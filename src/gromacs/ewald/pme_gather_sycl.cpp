@@ -538,11 +538,11 @@ auto pmeGatherKernel(sycl::handler& cgh,
         {
             /* We must sync here since the same shared memory is used as above. */
             itemIdx.barrier(fence_space::local_space);
-            fx                     = 0.0F;
-            fy                     = 0.0F;
-            fz                     = 0.0F;
-            const bool chargeCheck = pmeGpuCheckAtomCharge(gm_coefficientsB[atomIndexGlobal]);
-            if (chargeCheck)
+            fx                      = 0.0F;
+            fy                      = 0.0F;
+            fz                      = 0.0F;
+            const bool chargeCheck2 = pmeGpuCheckAtomCharge(gm_coefficientsB[atomIndexGlobal]);
+            if (chargeCheck2)
             {
                 sumForceComponents<order, atomsPerWarp, wrapX, wrapY>(&fx,
                                                                       &fy,
