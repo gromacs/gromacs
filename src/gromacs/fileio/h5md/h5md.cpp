@@ -460,6 +460,58 @@ void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inpu
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::writeNextFrame(ArrayRef<const RVec> positions,
+                          ArrayRef<const RVec> velocities,
+                          ArrayRef<const RVec> forces,
+                          const matrix         box,
+                          const int64_t        step,
+                          const double         time)
+{
+#if GMX_USE_HDF5
+    // Helper for error message creation when writing each array to the data sets
+    const auto blockNotFoundError = [&](const char* blockType)
+    {
+        return gmx::formatString(
+                "Cannot write %s for group '%s': no data set exists", blockType, c_fullSystemGroupName);
+    };
+
+    // We don't want to do a try-catch block or expensive search for every write,
+    // since we should always find the desired block after the H5md file has been set up.
+    // For extra debugging we leave this assert as a bread crumb.
+    GMX_ASSERT(particleBlocks_.find(c_fullSystemGroupName) != particleBlocks_.cend(),
+               "Could not find particle block when writing trajectory data");
+    H5mdParticleBlock& particleBlock = particleBlocks_.at(c_fullSystemGroupName).block();
+    if (!positions.empty())
+    {
+        throwUponH5mdError(!particleBlock.hasPosition(), blockNotFoundError("positions"));
+        particleBlock.position()->writeNextFrame(positions, step, time);
+        if (particleBlock.hasBox())
+        {
+            particleBlock.box()->writeNextFrame(
+                    constArrayRefFromArray<real>(reinterpret_cast<const real*>(box), DIM * DIM));
+        }
+    }
+    if (!velocities.empty())
+    {
+        throwUponH5mdError(!particleBlock.hasVelocity(), blockNotFoundError("velocities"));
+        particleBlock.velocity()->writeNextFrame(velocities, step, time);
+    }
+    if (!forces.empty())
+    {
+        throwUponH5mdError(!particleBlock.hasForce(), blockNotFoundError("forces"));
+        particleBlock.force()->writeNextFrame(forces, step, time);
+    }
+#else
+    GMX_UNUSED_VALUE(positions);
+    GMX_UNUSED_VALUE(velocities);
+    GMX_UNUSED_VALUE(forces);
+    GMX_UNUSED_VALUE(box);
+    GMX_UNUSED_VALUE(step);
+    GMX_UNUSED_VALUE(time);
+#endif
+}
+
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET

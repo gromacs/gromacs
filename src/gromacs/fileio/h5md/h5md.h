@@ -54,6 +54,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "gromacs/utility/vectypes.h"
+
 enum class PbcType : int;
 
 struct gmx_mtop_t;
@@ -191,6 +193,26 @@ public:
      * \param[in] inputRecord Simulation parameters.
      */
     void setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord);
+
+    /*! \brief Write input data as the next frame of the trajectory.
+     *
+     * \param[in] positions     Position data to write (or empty if not to write).
+     * \param[in] velocities    Velocity data to write (or empty if not to write).
+     * \param[in] forces        Force data to write (or empty if not to write).
+     * \param[in] box           Simulation box for frame.
+     * \param[in] step          Simulation step for frame.
+     * \param[in] time          Simulation time for frame.
+     *
+     * \throws gmx::FileIOError if \p position, \p velocity or \p force data is given
+     *     but the corresponding data set has not been created, or if the size of
+     *     the data buffers do not match the number of atoms of the system.
+     */
+    void writeNextFrame(ArrayRef<const RVec> positions,
+                        ArrayRef<const RVec> velocities,
+                        ArrayRef<const RVec> forces,
+                        const matrix         box,
+                        int64_t              step,
+                        double               time);
 
 private:
     /*! \brief Set up particle blocks for trajectory writing according to the H5md specification.

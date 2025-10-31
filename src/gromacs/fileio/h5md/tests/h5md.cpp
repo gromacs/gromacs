@@ -59,6 +59,7 @@
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/testmatchers.h"
 #include "testutils/tprfilegenerator.h"
 
 namespace gmx
@@ -70,6 +71,9 @@ namespace
 
 //! \brief Test fixture which sets up an empty H5md file.
 using H5mdIoTest = H5mdTestBase;
+
+//! \brief Dummy simulation box, used in tests where this is not needed.
+constexpr matrix c_unusedBox = { { -1.0, -1.0, -1.0 }, { -1.0, -1.0, -1.0 }, { -1.0, -1.0, -1.0 } };
 
 /*! \brief Test that opening (creating a new), closing, re-opening and closing
  * an H5MD file works
@@ -444,6 +448,228 @@ TEST_F(H5mdIoTest, BoxStepAndTimeDataSetsAreHardLinkedToPosition)
     timeInBoxGroup.readFrame(0, &readTimeBuffer);
     EXPECT_EQ(readTimeBuffer, timeToWrite)
             << "Time written to position block must exist in the box block";
+}
+
+TEST_F(H5mdIoTest, WriteNextFrameWorks)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    // Read the topology from a test system in our simulation data base
+    const std::string fileNameBase = "spc2-traj";
+    TprAndFileManager tprFileHandle(fileNameBase);
+    bool              haveTopology;
+    gmx_mtop_t        mtop;
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    constexpr int                            numFrames = 3;
+    const std::array<int64_t, numFrames>     steps     = { 5001, 10, 200050 };
+    const std::array<double, numFrames>      times     = { 50.1, -1.15, 256.1 };
+    std::array<std::vector<RVec>, numFrames> positions;
+    std::array<std::vector<RVec>, numFrames> velocities;
+    std::array<std::vector<RVec>, numFrames> forces;
+    std::array<matrix, numFrames>            boxes;
+
+    // Write unique per-frame values to the file (and to our per-frame buffers above for verification)
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        positions[frameIndex].resize(numAtoms);
+        velocities[frameIndex].resize(numAtoms);
+        forces[frameIndex].resize(numAtoms);
+        // For each atom in this frame, create a unique value and set it on all per-frame vectors
+        RVec frameValue = static_cast<real>(frameIndex) * RVec{ 1.0, 0.1, 0.01 };
+        for (hsize_t atomIndex = 0; atomIndex < numAtoms; ++atomIndex)
+        {
+            frameValue += { 1.0, 1.0, 1.0 };
+            positions[frameIndex][atomIndex]  = frameValue;
+            velocities[frameIndex][atomIndex] = static_cast<real>(10.0) * frameValue;
+            forces[frameIndex][atomIndex]     = static_cast<real>(100.0) * frameValue;
+        }
+
+        // Generate unique values for the box matrix
+        for (int i = 0; i < DIM; ++i)
+        {
+            for (int j = 0; j < DIM; ++j)
+            {
+                boxes[frameIndex][i][j] = (9 * frameIndex) + (3 * i) + j;
+            }
+        }
+
+        file().writeNextFrame(positions[frameIndex],
+                              velocities[frameIndex],
+                              forces[frameIndex],
+                              boxes[frameIndex],
+                              steps[frameIndex],
+                              times[frameIndex]);
+    }
+
+    H5mdTimeDataBlock<RVec> positionDataSet(fileid(), "/particles/system/position");
+    H5mdTimeDataBlock<RVec> velocityDataSet(fileid(), "/particles/system/velocity");
+    H5mdTimeDataBlock<RVec> forceDataSet(fileid(), "/particles/system/force");
+    H5mdFrameDataSet<real>  boxDataSet(fileid(), "/particles/system/box/edges/value");
+
+    {
+        SCOPED_TRACE("Assert that the correct number of frames were written");
+        EXPECT_EQ(positionDataSet.numFrames(), numFrames);
+        EXPECT_EQ(velocityDataSet.numFrames(), numFrames);
+        EXPECT_EQ(forceDataSet.numFrames(), numFrames);
+        EXPECT_EQ(boxDataSet.numFrames(), numFrames);
+    }
+    {
+        SCOPED_TRACE("Assert that trajectory data was written correctly");
+        for (int i = 0; i < numFrames; ++i)
+        {
+            std::vector<RVec> readValueBuffer(numAtoms);
+            positionDataSet.readValueAtIndex(i, readValueBuffer);
+            EXPECT_EQ(readValueBuffer, positions[i]);
+            velocityDataSet.readValueAtIndex(i, readValueBuffer);
+            EXPECT_EQ(readValueBuffer, velocities[i]);
+            forceDataSet.readValueAtIndex(i, readValueBuffer);
+            EXPECT_EQ(readValueBuffer, forces[i]);
+            std::array<real, DIM * DIM> readBoxBuffer;
+            boxDataSet.readFrame(i, readBoxBuffer);
+            EXPECT_THAT(constArrayRefFromArray(reinterpret_cast<real*>(boxes[i]), 9),
+                        ::testing::Pointwise(::testing::Eq(), readBoxBuffer));
+        }
+    }
+    {
+        SCOPED_TRACE("Assert that steps were written correctly");
+        for (int i = 0; i < numFrames; ++i)
+        {
+            EXPECT_EQ(*positionDataSet.readStepAtIndex(i), steps[i]);
+            EXPECT_EQ(*velocityDataSet.readStepAtIndex(i), steps[i]);
+            EXPECT_EQ(*forceDataSet.readStepAtIndex(i), steps[i]);
+        }
+    }
+    {
+        SCOPED_TRACE("Assert that times were written correctly");
+        for (int i = 0; i < numFrames; ++i)
+        {
+            EXPECT_FLOAT_EQ(*positionDataSet.readTimeAtIndex(i), times[i]);
+            EXPECT_FLOAT_EQ(*velocityDataSet.readTimeAtIndex(i), times[i]);
+            EXPECT_FLOAT_EQ(*forceDataSet.readTimeAtIndex(i), times[i]);
+        }
+    }
+}
+
+TEST_F(H5mdIoTest, WriteNextFrameDoesNotWriteEmptyRefs)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    // Read the topology from a test system in our simulation data base
+    const std::string fileNameBase = "spc2-traj";
+    TprAndFileManager tprFileHandle(fileNameBase);
+    bool              haveTopology;
+    gmx_mtop_t        mtop;
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    std::vector<RVec> positionsToWrite(numAtoms);
+    std::vector<RVec> velocitiesToWrite(numAtoms);
+    std::vector<RVec> forcesToWrite(numAtoms);
+
+    // Generate unique values to fill each value array above
+    RVec atomValue = RVec{ 1.0, 0.1, 0.01 };
+    for (hsize_t atomIndex = 0; atomIndex < numAtoms; ++atomIndex)
+    {
+        atomValue += { 1.0, 1.0, 1.0 };
+        positionsToWrite[atomIndex]  = atomValue;
+        velocitiesToWrite[atomIndex] = static_cast<real>(10.0) * atomValue;
+        forcesToWrite[atomIndex]     = static_cast<real>(100.0) * atomValue;
+    }
+
+    file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0);
+    file().writeNextFrame(positionsToWrite, {}, {}, c_unusedBox, 0, 0);
+    file().writeNextFrame({}, velocitiesToWrite, {}, c_unusedBox, 0, 0);
+    file().writeNextFrame({}, {}, forcesToWrite, c_unusedBox, 0, 0);
+
+    H5mdTimeDataBlock<RVec> positionDataSet(fileid(), "/particles/system/position");
+    H5mdTimeDataBlock<RVec> velocityDataSet(fileid(), "/particles/system/velocity");
+    H5mdTimeDataBlock<RVec> forceDataSet(fileid(), "/particles/system/force");
+    {
+        SCOPED_TRACE("Assert that only one frame was written to each data set");
+        EXPECT_EQ(positionDataSet.numFrames(), 1);
+        EXPECT_EQ(velocityDataSet.numFrames(), 1);
+        EXPECT_EQ(forceDataSet.numFrames(), 1);
+    }
+    {
+        SCOPED_TRACE("Assert that the correct values were written to frame 0");
+        std::vector<RVec> readValueBuffer(numAtoms);
+        positionDataSet.readValueAtIndex(0, readValueBuffer);
+        EXPECT_EQ(readValueBuffer, positionsToWrite);
+        velocityDataSet.readValueAtIndex(0, readValueBuffer);
+        EXPECT_EQ(readValueBuffer, velocitiesToWrite);
+        forceDataSet.readValueAtIndex(0, readValueBuffer);
+        EXPECT_EQ(readValueBuffer, forcesToWrite);
+    }
+}
+
+TEST_F(H5mdIoTest, WriteNextFrameThrowsForNotCreatedDataSets)
+{
+    t_inputrec inputRecord;
+    // Do not construct data sets for any trajectory data
+    inputRecord.nstxout = 0;
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 0;
+
+    // Read the topology from a test system in our simulation data base
+    const std::string fileNameBase = "spc2-traj";
+    TprAndFileManager tprFileHandle(fileNameBase);
+    bool              haveTopology;
+    gmx_mtop_t        mtop;
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    std::vector<RVec> valuesToWrite(numAtoms, { 0.0, 0.0, 0.0 });
+    ASSERT_NO_THROW(file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0))
+            << "Sanity check failed: should not throw when not trying to write any data";
+    EXPECT_THROW(file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_THROW(file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_THROW(file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0), gmx::FileIOError);
+}
+
+TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    // Read the topology from a test system in our simulation data base
+    const std::string fileNameBase = "spc2-traj";
+    TprAndFileManager tprFileHandle(fileNameBase);
+    bool              haveTopology;
+    gmx_mtop_t        mtop;
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    std::vector<RVec> bufferTooSmall(numAtoms - 1, { 0.0, 0.0, 0.0 });
+    std::vector<RVec> bufferTooLarge(numAtoms + 1, { 0.0, 0.0, 0.0 });
+    std::vector<RVec> bufferJustRight(numAtoms, { 0.0, 0.0, 0.0 });
+
+    EXPECT_THROW(file().writeNextFrame(bufferTooSmall, {}, {}, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_THROW(file().writeNextFrame(bufferTooLarge, {}, {}, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_NO_THROW(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0));
+    EXPECT_THROW(file().writeNextFrame({}, bufferTooSmall, {}, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_THROW(file().writeNextFrame({}, bufferTooLarge, {}, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_NO_THROW(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0));
+    EXPECT_THROW(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_THROW(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0), gmx::FileIOError);
+    EXPECT_NO_THROW(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
 }
 
 } // namespace
