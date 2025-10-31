@@ -46,7 +46,7 @@ gromacs:gcc-11-hip-622-mpi:test:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
-    - !reference [.rules:merge-and-post-merge-acceptance, rules]                 
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
