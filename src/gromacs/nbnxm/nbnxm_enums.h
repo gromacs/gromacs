@@ -159,8 +159,8 @@ enum class CoulombKernelType : int
     TableTwin,
     Ewald,
     EwaldTwin,
-    Fmm,
     None,
+    Fmm,
     Count
 };
 

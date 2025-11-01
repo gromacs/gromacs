@@ -65,6 +65,13 @@ NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJFsw_F_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJPsw_F_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombGeom_F_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref;
+#if GMX_USE_EXT_FMM
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJ_F_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJFsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJPsw_F_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJEwCombGeom_F_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJEwCombLB_F_ref;
+#endif
 
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecRF_VdwLJ_VF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecRF_VdwLJFsw_VF_ref;
@@ -81,6 +88,13 @@ NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJFsw_VF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJPsw_VF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref;
+#if GMX_USE_EXT_FMM
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJ_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJFsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJPsw_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJEwCombGeom_VF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJEwCombLB_VF_ref;
+#endif
 
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecRF_VdwLJ_VgrpF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecRF_VdwLJFsw_VgrpF_ref;
@@ -97,6 +111,14 @@ NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref;
 NbnxmKernelFunc nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
+#if GMX_USE_EXT_FMM
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJ_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJFsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJPsw_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJEwCombGeom_VgrpF_ref;
+NbnxmKernelFunc nbnxn_kernel_4x4_ElecNone_VdwLJEwCombLB_VgrpF_ref;
+#endif
+
 //! \}
 
 #ifdef INCLUDE_KERNELFUNCTION_TABLES
@@ -144,7 +166,18 @@ static NbnxmKernelFunc* const nbnxn_kernel_4x4_noener_ref[static_cast<int>(Coulo
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJFsw_F_ref,
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJPsw_F_ref,
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombGeom_F_ref,
-      nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref }
+      nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref },
+#    if GMX_USE_EXT_FMM
+    { nbnxn_kernel_4x4_ElecNone_VdwLJ_F_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJ_F_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJ_F_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJFsw_F_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJPsw_F_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJEwCombGeom_F_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJEwCombLB_F_ref }
+#    else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#    endif
 };
 
 static NbnxmKernelFunc* const nbnxn_kernel_4x4_ener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
@@ -182,7 +215,18 @@ static NbnxmKernelFunc* const nbnxn_kernel_4x4_ener_ref[static_cast<int>(Coulomb
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJFsw_VF_ref,
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJPsw_VF_ref,
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_ref,
-      nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref }
+      nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref },
+#    if GMX_USE_EXT_FMM
+    { nbnxn_kernel_4x4_ElecNone_VdwLJ_VF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJ_VF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJ_VF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJFsw_VF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJPsw_VF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJEwCombGeom_VF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJEwCombLB_VF_ref }
+#    else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#    endif
 };
 
 static NbnxmKernelFunc* const nbnxn_kernel_4x4_energrp_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
@@ -220,7 +264,18 @@ static NbnxmKernelFunc* const nbnxn_kernel_4x4_energrp_ref[static_cast<int>(Coul
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref,
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref,
       nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref,
-      nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref }
+      nbnxn_kernel_4x4_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref },
+#    if GMX_USE_EXT_FMM
+    { nbnxn_kernel_4x4_ElecNone_VdwLJ_VgrpF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJ_VgrpF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJ_VgrpF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJFsw_VgrpF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJPsw_VgrpF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJEwCombGeom_VgrpF_ref,
+      nbnxn_kernel_4x4_ElecNone_VdwLJEwCombLB_VgrpF_ref }
+#    else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#    endif
 };
 //! \}
 

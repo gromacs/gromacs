@@ -302,6 +302,8 @@ CoulombInteractionType coulombInteractionType(CoulombKernelType coulombKernelTyp
         case CoulombKernelType::EwaldTwin:
         case CoulombKernelType::TableTwin: return CoulombInteractionType::Pme;
         case CoulombKernelType::ReactionField: return CoulombInteractionType::RF;
+        case CoulombKernelType::None:
+        case CoulombKernelType::Fmm: return CoulombInteractionType::Fmm;
         default:
             GMX_RELEASE_ASSERT(false, "Unsupported CoulombKernelType");
             return CoulombInteractionType::Count;
@@ -351,17 +353,19 @@ interaction_const_t setupInteractionConst(const KernelOptions& options)
 
     interaction_const_t ic = init_interaction_const(nullptr, ir, mtop, false, std::nullopt);
 
+    if (ir.coulombtype == CoulombInteractionType::Fmm && options.coulombType == CoulombKernelType::None)
+    {
+        ic.nbnxmIsDirectCoulombProvider = false;
+    }
 
     init_interaction_const_tables(nullptr, &ic, options.pairlistCutoff, 0);
 
     return ic;
 }
 
-const EnumerationArray<CoulombKernelType, const char*> coulombKernelTypeName = { "ReactionField",
-                                                                                 "Table",
-                                                                                 "TableTwin",
-                                                                                 "Ewald",
-                                                                                 "EwaldTwin" };
+const EnumerationArray<CoulombKernelType, const char*> coulombKernelTypeName = {
+    "ReactionField", "Table", "TableTwin", "Ewald", "EwaldTwin", "None", "Fmm"
+};
 
 const std::array<const char*, vdwktNR> vdwKernelTypeName = { "CutCombGeom", "CutCombLB",
                                                              "CutCombNone", "ForceSwitch",
@@ -535,6 +539,19 @@ TEST_P(NbnxmKernelTest, WorksWith)
         GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
     }
 
+    if (options_.coulombType == CoulombKernelType::Fmm)
+    {
+        GTEST_SKIP() << "Cannot test or generate data for FMM kernels because FMM is not yet "
+                        "supported in GROMACS for short-range coulomb interactions";
+    }
+
+    if (!GMX_USE_EXT_FMM && options_.coulombType == CoulombKernelType::None)
+    {
+
+        GTEST_SKIP() << "Reference kernels that do not compute Coulomb interactions are available "
+                        "only with an FMM build configuration";
+    }
+
     GMX_ASSERT(*std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end())
                        == TestSystem::sc_numEnergyGroups,
                "The test system should have a sufficient number of energy groups");
@@ -685,7 +702,9 @@ INSTANTIATE_TEST_SUITE_P(Combinations,
                                                    CoulombKernelType::Ewald,
                                                    CoulombKernelType::EwaldTwin,
                                                    CoulombKernelType::Table,
-                                                   CoulombKernelType::TableTwin),
+                                                   CoulombKernelType::TableTwin,
+                                                   CoulombKernelType::None,
+                                                   CoulombKernelType::Fmm),
                                  ::testing::Values(int(vdwktLJCUT_COMBGEOM),
                                                    int(vdwktLJCUT_COMBLB),
                                                    int(vdwktLJCUT_COMBNONE),

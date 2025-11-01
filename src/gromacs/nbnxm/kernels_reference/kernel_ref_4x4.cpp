@@ -134,4 +134,32 @@ static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
 #undef VDW_CUTOFF_CHECK
 #undef CALC_COUL_TAB
 
+#if GMX_USE_EXT_FMM
+
+#    define CALC_COUL_NONE
+#    define VDW_CUTOFF_CHECK
+#    define LJ_CUT
+#    include "kernel_ref_includes.h"
+#    undef LJ_CUT
+#    define LJ_FORCE_SWITCH
+#    include "kernel_ref_includes.h"
+#    undef LJ_FORCE_SWITCH
+#    define LJ_POT_SWITCH
+#    include "kernel_ref_includes.h"
+#    undef LJ_POT_SWITCH
+#    define LJ_EWALD
+#    define LJ_CUT
+#    define LJ_EWALD_COMB_GEOM
+#    include "kernel_ref_includes.h"
+#    undef LJ_EWALD_COMB_GEOM
+#    define LJ_EWALD_COMB_LB
+#    include "kernel_ref_includes.h"
+#    undef LJ_EWALD_COMB_LB
+#    undef LJ_CUT
+#    undef LJ_EWALD
+#    undef VDW_CUTOFF_CHECK
+#    undef CALC_COUL_NONE
+
+#endif
+
 } // namespace gmx

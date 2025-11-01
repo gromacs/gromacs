@@ -1594,6 +1594,9 @@ static NbnxmKernelFunc* const nbnxmKernelNoenerSimd4xm[static_cast<int>(CoulombK
                             LJEwald::CombGeometric,
                             EnergyOutput::None>,
     },
+
+#    else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 #    endif
 };
 
@@ -1839,6 +1842,9 @@ static NbnxmKernelFunc* const nbnxmKernelEnerSimd4xm[static_cast<int>(CoulombKer
                             LJEwald::CombGeometric,
                             EnergyOutput::System>,
     },
+
+#    else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 #    endif
 };
 
@@ -2090,6 +2096,9 @@ static NbnxmKernelFunc* const nbnxmKernelEnergrpSimd4xm[static_cast<int>(Coulomb
                             LJEwald::CombGeometric,
                             EnergyOutput::GroupPairs>,
     },
+
+#    else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 #    endif
 };
 

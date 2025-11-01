@@ -195,6 +195,11 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
 
     constexpr bool haveLJEwaldGeometric = (ljEwald == LJEwald::CombGeometric);
 
+    constexpr bool haveElectrostatics = (coulombType != KernelCoulombType::None);
+    static_assert(GMX_USE_EXT_FMM || haveElectrostatics,
+                  "Reference kernels that do not compute Coulomb interactions are supported only "
+                  "with an FMM build configuration");
+
     constexpr bool calculateEnergies = (energyOutput != EnergyOutput::None);
     constexpr bool useEnergyGroups   = (energyOutput == EnergyOutput::GroupPairs);
 
@@ -345,7 +350,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
         const bool do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
-        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
+        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0) && haveElectrostatics;
         const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
         energyAccumulator.template initICluster<c_iClusterSize>(ci);
