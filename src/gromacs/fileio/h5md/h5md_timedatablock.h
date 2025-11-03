@@ -48,6 +48,7 @@
 
 #include "external/scope_guard/scope_guard.h"
 
+#include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_framedataset.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/utility/classhelpers.h"
@@ -246,6 +247,9 @@ public:
      * \throws gmx::FileIOError if there already exists an object at the given path.
      */
     H5mdTimeDataBlockBuilder(hid_t container, const std::string& name);
+
+    //! \brief Set \p compression for value data set (default is uncompressed).
+    H5mdTimeDataBlockBuilder& withCompression(H5mdCompression compression);
 
     //! \brief Set dimension for a single frame in the value data set.
     H5mdTimeDataBlockBuilder& withFrameDimension(ArrayRef<const hsize_t> dims);

@@ -58,6 +58,8 @@ constexpr char c_valueName[] = "value";
 constexpr char c_stepName[] = "step";
 //! \brief Name of time data set inside block group per the H5md specification.
 constexpr char c_timeName[] = "time";
+//! \brief Compression algorithm used for step and time data sets.
+constexpr H5mdCompression c_stepAndTimeCompression = H5mdCompression::LosslessShuffle;
 
 template<typename ValueType>
 H5mdTimeDataBlock<ValueType>::H5mdTimeDataBlock(H5mdFrameDataSet<ValueType>&&     valueDataSet,
@@ -196,6 +198,13 @@ H5mdTimeDataBlockBuilder<ValueType>::H5mdTimeDataBlockBuilder(const hid_t       
 }
 
 template<typename ValueType>
+H5mdTimeDataBlockBuilder<ValueType>& H5mdTimeDataBlockBuilder<ValueType>::withCompression(H5mdCompression compression)
+{
+    valueDataSetBuilder_.withCompression(compression);
+    return *this;
+}
+
+template<typename ValueType>
 H5mdTimeDataBlockBuilder<ValueType>&
 H5mdTimeDataBlockBuilder<ValueType>::withFrameDimension(ArrayRef<const hsize_t> dims)
 {
@@ -215,10 +224,12 @@ H5mdTimeDataBlock<ValueType> H5mdTimeDataBlockBuilder<ValueType>::build()
 {
     return H5mdTimeDataBlock<ValueType>(
             valueDataSetBuilder_.build(),
-            H5mdScalarFrameDataSet<int64_t>{
-                    H5mdFrameDataSetBuilder<int64_t>(blockGroup_, c_stepName).build() },
-            H5mdScalarFrameDataSet<double>{
-                    H5mdFrameDataSetBuilder<double>(blockGroup_, c_timeName).build() });
+            H5mdScalarFrameDataSet<int64_t>{ H5mdFrameDataSetBuilder<int64_t>(blockGroup_, c_stepName)
+                                                     .withCompression(c_stepAndTimeCompression)
+                                                     .build() },
+            H5mdScalarFrameDataSet<double>{ H5mdFrameDataSetBuilder<double>(blockGroup_, c_timeName)
+                                                    .withCompression(c_stepAndTimeCompression)
+                                                    .build() });
 }
 
 template class H5mdTimeDataBlock<int32_t>;

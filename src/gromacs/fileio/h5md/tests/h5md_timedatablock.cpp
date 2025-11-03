@@ -684,6 +684,86 @@ TEST_F(H5mdTimeDataBlockTest, ReadFrameDoesNotReadIntoNullPtrInput)
     EXPECT_EQ(readValueBuffer, valueFrame1);
 }
 
+TEST_F(H5mdTimeDataBlockTest, DefaultCompression)
+{
+    using ValueType = double;
+    {
+        SCOPED_TRACE("Create data sets and close them at the end of scope");
+        H5mdTimeDataBlock<ValueType> dataBlockUncompressed =
+                H5mdTimeDataBlockBuilder<ValueType>(fileid(), "block").build();
+    }
+    {
+        SCOPED_TRACE("Check value data set default compression");
+        H5mdDataSetBase<ValueType> dataSet(fileid(), "block/value");
+        const auto [propertyList, propertyListGuard] =
+                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+        EXPECT_EQ(H5Pget_nfilters(propertyList), 0)
+                << "No filters should be applied to values by default";
+    }
+    {
+        SCOPED_TRACE("Check step data set default compression");
+        H5mdDataSetBase<int64_t> dataSet(fileid(), "block/step");
+        const auto [propertyList, propertyListGuard] =
+                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+        EXPECT_GT(H5Pget_nfilters(propertyList), 0)
+                << "At least one filter (deflate) should be applied to steps by default";
+        // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+        EXPECT_GE(H5Pget_filter_by_id2(propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr), 0)
+                << "Deflate filter should be applied";
+    }
+    {
+        SCOPED_TRACE("Check time data set default compression");
+        H5mdDataSetBase<double> dataSet(fileid(), "block/time");
+        const auto [propertyList, propertyListGuard] =
+                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+        EXPECT_GT(H5Pget_nfilters(propertyList), 0)
+                << "At least one filter (deflate) should be applied to times by default";
+        // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+        EXPECT_GE(H5Pget_filter_by_id2(propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr), 0)
+                << "Deflate filter should be applied";
+    }
+}
+
+TEST_F(H5mdTimeDataBlockTest, CompressionWorks)
+{
+    using ValueType         = double;
+    constexpr int numValues = 101;
+
+    {
+        SCOPED_TRACE(
+                "Create data sets, write some data to them and close them at the end of scope");
+        H5mdTimeDataBlock<ValueType> dataBlockUncompressed =
+                H5mdTimeDataBlockBuilder<ValueType>(fileid(), "uncompressed")
+                        .withFrameDimension({ numValues })
+                        .build();
+
+        H5mdTimeDataBlock<ValueType> dataBlockCompressed =
+                H5mdTimeDataBlockBuilder<ValueType>(fileid(), "compressed")
+                        .withFrameDimension({ numValues })
+                        .withCompression(H5mdCompression::LosslessShuffle)
+                        .build();
+
+        // Write some data to the data sets
+        std::vector<ValueType> valuesToWrite(numValues);
+        std::iota(valuesToWrite.begin(), valuesToWrite.end(), 0.0);
+        dataBlockUncompressed.writeNextFrame(valuesToWrite, 0, 0.0);
+        dataBlockCompressed.writeNextFrame(valuesToWrite, 0, 0.0);
+    }
+
+    // Open the value data sets as H5mdDataSetBase to access the hid_t handles for below
+    H5mdDataSetBase<ValueType> valueDataSetUncompressed(fileid(), "uncompressed/value");
+    H5mdDataSetBase<ValueType> valueDataSetCompressed(fileid(), "compressed/value");
+
+    // H5Dget_storage_size returns the size (in bytes) of the stored data inside the set.
+    const size_t uncompressedSize = H5Dget_storage_size(valueDataSetUncompressed.id());
+    const size_t compressedSize   = H5Dget_storage_size(valueDataSetCompressed.id());
+    EXPECT_LT(compressedSize, 0.5 * uncompressedSize)
+            << "gzip compression should yield a saving of much more than 50% for this data";
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx
