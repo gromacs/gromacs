@@ -88,6 +88,8 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running the direct GPU communication path for the current build type
     static constexpr bool MpiCommunication =
             (GMX_THREAD_MPI && ThreadMpiCommunication) || (GMX_LIB_MPI && LibraryMpiCommunication);
+    //! Whether we disable event counting.
+    static constexpr bool DisableEventCounting = GMX_GPU_CUDA || GMX_GPU_HIP;
     //! Whether this configuration supports running gpu graphs
     static constexpr bool GpuGraph = GMX_HAVE_GPU_GRAPH_SUPPORT;
     //! Whether this configuration supports running gpu pme decomposition

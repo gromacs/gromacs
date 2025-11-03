@@ -218,7 +218,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
 #if GMX_MPI && GMX_THREAD_MPI
     // Exchange of remote addresses from neighboring ranks is needed only with peer-to-peer copies as cudaMemcpy needs both src/dst pointer
     // MPI calls such as MPI_send doesn't worry about receiving address, that is taken care by MPI_recv call in neighboring rank
-    if (supportedThreadMpiBuild)
+    if constexpr (supportedThreadMpiBuild)
     {
         // This rank will push data to its neighbor, so needs to know the remote receive address
         // and similarly send its receive address to other neighbour. We can do this here since
@@ -455,7 +455,7 @@ void GpuHaloExchange::Impl::communicateHaloData(Float3*  sendPtr,
                                                 int      recvRank,
                                                 HaloType haloType)
 {
-    if (supportedThreadMpiBuild)
+    if constexpr (supportedThreadMpiBuild)
     {
         // no need to explicitly sync with GMX_THREAD_MPI as all operations are
         // anyway launched in correct stream
@@ -600,9 +600,9 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3*  sendPtr,
 {
     GMX_RELEASE_ASSERT(supportedThreadMpiBuild, "Build does not support peer-to-peer communication");
     // The code below can be made backend-agnostic once we add device-to-device copy functionality to DeviceBuffer
-#if GMX_GPU_CUDA
-    cudaError_t stat;
 
+
+#if GMX_GPU_CUDA || GMX_GPU_HIP
     // We asynchronously push data to remote rank. The remote
     // destination pointer has already been set in the init fn.  We
     // don't need to worry about overwriting data the remote ranks
@@ -612,13 +612,23 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3*  sendPtr,
     // send data to neighbor, if any data exists to send
     if (sendSize > 0)
     {
-        stat = cudaMemcpyAsync(remotePtr,
-                               sendPtr,
-                               sendSize * DIM * sizeof(float),
-                               cudaMemcpyDeviceToDevice,
-                               haloStream_->stream());
+#    if GMX_GPU_CUDA
+        cudaError_t stat = cudaMemcpyAsync(remotePtr,
+                                           sendPtr,
+                                           sendSize * DIM * sizeof(float),
+                                           cudaMemcpyDeviceToDevice,
+                                           haloStream_->stream());
 
         CU_RET_ERR(stat, "cudaMemcpyAsync on GPU Domdec CUDA direct data transfer failed");
+#    elif GMX_GPU_HIP
+        hipError_t stat = hipMemcpyAsync(remotePtr,
+                                         sendPtr,
+                                         sendSize * DIM * sizeof(float),
+                                         hipMemcpyDeviceToDevice,
+                                         haloStream_->stream());
+
+        gmx::checkDeviceError(stat, "hipMemcpyAsync on GPU Domdec HIP direct data transfer failed");
+#    endif
     }
 
 #    if GMX_THREAD_MPI

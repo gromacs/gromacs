@@ -58,6 +58,10 @@
 #    include <cuda/barrier>
 #endif
 
+#if GMX_GPU_HIP
+#    include "gromacs/gpu_utils/gputraits_hip.h"
+#endif
+
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
 #endif
