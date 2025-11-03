@@ -92,7 +92,6 @@ enum
 #define PP_PME_FINISH (1 << 10)
 #define PP_PME_SWITCHGRID (1 << 11)
 #define PP_PME_RESETCOUNTERS (1 << 12)
-#define PP_PME_GPUCOMMS (1 << 13)
 // Whether PME forces are transferred directly to remote PP GPU memory in a specific step
 #define PP_PME_RECVFTOGPU (1 << 14)
 // Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow

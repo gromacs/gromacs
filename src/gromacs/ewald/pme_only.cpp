@@ -132,8 +132,8 @@ struct gmx_pme_pp
     /*! \brief object for sending PME force using communications operating on GPU memory space */
     std::unique_ptr<gmx::PmeForceSenderGpu> pmeForceSenderGpu;
 
-    /*! \brief whether GPU direct communications are active for PME-PP transfers */
-    bool useGpuDirectComm = false;
+    //! whether GPU direct communications are generally active for bi-directional PME-PP transfers
+    bool useGpuPmePpCommunication = false;
     /*! \brief whether GPU direct communications should send forces directly to remote GPU memory */
     bool sendForcesDirectToPpGpu = false;
     /*! \brief Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow */
@@ -304,9 +304,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
         }
 
-        pme_pp->useGpuDirectComm      = ((cnb.flags & PP_PME_GPUCOMMS) != 0);
-        stepWork->useGpuPmeFReduction = pme_pp->useGpuDirectComm;
-        GMX_ASSERT(!pme_pp->useGpuDirectComm || (pme_pp->pmeForceSenderGpu != nullptr),
+        stepWork->useGpuPmeFReduction = pme_pp->useGpuPmePpCommunication;
+        GMX_ASSERT(!pme_pp->useGpuPmePpCommunication || (pme_pp->pmeForceSenderGpu != nullptr),
                    "The use of GPU direct communication for PME-PP is enabled, "
                    "but the PME GPU force reciever object does not exist");
         pme_pp->sendForcesDirectToPpGpu = ((cnb.flags & PP_PME_RECVFTOGPU) != 0);
@@ -458,7 +457,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     }
                     pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
                 }
-                if (pme_pp->useGpuDirectComm)
+                if (pme_pp->useGpuPmePpCommunication)
                 {
                     GMX_ASSERT((runMode == PmeRunMode::GPU || runMode == PmeRunMode::Mixed),
                                "GPU Direct PME-PP communication has been enabled, "
@@ -498,7 +497,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             /* Receive the coordinates in place */
             nat             = 0;
             int senderCount = 0;
-            if (pme_pp->useGpuDirectComm)
+            if (pme_pp->useGpuPmePpCommunication)
             {
                 pme_pp->pmeCoordinateReceiverGpu->prepareToReceiveCoordinates();
             }
@@ -506,7 +505,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             {
                 if (sender.numAtoms > 0)
                 {
-                    if (pme_pp->useGpuDirectComm)
+                    if (pme_pp->useGpuPmePpCommunication)
                     {
                         if (GMX_THREAD_MPI)
                         {
@@ -594,18 +593,18 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     int                    messages, ind_start, ind_end;
     cve.cycles = cycles;
 
-    if (pme_pp->useGpuDirectComm)
+    if (pme_pp->useGpuPmePpCommunication)
     {
         GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
                    "The use of GPU direct communication for PME-PP is enabled, "
-                   "but the PME GPU force reciever object does not exist");
+                   "but the PME GPU force receiver object does not exist");
     }
 
     messages = 0;
     ind_end  = 0;
 
     /* Now the evaluated forces have to be transferred to the PP ranks */
-    if (pme_pp->useGpuDirectComm && GMX_THREAD_MPI)
+    if (pme_pp->useGpuPmePpCommunication && GMX_THREAD_MPI)
     {
         int numPpRanks = static_cast<int>(pme_pp->ppRanks.size());
 #    pragma omp parallel for num_threads(std::min(numPpRanks, pme.nthread)) schedule(static)
@@ -628,7 +627,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
             {
                 ind_start = ind_end;
                 ind_end   = ind_start + receiver.numAtoms;
-                if (pme_pp->useGpuDirectComm)
+                if (pme_pp->useGpuPmePpCommunication)
                 {
                     pme_pp->pmeForceSenderGpu->sendFToPpGpuAwareMpi(pme_gpu_get_device_f(&pme),
                                                                     ind_start,
@@ -718,9 +717,10 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     std::vector<gmx_pme_t*> pmedata;
     pmedata.push_back(pmeFromRunner);
 
-    auto pme_pp        = std::make_unique<gmx_pme_pp>(dd.mpiCommMySim().comm(), makePpRanks(dd));
-    pme_pp->useNvshmem = useNvshmem;
-    pme_pp->useGpuHaloExchange = useGpuHaloExchange;
+    auto pme_pp = std::make_unique<gmx_pme_pp>(dd.mpiCommMySim().comm(), makePpRanks(dd));
+    pme_pp->useGpuPmePpCommunication = useGpuPmePpCommunication;
+    pme_pp->useNvshmem               = useNvshmem;
+    pme_pp->useGpuHaloExchange       = useGpuHaloExchange;
 
     std::unique_ptr<gmx::StatePropagatorDataGpu>       stateGpu;
     std::unique_ptr<gmx::GpuHaloExchangeNvshmemHelper> gpuHaloExchangeNvshmemHelper;
@@ -736,7 +736,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->chargeB, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
-        if (useGpuPmePpCommunication)
+        if (pme_pp->useGpuPmePpCommunication)
         {
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(
                     pme_pp->mpi_comm_mysim, deviceStreamManager->context(), pme_pp->ppRanks);
@@ -841,7 +841,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         PmeOutput output = { {}, false, 0, { { 0 } }, 0, 0, 0, { { 0 } } };
         if (useGpuForPme)
         {
-            if (!pme_pp->useGpuDirectComm)
+            if (!pme_pp->useGpuPmePpCommunication)
             {
                 /* In PME-only mode, everything is on the same stream, so we do not consume the
                  * event marking the completion of the coordinate transfer */
@@ -858,7 +858,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                   xReadyOnDevice,
                                   wcycle,
                                   lambda_q,
-                                  pme_pp->useGpuDirectComm,
+                                  pme_pp->useGpuPmePpCommunication,
                                   pme_pp->pmeCoordinateReceiverGpu.get(),
                                   pme_pp->useMdGpuGraph);
             pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
