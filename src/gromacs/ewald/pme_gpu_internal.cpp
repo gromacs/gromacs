@@ -779,8 +779,8 @@ void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu)
 static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceContext, const DeviceStream& deviceStream)
 {
     /* Allocate the target-specific structures */
-    pmeGpu->archSpecific.reset(new PmeGpuSpecific(deviceContext, deviceStream));
-    pmeGpu->kernelParams.reset(new PmeGpuKernelParams());
+    pmeGpu->archSpecific = std::make_shared<PmeGpuSpecific>(deviceContext, deviceStream);
+    pmeGpu->kernelParams = std::make_shared<PmeGpuKernelParams>();
 
     // Use in-place FFT with cuFFTMp or BBFFT.
     pmeGpu->archSpecific->performOutOfPlaceFFT =
