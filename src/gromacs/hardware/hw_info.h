@@ -104,6 +104,7 @@ enum class ThreadAffinity
     Select,
     Auto,
     On,
+    Inherit,
     Off,
     Count
 };

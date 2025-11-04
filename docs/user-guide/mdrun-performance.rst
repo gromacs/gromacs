@@ -580,28 +580,42 @@ behavior.
     The default, 0, copies the value from ``-ntomp``.
 
 ``-pin``
-    Can be set to "auto," "on" or "off" to control whether
+    Can be set to "auto," "on," "inherit," or "off" to control whether
     :ref:`mdrun <gmx mdrun>` will attempt to set the affinity of threads to cores.
-    Defaults to "auto," which means that if :ref:`mdrun <gmx mdrun>` detects that all the
-    cores on the node are being used for :ref:`mdrun <gmx mdrun>`, then it should behave
-    like "on," and attempt to set the affinities (unless they are
-    already set by something else).
+    Defaults to "auto," which means that if :ref:`mdrun <gmx mdrun>` detects that all
+    cores on the node are used for :ref:`mdrun <gmx mdrun>` and the affinity is left default
+    (not set by an external tool such as an MPI launcher or ``numactl``), then it behaves
+    like "on," and attempts to set the affinities.
+    With "on," mdrun will set thread affinities, overriding any external CPU affinity settings.
+    With "inherit," mdrun will set thread affinities within the external affinity mask: that is,
+    if an external tool or a job scheduler set CPU affinities limiting each process
+    to a specific set of cores/hardware threads, ref:`mdrun <gmx mdrun>` rank(s) will pin
+    thread(s) within these boundaries.
+    The behavior of "on" and "inherit" is similar, both enable thread pinning, but they
+    differ in scope: "on" pins threads across all available CPU cores in the system,
+    while "inherit" only pins threads within the external affinity mask.
+    This scope difference also affects how the ``-pinoffset`` and ``-pinstride`` options work.
 
 ``-pinoffset``
-    If ``-pin on``, specifies the logical core number to
+    If ``-pin on`` or ``-pin inherit``, specifies the logical core number to
     which :ref:`mdrun <gmx mdrun>` should pin the first thread. When running more than
     one instance of :ref:`mdrun <gmx mdrun>` on a node, use this option to to avoid
     pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the same core.
+    With ``-pin on``, the offset is applied relative to all the available CPUs,
+    while with ``-pin inherit``, the offset is applied relative to the cores
+    within the external affinity mask.
 
 ``-pinstride``
-    If ``-pin on``, specifies the stride in logical core
+    If ``-pin on`` or ``-pin inherit``, specifies the stride in logical core
     numbers for the cores to which :ref:`mdrun <gmx mdrun>` should pin its threads. When
     running more than one instance of :ref:`mdrun <gmx mdrun>` on a node, use this option
     to avoid pinning threads from different :ref:`mdrun <gmx mdrun>` instances to the
-    same core.  Use the default, 0, to minimize the number of threads
+    same core. Use the default, 0, to minimize the number of threads
     per physical core - this lets :ref:`mdrun <gmx mdrun>` manage the hardware-, OS- and
     configuration-specific details of how to map logical cores to
-    physical cores.
+    physical cores. With ``-pin on``, the stride is applied across all available CPUs,
+    while with ``-pin inherit``, the stride is applied only within the external
+    affinity mask.
 
 ``-ddorder``
     Can be set to "interleave," "pp_pme" or "cartesian."

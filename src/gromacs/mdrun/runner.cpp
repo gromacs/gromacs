@@ -2129,18 +2129,8 @@ int Mdrunner::mdrunner()
     {
         /* We always call gmx_set_thread_affinity since it might want to write things to log
          * even with ThreadAffinity::Off */
-        int numThreadsOnThisNode, intraNodeThreadOffset;
-        analyzeThreadsOnThisNode(
-                physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode, &intraNodeThreadOffset);
-        /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog,
-                                cr->commMySim,
-                                &hw_opt,
-                                *hwinfo_->hardwareTopology,
-                                numThreadsOnThisRank,
-                                numThreadsOnThisNode,
-                                intraNodeThreadOffset,
-                                nullptr);
+        gmx_set_thread_affinity(
+                mdlog, cr->commMySim, physicalNodeComm, &hw_opt, *hwinfo_->hardwareTopology, numThreadsOnThisRank, nullptr);
     }
 
     if (EI_DYNAMICS(inputrec->eI))

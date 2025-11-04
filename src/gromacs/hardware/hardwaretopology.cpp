@@ -1311,6 +1311,32 @@ HardwareTopology::HardwareTopology(int logicalProcessorCount) :
     }
 }
 
+
+HardwareTopology::HardwareTopology(int logicalProcessorCount, ArrayRef<const int> externalAffinitySet) :
+    supportLevel_(SupportLevel::LogicalProcessorCount),
+    machine_(),
+    isThisSystem_(false),
+    cpuLimit_(logicalProcessorCount),
+    maxThreads_(logicalProcessorCount)
+{
+    std::vector<CpuInfo::LogicalProcessor> logicalProcessors(logicalProcessorCount);
+    // Simple topology with no SMP and trivial ordering
+    for (int i = 0; i < logicalProcessorCount; i++)
+    {
+        logicalProcessors[i] = { 0, i, 0, i };
+    }
+    translateCpuInfoLogicalProcessorsToMachine(logicalProcessors, &machine_);
+    supportLevel_ = SupportLevel::Basic;
+    for (auto& lp : machine_.logicalProcessors)
+    {
+        lp.isAssignedToProcess = false;
+    }
+    for (int c : externalAffinitySet)
+    {
+        machine_.logicalProcessors.at(c).isAssignedToProcess = true;
+    }
+}
+
 HardwareTopology::HardwareTopology(const std::map<int, std::array<int, 3>>& logicalProcessorIdMap,
                                    const std::string&                       filesystemRoot) :
     supportLevel_(SupportLevel::None), machine_(), isThisSystem_(false)
@@ -1370,6 +1396,17 @@ HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
     }
 }
 
+HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
+                                   const std::vector<int>& allowedProcessors,
+                                   const std::vector<int>& externalAffinitySet) :
+    HardwareTopology(filesystemRoot, allowedProcessors)
+{
+    for (auto& lp : machine_.logicalProcessors)
+    {
+        lp.isAssignedToProcess = std::find(externalAffinitySet.begin(), externalAffinitySet.end(), lp.osId)
+                                 != externalAffinitySet.end();
+    }
+}
 std::string hwlocDescription()
 {
 #if GMX_USE_HWLOC

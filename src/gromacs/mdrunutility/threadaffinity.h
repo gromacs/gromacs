@@ -69,13 +69,6 @@ protected:
 
 } // namespace gmx
 
-/*! \brief Communicates within physical nodes to discover the
- * distribution of threads over ranks. */
-void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator& physicalNodeComm,
-                              int                                  numThreadsOnThisRank,
-                              int*                                 numThreadsOnThisNode,
-                              int*                                 intraNodeThreadOffset);
-
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
  *
@@ -83,22 +76,19 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator& physicalNodeC
  *
  * \param[out] mdlog                  Logger.
  * \param[in]  mpiCommMySim           Communication handler for the simulation.
+ * \param[in]  mpiCommNode            Communication handler for the physical node.
  * \param[in]  hw_opt                 Accesses user choices for thread affinity handling.
  * \param[in]  hwTop                  Detected hardware topology.
  * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
- * \param[in]  numThreadsOnThisNode   The number of threads on all ranks of this node.
- * \param[in]  intraNodeThreadOffset  The index of the first hardware thread of this rank
- *   in the set of all the threads of all MPI ranks within a node (ordered by MPI rank ID).
  * \param[in]  affinityAccess         Interface for low-level access to affinity details.
  */
-void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
-                             const gmx::MpiComm&          mpiCommMySim,
-                             const gmx_hw_opt_t*          hw_opt,
-                             const gmx::HardwareTopology& hwTop,
-                             int                          numThreadsOnThisRank,
-                             int                          numThreadsOnThisNode,
-                             int                          intraNodeThreadOffset,
-                             gmx::IThreadAffinityAccess*  affinityAccess);
+void gmx_set_thread_affinity(const gmx::MDLogger&                 mdlog,
+                             const gmx::MpiComm&                  mpiCommMySim,
+                             const gmx::PhysicalNodeCommunicator& mpiCommNode,
+                             const gmx_hw_opt_t*                  hw_opt,
+                             const gmx::HardwareTopology&         hwTop,
+                             int                                  numThreadsOnThisRank,
+                             gmx::IThreadAffinityAccess*          affinityAccess);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,

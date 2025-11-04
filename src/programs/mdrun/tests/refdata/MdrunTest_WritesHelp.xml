@@ -231,7 +231,8 @@ Other options:
  -ntomp_pme &lt;int&gt;           (0)
            Number of OpenMP threads per MPI rank to start (0 is -ntomp)
  -pin    &lt;enum&gt;             (auto)
-           Whether mdrun should try to set thread affinities: auto, on, off
+           Whether mdrun should try to set thread affinities: auto, on,
+           inherit, off
  -pinoffset &lt;int&gt;           (0)
            The lowest logical core number to which mdrun should pin the first
            thread

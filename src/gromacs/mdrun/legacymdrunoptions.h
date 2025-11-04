@@ -161,11 +161,9 @@ public:
                                                                                         "no",
                                                                                         "yes",
                                                                                         nullptr };
-    const char* thread_aff_opt_choices[static_cast<int>(ThreadAffinity::Count) + 1] = { nullptr,
-                                                                                        "auto",
-                                                                                        "on",
-                                                                                        "off",
-                                                                                        nullptr };
+    const char* thread_aff_opt_choices[static_cast<int>(ThreadAffinity::Count) + 1] = {
+        nullptr, "auto", "on", "inherit", "off", nullptr
+    };
     const char* nbpu_opt_choices[5]    = { nullptr, "auto", "cpu", "gpu", nullptr };
     const char* pme_opt_choices[5]     = { nullptr, "auto", "cpu", "gpu", nullptr };
     const char* pme_fft_opt_choices[5] = { nullptr, "auto", "cpu", "gpu", nullptr };
