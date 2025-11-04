@@ -51,10 +51,12 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
+
+template<typename T>
+class ArrayRef;
 
 /*! \libinternal \brief Information about packages, cores, processing units, numa, caches
  *
@@ -361,7 +363,7 @@ public:
      *                            that should be retained in the topology, mocking the
      *                            logical processors that are enabled in our cpu mask.
      */
-    explicit HardwareTopology(const std::string& filesystemRoot, const std::vector<int>& allowedProcessors);
+    explicit HardwareTopology(const std::string& filesystemRoot, ArrayRef<const int> allowedProcessors);
 
     /*! \brief Creates mock topology by parsing mock Linux sys/fs path
      *
@@ -389,9 +391,9 @@ public:
      *                            that should be included in the external affinity mask
      *                            in the created topology.
      */
-    explicit HardwareTopology(const std::string&      filesystemRoot,
-                              const std::vector<int>& allowedProcessors,
-                              const std::vector<int>& externalAffinitySet);
+    explicit HardwareTopology(const std::string&  filesystemRoot,
+                              ArrayRef<const int> allowedProcessors,
+                              ArrayRef<const int> externalAffinitySet);
 
     /*! \brief Check what topology information is available and valid
      *

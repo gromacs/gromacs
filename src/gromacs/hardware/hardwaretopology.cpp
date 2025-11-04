@@ -68,6 +68,7 @@
 #include <sys/types.h>
 
 #include "gromacs/hardware/cpuinfo.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -131,7 +132,7 @@ std::unordered_set<int> getAffinityList()
  *                          logical cores/processing units we use.
  * \param machine           Hardware topology machine structure where result is written.
  */
-void translateCpuInfoLogicalProcessorsToMachine(const std::vector<CpuInfo::LogicalProcessor>& logicalProcessors,
+void translateCpuInfoLogicalProcessorsToMachine(ArrayRef<const CpuInfo::LogicalProcessor> logicalProcessors,
                                                 HardwareTopology::Machine* machine)
 {
     // We will keep and report the os-provided indices for packages, since we need to be
@@ -880,7 +881,7 @@ std::vector<int> parseCpuString(const std::string& cpuString)
  */
 HardwareTopology::SupportLevel parseSysFsCpuTopology(HardwareTopology::Machine* machine,
                                                      const std::string&         root        = "",
-                                                     const std::vector<int>&    allowedCpus = {})
+                                                     ArrayRef<const int>        allowedCpus = {})
 {
     std::string possibleCpuString;
     std::getline(std::ifstream(root + "/sys/devices/system/cpu/possible"), possibleCpuString);
@@ -972,9 +973,9 @@ HardwareTopology::SupportLevel parseSysFsCpuTopology(HardwareTopology::Machine* 
  *
  * \return Path to the active cgroup directory, or empty string if none found.
  */
-std::string findCgroupPath(const std::vector<std::string>& mountPoints,
-                           const std::vector<std::string>& subGroups,
-                           const std::string&              root)
+std::string findCgroupPath(ArrayRef<const std::string> mountPoints,
+                           ArrayRef<const std::string> subGroups,
+                           const std::string&          root)
 {
     // We read the pid from /proc/self/stat instead of calling getpid(),
     // so we can mock this properly in testing.
@@ -1017,7 +1018,7 @@ std::string findCgroupPath(const std::vector<std::string>& mountPoints,
  * \return Allowed CPU limit. Note that this is often larger than 1,
  *                    meaning the limit is larger than 1 thread.
  */
-float parseCgroup1CpuLimit(const std::vector<std::string>& mountPoints, const std::string& root = "")
+float parseCgroup1CpuLimit(ArrayRef<const std::string> mountPoints, const std::string& root = "")
 {
     std::vector<std::string> subGroups;
 
@@ -1081,7 +1082,7 @@ float parseCgroup1CpuLimit(const std::vector<std::string>& mountPoints, const st
  * \return Allowed CPU limit. Note that this is often larger than 1,
  *                    meaning the limit is larger than 1 thread.
  */
-float parseCgroup2CpuLimit(const std::vector<std::string>& mountPoints, const std::string& root = "")
+float parseCgroup2CpuLimit(ArrayRef<const std::string> mountPoints, const std::string& root = "")
 {
     std::vector<std::string> subGroups;
 
@@ -1156,13 +1157,12 @@ float detectCpuLimit(const std::string& root = "")
     float cpuLimit = -1;
 
     std::string              line;
-    bool                     found = false;
     std::vector<std::string> cgroups1Mounts;
     std::vector<std::string> cgroups2Mounts;
 
     // if /etc/mtab isn't present, std::getline will return 0.
     std::ifstream procMountsStream(root + "/proc/mounts");
-    while (!found && std::getline(procMountsStream, line))
+    while (std::getline(procMountsStream, line))
     {
         std::istringstream       lineStream(line);
         std::vector<std::string> columns{ std::istream_iterator<std::string>(lineStream),
@@ -1378,8 +1378,7 @@ HardwareTopology::HardwareTopology(const std::map<int, std::array<int, 3>>& logi
     }
 }
 
-HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
-                                   const std::vector<int>& allowedProcessors) :
+HardwareTopology::HardwareTopology(const std::string& filesystemRoot, ArrayRef<const int> allowedProcessors) :
     supportLevel_(SupportLevel::None), machine_(), isThisSystem_(false)
 {
     // Create mock topology by parsing saved sys/fs and (optionally) cgroups files
@@ -1396,9 +1395,9 @@ HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
     }
 }
 
-HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
-                                   const std::vector<int>& allowedProcessors,
-                                   const std::vector<int>& externalAffinitySet) :
+HardwareTopology::HardwareTopology(const std::string&  filesystemRoot,
+                                   ArrayRef<const int> allowedProcessors,
+                                   ArrayRef<const int> externalAffinitySet) :
     HardwareTopology(filesystemRoot, allowedProcessors)
 {
     for (auto& lp : machine_.logicalProcessors)
