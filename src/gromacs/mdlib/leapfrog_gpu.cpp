@@ -149,10 +149,17 @@ LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
 
 LeapFrogGpu::~LeapFrogGpu()
 {
-    // Wait for all the tasks to complete before freeing the memory. See #4519.
-    deviceStream_.synchronize();
-    freeDeviceBuffer(&d_inverseMasses_);
-    freeDeviceBuffer(&d_lambdas_);
+    try
+    {
+        // Wait for all the tasks to complete before freeing the memory. See #4519.
+        deviceStream_.synchronize();
+        freeDeviceBuffer(&d_inverseMasses_);
+        freeDeviceBuffer(&d_lambdas_);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of LeapFrogGpu: %s\n", e.what());
+    }
 }
 
 void LeapFrogGpu::set(const int                            numAtoms,

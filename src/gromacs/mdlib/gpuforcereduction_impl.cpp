@@ -184,7 +184,14 @@ void GpuForceReduction::Impl::execute()
 
 GpuForceReduction::Impl::~Impl()
 {
-    freeDeviceBuffer(&cellInfo_.d_cell);
+    try
+    {
+        freeDeviceBuffer(&cellInfo_.d_cell);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of GpuForceReduction: %s\n", e.what());
+    }
 }
 
 GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,

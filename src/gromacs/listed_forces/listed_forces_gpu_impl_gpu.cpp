@@ -153,19 +153,26 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
 
 ListedForcesGpu::Impl::~Impl()
 {
-    deviceStream_.synchronize();
-    for (InteractionFunction fType : fTypesOnGpu)
+    try
     {
-        const int ft = static_cast<int>(fType);
-        if (d_iAtoms_[ft])
+        deviceStream_.synchronize();
+        for (InteractionFunction fType : fTypesOnGpu)
         {
-            freeDeviceBuffer(&d_iAtoms_[ft]);
-            d_iAtoms_[ft] = nullptr;
+            const int ft = static_cast<int>(fType);
+            if (d_iAtoms_[ft])
+            {
+                freeDeviceBuffer(&d_iAtoms_[ft]);
+                d_iAtoms_[ft] = nullptr;
+            }
         }
-    }
 
-    freeDeviceBuffer(&d_forceParams_);
-    freeDeviceBuffer(&d_vTot_);
+        freeDeviceBuffer(&d_forceParams_);
+        freeDeviceBuffer(&d_vTot_);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of ListedForcesGpu: %s\n", e.what());
+    }
 }
 
 //! Return whether function type \p fType in \p idef has perturbed interactions

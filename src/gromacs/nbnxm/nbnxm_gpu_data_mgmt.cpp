@@ -236,13 +236,20 @@ GpuPairlistSorting::GpuPairlistSorting() {}
 
 GpuPairlistSorting::~GpuPairlistSorting()
 {
-    if (nbnxmSortListsOnGpu())
+    try
     {
-        freeDeviceBuffer(&scanTemporary);
-        freeDeviceBuffer(&sciHistogram);
-        freeDeviceBuffer(&sciOffset);
-        freeDeviceBuffer(&sciCount);
-        freeDeviceBuffer(&sciSorted);
+        if (nbnxmSortListsOnGpu())
+        {
+            freeDeviceBuffer(&scanTemporary);
+            freeDeviceBuffer(&sciHistogram);
+            freeDeviceBuffer(&sciOffset);
+            freeDeviceBuffer(&sciCount);
+            freeDeviceBuffer(&sciSorted);
+        }
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of GpuPairlistSorting: %s\n", e.what());
     }
 }
 
@@ -251,11 +258,18 @@ GpuPairlist::GpuPairlist() {}
 
 GpuPairlist::~GpuPairlist()
 {
-    freeDeviceBuffer(&sci);
-    freeDeviceBuffer(&cjPacked);
-    freeDeviceBuffer(&imask);
-    freeDeviceBuffer(&excl);
-    freeDeviceBuffer(&d_rollingPruningPart);
+    try
+    {
+        freeDeviceBuffer(&sci);
+        freeDeviceBuffer(&cjPacked);
+        freeDeviceBuffer(&imask);
+        freeDeviceBuffer(&excl);
+        freeDeviceBuffer(&d_rollingPruningPart);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of GpuPairlist: %s\n", e.what());
+    }
 }
 
 static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)

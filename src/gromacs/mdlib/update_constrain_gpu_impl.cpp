@@ -174,8 +174,15 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
 
 UpdateConstrainGpu::Impl::~Impl()
 {
-    freeDeviceBuffer(&d_x0_);
-    freeDeviceBuffer(&d_inverseMasses_);
+    try
+    {
+        freeDeviceBuffer(&d_x0_);
+        freeDeviceBuffer(&d_inverseMasses_);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of UpdateConstrainGpu: %s\n", e.what());
+    }
 }
 
 void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,

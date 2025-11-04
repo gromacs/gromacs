@@ -87,7 +87,14 @@ PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
 
 PmePpCommGpu::Impl::~Impl()
 {
-    freeDeviceBuffer(&d_pmeForces_);
+    try
+    {
+        freeDeviceBuffer(&d_pmeForces_);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of PmePpCommGpu: %s\n", e.what());
+    }
 }
 
 void PmePpCommGpu::Impl::reinit(int size)

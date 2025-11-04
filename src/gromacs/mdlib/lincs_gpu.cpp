@@ -148,24 +148,31 @@ LincsGpu::LincsGpu(int                  numIterations,
 
 LincsGpu::~LincsGpu()
 {
-    // Wait for all the tasks to complete before freeing the memory. See #4519.
-    deviceStream_.synchronize();
-
-    freeDeviceBuffer(&kernelParams_.d_virialScaled);
-
-    if (numConstraintsThreadsAlloc_ > 0)
+    try
     {
-        freeDeviceBuffer(&kernelParams_.d_constraints);
-        freeDeviceBuffer(&kernelParams_.d_constraintsTargetLengths);
+        // Wait for all the tasks to complete before freeing the memory. See #4519.
+        deviceStream_.synchronize();
 
-        freeDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts);
-        freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
-        freeDeviceBuffer(&kernelParams_.d_massFactors);
-        freeDeviceBuffer(&kernelParams_.d_matrixA);
+        freeDeviceBuffer(&kernelParams_.d_virialScaled);
+
+        if (numConstraintsThreadsAlloc_ > 0)
+        {
+            freeDeviceBuffer(&kernelParams_.d_constraints);
+            freeDeviceBuffer(&kernelParams_.d_constraintsTargetLengths);
+
+            freeDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts);
+            freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
+            freeDeviceBuffer(&kernelParams_.d_massFactors);
+            freeDeviceBuffer(&kernelParams_.d_matrixA);
+        }
+        if (numAtomsAlloc_ > 0)
+        {
+            freeDeviceBuffer(&kernelParams_.d_inverseMasses);
+        }
     }
-    if (numAtomsAlloc_ > 0)
+    catch (gmx::InternalError& e)
     {
-        freeDeviceBuffer(&kernelParams_.d_inverseMasses);
+        fprintf(stderr, "Internal error in destructor of LincsGpu: %s\n", e.what());
     }
 }
 

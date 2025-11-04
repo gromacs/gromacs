@@ -724,30 +724,37 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
 
 GpuHaloExchange::Impl::~Impl()
 {
-    if (useNvshmem_)
+    try
     {
-#if GMX_NVSHMEM
-        // As d_sendBuf_ is a source buffer in the PP Halo exchange nvshmem_put
-        // we had registered it via nvshmemx_buffer_register, such registered buffer
-        // need to be first unregistered via nvshmemx_buffer_unregister before freeing.
-        if (d_sendBuf_)
+        if (useNvshmem_)
         {
-            GMX_RELEASE_ASSERT(nvshmemx_buffer_unregister(d_sendBuf_) == 0,
-                               "NVSHMEM d_sendBuf_ Buffer unregistration failed");
-        }
+#if GMX_NVSHMEM
+            // As d_sendBuf_ is a source buffer in the PP Halo exchange nvshmem_put
+            // we had registered it via nvshmemx_buffer_register, such registered buffer
+            // need to be first unregistered via nvshmemx_buffer_unregister before freeing.
+            if (d_sendBuf_)
+            {
+                GMX_RELEASE_ASSERT(nvshmemx_buffer_unregister(d_sendBuf_) == 0,
+                                   "NVSHMEM d_sendBuf_ Buffer unregistration failed");
+            }
 #endif
-    }
-    else
-    {
-        // For the NVSHMEM path the freeing of d_recvBuf_
-        // happens in destroyGpuHaloExchangeNvshmemBuf() due to it
-        // been a collective call calling it at this point is not appropriate
-        freeDeviceBuffer(&d_recvBuf_);
-    }
+        }
+        else
+        {
+            // For the NVSHMEM path the freeing of d_recvBuf_
+            // happens in destroyGpuHaloExchangeNvshmemBuf() due to it
+            // been a collective call calling it at this point is not appropriate
+            freeDeviceBuffer(&d_recvBuf_);
+        }
 
-    freeDeviceBuffer(&d_indexMap_);
-    freeDeviceBuffer(&d_sendBuf_);
-    freeDeviceBuffer(&d_fShift_);
+        freeDeviceBuffer(&d_indexMap_);
+        freeDeviceBuffer(&d_sendBuf_);
+        freeDeviceBuffer(&d_fShift_);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of GpuHaloExchange: %s\n", e.what());
+    }
 }
 
 void GpuHaloExchange::Impl::destroyGpuHaloExchangeNvshmemBuf()
