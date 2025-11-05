@@ -195,6 +195,12 @@ if (GMX_GPU_CUDA)
 
     if (GMX_NVSHMEM)
         target_link_libraries(libgromacs PRIVATE nvshmem_host_lib)
+        # -fvisibility=hidden must be passed during the device link of libgromacs
+        # to hide downstream nvshmem based static libs and libnvshmem_device.a symbols
+        # from the libgromacs device link output. This allows applications/tests to also link
+        # libnvshmem_device.a for their own NVSHMEM kernels while linking against libgromacs.
+        # Omitting this causes runtime failures due to conflicting device symbols.
+        target_link_options(libgromacs PRIVATE $<DEVICE_LINK:-fvisibility=hidden>)
     endif()
 
     if (GMX_USE_cuFFTMp OR GMX_NVSHMEM)

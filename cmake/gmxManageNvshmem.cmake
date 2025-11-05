@@ -115,11 +115,11 @@ if(GMX_NVSHMEM)
         if(ARG_STATIC AND ARG_SHARED)
             message(FATAL_ERROR "gmx_add_library_for_nvshmem: Cannot have both STATIC and SHARED")
         endif()
-        # Default to STATIC if no library type specified
-        set(LIB_TYPE STATIC)
+        # Only STATIC libraries are supported (SHARED not yet working)
         if(ARG_SHARED)
-            set(LIB_TYPE SHARED)
+            message(FATAL_ERROR "gmx_add_library_for_nvshmem: SHARED libraries are not supported yet. Build STATIC instead.")
         endif()
+        set(LIB_TYPE STATIC)
 
         # Create the separable compilation library
         add_library(${ARG_TARGET_NAME} ${LIB_TYPE} ${ARG_SOURCES})
