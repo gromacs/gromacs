@@ -50,6 +50,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
@@ -71,6 +72,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -92,6 +94,7 @@ struct gmx_mdoutf
     t_fileio*                      fp_xtc;
     gmx_tng_trajectory_t           tng;
     gmx_tng_trajectory_t           tng_low_prec;
+    gmx::H5md*                     h5md;
     int                            x_compression_precision; /* only used by XTC output */
     ener_file_t                    fp_ene;
     const char*                    fn_cpt;
@@ -141,6 +144,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
     of->fp_xtc       = nullptr;
     of->tng          = nullptr;
     of->tng_low_prec = nullptr;
+    of->h5md         = nullptr;
     of->fp_dhdl      = nullptr;
 
     of->eIntegrator             = ir->eI;
@@ -211,7 +215,16 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
+                    if (filemode[0] == 'w')
+                    {
+                        make_backup(filename);
+                    }
+                    of->h5md = new gmx::H5md(filename, gmx::H5mdFileMode(filemode[0]));
+                    if (filemode[0] == 'w')
+                    {
+                        of->h5md->setupFileFromInput(top_global, *ir);
+                    }
+                    break;
                 default: gmx_incons("Invalid full precision file format");
             }
         }
@@ -631,9 +644,14 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
-            const rvec* x = (mdof_flags & MDOF_X) ? state_global->x.rvec_array() : nullptr;
-            const rvec* v = (mdof_flags & MDOF_V) ? state_global->v.rvec_array() : nullptr;
-            const rvec* f = (mdof_flags & MDOF_F) ? f_global : nullptr;
+            const gmx::ArrayRef<const gmx::RVec> x =
+                    (mdof_flags & MDOF_X) ? state_global->x : gmx::ArrayRef<const gmx::RVec>{};
+            const gmx::ArrayRef<const gmx::RVec> v =
+                    (mdof_flags & MDOF_V) ? state_global->v : gmx::ArrayRef<const gmx::RVec>{};
+            const gmx::ArrayRef<const gmx::RVec> f =
+                    (mdof_flags & MDOF_F) ? gmx::constArrayRefFromArray(
+                                                    reinterpret_cast<const gmx::RVec*>(f_global), natoms)
+                                          : gmx::ArrayRef<const gmx::RVec>{};
 
             if (of->fp_trn)
             {
@@ -643,9 +661,9 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
                                     state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                     state_local->box,
                                     natoms,
-                                    x,
-                                    v,
-                                    f);
+                                    as_rvec_array(x.data()),
+                                    as_rvec_array(v.data()),
+                                    as_rvec_array(f.data()));
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -663,9 +681,9 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
                                state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                state_local->box,
                                natoms,
-                               x,
-                               v,
-                               f);
+                               as_rvec_array(x.data()),
+                               as_rvec_array(v.data()),
+                               as_rvec_array(f.data()));
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
                coordinate output) also write forces and velocities to it. */
@@ -678,9 +696,13 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
                                state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                state_local->box,
                                natoms,
-                               x,
-                               v,
-                               f);
+                               as_rvec_array(x.data()),
+                               as_rvec_array(v.data()),
+                               as_rvec_array(f.data()));
+            }
+            else if (of->h5md)
+            {
+                of->h5md->writeNextFrame(x, v, f, state_local->box, step, t);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -817,6 +839,7 @@ void done_mdoutf(gmx_mdoutf_t of)
 
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
+    delete of->h5md;
 
     sfree(of);
 }

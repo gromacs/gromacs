@@ -155,6 +155,7 @@ INSTANTIATE_TEST_SUITE_P(MdrunCanWrite,
 
 #endif // GMX_USE_TNG
 
+#if GMX_USE_HDF5
 //! Test fixture for mdrun H5md trajectory writing
 class H5mdTrajectoryWritingTest : public gmx::test::MdrunTestFixture
 {
@@ -182,20 +183,17 @@ public:
     }
 };
 
-TEST_F(H5mdTrajectoryWritingTest, FatalErrorUntilImplemented)
+TEST_F(H5mdTrajectoryWritingTest, Works)
 {
-    if (gmx::test::getNumberOfTestMpiRanks() != 1 || gmx::test::getNumberOfTestOpenMPThreads() != 1)
-    {
-        GTEST_SKIP() << "Only run death tests on one thread";
-    }
-
     theMdpFile =
             "integrator = md\n"
             "nsteps = 6\n"
             "nstxout = 5\n"
             "nstvout = 2\n"
             "nstfout = 4\n";
-    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(), "H5MD reading/writing not yet implemented");
+    runTest();
 }
+
+#endif // GMX_USE_HDF5
 
 } // namespace
