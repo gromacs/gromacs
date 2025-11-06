@@ -26,7 +26,7 @@ where :math:`E_{NNP}` describes the energy predicted by the model for the NNP su
 :math:`E_{MM}` describes all other interactions calculated using the classical MM
 force field. The coupling term :math:`E_{NNP-MM}` term includes non-bonded electrostatic
 and LJ interactions between the atoms in the NNP and MM regions, calculated as usual
-in GROMACS. Bonded interactions are also described on the MM level, removing terms
+in |Gromacs|. Bonded interactions are also described on the MM level, removing terms
 consisting of bonds containing 2 NNP atoms, angles and settles containing 2 or 3 NNP atoms,
 and dihedrals containing 3 or 4 NNP atoms. Broken chemical bonds between NNP and MM atoms
 are capped with a link atom, as is usual in QM/MM simulations. The link atom is placed at
@@ -39,7 +39,7 @@ are performed automatically during :ref:`gmx grompp` preprocessing.
 Software Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^^
 
-To perform simulations with the NNPot module, GROMACS needs to be linked with
+To perform simulations with the NNPot module, |Gromacs| needs to be linked with
 a `LibTorch installation <https://pytorch.org/get-started/locally/>`_ (version
 2.0 or higher). For specific installations instructions please see
 `this section <installing with Neural Network potential support>` of the install guide.

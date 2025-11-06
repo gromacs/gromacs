@@ -1405,7 +1405,7 @@ it has to be built with the Pytorch C++ API or Libtorch, which can be downloaded
 from the `Pytorch website <https://pytorch.org/get-started/locally/>`_. 
 The website offers versions including pre-CXX11 and CXX11 ABI versions on Linux.
 You must use the same ABI version as you use when building the rest of
-GROMACS, which does not support or test the pre-CXX11 ABI.
+|Gromacs|, which does not support or test the pre-CXX11 ABI.
 So get (or build) the CXX11 ABI version of Libtorch.
 For the same reason, it is also not possible to use the Libtorch version that ships
 with a conda installation of Pytorch, because it is built with the pre-CXX11 ABI by default.

@@ -141,7 +141,7 @@ the separate muParser package if installed.
 libgromacs now only links to MPI libraries when explicitly required
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Formerly ``gmxapi`` could have erroneously triggered GROMACS to compile and link with an
+Formerly ``gmxapi`` could have erroneously triggered |Gromacs| to compile and link with an
 MPI library. This is now fixed.
 
 :issue:`5395`
