@@ -43,12 +43,11 @@
 
 #include <hdf5.h>
 
-#include <string>
 #include <unordered_map>
 #include <vector>
 
-#include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_atomloops.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx
@@ -56,6 +55,9 @@ namespace gmx
 
 //! \brief Map the global indices of the selection to the local indices within the selection
 using IndexMap = std::unordered_map<int32_t, int32_t>;
+
+//! \brief List of bond representations as pairs of atom indices
+using BondPairs = std::vector<std::pair<int64_t, int64_t>>;
 
 /*! \brief Map the selected atoms to local internal indices
  *
@@ -100,6 +102,32 @@ void writeAtomicProperties(AtomRange&                     atomRange,
 void writeResidueInfo(AtomRange&                     atomRange,
                       const hid_t                    baseContainer,
                       const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
+
+/*! \brief Write the covalent connectivity to the H5MD file.
+ *
+ * The result bond connectivity is stored in the group `<baseContainer>/bonds`.
+ * The connectivity information is deduced from the topology and written as an [numBonds x 2] dataset of int64_t.
+ * If a selection is applied, only the bonds where both bonded particles are within the selection are considered.
+ *
+ * \param[in] topology The topology of the simulation system.
+ * \param[in] baseContainer The HDF5 container to write the connectivity to.
+ * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
+ */
+void writeBonds(const gmx_mtop_t&              topology,
+                const hid_t                    baseContainer,
+                const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
+
+/*! \brief Write the additional annotation of disulfide bonds to the H5MD file.
+ *
+ * The result bond connectivity is stored in the group `<baseContainer>/disulfide_bonds`.
+ *
+ * \param[in] topology The topology of the simulation system.
+ * \param[in] baseContainer The HDF5 container to write the connectivity to.
+ * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
+ */
+void writeDisulfideBonds(const gmx_mtop_t&              topology,
+                         const hid_t                    baseContainer,
+                         const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
 
 } // namespace gmx
 

@@ -41,14 +41,8 @@
 #include "gromacs/fileio/h5md/h5md_topologyutils.h"
 
 #include "gromacs/fileio/h5md/h5md_attribute.h"
-#include "gromacs/fileio/h5md/h5md_datasetbase.h"
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_fixeddataset.h"
-#include "gromacs/fileio/h5md/h5md_group.h"
-#include "gromacs/fileio/h5md/h5md_util.h"
-#include "gromacs/topology/mtop_atomloops.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/utility/real.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -84,6 +78,124 @@ constexpr char c_residueNameTableName[] = "residue_name_table";
 constexpr char c_residueSequenceName[] = "sequence";
 //! \brief Name of attribute for the number of the residues.
 constexpr char c_numResiduesAttributeKey[] = "nr_residues";
+//! \brief Name of bond dataset inside connectivity group
+constexpr char c_bondsConnectivityName[] = "bonds";
+//! \brief Name of the attribute storing number of bonds
+constexpr char c_numberOfBondsAttributeKey[] = "nr_bonds";
+//! \brief Name of disulfide bonds within the special bonds group
+constexpr char c_disulfideBondsName[] = "disulfide_bonds";
+
+namespace
+{
+//! \brief Atomic number for sulfur element
+constexpr int c_sulfurAtomicNumber = 16;
+
+// Deduced bonds from interactions list
+BondPairs deduceBondsFromMolecule(const gmx_moltype_t& moltype)
+{
+    BondPairs bonds;
+    for (InteractionFunction itype : EnumerationWrapper<InteractionFunction>{})
+    {
+        if (IS_CHEMBOND(itype))
+        {
+            const InteractionList& ilist         = moltype.ilist[itype];
+            int                    fromAtomIndex = 1;
+            while (fromAtomIndex < ilist.size())
+            {
+                bonds.emplace_back(ilist.iatoms[fromAtomIndex], ilist.iatoms[fromAtomIndex + 1]);
+                fromAtomIndex += 3;
+            }
+        }
+        else if (itype == InteractionFunction::SETTLE)
+        {
+            // Specially treat the SETTLE interaction for water molecules
+            const InteractionList& ilist         = moltype.ilist[itype];
+            int                    fromAtomIndex = 1;
+            while (fromAtomIndex < ilist.size())
+            {
+                bonds.emplace_back(ilist.iatoms[fromAtomIndex], ilist.iatoms[fromAtomIndex + 1]);
+                bonds.emplace_back(ilist.iatoms[fromAtomIndex], ilist.iatoms[fromAtomIndex + 2]);
+                fromAtomIndex += 4;
+            }
+        }
+    }
+    return bonds;
+}
+
+BondPairs deduceDisulfideBondsFromMolecule(const gmx_moltype_t& molType)
+{
+    BondPairs disulfideBonds;
+    for (InteractionFunction itype : EnumerationWrapper<InteractionFunction>{})
+    {
+        if (IS_CHEMBOND(itype))
+        {
+            const InteractionList& ilist         = molType.ilist[itype];
+            int                    fromAtomIndex = 1;
+            while (fromAtomIndex < ilist.size())
+            {
+                int p1 = ilist.iatoms[fromAtomIndex];
+                int p2 = ilist.iatoms[fromAtomIndex + 1];
+                // Check if both atoms are sulfur
+                if (molType.atoms.atom[p1].atomnumber == c_sulfurAtomicNumber
+                    && molType.atoms.atom[p2].atomnumber == c_sulfurAtomicNumber)
+                {
+                    disulfideBonds.emplace_back(p1, p2);
+                }
+                fromAtomIndex += 3;
+            }
+        }
+    }
+    return disulfideBonds;
+}
+
+/*! \brief Cache bonds for \p numMols of molecule blocks into \p bondsBuffer
+ *
+ * This is an internal utility function when iterating over molecule types
+ *
+ * \param[in] bonds The bond pairs to cache.
+ * \param[out] bondsBuffer The buffer to store the cached bonds.
+ * \param[in] numMols The number of molecule blocks.
+ * \param[in] atomsPerMol The number of atoms per molecule.
+ * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
+ * \param[in] globalOffset The global index offset for the current molecule type.
+ */
+void cacheBondForNBlocks(const BondPairs&               bonds,
+                         std::vector<int64_t>*          bondsBuffer,
+                         const int32_t                  numMols,
+                         const int32_t                  atomsPerMol,
+                         const std::optional<IndexMap>& selectedAtomsIndexMap,
+                         const int64_t                  globalOffset)
+{
+    for (int32_t n = 0; n < numMols; ++n)
+    {
+        for (const auto& bond : bonds)
+        {
+            // Compute the global index of the first molecule in this block
+            auto offset = globalOffset + n * atomsPerMol;
+            // Applied a selection on atom indices if any
+            if (selectedAtomsIndexMap.has_value())
+            {
+                const auto firstIt = selectedAtomsIndexMap->find(bond.first + offset);
+                if (firstIt != selectedAtomsIndexMap->end())
+                {
+                    const auto secondIt = selectedAtomsIndexMap->find(bond.second + offset);
+                    if (secondIt != selectedAtomsIndexMap->end())
+                    {
+                        bondsBuffer->push_back(firstIt->second);
+                        bondsBuffer->push_back(secondIt->second);
+                    }
+                }
+            }
+            else
+            {
+                bondsBuffer->push_back(bond.first + offset);
+                bondsBuffer->push_back(bond.second + offset);
+            }
+        }
+    }
+}
+
+} // namespace
 
 
 IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t>& selectedIndices)
@@ -218,7 +330,7 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
     std::vector<int32_t> residueNames;
     residueNames.reserve(totalAtoms);
     std::vector<int32_t> sequence;
-    sequence.reserve(totalAtoms / 3); // A rought estimation of the number of residues (3 atoms per residue)
+    sequence.reserve(totalAtoms / 3); // A rough estimation of the number of residues (3 atoms per residue)
     std::vector<int32_t> cachedResIDs;
     cachedResIDs.reserve(totalAtoms / 3);
 
@@ -301,6 +413,104 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
     datasetResidueNameTable.writeData(existingResidueNames);
 
     setAttribute<int32_t>(baseContainer, c_numResiduesAttributeKey, sequence.size());
+}
+
+
+void writeBonds(const gmx_mtop_t& topology, const hid_t baseContainer, const std::optional<IndexMap>& selectedAtomsIndexMap)
+{
+    if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
+    {
+        throw InternalError(
+                "The index map is empty when writing atomic properties with selection.");
+    }
+    // NOTE: Initialize the bond container and reserve enough space, assuming the
+    //       number of bonds is smaller than the number of atoms
+    std::vector<int64_t> systemBonds;
+    if (selectedAtomsIndexMap.has_value())
+    {
+        systemBonds.reserve(selectedAtomsIndexMap->size() * 2);
+    }
+    else
+    {
+        systemBonds.reserve(topology.natoms * 2);
+    }
+    int64_t globalOffset = 0;
+    for (size_t i = 0; i < topology.molblock.size(); i++)
+    {
+        const gmx_molblock_t& molBlock = topology.molblock[i];
+        const gmx_moltype_t&  molType  = topology.moltype[molBlock.type];
+        const size_t          numMols  = molBlock.nmol;
+        const size_t          numAtoms = molType.atoms.nr;
+
+        // Deduce bonds from the interaction list of the molecule type
+        const BondPairs bonds = deduceBondsFromMolecule(molType);
+        if (selectedAtomsIndexMap.has_value())
+        {
+            cacheBondForNBlocks(
+                    bonds, &systemBonds, numMols, numAtoms, selectedAtomsIndexMap.value(), globalOffset);
+        }
+        else
+        {
+            cacheBondForNBlocks(bonds, &systemBonds, numMols, numAtoms, std::nullopt, globalOffset);
+        }
+
+        // Global index offset for the next molecule type
+        globalOffset += numMols * molType.atoms.nr;
+    }
+
+    // Register the Root group explicitly for connectivity
+    const size_t bCount = systemBonds.size() / 2;
+    H5mdFixedDataSet<int64_t> dBonds = H5mdDataSetBuilder<int64_t>(baseContainer, c_bondsConnectivityName)
+                                               .withDimension({ bCount, 2 })
+                                               .build();
+    dBonds.writeData(systemBonds);
+    setAttribute<int64_t>(baseContainer, c_numberOfBondsAttributeKey, bCount);
+}
+
+void writeDisulfideBonds(const gmx_mtop_t&              topology,
+                         const hid_t                    baseContainer,
+                         const std::optional<IndexMap>& selectedAtomsIndexMap)
+{
+    if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
+    {
+        throw InternalError(
+                "The index map is empty when writing atomic properties with selection.");
+    }
+    // Obtain the disulfide bonds from the topology
+    std::vector<int64_t> systemBonds;
+    int64_t              globalOffset = 0;
+    for (size_t i = 0; i < topology.molblock.size(); i++)
+    {
+        const gmx_molblock_t& molBlock = topology.molblock[i];
+        const gmx_moltype_t&  molType  = topology.moltype[molBlock.type];
+        const size_t          numMols  = molBlock.nmol;
+        const size_t          numAtoms = molType.atoms.nr;
+
+        const BondPairs disulfideBonds = deduceDisulfideBondsFromMolecule(molType);
+        if (selectedAtomsIndexMap.has_value())
+        {
+            cacheBondForNBlocks(
+                    disulfideBonds, &systemBonds, numMols, numAtoms, selectedAtomsIndexMap.value(), globalOffset);
+        }
+        else
+        {
+            cacheBondForNBlocks(disulfideBonds, &systemBonds, numMols, numAtoms, std::nullopt, globalOffset);
+        }
+
+        // Set the global index offset for the next molecule type
+        globalOffset += numMols * molType.atoms.nr;
+    }
+
+    // Write the information of disulfide bonds
+    if (systemBonds.size() > 0)
+    {
+        const size_t bondCount = systemBonds.size() / 2;
+        H5mdFixedDataSet<int64_t> dBonds = H5mdDataSetBuilder<int64_t>(baseContainer, c_disulfideBondsName)
+                                                   .withDimension({ bondCount, 2 })
+                                                   .build();
+        dBonds.writeData(systemBonds);
+        setAttribute<int64_t>(baseContainer, c_numberOfBondsAttributeKey, bondCount);
+    }
 }
 
 } // namespace gmx

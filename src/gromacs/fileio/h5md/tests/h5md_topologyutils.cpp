@@ -32,10 +32,13 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Declares the GROMACS/H5MD i/o interface.
+/*! \internal \file
+ * \brief
+ * Tests for topology-related utility functions.
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #include "gmxpre.h"
@@ -45,7 +48,6 @@
 #include <hdf5.h>
 
 #include <filesystem>
-#include <memory>
 #include <numeric>
 
 #include <gtest/gtest.h>
@@ -56,8 +58,7 @@
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/topology/include/gromacs/topology/mtop_util.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -99,7 +100,45 @@ inline std::vector<std::string> readFixedStringDataset(hid_t baseContainer, cons
     return retStringArray;
 }
 
-// Fixture for tests that does not need a tpr file
+void createDisulfideBondTopology(gmx_mtop_t*                topology,
+                                 const ArrayRef<char*>&     atomNames,
+                                 const ArrayRef<const int>& resIndices,
+                                 const BondPairs&           disulfideBonds,
+                                 const int                  numMols)
+{
+    topology->moltype.resize(1);
+    topology->molblock.resize(1);
+
+    gmx_moltype_t& molType = topology->moltype[0];
+    molType.atoms.nr       = static_cast<int>(atomNames.size());
+    snew(molType.atoms.atom, molType.atoms.nr);
+    snew(molType.atoms.atomname, molType.atoms.nr);
+
+    auto atomNameIterator = atomNames.begin();
+    for (int i = 0; i < molType.atoms.nr; ++i, ++atomNameIterator)
+    {
+        molType.atoms.atom[i].resind = resIndices[i];
+        molType.atoms.atomname[i]    = atomNameIterator.data();
+        if (std::strcmp(*atomNameIterator, "SG") == 0)
+        {
+            molType.atoms.atom[i].atomnumber = 16;
+        }
+        else
+        {
+            molType.atoms.atom[i].atomnumber = 6;
+        }
+    }
+
+    topology->molblock[0].type = 0;
+    topology->molblock[0].nmol = numMols;
+
+    for (const auto& bond : disulfideBonds)
+    {
+        molType.ilist[InteractionFunction::Bonds].push_back(
+                0, std::array<int, 2>({ static_cast<int>(bond.first), static_cast<int>(bond.second) }));
+    }
+}
+
 using H5mdTopologyUtilTest = H5mdTestBase;
 
 TEST_F(H5mdTopologyUtilTest, WriteFullTopologyAtomProp)
@@ -383,8 +422,8 @@ TEST_F(H5mdTopologyUtilTest, WriteProteinTopology)
             tprFileHandle.tprName(), &haveTopology, &topology, nullptr, nullptr, nullptr, nullptr);
     AtomRange atomRange(topology);
 
-    const int        protNrAtoms = 29;
-    std::vector<int> indices(protNrAtoms);
+    const int        protNumAtoms = 29;
+    std::vector<int> indices(protNumAtoms);
     std::iota(indices.begin(), indices.end(), 0);
     IndexGroup selectedGroup = { "protein", indices };
 
@@ -421,7 +460,7 @@ TEST_F(H5mdTopologyUtilTest, WriteProteinTopology)
 
         auto retNrAtoms = getAttribute<int64_t>(baseContainer, "nr_particles");
         ASSERT_TRUE(retNrAtoms.has_value());
-        EXPECT_EQ(retNrAtoms.value(), protNrAtoms);
+        EXPECT_EQ(retNrAtoms.value(), protNumAtoms);
 
         // Match the reordered atom indices
         std::vector<int64_t> expectedID(retNrAtoms.value());
@@ -467,6 +506,154 @@ TEST_F(H5mdTopologyUtilTest, ThrowUponEmptyIndexMap)
 
     EXPECT_THROW(writeAtomicProperties(atomRange, baseContainer, IndexMap({})), InternalError);
     EXPECT_THROW(writeResidueInfo(atomRange, baseContainer, IndexMap({})), InternalError);
+}
+
+TEST_F(H5mdTopologyUtilTest, WriteConnectivityProteinPart)
+{
+    // Prepare the topology of the molecule
+    gmx_mtop_t        topology;
+    bool              haveTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &haveTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    const int        protNrAtoms = 29;
+    std::vector<int> indices(protNrAtoms);
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Prepare the reference data checker
+    TestReferenceData    data;
+    TestReferenceChecker checker(data.rootChecker());
+
+    const auto [connectivity, connectivityGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/connectivity/bond"));
+
+    writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
+    const auto nrBonds = getAttribute<int64_t>(connectivity, "nr_bonds");
+    ASSERT_TRUE(nrBonds.has_value());
+    EXPECT_EQ(nrBonds.value(), 22);
+
+    H5mdFixedDataSet<int64_t> datasetBonds = H5mdFixedDataSet<int64_t>(connectivity, "bonds");
+    std::vector<int64_t>      bondData(datasetBonds.numValues());
+    datasetBonds.readData(bondData);
+    EXPECT_EQ(bondData.size(), 2 * nrBonds.value());
+    checker.checkSequence(makeConstArrayRef(bondData), "Bonds");
+}
+
+
+TEST_F(H5mdTopologyUtilTest, WriteConnectivityRandomSelectedWater)
+{
+    // Prepare the topology of the molecule
+    gmx_mtop_t        topology;
+    bool              haveTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &haveTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    const std::vector<int> indices = { 29,  30,  31,  218, 219, 220, 314, 315,
+                                       316, 566, 567, 568, 860, 861, 862 };
+
+    const auto [connectivity, connectivityGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/connectivity/bond"));
+
+    // Prepare the reference data checker
+    TestReferenceData    data;
+    TestReferenceChecker checker(data.rootChecker());
+
+    writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
+
+    const auto nrBonds = getAttribute<int64_t>(connectivity, "nr_bonds");
+    ASSERT_TRUE(nrBonds.has_value());
+    EXPECT_EQ(nrBonds.value(), 10);
+
+    H5mdFixedDataSet<int64_t> datasetBonds = H5mdFixedDataSet<int64_t>(connectivity, "bonds");
+    std::vector<int64_t>      bondData(datasetBonds.numValues());
+    datasetBonds.readData(bondData);
+    EXPECT_EQ(bondData.size(), 2 * nrBonds.value());
+    checker.checkSequence(makeConstArrayRef(bondData), "Bonds");
+}
+
+TEST_F(H5mdTopologyUtilTest, WriteDisulfideBonds)
+{
+    // Prepare the topology for disulfide bond writing
+    const std::vector<std::string> atomNames = {
+        "AA", "BB",       // Dummy atoms
+        "SG", "CB", "CA", // CYS 1-4
+        "AA", "BB",       // Dummy atoms
+        "SG", "CB", "CA", // CYS 2-3
+        "AA", "BB",       // Dummy atoms
+        "SG", "CB", "CA", // 2-3
+        "SG", "CB", "CA", // 1-4
+        "AA", "BB",       // Dummy atoms
+        "SG", "CB", "CA", // Not forming a disulfide bond here
+        "SG", "CB", "CA", // CYS 5-6
+        "SG", "CB", "CA", // 5-6
+        "AA", "BB",       // Dummy atoms
+    };
+    std::vector<char*> charAtomNames;
+    for (const auto& atomName : atomNames)
+    {
+        charAtomNames.push_back(const_cast<char*>(atomName.data()));
+    }
+
+    const std::vector<int> resinds = { 1, 1, 2, 2, 2, 3, 3, 4,  4,  4,  5,  5,  6,  6,  6, 7,
+                                       7, 7, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12 };
+    std::vector<std::pair<int64_t, int64_t>> expectedBonds = {
+        { 2, 15 },  // Disulfide CYS 1-4
+        { 7, 12 },  // Disulfide CYS 2-3
+        { 23, 26 }, // Disulfide CYS 5-6
+    };
+
+    {
+        SCOPED_TRACE("Create the disulfide bonds and check connectivity");
+
+        gmx_mtop_t topology;
+        createDisulfideBondTopology(&topology, charAtomNames, resinds, expectedBonds, 1);
+
+        const auto [connectivity, connectivityGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/connectivity/special_bonds"));
+        writeDisulfideBonds(topology, connectivity);
+
+        H5mdFixedDataSet<int64_t> datasetBond =
+                H5mdFixedDataSet<int64_t>(connectivity, "disulfide_bonds");
+        std::vector<int64_t> retBonds(datasetBond.numValues());
+        datasetBond.readData(retBonds);
+        EXPECT_EQ(retBonds.size(), expectedBonds.size() * 2);
+        for (size_t i = 0; i < expectedBonds.size(); ++i)
+        {
+            EXPECT_EQ(retBonds[2 * i], expectedBonds[i].first);
+            EXPECT_EQ(retBonds[2 * i + 1], expectedBonds[i].second);
+        }
+    }
+
+    {
+        SCOPED_TRACE("Write multiple replication of the block that contains disulfide bonds");
+
+        const int  blockReplication = 4;
+        gmx_mtop_t topology;
+        createDisulfideBondTopology(&topology, charAtomNames, resinds, expectedBonds, blockReplication);
+
+        const auto [connectivity, connectivityGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/connectivity_rep_blocks"));
+        writeDisulfideBonds(topology, connectivity);
+
+        H5mdFixedDataSet<int64_t> datasetBond =
+                H5mdFixedDataSet<int64_t>(connectivity, "disulfide_bonds");
+        std::vector<int64_t> retBonds(datasetBond.numValues());
+        datasetBond.readData(retBonds);
+
+        EXPECT_EQ(retBonds.size(), expectedBonds.size() * 2 * blockReplication);
+        for (size_t i = 0; i < expectedBonds.size(); ++i)
+        {
+            for (int b = 0; b < blockReplication; ++b)
+            {
+                const size_t offset = b * topology.moltype[0].atoms.nr;
+                const size_t index  = b * expectedBonds.size() * 2 + i * 2;
+                EXPECT_EQ(retBonds[index], expectedBonds[i].first + offset);
+                EXPECT_EQ(retBonds[index + 1], expectedBonds[i].second + offset);
+            }
+        }
+    }
 }
 
 } // namespace

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Bonds">
+    <Int Name="Length">20</Int>
+    <Int64>0</Int64>
+    <Int64>1</Int64>
+    <Int64>0</Int64>
+    <Int64>2</Int64>
+    <Int64>3</Int64>
+    <Int64>4</Int64>
+    <Int64>3</Int64>
+    <Int64>5</Int64>
+    <Int64>6</Int64>
+    <Int64>7</Int64>
+    <Int64>6</Int64>
+    <Int64>8</Int64>
+    <Int64>9</Int64>
+    <Int64>10</Int64>
+    <Int64>9</Int64>
+    <Int64>11</Int64>
+    <Int64>12</Int64>
+    <Int64>13</Int64>
+    <Int64>12</Int64>
+    <Int64>14</Int64>
+  </Sequence>
+</ReferenceData>
