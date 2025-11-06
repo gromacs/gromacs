@@ -87,6 +87,14 @@ void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistribu
             " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& /*pairlistData*/)
+{
+    GMX_THROW(InternalError(
+            "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
+            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
+}
+
 CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx

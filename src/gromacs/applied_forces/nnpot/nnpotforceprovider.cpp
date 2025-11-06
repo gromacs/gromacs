@@ -49,6 +49,7 @@
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/utility/exceptions.h"
@@ -91,6 +92,14 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     logger_(logger),
     mpiComm_(mpiComm)
 {
+    // for now, dom dec is disabled with pair list input
+    if (mpiComm_.size() > 1
+        && (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts")))
+    {
+        GMX_THROW(NotImplementedError(
+                "NNPot with pair list input does not support domain decomposition"));
+    }
+
     // initialize the neural network model
     std::filesystem::path modelPath(params_.modelFileName_);
     if (!std::filesystem::exists(modelPath))
@@ -121,6 +130,12 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     }
     // copy box
     copy_mat(fInput.box_, box_);
+    // check that pairlist is available if needed
+    if (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts"))
+    {
+        // this assert should only trigger if something breaks in the mdmodules notifications
+        GMX_ASSERT(!pairlistForModel_.empty(), "Pairlist for NNP model is empty!");
+    }
 
     // get link atom info
     std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_));
@@ -132,6 +147,8 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
                           params_.modelInput_,
                           positions_,
                           atomNumbers_,
+                          pairlistForModel_,
+                          shiftVectors_,
                           linkFrontier,
                           &box_,
                           params_.pbcType_.get());
@@ -250,6 +267,51 @@ NNPotForceProvider::constructLinkFrontier(const std::vector<LinkFrontierAtom>& i
         linkFrontier.push_back(link);
     }
     return linkFrontier;
+}
+
+void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& signal)
+{
+    // New pair list constructed: Indices in the pairlist correspond to local atom indices.
+    // For now, find all pairs of NNP atoms within the cutoff (which were excluded from the
+    // short-range calculation in GROMACS) so the NN potential does not have to re-compute them.
+    // Thus, we're interested in the excluded pairlist, because all NNP-atom pairs are excluded
+    // pairs, but not all excluded pairs are necessarily NNP-atom pairs.
+    // TODO: figure out dom.dec. case.
+
+    ArrayRef<const PairlistEntry> pairlistFromSignal = signal.excludedPairlist_;
+    const int                     numPairs           = gmx::ssize(pairlistFromSignal);
+
+    pairlistForModel_.clear();
+    pairlistForModel_.reserve(2 * numPairs);
+    shiftVectors_.clear();
+    shiftVectors_.reserve(numPairs);
+
+    for (int i = 0; i < numPairs; i++)
+    {
+        const auto [atomPair, shiftIndex] = pairlistFromSignal[i];
+
+        // we only want to add pairs where both atoms are part of the NNP input
+        // if any of the two (or more commonly both) is not, we skip this pair
+        if (const std::optional<ptrdiff_t> inputIdxA = indexOf(inputToGlobalIndex_, atomPair.first);
+            inputIdxA.has_value())
+        {
+            if (const std::optional<ptrdiff_t> inputIdxB = indexOf(inputToGlobalIndex_, atomPair.second);
+                inputIdxB.has_value())
+            {
+                // no need to check cutoff: pairlist already comes filtered by cutoff
+                RVec       shift;
+                const IVec unitShift = shiftIndexToXYZ(shiftIndex);
+                mvmul_ur0(box_, unitShift.toRVec(), shift);
+
+                pairlistForModel_.push_back(inputIdxA.value());
+                pairlistForModel_.push_back(inputIdxB.value());
+                shiftVectors_.push_back(shift);
+            }
+        }
+    }
+    // sanity check
+    GMX_RELEASE_ASSERT(pairlistForModel_.size() == shiftVectors_.size() * 2,
+                       "Inconsistent pairlist and shift vector sizes");
 }
 
 } // namespace gmx

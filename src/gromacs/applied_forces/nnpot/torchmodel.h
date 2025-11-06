@@ -89,6 +89,8 @@ public:
      * \param[in] inputs list of strings specifying input data
      * \param[in] positions atom positions
      * \param[in] atomNumbers atom numbers
+     * \param[in] atomPairs list of all input atom pairs within cutoff
+     * \param[in] pairShifts list of periodic shift vectors corresponding to atom pairs
      * \param[in] linkFrontier link frontier atoms
      * \param[in] box simulation box
      * \param[in] pbcType periodic boundary conditions
@@ -99,6 +101,8 @@ public:
                        ArrayRef<const std::string>      inputs,
                        ArrayRef<RVec>                   positions,
                        ArrayRef<int>                    atomNumbers,
+                       ArrayRef<int>                    atomPairs,
+                       ArrayRef<RVec>                   pairShifts,
                        ArrayRef<const LinkFrontierAtom> linkFrontier,
                        matrix*                          box     = nullptr,
                        PbcType*                         pbcType = nullptr) override;
@@ -112,10 +116,12 @@ public:
 private:
     //! Functions to prepare inputs for NN model. Create input torch::Tensors for the model.
     //! \{
-    void prepareAtomPositions(ArrayRef<RVec>& positions);
-    void prepareAtomNumbers(ArrayRef<int>& atomTypes);
+    void prepareAtomPositions(ArrayRef<RVec> positions);
+    void prepareAtomNumbers(ArrayRef<int> atomTypes);
     void prepareBox(matrix* box);
     void preparePbcType(PbcType* pbcType);
+    void prepareAtomPairs(ArrayRef<int> atomPairs);
+    void preparePairShifts(ArrayRef<RVec> pairShifts);
     //! \}
 
     //! pointer to the communication object

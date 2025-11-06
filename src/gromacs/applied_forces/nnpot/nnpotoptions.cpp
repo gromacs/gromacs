@@ -87,12 +87,15 @@ const std::string c_modelFileNameTag_ = "modelfile";
 const std::string c_inputGroupTag_    = "input-group";
 const std::string c_linkTypeTag_      = "link-type";
 const std::string c_linkDistanceTag_  = "link-distance";
+const std::string c_pairCutoffTag_    = "pair-cutoff";
 
 /*! \brief User defined input to NN model.
  *
  *  Possible values:
  * - "atom-positions" vector of atom positions
- * - "atom-numbers" vector of atom types
+ * - "atom-numbers" vector of atom numbers
+ * - "atom-pairs" list of atom pairs within cutoff set by user
+ * - "pair-shifts" list of periodic shifts for atom pairs
  * - "box" unit vectors of simulation box
  * - "pbc" boolean vector indicating periodic boundary conditions
  */
@@ -100,6 +103,8 @@ const std::string c_modelInput1Tag_ = "model-input1";
 const std::string c_modelInput2Tag_ = "model-input2";
 const std::string c_modelInput3Tag_ = "model-input3";
 const std::string c_modelInput4Tag_ = "model-input4";
+const std::string c_modelInput5Tag_ = "model-input5";
+const std::string c_modelInput6Tag_ = "model-input6";
 //! \}
 
 /*! \brief Following tags are needed to write parameters generated
@@ -175,6 +180,7 @@ void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_linkTypeTag_);
     addMdpTransformFromString<real>(
             rules, &fromStdString<real>, NNPotModuleInfo::sc_name, c_linkDistanceTag_);
+    addMdpTransformFromString<real>(rules, &fromStdString<real>, NNPotModuleInfo::sc_name, c_pairCutoffTag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput1Tag_);
     addMdpTransformFromString<std::string>(
@@ -183,6 +189,10 @@ void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput3Tag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput4Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput5Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput6Tag_);
 }
 
 void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
@@ -193,10 +203,13 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(StringOption(c_inputGroupTag_.c_str()).store(&params_.inputGroup_));
     section.addOption(StringOption(c_linkTypeTag_.c_str()).store(&params_.linkType_));
     section.addOption(RealOption(c_linkDistanceTag_.c_str()).store(&params_.linkDistance_));
+    section.addOption(RealOption(c_pairCutoffTag_.c_str()).store(&params_.pairCutoff_));
     section.addOption(StringOption(c_modelInput1Tag_.c_str()).store(&params_.modelInput_[0]));
     section.addOption(StringOption(c_modelInput2Tag_.c_str()).store(&params_.modelInput_[1]));
     section.addOption(StringOption(c_modelInput3Tag_.c_str()).store(&params_.modelInput_[2]));
     section.addOption(StringOption(c_modelInput4Tag_.c_str()).store(&params_.modelInput_[3]));
+    section.addOption(StringOption(c_modelInput5Tag_.c_str()).store(&params_.modelInput_[4]));
+    section.addOption(StringOption(c_modelInput6Tag_.c_str()).store(&params_.modelInput_[5]));
 }
 
 void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -214,6 +227,7 @@ void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
                 builder, NNPotModuleInfo::sc_name, c_inputGroupTag_, params_.inputGroup_);
         addMdpOutputValue<std::string>(builder, NNPotModuleInfo::sc_name, c_linkTypeTag_, params_.linkType_);
         addMdpOutputValue<real>(builder, NNPotModuleInfo::sc_name, c_linkDistanceTag_, params_.linkDistance_);
+        addMdpOutputValue<real>(builder, NNPotModuleInfo::sc_name, c_pairCutoffTag_, params_.pairCutoff_);
         addMdpOutputValue<std::string>(
                 builder, NNPotModuleInfo::sc_name, c_modelInput1Tag_, params_.modelInput_[0]);
         addMdpOutputValue<std::string>(
@@ -222,6 +236,10 @@ void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
                 builder, NNPotModuleInfo::sc_name, c_modelInput3Tag_, params_.modelInput_[2]);
         addMdpOutputValue<std::string>(
                 builder, NNPotModuleInfo::sc_name, c_modelInput4Tag_, params_.modelInput_[3]);
+        addMdpOutputValue<std::string>(
+                builder, NNPotModuleInfo::sc_name, c_modelInput5Tag_, params_.modelInput_[4]);
+        addMdpOutputValue<std::string>(
+                builder, NNPotModuleInfo::sc_name, c_modelInput6Tag_, params_.modelInput_[5]);
     }
 }
 
@@ -508,9 +526,11 @@ void NNPotOptions::checkNNPotModel()
     }
 
     // check if model accepts inputs
-    // prepare dummy inputs for NN model
-    std::vector<RVec> positions(1, RVec({ 0.0, 0.0, 0.0 }));
-    std::vector<int> atomNumbers(1, linkAtomNumber); // to check that the model can accept the link atom type
+    // Prepare dummy input with two atoms in the NN model, so we can check the pairlist inputs
+    std::vector<RVec> positions(2, RVec({ 0.0, 0.0, 0.0 }));
+    std::vector<int> atomNumbers(2, linkAtomNumber); // to check that the model can accept the link atom type
+    std::vector<int>              atomPairs{ 0, 1 };
+    std::vector<RVec>             pairShifts{ RVec({ 0.0, 0.0, 0.0 }) };
     matrix                        box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType                       pbc = PbcType();
     std::vector<LinkFrontierAtom> link;
@@ -521,6 +541,16 @@ void NNPotOptions::checkNNPotModel()
     if (params_.modelInput_.size() == 0)
     {
         GMX_THROW(InconsistentInputError("No inputs to NN model provided."));
+    }
+    // check that sensible cutoff was provided
+    const bool pairlistNeeded =
+            params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts");
+    if (pairlistNeeded && (params_.pairCutoff_ <= 0.0))
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "List of atom pairs was requested as input to the NNP model, but pair-cutoff is "
+                "%.1f. Please specify a valid cutoff radius or disable pair input.",
+                params_.pairCutoff_)));
     }
 
     const auto& theLogger = logger();
@@ -536,12 +566,17 @@ void NNPotOptions::checkNNPotModel()
         ArrayRef<RVec>    forces(forcesVec);
 
         // might throw a runtime error if the model is not compatible with the dummy input
-        auto indicesRef = makeConstArrayRef(indices);
-        auto inputs     = makeConstArrayRef(params_.modelInput_);
-        auto posRef     = makeArrayRef(positions);
-        auto atomNumRef = makeArrayRef(atomNumbers);
-        auto linkRef    = makeArrayRef(link);
-        model->evaluateModel(&enerd, forces, indicesRef, inputs, posRef, atomNumRef, linkRef, &box, &pbc);
+        model->evaluateModel(&enerd,
+                             forces,
+                             indices,
+                             params_.modelInput_,
+                             positions,
+                             atomNumbers,
+                             atomPairs,
+                             pairShifts,
+                             link,
+                             &box,
+                             &pbc);
 
         // check if model outputs forces after forward pass
         modelOutputsForces = model->outputsForces();

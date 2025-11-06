@@ -58,8 +58,14 @@ with ``nnpot-active`` set to ``true``, are:
    the NNP subsystem. Defaults to ``System``, which performs a pure NNP simulation.
 -  ``nnpot-model-input[1-4]``: These options can be used to specify the inputs
    for the model. Supported options are ``atom-positions``, a vector containing the input
-   atom positions; ``atom-numbers``, a vector containing atomic numbers; ``box``, the unit
-   vectors of the simulation box; ``pbc``, a boolean vector specifying PBC type.
+   atom positions; ``atom-numbers``, a vector containing atomic numbers; ``atom-pairs``, a
+   vector of shape (N_pairs, 2) containing pairs of input atoms within the cutoff distance;
+   ``pair-shifts``, a vector of shape (N_pairs, 3) containing the periodic shift vectors
+   for each atom pair; ``box``, the unit vectors of the simulation box; ``pbc``, a boolean
+   vector specifying PBC type.
+-  ``pair-cutoff``: Specifies the cutoff distance, in nm, for atom pairs to be included
+   in the ``atom-pairs`` input. Not setting this option when requesting the ``atom-pairs``
+   input will lead to an error.
 -  ``nnpot-link-type``: Specifies the type of link atom to use for capping broken bonds
    between NNP and MM atoms. Defaults to ``H`` (hydrogen).
 -  ``nnpot-link-distance``: Specifies the distance between the link atom and the

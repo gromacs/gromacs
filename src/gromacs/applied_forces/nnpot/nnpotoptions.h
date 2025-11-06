@@ -90,8 +90,11 @@ struct NNPotParameters
     //! Local set of atoms that are part of the MM region
     std::unique_ptr<LocalAtomSet> mmAtoms_;
 
-    //! User defined input to NN model (4 options as of now)
-    std::vector<std::string> modelInput_{ "", "", "", "" };
+    //! User defined input to NN model (6 options as of now)
+    std::vector<std::string> modelInput_{ "", "", "", "", "", "" };
+
+    //! User defined cutoff for pairlist (if used)
+    real pairCutoff_ = 0.0;
 
     //! stores pbc type used by the simulation
     std::unique_ptr<PbcType> pbcType_;

@@ -55,6 +55,12 @@ class MDLogger;
 class MpiComm;
 class LinkFrontierAtom;
 struct MDModulesAtomsRedistributedSignal;
+struct MDModulesPairlistConstructedSignal;
+
+/*! For compatibility with pairlist data structure in MDModulesPairlistConstructedSignal.
+ * Contains pairs like ((atom1, atom2), shiftIndex).
+ */
+using PairlistEntry = std::pair<std::pair<int, int>, int>;
 
 /*! \brief \internal
  * NNPotForceProvider class
@@ -86,6 +92,9 @@ public:
     //! Gather link frontier information.
     std::vector<LinkFrontierAtom> constructLinkFrontier(const std::vector<LinkFrontierAtom>& linkFrontier);
 
+    //! Set pairlist from PlainPairlistRanges notification and filter non-input atom pairs.
+    void setPairlist(const MDModulesPairlistConstructedSignal& signal);
+
 private:
     //! reference to NNPot parameters
     const NNPotParameters& params_;
@@ -105,6 +114,11 @@ private:
     std::vector<int> localToInputIndex_;
     //! lookup table to map model input indices [0...numInput) to global atom indices [0...numGlobal)
     std::vector<int> inputToGlobalIndex_;
+
+    //! Interacting pairs of NNP atoms within user-provided cutoff, for NNP input
+    std::vector<int> pairlistForModel_;
+    //! Shift vectors indicating periodic shifts for each atom pair in pairlistForModel_
+    std::vector<RVec> shiftVectors_;
 
     //! local copy of simulation box
     matrix box_;

@@ -125,10 +125,15 @@ TEST_F(NNPotOptionsTest, DefaultParameters)
     checker.checkBoolean(defaultParams.active_, "active");
     checker.checkString(defaultParams.modelFileName_, "modelFileName");
     checker.checkString(defaultParams.inputGroup_, "inputGroup");
+    checker.checkString(defaultParams.linkType_, "linkType");
+    checker.checkReal(defaultParams.linkDistance_, "linkDistance");
+    checker.checkReal(defaultParams.pairCutoff_, "pairCutoff");
     checker.checkString(defaultParams.modelInput_[0], "modelInput1");
     checker.checkString(defaultParams.modelInput_[1], "modelInput2");
     checker.checkString(defaultParams.modelInput_[2], "modelInput3");
     checker.checkString(defaultParams.modelInput_[3], "modelInput4");
+    checker.checkString(defaultParams.modelInput_[4], "modelInput5");
+    checker.checkString(defaultParams.modelInput_[5], "modelInput6");
 }
 
 TEST_F(NNPotOptionsTest, OptionSetsActive)

@@ -71,6 +71,8 @@ public:
      *   - atom numbers (ArrayRef<int>): atomic numbers
      *   - box (matrix): simulation box vectors
      *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
+     *   - atom pairs (ArrayRef<int>): list of pairs of NNP-region atom indices within the cutoff for which the model should compute
+     *   - pair shifts (ArrayRef<RVec>): list of shift vectors corresponding to atom pairs
      */
     virtual void evaluateModel(gmx_enerdata_t* /* enerData */,
                                ArrayRef<RVec> /* forces */,
@@ -78,6 +80,8 @@ public:
                                ArrayRef<const std::string> /* inputs */,
                                ArrayRef<RVec> /* positions */,
                                ArrayRef<int> /* atomNumbers */,
+                               ArrayRef<int> /* atomPairs */,
+                               ArrayRef<RVec> /* pairShifts */,
                                ArrayRef<const LinkFrontierAtom> /* linkFrontier */,
                                matrix* /* box */,
                                PbcType* /* pbcType */) = 0;

@@ -166,7 +166,7 @@ TorchModel::TorchModel(const std::string& fileName, const MDLogger& logger) :
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void TorchModel::prepareAtomPositions(ArrayRef<RVec>& positions)
+void TorchModel::prepareAtomPositions(ArrayRef<RVec> positions)
 {
     int N = positions.size();
 
@@ -182,7 +182,7 @@ void TorchModel::prepareAtomPositions(ArrayRef<RVec>& positions)
     inputs_.push_back(posTensor);
 }
 
-void TorchModel::prepareAtomNumbers(ArrayRef<int>& atomTypes)
+void TorchModel::prepareAtomNumbers(ArrayRef<int> atomTypes)
 {
     const int     N = atomTypes.size();
     torch::Tensor typesTensor =
@@ -217,12 +217,33 @@ void TorchModel::preparePbcType(PbcType* pbcType)
     inputs_.push_back(pbcTensor);
 }
 
+void TorchModel::prepareAtomPairs(ArrayRef<int> atomPairs)
+{
+    const int     numPairs    = atomPairs.size() / 2;
+    torch::Tensor pairsTensor = torch::from_blob(
+            atomPairs.data(), { numPairs, 2 }, torch::TensorOptions().dtype(torch::kInt32));
+    pairsTensor = pairsTensor.to(device_);
+
+    inputs_.push_back(pairsTensor);
+}
+
+void TorchModel::preparePairShifts(ArrayRef<RVec> pairShifts)
+{
+    const int     N            = pairShifts.size();
+    torch::Tensor shiftsTensor = torch::from_blob(
+            pairShifts.data()->as_vec(), { N, DIM }, torch::TensorOptions().dtype(torchRealType));
+    shiftsTensor = shiftsTensor.to(device_);
+    inputs_.push_back(shiftsTensor);
+}
+
 void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
                                ArrayRef<RVec>                   forces,
                                ArrayRef<const int>              indexLookup,
                                ArrayRef<const std::string>      inputs,
                                ArrayRef<RVec>                   positions,
                                ArrayRef<int>                    atomNumbers,
+                               ArrayRef<int>                    atomPairs,
+                               ArrayRef<RVec>                   pairShifts,
                                ArrayRef<const LinkFrontierAtom> linkFrontier,
                                matrix*                          box /* = nullptr*/,
                                PbcType*                         pbcType /* = nullptr*/)
@@ -250,6 +271,14 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
         else if (input == "pbc")
         {
             preparePbcType(pbcType);
+        }
+        else if (input == "atom-pairs")
+        {
+            prepareAtomPairs(atomPairs);
+        }
+        else if (input == "pair-shifts")
+        {
+            preparePairShifts(pairShifts);
         }
         else
         {
