@@ -48,6 +48,7 @@ if(GMX_USE_HDF5)
         h5md_guard.cpp
         h5md_particleblock.cpp
         h5md_timedatablock.cpp
+        h5md_topologyutils.cpp
     )
 
     target_include_directories(h5md SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})

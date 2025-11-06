@@ -46,6 +46,7 @@ if (GMX_USE_HDF5)
             h5md_guard.cpp
             h5md_particleblock.cpp
             h5md_timedatablock.cpp
+            h5md_topologyutils.cpp
             h5md_type.cpp
             h5md_util.cpp
         )

@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ResidueNameTable">
+    <Int Name="Length">1</Int>
+    <String>ALA</String>
+  </Sequence>
+  <Sequence Name="Sequence">
+    <Int Name="Length">2</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+  </Sequence>
+  <Sequence Name="ParticleNameTable">
+    <Int Name="Length">19</Int>
+    <String>MN1</String>
+    <String>MN2</String>
+    <String>N</String>
+    <String>H1</String>
+    <String>H2</String>
+    <String>H3</String>
+    <String>CA</String>
+    <String>HA</String>
+    <String>MCB1</String>
+    <String>MCB2</String>
+    <String>CB</String>
+    <String>HB1</String>
+    <String>HB2</String>
+    <String>HB3</String>
+    <String>C</String>
+    <String>O</String>
+    <String>H</String>
+    <String>OC1</String>
+    <String>OC2</String>
+  </Sequence>
+  <Sequence Name="ParticleSpecies">
+    <Int Name="Length">29</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>7</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>6</Int>
+    <Int>1</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>6</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>6</Int>
+    <Int>8</Int>
+    <Int>7</Int>
+    <Int>1</Int>
+    <Int>6</Int>
+    <Int>1</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>6</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>6</Int>
+    <Int>8</Int>
+    <Int>8</Int>
+  </Sequence>
+  <Sequence Name="ParticleCharge">
+    <Int Name="Length">29</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.14139999</Real>
+    <Real>0.1997</Real>
+    <Real>0.1997</Real>
+    <Real>0.1997</Real>
+    <Real>0.096199997</Real>
+    <Real>0.0889</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.059700001</Real>
+    <Real>0.029999999</Real>
+    <Real>0.029999999</Real>
+    <Real>0.029999999</Real>
+    <Real>0.61629999</Real>
+    <Real>-0.5722</Real>
+    <Real>-0.38209999</Real>
+    <Real>0.26809999</Real>
+    <Real>-0.17470001</Real>
+    <Real>0.1067</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.2093</Real>
+    <Real>0.076399997</Real>
+    <Real>0.076399997</Real>
+    <Real>0.076399997</Real>
+    <Real>0.77310002</Real>
+    <Real>-0.80549997</Real>
+    <Real>-0.80549997</Real>
+  </Sequence>
+  <Sequence Name="ParticleMass">
+    <Int Name="Length">29</Int>
+    <Real>8.5170002</Real>
+    <Real>8.5170002</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>13.018</Real>
+    <Real>0</Real>
+    <Real>7.5170002</Real>
+    <Real>7.5170002</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>12.01</Real>
+    <Real>16</Real>
+    <Real>15.018</Real>
+    <Real>0</Real>
+    <Real>13.018</Real>
+    <Real>0</Real>
+    <Real>7.5170002</Real>
+    <Real>7.5170002</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>12.01</Real>
+    <Real>16</Real>
+    <Real>16</Real>
+  </Sequence>
+</ReferenceData>

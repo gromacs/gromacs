@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ResidueNameTable">
+    <Int Name="Length">2</Int>
+    <String>ALA</String>
+    <String>SOL</String>
+  </Sequence>
+  <Sequence Name="Sequence">
+    <Int Name="Length">12</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+  </Sequence>
+</ReferenceData>
