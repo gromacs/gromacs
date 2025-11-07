@@ -339,3 +339,55 @@
 
 #undef EL_EWALD_TAB
 #undef VDW_CUTOFF_CHECK
+
+
+#if GMX_USE_EXT_FMM
+/* No electrostatics (e.g., FMM handles it); only VdW interactions generated
+ */
+
+#    define VDW_CUTOFF_CHECK
+
+/* cut-off + V shift LJ */
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJ##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w geometric combination rules */
+#    define LJ_COMB_GEOM
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJCombGeom##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef LJ_COMB_GEOM
+#    undef NB_KERNEL_FUNC_NAME
+/* cut-off + V shift LJ w LB combination rules */
+#    define LJ_COMB_LB
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJCombLB##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef LJ_COMB_LB
+#    undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#    define LJ_EWALD_COMB_GEOM
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJEwCombGeom##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef LJ_EWALD_COMB_GEOM
+#    undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#    define LJ_EWALD_COMB_LB
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJEwCombLB##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef LJ_EWALD_COMB_LB
+#    undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#    define LJ_FORCE_SWITCH
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJFsw##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef LJ_FORCE_SWITCH
+#    undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#    define LJ_POT_SWITCH
+#    define NB_KERNEL_FUNC_NAME(x, ...) x##_ElecNone_VdwLJPsw##__VA_ARGS__
+#    include "nbnxm_cuda_kernel.cuh"
+#    undef LJ_POT_SWITCH
+#    undef NB_KERNEL_FUNC_NAME
+
+#    undef VDW_CUTOFF_CHECK
+
+#endif /* GMX_USE_EXT_FMM */

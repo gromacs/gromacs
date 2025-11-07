@@ -63,6 +63,8 @@ namespace gmx
  *  and single or twin cut-off (for Ewald kernels).
  *  Note that the cut-off and RF kernels have only analytical flavor and unlike
  *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
+ *  The `None` option is used when Coulomb interactions are handled
+ *  by an MD module, such as FMM.
  *
  *  The row-order of pointers to different electrostatic kernels defined in
  *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
@@ -76,6 +78,8 @@ enum class ElecType : int
     EwaldTabTwin, //!< Tabulated Ewald with twin cut-off
     EwaldAna,     //!< Analytical Ewald with single cut-off
     EwaldAnaTwin, //!< Analytical Ewald with twin cut-off
+    None,         //!< No NBNxM electrostatics (e.g., when FMM uses its own direct kernel)
+    Fmm,          //!< Fast multipole method
     Count         //!< Number of valid values
 };
 

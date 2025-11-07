@@ -208,7 +208,18 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[c_numElecTypes][c_
       nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_cuda,
-      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_cuda }
+      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_cuda },
+#if GMX_USE_EXT_FMM
+    { nbnxn_kernel_ElecNone_VdwLJ_F_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombGeom_F_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombLB_F_cuda,
+      nbnxn_kernel_ElecNone_VdwLJFsw_F_cuda,
+      nbnxn_kernel_ElecNone_VdwLJPsw_F_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombGeom_F_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombLB_F_cuda }
+#else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#endif
 };
 
 /*! Force + energy kernel function pointers. */
@@ -254,7 +265,18 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[c_numElecTypes][c_nu
       nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_cuda,
-      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_cuda }
+      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_cuda },
+#if GMX_USE_EXT_FMM
+    { nbnxn_kernel_ElecNone_VdwLJ_VF_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombGeom_VF_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombLB_VF_cuda,
+      nbnxn_kernel_ElecNone_VdwLJFsw_VF_cuda,
+      nbnxn_kernel_ElecNone_VdwLJPsw_VF_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombGeom_VF_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombLB_VF_cuda }
+#else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#endif
 };
 
 /*! Force + pruning kernel function pointers. */
@@ -300,7 +322,18 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[c_numElecTypes][c_nu
       nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_cuda,
-      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_cuda }
+      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_cuda },
+#if GMX_USE_EXT_FMM
+    { nbnxn_kernel_ElecNone_VdwLJ_F_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombGeom_F_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombLB_F_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJFsw_F_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJPsw_F_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombGeom_F_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombLB_F_prune_cuda }
+#else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#endif
 };
 
 /*! Force + energy + pruning kernel function pointers. */
@@ -346,7 +379,18 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[c_numElecTypes][c_numV
       nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_cuda,
       nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_cuda,
-      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_cuda }
+      nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_cuda },
+#if GMX_USE_EXT_FMM
+    { nbnxn_kernel_ElecNone_VdwLJ_VF_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombGeom_VF_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJCombLB_VF_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJFsw_VF_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJPsw_VF_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombGeom_VF_prune_cuda,
+      nbnxn_kernel_ElecNone_VdwLJEwCombLB_VF_prune_cuda }
+#else
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
+#endif
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
@@ -359,7 +403,8 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType elecType,
     const int elecTypeIdx = static_cast<int>(elecType);
     const int vdwTypeIdx  = static_cast<int>(vdwType);
 
-    GMX_ASSERT(elecTypeIdx < c_numElecTypes,
+    GMX_ASSERT(elecTypeIdx < c_numElecTypes && elecTypeIdx != static_cast<int>(ElecType::Fmm)
+                       && (!GMX_USE_EXT_FMM && elecTypeIdx != static_cast<int>(ElecType::None)),
                "The electrostatics type requested is not implemented in the CUDA kernels.");
     GMX_ASSERT(vdwTypeIdx < c_numVdwTypes,
                "The VdW type requested is not implemented in the CUDA kernels.");
@@ -738,6 +783,12 @@ void cuda_set_cacheconfig()
 
     for (int i = 0; i < c_numElecTypes; i++)
     {
+        if (i == static_cast<int>(ElecType::Fmm)
+            || (!GMX_USE_EXT_FMM && i == static_cast<int>(ElecType::None)))
+        {
+            // Avoid configuring a cache for a missing kernel
+            continue;
+        }
         for (int j = 0; j < c_numVdwTypes; j++)
         {
             /* Default kernel 32/32 kB Shared/L1 */

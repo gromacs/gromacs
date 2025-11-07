@@ -378,7 +378,21 @@ static inline VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t& ic,
 static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t& ic,
                                                             const DeviceInformation&   deviceInfo)
 {
-    if (ic.coulomb.type == CoulombInteractionType::Cut)
+    if (ic.coulomb.type == CoulombInteractionType::Fmm)
+    {
+        if (ic.nbnxmIsDirectCoulombProvider)
+        {
+            GMX_RELEASE_ASSERT(
+                    false,
+                    "FMM is not yet supported in GROMACS for short-range coulomb interactions");
+            return ElecType::Fmm;
+        }
+        else
+        {
+            return ElecType::None;
+        }
+    }
+    else if (ic.coulomb.type == CoulombInteractionType::Cut)
     {
         return ElecType::Cut;
     }
