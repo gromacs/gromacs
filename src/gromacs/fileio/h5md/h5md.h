@@ -67,6 +67,7 @@ namespace gmx
 
 template<typename T>
 class ArrayRef;
+class MessageStringCollector;
 
 #if !GMX_USE_HDF5
 // Backup typedefs to be used when we are not compiling with the HDF5 library enabled.
@@ -194,6 +195,16 @@ public:
      */
     void setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord);
 
+    /*! \brief Set up from an existing file.
+     *
+     * Scans for trajectory data available in the /particles/system group
+     * of the HDF5 file. For trajectories written by GROMACS this group
+     * contains data for all atoms in the simulated system.
+     *
+     * \note Ignores trajectory data in other subgroups of /particles.
+     */
+    void setupFromExistingFile();
+
     /*! \brief Write input data as the next frame of the trajectory.
      *
      * \param[in] positions     Position data to write (or empty if not to write).
@@ -226,6 +237,12 @@ private:
                                     ArrayRef<const int> selectionIndices,
                                     const std::string&  selectionName,
                                     const t_inputrec&   inputRecord);
+
+    /*! \brief Set up particle block with name \p selectionName from the existing file structure.
+     *
+     * \param[in]  selectionName Name of group to set up particle block for
+     */
+    void setupParticleBlockForGroupFromExistingFile(const std::string& selectionName);
 
     /*! \brief Set up the H5MD metadata group according to the H5md specification.
      *

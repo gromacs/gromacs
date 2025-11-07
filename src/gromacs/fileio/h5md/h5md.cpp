@@ -55,6 +55,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -311,14 +312,14 @@ std::optional<std::string> H5md::creatorProgramVersion()
  */
 static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBlockBuilder& blockBuilder)
 {
-    // Per the H5md spec we should write the box only once if it is constant.
+    // TODO: Per the H5md spec we should write the box only once if it is constant.
     // At the time of writing we don't have access to the box values when the H5md
     // object is setup, so we'll return to this later and for now only set up
     // to write one box per frame.
     // const bool boxIsConstant = inputRecord.pressureCouplingOptions.epc == PressureCoupling::No;
 
-    // Additionally, per the H5md spec we should write cubic boxes as RVecs
-    // and non-cubic as matrix. Can we infer this at this point? For now we always
+    // TODO: Additionally, per the H5md spec we should write rectangular boxes as RVecs
+    // and triclinic boxes as matrix. Can we infer this at this point? For now we always
     // write the full matrix.
     // const bool boxIsCubic = (box[XX][YY] == 0.0) && (box[XX][ZZ] == 0.0) && (box[YY][XX] == 0.0)
     //                         && (box[YY][ZZ] == 0.0) && (box[ZZ][XX] == 0.0) && (box[ZZ][YY] == 0.0);
@@ -457,6 +458,57 @@ void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inpu
 #else
     GMX_UNUSED_VALUE(topology);
     GMX_UNUSED_VALUE(inputRecord);
+#endif
+}
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selectionName)
+{
+#if GMX_USE_HDF5
+    const auto [particlesGroup, particlesGroupGuard] =
+            makeH5mdGroupGuard(openGroup(file_, c_particlesGroupPath));
+    throwUponInvalidHid(particlesGroup, "H5md trajectory file has no /particles group");
+    const auto [selectionGroup, selectionGroupGuard] =
+            makeH5mdGroupGuard(openGroup(particlesGroup, selectionName.c_str()));
+    throwUponInvalidHid(selectionGroup, "No trajectory data found for system group");
+
+    H5mdParticleBlockBuilder blockBuilder;
+
+    // We don't have access to t_inputrec from the trajectory file opening framework,
+    // so open all available data sets (opening handles only is cheap).
+    if (objectExists(selectionGroup, c_positionGroupName))
+    {
+        blockBuilder.setPosition(H5mdTimeDataBlock<RVec>(selectionGroup, c_positionGroupName));
+
+        // Right now we always write the box size for every position frame
+        // and thus must always find a corresponding data set here.
+        // TODO: Revisit as needed when we've decided how to treat this when writing.
+
+        // Construct the box size group name relative to the current selection group,
+        // then open the box size value data set inside
+        const std::string boxSizeGroupPath = joinStrings({ c_boxGroupName, c_boxSizeName }, "/");
+        const auto [boxSizeGroup, boxSizeGroupGuard] =
+                makeH5mdGroupGuard(openGroup(selectionGroup, boxSizeGroupPath.c_str()));
+        blockBuilder.setBox(H5mdFrameDataSet<real>(boxSizeGroup, c_valueName));
+    }
+    if (objectExists(selectionGroup, c_velocityGroupName))
+    {
+        blockBuilder.setVelocity(H5mdTimeDataBlock<RVec>(selectionGroup, c_velocityGroupName));
+    }
+    if (objectExists(selectionGroup, c_forceGroupName))
+    {
+        blockBuilder.setForce(H5mdTimeDataBlock<RVec>(selectionGroup, c_forceGroupName));
+    }
+    particleBlocks_.insert({ selectionName, TrajectoryReadCursor(blockBuilder.build()) });
+#else
+    GMX_UNUSED_VALUE(selectionName);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupFromExistingFile()
+{
+#if GMX_USE_HDF5
+    setupParticleBlockForGroupFromExistingFile(c_fullSystemGroupName);
 #endif
 }
 

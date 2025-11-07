@@ -49,7 +49,9 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
+#include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/mtop_util.h"
@@ -319,6 +321,70 @@ TEST_F(H5mdIoTest, SetupFileFromInputSetsCorrectDataSetDims)
     const H5mdFrameDataSet<RVec> force(fileid(), "/particles/system/force/value");
     EXPECT_EQ(force.numFrames(), 0);
     EXPECT_EQ(force.frameDims(), DataSetDims{ numAtoms });
+}
+
+using H5mdSetupFromExistingFile = H5mdIoTest;
+
+TEST_F(H5mdSetupFromExistingFile, WorksForTrajectoryData)
+{
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "position").withFrameDimension({ 1 }).build();
+    H5mdTimeDataBlockBuilder<RVec>(group, "velocity").withFrameDimension({ 1 }).build();
+    H5mdTimeDataBlockBuilder<RVec>(group, "force").withFrameDimension({ 1 }).build();
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
+    H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
+    EXPECT_NO_THROW(file().setupFromExistingFile());
+}
+
+TEST_F(H5mdSetupFromExistingFile, WorksForPositionPlusBoxDataOnly)
+{
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "position").withFrameDimension({ 1 }).build();
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
+    H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
+    EXPECT_NO_THROW(file().setupFromExistingFile());
+}
+
+TEST_F(H5mdSetupFromExistingFile, ThrowsForPositionWithoutBoxData)
+{
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "position").withFrameDimension({ 1 }).build();
+    EXPECT_THROW(file().setupFromExistingFile(), gmx::FileIOError)
+            << "Must throw if there is a position but not a box data block";
+}
+
+TEST_F(H5mdSetupFromExistingFile, WorksForVelocityDataOnly)
+{
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "velocity").withFrameDimension({ 1 }).build();
+    EXPECT_NO_THROW(file().setupFromExistingFile());
+}
+
+TEST_F(H5mdSetupFromExistingFile, WorksForForceDataOnly)
+{
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "force").withFrameDimension({ 1 }).build();
+    EXPECT_NO_THROW(file().setupFromExistingFile());
+}
+
+TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryGroupDoesNotExist)
+{
+    EXPECT_THROW(file().setupFromExistingFile(), gmx::FileIOError)
+            << "Must throw before setting up /particles/system";
+    makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    EXPECT_NO_THROW(file().setupFromExistingFile());
+}
+
+TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNumParticles)
+{
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "position").withFrameDimension({ 1 }).build();
+    H5mdTimeDataBlockBuilder<RVec>(group, "velocity").withFrameDimension({ 2 }).build();
+    H5mdTimeDataBlockBuilder<RVec>(group, "force").withFrameDimension({ 1 }).build();
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
+    H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
+    EXPECT_THROW(file().setupFromExistingFile(), gmx::FileIOError)
+            << "Must throw if blocks have different numParticles";
 }
 
 TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
