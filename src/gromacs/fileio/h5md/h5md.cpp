@@ -112,6 +112,8 @@ constexpr char c_h5mdMetaDataGroupName[] = "/h5md";
 constexpr char c_h5mdAuthorGroupName[] = "author";
 //! \brief Name of creator (program) group in the H5MD metadata group.
 constexpr char c_h5mdCreatorGroupName[] = "creator";
+//! \brief Name of modules group in the H5MD metadata group.
+constexpr char c_h5mdModulesGroupName[] = "modules";
 //! \brief Attribute name for the author or creator (program) name.
 constexpr char c_h5mdNameAttributeKey[] = "name";
 //! \brief Attribute name for a version specification.
@@ -124,6 +126,66 @@ constexpr char c_positionUnit[] = "nm";
 constexpr char c_velocityUnit[] = "nm ps-1";
 //! \brief Unit for force data for simulations produced by mdrun.
 constexpr char c_forceUnit[] = "kJ mol-1 nm-1";
+
+namespace
+{
+/*! \brief Name of attribute which stores a URL for a module.
+ *
+ * Storing a URL value is not a part of the H5MD module specification
+ * but we can use this to add extra information for users by linking
+ * them to specifications or just our own website.
+ *
+ * This does not break compatibility since setting this field
+ * is fully independent of other data stored in a module.
+ */
+constexpr char c_urlAttributeKey[] = "url";
+
+/*! \brief Set up the GROMACS module with metadata in \p modulesGroup.
+ *
+ * Creates a module group with name "gromacs" and writes version
+ * metadata and a project URL to it.
+ */
+static void setupGromacsModule(const hid_t modulesGroup)
+{
+    constexpr char name[] = "gromacs";
+    // The version attribute is required by the H5MD specification to follow
+    // semantic versioning and to store two values: { majorVersion, minorVersion }
+    //
+    // To follow semantic versioning any change that breaks backwards compatibility
+    // for data stored inside or defined by this module must also bump the major
+    // version number, similar to how the TPR versioning works.
+    //
+    // The exception to the above is for major version = 0, which is treated as
+    // experimental by semantic versioning rules. This module is marked as experimental
+    // until further notice.
+    constexpr int  version[] = { 0, 1 };
+    constexpr char url[]     = "https://www.gromacs.org";
+
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(modulesGroup, name));
+    setAttributeVector(group, c_h5mdVersionAttributeKey, constArrayRefFromArray(version, 2));
+    setAttribute(group, c_urlAttributeKey, url);
+}
+
+/*! \brief Set up the units module with metadata in \p modulesGroup.
+ *
+ * Creates a module group with name "units" in and writes required
+ * metadata and a URL to its specification to it. Per the specification
+ * a unit system attribute is also written to the created group.
+ */
+static void setupUnitsModule(const hid_t modulesGroup, const char* unitSystem = "SI")
+{
+    // Module specification per the official H5MD specification
+    constexpr char name[]    = "units";
+    constexpr int  version[] = { 1, 0 };
+    constexpr char url[]     = "https://h5md.nongnu.org/modules/units.html";
+
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(modulesGroup, name));
+    setAttributeVector(group, c_h5mdVersionAttributeKey, constArrayRefFromArray(version, 2));
+    setAttribute(group, "system", unitSystem);
+    setAttribute(group, c_urlAttributeKey, url);
+}
+} // namespace
+
 #endif
 
 H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
@@ -457,6 +519,11 @@ void H5md::setupMetadataGroup()
             makeH5mdGroupGuard(createGroup(group, c_h5mdCreatorGroupName));
     setAttribute(creatorGroup, c_h5mdNameAttributeKey, "GROMACS");
     setAttribute(creatorGroup, c_h5mdVersionAttributeKey, gmx_version());
+
+    const auto [modulesGroup, modulesGroupGuard] =
+            makeH5mdGroupGuard(createGroup(group, c_h5mdModulesGroupName));
+    setupGromacsModule(modulesGroup);
+    setupUnitsModule(modulesGroup);
 #endif
 }
 

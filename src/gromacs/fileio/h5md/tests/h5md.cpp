@@ -172,6 +172,33 @@ TEST_F(H5mdIoTest, SetupFileFromInputWritesMetadataGroup)
             << "Program version must match";
 }
 
+TEST_F(H5mdIoTest, SetupFileFromInputWritesModuleInformation)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [metadataGroup, metadataGroupGuard] = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    ASSERT_TRUE(objectExists(metadataGroup, "modules"))
+            << "modules group must exist in /h5md metadata group after setup";
+
+    // Check that our GROMACS module exists and has an experimental version
+    const auto [gromacsGroup, gromacsGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/gromacs"));
+    EXPECT_EQ(getAttributeVector<int>(gromacsGroup, "version").value()[0], 0)
+            << "GROMACS module specification must have experimental version 0.x to follow semantic "
+               "versioning";
+    // Ideally we would test some of its content here, but until that is specified
+    // we only check its existence
+
+    // Check that the units module is defined and has the correct version
+    const auto [unitsGroup, unitsGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/units"));
+    EXPECT_EQ(getAttributeVector<int>(unitsGroup, "version").value(), (std::vector<int>{ 1, 0 }))
+            << "units module specification version should be 1.0";
+}
+
 TEST_F(H5mdIoTest, SetupFileFromInputCreatesParticlesGroup)
 {
     gmx_mtop_t mtop;
