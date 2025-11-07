@@ -118,6 +118,12 @@ constexpr char c_h5mdNameAttributeKey[] = "name";
 constexpr char c_h5mdVersionAttributeKey[] = "version";
 //! \brief Maximum length of author names (used to allocate memory).
 constexpr int c_maxUserNameLength = 4096;
+//! \brief Unit for position data for simulations produced by mdrun.
+constexpr char c_positionUnit[] = "nm";
+//! \brief Unit for velocity data for simulations produced by mdrun.
+constexpr char c_velocityUnit[] = "nm ps-1";
+//! \brief Unit for force data for simulations produced by mdrun.
+constexpr char c_forceUnit[] = "kJ mol-1 nm-1";
 #endif
 
 H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
@@ -327,8 +333,10 @@ static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBl
     const auto [edgesGroup, edgesGroupGuard] = makeH5mdGroupGuard(createGroup(boxGroup, c_boxSizeName));
 
     // Matrices are stored as real[DIM][DIM], which is the data set frame dimension
-    blockBuilder.setBox(
-            H5mdFrameDataSetBuilder<real>(edgesGroup, c_valueName).withFrameDimension({ DIM, DIM }).build());
+    blockBuilder.setBox(H5mdFrameDataSetBuilder<real>(edgesGroup, c_valueName)
+                                .withFrameDimension({ DIM, DIM })
+                                .withUnit(c_positionUnit)
+                                .build());
 
     const auto [positionGroup, positionGroupGuard] =
             makeH5mdGroupGuard(openGroup(selectionGroup, c_positionGroupName));
@@ -402,6 +410,7 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
     {
         blockBuilder.setPosition(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_positionGroupName)
                                          .withFrameDimension(frameDims)
+                                         .withUnit(c_positionUnit)
                                          .build());
         setupSimulationBoxDataSet(selectionGroup, blockBuilder);
     }
@@ -409,12 +418,14 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
     {
         blockBuilder.setVelocity(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_velocityGroupName)
                                          .withFrameDimension(frameDims)
+                                         .withUnit(c_velocityUnit)
                                          .build());
     }
     if (inputRecord.nstfout > 0)
     {
         blockBuilder.setForce(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_forceGroupName)
                                       .withFrameDimension(frameDims)
+                                      .withUnit(c_forceUnit)
                                       .build());
     }
     particleBlocks_.insert({ selectionName, TrajectoryReadCursor(blockBuilder.build()) });

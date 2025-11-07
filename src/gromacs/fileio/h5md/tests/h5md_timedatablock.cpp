@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
@@ -762,6 +763,60 @@ TEST_F(H5mdTimeDataBlockTest, CompressionWorks)
     const size_t compressedSize   = H5Dget_storage_size(valueDataSetCompressed.id());
     EXPECT_LT(compressedSize, 0.5 * uncompressedSize)
             << "gzip compression should yield a saving of much more than 50% for this data";
+}
+
+TEST_F(H5mdTimeDataBlockTest, UnitsAreSetCorrectly)
+{
+    {
+        SCOPED_TRACE("Default units");
+
+        // Build a default time data block, then open the raw HDF5 data sets
+        // to check their unit attributes
+        H5mdTimeDataBlockBuilder<float>(fileid(), "defaultUnits").build();
+        const auto [blockGroup, blockGroupGuard] =
+                makeH5mdGroupGuard(openGroup(fileid(), "defaultUnits"));
+
+        const auto [valueDataSet, valueDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(blockGroup, "value", H5P_DEFAULT));
+        EXPECT_FALSE(getAttribute<std::string>(valueDataSet, "unit").has_value())
+                << "By default the value data set has no unit";
+
+        const auto [stepDataSet, stepDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(blockGroup, "step", H5P_DEFAULT));
+        EXPECT_FALSE(getAttribute<std::string>(stepDataSet, "unit").has_value())
+                << "The step data set must never have a unit";
+
+        const auto [timeDataSet, timeDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(blockGroup, "time", H5P_DEFAULT));
+        EXPECT_EQ(getAttribute<std::string>(timeDataSet, "unit").value_or(""), "ps")
+                << "The time data set unit must always be ps";
+    }
+    {
+        SCOPED_TRACE("With value unit");
+
+        // Build a time data block and set a unit, then open the raw HDF5 data sets
+        // to check their unit attributes
+        constexpr char           valueUnit[] = "cm+2 s-1";
+        H5mdTimeDataBlock<float> withUnit =
+                H5mdTimeDataBlockBuilder<float>(fileid(), "withValueUnit").withUnit(valueUnit).build();
+        const auto [blockGroup, blockGroupGuard] =
+                makeH5mdGroupGuard(openGroup(fileid(), "withValueUnit"));
+
+        const auto [valueDataSet, valueDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(blockGroup, "value", H5P_DEFAULT));
+        EXPECT_EQ(getAttribute<std::string>(valueDataSet, "unit").value_or(""), valueUnit)
+                << "The value data set unit must be correct";
+
+        const auto [stepDataSet, stepDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(blockGroup, "step", H5P_DEFAULT));
+        EXPECT_FALSE(getAttribute<std::string>(stepDataSet, "unit").has_value())
+                << "The step data set must never have a unit";
+
+        const auto [timeDataSet, timeDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(blockGroup, "time", H5P_DEFAULT));
+        EXPECT_EQ(getAttribute<std::string>(timeDataSet, "unit").value_or(""), "ps")
+                << "The time data set unit must always be ps";
+    }
 }
 
 } // namespace

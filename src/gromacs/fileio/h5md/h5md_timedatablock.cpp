@@ -58,6 +58,8 @@ constexpr char c_valueName[] = "value";
 constexpr char c_stepName[] = "step";
 //! \brief Name of time data set inside block group per the H5md specification.
 constexpr char c_timeName[] = "time";
+//! \brief Unit for time data for simulations produced by mdrun.
+constexpr char c_timeDataSetUnit[] = "ps";
 //! \brief Compression algorithm used for step and time data sets.
 constexpr H5mdCompression c_stepAndTimeCompression = H5mdCompression::LosslessShuffle;
 
@@ -220,6 +222,13 @@ H5mdTimeDataBlockBuilder<ValueType>::withFrameDimension(std::initializer_list<hs
 }
 
 template<typename ValueType>
+H5mdTimeDataBlockBuilder<ValueType>& H5mdTimeDataBlockBuilder<ValueType>::withUnit(std::string_view unit)
+{
+    valueDataSetBuilder_.withUnit(unit);
+    return *this;
+}
+
+template<typename ValueType>
 H5mdTimeDataBlock<ValueType> H5mdTimeDataBlockBuilder<ValueType>::build()
 {
     return H5mdTimeDataBlock<ValueType>(
@@ -229,6 +238,7 @@ H5mdTimeDataBlock<ValueType> H5mdTimeDataBlockBuilder<ValueType>::build()
                                                      .build() },
             H5mdScalarFrameDataSet<double>{ H5mdFrameDataSetBuilder<double>(blockGroup_, c_timeName)
                                                     .withCompression(c_stepAndTimeCompression)
+                                                    .withUnit(c_timeDataSetUnit)
                                                     .build() });
 }
 

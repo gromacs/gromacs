@@ -45,6 +45,7 @@
 #include <initializer_list>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "external/scope_guard/scope_guard.h"
 
@@ -235,6 +236,9 @@ private:
  * Creates new (empty) value, step and time data sets with the expected names. Also exposes
  * some options for the creation of these data sets.
  *
+ * A unit can be set to the value data set using \c withUnit. Time data sets are always
+ * created with a unit attribute set to "ps". Step data sets never have a unit attribute.
+ *
  * Once all desired options are set, use \c H5mdTimeBlockBuilder::build() to finalize all
  * data sets and return the resulting \c H5mdTimeDataBlock.
  */
@@ -256,6 +260,9 @@ public:
 
     //! \copydoc withFrameDimension()
     H5mdTimeDataBlockBuilder& withFrameDimension(std::initializer_list<hsize_t> dims);
+
+    //! \brief Set a unit attribute to the value data set.
+    H5mdTimeDataBlockBuilder& withUnit(std::string_view unit);
 
     //! \brief Create all data sets and return as a \c H5mdTimeDataBlock.
     H5mdTimeDataBlock<ValueType> build();

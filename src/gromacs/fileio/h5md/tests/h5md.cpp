@@ -387,6 +387,41 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNu
             << "Must throw if blocks have different numParticles";
 }
 
+TEST_F(H5mdIoTest, SetupFileFromInputSetsUnitsToTrajectoryDataSets)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [positionGroup, positionGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/position"));
+    const auto [velocityGroup, velocityGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/velocity"));
+    const auto [forceGroup, forceGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/force"));
+    const auto [boxGroup, boxGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box/edges"));
+
+    // Open the value data sets as raw handles to check their unit attributes
+    const auto [position, positionGuard] =
+            makeH5mdDataSetGuard(H5Dopen(positionGroup, "value", H5P_DEFAULT));
+    EXPECT_EQ(getAttribute<std::string>(position, "unit").value_or(""), "nm");
+
+    const auto [velocity, velocityGuard] =
+            makeH5mdDataSetGuard(H5Dopen(velocityGroup, "value", H5P_DEFAULT));
+    EXPECT_EQ(getAttribute<std::string>(velocity, "unit").value_or(""), "nm ps-1");
+
+    const auto [force, forceGuard] = makeH5mdDataSetGuard(H5Dopen(forceGroup, "value", H5P_DEFAULT));
+    EXPECT_EQ(getAttribute<std::string>(force, "unit").value_or(""), "kJ mol-1 nm-1");
+
+    const auto [box, boxGuard] = makeH5mdDataSetGuard(H5Dopen(boxGroup, "value", H5P_DEFAULT));
+    EXPECT_EQ(getAttribute<std::string>(box, "unit").value_or(""), "nm");
+}
+
 TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
 {
     t_inputrec inputRecord;
