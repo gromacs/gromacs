@@ -1961,8 +1961,11 @@ static int findNumberOfDihedralAtomMatches(const InteractionOfType&       bondTy
 static std::vector<InteractionOfType>::iterator
 defaultInteractionsOfType(InteractionFunction                                             ftype,
                           gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bondType,
-                          const gmx::ArrayRef<const int>                                  atomTypes,
-                          int* nparam_def)
+                          const PreprocessingAtomTypes&                                   atypes,
+                          const gmx::ArrayRef<int>       atomIndices,
+                          const gmx::ArrayRef<const int> atomTypes,
+                          const bool                     atomReorderingLEaP,
+                          int*                           nparam_def)
 {
     int nparam_found = 0;
 
@@ -1995,6 +1998,157 @@ defaultInteractionsOfType(InteractionFunction                                   
         if (prevPos != bondType[ftype].interactionTypes.end())
         {
             nparam_found++;
+
+            if (atomReorderingLEaP)
+            {
+                // reorder atoms in a dihedral by atom type, like Amber LEaP does
+                // if an atom type is not available in dihedral type (i.e. X), use the
+                // empty single-character string
+                std::string ai = atypes.atomNameFromAtomType(prevPos->ai()).value_or(" ");
+                std::string aj = atypes.atomNameFromAtomType(prevPos->aj()).value_or(" ");
+                std::string ak = atypes.atomNameFromAtomType(prevPos->ak()).value_or(" ");
+                std::string al = atypes.atomNameFromAtomType(prevPos->al()).value_or(" ");
+
+                std::array<std::pair<std::string, int>, 4> dihedralAtoms = {
+                    { { std::move(ai), atomIndices[0] },
+                      { std::move(aj), atomIndices[1] },
+                      { std::move(ak), atomIndices[2] },
+                      { std::move(al), atomIndices[3] } }
+                };
+
+                if (prevPos->c1() != 0.0_real)
+                {
+                    // if force constant is zero, this dihedral is not reordered here, but can
+                    // still be reordered later if it is an improper
+
+                    // choose al-ak-aj-ai ordering over ai-aj-ak-al if ai comes after al, or,
+                    // if ai and al are the same, aj comes after after ak (lexicographically)
+                    if (dihedralAtoms[0].first > dihedralAtoms[3].first
+                        || (dihedralAtoms[0].first == dihedralAtoms[3].first
+                            && dihedralAtoms[1].first > dihedralAtoms[2].first))
+                    {
+                        std::reverse(dihedralAtoms.begin(), dihedralAtoms.end());
+                        for (int i = 0; i < NRAL(ftype); i++)
+                        {
+                            atomIndices[i] = dihedralAtoms[i].second;
+                        }
+                    }
+                }
+
+                if (ftype == InteractionFunction::ImproperDihedrals
+                    || ftype == InteractionFunction::PeriodicImproperDihedrals)
+                {
+                    // additionally reorder atoms in impropers
+                    std::array<std::string, 4> improperAtomTypes   = { dihedralAtoms[0].first,
+                                                                       dihedralAtoms[1].first,
+                                                                       dihedralAtoms[2].first,
+                                                                       dihedralAtoms[3].first };
+                    std::array<int, 4>         improperAtomIndices = { dihedralAtoms[0].second,
+                                                                       dihedralAtoms[1].second,
+                                                                       dihedralAtoms[2].second,
+                                                                       dihedralAtoms[3].second };
+
+                    if (bondType[ftype].leapDihedralTypes_.find(improperAtomTypes)
+                                == bondType[ftype].leapDihedralTypes_.end()
+                        && bondType[ftype].leapDihedralIndices_.find(improperAtomIndices)
+                                   == bondType[ftype].leapDihedralIndices_.end())
+                    {
+                        // an improper dihedral of this type wasn't encountered before
+                        // this improper dihedral, the first of its type, will not be reordered
+                        bondType[ftype].leapDihedralTypes_.insert(improperAtomTypes);
+                        bondType[ftype].leapDihedralIndices_.insert(improperAtomIndices);
+
+                        std::fprintf(stderr,
+                                     "%s '%d %d %d %d' of type '%s %s %s %s', first such, not "
+                                     "reordering atoms",
+                                     interaction_function[ftype].longname,
+                                     improperAtomIndices[0] + 1,
+                                     improperAtomIndices[1] + 1,
+                                     improperAtomIndices[2] + 1,
+                                     improperAtomIndices[3] + 1,
+                                     improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
+                                     improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
+                                     improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                     improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X");
+                    }
+                    else
+                    {
+                        // an improper dihedral of this type was encountered before
+                        // this improper dihedral will be reordered
+
+                        // third atom is now the central atom, it is fixed in place
+                        // reorder atoms around the third atom alphabetically by type
+                        std::array<std::pair<std::string, int>, 3> nonCentralAtoms = {
+                            dihedralAtoms[0], dihedralAtoms[1], dihedralAtoms[3]
+                        };
+                        std::sort(nonCentralAtoms.begin(), nonCentralAtoms.end());
+                        if (nonCentralAtoms
+                            == std::array<std::pair<std::string, int>, 3>{
+                                    dihedralAtoms[0], dihedralAtoms[1], dihedralAtoms[3] })
+                        {
+                            std::fprintf(
+                                    stderr,
+                                    "%s '%d %d %d %d' of type '%s %s %s %s', reordering not "
+                                    "necessary",
+                                    interaction_function[ftype].longname,
+                                    improperAtomIndices[0] + 1,
+                                    improperAtomIndices[1] + 1,
+                                    improperAtomIndices[2] + 1,
+                                    improperAtomIndices[3] + 1,
+                                    improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
+                                    improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
+                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                    improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X");
+                        }
+                        else
+                        {
+                            atomIndices[0] = nonCentralAtoms[0].second;
+                            atomIndices[1] = nonCentralAtoms[1].second;
+                            // atomIndices[2] is the index of the central atom, unchanged
+                            atomIndices[3] = nonCentralAtoms[2].second;
+
+                            std::fprintf(
+                                    stderr,
+                                    "%s '%d %d %d %d' of type '%s %s %s %s', reordered to '%d "
+                                    "%d %d %d' of type '%s %s %s %s'",
+                                    interaction_function[ftype].longname,
+                                    improperAtomIndices[0] + 1,
+                                    improperAtomIndices[1] + 1,
+                                    improperAtomIndices[2] + 1,
+                                    improperAtomIndices[3] + 1,
+                                    improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
+                                    improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
+                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                    improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X",
+                                    nonCentralAtoms[0].second + 1,
+                                    nonCentralAtoms[1].second + 1,
+                                    improperAtomIndices[2] + 1,
+                                    nonCentralAtoms[2].second + 1,
+                                    nonCentralAtoms[0].first != " " ? nonCentralAtoms[0].first.c_str() : "X",
+                                    nonCentralAtoms[1].first != " " ? nonCentralAtoms[1].first.c_str() : "X",
+                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                    nonCentralAtoms[2].first != " " ? nonCentralAtoms[2].first.c_str()
+                                                                    : "X");
+                        }
+                    }
+
+                    if (prevPos->c1() == 0.0_real)
+                    {
+                        // due to zero force constant, this interaction will not be present later in
+                        // the tpr dump, so here we notify the user to expect it
+                        // higher-level validation tools, that have to check all improper reorderings
+                        // in order to compare them with LEaP, can't find those with zero force
+                        // constant in the tpr dump, but can check them by processing grompp stderr
+                        std::fprintf(stderr,
+                                     " (has zero force constant and will not appear in "
+                                     "interaction list)\n");
+                    }
+                    else
+                    {
+                        std::fprintf(stderr, "\n");
+                    }
+                }
+            }
 
             /* Find additional matches for this dihedral - necessary
              * for ftype==9.
@@ -2050,6 +2204,7 @@ void push_bond(Directive                                                       d
                bool                                                            bGenPairs,
                real                                                            fudgeQQ,
                bool                                                            bZero,
+               const bool                                                      atomReorderingLEaP,
                bool*                                                           bWarn_copy_A_B,
                WarningHandler*                                                 wi)
 {
@@ -2210,7 +2365,8 @@ void push_bond(Directive                                                       d
         }
         else
         {
-            foundAParameter = defaultInteractionsOfType(ftype, bondtype, atomTypes, &nparam_defA);
+            foundAParameter = defaultInteractionsOfType(
+                    ftype, bondtype, *atypes, param.atoms(), atomTypes, atomReorderingLEaP, &nparam_defA);
             if (foundAParameter != bondtype[ftype].interactionTypes.end())
             {
                 /* Copy the A-state and B-state default parameters. */
@@ -2231,7 +2387,10 @@ void push_bond(Directive                                                       d
         }
         else
         {
-            foundBParameter = defaultInteractionsOfType(ftype, bondtype, atomTypesB, &nparam_defB);
+            // to get predictable results in cases where dihedrals change between states A and B,
+            // atomReorderingLEaP is used only for state A, i.e. it is always false for state B
+            foundBParameter = defaultInteractionsOfType(
+                    ftype, bondtype, *atypes, param.atoms(), atomTypesB, false, &nparam_defB);
             if (foundBParameter != bondtype[ftype].interactionTypes.end())
             {
                 /* Copy only the B-state default parameters */

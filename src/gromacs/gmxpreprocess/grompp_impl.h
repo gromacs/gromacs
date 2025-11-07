@@ -35,6 +35,7 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
+#include <set>
 #include <string>
 
 #include "gromacs/gmxpreprocess/notset.h"
@@ -151,6 +152,18 @@ struct InteractionsOfType
     std::vector<int> cmapAtomTypes;
     //! The five residue types followed by empty string for alignment with \link cmapAtomTypes \endlink.
     std::vector<std::string> cmapResTypes_;
+    //! \brief Processed dihedral types
+    //!
+    //! When Amber LEaP-like ordering is used, only dihedrals after the first one of the
+    //! same type should be reordered. To enable this behavior, the list of previously
+    //! matched dihedral types is kept during processing.
+    std::set<std::array<std::string, 4>> leapDihedralTypes_;
+    //! \brief Processed dihedrals
+    //!
+    //! When Amber LEaP-like ordering is used, only dihedrals after the first one of the
+    //! same type should be reordered. To enable this behavior, the list of first encountered
+    //! dihedrals of each type (i.e. those not reordered) is kept during processing.
+    std::set<std::array<int, 4>> leapDihedralIndices_;
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }

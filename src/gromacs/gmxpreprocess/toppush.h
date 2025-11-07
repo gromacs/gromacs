@@ -110,6 +110,7 @@ void push_bond(Directive                                                       d
                bool                                                            bGenPairs,
                real                                                            fudgeQQ,
                bool                                                            bZero,
+               bool                                                            atomReorderingLEaP,
                bool*                                                           bWarn_copy_A_B,
                WarningHandler*                                                 wi);
 

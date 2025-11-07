@@ -27,3 +27,19 @@ of the |Gromacs| doc along with the `Colvars documentation page
 Messages about Colvars in the |Gromacs| discussion forum should be tagged
 with the `colvars keyword <https://gromacs.bioexcel.eu/tag/colvars>`_ for
 easier consultation.
+
+Added LEaP-compatible dihedral reordering
+"""""""""""""""""""""""""""""""""""""""""
+
+AMBER LEaP reorders (improper) dihedrals when processing the topology, alphabetically
+by atom type. In order for GROMACS to be able to match the topology produced by LEaP,
+:ref:`gmx grompp` was extended LEaP-compatible dihedrals reordering. This functionality
+is intended for usage with the ports of recent AMBER force fields (e.g. ff14SB and
+ff19SB), but it is enabled on any force field that defines the
+``_FF_AMBER_LEAP_ATOM_REORDERING`` macro.
+
+This feature has been validated on all supported dipeptides and tripeptides as well as
+select tetrapeptides and pentapeptides. Systematic validation on a broader set of
+scientifically relevant biomolecules is still pending.
+
+:issue:`4998`

@@ -947,6 +947,7 @@ static char** read_topol(const char*                                 infile,
                                       bGenPairs,
                                       *fudgeQQ,
                                       bZero,
+                                      false,
                                       &bWarn_copy_A_B,
                                       wi);
                             break;
@@ -964,6 +965,7 @@ static char** read_topol(const char*                                 infile,
                                       FALSE,
                                       1.0,
                                       bZero,
+                                      false,
                                       &bWarn_copy_A_B,
                                       wi);
                             break;
@@ -999,6 +1001,7 @@ static char** read_topol(const char*                                 infile,
                                       bGenPairs,
                                       *fudgeQQ,
                                       bZero,
+                                      cpp_find_define(&handle, "_FF_AMBER_LEAP_ATOM_REORDERING") != nullptr,
                                       &bWarn_copy_A_B,
                                       wi);
                             break;

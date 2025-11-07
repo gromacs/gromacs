@@ -51,6 +51,7 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/textreader.h"
@@ -80,7 +81,7 @@ enum class ExpectedResult
 };
 
 class GromppDirectiveTest :
-    public ::testing::TestWithParam<std::tuple<std::string, ExpectedResult, std::string>>
+    public ::testing::TestWithParam<std::tuple<std::string, std::array<std::array<int, 4>, 2>>>
 {
 public:
     GromppDirectiveTest() = default;
@@ -126,11 +127,15 @@ TEST_F(GromppDirectiveTest, edgeCaseAtomTypeNames)
         int indexInMoltype = top_after.molblock[0].type;
 
         // Check atomic numbers (or lack thereof coded as -1)
-        ASSERT_EQ(top_after.moltype[indexInMoltype].atoms.nr, 4);
+        ASSERT_EQ(top_after.moltype[indexInMoltype].atoms.nr, 8);
         EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[0].atomnumber, -1);
         EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[1].atomnumber, 6);
         EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[2].atomnumber, 7);
         EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[3].atomnumber, -1);
+        EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[4].atomnumber, -1);
+        EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[5].atomnumber, 6);
+        EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[6].atomnumber, 7);
+        EXPECT_EQ(top_after.moltype[indexInMoltype].atoms.atom[7].atomnumber, -1);
     }
 }
 
@@ -184,7 +189,145 @@ TEST_F(GromppDirectiveTest, WarnOnDihedralSumDifferentForFreeEnergy)
                                   "undesired offset in dHdl values");
 }
 
-TEST_P(GromppDirectiveTest, AcceptValidAndErrorOnInvalidCMAP)
+TEST_P(GromppDirectiveTest, LEaPImproperDihedralAtomReordering)
+{
+    CommandLine cmdline;
+    cmdline.addOption("grompp");
+
+    auto        testParam = GetParam();
+    std::string mdpString = mdpContentString_;
+    mdpString += std::get<0>(testParam);
+
+    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath("directives.mdp").string();
+    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpString);
+    cmdline.addOption("-f", mdpInputFileName);
+
+    cmdline.addOption("-c", TestFileManager::getInputFilePath("directives.gro").string());
+    cmdline.addOption("-p", TestFileManager::getInputFilePath("directives.top").string());
+
+    std::string outTprFilename = fileManager_.getTemporaryFilePath("directives.tpr").string();
+    cmdline.addOption("-o", outTprFilename);
+
+    EXPECT_EQ(gmx_grompp(cmdline.argc(), cmdline.argv()), 0);
+    {
+        gmx_mtop_t top_after;
+        t_inputrec ir_after;
+        t_state    state;
+        read_tpx_state(outTprFilename, &ir_after, &state, &top_after);
+
+        int indexInMoltype = top_after.molblock[0].type;
+
+        const int nDihedrals = 2;
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .size(),
+                  (1 + NRAL(InteractionFunction::PeriodicImproperDihedrals)) * nDihedrals);
+
+        auto expectedAtomIndexes = std::get<1>(testParam);
+        ASSERT_EQ(top_after.ffparams.functype[top_after.moltype[indexInMoltype]
+                                                      .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                                                      .iatoms[0]],
+                  InteractionFunction::PeriodicImproperDihedrals);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[1],
+                  expectedAtomIndexes[0][0]);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[2],
+                  expectedAtomIndexes[0][1]);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[3],
+                  expectedAtomIndexes[0][2]);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[4],
+                  expectedAtomIndexes[0][3]);
+
+        ASSERT_EQ(top_after.ffparams.functype[top_after.moltype[indexInMoltype]
+                                                      .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                                                      .iatoms[5]],
+                  InteractionFunction::PeriodicImproperDihedrals);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[6],
+                  expectedAtomIndexes[1][0]);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[7],
+                  expectedAtomIndexes[1][1]);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[8],
+                  expectedAtomIndexes[1][2]);
+        ASSERT_EQ(top_after.moltype[indexInMoltype]
+                          .ilist[InteractionFunction::PeriodicImproperDihedrals]
+                          .iatoms[9],
+                  expectedAtomIndexes[1][3]);
+    }
+}
+
+std::vector<std::tuple<std::string, std::array<std::array<int, 4>, 2>>> dihedralAtomOrderings = {
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_NOX", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X1", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X2", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X4", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X12", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X14", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X24", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X124", { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_NOX",
+      { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X1",
+      { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X2",
+      { { { 0, 2, 1, 3 }, { 6, 4, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DSTOP_PRETENDING -DIMPROPER_DIHEDRALS "
+      "-DIMPROPER_DIHEDRAL_TYPE_X2",
+      { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X4",
+      { { { 3, 1, 2, 0 }, { 7, 4, 6, 5 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DSTOP_PRETENDING -DIMPROPER_DIHEDRALS "
+      "-DIMPROPER_DIHEDRAL_TYPE_X4",
+      { { { 3, 1, 2, 0 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X12",
+      { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X14",
+      { { { 0, 2, 1, 3 }, { 4, 7, 5, 6 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X24",
+      { { { 3, 1, 2, 0 }, { 7, 4, 6, 5 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DSTOP_PRETENDING -DIMPROPER_DIHEDRALS "
+      "-DIMPROPER_DIHEDRAL_TYPE_X24",
+      { { { 3, 1, 2, 0 }, { 4, 6, 5, 7 } } } },
+    { "define = -DPRETEND_TO_BE_FF19SB -DIMPROPER_DIHEDRALS -DIMPROPER_DIHEDRAL_TYPE_X124",
+      { { { 0, 2, 1, 3 }, { 4, 6, 5, 7 } } } },
+};
+
+INSTANTIATE_TEST_SUITE_P(DihedralAtomOrdering, GromppDirectiveTest, testing::ValuesIn(dihedralAtomOrderings));
+
+class GromppCmapDirectiveTest :
+    public ::testing::TestWithParam<std::tuple<std::string, ExpectedResult, std::string>>
+{
+public:
+    GromppCmapDirectiveTest() = default;
+
+protected:
+    gmx::test::TestFileManager fileManager_;
+    std::string                mdpContentString_ =
+            "title                   = Directive edge case test \n"
+            "integrator              = md \n"
+            "nsteps                  = 1 \n"
+            "dt                      = 0.002 \n"
+            "vdwtype                 = cutoff \n"
+            "coulombtype             = cutoff \n"
+            "tcoupl                  = no \n"
+            "pcoupl                  = no \n"
+            "pbc                     = xyz \n"
+            "gen_vel                 = yes \n";
+};
+
+TEST_P(GromppCmapDirectiveTest, AcceptValidAndErrorOnInvalidCMAP)
 {
     auto testParam = GetParam();
 
@@ -274,7 +417,7 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
       "Unable to assign a cmap type to torsion 1 2 3 4 and 5" }
 };
 
-INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppDirectiveTest, testing::ValuesIn(cmapValidInputOutput));
+INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppCmapDirectiveTest, testing::ValuesIn(cmapValidInputOutput));
 
 } // namespace
 } // namespace test

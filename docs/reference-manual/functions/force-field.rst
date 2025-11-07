@@ -138,6 +138,39 @@ AMBER
 
 -  AMBERGS \ :ref:`117 <refGarcia2002>`
 
+Dihedrals
+^^^^^^^^^
+
+|Gromacs| supports reordering atoms in select dihedrals to match
+topologies produced by AMBER LEaP.
+
+When this atom reordering is enabled, dihedral atoms
+:math:`a_i`, :math:`a_j`, :math:`a_k`, and :math:`a_l` are reordered to
+:math:`(a_l, a_k, a_j, a_i)` instead of :math:`(a_i, a_j, a_k, a_l)` if
+:math:`at_i > at_l` or :math:`at_i = at_l` and :math:`at_j > at_k`, where
+operator greater than is considered in lexicographical ordering,
+:math:`at_i`, :math:`at_j`, :math:`at_k`, and :math:`at_l` are atom type
+strings from the matching dihedral type, except in case of the wildcard
+type X, which is replaced by space. This reordering doesn't affect the
+resulting energies, but it is a necessity for what follows.
+
+Additionally, but only for improper dihedrals, the third atom (:math:`a_k`
+or :math:`a_j`) is taken to be central, while the remaining atoms
+(:math:`a_i`, :math:`a_j`, and :math:`a_l` or :math:`a_l`, :math:`a_k`,
+and :math:`a_i`) are then reordered by atom type from the matching
+improper dihedral type. This can affect the resulting energies.
+
+The reordering is performed by :ref:`gmx grompp` only when the
+preprocessor define ``_FF_AMBER_LEAP_ATOM_REORDERING`` is encountered,
+which enables this functionality only for select force fields (such as
+AMBER19SB). In addition, preprocessor define-based enablement allows
+fine-grained control in the topology file by combining ``#define`` and
+``#undef`` statements, which can be useful for further force field
+research and experimentation.
+
+CMAPs
+^^^^^
+
 AMBER19SB and newer versions provide support for amino-acid-specific
 energy correction maps (CMAPs). When these force fields are used with
 :ref:`pdb2gmx <gmx pdb2gmx>`, the default option is to enable CMAPs.
