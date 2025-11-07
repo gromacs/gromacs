@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/embedded_system_preprocessing.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/vectypes.h"
 
 // some forward declarations
@@ -68,6 +69,17 @@ class KeyValueTreeObjectBuilder;
 class KeyValueTreeObject;
 class IndexGroupsAndNames;
 class LocalAtomSet;
+
+//! \brief Enum to specify embedding scheme used for NNP/MM interaction
+enum class NNPotEmbedding
+{
+    //! Mechanical embedding: NNP/MM interaction calculated classically
+    Mechanical,
+    //! Electrostatic embedding calculated within NNP model (e.g.g EMLE-engine)
+    ElectrostaticModel,
+    // TODO: add more embedding schemes (Polarizable, ...)
+    Count
+};
 
 //!\brief \internal Data structure to store NNPot input parameters
 struct NNPotParameters
@@ -90,14 +102,19 @@ struct NNPotParameters
     //! Local set of atoms that are part of the MM region
     std::unique_ptr<LocalAtomSet> mmAtoms_;
 
-    //! User defined input to NN model (6 options as of now)
-    std::vector<std::string> modelInput_{ "", "", "", "", "", "" };
+    //! User defined input to NN model (9 options as of now)
+    std::vector<std::string> modelInput_{ "", "", "", "", "", "", "", "", "" };
 
     //! User defined cutoff for pairlist (if used)
     real pairCutoff_ = 0.0;
 
     //! stores pbc type used by the simulation
     std::unique_ptr<PbcType> pbcType_;
+
+    //! stores embedding scheme used for NNP/MM interaction
+    NNPotEmbedding embeddingScheme_ = NNPotEmbedding::Mechanical;
+    //! stores total charge of NNP region
+    real nnpCharge_ = 0.0;
 
     //! stores all (global) atom info
     t_atoms atoms_;
@@ -120,15 +137,15 @@ class NNPotOptions final : public IMdpOptionProvider
 {
 public:
     //! Implementation of IMdpOptionProvider method
-    void initMdpTransform(IKeyValueTreeTransformRules* rules) override;
+    void initMdpTransform(IKeyValueTreeTransformRules* /*rules*/) override;
 
     //! \brief Connects option names and data.
-    void initMdpOptions(IOptionsContainerWithSections* options) override;
+    void initMdpOptions(IOptionsContainerWithSections* /*options*/) override;
 
     /*! \brief Build mdp parameters for NNPot to be output after pre-processing.
      * \param[in, out] builder the builder for the mdp options output KVT.
      */
-    void buildMdpOutput(KeyValueTreeObjectBuilder* builder) const override;
+    void buildMdpOutput(KeyValueTreeObjectBuilder* /*builder*/) const override;
 
     //! return active state of NNPot module
     bool isActive() const;
@@ -137,38 +154,38 @@ public:
     std::string getModelFileName() const;
 
     //! set atom group for neural network input
-    void setInputGroupIndices(const IndexGroupsAndNames&);
+    void setInputGroupIndices(const IndexGroupsAndNames& /*indexGroupsAndNames*/);
 
     //! set local atom set for neural network input during simulation setup
-    void setLocalInputAtomSet(const LocalAtomSet&);
+    void setLocalInputAtomSet(const LocalAtomSet& /*localAtomSet*/);
 
     //! set local MM atom set during simulation setup
-    void setLocalMMAtomSet(const LocalAtomSet&);
+    void setLocalMMAtomSet(const LocalAtomSet& /*localMMAtomSet*/);
 
     //! modify topology of the system during preprocessing
-    void modifyTopology(gmx_mtop_t*);
+    void modifyTopology(gmx_mtop_t* /*mtop*/);
 
     //! set topology of the system during simulation setup
-    void setTopology(const gmx_mtop_t&);
+    void setTopology(const gmx_mtop_t& /*mtop*/);
 
     //! set communication object during simulation setup
-    void setComm(const MpiComm&);
+    void setComm(const MpiComm& /*mpiComm*/);
 
     //! Store the paramers that are not mdp options in the tpr file
     // This is needed to retain data from preprocessing to simulation setup
-    void writeParamsToKvt(KeyValueTreeObjectBuilder);
+    void writeParamsToKvt(KeyValueTreeObjectBuilder /*treeBuilder*/);
 
     //! Set the internal parameters that are stored in the tpr file
-    void readParamsFromKvt(const KeyValueTreeObject&);
+    void readParamsFromKvt(const KeyValueTreeObject& /*tree*/);
 
     //! get NNPot parameters
     const NNPotParameters& parameters();
 
     //! set PBC type during simulation setup
-    void setPbcType(const PbcType&);
+    void setPbcType(const PbcType& /*pbcType*/);
 
-    void            setLogger(const MDLogger&);
-    void            setWarninp(WarningHandler*);
+    void            setLogger(const MDLogger& /*logger*/);
+    void            setWarninp(WarningHandler* /*wi*/);
     const MDLogger& logger() const;
     const MpiComm&  mpiComm() const;
 

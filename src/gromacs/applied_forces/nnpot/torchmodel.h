@@ -59,6 +59,8 @@
 namespace gmx
 {
 
+enum class NNPotEmbedding;
+
 /*! \brief Define the torch datatype according to GMX_DOUBLE.
  *
  * Important for converting data types, as model inference is always done in float32.
@@ -79,18 +81,23 @@ public:
     /*! \brief Constructor for TorchModel.
      * \param[in] filename path to the TorchScript model file
      * \param[in] logger handle to MDLogger
+     * \param[in] embedding embedding scheme used for NNP/MM interaction
      */
-    TorchModel(const std::string& filename, const MDLogger& logger);
+    TorchModel(const std::string& filename, const MDLogger& logger, NNPotEmbedding embedding);
 
     /*! Call inference on NN model and retrieve outputs
      * \param[out] enerd energy data struct
      * \param[out] forces forces on atoms
      * \param[in] indexLookup lookup table for atom indices
+     * \param[in] mmIndices indices of MM atoms
      * \param[in] inputs list of strings specifying input data
      * \param[in] positions atom positions
      * \param[in] atomNumbers atom numbers
      * \param[in] atomPairs list of all input atom pairs within cutoff
      * \param[in] pairShifts list of periodic shift vectors corresponding to atom pairs
+     * \param[in] positionsMM MM atom positions
+     * \param[in] chargesMM MM atom charges
+     * \param[in] nnpCharge total charge of NNP region
      * \param[in] linkFrontier link frontier atoms
      * \param[in] box simulation box
      * \param[in] pbcType periodic boundary conditions
@@ -98,11 +105,15 @@ public:
     void evaluateModel(gmx_enerdata_t*                  enerd,
                        ArrayRef<RVec>                   forces,
                        ArrayRef<const int>              indexLookup,
+                       ArrayRef<const int>              mmIndices,
                        ArrayRef<const std::string>      inputs,
                        ArrayRef<RVec>                   positions,
                        ArrayRef<int>                    atomNumbers,
                        ArrayRef<int>                    atomPairs,
                        ArrayRef<RVec>                   pairShifts,
+                       ArrayRef<RVec>                   positionsMM,
+                       ArrayRef<real>                   chargesMM,
+                       real                             nnpCharge,
                        ArrayRef<const LinkFrontierAtom> linkFrontier,
                        matrix*                          box     = nullptr,
                        PbcType*                         pbcType = nullptr) override;
@@ -122,12 +133,17 @@ private:
     void preparePbcType(PbcType* pbcType);
     void prepareAtomPairs(ArrayRef<int> atomPairs);
     void preparePairShifts(ArrayRef<RVec> pairShifts);
+    void prepareMMPositions(ArrayRef<RVec> pos);
+    void prepareMMCharges(ArrayRef<real> charges);
+    void prepareNNPCharge(real charge);
     //! \}
 
     //! pointer to the communication object
     const MpiComm* mpiComm_ = nullptr;
     //! MDLogger during mdrun
     const MDLogger& logger_;
+
+    const NNPotEmbedding embeddingScheme_;
 
     //! device to run the model on
     torch::Device device_;

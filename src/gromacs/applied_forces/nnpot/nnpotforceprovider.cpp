@@ -81,6 +81,44 @@ static std::optional<ptrdiff_t> indexOf(gmx::ArrayRef<const int> vec, const int 
 namespace gmx
 {
 
+/*! Center positions of NN and MM atoms in the box.
+ *
+ * For treatment of the NNP-MM interactions, we assume that the embedding model expects
+ * all atom positions to be centered around the NNP region.
+ */
+static void centerAtomPositions(ArrayRef<RVec> nnPos, ArrayRef<RVec> mmPos, const matrix& box, const PbcType& pbcType)
+{
+    t_pbc pbc;
+    set_pbc(&pbc, pbcType, box);
+
+    // center atom positions in the box around the NNP region
+    // compute center of the NNP region
+    RVec nnpCenter{ 0.0, 0.0, 0.0 };
+    RVec dx;
+    for (const auto& pos : nnPos)
+    {
+        pbc_dx(&pbc, pos, nnPos[0], dx);
+        nnpCenter += dx;
+    }
+    nnpCenter        = nnpCenter / nnPos.size() + nnPos[0];
+    RVec translation = RVec(box[0]) + RVec(box[1]) + RVec(box[2]);
+    translation /= 2.0;
+    translation -= nnpCenter;
+
+    // apply translation to NNP and MM positions
+    for (auto& pos : nnPos)
+    {
+        pos += translation;
+    }
+    for (auto& pos : mmPos)
+    {
+        pos += translation;
+    }
+    // put all atoms into the central box (they might be shifted out of it because of the translation)
+    put_atoms_in_box(pbcType, box, nnPos);
+    put_atoms_in_box(pbcType, box, mmPos);
+}
+
 NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
                                        const MDLogger&        logger,
                                        const MpiComm&         mpiComm) :
@@ -93,11 +131,16 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     mpiComm_(mpiComm)
 {
     // for now, dom dec is disabled with pair list input
-    if (mpiComm_.size() > 1
+    if (mpiComm_.isParallel()
         && (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts")))
     {
         GMX_THROW(NotImplementedError(
                 "NNPot with pair list input does not support domain decomposition"));
+    }
+    if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel && mpiComm_.isParallel())
+    {
+        GMX_THROW(NotImplementedError(
+                "Electrostatic embedding scheme not yet implemented for domain decomposition."));
     }
 
     // initialize the neural network model
@@ -108,7 +151,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     }
     else if (modelPath.extension() == ".pt")
     {
-        model_ = std::make_shared<TorchModel>(params_.modelFileName_, logger_);
+        model_ = std::make_shared<TorchModel>(params_.modelFileName_, logger_, params_.embeddingScheme_);
     }
     else
     {
@@ -128,6 +171,12 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     {
         gatherAtomPositions(fInput.x_);
     }
+    if (params_.modelNeedsInput("atom-positions-mm") || params_.modelNeedsInput("atom-charges-mm"))
+    {
+        idxMM_.assign(params_.mmIndices_.begin(), params_.mmIndices_.end());
+        setMMPositionsAndCharges(fInput.x_, fInput.chargeA_);
+        copy_mat(fInput.box_, box_);
+    }
     // copy box
     copy_mat(fInput.box_, box_);
     // check that pairlist is available if needed
@@ -140,15 +189,24 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     // get link atom info
     std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_));
 
-    // prepare inputs for NN model
+    if (params_.modelNeedsInput("atom-positions-mm"))
+    {
+        // center MM atom positions in the box
+        centerAtomPositions(positions_, mmPositions_, box_, *(params_.pbcType_));
+    }
+
     model_->evaluateModel(&(fOutput->enerd_),
                           fOutput->forceWithVirial_.force_,
                           inputToLocalIndex_,
+                          idxMM_,
                           params_.modelInput_,
                           positions_,
                           atomNumbers_,
                           pairlistForModel_,
                           shiftVectors_,
+                          mmPositions_,
+                          mmCharges_,
+                          params_.nnpCharge_,
                           linkFrontier,
                           &box_,
                           params_.pbcType_.get());
@@ -312,6 +370,23 @@ void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& s
     // sanity check
     GMX_RELEASE_ASSERT(pairlistForModel_.size() == shiftVectors_.size() * 2,
                        "Inconsistent pairlist and shift vector sizes");
+}
+
+void NNPotForceProvider::setMMPositionsAndCharges(ArrayRef<const RVec> pos, ArrayRef<const real> charges)
+{
+    // collect MM atom positions and charges
+    // can't use lookup table here, because we need all MM atoms
+    size_t numMM = params_.mmAtoms_->numAtomsLocal();
+
+    // resize positions and charges vectors
+    mmPositions_.resize(numMM, RVec({ 0.0, 0.0, 0.0 }));
+    mmCharges_.resize(numMM, 0.0);
+
+    for (size_t i = 0; i < numMM; i++)
+    {
+        mmPositions_[i] = pos[params_.mmAtoms_->localIndex()[i]];
+        mmCharges_[i]   = charges[params_.mmAtoms_->localIndex()[i]];
+    }
 }
 
 } // namespace gmx

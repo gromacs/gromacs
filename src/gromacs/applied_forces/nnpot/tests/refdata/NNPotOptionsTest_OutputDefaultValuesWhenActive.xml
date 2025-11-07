@@ -9,11 +9,15 @@ nnpot-input-group        = System
 nnpot-link-type          = H
 nnpot-link-distance      = 0.1
 nnpot-pair-cutoff        = 0
+nnpot-embedding          = mechanical
 nnpot-model-input1       = 
 nnpot-model-input2       = 
 nnpot-model-input3       = 
 nnpot-model-input4       = 
 nnpot-model-input5       = 
 nnpot-model-input6       = 
+nnpot-model-input7       = 
+nnpot-model-input8       = 
+nnpot-model-input9       = 
 </String>
 </ReferenceData>

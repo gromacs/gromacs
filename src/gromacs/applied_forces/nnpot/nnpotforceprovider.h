@@ -46,6 +46,8 @@
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/topology/atoms.h"
 
+enum class PbcType;
+
 namespace gmx
 {
 
@@ -89,6 +91,9 @@ public:
     //! Gather atom positions for NN input.
     void gatherAtomPositions(ArrayRef<const RVec> pos);
 
+    //! Gather MM atom positions and charges for MM input.
+    void setMMPositionsAndCharges(ArrayRef<const RVec> pos, ArrayRef<const real> charges);
+
     //! Gather link frontier information.
     std::vector<LinkFrontierAtom> constructLinkFrontier(const std::vector<LinkFrontierAtom>& linkFrontier);
 
@@ -102,8 +107,14 @@ private:
     //! neural network model
     std::shared_ptr<INNPotModel> model_;
 
-    //! vector storing all atom positions
+    //! vector storing all nnp atom positions
     std::vector<RVec> positions_;
+
+    //! vector storing all mm atom positions
+    std::vector<RVec> mmPositions_;
+
+    //! vector storing all mm atom charges
+    std::vector<real> mmCharges_;
 
     //! vector storing all atomic numbers
     std::vector<int> atomNumbers_;
@@ -120,6 +131,9 @@ private:
     //! Shift vectors indicating periodic shifts for each atom pair in pairlistForModel_
     std::vector<RVec> shiftVectors_;
 
+    //! index vector for MM atoms
+    std::vector<int> idxMM_;
+
     //! local copy of simulation box
     matrix box_;
 
@@ -132,6 +146,10 @@ private:
 
     //! stores communication object
     const MpiComm& mpiComm_;
+
+    //! flag to check if MM data should be gathered
+    // added to avoid having to loop over MM atoms twice
+    bool doGatherMMData_ = false;
 };
 
 } // namespace gmx

@@ -69,19 +69,26 @@ public:
      * Currently supported inputs:
      *   - atom positions (ArrayRef<RVec>): atomic positions
      *   - atom numbers (ArrayRef<int>): atomic numbers
-     *   - box (matrix): simulation box vectors
-     *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
      *   - atom pairs (ArrayRef<int>): list of pairs of NNP-region atom indices within the cutoff for which the model should compute
      *   - pair shifts (ArrayRef<RVec>): list of shift vectors corresponding to atom pairs
+     *   - MM atom positions (ArrayRef<RVec>): atomic positions of MM atoms
+     *   - MM atom charges (ArrayRef<real>): atomic charges of MM atoms
+     *   - NNP charge (real): total charge of NNP region
+     *   - box (matrix): simulation box vectors
+     *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
      */
     virtual void evaluateModel(gmx_enerdata_t* /* enerData */,
                                ArrayRef<RVec> /* forces */,
                                ArrayRef<const int> /* idxLookup */,
+                               ArrayRef<const int> /* mmIndices */,
                                ArrayRef<const std::string> /* inputs */,
                                ArrayRef<RVec> /* positions */,
                                ArrayRef<int> /* atomNumbers */,
                                ArrayRef<int> /* atomPairs */,
                                ArrayRef<RVec> /* pairShifts */,
+                               ArrayRef<RVec> /* positionsMM */,
+                               ArrayRef<real> /* chargesMM */,
+                               real /* nnpCharge */,
                                ArrayRef<const LinkFrontierAtom> /* linkFrontier */,
                                matrix* /* box */,
                                PbcType* /* pbcType */) = 0;

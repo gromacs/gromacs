@@ -88,6 +88,13 @@ const std::string c_inputGroupTag_    = "input-group";
 const std::string c_linkTypeTag_      = "link-type";
 const std::string c_linkDistanceTag_  = "link-distance";
 const std::string c_pairCutoffTag_    = "pair-cutoff";
+const std::string c_nnpChargeTag_     = "nnp-charge";
+const std::string c_embeddingTag_     = "embedding";
+
+//! The names of the supported embedding schemes
+const EnumerationArray<NNPotEmbedding, const char*> c_embeddingSchemeNames = {
+    { "mechanical", "electrostatic-model" }
+};
 
 /*! \brief User defined input to NN model.
  *
@@ -98,6 +105,9 @@ const std::string c_pairCutoffTag_    = "pair-cutoff";
  * - "pair-shifts" list of periodic shifts for atom pairs
  * - "box" unit vectors of simulation box
  * - "pbc" boolean vector indicating periodic boundary conditions
+ * - "atom-positions-mm" vector of atom positions
+ * - "atom-charges-mm" vector of atomic charges
+ * - "nnp-charge" charge of the NNP region
  */
 const std::string c_modelInput1Tag_ = "model-input1";
 const std::string c_modelInput2Tag_ = "model-input2";
@@ -105,6 +115,9 @@ const std::string c_modelInput3Tag_ = "model-input3";
 const std::string c_modelInput4Tag_ = "model-input4";
 const std::string c_modelInput5Tag_ = "model-input5";
 const std::string c_modelInput6Tag_ = "model-input6";
+const std::string c_modelInput7Tag_ = "model-input7";
+const std::string c_modelInput8Tag_ = "model-input8";
+const std::string c_modelInput9Tag_ = "model-input9";
 //! \}
 
 /*! \brief Following tags are needed to write parameters generated
@@ -114,14 +127,23 @@ const std::string c_modelInput6Tag_ = "model-input6";
 const std::string c_mmGroupTag_ = "mm-group";
 const std::string c_nnpLinkTag_ = "nnp-link";
 const std::string c_mmLinkTag_  = "mm-link";
-
 //! \}
 
-//! \brief Helper function to preprocess topology for NNP
-std::vector<LinkFrontierAtom> preprocessTopology(gmx_mtop_t*           mtop,
-                                                 ArrayRef<const Index> nnpIndices,
-                                                 const MDLogger&       logger,
-                                                 WarningHandler*       wi)
+/*! \brief Helper function to preprocess topology for NNP
+ *
+ * This function performs the following modifications:
+ * - Excludes non-bonded interactions between NNP atoms (LJ and Coulomb)
+ * - In case of electrostatic embedding: removes classical charges on NNP atoms
+ * - Removes bonds containing 1 or more NNP atoms
+ * - Removes angles and settles containing 2 or more NNP atoms
+ * - Removes dihedrals containing 3 or more NNP atoms
+ */
+std::vector<LinkFrontierAtom> preprocessNNPotTopology(gmx_mtop_t*           mtop,
+                                                      ArrayRef<const Index> nnpIndices,
+                                                      const NNPotEmbedding& embedding,
+                                                      const real&           nnpCharge,
+                                                      const MDLogger&       logger,
+                                                      WarningHandler*       wi)
 {
     // convert nnpIndices to set for faster lookup
     std::set<int> nnpIndicesSet(nnpIndices.begin(), nnpIndices.end());
@@ -141,8 +163,12 @@ std::vector<LinkFrontierAtom> preprocessTopology(gmx_mtop_t*           mtop,
     // 2) Exclude non-bonded interactions between QM atoms
     addEmbeddedNBExclusions(mtop, nnpIndicesSet, logger);
 
-    // 3) Build atomNumbers vector with atomic numbers of all atoms
-    std::vector<int> atomNumbers = buildEmbeddedAtomNumbers(*mtop);
+    // 3) Remove classical charges from embedded atoms if electrostatic embedding is used
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        GMX_LOG(logger.info).appendText("Electrostatic embedding scheme is used.\n");
+        removeEmbeddedClassicalCharges(mtop, nnpIndicesSet, isNNPBlock, nnpCharge, logger, wi);
+    }
 
     // 4) Make F_CONNBOND between atoms within QM region
     modifyEmbeddedTwoCenterInteractions(mtop, nnpIndicesSet, isNNPBlock, logger);
@@ -182,6 +208,8 @@ void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
             rules, &fromStdString<real>, NNPotModuleInfo::sc_name, c_linkDistanceTag_);
     addMdpTransformFromString<real>(rules, &fromStdString<real>, NNPotModuleInfo::sc_name, c_pairCutoffTag_);
     addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_embeddingTag_);
+    addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput1Tag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput2Tag_);
@@ -193,6 +221,12 @@ void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput5Tag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput6Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput7Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput8Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput9Tag_);
 }
 
 void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
@@ -204,12 +238,19 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(StringOption(c_linkTypeTag_.c_str()).store(&params_.linkType_));
     section.addOption(RealOption(c_linkDistanceTag_.c_str()).store(&params_.linkDistance_));
     section.addOption(RealOption(c_pairCutoffTag_.c_str()).store(&params_.pairCutoff_));
+    section.addOption(EnumOption<NNPotEmbedding>(c_embeddingTag_.c_str())
+                              .enumValue(c_embeddingSchemeNames)
+                              .store(&params_.embeddingScheme_));
+    section.addOption(RealOption(c_nnpChargeTag_.c_str()).store(&params_.nnpCharge_));
     section.addOption(StringOption(c_modelInput1Tag_.c_str()).store(&params_.modelInput_[0]));
     section.addOption(StringOption(c_modelInput2Tag_.c_str()).store(&params_.modelInput_[1]));
     section.addOption(StringOption(c_modelInput3Tag_.c_str()).store(&params_.modelInput_[2]));
     section.addOption(StringOption(c_modelInput4Tag_.c_str()).store(&params_.modelInput_[3]));
     section.addOption(StringOption(c_modelInput5Tag_.c_str()).store(&params_.modelInput_[4]));
     section.addOption(StringOption(c_modelInput6Tag_.c_str()).store(&params_.modelInput_[5]));
+    section.addOption(StringOption(c_modelInput7Tag_.c_str()).store(&params_.modelInput_[6]));
+    section.addOption(StringOption(c_modelInput8Tag_.c_str()).store(&params_.modelInput_[7]));
+    section.addOption(StringOption(c_modelInput9Tag_.c_str()).store(&params_.modelInput_[8]));
 }
 
 void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -228,6 +269,10 @@ void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
         addMdpOutputValue<std::string>(builder, NNPotModuleInfo::sc_name, c_linkTypeTag_, params_.linkType_);
         addMdpOutputValue<real>(builder, NNPotModuleInfo::sc_name, c_linkDistanceTag_, params_.linkDistance_);
         addMdpOutputValue<real>(builder, NNPotModuleInfo::sc_name, c_pairCutoffTag_, params_.pairCutoff_);
+        addMdpOutputValue<std::string>(builder,
+                                       NNPotModuleInfo::sc_name,
+                                       c_embeddingTag_,
+                                       c_embeddingSchemeNames[params_.embeddingScheme_]);
         addMdpOutputValue<std::string>(
                 builder, NNPotModuleInfo::sc_name, c_modelInput1Tag_, params_.modelInput_[0]);
         addMdpOutputValue<std::string>(
@@ -240,6 +285,12 @@ void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
                 builder, NNPotModuleInfo::sc_name, c_modelInput5Tag_, params_.modelInput_[4]);
         addMdpOutputValue<std::string>(
                 builder, NNPotModuleInfo::sc_name, c_modelInput6Tag_, params_.modelInput_[5]);
+        addMdpOutputValue<std::string>(
+                builder, NNPotModuleInfo::sc_name, c_modelInput7Tag_, params_.modelInput_[6]);
+        addMdpOutputValue<std::string>(
+                builder, NNPotModuleInfo::sc_name, c_modelInput8Tag_, params_.modelInput_[7]);
+        addMdpOutputValue<std::string>(
+                builder, NNPotModuleInfo::sc_name, c_modelInput9Tag_, params_.modelInput_[8]);
     }
 }
 
@@ -319,7 +370,8 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top)
         return;
     }
 
-    params_.linkFrontier_ = preprocessTopology(top, params_.nnpIndices_, logger(), wi_);
+    params_.linkFrontier_ = preprocessNNPotTopology(
+            top, params_.nnpIndices_, params_.embeddingScheme_, params_.nnpCharge_, *logger_, wi_);
 }
 
 void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
@@ -509,7 +561,7 @@ void NNPotOptions::checkNNPotModel()
     }
     else if (modelPath.extension() == ".pt")
     {
-        model = std::make_unique<TorchModel>(params_.modelFileName_, logger());
+        model = std::make_unique<TorchModel>(params_.modelFileName_, logger(), params_.embeddingScheme_);
     }
     else
     {
@@ -527,12 +579,15 @@ void NNPotOptions::checkNNPotModel()
 
     // check if model accepts inputs
     // Prepare dummy input with two atoms in the NN model, so we can check the pairlist inputs
+    std::vector<int>  indices(1, 0);
     std::vector<RVec> positions(2, RVec({ 0.0, 0.0, 0.0 }));
     std::vector<int> atomNumbers(2, linkAtomNumber); // to check that the model can accept the link atom type
     std::vector<int>              atomPairs{ 0, 1 };
     std::vector<RVec>             pairShifts{ RVec({ 0.0, 0.0, 0.0 }) };
+    std::vector<real>             charges(1, 1.0);
     matrix                        box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType                       pbc = PbcType();
+    std::vector<int>              mmIndices(1, 1);
     std::vector<LinkFrontierAtom> link;
     MpiComm                       comm(MpiComm::SingleRank{});
     model->setComm(comm);
@@ -559,21 +614,24 @@ void NNPotOptions::checkNNPotModel()
     bool modelOutputsForces = false;
     try
     {
-        // prepare dummy output
-        std::vector<int>  indices(1, 0);
-        gmx_enerdata_t    enerd(1, nullptr);
-        std::vector<RVec> forcesVec(1, RVec({ 0.0, 0.0, 0.0 }));
+        // prepare dummy output (1 NNP and 1 MM atom)
+        gmx_enerdata_t    enerd(2, nullptr);
+        std::vector<RVec> forcesVec(2, RVec({ 0.0, 0.0, 0.0 }));
         ArrayRef<RVec>    forces(forcesVec);
 
         // might throw a runtime error if the model is not compatible with the dummy input
         model->evaluateModel(&enerd,
                              forces,
                              indices,
+                             mmIndices,
                              params_.modelInput_,
                              positions,
                              atomNumbers,
                              atomPairs,
                              pairShifts,
+                             positions,
+                             charges,
+                             params_.nnpCharge_,
                              link,
                              &box,
                              &pbc);
@@ -588,6 +646,13 @@ void NNPotOptions::checkNNPotModel()
         }
         else
         {
+            if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel)
+            {
+                GMX_THROW(
+                        InconsistentInputError("NNP model does not output forces, but they are "
+                                               "expected to be computed by the model for "
+                                               "electrostatic embedding scheme."));
+            }
             GMX_LOG(theLogger.info)
                     .appendText(
                             "NNP model does not output forces. They will be computed as gradients "
@@ -612,6 +677,17 @@ void NNPotOptions::checkNNPotModel()
     {
         wi_->addWarning("Gradients will be computed with respect to first input to NN model "
                         + params_.modelInput_[0] + " instead of atom positions. Is this intended?");
+    }
+
+    // check if model might need MM atom positions and/or charges
+    if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel)
+    {
+        if (!params_.modelNeedsInput("atom-positions-mm") && !params_.modelNeedsInput("atom-charges-mm"))
+        {
+            wi_->addWarning(
+                    "Embedding scheme is set to Electrostatic model, but MM positions and/or "
+                    "charges are not requested as model input. Is this intended?");
+        }
     }
 
 #else
