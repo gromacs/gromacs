@@ -36,7 +36,6 @@
  * \brief
  * Tests for topology-related utility functions.
  *
- * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Yang Zhang <yang.zhang@scilifelab.se>
  * \ingroup module_fileio
  */
@@ -654,6 +653,63 @@ TEST_F(H5mdTopologyUtilTest, WriteDisulfideBonds)
             }
         }
     }
+}
+
+TEST_F(H5mdTopologyUtilTest, CreateMTopFromMolType)
+{
+    gmx_mtop_t        topology;
+    bool              fullTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &fullTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    for (const auto& moltype : topology.moltype)
+    {
+        gmx_mtop_t newMtop;
+        gmx::detail::mtopFromMolType(&newMtop, moltype);
+
+        ASSERT_EQ(moltype.atoms.nr, newMtop.moltype[0].atoms.nr);
+        for (int i = 0; i < moltype.atoms.nr; ++i)
+        {
+            EXPECT_EQ(moltype.atoms.atom[i].type, newMtop.moltype[0].atoms.atom[i].type);
+            EXPECT_EQ(moltype.atoms.atom[i].m, newMtop.moltype[0].atoms.atom[i].m);
+            EXPECT_EQ(moltype.atoms.atom[i].q, newMtop.moltype[0].atoms.atom[i].q);
+            EXPECT_EQ(moltype.atoms.atom[i].resind, newMtop.moltype[0].atoms.atom[i].resind);
+            EXPECT_EQ(moltype.atoms.atom[i].atomnumber, newMtop.moltype[0].atoms.atom[i].atomnumber);
+            EXPECT_EQ(std::string(moltype.atoms.atom[i].elem),
+                      std::string(newMtop.moltype[0].atoms.atom[i].elem));
+        }
+    }
+}
+
+TEST_F(H5mdTopologyUtilTest, LabelVersionH5MDMTop)
+{
+    const auto [topologyContainer, topologyGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/gromacs_topology"));
+    const std::vector<int> expectedVersion = { 0, 1 };
+
+    // Set headers for the internal topology
+    labelInternalTopologyVersion(topologyContainer);
+
+    // Read back the version and compare with the internal version constant
+    const auto version = getAttributeVector<int32_t>(topologyContainer, "version");
+    ASSERT_TRUE(version.has_value());
+    EXPECT_EQ(version.value(), expectedVersion);
+}
+
+TEST_F(H5mdTopologyUtilTest, LabelSystemName)
+{
+    const auto [topologyContainer, topologyGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/gromacs_topology"));
+    const std::string systemName = "TestSystem";
+
+    // Set headers for the internal topology
+    labelTopologyName(topologyContainer, systemName.c_str());
+
+    // Read back the version and compare with the internal version constant
+    const auto version = getAttribute<std::string>(topologyContainer, "system_name");
+    ASSERT_TRUE(version.has_value());
+    EXPECT_EQ(version.value(), systemName);
 }
 
 } // namespace

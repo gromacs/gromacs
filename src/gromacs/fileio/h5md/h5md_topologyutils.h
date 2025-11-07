@@ -53,6 +53,21 @@
 namespace gmx
 {
 
+namespace detail
+{
+
+/*! \brief Create a topology from a molecule type.
+ *
+ * This function is designed for obtaining the AtomRange of the desired molecule type
+ * for writing atomic properties and residue information.
+ *
+ * \param[out] mtop The pointer to the topology to create.
+ * \param[in] sourceMolType The source molecule type to create the topology from.
+ */
+void mtopFromMolType(gmx_mtop_t* mtop, const gmx_moltype_t& sourceMolType);
+
+} // namespace detail
+
 //! \brief Map the global indices of the selection to the local indices within the selection
 using IndexMap = std::unordered_map<int32_t, int32_t>;
 
@@ -128,6 +143,19 @@ void writeBonds(const gmx_mtop_t&              topology,
 void writeDisulfideBonds(const gmx_mtop_t&              topology,
                          const hid_t                    baseContainer,
                          const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
+
+/*! \brief Label the version of the internal topology module.
+ *
+ * \param[in] baseContainer The HDF5 container to write to.
+ */
+void labelInternalTopologyVersion(const hid_t baseContainer);
+
+/*! \brief Label the name of the simulation system.
+ *
+ * \param[in] baseContainer The HDF5 container to write to.
+ * \param[in] topName The name of the topology.
+ */
+void labelTopologyName(const hid_t baseContainer, const char* topName);
 
 } // namespace gmx
 

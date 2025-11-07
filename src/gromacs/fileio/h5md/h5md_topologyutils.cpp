@@ -50,6 +50,13 @@ CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 namespace gmx
 {
 
+// NOTE: Since H5MD is an experiment feature, we start the versioning from 0.1 and
+//       increment to 1.0 when the metadata definition is stable and published.
+//! \brief The major version of the GROMACS internal topology.
+constexpr int c_h5mdInternalTopologyVersionMajor = 0;
+//! \brief The minor version of the GROMACS internal topology.
+constexpr int c_h5mdInternalTopologyVersionMinor = 1;
+
 //! \brief Unit for mass data in GROMACS.
 constexpr char c_massUnit[] = "u";
 //! \brief Unit for electric charge data in GROMACS.
@@ -84,6 +91,10 @@ constexpr char c_bondsConnectivityName[] = "bonds";
 constexpr char c_numberOfBondsAttributeKey[] = "nr_bonds";
 //! \brief Name of disulfide bonds within the special bonds group
 constexpr char c_disulfideBondsName[] = "disulfide_bonds";
+//! \brief Name of attribute for the version of internal topology.
+constexpr char c_h5mdInternalTopologyVersionAttributeKey[] = "version";
+//! \brief Name of attribute for topology name.
+constexpr char c_h5mdInternalTopologyNameAttributeKey[] = "system_name";
 
 namespace
 {
@@ -197,6 +208,22 @@ void cacheBondForNBlocks(const BondPairs&               bonds,
 
 } // namespace
 
+namespace detail
+{
+
+void mtopFromMolType(gmx_mtop_t* mtop, const gmx_moltype_t& sourceMolType)
+{
+    mtop->moltype.resize(1);
+    copy_moltype(&sourceMolType, &mtop->moltype[0]);
+
+    mtop->molblock.resize(1);
+    mtop->molblock[0].type = 0;
+    mtop->molblock[0].nmol = 1;
+    mtop->natoms           = sourceMolType.atoms.nr * mtop->molblock[0].nmol;
+    mtop->finalize();
+}
+
+} // namespace detail
 
 IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t>& selectedIndices)
 {
@@ -415,7 +442,6 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
     setAttribute<int32_t>(baseContainer, c_numResiduesAttributeKey, sequence.size());
 }
 
-
 void writeBonds(const gmx_mtop_t& topology, const hid_t baseContainer, const std::optional<IndexMap>& selectedAtomsIndexMap)
 {
     if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
@@ -511,6 +537,20 @@ void writeDisulfideBonds(const gmx_mtop_t&              topology,
         dBonds.writeData(systemBonds);
         setAttribute<int64_t>(baseContainer, c_numberOfBondsAttributeKey, bondCount);
     }
+}
+
+void labelInternalTopologyVersion(const hid_t baseContainer)
+{
+    // Similar to H5MD standard, the version is a simple array of two integers.
+    setAttributeVector<int>(
+            baseContainer,
+            c_h5mdInternalTopologyVersionAttributeKey,
+            std::vector<int>{ c_h5mdInternalTopologyVersionMajor, c_h5mdInternalTopologyVersionMinor });
+}
+
+void labelTopologyName(const hid_t baseContainer, const char* topName)
+{
+    setAttribute(baseContainer, c_h5mdInternalTopologyNameAttributeKey, topName);
 }
 
 } // namespace gmx
