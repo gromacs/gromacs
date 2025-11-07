@@ -89,10 +89,13 @@ This option can be useful for cases in which the forces can be computed by the m
 by some technique that is more efficient than via backpropagation. If the model does not
 provide its own forces, they are calculated by the interface as gradients
 w.r.t. the *first* input tensor. \
-You can specify the device on which you wish to run model inference using the
-environment variable ``GMX_NN_DEVICE``. For now, only ``cpu`` and ``cuda`` are supported.
-For ``cuda``, a CUDA-aware LibTorch installation should be installed, and the corresponding
-CUDA installation should be available in your ``PATH``. 
+By default, |Gromacs| will run inference on the GPU, if available. You can also explicitly
+specify the device on which you wish to run model inference using the environment
+variable ``GMX_NN_DEVICE``. The options ``cpu`` and ``gpu`` are supported. Option ``cuda``
+is deprecated, and is treated as ``gpu``.
+If multiple GPUs are available, the active device will be inherited from mdrun.
+For ``gpu``, a CUDA/HIP-aware LibTorch installation should be installed, and the
+corresponding CUDA/HIP installation should be available in your ``PATH``. 
 
 Find below an example Python code snippet to export a pretrained model in
 PyTorch using TorchScript. As an example, we use the popular ANI models

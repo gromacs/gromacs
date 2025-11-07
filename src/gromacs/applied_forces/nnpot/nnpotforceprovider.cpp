@@ -151,15 +151,13 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     }
     else if (modelPath.extension() == ".pt")
     {
-        model_ = std::make_shared<TorchModel>(params_.modelFileName_, logger_, params_.embeddingScheme_);
+        model_ = std::make_shared<TorchModel>(
+                params_.modelFileName_, params_.embeddingScheme_, logger_, mpiComm_);
     }
     else
     {
         GMX_THROW(FileIOError("Unrecognized extension for model file: " + params_.modelFileName_));
     }
-
-    // set communication record
-    model_->setComm(mpiComm_);
 }
 
 NNPotForceProvider::~NNPotForceProvider() {}

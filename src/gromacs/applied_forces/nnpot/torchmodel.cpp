@@ -46,6 +46,7 @@
 #include <iostream>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -94,60 +95,121 @@ static void loadModelExtensions(const std::string& ext_libs, const MDLogger& log
     }
 }
 
+/*! \brief \internal Helper function to get active device used by mdrun
+ *
+ * This should be called before loading the model, or calling any torch functions that might
+ * overwrite the active device.
+ * \returns Tuple of device type string and optional device index.
+ */
+static std::tuple<std::string, std::optional<int>> getMdrunActiveDevice()
+{
+#if GMX_GPU_CUDA || (GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET) // AdaptiveCpp uses CUDA Runtime API
+    // Annoyingly, USE_CUDA doesn't seem to be defined correctly by libtorch when using CUDA,
+    // while for HIP, torch::hasHIP() doesn't work, so we have different checks for both cases.
+    GMX_RELEASE_ASSERT(
+            torch::hasCUDA(),
+            "Libtorch was not compiled with CUDA support. Ensure that GROMACS and Libtorch "
+            "are compiled with matching GPU support.");
+    int  activeDevice;
+    auto success = cudaGetDevice(&activeDevice);
+    if (success != cudaSuccess)
+    {
+        GMX_THROW(InternalError("Could not get active device: cudaGetDevice failed."));
+    }
+    return { "cuda", activeDevice };
+#elif GMX_GPU_HIP || (GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET) // AdaptiveCpp uses HIP Runtime API
+#    ifndef USE_ROCM                                             // Defined by torch
+    GMX_THROW(InternalError(
+            "Libtorch was not compiled with HIP support. Ensure that GROMACS and Libtorch are "
+            "compiled with matching GPU support."));
+#    endif
+    int  activeDevice;
+    auto success = hipGetDevice(&activeDevice);
+    if (success != hipSuccess)
+    {
+        GMX_THROW(InternalError("Could not get active device: hipGetDevice failed."));
+    }
+    return { "hip", activeDevice };
+#else
+    return { "cpu", std::nullopt };
+#endif
+}
+
 /*! \brief Determine which device to use depending on GMX_NN_DEVICE environment variable
  *
- * Defaults to CPU if no environment variable is set. Throws an error if CUDA is requested but no CUDA device is available.
+ * Should be "gpu" or "cpu". "cuda" option is deprecated. Defaults to GPU if no environment variable is set.
+ * Throws an error if CUDA/HIP is requested but no compatible device is available.
  * Also throws an error if the environment variable is set to an invalid value.
  */
-static torch::DeviceType determineDeviceType(const MDLogger& logger)
+static torch::Device determineDevice(const MDLogger& logger, const MpiComm& mpiComm)
 {
-    torch::DeviceType device;
+    torch::Device device(torch::kCPU);
 
-    // check if environment variable GMX_NN_DEVICE is set (should be something like cuda:0 or cpu)
+    // if not on the main rank, just return CPU device
+    if (!mpiComm.isMainRank())
+    {
+        return device;
+    }
+
+    // check active device and type
+    auto [torchDeviceType, activeDevice] = getMdrunActiveDevice();
+
+    // check if environment variable GMX_NN_DEVICE is set (should be gpu or cpu)
     if (const char* env = std::getenv("GMX_NN_DEVICE"))
     {
-        std::string dev = std::string(env);
-        if (dev == "cpu")
-        {
-            device = torch::kCPU;
-        }
-        else if (dev.find("cuda") != std::string::npos)
+        const std::string devLC = toLowerCase(env);
+        if (devLC == "gpu" || devLC == "cuda")
         {
             if (!torch::cuda::is_available())
             {
-                GMX_THROW(
-                        InternalError("Environment variable GMX_NN_DEVICE was set to cuda, but no "
-                                      "CUDA device is available."));
+                GMX_THROW(InternalError(formatString(
+                        "GMX_NN_DEVICE was set to '%s', but no matching device is available.", env)));
             }
-            device = torch::kCUDA;
+            GMX_RELEASE_ASSERT(
+                    activeDevice.has_value(),
+                    "Active device couldn't be determined. Ensure that Libtorch and GROMACS "
+                    "are compiled with matching GPU support.");
+            device = torch::Device(torch::kCUDA, activeDevice.value());
+        }
+        else if (devLC != "cpu")
+        {
+            GMX_THROW(InvalidInputError(formatString(
+                    "Environment variable GMX_NN_DEVICE was set to an invalid value: '%s'.", env)));
+        }
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted(
+                        "GMX_NN_DEVICE environment variable found. Using device: '%s'.", env);
+    }
+    else // not set: automatically determine device
+    {
+        if (torch::cuda::is_available() && activeDevice.has_value())
+        {
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_NN_DEVICE environment variable not found."
+                            " Using "
+                            + toUpperCase(torchDeviceType) + " device.");
+            device = torch::Device(torch::kCUDA, activeDevice.value());
         }
         else
         {
-            GMX_THROW(InvalidInputError(
-                    "Environment variable GMX_NN_DEVICE was set to an invalid value."));
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_NN_DEVICE environment variable not found, and no GPU available."
+                            " Using CPU.");
         }
-        GMX_LOG(logger.info)
-                .asParagraph()
-                .appendText(
-                        "GMX_NN_DEVICE environment variable found."
-                        " Using device: "
-                        + dev + ".");
-    }
-    else
-    {
-        // todo: default to gpu if available
-        device = torch::kCPU;
-        GMX_LOG(logger.info)
-                .asParagraph()
-                .appendText(
-                        "No GMX_NN_DEVICE environment variable found."
-                        " Using CPU.");
     }
     return device;
 }
 
-TorchModel::TorchModel(const std::string& fileName, const MDLogger& logger, NNPotEmbedding embedding) :
-    logger_(logger), embeddingScheme_(embedding), device_(determineDeviceType(logger))
+TorchModel::TorchModel(const std::string& fileName,
+                       NNPotEmbedding     embedding,
+                       const MDLogger&    logger,
+                       const MpiComm&     mpiComm) :
+    mpiComm_(mpiComm), logger_(logger), embeddingScheme_(embedding), device_(determineDevice(logger, mpiComm))
 {
     // load pytorch extensions from extra_files
     // we can't use extra_files map from the torch::jit::load function
@@ -160,12 +222,15 @@ TorchModel::TorchModel(const std::string& fileName, const MDLogger& logger, NNPo
     }
 
     // try loading the model
-    try
+    if (mpiComm_.isMainRank())
     {
-        model_ = torch::jit::load(fileName, device_);
-        model_.eval();
+        try
+        {
+            model_ = torch::jit::load(fileName, device_);
+            model_.eval();
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 void TorchModel::prepareAtomPositions(ArrayRef<RVec> positions)
@@ -338,7 +403,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
     }
 
     // for now: only do inference on main rank
-    if (mpiComm_->isMainRank())
+    if (mpiComm_.isMainRank())
     {
         // run model
         c10::IValue out = model_.forward(inputs_);
@@ -361,7 +426,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
     // electrostatic embedding produces additional force corrections on MM atoms
     torch::Tensor mmForceTensor = torch::zeros({ numMM, DIM });
 
-    if (mpiComm_->isMainRank())
+    if (mpiComm_.isMainRank())
     {
         // get energy
         energyTensor = outputs_->elements()[0].toTensor();
@@ -393,9 +458,9 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
     }
 
     // distribute forces
-    if (mpiComm_->isParallel())
+    if (mpiComm_.isParallel())
     {
-        mpiComm_->sumReduce(3 * N, static_cast<real*>(forceTensor.data_ptr()));
+        mpiComm_.sumReduce(3 * N, static_cast<real*>(forceTensor.data_ptr()));
     }
 
     // accumulate forces only on local atoms
@@ -452,11 +517,6 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
 
     // after output is retrieved: reset input vector
     inputs_.resize(0);
-}
-
-void TorchModel::setComm(const MpiComm& mpiComm)
-{
-    mpiComm_ = &mpiComm;
 }
 
 bool TorchModel::outputsForces() const

@@ -555,13 +555,15 @@ void NNPotOptions::checkNNPotModel()
     // try initializing the neural network model
     std::filesystem::path        modelPath(params_.modelFileName_);
     std::unique_ptr<INNPotModel> model;
+    MpiComm                      comm(MpiComm::SingleRank{});
     if (!std::filesystem::exists(modelPath))
     {
         GMX_THROW(FileIOError("Model file does not exist: " + params_.modelFileName_));
     }
     else if (modelPath.extension() == ".pt")
     {
-        model = std::make_unique<TorchModel>(params_.modelFileName_, logger(), params_.embeddingScheme_);
+        model = std::make_unique<TorchModel>(
+                params_.modelFileName_, params_.embeddingScheme_, logger(), comm);
     }
     else
     {
@@ -589,8 +591,6 @@ void NNPotOptions::checkNNPotModel()
     PbcType                       pbc = PbcType();
     std::vector<int>              mmIndices(1, 1);
     std::vector<LinkFrontierAtom> link;
-    MpiComm                       comm(MpiComm::SingleRank{});
-    model->setComm(comm);
 
     // check that inputs are not empty
     if (params_.modelInput_.size() == 0)

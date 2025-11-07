@@ -93,9 +93,6 @@ public:
                                matrix* /* box */,
                                PbcType* /* pbcType */) = 0;
 
-    //! set communication object for possible communication of input/output data between ranks
-    virtual void setComm(const MpiComm&) = 0;
-
     //! helper function to check if model outputs forces
     virtual bool outputsForces() const = 0;
 };

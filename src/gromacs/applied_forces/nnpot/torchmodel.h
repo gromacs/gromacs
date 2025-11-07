@@ -80,10 +80,11 @@ class TorchModel : public INNPotModel
 public:
     /*! \brief Constructor for TorchModel.
      * \param[in] filename path to the TorchScript model file
-     * \param[in] logger handle to MDLogger
      * \param[in] embedding embedding scheme used for NNP/MM interaction
+     * \param[in] logger handle to MDLogger
+     * \param[in] mpiComm handle to MpiComm
      */
-    TorchModel(const std::string& filename, const MDLogger& logger, NNPotEmbedding embedding);
+    TorchModel(const std::string& filename, NNPotEmbedding embedding, const MDLogger& logger, const MpiComm& mpiComm);
 
     /*! Call inference on NN model and retrieve outputs
      * \param[out] enerd energy data struct
@@ -118,9 +119,6 @@ public:
                        matrix*                          box     = nullptr,
                        PbcType*                         pbcType = nullptr) override;
 
-    //! Set communication object for possible communication of input/output data between ranks
-    void setComm(const MpiComm& mpiComm) override;
-
     //! helper function to check if model outputs forces
     bool outputsForces() const override;
 
@@ -139,7 +137,7 @@ private:
     //! \}
 
     //! pointer to the communication object
-    const MpiComm* mpiComm_ = nullptr;
+    const MpiComm& mpiComm_;
     //! MDLogger during mdrun
     const MDLogger& logger_;
 
