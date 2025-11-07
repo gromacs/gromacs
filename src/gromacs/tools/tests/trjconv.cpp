@@ -81,6 +81,15 @@ TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
     {
         GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
     }
+    if (!GMX_USE_HDF5 && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
+    }
     auto& cmdline = commandLine();
 
     setInputFile("-s", "spc2.gro");
@@ -91,20 +100,6 @@ TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
-    // Until H5MD reading is implemented trjconv will throw, so we handle the case
-    // for .h5md input files here separately. Since we expect a throw here there
-    // will be lost memory so we also disable this test for the address sanitizer build.
-    if (std::strstr(GetParam(), ".h5md") != nullptr)
-    {
-#if defined(__has_feature)
-#    if !__has_feature(address_sanitizer)
-        EXPECT_THROW(gmx_trjconv(cmdline.argc(), cmdline.argv()), gmx::NotImplementedError);
-        return;
-#    else
-        GTEST_SKIP() << "Test disabled for ASAN build until H5md reading is implemented";
-#    endif
-#endif
-    }
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
     TrajectoryFrameReader reader(outputFile);
@@ -123,6 +118,15 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
     {
         GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
     }
+    if (!GMX_USE_HDF5 && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
+    }
     auto& cmdline = commandLine();
 
     setInputFile("-f", GetParam());
@@ -132,20 +136,6 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
-    // Until H5MD reading is implemented trjconv will throw, so we handle the case
-    // for .h5md input files here separately. Since we expect a throw here there
-    // will be lost memory so we also disable this test for the address sanitizer build.
-    if (std::strstr(GetParam(), ".h5md") != nullptr)
-    {
-#if defined(__has_feature)
-#    if !__has_feature(address_sanitizer)
-        EXPECT_THROW(gmx_trjconv(cmdline.argc(), cmdline.argv()), gmx::NotImplementedError);
-        return;
-#    else
-        GTEST_SKIP() << "Test disabled for ASAN build until H5md reading is implemented";
-#    endif
-#endif
-    }
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
     TrajectoryFrameReader reader(outputFile);
@@ -201,6 +191,15 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     {
         GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
     }
+    if (!GMX_USE_HDF5 && std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
+    }
     auto& cmdline = commandLine();
 
     setInputFile("-f", std::get<0>(GetParam()));
@@ -208,20 +207,6 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     cmdline.addOption("-dump", std::to_string(dumpTime));
     std::string outputFile = setOutputFile("-o", "dumped-frame.trr", gmx::test::NoTextMatch());
 
-    // Until H5MD reading is implemented trjconv will throw, so we handle the case
-    // for .h5md input files here separately. Since we expect a throw here there
-    // will be lost memory so we also disable this test for the address sanitizer build.
-    if (std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
-    {
-#if defined(__has_feature)
-#    if !__has_feature(address_sanitizer)
-        EXPECT_THROW(gmx_trjconv(cmdline.argc(), cmdline.argv()), gmx::NotImplementedError);
-        return;
-#    else
-        GTEST_SKIP() << "Test disabled for ASAN build until H5md reading is implemented";
-#    endif
-#endif
-    }
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
     // This relies on the input trajectories having frames with times

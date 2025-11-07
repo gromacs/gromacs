@@ -54,6 +54,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/groio.h"
+#include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
@@ -101,6 +102,7 @@ struct t_trxstatus
     t_trxframe*          xframe;
     t_fileio*            fio;
     gmx_tng_trajectory_t tng;
+    gmx::H5md*           h5md;
     int                  fileType;
     int                  natoms;
     char*                persistent_line; /* Persistent line for reading g96 trajectories */
@@ -187,6 +189,7 @@ static void status_init(t_trxstatus* status)
     status->tf              = 0;
     status->persistent_line = nullptr;
     status->tng             = nullptr;
+    status->h5md            = nullptr;
     status->fileType        = efNR;
 }
 
@@ -644,6 +647,7 @@ void close_trx(t_trxstatus* status)
         return;
     }
     gmx_tng_close(&status->tng);
+    delete status->h5md;
     if (status->fio)
     {
         gmx_fio_close(status->fio);
@@ -878,7 +882,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 }
                 break;
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
-            case efH5MD: throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
+            case efH5MD: bRet = status->h5md->readNextFrame(fr); break;
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
             case efGRO: bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr); break;
             default:
@@ -959,7 +963,8 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     }
     else if (efH5MD == (*status)->fileType)
     {
-        throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
+        (*status)->h5md = new gmx::H5md(fn, gmx::H5mdFileMode('r'));
+        (*status)->h5md->setupFromExistingFile();
     }
     else if ((*status)->fileType != efCPT)
     {
@@ -1035,7 +1040,20 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             }
             bFirst = FALSE;
             break;
-        case efH5MD: throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
+        case efH5MD:
+            fr->step = -1;
+            if (!(*status)->h5md->readNextFrame(fr))
+            {
+                fr->not_ok = DATA_NOT_OK;
+                fr->natoms = 0;
+                printincomp(*status, fr);
+            }
+            else
+            {
+                printcount(*status, oenv, fr->time, FALSE);
+            }
+            bFirst = FALSE;
+            break;
         case efPDB:
             pdb_first_x(*status, gmx_fio_getfp(fio), fr);
             if (fr->natoms)
