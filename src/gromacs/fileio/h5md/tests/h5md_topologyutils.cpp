@@ -800,6 +800,152 @@ TEST_F(H5mdTopologyUtilTest, WriteEmptyMoleculeTypes)
     EXPECT_EQ(getAttributeVector<std::string>(gmxMol, "molecule_names"), std::nullopt);
 }
 
+TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocks)
+{
+    // Prepare the topology of the molecule
+    gmx_mtop_t        topology;
+    bool              fullTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &fullTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    const auto [topologyContainer, topologyGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/gromacs_topology"));
+    const auto [gmxMol, gmxMolGuard] =
+            makeH5mdGroupGuard(createGroup(topologyContainer, "molecule_types"));
+
+    std::vector<std::string> molNames;
+    {
+        SCOPED_TRACE("Setup PosRes, create molecule types and write the molecule blocks");
+
+        // Write the molecule type and block information
+        int c = 0;
+        for (const auto& moltype : topology.moltype)
+        {
+            molNames.emplace_back(*(moltype.name));
+            const auto [molGroup, molGroupGuard] =
+                    makeH5mdGroupGuard(createGroup(gmxMol, *(moltype.name)));
+            // Manually set some posres_xA and posres_xB data for testing
+            topology.molblock[c].posres_xA.resize(moltype.atoms.nr);
+            topology.molblock[c].posres_xB.resize(moltype.atoms.nr);
+            for (int i = 0; i < moltype.atoms.nr; ++i)
+            {
+                topology.molblock[c].posres_xA[i] = { static_cast<float>(i) * 0.1f + 1.5f,
+                                                      static_cast<float>(i) * 0.2f + 2.5f,
+                                                      static_cast<float>(i) * 0.3f + 3.5f };
+                topology.molblock[c].posres_xB[i] = { static_cast<float>(i) * 0.1f + 4.5f,
+                                                      static_cast<float>(i) * 0.2f + 5.5f,
+                                                      static_cast<float>(i) * 0.3f + 6.5f };
+            }
+            c += 1;
+        }
+        setAttributeVector(gmxMol, "molecule_names", molNames);
+
+        // Write the molecule blocks
+        writeMoleculeBlocks(gmxMol, makeConstArrayRef(topology.molblock));
+    }
+
+
+    {
+        SCOPED_TRACE("Verify the written molecule blocks");
+
+        for (size_t i = 0; i < molNames.size(); ++i)
+        {
+            ASSERT_GT(H5Lexists(gmxMol, molNames[i].c_str(), H5P_DEFAULT), 0);
+            const auto retNrBlocks =
+                    getAttribute<int32_t>(openGroup(gmxMol, molNames[i].c_str()), "nr_blocks");
+            ASSERT_TRUE(retNrBlocks.has_value());
+            ASSERT_EQ(retNrBlocks.value(), topology.molblock[i].nmol);
+
+            // Verify posres_xA data
+            const H5mdFixedDataSet<RVec> datasetPosresX_A = H5mdFixedDataSet<RVec>(
+                    gmxMol, formatString("%s/posres_xA", molNames[i].c_str()).c_str());
+            std::vector<RVec> dataPosresX_A(datasetPosresX_A.numValues());
+            datasetPosresX_A.readData(dataPosresX_A);
+            for (size_t j = 0; j < datasetPosresX_A.numValues(); ++j)
+            {
+                EXPECT_FLOAT_EQ(dataPosresX_A[j][0], topology.molblock[i].posres_xA[j][0]);
+                EXPECT_FLOAT_EQ(dataPosresX_A[j][1], topology.molblock[i].posres_xA[j][1]);
+                EXPECT_FLOAT_EQ(dataPosresX_A[j][2], topology.molblock[i].posres_xA[j][2]);
+            }
+
+            // Verify posres_xB data
+            const H5mdFixedDataSet<RVec> datasetPosresX_B = H5mdFixedDataSet<RVec>(
+                    gmxMol, formatString("%s/posres_xB", molNames[i].c_str()).c_str());
+            std::vector<RVec> dataPosresX_B(datasetPosresX_B.numValues());
+            datasetPosresX_B.readData(dataPosresX_B);
+            for (size_t j = 0; j < datasetPosresX_B.numValues(); ++j)
+            {
+                EXPECT_FLOAT_EQ(dataPosresX_B[j][0], topology.molblock[i].posres_xB[j][0]);
+                EXPECT_FLOAT_EQ(dataPosresX_B[j][1], topology.molblock[i].posres_xB[j][1]);
+                EXPECT_FLOAT_EQ(dataPosresX_B[j][2], topology.molblock[i].posres_xB[j][2]);
+            }
+        }
+    }
+}
+
+TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocksFailsWithoutPriorMoleculeType)
+{
+    // Prepare the topology of the molecule
+    gmx_mtop_t        topology;
+    bool              fullTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &fullTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    const auto [topContainer, topGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/gromacs_topology"));
+
+    EXPECT_THROW(writeMoleculeBlocks(topContainer, makeConstArrayRef(topology.molblock)), FileIOError);
+}
+
+TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocksFailsUponNumberMismatch)
+{
+    gmx_mtop_t        topology;
+    bool              fullTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &fullTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    {
+        const auto [topContainer, topGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/missOneMoleculeType"));
+        std::vector<std::string> molNames;
+        int                      c = 0;
+        for (const auto& moltype : topology.moltype)
+        {
+            if (c == 1)
+            {
+                break;
+            }
+            molNames.push_back(*(moltype.name));
+            const auto [molGroup, molGroupGuard] =
+                    makeH5mdGroupGuard(createGroup(topContainer, molNames.back().c_str()));
+            c++;
+        }
+        setAttributeVector(topContainer, "molecule_names", molNames);
+
+        EXPECT_THROW(writeMoleculeBlocks(topContainer, makeConstArrayRef(topology.molblock)), FileIOError);
+    }
+
+    {
+        const auto [topContainer, topGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/missOneMoleculeBlock"));
+        std::vector<std::string> molNames;
+        for (const auto& moltype : topology.moltype)
+        {
+            molNames.push_back(*(moltype.name));
+            const auto [molGroup, molGroupGuard] =
+                    makeH5mdGroupGuard(createGroup(topContainer, molNames.back().c_str()));
+        }
+        setAttributeVector(topContainer, "molecule_names", molNames);
+
+        std::vector<gmx_molblock_t> incompleteMolblocks(1, topology.molblock[0]);
+        EXPECT_THROW(writeMoleculeBlocks(topContainer, makeConstArrayRef(incompleteMolblocks)), FileIOError);
+    }
+}
+
+
 } // namespace
 } // namespace test
 } // namespace gmx

@@ -185,6 +185,19 @@ void labelTopologyName(const hid_t baseContainer, const char* topName);
  */
 void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> moltypes);
 
+/*! \brief Write the molecule block information to the HDF5 container of GROMACS internal topology.
+ *
+ * \note Write molecule type information by calling writeMoleculeTypes(), before writing molecule blocks.
+ *       Without the list of molecule type names, the function will throw a file IO error.
+ *       The result molecule block information will be put into the corresponding
+ *       `<baseContainer>/<moleculeTypeName>` group.
+ *
+ * \param[in] baseContainer The HDF5 container to write the topology information to.
+ * \param[in] molBlocks The molecule blocks to write.
+ */
+void writeMoleculeBlocks(const hid_t baseContainer, const ArrayRef<const gmx_molblock_t> molBlocks);
+
+
 } // namespace gmx
 
 #endif // GMX_FILEIO_H5MD_TOPOLOGYUTILS_H

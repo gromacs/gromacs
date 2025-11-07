@@ -99,6 +99,11 @@ constexpr char c_h5mdInternalTopologyVersionAttributeKey[] = "version";
 constexpr char c_h5mdInternalTopologyNameAttributeKey[] = "system_name";
 //! \brief Name of attribute for the names of the molecule types.
 constexpr char c_moleculeNamesAttributeKey[] = "molecule_names";
+//! \brief Name of attribute for the number of blocks for each molecule types
+constexpr char c_numMolBlocksAttributeKey[] = "nr_blocks";
+//! \brief Name of attribute for the position restraints of the molecules.
+constexpr char c_positionRestraintsAName[] = "posres_xA";
+constexpr char c_positionRestraintsBName[] = "posres_xB";
 
 namespace
 {
@@ -589,6 +594,51 @@ void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_molt
         // TODO: Write interaction list and exclusions list - MR !5524/!5523
     }
     setAttributeVector(baseContainer, c_moleculeNamesAttributeKey, moltypeNames);
+}
+
+void writeMoleculeBlocks(const hid_t baseContainer, const ArrayRef<const gmx_molblock_t> molBlocks)
+{
+    // Molecule types must match the number of molecule blocks
+    const auto molNames = getAttributeVector<std::string>(baseContainer, c_moleculeNamesAttributeKey);
+    if (!molNames.has_value())
+    {
+        throw FileIOError("Failed to read molecule names attribute");
+    }
+    else if (molNames->size() != molBlocks.size())
+    {
+        throw FileIOError(
+                "Failed to match the number of molecule names with the number of molecule blocks.");
+    }
+
+    for (int index = 0; index < gmx::ssize(molBlocks); ++index)
+    {
+        const gmx_molblock_t& molBlock     = molBlocks[index];
+        const std::string&    molBlockName = molNames->at(index);
+
+        const auto [molContainer, molGuard] =
+                makeH5mdGroupGuard(openGroup(baseContainer, molBlockName.c_str()));
+
+        // Write MolBlock attributes
+        setAttribute<int32_t>(molContainer, c_numMolBlocksAttributeKey, molBlock.nmol);
+
+        if (molBlock.posres_xA.size() > 0)
+        {
+            H5mdFixedDataSet<RVec> dataPosresX =
+                    H5mdDataSetBuilder<RVec>(molContainer, c_positionRestraintsAName)
+                            .withDimension({ molBlock.posres_xA.size() })
+                            .build();
+            dataPosresX.writeData(molBlock.posres_xA);
+        }
+
+        if (molBlock.posres_xB.size() > 0)
+        {
+            H5mdFixedDataSet<RVec> dataPosresX =
+                    H5mdDataSetBuilder<RVec>(molContainer, c_positionRestraintsBName)
+                            .withDimension({ molBlock.posres_xB.size() })
+                            .build();
+            dataPosresX.writeData(molBlock.posres_xB);
+        }
+    }
 }
 
 } // namespace gmx
