@@ -92,88 +92,88 @@
     <Int Name="Length">59</Int>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>0.14139999</Real>
-    <Real>0.1997</Real>
-    <Real>0.1997</Real>
-    <Real>0.1997</Real>
-    <Real>0.096199997</Real>
-    <Real>0.0889</Real>
+    <Real>0.1414</Real>
+    <Real>0.19969999999999999</Real>
+    <Real>0.19969999999999999</Real>
+    <Real>0.19969999999999999</Real>
+    <Real>0.096199999999999994</Real>
+    <Real>0.088900000000000007</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>-0.059700001</Real>
-    <Real>0.029999999</Real>
-    <Real>0.029999999</Real>
-    <Real>0.029999999</Real>
-    <Real>0.61629999</Real>
-    <Real>-0.5722</Real>
-    <Real>-0.38209999</Real>
-    <Real>0.26809999</Real>
-    <Real>-0.17470001</Real>
+    <Real>-0.059700000000000003</Real>
+    <Real>0.029999999999999999</Real>
+    <Real>0.029999999999999999</Real>
+    <Real>0.029999999999999999</Real>
+    <Real>0.61629999999999996</Real>
+    <Real>-0.57220000000000004</Real>
+    <Real>-0.3821</Real>
+    <Real>0.2681</Real>
+    <Real>-0.17469999999999999</Real>
     <Real>0.1067</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>-0.2093</Real>
-    <Real>0.076399997</Real>
-    <Real>0.076399997</Real>
-    <Real>0.076399997</Real>
-    <Real>0.77310002</Real>
-    <Real>-0.80549997</Real>
-    <Real>-0.80549997</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
+    <Real>-0.20930000000000001</Real>
+    <Real>0.076399999999999996</Real>
+    <Real>0.076399999999999996</Real>
+    <Real>0.076399999999999996</Real>
+    <Real>0.77310000000000001</Real>
+    <Real>-0.80549999999999999</Real>
+    <Real>-0.80549999999999999</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
   </Sequence>
   <Sequence Name="ParticleMass">
     <Int Name="Length">59</Int>
-    <Real>8.5170002</Real>
-    <Real>8.5170002</Real>
+    <Real>8.5169999999999995</Real>
+    <Real>8.5169999999999995</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
-    <Real>13.018</Real>
+    <Real>13.018000000000001</Real>
     <Real>0</Real>
-    <Real>7.5170002</Real>
-    <Real>7.5170002</Real>
+    <Real>7.5170000000000003</Real>
+    <Real>7.5170000000000003</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>12.01</Real>
     <Real>16</Real>
-    <Real>15.018</Real>
+    <Real>15.018000000000001</Real>
     <Real>0</Real>
-    <Real>13.018</Real>
+    <Real>13.018000000000001</Real>
     <Real>0</Real>
-    <Real>7.5170002</Real>
-    <Real>7.5170002</Real>
+    <Real>7.5170000000000003</Real>
+    <Real>7.5170000000000003</Real>
     <Real>0</Real>
     <Real>0</Real>
     <Real>0</Real>

@@ -157,6 +157,34 @@ void labelInternalTopologyVersion(const hid_t baseContainer);
  */
 void labelTopologyName(const hid_t baseContainer, const char* topName);
 
+/*! \brief Write a set of molecule type blocks in \p moltypes to the HDF5 container \p baseContainer.
+ *
+ * The hierarchy is as follows:
+ *
+ * /h5md/modules/gromacs_topology  (group (baseContainer) for H5md internal topology module)
+ * \++ molecule_names              (attribute for the names of molecules in the system)
+ * \-- molecule1                   (group for molecule 1, same group name as molecule_names[0])
+ *     \++ nr_particles            (attribute for the number of particles in molecule 1)
+ *     \++ nr_residues             (attribute for the number of residues in molecule 1)
+ *     \-- id                      (dataset for the atomic identifier in molecule 1)
+ *     \-- mass                    (dataset for the atomic masses in molecule 1)
+ *     \-- charge                  (dataset for the atomic charges in molecule 1)
+ *     \-- species                 (dataset for the atomic species in molecule 1)
+ *     \-- particle_name           (dataset for the atomic names (indices into particle name table) in molecule 1)
+ *     \-- particle_name_table     (dataset for the atomic name lookup table in molecule 1)
+ *     \-- residue_id              (dataset for the residue identifier in molecule 1)
+ *     \-- sequence                (dataset for the residue sequence (indices into residue name table) in molecule 1)
+ *     \-- residue_name            (dataset for the residue names (indices into residue name table) in molecule 1)
+ *     \-- residue_name_table      (dataset for the residue name lookup table in molecule 1)
+ *
+ * \note: The molecule_names attribute is needed when writing the molecule blocks. Hence, firstly run
+ *        writeMoleculeTypes() and then run writeMoleculeBlocks().
+ *
+ * \param[in] baseContainer The HDF5 container to write to
+ * \param[in] moltypes The molecule types to write
+ */
+void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> moltypes);
+
 } // namespace gmx
 
 #endif // GMX_FILEIO_H5MD_TOPOLOGYUTILS_H

@@ -43,6 +43,8 @@
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_fixeddataset.h"
+#include "gromacs/fileio/h5md/h5md_group.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -95,6 +97,8 @@ constexpr char c_disulfideBondsName[] = "disulfide_bonds";
 constexpr char c_h5mdInternalTopologyVersionAttributeKey[] = "version";
 //! \brief Name of attribute for topology name.
 constexpr char c_h5mdInternalTopologyNameAttributeKey[] = "system_name";
+//! \brief Name of attribute for the names of the molecule types.
+constexpr char c_moleculeNamesAttributeKey[] = "molecule_names";
 
 namespace
 {
@@ -551,6 +555,40 @@ void labelInternalTopologyVersion(const hid_t baseContainer)
 void labelTopologyName(const hid_t baseContainer, const char* topName)
 {
     setAttribute(baseContainer, c_h5mdInternalTopologyNameAttributeKey, topName);
+}
+
+void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> moltypes)
+{
+    const int numMolTypes = moltypes.size();
+    // Nothing to write
+    if (moltypes.empty())
+    {
+        return;
+    }
+
+    std::vector<std::string> moltypeNames(numMolTypes);
+    for (int index = 0; index < numMolTypes; ++index)
+    {
+        const gmx_moltype_t& moltype     = moltypes[index];
+        const std::string&   moltypeName = *(moltype.name);
+        moltypeNames[index]              = moltypeName;
+        const auto [molContainer, molGuard] =
+                makeH5mdGroupGuard(createGroup(baseContainer, moltypeName.c_str()));
+
+        // Create an AtomRange to iterate over the molecule type
+        gmx_mtop_t tempMtop;
+        detail::mtopFromMolType(&tempMtop, moltype);
+        AtomRange atomRange(tempMtop);
+
+        // Write atomic properties information
+        writeAtomicProperties(atomRange, molContainer);
+
+        // Write sequence/residue information
+        writeResidueInfo(atomRange, molContainer);
+
+        // TODO: Write interaction list and exclusions list - MR !5524/!5523
+    }
+    setAttributeVector(baseContainer, c_moleculeNamesAttributeKey, moltypeNames);
 }
 
 } // namespace gmx

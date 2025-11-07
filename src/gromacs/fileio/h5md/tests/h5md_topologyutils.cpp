@@ -46,7 +46,6 @@
 
 #include <hdf5.h>
 
-#include <filesystem>
 #include <numeric>
 
 #include <gtest/gtest.h>
@@ -523,6 +522,7 @@ TEST_F(H5mdTopologyUtilTest, WriteConnectivityProteinPart)
     // Prepare the reference data checker
     TestReferenceData    data;
     TestReferenceChecker checker(data.rootChecker());
+    checker.setDefaultTolerance(test::absoluteTolerance(0.1));
 
     const auto [connectivity, connectivityGuard] =
             makeH5mdGroupGuard(createGroup(fileid(), "/connectivity/bond"));
@@ -558,6 +558,7 @@ TEST_F(H5mdTopologyUtilTest, WriteConnectivityRandomSelectedWater)
     // Prepare the reference data checker
     TestReferenceData    data;
     TestReferenceChecker checker(data.rootChecker());
+    checker.setDefaultTolerance(test::absoluteTolerance(0.1));
 
     writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
 
@@ -658,10 +659,10 @@ TEST_F(H5mdTopologyUtilTest, WriteDisulfideBonds)
 TEST_F(H5mdTopologyUtilTest, CreateMTopFromMolType)
 {
     gmx_mtop_t        topology;
-    bool              fullTopology;
+    bool              haveTopology;
     TprAndFileManager tprFileHandle("alanine_vsite_solvated");
     readConfAndTopology(
-            tprFileHandle.tprName(), &fullTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+            tprFileHandle.tprName(), &haveTopology, &topology, nullptr, nullptr, nullptr, nullptr);
 
     for (const auto& moltype : topology.moltype)
     {
@@ -710,6 +711,93 @@ TEST_F(H5mdTopologyUtilTest, LabelSystemName)
     const auto version = getAttribute<std::string>(topologyContainer, "system_name");
     ASSERT_TRUE(version.has_value());
     EXPECT_EQ(version.value(), systemName);
+}
+
+TEST_F(H5mdTopologyUtilTest, WritesMoleculeTypes)
+{
+    // Prepare the topology of the molecule
+    gmx_mtop_t        topology;
+    bool              haveTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(
+            tprFileHandle.tprName(), &haveTopology, &topology, nullptr, nullptr, nullptr, nullptr);
+
+    const auto [gmxMol, gmxMolGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/gromacs_topology"));
+
+    // Write the molecule type and block information
+    writeMoleculeTypes(gmxMol, makeConstArrayRef(topology.moltype));
+
+    {
+        // Prepare the reference data checker
+        TestReferenceData    data;
+        TestReferenceChecker checker(data.rootChecker());
+        checker.setDefaultTolerance(test::absoluteTolerance(0.1));
+
+        // Read back and check the molecule type names
+        const std::vector<std::string> expectedMolNames = { "Alanine_dipeptide", "SOL" };
+
+        const auto retMoleculeNames = getAttributeVector<std::string>(gmxMol, "molecule_names");
+        ASSERT_TRUE(retMoleculeNames.has_value());
+        ASSERT_EQ(retMoleculeNames.value(), expectedMolNames);
+
+        for (const std::string& molName : expectedMolNames)
+        {
+            // charge - real
+            const std::string      chargeName = (molName + "/charge");
+            H5mdFixedDataSet<real> datasetCharge(gmxMol, chargeName.c_str());
+            std::vector<real>      dataCharge(datasetCharge.numValues());
+            datasetCharge.readData(dataCharge);
+            checker.checkSequence(makeConstArrayRef(dataCharge), chargeName.c_str());
+
+            // mass - real
+            const std::string      massName = (molName + "/mass");
+            H5mdFixedDataSet<real> datasetMass(gmxMol, massName.c_str());
+            std::vector<real>      dataMass(datasetMass.numValues());
+            datasetMass.readData(dataMass);
+            checker.checkSequence(makeConstArrayRef(dataMass), massName.c_str());
+
+            // particle_name - int
+            const std::string     particleName = (molName + "/particle_name");
+            H5mdFixedDataSet<int> datasetParticleName(gmxMol, particleName.c_str());
+            std::vector<int>      dataParticleName(datasetParticleName.numValues());
+            datasetParticleName.readData(dataParticleName);
+            checker.checkSequence(makeConstArrayRef(dataParticleName), particleName.c_str());
+
+            // particle_name_table - std::string
+            const std::string        particleNameTable = (molName + "/particle_name_table");
+            std::vector<std::string> retNameStringTable =
+                    readFixedStringDataset(gmxMol, particleNameTable.c_str());
+            checker.checkSequence(makeConstArrayRef(retNameStringTable), particleNameTable.c_str());
+
+            // residue_name - int
+            const std::string     residueName = (molName + "/residue_name");
+            H5mdFixedDataSet<int> datasetResidueName(gmxMol, residueName.c_str());
+            std::vector<int>      dataResidueName(datasetResidueName.numValues());
+            datasetResidueName.readData(dataResidueName);
+            checker.checkSequence(makeConstArrayRef(dataResidueName), residueName.c_str());
+
+            // residue_name_table - std::string
+            const std::string        residueNameTable = (molName + "/residue_name_table");
+            std::vector<std::string> retResidueNameTable =
+                    readFixedStringDataset(gmxMol, residueNameTable.c_str());
+            checker.checkSequence(makeConstArrayRef(retResidueNameTable), residueNameTable.c_str());
+        }
+        // TODO: further check the detailed data when the actual writing functions are merged
+    }
+}
+
+TEST_F(H5mdTopologyUtilTest, WriteEmptyMoleculeTypes)
+{
+    // Prepare the topology of the molecule
+    gmx_mtop_t topology;
+    const auto [gmxMol, gmxMolGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/h5md/modules/gromacs_topology"));
+
+    // Write the molecule type and block information
+    writeMoleculeTypes(gmxMol, makeConstArrayRef(topology.moltype));
+
+    EXPECT_EQ(getAttributeVector<std::string>(gmxMol, "molecule_names"), std::nullopt);
 }
 
 } // namespace

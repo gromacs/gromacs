@@ -49,21 +49,21 @@
   </Sequence>
   <Sequence Name="ParticleCharge">
     <Int Name="Length">15</Int>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
-    <Real>-0.83399999</Real>
-    <Real>0.417</Real>
-    <Real>0.417</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
   </Sequence>
   <Sequence Name="ParticleMass">
     <Int Name="Length">15</Int>
