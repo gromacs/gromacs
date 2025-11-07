@@ -56,6 +56,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -798,6 +799,470 @@ TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
     EXPECT_THROW(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0), gmx::FileIOError);
     EXPECT_THROW(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0), gmx::FileIOError);
     EXPECT_NO_THROW(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
+}
+
+//! \brief Helper function to return an ArrayRef<RVec> from an input rvec pointer \p values.
+ArrayRef<RVec> asRVecArray(rvec* values, int64_t numValues)
+{
+    return arrayRefFromArray(reinterpret_cast<RVec*>(values), numValues);
+}
+
+using H5mdReadNextFrame = H5mdIoTest;
+
+TEST_F(H5mdReadNextFrame, Works)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    const int  numAtoms = 6;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    constexpr int                            numFrames = 3;
+    const std::array<int64_t, numFrames>     steps     = { 5001, 10, 200050 };
+    const std::array<double, numFrames>      times     = { 50.1, -1.15, 256.1 };
+    std::array<std::vector<RVec>, numFrames> positions;
+    std::array<std::vector<RVec>, numFrames> velocities;
+    std::array<std::vector<RVec>, numFrames> forces;
+    std::array<matrix, numFrames>            boxes;
+
+    // Write unique per-frame values to the file (and to our per-frame buffers above for verification)
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        positions[frameIndex].resize(numAtoms);
+        velocities[frameIndex].resize(numAtoms);
+        forces[frameIndex].resize(numAtoms);
+        // For each atom in this frame, create a unique value and append to all per-frame vectors
+        RVec frameValue = static_cast<real>(frameIndex) * RVec{ 1.0, 0.1, 0.01 };
+        for (hsize_t atomIndex = 0; atomIndex < numAtoms; ++atomIndex)
+        {
+            frameValue += { 1.0, 1.0, 1.0 };
+            positions[frameIndex][atomIndex]  = frameValue;
+            velocities[frameIndex][atomIndex] = static_cast<real>(10.0) * frameValue;
+            forces[frameIndex][atomIndex]     = static_cast<real>(100.0) * frameValue;
+        }
+
+        // Generate unique values for the box matrix
+        for (int i = 0; i < DIM; ++i)
+        {
+            for (int j = 0; j < DIM; ++j)
+            {
+                boxes[frameIndex][i][j] = (9 * frameIndex) + (3 * i) + j;
+            }
+        }
+
+
+        file().writeNextFrame(positions[frameIndex],
+                              velocities[frameIndex],
+                              forces[frameIndex],
+                              boxes[frameIndex],
+                              steps[frameIndex],
+                              times[frameIndex]);
+    }
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        EXPECT_TRUE(file().readNextFrame(frame)) << "Must return true for a successful read";
+
+        EXPECT_TRUE(frame->bX);
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms),
+                    ::testing::Pointwise(::testing::Eq(), positions[frameIndex]));
+        EXPECT_TRUE(frame->bV);
+        EXPECT_THAT(asRVecArray(frame->v, frame->natoms),
+                    ::testing::Pointwise(::testing::Eq(), velocities[frameIndex]));
+        EXPECT_TRUE(frame->bF);
+        EXPECT_THAT(asRVecArray(frame->f, frame->natoms),
+                    ::testing::Pointwise(::testing::Eq(), forces[frameIndex]));
+        EXPECT_TRUE(frame->bX);
+        EXPECT_THAT(constArrayRefFromArray(reinterpret_cast<real*>(frame->box), DIM * DIM),
+                    ::testing::Pointwise(
+                            ::testing::FloatEq(),
+                            constArrayRefFromArray(reinterpret_cast<real*>(boxes[frameIndex]), DIM * DIM)));
+        EXPECT_TRUE(frame->bStep);
+        EXPECT_EQ(frame->step, steps[frameIndex]);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, times[frameIndex]);
+    }
+    EXPECT_FALSE(file().readNextFrame(frame))
+            << "Must return false when no more frames exist to read";
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    EXPECT_FALSE(file().readNextFrame(frame));
+    std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0.0);
+    EXPECT_TRUE(file().readNextFrame(frame));
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 0;
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 0;
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    EXPECT_FALSE(file().readNextFrame(frame));
+    EXPECT_FALSE(frame->bX);
+    EXPECT_FALSE(frame->bV);
+    EXPECT_FALSE(frame->bF);
+    EXPECT_FALSE(frame->bBox);
+    EXPECT_FALSE(frame->bStep);
+    EXPECT_FALSE(frame->bTime);
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 0;
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
+    matrix boxToWrite = { { 0.1, 0.2, 0.3 }, { 1.1, 1.2, 1.3 }, { 2.1, 2.2, 2.3 } };
+    file().writeNextFrame(valuesToWrite, {}, {}, boxToWrite, -1, -1.0);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    EXPECT_TRUE(file().readNextFrame(frame));
+    EXPECT_TRUE(frame->bX);
+    EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), valuesToWrite));
+    EXPECT_FALSE(frame->bV);
+    EXPECT_FALSE(frame->bF);
+    EXPECT_TRUE(frame->bBox) << "Simulation box must be read when positions are";
+    EXPECT_THAT(constArrayRefFromArray(reinterpret_cast<real*>(frame->box), DIM * DIM),
+                ::testing::Pointwise(
+                        ::testing::FloatEq(),
+                        constArrayRefFromArray(reinterpret_cast<real*>(boxToWrite), DIM * DIM)));
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 0;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 0;
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
+    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, -1, -1.0);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    EXPECT_TRUE(file().readNextFrame(frame));
+    EXPECT_FALSE(frame->bX);
+    EXPECT_TRUE(frame->bV);
+    EXPECT_THAT(asRVecArray(frame->v, frame->natoms), ::testing::Pointwise(::testing::Eq(), valuesToWrite));
+    EXPECT_FALSE(frame->bF);
+    EXPECT_FALSE(frame->bBox);
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 0;
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 1;
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
+    matrix boxToWrite = { { 0.1, 0.2, 0.3 }, { 1.1, 1.2, 1.3 }, { 2.1, 2.2, 2.3 } };
+    file().writeNextFrame({}, {}, valuesToWrite, boxToWrite, -1, -1.0);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    EXPECT_TRUE(file().readNextFrame(frame));
+    EXPECT_FALSE(frame->bX);
+    EXPECT_FALSE(frame->bV);
+    EXPECT_TRUE(frame->bF);
+    EXPECT_THAT(asRVecArray(frame->f, frame->natoms), ::testing::Pointwise(::testing::Eq(), valuesToWrite));
+    EXPECT_FALSE(frame->bBox);
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    // First frame: Velocity only
+    const int64_t           step1     = 1;
+    const std::vector<RVec> velocity1 = { { 0.3, 0.4, 0.5 } };
+    file().writeNextFrame({}, velocity1, {}, c_unusedBox, step1, static_cast<double>(step1));
+
+    // Second frame: Position + Force
+    const int64_t           step2     = 2;
+    const std::vector<RVec> position1 = { { 0.0, 0.1, 0.2 } };
+    const std::vector<RVec> force1    = { { 0.6, 0.7, 0.8 } };
+    file().writeNextFrame(position1, {}, force1, c_unusedBox, step2, static_cast<double>(step2));
+
+    // Third frame: Velocity + force
+    const int64_t           step3     = 3;
+    const std::vector<RVec> velocity2 = { { 1.3, 1.4, 1.5 } };
+    const std::vector<RVec> force2    = { { 1.6, 1.7, 1.8 } };
+    file().writeNextFrame({}, velocity2, force2, c_unusedBox, step3, static_cast<double>(step3));
+
+    // Fourth frame: Position only
+    const int64_t           step4     = 4;
+    const std::vector<RVec> position2 = { { 1.0, 1.1, 1.2 } };
+    file().writeNextFrame(position2, {}, {}, c_unusedBox, step4, static_cast<double>(step4));
+
+    // Fifth frame: All
+    const int64_t           step5     = 5;
+    const std::vector<RVec> position3 = { { 2.0, 2.1, 2.2 } };
+    const std::vector<RVec> velocity3 = { { 2.3, 2.4, 2.5 } };
+    const std::vector<RVec> force3    = { { 2.6, 2.7, 2.8 } };
+    file().writeNextFrame(position3, velocity3, force3, c_unusedBox, step5, static_cast<double>(step5));
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    {
+        SCOPED_TRACE("Frame 1: Velocity only");
+        file().readNextFrame(frame);
+        EXPECT_FALSE(frame->bX);
+        EXPECT_TRUE(frame->bV);
+        EXPECT_THAT(asRVecArray(frame->v, frame->natoms), ::testing::Pointwise(::testing::Eq(), velocity1));
+        EXPECT_FALSE(frame->bF);
+        EXPECT_FALSE(frame->bBox) << "Box frames are only read when positions are read";
+        EXPECT_TRUE(frame->bStep);
+        EXPECT_EQ(frame->step, step1);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, static_cast<double>(step1));
+    }
+    {
+        SCOPED_TRACE("Frame 2: Position + Force");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bX);
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), position1));
+        EXPECT_FALSE(frame->bV);
+        EXPECT_TRUE(frame->bF);
+        EXPECT_THAT(asRVecArray(frame->f, frame->natoms), ::testing::Pointwise(::testing::Eq(), force1));
+        EXPECT_TRUE(frame->bBox) << "Box frames are only read when positions are read";
+        EXPECT_TRUE(frame->bStep);
+        EXPECT_EQ(frame->step, step2);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, static_cast<double>(step2));
+    }
+    {
+        SCOPED_TRACE("Frame 3: Velocity + Force");
+        file().readNextFrame(frame);
+        EXPECT_FALSE(frame->bX);
+        EXPECT_TRUE(frame->bV);
+        EXPECT_THAT(asRVecArray(frame->v, frame->natoms), ::testing::Pointwise(::testing::Eq(), velocity2));
+        EXPECT_TRUE(frame->bF);
+        EXPECT_THAT(asRVecArray(frame->f, frame->natoms), ::testing::Pointwise(::testing::Eq(), force2));
+        EXPECT_FALSE(frame->bBox) << "Box frames are only read when positions are read";
+        EXPECT_TRUE(frame->bStep);
+        EXPECT_EQ(frame->step, step3);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, static_cast<double>(step3));
+    }
+    {
+        SCOPED_TRACE("Frame 4: Position only");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bX);
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), position2));
+        EXPECT_FALSE(frame->bV);
+        EXPECT_FALSE(frame->bF);
+        EXPECT_TRUE(frame->bBox) << "Box frames are only read when positions are read";
+        EXPECT_TRUE(frame->bStep);
+        EXPECT_EQ(frame->step, step4);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, static_cast<double>(step4));
+    }
+    {
+        SCOPED_TRACE("Frame 3: Position + Velocity + Force");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bX);
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), position3));
+        EXPECT_TRUE(frame->bV);
+        EXPECT_THAT(asRVecArray(frame->v, frame->natoms), ::testing::Pointwise(::testing::Eq(), velocity3));
+        EXPECT_TRUE(frame->bF);
+        EXPECT_THAT(asRVecArray(frame->f, frame->natoms), ::testing::Pointwise(::testing::Eq(), force3));
+        EXPECT_TRUE(frame->bBox) << "Box frames are only read when positions are read";
+        EXPECT_TRUE(frame->bStep);
+        EXPECT_EQ(frame->step, step5);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, static_cast<double>(step5));
+    }
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
+{
+    // Manually set up the trajectory tree, only position and force data sets store time!
+    const DataSetDims frameDims = { 1 };
+    {
+        const auto [positionGroup, positionGroupGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/particles/system/position"));
+        H5mdFrameDataSetBuilder<RVec>(positionGroup, "value").withFrameDimension(frameDims).build();
+        H5mdFrameDataSetBuilder<int64_t>(positionGroup, "step").build();
+        H5mdFrameDataSetBuilder<double>(positionGroup, "time").build();
+
+        const auto [velocityGroup, velocityGroupGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/particles/system/velocity"));
+        H5mdFrameDataSetBuilder<RVec>(velocityGroup, "value").withFrameDimension(frameDims).build();
+        H5mdFrameDataSetBuilder<int64_t>(velocityGroup, "step").build();
+        // No time data set here!
+
+        const auto [forceGroup, forceGroupGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/particles/system/force"));
+        H5mdFrameDataSetBuilder<RVec>(forceGroup, "value").withFrameDimension(frameDims).build();
+        H5mdFrameDataSetBuilder<int64_t>(forceGroup, "step").build();
+        H5mdFrameDataSetBuilder<double>(forceGroup, "time").build();
+
+        const auto [boxGroup, boxGroupGuard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "/particles/system/box/edges"));
+        H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
+
+        file().setupFromExistingFile();
+    }
+
+    const std::vector<RVec> valuesToWrite = { { -1.0, -1.0, -1.0 } };
+
+    // Frame 1: Write velocities only (will not write time)
+    const double time1 = 1.1;
+    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 1, time1);
+
+    // Frame 2: Write position + velocity (will write time)
+    const double time2 = 2.2;
+    file().writeNextFrame(valuesToWrite, valuesToWrite, {}, c_unusedBox, 2, time2);
+
+    // Frame 3: Write position only (will write time)
+    const double time3 = 3.3;
+    file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 3, time3);
+
+    // Frame 4: Write velocities only (will not write time)
+    const double time4 = 4.4;
+    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 4, time4);
+
+    // Frame 5: Write velocities + force (will write time)
+    const double time5 = 5.5;
+    file().writeNextFrame({}, valuesToWrite, valuesToWrite, c_unusedBox, 5, time5);
+
+    // Frame 1: Write force only (will write time)
+    const double time6 = 6.6;
+    file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 6, time6);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+    {
+        SCOPED_TRACE("Read frame 1 (velocity only, will not have time)");
+        file().readNextFrame(frame);
+        EXPECT_FALSE(frame->bTime);
+    }
+    {
+        SCOPED_TRACE("Read frame 2 (position + velocity, will have time)");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, time2);
+    }
+    {
+        SCOPED_TRACE("Read frame 3 (position only, will have time)");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, time3);
+    }
+    {
+        SCOPED_TRACE("Read frame 4 (velocity only, will not have time)");
+        file().readNextFrame(frame);
+        EXPECT_FALSE(frame->bTime);
+    }
+    {
+        SCOPED_TRACE("Read frame 5 (velocity + force, will have time)");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, time5);
+    }
+    {
+        SCOPED_TRACE("Read frame 6 (force only, will have time)");
+        file().readNextFrame(frame);
+        EXPECT_TRUE(frame->bTime);
+        EXPECT_FLOAT_EQ(frame->time, time6);
+    }
+    done_frame(frame);
+}
+
+TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    const int  numAtoms = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = numAtoms;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const std::vector<RVec> valuesToWrite = { { -1.0, -1.0, -1.0 } };
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, -1, -1.0);
+
+    t_trxframe* frame;
+    snew(frame, 1);
+
+    file().readNextFrame(frame);
+    EXPECT_FALSE(frame->bAtoms);
+    EXPECT_FALSE(frame->bLambda);
+    EXPECT_FALSE(frame->bFepState);
+    EXPECT_FALSE(frame->bIndex);
+    EXPECT_FALSE(frame->bPBC);
+    EXPECT_FALSE(frame->bPrec); // check this for reduced-precision trajectories separately
+#if GMX_DOUBLE
+    EXPECT_TRUE(frame->bDouble);
+#else
+    EXPECT_FALSE(frame->bDouble);
+#endif
+
+    done_frame(frame);
 }
 
 } // namespace

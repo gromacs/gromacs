@@ -61,6 +61,7 @@ enum class PbcType : int;
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_inputrec;
+struct t_trxframe;
 
 namespace gmx
 {
@@ -109,13 +110,71 @@ private:
     {
     public:
         //! \brief Constructor.
-        TrajectoryReadCursor(H5mdParticleBlock&& block) : block_{ std::move(block) } {}
+        TrajectoryReadCursor(H5mdParticleBlock&& block) :
+            block_{ std::move(block) },
+            nextPositionFrameToRead_{ 0 },
+            nextVelocityFrameToRead_{ 0 },
+            nextForceFrameToRead_{ 0 }
+        {
+        }
+
         //! \brief Return the particle block.
         H5mdParticleBlock& block() { return block_; }
+
+        /*! \brief Check which data blocks are available for the next frame and return whether a next frame exists.
+         *
+         * \param[out] hasPosition Whether or not position data exist for the next frame.
+         * \param[out] hasVelocity Whether or not velocity data exist for the next frame.
+         * \param[out] hasForce    Whether or not force data exist for the next frame.
+         * \param[out] hasBox      Whether or not simulation box data exist for the next frame.
+         * \param[out] hasStep     Whether or not step data exist for the next frame.
+         * \param[out] hasTime     Whether or not time data exist for the next frame.
+         *
+         * \returns True if a next frame exists to read, otherwise false.
+         */
+
+        bool nextFrameContents(bool* hasPosition,
+                               bool* hasVelocity,
+                               bool* hasForce,
+                               bool* hasBox,
+                               bool* hasStep,
+                               bool* hasTime);
+
+        /*! \brief Read the next frame into given data buffers.
+         *
+         * \note This attempts to read the next frame for all non-empty input data, without checking
+         * that they are stored at the same simulation step and time. To read the data in sync,
+         * first make a call to \c nextFrameContents, which sets flags corresponding to the the data
+         * blocks found in the next frame. Then use those flags to select the output
+         * blocks in a call to this function.
+         *
+         * \param[out] positions     Buffer to read position data into (or empty if not to read).
+         * \param[out] velocities    Buffer to read velocity data into (or empty if not to read).
+         * \param[out] forces        Buffer to read force data into (or empty if not to read).
+         * \param[out] box           Buffer to read simulation box data into.
+         * \param[out] step          Buffer to read step into.
+         * \param[out] time          Buffer to read simulation time into.
+         *
+         * \returns True if a frame was read, otherwise false.
+         *
+         * \throws gmx::FileIOError if \p position, \p velocity or \p force data is given
+         *     but the corresponding data set has not been created, or if the size of
+         *     the data buffers do not match the number of atoms of the system.
+         */
+        bool readNextFrame(ArrayRef<RVec> position,
+                           ArrayRef<RVec> velocity,
+                           ArrayRef<RVec> force,
+                           matrix         box,
+                           int64_t*       step,
+                           double*        time);
 
     private:
         //! \brief Particle block.
         H5mdParticleBlock block_;
+
+        int64_t nextPositionFrameToRead_;
+        int64_t nextVelocityFrameToRead_;
+        int64_t nextForceFrameToRead_;
     };
 
     //! \brief List of particle blocks in /particles/, with the key being the block name
@@ -204,6 +263,15 @@ public:
      * \note Ignores trajectory data in other subgroups of /particles.
      */
     void setupFromExistingFile();
+
+    /*! \brief Read the next \p frame of the trajectory.
+     *
+     * \param[out] frame         Container to read data into.
+     * \param[in]  selectionName Name of group to read frame for.
+     *
+     * \returns True if a frame was read, otherwise false.
+     */
+    bool readNextFrame(t_trxframe* frame, const std::string& selectionName = "system");
 
     /*! \brief Write input data as the next frame of the trajectory.
      *

@@ -52,10 +52,10 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -538,6 +538,7 @@ void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inpu
     GMX_UNUSED_VALUE(inputRecord);
 #endif
 }
+
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selectionName)
 {
@@ -587,6 +588,76 @@ void H5md::setupFromExistingFile()
 {
 #if GMX_USE_HDF5
     setupParticleBlockForGroupFromExistingFile(c_fullSystemGroupName);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+bool H5md::readNextFrame(t_trxframe* frame, const std::string& selectionName)
+{
+#if GMX_USE_HDF5
+    bool frameWasRead = false;
+
+    // TODO: We should check this in the file (and use appropriate conversion when reading)
+    //
+    // The current data set opening framework does not support opening double-precision `real`
+    // data as single-precision (this results in a throw during setup). So for now bDouble
+    // always matches the build precision.
+    //
+    // Since reading trajectory data from any-precision builds is wanted we need to expand
+    // this and then set bDouble from the actual precision stored in the data sets.
+    //
+    // See issue #5474
+#    if GMX_DOUBLE
+    frame->bDouble = true;
+#    else
+    frame->bDouble = false;
+#    endif
+    frame->bLambda = false;
+    // TODO: This should be read from the file
+    frame->bPrec = false;
+    frame->prec  = 0.0;
+
+    TrajectoryReadCursor& readCursor = particleBlocks_.at(selectionName);
+    if (readCursor.nextFrameContents(
+                &frame->bX, &frame->bV, &frame->bF, &frame->bBox, &frame->bStep, &frame->bTime))
+    {
+        ArrayRef<RVec> positions{};
+        ArrayRef<RVec> velocities{};
+        ArrayRef<RVec> forces{};
+
+        frame->natoms = readCursor.block().numParticles();
+        if (frame->bX)
+        {
+            srenew(frame->x, frame->natoms);
+            positions = arrayRefFromArray(reinterpret_cast<RVec*>(frame->x), frame->natoms);
+        }
+        if (frame->bV)
+        {
+            srenew(frame->v, frame->natoms);
+            velocities = arrayRefFromArray(reinterpret_cast<RVec*>(frame->v), frame->natoms);
+        }
+        if (frame->bF)
+        {
+            srenew(frame->f, frame->natoms);
+            forces = arrayRefFromArray(reinterpret_cast<RVec*>(frame->f), frame->natoms);
+        }
+
+        double timeAsDouble;
+        frameWasRead = readCursor.readNextFrame(
+                positions, velocities, forces, frame->box, &frame->step, &timeAsDouble);
+
+        if (frame->bTime)
+        {
+            frame->time = timeAsDouble;
+        }
+    }
+
+    return frameWasRead;
+#else
+    throw gmx::NotImplementedError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+    GMX_UNUSED_VALUE(frame);
+    GMX_UNUSED_VALUE(selectionName);
 #endif
 }
 
@@ -641,6 +712,118 @@ void H5md::writeNextFrame(ArrayRef<const RVec> positions,
     GMX_UNUSED_VALUE(time);
 #endif
 }
+
+#if GMX_USE_HDF5
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+bool H5md::TrajectoryReadCursor::nextFrameContents(bool* hasPosition,
+                                                   bool* hasVelocity,
+                                                   bool* hasForce,
+                                                   bool* hasBox,
+                                                   bool* hasStep,
+                                                   bool* hasTime)
+{
+    const std::optional<int64_t> positionStep =
+            block_.hasPosition() ? block_.position()->readStepAtIndex(nextPositionFrameToRead_)
+                                 : std::nullopt;
+    const std::optional<int64_t> velocityStep =
+            block_.hasVelocity() ? block_.velocity()->readStepAtIndex(nextVelocityFrameToRead_)
+                                 : std::nullopt;
+    const std::optional<int64_t> forceStep =
+            block_.hasForce() ? block_.force()->readStepAtIndex(nextForceFrameToRead_) : std::nullopt;
+
+    // Positions, velocities and forces may be sampled at different frequencies.
+    // To determine the next frame to read we need to calculate the minimum simulation
+    // step of the next frame for all trajectory data. All data sets whose next simulation
+    // step matches this minimum are those which we can read data from for the next frame.
+    std::optional<int64_t> minimumStep = std::nullopt;
+    for (const auto& blockStep : { positionStep, velocityStep, forceStep })
+    {
+        // The order in this condition is important: we first check if we *do not* have
+        // a minimum step, in which case we always take the current block value.
+        // Only after we have found a step from a block do we compare it to the new block.
+        if (!minimumStep.has_value() || (blockStep.has_value() && blockStep.value() < minimumStep.value()))
+        {
+            minimumStep = blockStep;
+        }
+    }
+
+    if (minimumStep.has_value())
+    {
+        *hasPosition = positionStep.has_value() && (positionStep.value() == minimumStep.value());
+        *hasVelocity = velocityStep.has_value() && (velocityStep.value() == minimumStep.value());
+        *hasForce    = forceStep.has_value() && (forceStep.value() == minimumStep.value());
+        *hasBox      = *hasPosition;
+        *hasStep     = true;
+        *hasTime     = (*hasPosition && block_.position()->hasTime())
+                   || (*hasVelocity && block_.velocity()->hasTime())
+                   || (*hasForce && block_.force()->hasTime());
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
+                                               ArrayRef<RVec> velocities,
+                                               ArrayRef<RVec> forces,
+                                               matrix         box,
+                                               int64_t*       step,
+                                               double*        time)
+{
+    // Helper for error message creation when writing each array to the data sets
+    const auto blockNotFoundError = [&](const char* blockType)
+    {
+        return gmx::formatString(
+                "Cannot read %s for group '%s': no data set exists", blockType, c_fullSystemGroupName);
+    };
+
+    bool                   frameWasRead    = false;
+    std::optional<int64_t> stepThatWasRead = std::nullopt;
+    if (!positions.empty())
+    {
+        throwUponH5mdError(!block_.hasPosition(), blockNotFoundError("positions"));
+        frameWasRead = block_.position()->readFrame(nextPositionFrameToRead_, positions, step, time)
+                       || frameWasRead;
+        // TODO: For a constant box we must also read it!
+        throwUponH5mdError(!block_.hasBox(), blockNotFoundError("box"));
+        block_.box()->readFrame(nextPositionFrameToRead_,
+                                arrayRefFromArray<real>(reinterpret_cast<real*>(box), DIM * DIM));
+
+        throwUponH5mdError(
+                stepThatWasRead.has_value() && *step != stepThatWasRead.value(),
+                "Tried to read trajectory data for different simulation steps as the next frame");
+        stepThatWasRead = *step;
+        ++nextPositionFrameToRead_;
+    }
+    if (!velocities.empty())
+    {
+        throwUponH5mdError(!block_.hasVelocity(), blockNotFoundError("velocities"));
+        frameWasRead = block_.velocity()->readFrame(nextVelocityFrameToRead_, velocities, step, time)
+                       || frameWasRead;
+
+        throwUponH5mdError(
+                stepThatWasRead.has_value() && *step != stepThatWasRead.value(),
+                "Tried to read trajectory data for different simulation steps as the next frame");
+        stepThatWasRead = *step;
+        ++nextVelocityFrameToRead_;
+    }
+    if (!forces.empty())
+    {
+        throwUponH5mdError(!block_.hasForce(), blockNotFoundError("forces"));
+        frameWasRead = block_.force()->readFrame(nextForceFrameToRead_, forces, step, time) || frameWasRead;
+
+        throwUponH5mdError(
+                stepThatWasRead.has_value() && *step != stepThatWasRead.value(),
+                "Tried to read trajectory data for different simulation steps as the next frame");
+        stepThatWasRead = *step;
+        ++nextForceFrameToRead_;
+    }
+    return frameWasRead;
+}
+#endif
 
 } // namespace gmx
 
