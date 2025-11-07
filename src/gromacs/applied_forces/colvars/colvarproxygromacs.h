@@ -97,8 +97,6 @@ protected:
 
 
 public:
-    friend class cvm::atom;
-
     /*! \brief Construct ColvarProxyGromacs from its parameters
      *
      * \param[in] colvarsConfigString Content of the colvars input file.

@@ -28,7 +28,7 @@ Configuration files for input
 
 Colvars configuration files are plain text files describing specific collective variables and
 biasing and analysis algorithms to be applied onto them.
-Full documentation is available `here <https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html>`_.
+Full documentation is available `here <https://colvars.github.io/gromacs-2026/colvars-refman-gromacs.html>`_.
 
 Additionally, the Colvars Dashboard extension within VMD can be used to prepare a Colvars
 configuration file, leveraging input templates for many features; VMD version 1.9.4 or later is

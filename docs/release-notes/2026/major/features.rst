@@ -7,3 +7,23 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+
+Collective variables module (Colvars) update
+""""""""""""""""""""""""""""""""""""""""""""
+
+The (`Colvars <https://colvars.github.io>`_) library for enhanced sampling simulations included
+in |Gromacs| has been updated to version 2025-10-13.
+
+This update brings many improvements, including:
+- performance improvements for moving frame of reference calculations
+- improved OPES implementation
+- improved moving restraint logic, allowing for moving harmonic walls
+- more flexible definitions of grids on CVs
+A complete list of changes can be found `here <https://gitlab.com/gromacs/gromacs/-/merge_requests/5397>`_.
+
+For documentation see :ref:`this section <colvars>`
+of the |Gromacs| doc along with the `Colvars documentation page
+<https://colvars.github.io/gromacs-2026/colvars-refman-gromacs.html>`_ dedicated to |Gromacs| 2026.
+Messages about Colvars in the |Gromacs| discussion forum should be tagged
+with the `colvars keyword <https://gromacs.bioexcel.eu/tag/colvars>`_ for
+easier consultation.

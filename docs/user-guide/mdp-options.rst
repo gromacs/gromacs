@@ -3648,8 +3648,8 @@ For further details about Colvars interface implementation follow :ref:`colvars`
 
    Name of the Colvars configuration file, using options
    specific to Colvars that are documented at:
-   `https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html
-   <https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html>`_.
+   `https://colvars.github.io/gromacs-2026/colvars-refman-gromacs.html
+   <https://colvars.github.io/gromacs-2026/colvars-refman-gromacs.html>`_.
    The file name can be either an absolute path, or a path relative to the
    working directory when :ref:`gmx grompp` is called.
 

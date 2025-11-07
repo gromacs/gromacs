@@ -56,6 +56,7 @@
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "colvars_version.h"
 #include "colvarsforceprovider.h"
 #include "colvarsoptions.h"
 #include "colvarssimulationsparameters.h"

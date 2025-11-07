@@ -19,6 +19,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+#if defined(NAMD_VERSION)
+#include "CkLoopAPI.h"
+#include "CkLambda.h"
+#define OPES_THREADING
+#endif
+
 #include "colvarbias_opes.h"
 #include "colvarbias.h"
 #include "colvardeps.h"
@@ -35,6 +41,7 @@
 #include <unordered_set>
 #include <limits>
 #include <sstream>
+
 
 colvarbias_opes::colvarbias_opes(char const *key):
   colvarbias(key), m_kbt(0), m_barrier(0), m_biasfactor(0),
@@ -55,8 +62,14 @@ colvarbias_opes::colvarbias_opes(char const *key):
   m_traj_line(traj_line{0}), m_is_first_step(true),
   m_pmf_grid_on(false), m_reweight_grid(nullptr),
   m_pmf_grid(nullptr), m_pmf_hist_freq(0), m_pmf_shared(true),
-  m_explore(false)
+  m_explore(false), m_inf_biasfactor(false)
 {
+#ifdef OPES_THREADING
+  provide(f_cvb_smp, cvm::proxy->get_smp_mode() == colvarproxy_smp::smp_mode_t::inner_loop);
+  if (is_available(f_cvb_smp)){
+    enable(f_cvb_smp); // Enabled by default
+  }
+#endif
 }
 
 int colvarbias_opes::init(const std::string& conf) {
@@ -66,6 +79,12 @@ int colvarbias_opes::init(const std::string& conf) {
   m_temperature = cvm::proxy->target_temperature();
   m_kbt = m_temperature * cvm::proxy->boltzmann();
   get_keyval(conf, "newHillFrequency", m_pace);
+  if (m_pace % time_step_factor != 0) {
+    error_code |= cvm::error("newHillFrequency (currently " + cvm::to_str(m_pace) +
+                                 ") must be a multiple of timeStepFactor (" +
+                                 cvm::to_str(time_step_factor) + ").\n",
+                             COLVARS_INPUT_ERROR);
+  }
   get_keyval(conf, "barrier", m_barrier);
   get_keyval(conf, "explore", m_explore, false);
   if (m_barrier < 0) {
@@ -77,8 +96,8 @@ int colvarbias_opes::init(const std::string& conf) {
     cvm::log("WARNING: OPES should not be run without a thermostat or at 0 Kelvin!\n");
   }
   m_biasfactor = m_barrier / m_kbt;
-  const bool inf_biasfactor = biasfactor_str == "inf" || biasfactor_str == "INF";
-  if (inf_biasfactor) {
+  m_inf_biasfactor = biasfactor_str == "inf" || biasfactor_str == "INF";
+  if (m_inf_biasfactor) {
     m_biasfactor = std::numeric_limits<cvm::real>::infinity();
     m_bias_prefactor = 1;
     if (m_explore) {
@@ -107,7 +126,7 @@ int colvarbias_opes::init(const std::string& conf) {
   m_av_M2.assign(num_variables(), 0);
   if (m_adaptive_sigma) {
     get_keyval(conf, "adaptiveSigmaStride", m_adaptive_sigma_stride, 0);
-    if (inf_biasfactor) {
+    if (m_inf_biasfactor) {
       return cvm::error("cannot use infinite biasfactor with adaptive sigma",
                         COLVARS_INPUT_ERROR);
     }
@@ -201,17 +220,18 @@ int colvarbias_opes::init(const std::string& conf) {
   get_keyval(conf, "calcWork", m_calc_work, false);
   bool b_replicas = false;
   get_keyval(conf, "multipleReplicas", b_replicas, false);
-  if (!cvm::proxy->b_smp_active) m_num_threads = 1;
-  else m_num_threads = cvm::proxy->smp_num_threads();
+
 #ifdef OPES_THREADING
-  if (m_num_threads == -1) {
-    return cvm::error("Multithreading is not available for OPES because Colvars is not running multiple threads.");
+  get_keyval_feature(this, conf, "smp", f_cvb_smp, is_enabled(f_cvb_smp));
+  if (is_enabled(f_cvb_smp)) {
+    m_num_threads = cvm::proxy->smp_num_threads();
+  } else {
+    m_num_threads = 1;
   }
 #else
-  // if (m_num_threads > 1) {
-  //   return cvm::error("Multithreading in OPES is not compiled.\n");
-  // }
-  m_num_threads = 1;
+  if (m_num_threads > 1) {
+    return cvm::error("Multi-threading requested in OPES, which is not supported by this build.\n");
+  }
 #endif
   bool serial = false;
   get_keyval(conf, "serial", serial, false);
@@ -221,6 +241,12 @@ int colvarbias_opes::init(const std::string& conf) {
     colvarproxy *proxy = cvm::main()->proxy;
     get_keyval(conf, "replicaID", replica_id, replica_id);
     get_keyval(conf, "sharedFreq", shared_freq, output_freq);
+    if (shared_freq % time_step_factor != 0) {
+      error_code |= cvm::error("sharedFreq (currently " + cvm::to_str(shared_freq) +
+                                   ") must be a multiple of timeStepFactor (" +
+                                   cvm::to_str(time_step_factor) + ").\n",
+                               COLVARS_INPUT_ERROR);
+    }
     if (!replica_id.size()) {
       if (proxy->check_replicas_enabled() == COLVARS_OK) {
         // Obtain replicaID from the communicator
@@ -228,8 +254,9 @@ int colvarbias_opes::init(const std::string& conf) {
         cvm::log("Setting replicaID from communication layer: replicaID = "+
                  replica_id+".\n");
       } else {
-        return cvm::error("Error: using more than one replica, but replicaID "
-                          "could not be obtained.\n", COLVARS_INPUT_ERROR);
+        error_code |=
+            cvm::error("Error: using more than one replica, but replicaID could not be obtained.\n",
+                       COLVARS_INPUT_ERROR);
       }
     }
     m_num_walkers = proxy->num_replicas();
@@ -254,14 +281,19 @@ int colvarbias_opes::init(const std::string& conf) {
         return cvm::error("CV " + (*it) + " not found\n");
       }
     }
-    m_reweight_grid = std::unique_ptr<colvar_grid_scalar>(new colvar_grid_scalar(m_pmf_cvs));
-    m_pmf_grid = std::unique_ptr<colvar_grid_scalar>(new colvar_grid_scalar(m_pmf_cvs));
-    get_keyval(conf, "pmfHistoryFrequency", m_pmf_hist_freq, 0);
+    key_lookup(conf, "grid", &grid_conf);
+    m_reweight_grid.reset(new colvar_grid_scalar(m_pmf_cvs, nullptr, false, grid_conf));
+    m_pmf_grid.reset(new colvar_grid_scalar(m_pmf_cvs, m_reweight_grid));
+    get_keyval(conf, "pmfHistoryFrequency", m_pmf_hist_freq, output_freq);
+    if ((m_pmf_hist_freq % output_freq) != 0) {
+      error_code |= cvm::error("Error: pmfHistoryFrequency must be a multiple of outputFreq.\n",
+                               COLVARS_INPUT_ERROR);
+    }
     if (comm == multiple_replicas) {
       get_keyval(conf, "pmfShared", m_pmf_shared, true);
       if (m_pmf_shared) {
-        m_global_reweight_grid = std::unique_ptr<colvar_grid_scalar>(new colvar_grid_scalar(m_pmf_cvs));
-        m_global_pmf_grid = std::unique_ptr<colvar_grid_scalar>(new colvar_grid_scalar(m_pmf_cvs));
+        m_global_reweight_grid.reset(new colvar_grid_scalar(m_pmf_cvs, m_reweight_grid));
+        m_global_pmf_grid.reset(new colvar_grid_scalar(m_pmf_cvs, m_reweight_grid));
       }
     }
   }
@@ -272,6 +304,12 @@ int colvarbias_opes::init(const std::string& conf) {
   m_traj_line.neff = (1 + m_sum_weights) * (1 + m_sum_weights) / (1 + m_sum_weights2);
   m_traj_line.nker = m_kernels.size();
   get_keyval(conf, "printTrajectoryFrequency", m_traj_output_frequency, cvm::cv_traj_freq);
+  if (m_traj_output_frequency % time_step_factor != 0) {
+    error_code |= cvm::error(
+        "printTrajectoryFrequency (currently " + cvm::to_str(m_traj_output_frequency) +
+            ") must be a multiple of timeStepFactor (" + cvm::to_str(time_step_factor) + ").\n",
+        COLVARS_INPUT_ERROR);
+  }
   m_cv.resize(num_variables(), 0);
   showInfo();
   return error_code;
@@ -286,8 +324,8 @@ void colvarbias_opes::showInfo() const {
   printInfo("beta = ", cvm::to_str(1.0 / m_kbt));
   printInfo("depositing new kernels with newHillFrequency = ", cvm::to_str(m_pace));
   printInfo("expected barrier is ", cvm::to_str(m_barrier));
-  printInfo("using target distribution with biasfactor (gamma) = ", cvm::to_str(m_biasfactor));
-  if (m_biasfactor == std::numeric_limits<cvm::real>::infinity()) {
+  printInfo("using target distribution with biasfactor (gamma) = ", m_inf_biasfactor ? "inf" : cvm::to_str(m_biasfactor));
+  if (m_inf_biasfactor) {
     cvm::log("  (thus a uniform flat target distribution, no well-tempering)\n");
     cvm::log(this->name + ": " + "the equivalent bias temperature = inf\n");
   } else {
@@ -407,7 +445,7 @@ cvm::real colvarbias_opes::getProbAndDerivatives(
           dist[i] = tmp_dist[i];
         }
       }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
       // TODO: Test this once fine-grained parallelization is enabled
       std::vector<std::vector<cvm::real>> derivs(m_num_threads, std::vector<cvm::real>(num_variables(), 0));
       std::vector<std::vector<cvm::real>> dists(m_num_threads, std::vector<cvm::real>(num_variables(), 0));
@@ -419,11 +457,10 @@ cvm::real colvarbias_opes::getProbAndDerivatives(
         }
         *(double *)result = tmp_prob;
       };
-      const size_t numChunks = m_kernels.size();
       const size_t lowerRange = 0;
-      const size_t upperRange = numChunks - 1;
+      const size_t upperRange = m_kernels.size() - 1;
       CkLoop_Parallelize(
-        numChunks, lowerRange, upperRange,
+        m_num_threads, lowerRange, upperRange,
         worker, &prob, CKLOOP_DOUBLE_SUM, NULL);
       for (size_t i = 0; i < num_variables(); ++i) {
         for (size_t j = 0; j < m_num_threads; ++j) {
@@ -461,7 +498,7 @@ cvm::real colvarbias_opes::getProbAndDerivatives(
           dist[i] = tmp_dist[i];
         }
       }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
       // TODO: Test this once fine-grained parallelization is enabled
       std::vector<std::vector<cvm::real>> derivs(m_num_threads, std::vector<cvm::real>(num_variables(), 0));
       std::vector<std::vector<cvm::real>> dists(m_num_threads, std::vector<cvm::real>(num_variables(), 0));
@@ -474,11 +511,10 @@ cvm::real colvarbias_opes::getProbAndDerivatives(
         }
         *(double *)result = tmp_prob;
       };
-      const size_t numChunks = m_nlist_index.size();
       const size_t lowerRange = 0;
-      const size_t upperRange = numChunks - 1;
+      const size_t upperRange = m_nlist_index.size() - 1;
       CkLoop_Parallelize(
-        numChunks, lowerRange, upperRange,
+        m_num_threads, lowerRange, upperRange,
         worker, &prob, CKLOOP_DOUBLE_SUM, NULL);
       for (size_t i = 0; i < num_variables(); ++i) {
         for (size_t j = 0; j < m_num_threads; ++j) {
@@ -953,7 +989,7 @@ int colvarbias_opes::update_opes() {
               }
             }
           }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
           // TODO: Does this work??
           auto worker = [&](int start, int end, void* result) {
             double tmp_prob = 0;
@@ -964,11 +1000,10 @@ int colvarbias_opes::update_opes() {
             }
             *(double *)result = tmp_prob;
           };
-          const size_t numChunks = m_kernels.size();
           const size_t lowerRange = 0;
-          const size_t upperRange = numChunks - 1;
+          const size_t upperRange = m_kernels.size() - 1;
           CkLoop_Parallelize(
-            numChunks, lowerRange, upperRange,
+            m_num_threads, lowerRange, upperRange,
             worker, &sum_uprob, CKLOOP_DOUBLE_SUM, NULL);
 #else
           cvm::error("OPES cannot run because this binary is not linked with a supported threading library.\n");
@@ -999,7 +1034,7 @@ int colvarbias_opes::update_opes() {
                 }
               }
             }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
             auto worker = [&](int start, int end, void* result) {
               double tmp_prob = 0;
               for (int i = start; i <= end; ++i) {
@@ -1010,11 +1045,10 @@ int colvarbias_opes::update_opes() {
               }
               *(double *)result = tmp_prob;
             };
-            const size_t numChunks = m_kernels.size();
             const size_t lowerRange = 0;
-            const size_t upperRange = numChunks - 1;
+            const size_t upperRange = m_kernels.size() - 1;
             CkLoop_Parallelize(
-              numChunks, lowerRange, upperRange,
+              m_num_threads, lowerRange, upperRange,
               worker, &delta_sum_uprob, CKLOOP_DOUBLE_SUM, NULL);
 #else
             cvm::error("OPES cannot run because this binary is not linked with a supported threading library.\n");
@@ -1042,7 +1076,7 @@ int colvarbias_opes::update_opes() {
                 }
               }
             }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
             auto worker = [&](int start, int end, void* result) {
               double tmp_prob = 0;
               for (int i = start; i <= end; ++i) {
@@ -1054,11 +1088,10 @@ int colvarbias_opes::update_opes() {
               }
               *(double *)result = tmp_prob;
             };
-            const size_t numChunks = m_nlist_index.size();
             const size_t lowerRange = 0;
-            const size_t upperRange = numChunks - 1;
+            const size_t upperRange = m_nlist_index.size() - 1;
             CkLoop_Parallelize(
-              numChunks, lowerRange, upperRange,
+              m_num_threads, lowerRange, upperRange,
               worker, &delta_sum_uprob, CKLOOP_DOUBLE_SUM, NULL);
 #else
             cvm::error("OPES cannot run because this binary is not linked with a supported threading library.\n");
@@ -1087,7 +1120,7 @@ int colvarbias_opes::update_opes() {
               }
             }
           }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
           auto worker = [&](int start, int end, void* result) {
             double tmp_prob = 0;
             for (int d = start; d <= end; ++d) {
@@ -1098,12 +1131,11 @@ int colvarbias_opes::update_opes() {
             }
             *(double *)result = tmp_prob;
           };
-          const size_t numChunks = m_delta_kernels.size();
           const size_t lowerRange = 0;
-          const size_t upperRange = numChunks - 1;
+          const size_t upperRange = m_delta_kernels.size() - 1;
           double tmp = 0;
           CkLoop_Parallelize(
-            numChunks, lowerRange, upperRange,
+            m_num_threads, lowerRange, upperRange,
             worker, &tmp, CKLOOP_DOUBLE_SUM, NULL);
           delta_sum_uprob -= tmp;
 #else
@@ -1154,7 +1186,7 @@ int colvarbias_opes::update() {
     writeTrajBuffer();
     if (m_pmf_grid_on) error_code |= collectSampleToPMFGrid();
     m_is_first_step = false;
-    return COLVARS_OK;
+    return error_code;
   }
   error_code |= update_opes();
   if (error_code != COLVARS_OK) return error_code;
@@ -1211,7 +1243,11 @@ template <typename OST> OST& colvarbias_opes::write_state_data_template_(OST &os
       os << "\n";
   };
   std::ostringstream oss;
-  oss << m_biasfactor;
+  if (m_inf_biasfactor) {
+    oss << "inf";
+  } else {
+    oss << m_biasfactor;
+  }
   printFieldString("biasfactor", oss.str());
   printFieldReal("epsilon", m_epsilon);
   printFieldReal("kernel_cutoff", cvm::sqrt(m_cutoff2));
@@ -1315,8 +1351,10 @@ template <typename IST> IST& colvarbias_opes::read_state_data_template_(IST &is)
   if (old_biasfactor_str == "inf" || old_biasfactor_str == "-inf" || old_biasfactor_str == "+inf" ||
       old_biasfactor_str == "INF" || old_biasfactor_str == "-INF" || old_biasfactor_str == "+INF") {
     old_biasfactor = std::numeric_limits<cvm::real>::infinity();
+    m_inf_biasfactor = true;
   } else {
     old_biasfactor = std::stod(old_biasfactor_str);
+    m_inf_biasfactor = false;
   }
   if (std::abs(old_biasfactor - m_biasfactor) > 1e-6 * m_biasfactor) {
     cvm::log("WARNING: previous bias factor was " + cvm::to_str(old_biasfactor) +
@@ -1563,7 +1601,7 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
           }
         }
       }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
       // NOTE: No existing reduction type for finding the minimum, so I have
       //       to use such a workaround.
       std::vector<size_t> min_k_smp(m_num_threads, min_k);
@@ -1573,7 +1611,7 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
         for (int k = start; k <= end; ++k) {
           if (k == giver_k) continue;
           double norm2 = 0;
-          for (size_t j = 0; j < num_variables(); ++j) {
+          for (size_t i = 0; i < num_variables(); ++i) {
             norm2 += variables(i)->dist2( giver_center[i], m_kernels[k].m_center[i]) / (m_kernels[k].m_sigma[i] * m_kernels[k].m_sigma[i]);
             if (norm2 >= min_norm2_smp[tid]) break;
           }
@@ -1583,11 +1621,10 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
           }
         }
       };
-      const size_t numChunks = m_kernels.size();
       const size_t lowerRange = 0;
-      const size_t upperRange = numChunks - 1;
+      const size_t upperRange = m_kernels.size() - 1;
       CkLoop_Parallelize(
-        numChunks, lowerRange, upperRange,
+        m_num_threads, lowerRange, upperRange,
         worker, NULL, CKLOOP_NONE, NULL);
       const auto it_min = std::min_element(min_norm2_smp.begin(), min_norm2_smp.end());
       min_norm2 = *it_min;
@@ -1595,6 +1632,7 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
 #else
       cvm::error("OPES cannot run because this binary is not linked with a supported threading library.\n");
 #endif
+      (void) min_norm2; // Silence Clang analyzer
     }
   } else {
     if (m_num_threads == 1) {
@@ -1641,7 +1679,7 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
           }
         }
       }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
       // NOTE: No existing reduction type for finding the minimum, so I have
       //       to use such a workaround.
       std::vector<size_t> min_k_smp(m_num_threads, min_k);
@@ -1652,7 +1690,7 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
           const size_t k = m_nlist_index[nk];
           if (k == giver_k) continue;
           double norm2 = 0;
-          for (size_t j = 0; j < num_variables(); ++j) {
+          for (size_t i = 0; i < num_variables(); ++i) {
             norm2 += variables(i)->dist2( giver_center[i], m_kernels[k].m_center[i]) / (m_kernels[k].m_sigma[i] * m_kernels[k].m_sigma[i]);
             if (norm2 >= min_norm2_smp[tid]) break;
           }
@@ -1662,11 +1700,10 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
           }
         }
       };
-      const size_t numChunks = m_nlist_index.size();
       const size_t lowerRange = 0;
-      const size_t upperRange = numChunks - 1;
+      const size_t upperRange = m_nlist_index.size() - 1;
       CkLoop_Parallelize(
-        numChunks, lowerRange, upperRange,
+        m_num_threads, lowerRange, upperRange,
         worker, NULL, CKLOOP_NONE, NULL);
       const auto it_min = std::min_element(min_norm2_smp.begin(), min_norm2_smp.end());
       min_norm2 = *it_min;
@@ -1674,6 +1711,7 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
 #else
       cvm::error("OPES cannot run because this binary is not linked with a supported threading library.\n");
 #endif
+      (void) min_norm2; // Silence Clang analyzer
     }
   }
   if (num_parallel > 1) {
@@ -1710,7 +1748,11 @@ int colvarbias_opes::write_output_files() {
     // Make sure the action name compatible with the script in https://github.com/invemichele/opes/blob/master/postprocessing/State_from_Kernels.py
     if (m_explore) os_kernels << "#! SET action OPES_METAD_EXPLORE_kernels\n";
     else os_kernels << "#! SET action OPES_METAD_kernels\n";
-    os_kernels << "#! SET biasfactor " << m_biasfactor << "\n";
+    if (m_inf_biasfactor) {
+      os_kernels << "#! SET biasfactor " << "inf" << "\n";
+    } else {
+      os_kernels << "#! SET biasfactor " << m_biasfactor << "\n";
+    }
     os_kernels << "#! SET epsilon " << m_epsilon << "\n";
     os_kernels << "#! SET kernel_cutoff " << m_cutoff << "\n";
     os_kernels << "#! SET compression_threshold " << m_compression_threshold << "\n";
@@ -1790,7 +1832,7 @@ int colvarbias_opes::write_output_files() {
   return error_code;
 }
 
-void hist_to_pmf(const cvm::real kbt, const std::unique_ptr<colvar_grid_scalar>& hist, std::unique_ptr<colvar_grid_scalar>& pmf) {
+void hist_to_pmf(const cvm::real kbt, const colvar_grid_scalar *hist, std::unique_ptr<colvar_grid_scalar>& pmf) {
   // Get the sum of probabilities of all grids
   cvm::real norm_factor = 0;
   cvm::real max_prob = 0;
@@ -1850,10 +1892,10 @@ int colvarbias_opes::computePMF() {
     }
   }
   // Get the sum of probabilities of all grids
-  hist_to_pmf(m_kbt, m_reweight_grid, m_pmf_grid);
+  hist_to_pmf(m_kbt, m_reweight_grid.get(), m_pmf_grid);
   if (comm == multiple_replicas && m_pmf_shared) {
     if (cvm::main()->proxy->replica_index() == 0) {
-      hist_to_pmf(m_kbt, m_global_reweight_grid, m_global_pmf_grid);
+      hist_to_pmf(m_kbt, m_global_reweight_grid.get(), m_global_pmf_grid);
     }
   }
   if (comm == multiple_replicas) {
@@ -1927,7 +1969,7 @@ void colvarbias_opes::updateNlist(const std::vector<cvm::real>& center) {
       #pragma omp critical
       m_nlist_index.insert(m_nlist_index.end(), private_nlist_index.begin(), private_nlist_index.end());
     }
-#elif defined(CMK_SMP) && defined(USE_CKLOOP)
+#elif CMK_SMP && USE_CKLOOP
     std::vector<std::vector<size_t>> private_nlist_index(m_num_threads);
     auto worker = [&](int start, int end, void* unused){
       const int tid = cvm::proxy->smp_thread_id();
@@ -1941,14 +1983,13 @@ void colvarbias_opes::updateNlist(const std::vector<cvm::real>& center) {
         }
       }
     };
-    const size_t numChunks = m_kernels.size();
     const size_t lowerRange = 0;
-    const size_t upperRange = numChunks - 1;
+    const size_t upperRange = m_kernels.size() - 1;
     CkLoop_Parallelize(
-      numChunks, lowerRange, upperRange,
+      m_num_threads, lowerRange, upperRange,
       worker, NULL, CKLOOP_NONE, NULL);
-    for (size_t j = 0; j < m_num_threads; ++j) {
-      m_nlist_index.insert(m_nlist_index.end(), private_nlist_index[i].begin(), private_nlist_index.end());
+    for (size_t i = 0; i < m_num_threads; ++i) {
+      m_nlist_index.insert(m_nlist_index.end(), private_nlist_index[i].begin(), private_nlist_index[i].end());
     }
 #else
     cvm::error("OPES cannot run because this binary is not linked with a supported threading library.\n");
