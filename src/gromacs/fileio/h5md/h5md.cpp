@@ -36,6 +36,7 @@
  *
  * \author Petter Johansson <pettjoha@kth.se>
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  */
 
 #include "gmxpre.h"
@@ -69,6 +70,7 @@
 #    include "h5md_guard.h"
 #    include "h5md_particleblock.h"
 #    include "h5md_timedatablock.h"
+#    include "h5md_topologyutils.h"
 #    include "h5md_util.h"
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #else
@@ -118,6 +120,8 @@ constexpr char c_h5mdModulesGroupName[] = "modules";
 constexpr char c_h5mdNameAttributeKey[] = "name";
 //! \brief Attribute name for a version specification.
 constexpr char c_h5mdVersionAttributeKey[] = "version";
+//! \brief Path to H5MD connectivity group from the file root.
+constexpr char c_h5mdConnectivityGroupPath[] = "/connectivity";
 //! \brief Maximum length of author names (used to allocate memory).
 constexpr int c_maxUserNameLength = 4096;
 //! \brief Unit for position data for simulations produced by mdrun.
@@ -500,6 +504,50 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupGromacsTopology(const gmx_mtop_t& topology)
+{
+#if GMX_USE_HDF5
+    if (topology.moltype.empty())
+    {
+        return;
+    }
+    // Create the HDF5 group for storing the GROMACS topology
+    constexpr char    c_moduleNameGromacsTopology[] = "gromacs_topology";
+    const std::string pathToGromacsTopology         = joinStrings(
+            { c_h5mdMetaDataGroupName, c_h5mdModulesGroupName, c_moduleNameGromacsTopology }, "/");
+    const auto [gmxTop, gmxTopGuard] =
+            makeH5mdGroupGuard(createGroup(file_, pathToGromacsTopology.c_str()));
+
+    writeMoleculeTypes(gmxTop, makeConstArrayRef(topology.moltype));
+    // The h5md_topologyutils module takes care of the versioning of the GROMACS topology
+    labelInternalTopologyVersion(gmxTop);
+    labelTopologyName(gmxTop, *(topology.name));
+#else
+    GMX_UNUSED_VALUE(topology);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupBondConnectivity(const gmx_mtop_t& topology)
+{
+#if GMX_USE_HDF5
+    if (topology.moltype.empty())
+    {
+        return;
+    }
+    const auto [connectivityGroup, connectivityGroupGuard] =
+            makeH5mdGroupGuard(createGroup(file_, c_h5mdConnectivityGroupPath));
+
+    writeBonds(topology, connectivityGroup);
+    // TODO: need to determine if there is a disulfide bond in the system
+    // writeDisulfideBonds(topology, connectivityGroup);
+#else
+    GMX_UNUSED_VALUE(topology);
+#endif
+}
+
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setupMetadataGroup()
 {
 #if GMX_USE_HDF5
@@ -533,6 +581,8 @@ void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inpu
 #if GMX_USE_HDF5
     setupMetadataGroup();
     setupParticleBlockForGroup(topology, {}, c_fullSystemGroupName, inputRecord);
+    setupGromacsTopology(topology);
+    setupBondConnectivity(topology);
 #else
     GMX_UNUSED_VALUE(topology);
     GMX_UNUSED_VALUE(inputRecord);

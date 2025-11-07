@@ -36,6 +36,7 @@
  * Tests for H5MD file I/O routines
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  * \ingroup module_fileio
  */
 #include "gmxpre.h"
@@ -59,6 +60,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -413,6 +415,76 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNu
     H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
     EXPECT_THROW(file().setupFromExistingFile(), gmx::FileIOError)
             << "Must throw if blocks have different numParticles";
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
+{
+    gmx_mtop_t        mtop;
+    t_inputrec        inputRecord;
+    bool              haveTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_NO_THROW(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
+    const auto [group, groupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
+
+    // Check attributes for the topology group.
+    EXPECT_EQ(getAttributeVector<int>(group, "version").value_or(std::vector<int>{}), std::vector<int>({ 0, 1 }))
+            << "The internal topology version is 0.1 in the current implementation";
+    EXPECT_EQ(getAttributeVector<std::string>(group, "molecule_names").value_or(std::vector<std::string>{}),
+              std::vector<std::string>({ "Alanine_dipeptide", "SOL" }));
+    EXPECT_EQ(getAttribute<std::string>(group, "system_name").value_or("NotASystem"), *(mtop.name));
+
+    for (auto& moltype : mtop.moltype)
+    {
+        const std::string molPath = formatString("/h5md/modules/gromacs_topology/%s", *(moltype.name));
+        EXPECT_NO_THROW(openGroup(fileid(), molPath.c_str()));
+
+        const auto [molGroup, molGroupGuard] = makeH5mdGroupGuard(openGroup(fileid(), molPath.c_str()));
+
+        // Check attributes for each molecule type.
+        EXPECT_GT(getAttribute<int64_t>(molGroup, "nr_particles").value_or(-1), 0);
+        EXPECT_GT(getAttribute<int>(molGroup, "nr_residues").value_or(-1), 0);
+
+        // Check atomic properties datasets for each molecule type.
+        EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(molGroup, "id"));
+        EXPECT_NO_THROW(H5mdDataSetBase<real>(molGroup, "mass"));
+        EXPECT_NO_THROW(H5mdDataSetBase<real>(molGroup, "charge"));
+        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "species"));
+        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "particle_name"));
+        EXPECT_NO_THROW(H5mdDataSetBase<std::string>(molGroup, "particle_name_table"));
+        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "residue_id"));
+        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "sequence"));
+        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "residue_name"));
+        EXPECT_NO_THROW(H5mdDataSetBase<std::string>(molGroup, "residue_name_table"));
+    }
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesConnectivity)
+{
+    gmx_mtop_t        mtop;
+    t_inputrec        inputRecord;
+    bool              haveTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_NO_THROW(openGroup(fileid(), "/connectivity"));
+    const auto [connGroup, connGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/connectivity"));
+    EXPECT_NO_THROW(getAttribute<int64_t>(connGroup, "nr_bonds"));
+    EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(connGroup, "bonds"));
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritingSkipsEmptyTopology)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_THROW(openGroup(fileid(), "/h5md/modules/gromacs_topology"), gmx::FileIOError);
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputSetsUnitsToTrajectoryDataSets)

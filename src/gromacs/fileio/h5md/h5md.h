@@ -36,6 +36,7 @@
  *
  * \author Petter Johansson <pettjoha@kth.se>
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  */
 
 #ifndef GMX_FILEIO_H5MD_H
@@ -337,6 +338,47 @@ private:
      * in the file. After setting these up we can proceed with the rest of the file.
      */
     void setupMetadataGroup();
+
+    /*! \brief Set up the module for GROMACS molecular topology
+     *
+     * This module store the GROMACS molecular topology for internal use.
+     * The version of this module is determined by the h5md_topologyutils module.
+     *
+     * Create the following hierarchy (relative to the HDF5 root):
+     *
+     * /h5md/modules/gromacs_topology  (group for H5md GROMACS topology module)
+     * \++ version                     (attribute for the version of GROMACS topology)
+     * \++ molecule_names              (attribute for the names of molecules in the system)
+     * \++ system_name                 (attribute for the name of the system)
+     * \-- molecule1                   (group for molecule 1, same group name as molecule_names[0])
+     *     \++ nr_particles            (attribute for the number of particles in molecule 1)
+     *     \++ nr_residues             (attribute for the number of residues in molecule 1)
+     *     \-- id                      (dataset for the atomic identifier in molecule 1)
+     *     \-- mass                    (dataset for the atomic masses in molecule 1)
+     *     \-- charge                  (dataset for the atomic charges in molecule 1)
+     *     \-- species                 (dataset for the atomic species in molecule 1)
+     *     \-- particle_name           (dataset for the atomic names (indices into particle name table) in molecule 1)
+     *     \-- particle_name_table     (dataset for the atomic name lookup table in molecule 1)
+     *     \-- residue_id              (dataset for the residue identifier in molecule 1)
+     *     \-- sequence                (dataset for the residue sequence (indices into residue name table) in molecule 1)
+     *     \-- residue_name            (dataset for the residue names (indices into residue name table) in molecule 1)
+     *     \-- residue_name_table      (dataset for the residue name lookup table in molecule 1)
+     *
+     * \param[in] topology Molecular topology for the simulated system.
+     */
+    void setupGromacsTopology(const gmx_mtop_t& topology);
+
+    /*! \brief Set up the H5MD metadata group for connectivity information.
+     *
+     * Create the following hierarchy (relative to the HDF5 root):
+     *
+     * /connectivity          (group for connectivity information)
+     * \++ nr_bonds           (attribute for the number of bonds in the system)
+     *     \-- bonds          (dataset for the bonds (shaped [numBond, 2]) in the system)
+     *
+     * \param[in] topology Molecular topology for the simulated system.
+     */
+    void setupBondConnectivity(const gmx_mtop_t& topology);
 };
 
 } // namespace gmx
