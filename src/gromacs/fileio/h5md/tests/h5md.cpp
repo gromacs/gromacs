@@ -447,6 +447,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
         // Check attributes for each molecule type.
         EXPECT_GT(getAttribute<int64_t>(molGroup, "nr_particles").value_or(-1), 0);
         EXPECT_GT(getAttribute<int>(molGroup, "nr_residues").value_or(-1), 0);
+        EXPECT_GT(getAttribute<int>(molGroup, "nr_blocks").value_or(-1), 0);
 
         // Check atomic properties datasets for each molecule type.
         EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(molGroup, "id"));

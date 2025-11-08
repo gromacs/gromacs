@@ -353,6 +353,7 @@ private:
      * \-- molecule1                   (group for molecule 1, same group name as molecule_names[0])
      *     \++ nr_particles            (attribute for the number of particles in molecule 1)
      *     \++ nr_residues             (attribute for the number of residues in molecule 1)
+     *     \++ nr_blocks               (attribute for the number of blocks for molecule 1)
      *     \-- id                      (dataset for the atomic identifier in molecule 1)
      *     \-- mass                    (dataset for the atomic masses in molecule 1)
      *     \-- charge                  (dataset for the atomic charges in molecule 1)
@@ -363,6 +364,8 @@ private:
      *     \-- sequence                (dataset for the residue sequence (indices into residue name table) in molecule 1)
      *     \-- residue_name            (dataset for the residue names (indices into residue name table) in molecule 1)
      *     \-- residue_name_table      (dataset for the residue name lookup table in molecule 1)
+     *     \-- posres_xA               (dataset for the position restraint for topology A values in molecule 1)
+     *     \-- posres_xB               (dataset for the position restraint for topology B values in molecule 1)
      *
      * \param[in] topology Molecular topology for the simulated system.
      */
