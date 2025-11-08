@@ -440,13 +440,7 @@ static void setupSimulationBoxGroup(const hid_t selectionGroup, const t_inputrec
         }
     }();
 
-    std::vector<char>                 outputBuffer;
-    const ArrayRef<const std::string> boundaryRef = makeConstArrayRef(boundary);
-    setAttributeStringVector(boxGroup,
-                             c_boxBoundaryAttributeKey,
-                             std::move(outputBuffer),
-                             boundaryRef.begin(),
-                             boundaryRef.end());
+    setAttributeVector(boxGroup, c_boxBoundaryAttributeKey, boundary);
     setAttribute(boxGroup, c_boxDimensionAttributeKey, static_cast<int32_t>(boundary.size()));
 }
 #endif
