@@ -50,37 +50,8 @@ Usage
 ^^^^^
 
 Simulations using the NNPot interface are controlled by setting :ref:`mdp` file options.
-In particular, the relevant options, specifying the behaviour of a simulation
-with ``nnpot-active`` set to ``true``, are:
-
--  ``nnpot-modelfile``: Specifies a path to a TorchScript-compiled model, either absolute
-   or relative to the simulation directory. If not provided, the interface will look for
-   a file named ``model.pt`` in the current working directory.
--  ``nnpot-input-group``: Specifies an [index group] defining the input atoms for
-   the NNP subsystem. Defaults to ``System``, which performs a pure NNP simulation.
--  ``nnpot-embedding``: Specifies the embedding scheme to be used. Currently, this supports
-   ``mechanical``, which calculates classical non-bonded interactions between NNP and MM atoms,
-   and ``electrostatic-model``, which assumes that the model itself calculates electrostatic
-   interactions, and only calculates LJ interactions between NNP and MM atoms. In this case,
-   the model is expected to return the total energy, as well as forces on NNP and MM atoms.
-   Defaults to ``mechanical``.
--  ``nnpot-model-input[1-7]``: These options can be used to specify the inputs
-   for the model. Supported options are ``atom-positions``, a vector containing the input
-   atom positions; ``atom-numbers``, a vector containing atomic numbers; ``atom-pairs``, a
-   vector of shape (N_pairs, 2) containing pairs of input atoms within the cutoff distance;
-   ``pair-shifts``, a vector of shape (N_pairs, 3) containing the periodic shift vectors
-   for each atom pair; ``atom-positions-mm``, a vector containing the MM atom positions
-   centered around the NNP region; ``atom-charges-mm``, a vector containing the MM atom
-   charges; ``nnp-charge``, the total charge of the NNP region; ``box``, the unit vectors
-   of the simulation box; ``pbc``, a boolean vector specifying PBC type.
--  ``pair-cutoff``: Specifies the cutoff distance, in nm, for atom pairs to be included
-   in the ``atom-pairs`` input. Not setting this option when requesting the ``atom-pairs``
-   input will lead to an error.
--  ``nnpot-link-type``: Specifies the type of link atom to use for capping broken bonds
-   between NNP and MM atoms. Defaults to ``H`` (hydrogen).
--  ``nnpot-link-distance``: Specifies the distance between the link atom and the
-   embedded NNP atom, in nm. Defaults to ``0.1`` nm. 
-
+For a detailed description of all available options, please see the
+:ref:`mdp options documentation<mdp-nnpot>`.
 The inputs are passed to the model in order of their occurence in the mdp file. Note
 that there are no default values for the model input, so not specifying the model
 input will lead to errors. The model is expected to return a tensor containing the energy
@@ -88,7 +59,8 @@ of the system and, optionally, a tensor containing the forces on the input atoms
 This option can be useful for cases in which the forces can be computed by the model
 by some technique that is more efficient than via backpropagation. If the model does not
 provide its own forces, they are calculated by the interface as gradients
-w.r.t. the *first* input tensor. \
+w.r.t. the *first* input tensor. In the case of :mdp-value:`electrostatic-model` embedding,
+forces on the NNP as well as MM atoms should be returned. \
 By default, |Gromacs| will run inference on the GPU, if available. You can also explicitly
 specify the device on which you wish to run model inference using the environment
 variable ``GMX_NN_DEVICE``. The options ``cpu`` and ``gpu`` are supported. Option ``cuda``
@@ -143,3 +115,14 @@ available from `TorchANI <https://github.com/aiqm/torchani/>`_.
 The model can then be used in |Gromacs| by specifying the path to the saved model.
 Take care that the LibTorch version linked to |Gromacs| matches the one that
 was used to train/export the model.
+In the :ref:`mdp` file, the relevant options could look like:
+
+::
+
+    nnpot-active          = true
+    nnpot-modelfile       = ani2x.pt
+    nnpot-input-group     = System
+    nnpot-model-input1    = atom-positions
+    nnpot-model-input2    = atom-numbers
+    nnpot-model-input3    = box
+    nnpot-model-input4    = pbc

@@ -3664,6 +3664,99 @@ relevant atomic coordinates on one MPI rank, where all collective variables
 and their forces are computed.  Take this fact into account when choosing how
 many atoms to include in selections.
 
+.. _mdp-nnpot:
+
+NNP/MM simulations with neural network potentials in the NNPot interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+These options enable and control the calculation and application of additional
+forces derived from neural network potentials via the nnpot interface, if |Gromacs|
+is built with LibTorch support. For further details about NNP/MM
+interface implementation follow :ref:`nnpot`.
+
+.. mdp:: nnpot-active
+
+   (false) Activate NNP/MM simulations via the NNPot interface. Requires |Gromacs|
+   to be built with LibTorch support.
+
+.. mdp:: nnpot-modelfile
+
+   (model.pt) Path to a TorchScript-compiled model, either absolute or relative to the simulation
+   directory.
+
+.. mdp:: nnpot-input-group
+
+   (System) Index group defining the input atoms for the NNP subsystem. Defaults to ``System``,
+   which performs a pure NNP simulation.
+
+.. mdp:: nnpot-embedding
+
+   (mechanical) Type of embedding scheme to use for NNP/MM simulations.
+
+   .. mdp-value:: mechanical
+
+      Mechanical embedding scheme, NNP-MM interactions are treated classically.
+   
+   .. mdp-value:: electrostatic-model
+
+      Electrostatic embedding scheme, NNP-MM interactions are computed by the NNP model.
+      In this case, the NNP model is expected to return the total energy, as well as forces on
+      NNP and MM atoms.
+
+.. mdp:: nnpot-model-input[1-9]
+
+   Names of input fields to be filled in by |Gromacs| at each step and passed to the NNP model.
+   Up to 9 inputs can be specified:
+
+   .. mdp-value:: atom-positions
+
+      Positions of the NNP atoms specified by :mdp:`nnpot-input-group`.
+
+   .. mdp-value:: atom-numbers
+
+      Atomic numbers of the NNP atoms specified by :mdp:`nnpot-input-group`.
+
+   .. mdp-value:: atom-pairs
+
+      Pairs of NNP atoms specified by :mdp:`nnpot-input-group`, filter by the :mdp:`pair-cutoff`,
+      as a vector of shape (N_pairs, 2).
+
+   .. mdp-value:: pair-shifts
+
+      Periodic box shift vectors for the NNP atom pairs, as a vector of shape (N_pairs, 3).
+
+   .. mdp-value:: atom-positions-mm
+
+      Positions of the MM atoms surrounding the NNP region, needed for :mdp-value:`electrostatic-model` embedding.
+
+   .. mdp-value:: atom-charges-mm
+
+      Charges of the MM atoms surrounding the NNP region, needed for :mdp-value:`electrostatic-model` embedding.
+
+   .. mdp-value:: nnp-charge
+
+      Total charge of the NNP atoms.
+
+   .. mdp-value:: box
+
+      Simulation box vectors.
+
+   .. mdp-value:: pbc
+
+      Periodic boundary conditions.
+
+.. mdp:: pair-cutoff
+
+   (0.0) [nm] Cutoff distance for pairs of NNP atoms. Positive cutoff value must be specified
+   when requesting ``atom-pairs`` input.
+
+.. mdp:: nnpot-link-type
+
+   (H) Type of link atoms to be used in the NNP/MM simulation, specified by element symbol.
+   Defaults to hydrogen (H).
+
+.. mdp:: nnpot-link-distance
+
+   (0.1) [nm] Distance between link atom and the bonded MM atom.
 
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^
