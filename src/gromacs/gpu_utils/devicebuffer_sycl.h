@@ -158,6 +158,14 @@ T* DeviceBuffer<T>::get_pointer()
     return buffer_ ? buffer_->ptr_ : nullptr;
 }
 
+//! Set the underlying device pointer
+template<typename T>
+void DeviceBuffer<T>::set_pointer(T* input)
+{
+    GMX_ASSERT(buffer_, "Trying to assign value to invalid buffer");
+    buffer_->ptr_ = input;
+}
+
 #endif // #ifndef DOXYGEN
 
 /*! \brief Check the validity of the device buffer.
@@ -439,7 +447,7 @@ ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
 template<typename ValueType>
 void setMpiPointer(DeviceBuffer<ValueType>& buffer, ValueType* ptr)
 {
-    buffer.setPointer(ptr);
+    buffer.set_pointer(ptr);
 }
 
 #endif // GMX_GPU_UTILS_DEVICEBUFFER_SYCL_H

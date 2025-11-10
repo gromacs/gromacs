@@ -71,10 +71,10 @@
 
 // NOLINTNEXTLINE(misc-redundant-expression)
 constexpr bool supportedLibMpiBuild =
-        ((GMX_LIB_MPI != 0) && gmx::GpuConfigurationCapabilities::LibraryMpiCommunication);
+        ((GMX_LIB_MPI != 0) && gmx::GpuConfigurationCapabilities::HaloExchangeDirectComm);
 // NOLINTNEXTLINE(misc-redundant-expression)
 constexpr bool supportedThreadMpiBuild =
-        ((GMX_THREAD_MPI != 0) && gmx::GpuConfigurationCapabilities::ThreadMpiCommunication);
+        ((GMX_THREAD_MPI != 0) && gmx::GpuConfigurationCapabilities::HaloExchangeDirectComm);
 
 namespace gmx
 {
@@ -461,9 +461,13 @@ void GpuHaloExchange::Impl::communicateHaloData(Float3*  sendPtr,
         // anyway launched in correct stream
         communicateHaloDataPeerToPeer(sendPtr, sendSize, sendRank, recvPtr, recvRank, haloType);
     }
-    else
+    else if constexpr (supportedLibMpiBuild)
     {
         communicateHaloDataGpuAwareMpi(sendPtr, sendSize, sendRank, recvPtr, recvSize, recvRank);
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Calling GPU haloexchange without MPI");
     }
 }
 

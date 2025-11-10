@@ -91,11 +91,11 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
     {
         return;
     }
-    GMX_ASSERT(GpuConfigurationCapabilities::ThreadMpiCommunication,
+    GMX_ASSERT(GpuConfigurationCapabilities::PpPmeDirectComm,
                "PmeForceSenderGpu does not support current GPU backend with threadMPI; use libMPI "
                "instead.");
 
-    if constexpr (GpuConfigurationCapabilities::ThreadMpiCommunication)
+    if constexpr (GpuConfigurationCapabilities::PpPmeDirectComm)
     {
         int ind_start = 0;
         int ind_end   = 0;

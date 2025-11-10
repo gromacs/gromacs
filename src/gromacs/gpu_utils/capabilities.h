@@ -82,14 +82,18 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
     static constexpr bool Update = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path with thread-MPI
-    static constexpr bool ThreadMpiCommunication = GMX_GPU_CUDA || GMX_GPU_HIP;
+    static constexpr bool ThreadMpiDirectComm = GMX_GPU_CUDA || GMX_GPU_HIP;
     //! Whether this configuration supports running the direct GPU communication path with library-MPI
-    static constexpr bool LibraryMpiCommunication = GMX_GPU && !GMX_GPU_OPENCL;
+    static constexpr bool LibraryMpiDirectComm = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path for the current build type
-    static constexpr bool MpiCommunication =
-            (GMX_THREAD_MPI && ThreadMpiCommunication) || (GMX_LIB_MPI && LibraryMpiCommunication);
+    static constexpr bool MpiDirectComm =
+            (GMX_THREAD_MPI && ThreadMpiDirectComm) || (GMX_LIB_MPI && LibraryMpiDirectComm);
     //! Whether we disable event counting.
     static constexpr bool DisableEventCounting = GMX_GPU_CUDA || GMX_GPU_HIP;
+    //! This flag enables the direct GPU communication path for PP-PME communication.
+    static constexpr bool PpPmeDirectComm = MpiDirectComm;
+    //! This flag enables the direct GPU communication path for domain decomposition halo exchange.
+    static constexpr bool HaloExchangeDirectComm = MpiDirectComm;
     //! Whether this configuration supports running gpu graphs
     static constexpr bool GpuGraph = GMX_HAVE_GPU_GRAPH_SUPPORT;
     //! Whether this configuration supports running gpu pme decomposition

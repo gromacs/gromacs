@@ -314,7 +314,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
     const bool pmeGpuDecompositionSupported =
-            canUseGpuAwareMpi
+            canUseGpuAwareMpi && GpuConfigurationCapabilities::PpPmeDirectComm
             && ((GpuConfigurationCapabilities::PmeDecomposition && pmeRunMode == PmeRunMode::GPU)
                 || (GpuConfigurationCapabilities::Pme && pmeRunMode == PmeRunMode::Mixed));
 

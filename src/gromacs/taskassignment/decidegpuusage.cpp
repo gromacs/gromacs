@@ -822,9 +822,9 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
                                                   const gmx::MDLogger&   mdlog)
 {
     // Decide if we have either a supported library MPI build or thread-MPI build
-    const bool isSupportedLibMpiBuild = GMX_LIB_MPI && GpuConfigurationCapabilities::LibraryMpiCommunication;
+    const bool isSupportedLibMpiBuild = GMX_LIB_MPI && GpuConfigurationCapabilities::LibraryMpiDirectComm;
     const bool isSupportedThreadMpiBuild =
-            GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication;
+            GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiDirectComm;
     // Direct GPU communication is used by default in supported configurations.
     const bool isSupportedByBuild = isSupportedLibMpiBuild || isSupportedThreadMpiBuild;
 
@@ -959,6 +959,8 @@ bool decideWhetherToUseGpuForHalo(bool                 havePPDomainDecomposition
     // fallback to CPU halo, and report accordingly
     gmx::MessageStringCollector errorReasons;
     errorReasons.startContext("GPU halo exchange will not be activated because:");
+    errorReasons.appendIf(!GpuConfigurationCapabilities::HaloExchangeDirectComm,
+                          "Configuration does not support GPU halo exchange");
     errorReasons.appendIf(useModularSimulator, "Modular simulator runs are not supported.");
     errorReasons.appendIf(doRerun, "Re-runs are not supported.");
     errorReasons.appendIf(haveEnergyMinimization, "Energy minimization is not supported.");

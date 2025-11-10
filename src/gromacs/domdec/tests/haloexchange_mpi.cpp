@@ -644,11 +644,11 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
     SCOPED_TRACE("Testing " + GetParam().description);
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    if (GMX_THREAD_MPI && !GpuConfigurationCapabilities::ThreadMpiCommunication)
+    if (GMX_THREAD_MPI && !GpuConfigurationCapabilities::HaloExchangeDirectComm)
     {
         GTEST_SKIP() << "With thread-MPI, GPU halo exchange is only supported on CUDA";
     }
-    if (GMX_LIB_MPI && !GpuConfigurationCapabilities::LibraryMpiCommunication)
+    if (GMX_LIB_MPI && !GpuConfigurationCapabilities::HaloExchangeDirectComm)
     {
         GTEST_SKIP() << "With library MPI, GPU halo exchange is not supported for this build";
     }

@@ -125,6 +125,9 @@ struct DeviceBuffer
     //! Get underlying device pointer
     ValueType* get_pointer();
 
+    //! Set underlying pointer
+    void set_pointer(ValueType* input);
+
     //! Allow implicit conversion to bool to check buffer status for compatibility with other implementations.
     operator bool() const { return buffer_.get() != nullptr; }
 

@@ -98,7 +98,7 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
         if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
         {
-            GMX_RELEASE_ASSERT(GpuConfigurationCapabilities::ThreadMpiCommunication,
+            GMX_RELEASE_ASSERT(GpuConfigurationCapabilities::PpPmeDirectComm,
                                "Direct PME-PP communication with threadMPI needs to be supported "
                                "by the backend.");
             // Data will be transferred directly from GPU.
@@ -128,7 +128,7 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpPeerToP
     GMX_ASSERT(GMX_THREAD_MPI,
                "receiveCoordinatesSynchronizerFromPpPeerToPeer is expected to be called only for "
                "Thread-MPI");
-    GMX_ASSERT(GpuConfigurationCapabilities::ThreadMpiCommunication,
+    GMX_ASSERT(GpuConfigurationCapabilities::PpPmeDirectComm,
                "Direct PME-PP communication not supported with with the backend and threadMPI; use "
                "libMPI "
                "instead.");

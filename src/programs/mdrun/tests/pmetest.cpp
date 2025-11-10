@@ -263,7 +263,7 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         if (!commandLineTargetsPmeOnlyRanks && numRanks > 1)
         {
             const bool pmeDecompositionSupported = GpuConfigurationCapabilities::PmeDecomposition
-                                                   && GpuConfigurationCapabilities::MpiCommunication;
+                                                   && GpuConfigurationCapabilities::PpPmeDirectComm;
             messages.appendIf(!pmeDecompositionSupported,
                               "it targets PME decomposition, but that is not supported");
             if (pmeDecompositionSupported)
