@@ -93,6 +93,13 @@ enable_language(CUDA)
 # We expand the list so that it can be pruned down later if NVSHMEM is enabled
 if(GMX_CUDA_ARCHITECTURES STREQUAL "all")
     set(GMX_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES_ALL}")
+elseif(GMX_CUDA_ARCHITECTURES STREQUAL "all-major")
+    set(GMX_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES_ALL_MAJOR}")
+elseif(GMX_CUDA_ARCHITECTURES STREQUAL "native")
+    if (CMAKE_CUDA_ARCHITECTURES_NATIVE MATCHES "No CUDA devices")
+        message(FATAL_ERROR "A 'native' CUDA architecture requested, but CMake cannot detect a GPU")
+    endif()
+    set(GMX_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES_NATIVE}")
 endif()
 
 set(GMX_CUDA_ARCHITECTURES "${GMX_CUDA_ARCHITECTURES}" CACHE STRING "GROMACS-specific CUDA architectures")
