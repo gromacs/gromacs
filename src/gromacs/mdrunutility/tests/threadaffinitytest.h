@@ -63,7 +63,6 @@ class MockThreadAffinityAccess : public IThreadAffinityAccess
 {
 public:
     MockThreadAffinityAccess();
-    ~MockThreadAffinityAccess() override;
 
     void setSupported(bool supported) { supported_ = supported; }
 

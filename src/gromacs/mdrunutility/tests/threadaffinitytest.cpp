@@ -59,9 +59,6 @@ MockThreadAffinityAccess::MockThreadAffinityAccess() : supported_(true)
     ON_CALL(*this, setCurrentThreadAffinityToCore(_)).WillByDefault(Return(true));
 }
 
-MockThreadAffinityAccess::~MockThreadAffinityAccess() {}
-
-
 ThreadAffinityTestHelper::ThreadAffinityTestHelper() : mpiComm_(MPI_COMM_WORLD)
 {
     hwOpt_.threadAffinity      = ThreadAffinity::Auto;

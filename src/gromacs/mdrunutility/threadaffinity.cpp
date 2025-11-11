@@ -92,8 +92,6 @@ DefaultThreadAffinityAccess g_defaultAffinityAccess;
 
 } // namespace
 
-gmx::IThreadAffinityAccess::~IThreadAffinityAccess() {}
-
 static bool invalidWithinSimulation(const gmx::MpiComm& mpiCommMySim, bool invalidLocally)
 {
 #if GMX_MPI
