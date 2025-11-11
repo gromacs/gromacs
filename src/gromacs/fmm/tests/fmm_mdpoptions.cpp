@@ -100,6 +100,9 @@ TEST_F(FmmMdpOptionsTest, ExaFmmOptionsMatchDefaultsWhenActive)
     EXPECT_EQ(opts.order, defaultExaFmmOptionValues.order);
     EXPECT_EQ(opts.directRange, defaultExaFmmOptionValues.directRange);
     EXPECT_EQ(opts.directProvider, defaultExaFmmOptionValues.directProvider);
+    EXPECT_EQ(opts.treeType, defaultExaFmmOptionValues.treeType);
+    EXPECT_EQ(opts.treeDepth, defaultExaFmmOptionValues.treeDepth);
+    EXPECT_EQ(opts.maxParticlesPerCell, defaultExaFmmOptionValues.maxParticlesPerCell);
 }
 
 TEST_F(FmmMdpOptionsTest, FMSolvrOptionsMatchDefaultsWhenActive)

@@ -104,6 +104,26 @@ std::string fmmDirectProviderName(FmmDirectProvider directProvider);
 //! MDP option name to enable one of the FMM backends (e.g., ExaFMM).
 const std::string c_fmmActiveOptionName = "backend";
 
+//! \brief Tree type options for ExaFMM.
+enum class ExaFmmTreeType
+{
+    Uniform,
+    Adaptive,
+    Count
+};
+
+/*! \brief Returns the string name for a given ExaFmm Tree Type.
+ *
+ * \param treeType The ExaFmmTreeType enum value.
+ * \return The corresponding tree type name as a std::string.
+ */
+std::string exaFmmTreeTypeName(ExaFmmTreeType treeType);
+
+//! String names corresponding to ExaFmmTreeType enum values.
+static const EnumerationArray<ExaFmmTreeType, const char*> c_exaFmmTreeTypeNames = {
+    { "uniform", "adaptive" }
+};
+
 // ExaFMM MDP option names
 
 //! MDP option name to configure the direct interaction range for ExaFMM (1 or 2)
@@ -112,6 +132,19 @@ const std::string c_fmmExaFmmDirectRangeOptionName = "exafmm-direct-range";
 const std::string c_fmmExaFmmDirectProviderOptionName = "exafmm-direct-provider";
 //! MDP option name to set the multipole expansion order for ExaFMM
 const std::string c_fmmExaFmmOrderOptionName = "exafmm-order";
+//! MDP option name to choose the tree type for ExaFMM (uniform or adaptive)
+//! - Must be uniform when the direct provider is GROMACS
+//! - If using an adaptive tree, maximum particles per cell must be specified
+const std::string c_fmmExaFmmTreeTypeOptionName = "exafmm-tree-type";
+//! MDP option name to set the tree depth for ExaFMM
+//! - Required when using a uniform tree and the direct provider is FMM
+//! - When the direct provider is GROMACS, the tree depth is determined
+//!   based on the domain decomposition grid and should not be set by the user.
+const std::string c_fmmExaFmmTreeDepthOptionName = "exafmm-tree-depth";
+//! MDP option name to set the maximum number of particles per cell for ExaFMM
+//! - Used only when an adaptive tree is used
+//! - Must not be set when using a uniform tree
+const std::string c_fmmExaFmmMaxParticlesPerCellOptionName = "exafmm-max-particles-per-cell";
 
 //  FMSolvr MDP option names
 
@@ -151,9 +184,12 @@ struct IFmmOptions
 
 struct ExaFmmOptions : IFmmOptions
 {
-    int               order          = 6;
-    int               directRange    = 2;
-    FmmDirectProvider directProvider = FmmDirectProvider::Gromacs;
+    int               order               = 6;
+    int               directRange         = 2;
+    FmmDirectProvider directProvider      = FmmDirectProvider::Gromacs;
+    ExaFmmTreeType    treeType            = ExaFmmTreeType::Uniform;
+    int               treeDepth           = 0;
+    int               maxParticlesPerCell = 0;
 
     void initMdpOptionsFmm(OptionSectionHandle& section) override;
     void initMdpTransformFmm(IKeyValueTreeTransformRules* rules) override;

@@ -328,5 +328,8 @@ fmm-backend              = exafmm
 fmm-exafmm-order         = 6
 fmm-exafmm-direct-range  = 2
 fmm-exafmm-direct-provider = GROMACS
+fmm-exafmm-tree-type     = uniform
+fmm-exafmm-tree-depth    = 0
+fmm-exafmm-max-particles-per-cell = 0
 </String>
 </ReferenceData>
