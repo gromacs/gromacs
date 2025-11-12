@@ -53,6 +53,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
@@ -172,6 +173,15 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     runner_.edrFileName_                     = simulationEdrFileName.string();
     runner_.dhdlFileName_                    = simulationDhdlFileName.string();
     runMdrun(&runner_);
+
+    // Run FEP-on-GPU tests when available
+    // Expanded ensemble simulations are also not implemented on GPUs yet.
+    if (GpuConfigurationCapabilities::NonbondedFE && simulationName != "expanded")
+    {
+        auto fep_option = std::vector<SimulationOptionTuple>();
+        fep_option.emplace_back(SimulationOptionTuple("-nbfe", "gpu"));
+        runMdrun(&runner_, fep_option);
+    }
 
     /* Currently used tests write trajectory (x/v/f) frames every 20 steps.
      * Except for the expanded ensemble test, all tests run for 20 steps total.

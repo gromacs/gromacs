@@ -136,11 +136,20 @@ void nonbonded_verlet_t::setLocalAtomOrder() const
     pairSearch_->setLocalAtomOrder();
 }
 
-void nonbonded_verlet_t::setAtomProperties(ArrayRef<const int>     atomTypes,
-                                           ArrayRef<const real>    atomCharges,
+void nonbonded_verlet_t::setAtomProperties(ArrayRef<const int>     atomTypesA,
+                                           ArrayRef<const int>     atomTypesB,
+                                           ArrayRef<const real>    atomChargesA,
+                                           ArrayRef<const real>    atomChargesB,
                                            ArrayRef<const int32_t> atomInfo) const
 {
-    nbnxn_atomdata_set(nbat_.get(), pairSearch_->gridSet(), atomTypes, atomCharges, atomInfo);
+    nbnxn_atomdata_set(nbat_.get(),
+                       pairSearch_->gridSet(),
+                       atomTypesA,
+                       atomTypesB,
+                       atomChargesA,
+                       atomChargesB,
+                       atomInfo,
+                       useGpuNonbondedFE());
 }
 
 void nonbonded_verlet_t::convertCoordinates(const AtomLocality locality, ArrayRef<const RVec> coordinates)

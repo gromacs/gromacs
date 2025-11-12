@@ -459,6 +459,41 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
     return gpusWereDetected;
 }
 
+bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget nonBondedFeTarget)
+{
+    if (nonBondedFeTarget == TaskTarget::Cpu)
+    {
+        return false;
+    }
+
+    if (!useGpuForNonbonded)
+    {
+        if (nonBondedFeTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(InconsistentInputError(
+                    "Nonbonded FE interactions on the GPU were required, but this requires that "
+                    "short-ranged non-bonded interactions are also run on the GPU. Change "
+                    "your settings, or do not require using GPUs."));
+        }
+
+        return false;
+    }
+
+    if (nonBondedFeTarget == TaskTarget::Gpu)
+    {
+        if (!GpuConfigurationCapabilities::NonbondedFE)
+        {
+            GMX_THROW(NotImplementedError(
+                    "Nonbonded free energy tasks were required to run on GPUs, "
+                    "but currely it is only implemented in CUDA build. Use a CUDA visible device "
+                    "or run these calculations on the CPU."));
+        }
+        return true;
+    }
+
+    return false;
+}
+
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const TaskTarget        pmeTarget,
                                   const TaskTarget        pmeFftTarget,

@@ -975,17 +975,21 @@ static void nbnxn_atomdata_set_energygroups(const GridSet&          gridSet,
 }
 
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
-void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
-                        const GridSet&          gridSet,
-                        ArrayRef<const int>     atomTypes,
-                        ArrayRef<const real>    atomCharges,
-                        ArrayRef<const int32_t> atomInfo)
+/* The parameters B setter will be enabled in the next MR */
+void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
+                        const GridSet gmx_unused&          gridSet,
+                        ArrayRef<const int> gmx_unused     atomTypesA,
+                        ArrayRef<const int> gmx_unused     atomTypesB,
+                        ArrayRef<const real> gmx_unused    atomChargesA,
+                        ArrayRef<const real> gmx_unused    atomChargesB,
+                        ArrayRef<const int32_t> gmx_unused atomInfo,
+                        const bool gmx_unused              useGpuNonbondedFE)
 {
     nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
 
-    nbnxn_atomdata_set_atomtypes(&params, gridSet, atomTypes);
+    nbnxn_atomdata_set_atomtypes(&params, gridSet, atomTypesA);
 
-    nbnxn_atomdata_set_charges(nbat, gridSet, atomCharges);
+    nbnxn_atomdata_set_charges(nbat, gridSet, atomChargesA);
 
     if (gridSet.haveFep())
     {

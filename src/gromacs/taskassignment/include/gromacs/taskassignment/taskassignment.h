@@ -148,6 +148,8 @@ public:
      * \param[in]  physicalNodeComm       Communication object for this physical node.
      * \param[in]  nonbondedTarget        The user's choice for mdrun -nb for where to assign
      *                                    short-ranged nonbonded interaction tasks.
+     * \param[in]  nonbondedFETarget      The user's choice for mdrun -nbfe for where to assign
+     *                                    nonbonded FE interaction tasks.
      * \param[in]  pmeTarget              The user's choice for mdrun -pme for where to assign
      *                                    long-ranged PME nonbonded interaction tasks.
      * \param[in]  bondedTarget           The user's choice for mdrun -bonded for where to assign tasks.
@@ -166,6 +168,7 @@ public:
                                     MPI_Comm                        gromacsWorldComm,
                                     const PhysicalNodeCommunicator& physicalNodeComm,
                                     TaskTarget                      nonbondedTarget,
+                                    TaskTarget                      nonbondedFETarget,
                                     TaskTarget                      pmeTarget,
                                     TaskTarget                      bondedTarget,
                                     TaskTarget                      updateTarget,

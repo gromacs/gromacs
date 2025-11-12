@@ -192,6 +192,17 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
                                         bool                    binaryReproducibilityRequested,
                                         bool                    gpusWereDetected);
 
+/*! \brief Decide whether the simulation will try to run nonbonde FE tasks on GPUs.
+ *
+ * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  nonBondedFeTarget         The user's choice for mdrun -nbfe for where to assign tasks.
+ *
+ * \returns    Whether the simulation will run nonbonded fe tasks on GPUs.
+ *
+ * \throws     std::bad_alloc          If out of memory
+ *             InconsistentInputError  If the user requirements are inconsistent. */
+bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget nonBondedFeTarget);
+
 /*! \brief Decide whether the simulation will try to run tasks of
  * different types on GPUs.
  *
@@ -266,6 +277,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
                                      const gmx_mtop_t& mtop,
                                      int               numPmeRanksPerSimulation,
                                      bool              gpusWereDetected);
+
 
 /*! \brief Decide whether to use GPU for update.
  *

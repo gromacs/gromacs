@@ -819,7 +819,8 @@ double TestParticleInsertion::insertIntoFrame(const double           t,
                     box, 1, xInit, xInit, nullptr, testAtomsRange_, testAtomsRange_.size(), -1, fr_.atomInfo, x, nullptr);
 
             /* TODO: Avoid updating all atoms at every bNS step */
-            fr_.nbv->setAtomProperties(mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo);
+            fr_.nbv->setAtomProperties(
+                    mdatoms_.typeA, mdatoms_.typeB, mdatoms_.chargeA, mdatoms_.chargeB, fr_.atomInfo);
 
             fr_.nbv->constructPairlist(InteractionLocality::Local, top_.excls, false, step, nrnb);
 

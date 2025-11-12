@@ -383,11 +383,14 @@ private:
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0);
 
 //! Sets the atomdata after pair search
-void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
-                        const GridSet&          gridSet,
-                        ArrayRef<const int>     atomTypes,
-                        ArrayRef<const real>    atomCharges,
-                        ArrayRef<const int32_t> atomInfo);
+void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
+                        const GridSet gmx_unused&          gridSet,
+                        ArrayRef<const int> gmx_unused     atomTypesA,
+                        ArrayRef<const int> gmx_unused     atomTypesB,
+                        ArrayRef<const real> gmx_unused    atomChargesA,
+                        ArrayRef<const real> gmx_unused    atomChargesB,
+                        ArrayRef<const int32_t> gmx_unused atomInfo,
+                        bool gmx_unused                    useGpuNonbondedFE);
 
 //! Copy the shift vectors to nbat
 void nbnxn_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,

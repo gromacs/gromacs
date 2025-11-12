@@ -135,8 +135,12 @@ public:
     bool haveCpuLocalForceWork = false;
     //! Whether there are currently any non-local forces to be computed on the CPU and, with GPU update and DD, later reduced on the GPU.
     bool haveCpuNonLocalForceWork = false;
-    //! Whether the current nstlist step-range Free energy work on the CPU.
-    bool haveFreeEnergyWork = false;
+    //! Whether the current nstlist step-range has free-energy work (on CPU or GPU).
+    bool haveNonbondedFreeEnergyWork = false;
+    //! Whether the current nstlist step-range has free-energy work on the CPU.
+    bool haveCpuNonbondedFreeEnergyWork = false;
+    //! Whether the current nstlist step-range has free-energy work on the GPU.
+    bool haveGpuNonbondedFreeEnergyWork = false;
     //! Whether the CPU force buffer has contributions to local atoms that need to be reduced on the GPU (with DD).
     // This depends on whether there are CPU-based force tasks
     // or when DD is active the halo exchange has resulted in contributions
@@ -171,6 +175,10 @@ public:
     bool useCpuNonbonded = false;
     //! If we have calculation of short range nonbondeds on GPU
     bool useGpuNonbonded = false;
+    //! If we have calculation of nonbonded fe on CPU
+    bool useCpuNonbondedFE = false;
+    //! If we have calculation of nonbonded fe on GPU
+    bool useGpuNonbondedFE = false;
     //! If we have calculation of long range PME in GPU
     bool useCpuPme = false;
     //! If we have calculation of long range PME in GPU

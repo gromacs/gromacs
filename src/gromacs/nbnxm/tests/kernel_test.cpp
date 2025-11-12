@@ -260,7 +260,8 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 
     nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, false, 0, nullptr);
 
-    nbv->setAtomProperties(system.atomTypes, system.charges, system.atomInfo);
+    nbv->setAtomProperties(
+            system.atomTypes, system.atomTypes, system.charges, system.charges, system.atomInfo);
 
     return nbv;
 }

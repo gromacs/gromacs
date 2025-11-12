@@ -1341,8 +1341,9 @@ static void doPairSearch(const t_commrec*             cr,
 
     StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
-    const SimulationWorkload& simulationWork = runScheduleWork.simulationWork;
-    const StepWorkload&       stepWork       = runScheduleWork.stepWork;
+    const SimulationWorkload&     simulationWork = runScheduleWork.simulationWork;
+    const StepWorkload&           stepWork       = runScheduleWork.stepWork;
+    const DomainLifetimeWorkload& domainWork     = runScheduleWork.domainWork;
 
     if (needStateGpu(simulationWork))
     {
@@ -1425,7 +1426,7 @@ static void doPairSearch(const t_commrec*             cr,
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
     }
 
-    nbv->setAtomProperties(mdatoms.typeA, mdatoms.chargeA, fr->atomInfo);
+    nbv->setAtomProperties(mdatoms.typeA, mdatoms.typeB, mdatoms.chargeA, mdatoms.chargeB, fr->atomInfo);
 
     wallcycle_stop(wcycle, WallCycleCounter::NS);
 
@@ -1521,7 +1522,7 @@ static void doPairSearch(const t_commrec*             cr,
 
     // With FEP we set up the reduction over threads for local+non-local simultaneously,
     // so we need to do that here after the local and non-local pairlist construction.
-    if (fr->efep != FreeEnergyPerturbationType::No)
+    if (domainWork.haveCpuNonbondedFreeEnergyWork)
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NonbondedFep);
         nbv->setupFepThreadedForceBuffer(fr->natoms_force_constr);
@@ -2076,7 +2077,7 @@ void do_force(FILE*                         fplog,
     }
 
     wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
-    if (fr->efep != FreeEnergyPerturbationType::No && stepWork.computeNonbondedForces)
+    if (domainWork.haveCpuNonbondedFreeEnergyWork && stepWork.computeNonbondedForces)
     {
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.

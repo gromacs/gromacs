@@ -16,11 +16,11 @@ gmx [-s [&lt;.tpr&gt;]] [-cpi [&lt;.cpt&gt;]] [-table [&lt;.xvg&gt;]] [-tablep [
     [-ntmpi &lt;int&gt;] [-ntomp &lt;int&gt;] [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;]
     [-pinoffset &lt;int&gt;] [-pinstride &lt;int&gt;] [-gpu_id &lt;string&gt;]
     [-gputasks &lt;string&gt;] [-[no]ddcheck] [-rdd &lt;real&gt;] [-rcon &lt;real&gt;]
-    [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;] [-nstlist &lt;int&gt;] [-[no]tunepme]
-    [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;] [-bonded &lt;enum&gt;] [-update &lt;enum&gt;] [-[no]v]
-    [-pforce &lt;real&gt;] [-[no]reprod] [-cpt &lt;real&gt;] [-[no]cpnum] [-[no]append]
-    [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;] [-replex &lt;int&gt;] [-nex &lt;int&gt;]
-    [-reseed &lt;int&gt;]
+    [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;] [-nbfe &lt;enum&gt;] [-nstlist &lt;int&gt;]
+    [-[no]tunepme] [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;] [-bonded &lt;enum&gt;]
+    [-update &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod] [-cpt &lt;real&gt;]
+    [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;] [-replex &lt;int&gt;]
+    [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
 
 DESCRIPTION
 
@@ -259,6 +259,8 @@ Other options:
            balancing can act while preserving the minimum cell size.
  -nb     &lt;enum&gt;             (auto)
            Calculate non-bonded interactions on: auto, cpu, gpu
+ -nbfe   &lt;enum&gt;             (auto)
+           Perform non-bonded FE calculations on: auto, cpu, gpu
  -nstlist &lt;int&gt;             (0)
            Set nstlist when using a Verlet buffer tolerance (0 is guess)
  -[no]tunepme               (yes)

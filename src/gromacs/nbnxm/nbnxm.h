@@ -207,6 +207,7 @@ public:
      * \param[in] kernelSetup   The non-bonded kernel setup
      * \param[in] exclusionChecker  The FEP exclusion checker, is consumed, can be nullptr
      * \param[in] gpu_nbv       The GPU non-bonded setup, ownership is transferred, can be nullptr
+     * \param[in] useGpuNonbondedFE Whether to use GPU for nonbonded FE calculations
      * \param[in] wcycle        Pointer to wallcycle counters, can be nullptr
      */
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
@@ -215,6 +216,7 @@ public:
                        const NbnxmKernelSetup&           kernelSetup,
                        std::unique_ptr<ExclusionChecker> exclusionChecker,
                        NbnxmGpu*                         gpu_nbv,
+                       bool                              useGpuNonbondedFE,
                        gmx_wallcycle*                    wcycle);
 
     /*! \brief Constructs an object from its, minimal, components
@@ -235,6 +237,9 @@ public:
 
     //! Returns whether a GPU is use for the non-bonded calculations
     bool useGpu() const { return isGpuKernelType(kernelSetup_.kernelType); }
+
+    //! Returns whether a GPU is use for the non-bonded free energy calculations
+    bool useGpuNonbondedFE() const { return useGpuNonbondedFE_; }
 
     //! Returns whether a GPU is emulated for the non-bonded calculations
     bool emulateGpu() const { return kernelSetup_.kernelType == NbnxmKernelType::Cpu8x8x8_PlainC; }
@@ -330,8 +335,10 @@ public:
                            t_nrnb*                 nrnb) const;
 
     //! Updates all the atom properties in Nbnxm
-    void setAtomProperties(ArrayRef<const int>     atomTypes,
-                           ArrayRef<const real>    atomCharges,
+    void setAtomProperties(ArrayRef<const int>     atomTypesA,
+                           ArrayRef<const int>     atomTypesB,
+                           ArrayRef<const real>    atomChargesA,
+                           ArrayRef<const real>    atomChargesB,
                            ArrayRef<const int32_t> atomInfo) const;
 
     /*!\brief Convert the coordinates to NBNXM format for the given locality.
@@ -483,6 +490,9 @@ private:
 
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
     NbnxmGpu* gpuNbv_;
+
+    // whether to use GPU for nonbonded FE calculations
+    bool useGpuNonbondedFE_;
 };
 
 /*! \brief Creates an Nbnxm object */
@@ -493,6 +503,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    const gmx_domdec_t*        dd,
                                                    const gmx_hw_info_t&       hardwareInfo,
                                                    bool                       useGpuForNonbonded,
+                                                   bool                       useGpuForNonbondedFE,
                                                    const DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&          mtop,
                                                    bool localAtomOrderMatchesNbnxmOrder,

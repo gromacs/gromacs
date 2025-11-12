@@ -179,8 +179,11 @@ void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<gmx::RVec> c
             gmx::InteractionLocality::Local, backend_.exclusions_, false, 0, &backend_.nrnb_);
 
     // Set Particle Types and Charges and VdW params
-    backend_.nbv_->setAtomProperties(
-            system_.particleTypeIdOfAllParticles_, system_.charges_, system_.particleInfo_);
+    backend_.nbv_->setAtomProperties(system_.particleTypeIdOfAllParticles_,
+                                     system_.particleTypeIdOfAllParticles_,
+                                     system_.charges_,
+                                     system_.charges_,
+                                     system_.particleInfo_);
     backend_.updatePairlistCalled = true;
 }
 
