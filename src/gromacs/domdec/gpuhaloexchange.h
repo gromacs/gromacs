@@ -56,9 +56,14 @@ struct gmx_wallcycle;
 class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
+struct t_commrec;
 
 namespace gmx
 {
+
+#if GMX_NVSHMEM
+class FusedGpuHaloExchange;
+#endif
 
 /*! \libinternal
  * \brief Manages GPU Halo Exchange object */
@@ -90,7 +95,6 @@ public:
      * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
-     * \param [in]    useNvshmem               use NVSHMEM for communication
      * \param [in]    wcycle                   The wallclock counter
      */
     GpuHaloExchange(gmx_domdec_t*        dd,
@@ -99,7 +103,6 @@ public:
                     MPI_Comm             mpi_comm_mysim_world,
                     const DeviceContext& deviceContext,
                     int                  pulse,
-                    bool                 useNvshmem,
                     gmx_wallcycle*       wcycle);
     ~GpuHaloExchange();
     GpuHaloExchange(GpuHaloExchange&& source) noexcept;
@@ -112,14 +115,6 @@ public:
      * \param [in] d_forcesBuffer   pointer to coordinates buffer in GPU memory
      */
     void reinitHalo(DeviceBuffer<RVec> d_coordinateBuffer, DeviceBuffer<RVec> d_forcesBuffer);
-
-    /*! \brief
-     * (Re-) Initialization for NVSHMEM Signal objects
-     * \param [in] d_syncBuffer        Device buffer for the signals
-     * \param [in] totalPulsesAndDims  Total number of DD pulses and dimensions
-     * \param [in] signalObjOffset     Offset of the signal object corresponding to given pulse/dim.
-     */
-    void reinitNvshmemSignal(DeviceBuffer<uint64_t> d_syncBuffer, int totalPulsesAndDims, int signalObjOffset);
 
     /*! \brief GPU halo exchange of coordinates buffer.
      *
@@ -144,10 +139,6 @@ public:
      */
     GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
 
-    /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
-     */
-    void destroyGpuHaloExchangeNvshmemBuf();
-
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;
@@ -165,7 +156,10 @@ public:
     GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&       dd,
                                  const DeviceContext&      context,
                                  const DeviceStream&       stream,
-                                 const std::optional<int>& peerRank);
+                                 const std::optional<int>& peerRank,
+                                 gmx_wallcycle*            wcycle,
+                                 MPI_Comm                  mpi_comm_mygroup,
+                                 MPI_Comm                  mpi_comm_mysim_world);
 
     ~GpuHaloExchangeNvshmemHelper();
 
@@ -178,10 +172,30 @@ public:
     //! Permit symmetric deallocation
     void freeHaloExchangeBuffers();
 
+
+#if GMX_NVSHMEM
+    //! Fused PP halo exchange object used when NVSHMEM is enabled
+    std::unique_ptr<gmx::FusedGpuHaloExchange> fusedPpHaloExchange_;
+#else
+    //! Placeholder when NVSHMEM is disabled
+    std::unique_ptr<int> fusedPpHaloExchange_;
+#endif
+    // Fused pass-through API (defined in gpuhaloexchange_impl_gpu.cpp)
+    void                  reinitAllHaloExchanges(const t_commrec&   cr,
+                                                 DeviceBuffer<RVec> d_coordinatesBuffer,
+                                                 DeviceBuffer<RVec> d_forcesBuffer);
+    GpuEventSynchronizer* launchAllCoordinateExchanges(const matrix          box,
+                                                       GpuEventSynchronizer* dependencyEvent);
+    GpuEventSynchronizer* launchAllForceExchanges(bool accumulateForces,
+                                                  FixedCapacityVector<GpuEventSynchronizer*, 2>* dependencyEvents);
+    void                  destroyAllHaloExchangeBuffers();
+    GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
+
+
 private:
     //! Communication record
     const gmx_domdec_t& dd_;
-    //! Number of signal buffers types used for PP Halo exchange
+    //! Number of NVSHMEM signal buffer types used for PP halo exchange (X send, X recv, F recv)
     static const int numOfPpHaloExSyncBufs = 3;
     //! Size for the each of the 3 signal buffers used for PP Halo exchange
     int ppHaloExPerSyncBufSize_ = 0;
@@ -198,16 +212,31 @@ private:
     /*! \{ */
     //! On a PME rank, the rank of its PP peer
     std::optional<int> peerRank_;
-    //! device buffer for receiving packed data
+    //! Per-dimension device buffers for receiving packed data (PME-only)
     std::vector<DeviceBuffer<gmx::RVec>> d_recvBuf_;
-    //! keeps track of number of dimensions and pulses in each dimension.
-    std::vector<int> numDimsAndPulses_;
     //! Allocation size for the recvBuf
     std::vector<int> d_recvBufSize_;
     //! Allocation capacity for the recvBuf
     std::vector<int> d_recvBufCapacity_;
+    // for PME only
+    //! Unified recv buffer on PME used for PP symmetric allocations
+    DeviceBuffer<gmx::RVec> d_unifiedRecvBufForPpFromPme_ = nullptr;
+    //! Unified send buffer on PME used for PP symmetric allocations
+    DeviceBuffer<gmx::RVec> d_unifiedSendBufForPpFromPme_ = nullptr;
+    //! Per-pulse recv extent in unified buffer on PME (elements)
+    int d_unifiedRecvBufSizeForPpFromPme_ = -1;
+    //! Per-pulse recv capacity in unified buffer on PME (elements)
+    int d_unifiedRecvBufCapacityForPpFromPme_ = -1;
+    //! Per-pulse send extent in unified buffer on PME (elements)
+    int d_unifiedSendBufSizeForPpFromPme_ = -1;
+    //! Per-pulse send capacity in unified buffer on PME (elements)
+    int d_unifiedSendBufCapacityForPpFromPme_ = -1;
+    //! keeps track of number of pulses across all dimensions.
+    int totalNumPulses_ = 0;
     //! Device context
     const DeviceContext& context_;
+    //! Wallclock cycle accounting
+    gmx_wallcycle* wcycle_;
     /*! \} */
 
     /*! \brief Handles NVSHEM signal buffer initialization
@@ -215,7 +244,7 @@ private:
      * Allocates and initializes the signal buffers used in NVSHMEM enabled
      * PP Halo exchange.
      */
-    void allocateAndInitSignalBufs(int totalDimsAndPulses);
+    void allocateAndInitSignalBufs(int totalNumPulses);
 };
 
 } // namespace gmx

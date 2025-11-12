@@ -3114,19 +3114,42 @@ void constructGpuHaloExchange(const t_commrec&                cr,
 
     if (useNvshmem)
     {
-        cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
-                *cr.dd,
-                deviceStreamManager.context(),
-                deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
-                std::nullopt);
-    }
-
-    for (int d = 0; d < cr.dd->ndim; d++)
-    {
-        for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        /* The gpuHaloExchangeNvshmemHelper is created on first use, or after it was explicitly
+         * destroyed and reset to nullptr (e.g., during teardown or mode switches).
+         * When useNvshmem is true at this point, we must ensure the it exists. */
+        if (cr.dd->gpuHaloExchangeNvshmemHelper == nullptr)
         {
-            cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                    cr.dd, d, cr.commMyGroup.comm(), cr.commMySim.comm(), deviceStreamManager.context(), pulse, useNvshmem, wcycle));
+            cr.dd->useGpuHaloExchangeNvshmem = true;
+            cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
+                    *cr.dd,
+                    deviceStreamManager.context(),
+                    deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                    std::nullopt,
+                    wcycle,
+                    cr.commMyGroup.comm(),
+                    cr.commMySim.comm());
+        }
+        for (auto& cdDim : cr.dd->comm->cd)
+        {
+            for (auto& indices : cdDim.ind)
+            {
+                gmx::changePinningPolicy(&indices.index, gmx::PinningPolicy::PinnedIfSupported);
+            }
+        }
+        GMX_RELEASE_ASSERT(
+                cr.dd->gpuHaloExchangeNvshmemHelper != nullptr,
+                "GpuHaloExchangeNvshmemHelper must be constructed when useNvshmem is true");
+    }
+    else
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
+        {
+            for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses();
+                 pulse++)
+            {
+                cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
+                        cr.dd, d, cr.commMyGroup.comm(), cr.commMySim.comm(), deviceStreamManager.context(), pulse, wcycle));
+            }
         }
     }
 }
@@ -3135,11 +3158,18 @@ void reinitGpuHaloExchange(const t_commrec&              cr,
                            const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            const DeviceBuffer<gmx::RVec> d_forcesBuffer)
 {
-    for (int d = 0; d < cr.dd->ndim; d++)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        cr.dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(cr, d_coordinatesBuffer, d_forcesBuffer);
+    }
+    else
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
         {
-            cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            {
+                cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+            }
         }
     }
 }
@@ -3148,33 +3178,15 @@ void reinitGpuHaloExchangeNvshmem(const t_commrec& cr)
 {
     // Does global communication and symmetric reallocation
     cr.dd->gpuHaloExchangeNvshmemHelper->reinit();
-    DeviceBuffer<uint64_t> d_syncBuffer = cr.dd->gpuHaloExchangeNvshmemHelper->getSyncBuffer();
-    const int totalPulsesAndDims        = cr.dd->gpuHaloExchangeNvshmemHelper->totalPulsesAndDims();
-
-    int numDimsAndPulses = 0;
-    for (int d = 0; d < cr.dd->ndim; d++)
-    {
-        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
-        {
-            cr.dd->gpuHaloExchange[d][pulse]->reinitNvshmemSignal(
-                    d_syncBuffer, totalPulsesAndDims, numDimsAndPulses++);
-        }
-    }
 }
 
 void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)
 {
-    if (cr.dd->gpuHaloExchangeNvshmemHelper)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int d = 0; d < cr.dd->ndim; d++)
-        {
-            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
-            {
-                cr.dd->gpuHaloExchange[d][pulse]->destroyGpuHaloExchangeNvshmemBuf();
-            }
-        }
+        cr.dd->gpuHaloExchangeNvshmemHelper->destroyAllHaloExchangeBuffers();
+        cr.dd->gpuHaloExchangeNvshmemHelper.reset(nullptr);
     }
-    cr.dd->gpuHaloExchangeNvshmemHelper.reset(nullptr);
 }
 
 GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,
@@ -3183,13 +3195,21 @@ GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,
 {
     GpuEventSynchronizer* eventPtr = dependencyEvent;
 
-    for (int d = 0; d < cr.dd->ndim; d++)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        eventPtr = cr.dd->gpuHaloExchangeNvshmemHelper->launchAllCoordinateExchanges(box, eventPtr);
+    }
+    else
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
         {
-            eventPtr = cr.dd->gpuHaloExchange[d][pulse]->communicateHaloCoordinates(box, eventPtr);
+            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            {
+                eventPtr = cr.dd->gpuHaloExchange[d][pulse]->communicateHaloCoordinates(box, eventPtr);
+            }
         }
     }
+
     return eventPtr;
 }
 
@@ -3197,12 +3217,21 @@ void communicateGpuHaloForces(const t_commrec&                                  
                               bool                                                accumulateForces,
                               gmx::FixedCapacityVector<GpuEventSynchronizer*, 2>* dependencyEvents)
 {
-    for (int d = cr.dd->ndim - 1; d >= 0; d--)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int pulse = cr.dd->comm->cd[d].numPulses() - 1; pulse >= 0; pulse--)
+        auto* eventPtr = cr.dd->gpuHaloExchangeNvshmemHelper->launchAllForceExchanges(
+                accumulateForces, dependencyEvents);
+        dependencyEvents->push_back(eventPtr);
+    }
+    else
+    {
+        for (int d = cr.dd->ndim - 1; d >= 0; d--)
         {
-            cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces, dependencyEvents);
-            dependencyEvents->push_back(cr.dd->gpuHaloExchange[d][pulse]->getForcesReadyOnDeviceEvent());
+            for (int pulse = cr.dd->comm->cd[d].numPulses() - 1; pulse >= 0; pulse--)
+            {
+                cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces, dependencyEvents);
+                dependencyEvents->push_back(cr.dd->gpuHaloExchange[d][pulse]->getForcesReadyOnDeviceEvent());
+            }
         }
     }
 }

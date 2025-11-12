@@ -210,7 +210,7 @@ MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
             gpuHaloExchange[d].push_back(GpuHaloExchange(
-                    dd, d, mpiComm.comm(), mpiComm.comm(), deviceContext, pulse, false, nullptr));
+                    dd, d, mpiComm.comm(), mpiComm.comm(), deviceContext, pulse, nullptr));
         }
     }
 
@@ -306,8 +306,8 @@ void define1dHaloWith1Pulse(const int rank,
                             gmx_domdec_t*                  dd,
                             std::vector<gmx_domdec_ind_t>* indvec)
 {
-    FastVector<int>  indexvec;
-    gmx_domdec_ind_t ind;
+    gmx::HostVector<int> indexvec;
+    gmx_domdec_ind_t     ind;
 
     dd->ndim     = 1;
     int nzone    = 1;
@@ -344,8 +344,8 @@ void define1dHaloWith2Pulses(const int rank,
                              gmx_domdec_t*                  dd,
                              std::vector<gmx_domdec_ind_t>* indvec)
 {
-    FastVector<int>  indexvec;
-    gmx_domdec_ind_t ind;
+    gmx::HostVector<int> indexvec;
+    gmx_domdec_ind_t     ind;
 
     dd->ndim     = 1;
     int nzone    = 1;
@@ -394,8 +394,8 @@ void define2dHaloWith1PulseInEachDim(const int rank,
                                      gmx_domdec_t*                  dd,
                                      std::vector<gmx_domdec_ind_t>* indvec)
 {
-    FastVector<int>  indexvec;
-    gmx_domdec_ind_t ind;
+    gmx::HostVector<int> indexvec;
+    gmx_domdec_ind_t     ind;
 
     dd->ndim  = 2;
     int nzone = 1;
@@ -436,7 +436,7 @@ void define2dHaloWith2PulsesInDim1(const int rank,
                                    gmx_domdec_t*                  dd,
                                    std::vector<gmx_domdec_ind_t>* indvec)
 {
-    FastVector<int>  indexvec;
+    HostVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
     dd->ndim  = 2;

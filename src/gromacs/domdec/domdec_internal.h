@@ -47,6 +47,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
@@ -81,12 +82,13 @@ struct gmx_domdec_ind_t
     int nrecv[gmx::sc_maxNumIZones + 2] = {};
     //! @}
     //! The charge groups to send
-    gmx::FastVector<int> index;
+    gmx::HostVector<int> index;
     //! @{
     /* The atom range for non-in-place communication */
     int cell2at0[gmx::sc_maxNumIZones] = {};
     int cell2at1[gmx::sc_maxNumIZones] = {};
     //! @}
+    gmx_domdec_ind_t() {}
 };
 
 //! Things relating to index communication

@@ -747,13 +747,16 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                     pme_pp->ppRanks);
             if (pme_pp->useNvshmem)
             {
-                if (pme_pp->useGpuHaloExchange)
+                if (pme_pp->useGpuHaloExchange && gpuHaloExchangeNvshmemHelper == nullptr)
                 {
                     gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
                             dd,
                             deviceStreamManager->context(),
                             deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
-                            pme_pp->peerRankId);
+                            pme_pp->peerRankId,
+                            wcycle,
+                            pme_pp->mpi_comm_mysim,
+                            pme_pp->mpi_comm_mysim);
                 }
                 pme_gpu_use_nvshmem(pmeFromRunner->gpu, useNvshmem);
                 pmeFromRunner->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;

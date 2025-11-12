@@ -223,44 +223,13 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, MP
     }
 
     reallocateDeviceBuffer(&d_v_, numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
-
-    bool isNvshmemBufRegRequired = false;
-    if (useNvshmem_ && numAtomsAll_ > d_fCapacity_)
-    {
-        isNvshmemBufRegRequired = true;
-        if (d_fCapacity_ > 0)
-        {
-            GMX_RELEASE_ASSERT(d_f_ != nullptr,
-                               "nvshmemx_buffer_unregister requires d_f_ buffer to be valid");
-            // unregister only when d_f_ was registered previously
-            // via nvshmemx_buffer_register and there is a realloc needed.
-#    if GMX_NVSHMEM
-            GMX_RELEASE_ASSERT(nvshmemx_buffer_unregister(d_f_) == 0,
-                               "NVSHMEM d_f_ Buffer unregistration failed");
-#    endif
-        }
-    }
-
-    reallocateDeviceBuffer(&d_f_, numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
+    reallocateDeviceBuffer(&d_f_, maxNumAtomsPadded, &d_fSize_, &d_fCapacity_, deviceContext_, useNvshmem_);
 
     // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
     // the force accumulation stage before syncing with the local stream. Not done for OpenCL,
     // since the force buffer ops are not implemented for it.
     if (useGpuFBufferOpsWhenAllowed_)
     {
-        if (isNvshmemBufRegRequired)
-        {
-            // As d_f_ is a source buffer in the PP Halo exchange nvshmem_put
-            // we do not need to do a symmetric allocation for it, registering it via
-            // nvshmemx_buffer_register is sufficient. Thus the required buffer size only needs
-            // to be locally sufficient, and does not need to be consistent across ranks.
-#    if GMX_NVSHMEM
-            std::size_t bufLen = d_fCapacity_ * sizeof(float3);
-            GMX_RELEASE_ASSERT(nvshmemx_buffer_register(d_f_, bufLen) == 0,
-                               "NVSHMEM d_f_ Buffer registration failed");
-#    endif
-        }
-
         clearDeviceBufferAsync(&d_f_, 0, d_fCapacity_, *localStream_);
         // We need to synchronize to avoid a data race with copyForcesToGpu(Local).
         localStream_->synchronize();

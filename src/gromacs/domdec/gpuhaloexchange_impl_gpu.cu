@@ -63,7 +63,7 @@
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 
 #include "domdec_struct.h"
-
+#include "fused_gpuhaloexchange.h"
 #if GMX_NVSHMEM
 #    include <nvshmem.h>
 #    include <nvshmemx.h>
@@ -369,56 +369,13 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
     const float3 coordinateShift{ box[boxDimensionIndex][XX],
                                   box[boxDimensionIndex][YY],
                                   box[boxDimensionIndex][ZZ] };
-    if (useNvshmem_)
+    // Avoid launching kernel when there is no work to do
+    if (xSendSize_ > 0)
     {
-#if GMX_NVSHMEM
-        // Launch the coordinates pack & put kernel only if either we have some buffer to pack (xSendSize_ > 0)
-        // and put it to sendRankX_ or we have some data received via puts (xRecvSize_ > 0) which needs to be waited on.
-        if ((xSendSize_ > 0) || (xRecvSize_ > 0))
-        {
-            config.blockSize[0] = nvshmemHaloExchange_.c_nvshmemThreadsPerBlock;
-            config.gridSize[0]  = nvshmemHaloExchange_.gridDimX_;
-
-            auto       packNvShmemkernelFn = usePBC_ ? packSendBufAndPutNvshmemKernel<true>
-                                                     : packSendBufAndPutNvshmemKernel<false>;
-            const auto kernelArgs =
-                    prepareGpuKernelArguments(packNvShmemkernelFn,
-                                              config,
-                                              &d_x,
-                                              &sendBuf,
-                                              &indexMap,
-                                              &xSendSize_,
-                                              &coordinateShift,
-                                              &sendRankX_,
-                                              &recvRankX_,
-                                              &nvshmemHaloExchange_.putAtomOffsetInReceiverRankXBuf_,
-                                              &nvshmemHaloExchange_.d_signalReceiverRankX_,
-                                              &nvshmemHaloExchange_.d_signalSenderRankX_,
-                                              &nvshmemHaloExchange_.signalReceiverRankXCounter_,
-                                              &nvshmemHaloExchange_.signalObjOffset_,
-                                              &nvshmemHaloExchange_.d_arriveWaitBarrier_,
-                                              &xRecvSize_);
-            launchGpuKernel(packNvShmemkernelFn,
-                            config,
-                            *haloStream_,
-                            nullptr,
-                            "Domdec GPU Apply X Halo Exchange",
-                            kernelArgs);
-        }
-        nvshmemHaloExchange_.signalReceiverRankXCounter_++;
-#endif
-    }
-    else
-    {
-        // Avoid launching kernel when there is no work to do
-        if (xSendSize_ > 0)
-        {
-            auto       kernelFn   = usePBC_ ? packSendBufKernel<true> : packSendBufKernel<false>;
-            const auto kernelArgs = prepareGpuKernelArguments(
-                    kernelFn, config, &sendBuf, &d_x, &indexMap, &xSendSize_, &coordinateShift);
-            launchGpuKernel(
-                    kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
-        }
+        auto       kernelFn   = usePBC_ ? packSendBufKernel<true> : packSendBufKernel<false>;
+        const auto kernelArgs = prepareGpuKernelArguments(
+                kernelFn, config, &sendBuf, &d_x, &indexMap, &xSendSize_, &coordinateShift);
+        launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     }
 }
 
@@ -439,52 +396,149 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
     const float3* recvBuf  = asFloat3(d_recvBuf_);
     const int*    indexMap = d_indexMap_;
 
-    if (useNvshmem_ && receiveInPlace_)
+    if (fRecvSize_ > 0)
     {
-        // Launch the force put & unpack kernel only if either we have some packed buffer to put
-        // (fSendSize_ > 0) or we have some data received (fRecvSize_ > 0) to unpack.
-        if ((fSendSize_ > 0) || (fRecvSize_ > 0))
-        {
-            config.blockSize[0] = nvshmemHaloExchange_.c_nvshmemThreadsPerBlock;
-            // Add 1 to fRecvSize_ to take care of case when fRecvSize_ == 0 in such case
-            // we still launch the kernel to signal the remote rank recvRankX_
-            // from which this rank receives packed data as (fSendSize_ > 0)
-            config.gridSize[0] =
-                    gmx::divideRoundUp(fRecvSize_ + 1, nvshmemHaloExchange_.c_nvshmemThreadsPerBlock);
-            const int  fSendSize = fSendSize_ * DIM;
-            auto       kernelFn  = accumulateForces ? putPackedDataUnpackRecvBufNvshmemKernel<true>
-                                                    : putPackedDataUnpackRecvBufNvshmemKernel<false>;
-            const auto kernelArgs =
-                    prepareGpuKernelArguments(kernelFn,
-                                              config,
-                                              &d_f,
-                                              &recvBuf,
-                                              &indexMap,
-                                              &fRecvSize_,
-                                              &fSendSize,
-                                              &atomOffset_,
-                                              &sendRankF_,
-                                              &nvshmemHaloExchange_.d_signalReceiverRankF_,
-                                              &nvshmemHaloExchange_.signalReceiverRankFCounter_,
-                                              &nvshmemHaloExchange_.signalObjOffset_);
-            launchGpuKernel(
-                    kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
-        }
-        nvshmemHaloExchange_.signalReceiverRankFCounter_++;
+        auto kernelFn = accumulateForces ? unpackRecvBufKernel<true> : unpackRecvBufKernel<false>;
+        const auto kernelArgs =
+                prepareGpuKernelArguments(kernelFn, config, &d_f, &recvBuf, &indexMap, &fRecvSize_);
+
+        launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
     }
-    else
+}
+
+void FusedGpuHaloExchange::launchPackXKernel(const matrix box)
+{
+    // Iterate over all HaloExchangeData entries and launch pack kernel per entry
+    // Use the absolute entry index as the signal/buffer/barrier offset to keep
+    // indices consistent with the pre-initialized barrier array and signal buffers.
+#if GMX_NVSHMEM
+    for (int idx = 0; idx < static_cast<int>(haloExchangeData_.size()); ++idx)
     {
-        if (fRecvSize_ > 0)
+        const auto& e               = haloExchangeData_[idx];
+        const int   signalObjOffset = idx;
+        const int   xSendSize       = e.xSendSize;
+        const int   xRecvSize       = e.xRecvSize;
+        if ((xSendSize <= 0) && (xRecvSize <= 0))
         {
-            auto kernelFn = accumulateForces ? unpackRecvBufKernel<true> : unpackRecvBufKernel<false>;
-
-            const auto kernelArgs =
-                    prepareGpuKernelArguments(kernelFn, config, &d_f, &recvBuf, &indexMap, &fRecvSize_);
-
-            launchGpuKernel(
-                    kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+            continue;
         }
+
+        KernelLaunchConfig config;
+        config.blockSize[0] = FusedGpuHaloExchange::c_nvshmemThreadsPerBlock;
+        config.blockSize[1] = 1;
+        config.blockSize[2] = 1;
+        // Add 1 to size to take care of case when (xSendSize_ == 0 && xRecvSize_ > 0).
+        // In such case, we still launch the kernel to signal the remote rank
+        // from which this rank receives packed data
+        config.gridSize[0]      = gmx::divideRoundUp(xSendSize + 1, c_nvshmemThreadsPerBlock);
+        config.gridSize[1]      = 1;
+        config.gridSize[2]      = 1;
+        config.sharedMemorySize = 0;
+
+        const float3* d_x               = asFloat3(sharedBuffers_.d_x);
+        float3*       sendBuf           = asFloat3(e.d_sendBuf);
+        const int*    indexMap          = e.d_indexMap;
+        const int     boxDimensionIndex = e.boxDimensionIndex;
+        const float3  coordinateShift{ box[boxDimensionIndex][XX],
+                                      box[boxDimensionIndex][YY],
+                                      box[boxDimensionIndex][ZZ] };
+        auto          packNvShmemkernelFn          = e.usePBC ? packSendBufAndPutNvshmemKernel<true>
+                                                              : packSendBufAndPutNvshmemKernel<false>;
+        int           atomOffsetXInSendRank        = e.nvshmemData.putAtomOffsetInReceiverRankXBuf_;
+        int           sendRankX                    = e.sendRankX;
+        int           recvRankX                    = e.recvRankX;
+        DeviceBuffer<uint64_t> signalReceiverRankX = sharedBuffers_.d_signalReceiverRankX_;
+        DeviceBuffer<uint64_t> signalSenderRankX   = sharedBuffers_.d_signalSenderRankX_;
+        cuda::barrier<cuda::thread_scope_device>* bar = (d_xGridSync_ + idx);
+
+        const auto kernelArgs = prepareGpuKernelArguments(packNvShmemkernelFn,
+                                                          config,
+                                                          &d_x,
+                                                          &sendBuf,
+                                                          &indexMap,
+                                                          &xSendSize,
+                                                          &coordinateShift,
+                                                          &sendRankX,
+                                                          &recvRankX,
+                                                          &atomOffsetXInSendRank,
+                                                          &signalReceiverRankX,
+                                                          &signalSenderRankX,
+                                                          &signalReceiverRankXCounter_,
+                                                          &signalObjOffset,
+                                                          &bar,
+                                                          &xRecvSize);
+        launchGpuKernel(packNvShmemkernelFn,
+                        config,
+                        *haloStream_,
+                        nullptr,
+                        "Domdec GPU Apply X Halo Exchange (Fused)",
+                        kernelArgs);
     }
+    signalReceiverRankXCounter_++;
+#endif
+}
+
+void FusedGpuHaloExchange::launchUnpackFKernel(bool accumulateForces)
+{
+    // Iterate over all HaloExchangeData entries in reverse launch order and launch force put+unpack per entry
+#if GMX_NVSHMEM
+    for (int idx = static_cast<int>(haloExchangeData_.size()) - 1; idx >= 0; --idx)
+    {
+        int         signalObjOffset = idx;
+        const auto& e               = haloExchangeData_[idx];
+        const int   fRecvSize       = e.xSendSize;       // recv forces equals send coords size
+        const int   fSendSize       = e.xRecvSize * DIM; // send forces equals recv coords size
+        if ((fSendSize <= 0) && (fRecvSize <= 0))
+        {
+            continue;
+        }
+
+        KernelLaunchConfig config;
+        float3*            d_f      = asFloat3(sharedBuffers_.d_f);
+        float3*            recvBuf  = asFloat3(e.d_recvBuf);
+        const int*         indexMap = e.d_indexMap;
+
+        // Use fused NVSHMEM grid settings if available; ensure at least one block
+        config.blockSize[0] = FusedGpuHaloExchange::c_nvshmemThreadsPerBlock;
+        config.blockSize[1] = 1;
+        config.blockSize[2] = 1;
+        // Add 1 to size to take care of case when (fRecvSize == 0 && fSendSize > 0).
+        // In such case, we still launch the kernel to signal the remote rank
+        // from which this rank receives packed data
+        config.gridSize[0] =
+                gmx::divideRoundUp(fRecvSize + 1, FusedGpuHaloExchange::c_nvshmemThreadsPerBlock);
+        config.gridSize[1]      = 1;
+        config.gridSize[2]      = 1;
+        config.sharedMemorySize = 0;
+
+        // Accumulation behavior:
+        // - Accumulate when there are CPU-side force contributions.
+        // - If there are no CPU-side contributions, accumulate only for 2D/3D domain decomposition for all pulses,
+        //   and for 1D only from the second pulse onward (not on pulse 0 in 1D).
+        bool shouldAccumulateForces = (accumulateForces && idx == 0) ? accumulateForces : e.accumulateForces;
+        auto kernelFn = shouldAccumulateForces ? putPackedDataUnpackRecvBufNvshmemKernel<true>
+                                               : putPackedDataUnpackRecvBufNvshmemKernel<false>;
+
+        int        atomOffset          = e.atomOffset;
+        int        sendRankF           = e.recvRankX; // F send rank is reverse of X
+        uint64_t*  signalReceiverRankF = sharedBuffers_.d_signalReceiverRankF_;
+        const auto kernelArgs          = prepareGpuKernelArguments(kernelFn,
+                                                          config,
+                                                          &d_f,
+                                                          &recvBuf,
+                                                          &indexMap,
+                                                          &fRecvSize,
+                                                          &fSendSize,
+                                                          &atomOffset,
+                                                          &sendRankF,
+                                                          &signalReceiverRankF,
+                                                          &signalReceiverRankFCounter_,
+                                                          &signalObjOffset);
+        launchGpuKernel(
+                kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange (Fused)", kernelArgs);
+    }
+    signalReceiverRankFCounter_++;
+#endif
 }
 
 } // namespace gmx

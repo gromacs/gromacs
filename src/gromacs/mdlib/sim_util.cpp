@@ -1263,7 +1263,17 @@ static void setupLocalGpuForceReduction(const MdrunScheduleWorkload& runSchedule
 
     if (runScheduleWork.simulationWork.useGpuHaloExchange)
     {
-        gpuForceReduction->addDependency(dd->gpuHaloExchange[0][0]->getForcesReadyOnDeviceEvent());
+        if (runScheduleWork.simulationWork.useNvshmem)
+        {
+            GMX_RELEASE_ASSERT(dd->gpuHaloExchangeNvshmemHelper != nullptr,
+                               "NVSHMEM helper should be initialized when using NVSHMEM");
+            gpuForceReduction->addDependency(
+                    dd->gpuHaloExchangeNvshmemHelper->getForcesReadyOnDeviceEvent());
+        }
+        else
+        {
+            gpuForceReduction->addDependency(dd->gpuHaloExchange[0][0]->getForcesReadyOnDeviceEvent());
+        }
     }
 }
 

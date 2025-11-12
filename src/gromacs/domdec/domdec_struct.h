@@ -216,6 +216,9 @@ struct gmx_domdec_t
 
     /* GPU halo exchange objects: this structure supports a vector of pulses for each dimension */
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
+
+    //! Enables NVSHMEM-based GPU halo exchange
+    bool useGpuHaloExchangeNvshmem = false;
 };
 
 /*! \brief Returns whether this rank computes particle-particle interactions
