@@ -256,7 +256,7 @@ static bool inline haveDDAtomOrdering(const gmx_domdec_t* dd)
  */
 static bool inline havePPDomainDecomposition(const gmx_domdec_t* dd)
 {
-    return dd && dd->nnodes > 1;
+    return (dd != nullptr) && (dd->nnodes > 1);
 }
 
 /*! Return whether \p globalAtomIndex is a valid global atom (and not a filler particle)

@@ -66,7 +66,6 @@
 
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
-struct nonbonded_verlet_t;
 enum class PbcType : int;
 struct t_forcerec;
 class t_state;
@@ -95,7 +94,7 @@ public:
     ~HaloExchange();
 
     //! Set up the halo communication, should be called after (re)partitioning
-    void setup(gmx_domdec_t* dd, t_state* localState, const gmx_ddbox_t& ddbox, t_forcerec* fr, const bool cellsChanged);
+    void setup(gmx_domdec_t* dd, t_state* localState, const gmx_ddbox_t& ddbox, t_forcerec* fr, bool cellsChanged);
 
     /*! \brief Iniatiate a non-blocking receive of the halo coordinates x
      *

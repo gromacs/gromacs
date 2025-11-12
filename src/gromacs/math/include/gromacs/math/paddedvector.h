@@ -378,13 +378,13 @@ public:
         return ArrayRefWithPadding<const T>(data(), data() + size(), data() + paddedSize());
     }
     //! Returns an rvec * pointer for containers of RVec, for use with legacy code.
-    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same_v<AlsoT, RVec>>>
+    template<typename AlsoT = T, typename = std::enable_if_t<std::is_same_v<AlsoT, RVec>>>
     rvec* rvec_array()
     {
         return as_rvec_array(data());
     }
     //! Returns a const rvec * pointer for containers of RVec, for use with legacy code.
-    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same_v<AlsoT, RVec>>>
+    template<typename AlsoT = T, typename = std::enable_if_t<std::is_same_v<AlsoT, RVec>>>
     const rvec* rvec_array() const
     {
         return as_rvec_array(data());

@@ -53,7 +53,7 @@ enum class GpuAwareMpiStatus : int
 };
 
 //! Helper function to pretty-print GPU-aware status values
-const char* enumValueToString(const GpuAwareMpiStatus status);
+const char* enumValueToString(GpuAwareMpiStatus status);
 
 //! Return whether GROMACS is linked against an MPI library describing itself as Intel MPI
 bool usingIntelMpi();
