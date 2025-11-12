@@ -268,7 +268,7 @@ public:
  * In tests, we want to be able to cover many code paths on the
  * available hardware regardless of performance. This setter allows
  * test code to avoid irrelevant fatal errors about performance. */
-void setThrowForPerformanceProblems(const bool newValue);
+void setThrowForPerformanceProblems(bool newValue);
 
 } // namespace gmx
 

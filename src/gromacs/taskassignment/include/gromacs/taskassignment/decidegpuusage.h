@@ -92,7 +92,7 @@ struct DevelopmentFeatureFlags
 class MDAtoms;
 
 
-bool canUseGpusForNonbonded(const t_inputrec& ir, const bool doRerun, std::string* error);
+bool canUseGpusForNonbonded(const t_inputrec& ir, bool doRerun, std::string* error);
 
 /*! \brief Decide whether this thread-MPI simulation will run
  * nonbonded tasks on GPUs.
