@@ -218,6 +218,7 @@ void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistribu
     const int numInput = params_.nnpAtoms_->numAtomsGlobal();
 
     inputToLocalIndex_.assign(numInput, -1);
+    inputToGlobalIndex_.assign(numInput, -1);
     atomNumbers_.assign(numInput, 0);
 
     if (mpiComm_.isParallel())
@@ -239,8 +240,9 @@ void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistribu
                     // only map input indices for home atoms
                     if (i < numLocal)
                     {
-                        inputToLocalIndex_[j] = i;
-                        atomNumbers_[j]       = params_.atoms_.atom[globalIdx].atomnumber;
+                        inputToLocalIndex_[j]  = i;
+                        inputToGlobalIndex_[j] = globalIdx;
+                        atomNumbers_[j]        = params_.atoms_.atom[globalIdx].atomnumber;
                     }
                     localToInputIndex_[i] = j;
                     break;
@@ -257,6 +259,7 @@ void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistribu
             int localIndex = params_.nnpAtoms_->localIndex()[i];
             int globalIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
             inputToLocalIndex_[i]          = localIndex;
+            inputToGlobalIndex_[i]         = globalIdx;
             localToInputIndex_[localIndex] = i;
             atomNumbers_[i]                = params_.atoms_.atom[globalIdx].atomnumber;
         }
