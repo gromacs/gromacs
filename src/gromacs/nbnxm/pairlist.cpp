@@ -2473,6 +2473,46 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<AtomPairlist>> fepLists, 
     }
 }
 
+// Combine fep pair lists generated on multiple threads
+static void combine_fep_lists(ArrayRef<std::unique_ptr<AtomPairlist>> fepLists)
+{
+    const int numLists = fepLists.ssize();
+
+    if (numLists == 1)
+    {
+        /* Nothing to combine */
+        return;
+    }
+
+    AtomPairlist& dest = *fepLists[0];
+
+    for (int srcThread = 1; srcThread < numLists; srcThread++)
+    {
+        AtomPairlist& src = *fepLists[srcThread];
+        for (gmx::Index i = 0; i < src.iList().ssize(); i++)
+        {
+            /* The number of pairs in this i-entry */
+            const int nrj = src.jList(i).ssize();
+            dest.addIEntry(src.iList()[i], nrj);
+
+            for (const AtomPairlist::JEntry& jEntry : src.jList(i))
+            {
+                dest.addJEntry(jEntry);
+            }
+        }
+
+        src.clear();
+    }
+
+    if (debug)
+    {
+        fprintf(debug,
+                "nbl_fep[0] nri %4d nrj %4d\n",
+                int(dest.iList().ssize()),
+                int(dest.flatJList().ssize()));
+    }
+}
+
 /* Returns the distance^2 for which we put cell pairs in the list
  * without checking atom pair distances. This is usually < rlist^2.
  */
@@ -3638,7 +3678,8 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                                      const bool               includeAllPairs,
                                      const int                minimumIlistCountForGpuBalancing,
                                      t_nrnb*                  nrnb,
-                                     SearchCycleCounting*     searchCycleCounting)
+                                     SearchCycleCounting*     searchCycleCounting,
+                                     const bool               useGpuNonbondedFE)
 {
     const real rlist = params_.rlistOuter;
 
@@ -3889,9 +3930,16 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
         {
             numPerturbedExclusionsWithinRlist_ += fepList->numExclusionsWithinRlist();
         }
-
-        /* Balance the free-energy lists over all the threads */
-        balance_fep_lists(fepLists_, searchWork);
+        if (isCpuType_ || !useGpuNonbondedFE || !params_.haveNonbondedFEGpu_)
+        {
+            /* Balance the free-energy lists over all the threads */
+            balance_fep_lists(fepLists_, searchWork);
+        }
+        else
+        {
+            /* Combine the free-energy lists into one for GPU */
+            combine_fep_lists(fepLists_);
+        }
     }
 
     if (isCpuType_)
@@ -3962,7 +4010,8 @@ void PairlistSets::construct(const InteractionLocality iLocality,
                              const ListOfLists<int>&   exclusions,
                              const bool                includeAllPairs,
                              const int64_t             step,
-                             t_nrnb*                   nrnb)
+                             t_nrnb*                   nrnb,
+                             const bool                useGpuNonbondedFE)
 {
     includesAllPairs_ = includeAllPairs;
 
@@ -3987,7 +4036,8 @@ void PairlistSets::construct(const InteractionLocality iLocality,
                                               includeAllPairs,
                                               minimumIlistCountForGpuBalancing_,
                                               nrnb,
-                                              &pairSearch->cycleCounting_);
+                                              &pairSearch->cycleCounting_,
+                                              useGpuNonbondedFE);
 
     if (iLocality == InteractionLocality::Local)
     {
@@ -4018,8 +4068,8 @@ void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
                                            t_nrnb*                   nrnb) const
 {
     pairlistSets_->construct(
-            iLocality, pairSearch_.get(), nbat_.get(), exclusions, includeAllPairs, step, nrnb);
 
+            iLocality, pairSearch_.get(), nbat_.get(), exclusions, includeAllPairs, step, nrnb, useGpuNonbondedFE_);
     // For tests it is convenient to allow gpuNbv_==nullptr and skip GPU calls
     if (useGpu() && gpuNbv_ != nullptr)
     {

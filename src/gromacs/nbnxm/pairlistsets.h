@@ -84,7 +84,8 @@ public:
                    const ListOfLists<int>& exclusions,
                    bool                    includeAllPairs,
                    int64_t                 step,
-                   t_nrnb*                 nrnb);
+                   t_nrnb*                 nrnb,
+                   bool                    useGpuForNonbondedFE);
 
     //! Dispatches the dynamic pruning kernel for the given locality
     void dispatchPruneKernel(InteractionLocality     iLocality,

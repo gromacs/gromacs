@@ -336,10 +336,10 @@ public:
 
     //! Updates all the atom properties in Nbnxm
     void setAtomProperties(ArrayRef<const int>     atomTypesA,
-                           ArrayRef<const int>     atomTypesB,
                            ArrayRef<const real>    atomChargesA,
-                           ArrayRef<const real>    atomChargesB,
-                           ArrayRef<const int32_t> atomInfo) const;
+                           ArrayRef<const int32_t> atomInfo,
+                           ArrayRef<const int>     atomTypesB   = {},
+                           ArrayRef<const real>    atomChargesB = {}) const;
 
     /*!\brief Convert the coordinates to NBNXM format for the given locality.
      *
@@ -491,7 +491,7 @@ private:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
     NbnxmGpu* gpuNbv_;
 
-    // whether to use GPU for nonbonded FE calculations
+    // whether to use GPU for nonbonded FE calculations, also affects the pairlist construction kernel
     bool useGpuNonbondedFE_;
 };
 

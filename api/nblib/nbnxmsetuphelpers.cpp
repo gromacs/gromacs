@@ -373,7 +373,7 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           n
                                                             numThreadsInit);
 
     gmx::NbnxmGpu* nbnxmGpu = gmx::gpu_init(
-            deviceStreamManager, &interactionConst, pairlistParams, atomData.get(), false);
+            deviceStreamManager, &interactionConst, pairlistParams, atomData.get(), false, std::nullopt);
 
     // minimum iList count for GPU balancing
     int iListCount = gmx::gpu_min_ci_balanced(nbnxmGpu);

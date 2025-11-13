@@ -1426,7 +1426,7 @@ static void doPairSearch(const t_commrec*             cr,
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
     }
 
-    nbv->setAtomProperties(mdatoms.typeA, mdatoms.typeB, mdatoms.chargeA, mdatoms.chargeB, fr->atomInfo);
+    nbv->setAtomProperties(mdatoms.typeA, mdatoms.chargeA, fr->atomInfo, mdatoms.typeB, mdatoms.chargeB);
 
     wallcycle_stop(wcycle, WallCycleCounter::NS);
 

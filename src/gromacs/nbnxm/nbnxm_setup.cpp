@@ -503,6 +503,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     PairlistParams pairlistParams(
             kernelSetup.kernelType, gpuPairlistLayout, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
+    pairlistParams.haveNonbondedFEGpu_ = bFEP_GPU_NonBonded;
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
             coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), mpiComm.comm());
@@ -562,8 +563,12 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                 (deviceStreamManager != nullptr),
                 "Device stream manager should be initialized in order to use GPU for non-bonded.");
         gpu_nbv = gpu_init(
-                *deviceStreamManager, forcerec.ic.get(), pairlistParams, nbat.get(), haveMultipleDomains);
-
+                *deviceStreamManager,
+                forcerec.ic.get(),
+                pairlistParams,
+                nbat.get(),
+                haveMultipleDomains,
+                bFEP_GPU_NonBonded ? std::optional<int>(inputrec.fepvals->n_lambda) : std::nullopt);
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 

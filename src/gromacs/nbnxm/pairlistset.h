@@ -93,7 +93,8 @@ public:
                             bool                     includeAllPairs,
                             int                      minimumIlistCountForGpuBalancing,
                             t_nrnb*                  nrnb,
-                            SearchCycleCounting*     searchCycleCounting);
+                            SearchCycleCounting*     searchCycleCounting,
+                            bool                     useGpuNonbondedFE);
 
     //! Dispatch the kernel for dynamic pairlist pruning
     void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, ArrayRef<const RVec> shift_vec);
@@ -113,6 +114,9 @@ public:
             return nullptr;
         }
     }
+
+    //! Returns the pair list parameters
+    const PairlistParams& params() const { return params_; }
 
     //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
     ArrayRef<const std::unique_ptr<AtomPairlist>> fepLists() const { return fepLists_; }

@@ -478,6 +478,12 @@ nbnxn_atomdata_t::Params::Params(PinningPolicy pinningPolicy) :
     type({}, { pinningPolicy }),
     lj_comb({}, { pinningPolicy }),
     q({}, { pinningPolicy }),
+    typeA({}, { pinningPolicy }),
+    lj_combA({}, { pinningPolicy }),
+    qA({}, { pinningPolicy }),
+    typeB({}, { pinningPolicy }),
+    lj_combB({}, { pinningPolicy }),
+    qB({}, { pinningPolicy }),
     numEnergyGroups(0)
 {
 }
@@ -779,7 +785,9 @@ static void copy_lj_to_nbat_lj_comb(ArrayRef<const real> ljparam_type, const int
 /* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
                                          const GridSet&            gridSet,
-                                         ArrayRef<const int>       atomTypes)
+                                         ArrayRef<const int>       atomTypesA,
+                                         ArrayRef<const int>       atomTypesB,
+                                         const bool                useGpuNonbondedFE)
 {
     params->type.resize(gridSet.numGridAtomsTotal());
 
@@ -796,17 +804,50 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
             copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
                                  grid.numAtomsInColumn(i),
                                  numAtoms,
-                                 atomTypes.data(),
+                                 atomTypesA.data(),
                                  params->numTypes - 1,
                                  params->type.data() + atomOffset);
         }
     }
+    if (useGpuNonbondedFE)
+    {
+        params->typeA.resize(gridSet.numGridAtomsTotal());
+        params->typeB.resize(gridSet.numGridAtomsTotal());
+
+        for (const Grid& grid : gridSet.grids())
+        {
+            /* Loop over all columns and copy and fill */
+            for (int i = 0; i < grid.numColumns(); i++)
+            {
+                const int numAtoms   = grid.paddedNumAtomsInColumn(i);
+                const int atomOffset = grid.firstAtomInColumn(i);
+
+                copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
+                                     grid.numAtomsInColumn(i),
+                                     numAtoms,
+                                     atomTypesA.data(),
+                                     params->numTypes - 1,
+                                     params->typeA.data() + atomOffset);
+
+                GMX_ASSERT(atomTypesB.ssize() >= params->numTypes,
+                           "atomTypesB does not have sufficient size");
+                copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
+                                     grid.numAtomsInColumn(i),
+                                     numAtoms,
+                                     atomTypesB.data(),
+                                     params->numTypes - 1,
+                                     params->typeB.data() + atomOffset);
+            }
+        }
+    }
 }
+
 
 /* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
                                             const int                 XFormat,
-                                            const GridSet&            gridSet)
+                                            const GridSet&            gridSet,
+                                            const bool                useGpuNonbondedFE)
 {
     params->lj_comb.resize(gridSet.numGridAtomsTotal() * 2);
 
@@ -846,10 +887,67 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
             }
         }
     }
+
+    if (useGpuNonbondedFE)
+    {
+        params->lj_combA.resize(gridSet.numGridAtomsTotal() * 2);
+        params->lj_combB.resize(gridSet.numGridAtomsTotal() * 2);
+
+        if (params->ljCombinationRule != LJCombinationRule::None)
+        {
+            for (const Grid& grid : gridSet.grids())
+            {
+                /* Loop over all columns and copy and fill */
+                for (int i = 0; i < grid.numColumns(); i++)
+                {
+                    const int numAtoms   = grid.paddedNumAtomsInColumn(i);
+                    const int atomOffset = grid.firstAtomInColumn(i);
+
+                    if (XFormat == nbatX4)
+                    {
+                        copy_lj_to_nbat_lj_comb<c_packX4>(params->nbfp_comb,
+                                                          params->typeA.data() + atomOffset,
+                                                          numAtoms,
+                                                          params->lj_combA.data() + atomOffset * 2);
+                        copy_lj_to_nbat_lj_comb<c_packX4>(params->nbfp_comb,
+                                                          params->typeB.data() + atomOffset,
+                                                          numAtoms,
+                                                          params->lj_combB.data() + atomOffset * 2);
+                    }
+                    else if (XFormat == nbatX8)
+                    {
+                        copy_lj_to_nbat_lj_comb<c_packX8>(params->nbfp_comb,
+                                                          params->typeA.data() + atomOffset,
+                                                          numAtoms,
+                                                          params->lj_combA.data() + atomOffset * 2);
+                        copy_lj_to_nbat_lj_comb<c_packX8>(params->nbfp_comb,
+                                                          params->typeB.data() + atomOffset,
+                                                          numAtoms,
+                                                          params->lj_combB.data() + atomOffset * 2);
+                    }
+                    else if (XFormat == nbatXYZQ)
+                    {
+                        copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb,
+                                                   params->typeA.data() + atomOffset,
+                                                   numAtoms,
+                                                   params->lj_combA.data() + atomOffset * 2);
+                        copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb,
+                                                   params->typeB.data() + atomOffset,
+                                                   numAtoms,
+                                                   params->lj_combB.data() + atomOffset * 2);
+                    }
+                }
+            }
+        }
+    }
 }
 
 /* Sets the charges in nbnxn_atomdata_t *nbat */
-static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const GridSet& gridSet, ArrayRef<const real> charges)
+static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*    nbat,
+                                       const GridSet&       gridSet,
+                                       ArrayRef<const real> chargesA,
+                                       ArrayRef<const real> chargesB,
+                                       const bool           useGpuNonbondedFE)
 {
     if (nbat->XFormat != nbatXYZQ)
     {
@@ -872,7 +970,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const GridSet& gr
                 real* q = nbat->x().data() + atomOffset * STRIDE_XYZQ + ZZ + 1;
                 for (int i = 0; i < numAtoms; i++)
                 {
-                    *q = charges[gridSet.atomIndices()[atomOffset + i]];
+                    *q = chargesA[gridSet.atomIndices()[atomOffset + i]];
                     q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
@@ -887,7 +985,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const GridSet& gr
                 real* q = nbat->paramsDeprecated().q.data() + atomOffset;
                 for (int i = 0; i < numAtoms; i++)
                 {
-                    *q = charges[gridSet.atomIndices()[atomOffset + i]];
+                    *q = chargesA[gridSet.atomIndices()[atomOffset + i]];
                     q++;
                 }
                 /* Complete the partially filled last cell with zeros */
@@ -895,6 +993,43 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const GridSet& gr
                 {
                     *q = 0;
                     q++;
+                }
+            }
+        }
+    }
+
+    if (useGpuNonbondedFE)
+    {
+        nbat->paramsDeprecated().qA.resize(nbat->numAtoms());
+        nbat->paramsDeprecated().qB.resize(nbat->numAtoms());
+        ArrayRef<real> qA = nbat->paramsDeprecated().qA;
+        ArrayRef<real> qB = nbat->paramsDeprecated().qB;
+        int            qIndex;
+
+        for (const Grid& grid : gridSet.grids())
+        {
+            /* Loop over all columns and copy and fill */
+            for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+            {
+                const int atomOffset     = grid.firstAtomInColumn(cxy);
+                const int numAtoms       = grid.numAtomsInColumn(cxy);
+                const int paddedNumAtoms = grid.paddedNumAtomsInColumn(cxy);
+
+                qIndex = atomOffset;
+                GMX_ASSERT(chargesB.ssize() >= numAtoms, "chargesB does not have sufficient size");
+
+                for (int i = 0; i < numAtoms; i++)
+                {
+                    qA[qIndex] = chargesA[gridSet.atomIndices()[atomOffset + i]];
+                    qB[qIndex] = chargesB[gridSet.atomIndices()[atomOffset + i]];
+                    qIndex++;
+                }
+                /* Complete the partially filled last cell with zeros */
+                for (int i = numAtoms; i < paddedNumAtoms; i++)
+                {
+                    qA[qIndex] = 0;
+                    qB[qIndex] = 0;
+                    qIndex++;
                 }
             }
         }
@@ -975,7 +1110,6 @@ static void nbnxn_atomdata_set_energygroups(const GridSet&          gridSet,
 }
 
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
-/* The parameters B setter will be enabled in the next MR */
 void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
                         const GridSet gmx_unused&          gridSet,
                         ArrayRef<const int> gmx_unused     atomTypesA,
@@ -987,9 +1121,9 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
 {
     nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
 
-    nbnxn_atomdata_set_atomtypes(&params, gridSet, atomTypesA);
+    nbnxn_atomdata_set_atomtypes(&params, gridSet, atomTypesA, atomTypesB, useGpuNonbondedFE);
 
-    nbnxn_atomdata_set_charges(nbat, gridSet, atomChargesA);
+    nbnxn_atomdata_set_charges(nbat, gridSet, atomChargesA, atomChargesB, useGpuNonbondedFE);
 
     if (gridSet.haveFep())
     {
@@ -997,7 +1131,7 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
     }
 
     /* This must be done after masking types for FEP */
-    nbnxn_atomdata_set_ljcombparams(&params, nbat->XFormat, gridSet);
+    nbnxn_atomdata_set_ljcombparams(&params, nbat->XFormat, gridSet, useGpuNonbondedFE);
 
     if (nbat->params().energyGroupsPerCluster)
     {

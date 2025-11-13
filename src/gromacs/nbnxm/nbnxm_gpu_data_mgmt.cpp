@@ -490,7 +490,8 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
-                   const bool                 bLocalAndNonlocal)
+                   const bool                 bLocalAndNonlocal,
+                   const gmx_unused std::optional<int> n_lambda)
 {
     auto* nb           = new NbnxmGpu();
     nb->deviceContext_ = &deviceStreamManager.context();

@@ -46,6 +46,7 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/gpu_macros.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 
 #include "nbnxm.h"
@@ -72,7 +73,8 @@ NbnxmGpu* gpu_init(const DeviceStreamManager gmx_unused& deviceStreamManager,
                    const PairlistParams gmx_unused&      listParams,
                    const nbnxn_atomdata_t gmx_unused*    nbat,
                    /* true if both local and non-local are done on GPU */
-                   bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+                   bool gmx_unused                     bLocalAndNonlocal,
+                   const std::optional<int> gmx_unused n_lambda) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER

@@ -211,6 +211,22 @@ struct nbnxn_atomdata_t
         HostVector<real> lj_comb;
         //! Charges per atom, not set with format nbatXYZQ
         HostVector<real> q;
+        /* The charges and types of the perturbed atoms are set to non-interacting by the nbnxn_atomdata_mask_fep function.
+         * Therefore, separate arrays are used to store the A and B state parameters in FEP calculations.
+         * These arrays will have correct values for all particles in the system (perturbed and non-perturbed).
+         */
+        //! FEP param: Atom types of stateA per atom
+        HostVector<int> typeA;
+        //! FEP param: LJ parameters of stateA per atom for fast SIMD loading
+        HostVector<real> lj_combA;
+        //! FEP param: Charges of stateA per atom
+        HostVector<real> qA;
+        //! FEP param: Atom types of stateB per atom
+        HostVector<int> typeB;
+        //! FEP param: LJ parameters of stateB per atom for fast SIMD loading
+        HostVector<real> lj_combB;
+        //! FEP param: Charges of stateB per atom
+        HostVector<real> qB;
         //! The number of energy groups
         int numEnergyGroups;
         //! The list of energy groups per i-cluster

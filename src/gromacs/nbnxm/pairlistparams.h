@@ -85,6 +85,8 @@ struct PairlistParams
     PairlistType pairlistType;
     //! Tells whether we have perturbed interactions
     bool haveFep_;
+    //! Tells whether we have nonbonded free energy interactions on GPU
+    bool haveNonbondedFEGpu_;
     //! Cut-off of the larger, outer pair-list
     real rlistOuter;
     //! Cut-off of the smaller, inner pair-list

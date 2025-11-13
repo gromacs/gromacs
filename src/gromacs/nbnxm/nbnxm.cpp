@@ -137,10 +137,10 @@ void nonbonded_verlet_t::setLocalAtomOrder() const
 }
 
 void nonbonded_verlet_t::setAtomProperties(ArrayRef<const int>     atomTypesA,
-                                           ArrayRef<const int>     atomTypesB,
                                            ArrayRef<const real>    atomChargesA,
-                                           ArrayRef<const real>    atomChargesB,
-                                           ArrayRef<const int32_t> atomInfo) const
+                                           ArrayRef<const int32_t> atomInfo,
+                                           ArrayRef<const int>     atomTypesB,
+                                           ArrayRef<const real>    atomChargesB) const
 {
     nbnxn_atomdata_set(nbat_.get(),
                        pairSearch_->gridSet(),
