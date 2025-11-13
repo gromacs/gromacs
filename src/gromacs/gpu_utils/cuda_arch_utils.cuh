@@ -86,22 +86,18 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
 
 /* CUDA architecture technical characteristics. Needs macros because it is used
  * in the __launch_bounds__ function qualifiers and might need it in preprocessor
- * conditionals.
- *
- */
+ * conditionals. */
 #if GMX_PTX_ARCH > 0
-#    if GMX_PTX_ARCH == 750 // CC 7.5, lower limits compared to 7.0
+#    if GMX_PTX_ARCH == 750 // CC 7.5 has the lowest limit, 1024
 #        define GMX_CUDA_MAX_THREADS_PER_MP 1024
-#    elif (GMX_PTX_ARCH == 860 || GMX_PTX_ARCH == 870 || GMX_PTX_ARCH == 890       \
-           || GMX_PTX_ARCH == 1010 || GMX_PTX_ARCH == 1100 || GMX_PTX_ARCH == 1200 \
-           || GMX_PTX_ARCH == 1210) // Lower limits compared to 8.0
-#        define GMX_CUDA_MAX_THREADS_PER_MP 1536
-#    else // CC 5.x, 6.x, 7.0, 8.0, 9.0, 10.x
-/* Note that this final branch covers all future architectures (current gen
- * is 12.x as of writing), hence assuming that these *currently defined* upper
- * limits will not be lowered.
- */
+#    elif (GMX_PTX_ARCH <= 800 || GMX_PTX_ARCH == 900 || GMX_PTX_ARCH == 1000 || GMX_PTX_ARCH == 1030)
+// CC 5.x, 6.x, 7.0, 8.0, 9.0, 10.x have a limit of 2048
 #        define GMX_CUDA_MAX_THREADS_PER_MP 2048
+#    else
+/* CC 8.6-8.9, 10.1/11.0, 12.x have a lower limit of 1536
+   Use this branch for future generations as a conservative estimate to avoid compile-time errors
+   due to invalid __launch_bounds__ */
+#        define GMX_CUDA_MAX_THREADS_PER_MP 1536
 #    endif
 #else
 #    define GMX_CUDA_MAX_THREADS_PER_MP 0
