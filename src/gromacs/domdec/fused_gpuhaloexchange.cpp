@@ -273,15 +273,8 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
     // Build per-dimension/pulse entries mirroring Impl::reinitHalo
     haloExchangeData_.resize(totalNumPulses_);
 
-    const gmx_domdec_comm_t& comm = *cr.dd->comm;
-    // Host-side storage for device barriers without requiring copy/move
-    DeviceBarrier* barriers               = nullptr;
-    int            numBarriersConstructed = 0;
-    GMX_RELEASE_ASSERT(totalNumPulses_ > 0, "Total number of pulses must be > 0");
-    barriers = static_cast<DeviceBarrier*>(
-            ::operator new(static_cast<size_t>(totalNumPulses_) * sizeof(DeviceBarrier)));
-
-    int idxEntry = 0;
+    const gmx_domdec_comm_t& comm     = *cr.dd->comm;
+    int                      idxEntry = 0;
     for (int d = 0; d < cr.dd->ndim; d++)
     {
         const int  dimIndex  = d;
@@ -356,18 +349,17 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
                          MPI_STATUS_IGNORE);
 
 #endif
-            // Add 1 to size to take care of case when xSendSize_ == 0 in such case
-            // we still launch the kernel to signal the remote rank recvRankX_
-            // from which this rank receives packed data as (xRecvSize_ > 0)
-            const int gridDimX = gmx::divideRoundUp(data.xSendSize + 1,
-                                                    FusedGpuHaloExchange::c_nvshmemThreadsPerBlock);
-
-            // Construct in-place to avoid copy/move of cuda::barrier
-            if (barriers != nullptr)
-            {
-                new (&barriers[numBarriersConstructed]) DeviceBarrier(gridDimX);
-                numBarriersConstructed++;
-            }
+            // Add 1 to size to take care of case when xSendSize == 0 in such case
+            // we still launch the kernel to signal the remote rank recvRankX
+            // from which this rank receives packed data as (xRecvSize > 0)
+            // Additionally, we use a fixed "atoms per threadBlock" (c_atomsPerThreadBlock)
+            // together with grid-stride loops in the device code to:
+            //  - mitigate imbalance across threadblocks for per pulse cases.
+            //  - bound the number of CTAs for avoiding over-launching,
+            //  - keep a uniform launch shape across pulses for simplifying fused kernel impl.
+            const int gridDimX =
+                    gmx::divideRoundUp(data.xSendSize + 1, FusedGpuHaloExchange::c_atomsPerThreadBlock);
+            maxGridXSize_ = std::max(maxGridXSize_, gridDimX);
             idxEntry++;
         }
     }
@@ -397,19 +389,9 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
     reallocateDeviceBuffer(
             &d_xGridSync_, totalNumPulses_, &d_xGridSyncSize_, &d_xGridSyncSizeAlloc_, deviceContext_);
 
-    // Initialize arrive-wait barriers once using the constructed array
-    if (numBarriersConstructed > 0)
-    {
-        copyToDeviceBuffer(
-                &d_xGridSync_, barriers, 0, numBarriersConstructed, *haloStream_, GpuApiCallBehavior::Sync, nullptr);
-        clearDeviceBufferAsync(&d_fGridSync_, 0, totalNumPulses_, *haloStream_);
-        // Destroy and release host-side barriers storage
-        for (int i = 0; i < numBarriersConstructed; ++i)
-        {
-            barriers[i].~DeviceBarrier();
-        }
-        ::operator delete(barriers);
-    }
+    // Initialize grid sync per-pulse array for X and F
+    clearDeviceBufferAsync(&d_xGridSync_, 0, totalNumPulses_, *haloStream_);
+    clearDeviceBufferAsync(&d_fGridSync_, 0, totalNumPulses_, *haloStream_);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::DDGpu);
     wallcycle_stop(wcycle_, WallCycleCounter::Domdec);

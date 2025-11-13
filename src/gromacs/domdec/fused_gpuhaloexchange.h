@@ -133,14 +133,6 @@ public:
     /*! \brief Destroy unified/symmetric buffers used by fused halo exchange (if any). */
     void destroyAllHaloExchangeBuffers();
 
-    // Use cuda::barrier when available, otherwise fall back to an empty type
-#if GMX_NVSHMEM
-    using DeviceBarrier = cuda::barrier<cuda::thread_scope_device>;
-#else
-    struct DeviceBarrier
-    {
-    };
-#endif
     struct HaloExchangeData
     {
         //! The dimension index corresponding to this pulse
@@ -216,7 +208,13 @@ public:
 
 private:
     // Threads per block used by NVSHMEM kernels
-    static constexpr int c_nvshmemThreadsPerBlock = 1024; // fix this for fused kernel
+    static constexpr int c_nvshmemThreadsPerBlock = 1024;
+    // Threads per block used by all pulses fused NVSHMEM kernels
+    static constexpr int c_fusedKernelsThreadsPerBlock = 512;
+    //! Number of atoms processed per thread by fused kernels
+    static constexpr int c_atomsPerThread = 4;
+    // Atoms processed per thread block by fused kernels
+    static constexpr int c_atomsPerThreadBlock = c_fusedKernelsThreadsPerBlock * c_atomsPerThread;
     /*! \brief Minimum Alignment (bytes) for per-entry regions in unified buffers.
      *
      * Chosen as 256 B to be safe and performant:
@@ -255,14 +253,14 @@ private:
     DeviceBuffer<uint32_t> d_fGridSync_ = nullptr;
     //! number of F grid sync pulses
     int d_fGridSyncSize_ = -1;
-    //! capacity of F grid sync pulses
+    //! capacity of F grid sync pulses array
     int d_fGridSyncSizeAlloc_ = -1;
 
-    //! per-pulse device-side arrive-wait barriers for X kernel
-    DeviceBuffer<DeviceBarrier> d_xGridSync_ = nullptr;
+    //! per-pulse device-side grid sync counters for X kernel
+    DeviceBuffer<uint32_t> d_xGridSync_ = nullptr;
     //! number of X grid sync pulses
     int d_xGridSyncSize_ = -1;
-    //! capacity of X grid sync pulses
+    //! capacity of X grid sync pulses array
     int d_xGridSyncSizeAlloc_ = -1;
 
     //! device array of per-pulse metadata

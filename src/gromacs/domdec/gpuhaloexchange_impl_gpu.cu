@@ -39,7 +39,7 @@
  * NVSHMEM Kernels:
  * Implements NVSHMEM enabled kernel initiated transfers of coordinates and forces.
  *
- * For coordinates, the packSendBufAndPutNvshmemKernel() function packs the coordinates
+ * For coordinates, the fusedPulsesPackXAndSendKernel() function packs the coordinates
  * and communicates the packed data to the sendRank. It also signals readiness to receive
  * data from the recvRank using signal counters, ensuring that the recvRank can safely
  * transfer the packed data into this process's buffer.
@@ -67,8 +67,6 @@
 #if GMX_NVSHMEM
 #    include <nvshmem.h>
 #    include <nvshmemx.h>
-
-#    include <cuda/barrier>
 #endif
 
 namespace gmx
@@ -132,131 +130,6 @@ __global__ void unpackRecvBufKernel(float3* __restrict__ data,
         }
     }
 }
-
-#if GMX_NVSHMEM
-/*! \brief This kernel is responsible for packing coordinate data into a buffer
- * on the GPU using pre-populated "map" containing index info and then sending this
- * packed data to a remote processing element (PE) or rank using NVSHMEM. It also manages
- * synchronization signals to ensure safe and efficient data transfer.
- *
- * Execution Flow is as below:
- * 1.) Set up signal pointers based on signal offsets which depends on pulse/dim.
- * 2.) If this rank expects to receive data, signal readiness using nvshmemx_signal_op to recvRank.
- * 3.) Loop through assigned indices to pack data into dataPacked.
- * 4.) Use device scoped arrive-wait barrier to ensure all threads have completed their tasks and
-       and wait on signal (signalSenderRankX) before proceeding with data transfer.
- * 5.) Perform non-blocking put operations to send packed data to sendRank.
- * 6.) Wait for signal (signalSenderRankX) indicating that all required data has been received
- *     from recvRank.
- * It should be noted that the kernel is launched if either sendSize > 0 or recvSize > 0, as in
- * each of these case we need to synchronize with sendRank or recvRank accordingly.
- *
- * \param[in] data        full array of coordinates
- * \param[out] dataPacked  packed array of coordinates to be transferred
- * \param[in] map         array of indices defining mapping from full to packed array
- * \param[in] sendSize     number of elements in map array to pack and put
- * \param[in] coordinateShift     coordinate shift to be used when usePBC is true
- * \param[in] sendRank    rank at which the packed data needs to be put
- * \param[in] recvRank    rank from which this rank will receive the packed data puts.
- * \param[in] atomOffsetXInSendRank offset in the remote sendRank from where the packed data should be put
- * \param[in] signalReceiverRankX  signal object used for notifying the sendRank completion of puts
- * \param[in] signalSenderRankX signal object used for notifying the recvRank about readiness to receive the puts
- * \param[in] signalXCounter   signal counter value used for notifying put completions for this timestep
- * \param[in] signalObjOffset  Offset to get current pulse/dim signal object
- * \param[in] bar         Device scoped arrive wait barrier used to track all the CTAs data pack completion
- * \param[in] recvSize   number of elements this rank shall receive via puts from recvRank
- */
-template<bool usePBC>
-__global__ void packSendBufAndPutNvshmemKernel(float3*        data,
-                                               float3*        dataPacked,
-                                               const int*     map,
-                                               const int      sendSize,
-                                               const float3   coordinateShift,
-                                               const int      sendRank,
-                                               const int      recvRank,
-                                               const int      atomOffsetXInSendRank,
-                                               uint64_t*      signalReceiverRankX,
-                                               uint64_t*      signalSenderRankX,
-                                               const uint64_t signalXCounter,
-                                               const int      signalObjOffset,
-                                               cuda::barrier<cuda::thread_scope_device>* bar,
-                                               const int                                 recvSize)
-{
-    using barrier   = cuda::barrier<cuda::thread_scope_device>;
-    int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
-    signalReceiverRankX += signalObjOffset;
-    signalSenderRankX += signalObjOffset;
-
-    /* Notify the neighbor about arrival, readiness to receive the packed data via nvshmem_put */
-    if (threadIndex == 0 && recvSize > 0)
-    {
-        nvshmemx_signal_op(signalSenderRankX, signalXCounter, NVSHMEM_SIGNAL_SET, recvRank);
-    }
-
-    if (sendSize > 0)
-    {
-        const int gridSize = blockDim.x * gridDim.x;
-
-        for (int idx = threadIndex; idx < sendSize; idx += gridSize)
-        {
-            int           atomIndex   = map[idx];
-            const float3* gm_dataSrc  = &data[atomIndex];
-            float3*       gm_dataDest = &dataPacked[idx];
-            if (usePBC)
-            {
-                *gm_dataDest = *gm_dataSrc + coordinateShift;
-            }
-            else
-            {
-                *gm_dataDest = *gm_dataSrc;
-            }
-        }
-        __syncthreads();
-
-        // More study is needed to understand why more than 1 block nvshmem_put performs bad
-        constexpr int          numFinalBlocks = 1;
-        barrier::arrival_token token;
-        if (threadIdx.x == 0)
-        {
-            token = bar->arrive();
-        }
-
-        if (blockIdx.x < numFinalBlocks)
-        {
-            const int chunkSize   = sendSize / numFinalBlocks;
-            const int blockOffset = blockIdx.x * chunkSize;
-            const int dataSize    = blockIdx.x != (numFinalBlocks - 1)
-                                            ? chunkSize
-                                            : max(sendSize - blockOffset, chunkSize);
-
-            float* recvPtr = reinterpret_cast<float*>(&data[atomOffsetXInSendRank + blockOffset]);
-
-            if (threadIdx.x == 0)
-            {
-                bar->wait(std::move(token));
-                nvshmem_signal_wait_until(signalSenderRankX, NVSHMEM_CMP_EQ, signalXCounter);
-            }
-            __syncthreads();
-
-            nvshmemx_float_put_signal_nbi_block(recvPtr,
-                                                reinterpret_cast<const float*>(&dataPacked[blockOffset]),
-                                                dataSize * 3,
-                                                signalReceiverRankX,
-                                                signalXCounter,
-                                                NVSHMEM_SIGNAL_SET,
-                                                sendRank);
-        }
-    }
-
-    if (threadIndex == 0 && recvSize > 0)
-    {
-        // We need to wait for the signal completion before exiting the kernel
-        // in order to make sure the packed data received from recvRank's is complete.
-        nvshmem_signal_wait_until(signalReceiverRankX, NVSHMEM_CMP_EQ, signalXCounter);
-    }
-}
-#endif
-
 
 /*! \brief This kernel is responsible for transferring packed force data to a remote
  * processing element(PE) or rank and unpacking received non-local forces data, using NVSHMEM.
@@ -345,6 +218,427 @@ __global__ void putPackedDataUnpackRecvBufNvshmemKernel(float3* __restrict__ dat
 #endif
 }
 
+/*!
+ * \brief System-scoped acquire load of a 64-bit value from global memory.
+ *  we need system scoped ld.acquire as the signal reads though local to
+ *  the gpu but are written by remote gpu.
+ * PTX: ld.acquire.sys.global.u64
+ *
+ * Semantics:
+ * - Acquire ordering at system scope: subsequent global reads/writes by this thread
+ *   cannot be reordered before this load. Ensures visibility of remote GPU writes
+ *   (e.g., NVSHMEM signals) before consuming dependent data.
+ */
+inline __device__ uint64_t loadAcquireSysAsm(const uint64_t* ptr)
+{
+    uint64_t retval = 0;
+#if __CUDA_ARCH__ >= 700
+    asm("ld.acquire.sys.global.u64 %0, [%1];" : "=l"(retval) : "l"(ptr) : "memory");
+#endif
+    return retval;
+}
+
+/*!
+ * \brief System-scoped relaxed load of a 64-bit value from global memory.
+ *
+ * PTX: ld.relaxed.sys.global.u64
+ *  Relaxed loads at system scope
+ */
+inline __device__ uint64_t loadRelaxedSysAsm(const uint64_t* ptr)
+{
+    uint64_t retval = 0;
+#if __CUDA_ARCH__ >= 700
+    asm("ld.relaxed.sys.global.u64 %0, [%1];" : "=l"(retval) : "l"(ptr) : "memory");
+#endif
+    return retval;
+}
+
+/*!
+ * \brief System-scoped release store of a 64-bit value to global memory.
+ *
+ * PTX: st.release.sys.global.u64
+ *
+ * Semantics:
+ * - Release ordering at system scope: all prior global writes by this thread
+ *   become visible to system peers before the store is observable. Used to
+ *   publish completion signals after making packed data globally visible.
+ */
+inline __device__ void storeReleaseSysAsm(uint64_t* ptr, const uint64_t val)
+{
+#if __CUDA_ARCH__ >= 700
+    asm("st.release.sys.global.u64 [%0], %1;" : : "l"(ptr), "l"(val) : "memory");
+#endif
+}
+
+/*!
+ * \brief Atomically increment counter with release semantics.
+ *
+ * This wraps the PTX instruction:
+ *   atom.inc.release.gpu.global.u32 old, [addr], modMinusOne
+ *
+ * - The counter at addr is incremented modulo (modMinusOne + 1) and the OLD value is returned.
+ * - The .release qualifier ensures that all prior global writes by this thread are made visible
+ *   at GPU scope before the atomic is observed by other agents. This acts as a cache-flushing
+ *   fence for data the threadBlock produced before signalling its arrival.
+ * - We use modulo (numBlocks - 1) + 1 so that the last arriving block can be detected by
+ *   comparing the returned old value against (numBlocks - 1).
+ */
+inline __device__ uint32_t atomicIncReleaseGpu(uint32_t* addr, int32_t modMinusOne)
+{
+    uint32_t old = 0;
+#if __CUDA_ARCH__ >= 700
+    asm("atom.inc.release.gpu.global.u32 %0,[%1],%2;"
+        : "=r"(old)
+        : "l"(addr), "r"(modMinusOne)
+        : "memory");
+#endif
+    return old;
+}
+
+/*!
+ * \brief Pack a subset of indices into the destination buffer.
+ *
+ * Packs elements selected by \p map from \p data into \p gm_dataDest using a
+ * grid-stride loop. Depending on the template parameters, either all elements
+ * are packed unconditionally or only a conditional subset is packed based on
+ * a threshold comparison.
+ *
+ * Template parameters:
+ * - packAll: When true, packs all indices without any threshold checks.
+ * - packLessThan: When packAll is false, selects elements using
+ *   (atomIndex < threshold) if true, or (atomIndex >= threshold) if false.
+ *
+ * \param[in,out] gm_dataDest        Destination buffer for packed values
+ * \param[in,out] data               Full source array of float3
+ * \param[in]     map                Index map selecting elements to pack
+ * \param[in]     sendSize           Number of elements to consider
+ * \param[in]     gridStride         Stride for grid-stride loop
+ * \param[in]     threadIndex        Linearized thread index
+ * \param[in]     usePBC             Whether to apply periodic shift
+ * \param[in]     coordinateShift    Shift to apply when usePBC is true
+ * \param[in]     threshold          Threshold atom index used for selection
+ * \param[in,out] hasDependencyAtoms Incremented by the number of elements that
+ *                                   did not match the predicate in the first pass
+ *                                   used only when packLessThan is true.
+ */
+template<bool packAll, bool packLessThan>
+inline __device__ void packSubset(float3*       gm_dataDest,
+                                  float3*       data,
+                                  const int*    map,
+                                  int           sendSize,
+                                  int           gridStride,
+                                  int           threadIndex,
+                                  bool          usePBC,
+                                  const float3& coordinateShift,
+                                  int           threshold,
+                                  int&          hasDependencyAtoms)
+{
+    for (int idx = threadIndex; idx < sendSize; idx += gridStride)
+    {
+        int    atomIndex = map[idx];
+        float3 srcVal    = data[atomIndex];
+        if constexpr (packAll)
+        {
+            gm_dataDest[idx] = usePBC ? srcVal + coordinateShift : srcVal;
+        }
+        else
+        {
+            bool doPackNow = packLessThan ? (atomIndex < threshold) : (atomIndex >= threshold);
+            if (doPackNow)
+            {
+                gm_dataDest[idx] = usePBC ? srcVal + coordinateShift : srcVal;
+            }
+            else if (packLessThan)
+            {
+                // Track presence of deferred atoms in the first pass
+                hasDependencyAtoms++;
+            }
+        }
+    }
+}
+
+/*!
+ * \brief Pack X coordinates into a contiguous buffer (non-TMA).
+ *
+ * Packs selected atoms from the full coordinate array \p data into the destination
+ * buffer \p gm_dataDest using the index \p map. When \p usePBC is true, applies the
+ * provided \p coordinateShift to each packed value. For pulses beyond the first,
+ * the function enforces ordering between pulses by:
+ * - Packing all atoms whose indices are below \p dependencyAtomOffset immediately.
+ * - Waiting on completion signals from earlier pulses using \p signalReceiverRankXCurr
+ *   and \p signalXCounter.
+ * - Packing remaining atoms (indices >= \p dependencyAtomOffset) only after the
+ *   dependency condition is met across the grid.
+ *
+ * Notes:
+ * - This routine performs only packing and intra-grid dependency coordination. The
+ *   signaling to peers (inter- or intra-node) happens separately after packing.
+ * - The destination pointer can be a local send buffer or a peer-accessible pointer
+ *   (NVLINK) computed by the caller.
+ *
+ * \param[in,out] gm_dataDest                 Destination buffer for packed coordinates
+ * \param[in]     sendSize                    Number of elements to pack
+ * \param[in,out] data                        Full coordinate array (source)
+ * \param[in]     map                         Index map selecting elements to pack
+ * \param[in]     usePBC                      Whether to apply periodic shift
+ * \param[in]     coordinateShift             Shift vector to add when usePBC is true
+ * \param[in]     currPulse                   Current pulse/dimension index
+ * \param[in]     signalXCounter              Signal value identifying this timestep/pulse
+ * \param[in,out] xGridSync                   Per-pulse grid sync counter (not modified here)
+ * \param[in]     signalReceiverRankXCurr     Pointer to receiver-rank X signal for this pulse
+ * \param[in]     sendRank                    Destination rank id for X
+ * \param[in]     recvSize                    Number of elements expected to be received
+ * \param[in]     totalNumPulses              Total number of pulses across all dimensions
+ * \param[in]     threadIndex                 Linearized thread index for grid-stride loops
+ * \param[in]     numOfThreadBlocksRequired   Number of CTAs launched for this pulse
+ * \param[in]     dependencyAtomOffset        Threshold index separating dependency subset
+ */
+inline __device__ void packPeerPutXNonTma(float3*         gm_dataDest,
+                                          const int&      sendSize,
+                                          float3*         data,
+                                          const int*      map,
+                                          const bool&     usePBC,
+                                          const float3&   coordinateShift,
+                                          const int&      currPulse,
+                                          const uint64_t& signalXCounter,
+                                          uint32_t*       xGridSync,
+                                          uint64_t*       signalReceiverRankXCurr,
+                                          const int&      sendRank,
+                                          const int&      recvSize,
+                                          const int&      totalNumPulses,
+                                          const int       threadIndex,
+                                          const int&      numOfThreadBlocksRequired,
+                                          const int&      dependencyAtomOffset)
+{
+    const int  gridStride = blockDim.x * gridDim.x;
+    const bool isThread0  = (threadIdx.x == 0);
+
+    if (currPulse > 0)
+    {
+        // First pass: pack elements below dependency threshold
+        int hasDependencyAtoms = 0;
+        packSubset</*packAll*/ false, /*packLessThan*/ true>(
+                gm_dataDest, data, map, sendSize, gridStride, threadIndex, usePBC, coordinateShift, dependencyAtomOffset, hasDependencyAtoms);
+
+        if (isThread0)
+        {
+            // wait for the previous pulse/dimension data to be received.
+            for (int i = currPulse; i > 0; i--)
+            {
+                while (loadRelaxedSysAsm(signalReceiverRankXCurr - i) != signalXCounter)
+                    ;
+            }
+        }
+        const int need_to_wait = __any_sync(c_fullWarpMask, hasDependencyAtoms > 0);
+        __syncthreads();
+        if (need_to_wait)
+        {
+            // Second pass: pack the deferred elements (>= threshold)
+            int ignored = 0;
+            packSubset</*packAll*/ false, /*packLessThan*/ false>(
+                    gm_dataDest, data, map, sendSize, gridStride, threadIndex, usePBC, coordinateShift, dependencyAtomOffset, ignored);
+        }
+    }
+    else
+    {
+        // No dependency between pulses; pack all without threshold checks
+        int ignored = 0;
+        packSubset</*packAll*/ true, /*packLessThan*/ true>(
+                gm_dataDest, data, map, sendSize, gridStride, threadIndex, usePBC, coordinateShift, 0 /*unused*/, ignored);
+    }
+    __syncthreads();
+}
+
+// Helper function to handle signal synchronization
+// Note: this function is supposed to be called by a single thread in the threadblock.
+template<bool isRemoteInterNode>
+inline __device__ void manageXHaloExchangeSync(uint32_t*       xGridSync,
+                                               uint64_t*       signalReceiverRankXCurr,
+                                               const uint64_t& signalXCounter,
+                                               const int&      sendRank,
+                                               const int&      recvSize,
+                                               const int&      sendSize,
+                                               const int&      currPulse,
+                                               const int&      totalNumPulses,
+                                               const int&      numOfThreadBlocksRequired,
+                                               float*          recvPtr,
+                                               const float*    dataPacked)
+{
+#if GMX_NVSHMEM
+    // Increment per-pulse arrive counter with release semantics which tracks how many
+    // threadBlocks are done; returns old value.
+    uint32_t old_arrive = atomicIncReleaseGpu(xGridSync, (numOfThreadBlocksRequired - 1));
+    // Last arriving block will signal completion for this pulse.
+    if (old_arrive == (numOfThreadBlocksRequired - 1))
+    {
+        if constexpr (isRemoteInterNode)
+        {
+
+            nvshmem_float_put_signal_nbi(recvPtr,
+                                         dataPacked,
+                                         sendSize * 3,
+                                         signalReceiverRankXCurr,
+                                         signalXCounter,
+                                         NVSHMEM_SIGNAL_SET,
+                                         sendRank);
+        }
+        else
+        {
+            uint64_t* sendRankSignalPtr =
+                    reinterpret_cast<uint64_t*>(nvshmem_ptr(signalReceiverRankXCurr, sendRank));
+            // Use system-scoped release store to publish the completion signal after ensuring
+            // all prior global writes from all threadBlocks are visible at system scope to
+            // the remote peer.
+            storeReleaseSysAsm(sendRankSignalPtr, signalXCounter);
+        }
+
+        // We need to wait for the signal completion before exiting the kernel
+        // in order to make sure the packed data received from recvRank's is complete.
+        if (recvSize > 0 && currPulse == totalNumPulses - 1)
+        {
+            while (loadAcquireSysAsm(signalReceiverRankXCurr) != signalXCounter)
+                ;
+        }
+    }
+#endif
+}
+
+/*! \brief Fused pack-and-send kernel for X halo exchange (all pulses in one launch)
+ *
+ * Processes all pulse/dimension entries in a single kernel launch. Packs X coordinates
+ * into the per-pulse send buffer or writes directly to the peer buffer when a peer
+ * pointer is available (via NVLink). Performs inter/intra-node
+ * synchronization via NVSHMEM signals. For inter-node paths, a put+signal is
+ * issued once all of the grid's thread blocks have finished writing the packed
+ * data on per pulse basis. For intra-node paths (NVLink), the remote
+ * signal location is written directly after ensuring system-wide visibility of
+ * prior writes. The kernel iterates over pulse/dimension entries assigned to
+ * the current grid.y index.
+ *
+ * Mapping of blocks/threads to work:
+ * - Pulses/dimensions: gridDim.y == totalNumPulses. Each block row (blockIdx.y)
+ *   selects a single pulse; all CTAs with the same blockIdx.y cooperate on that pulse.
+ * - CTAs within a pulse: gridDim.x CTAs partition the work for that pulse via
+ *   grid-stride loops; numOfThreadBlocksRequired == gridDim.x.
+ * - Threads to atoms: each thread uses a linear index
+ *   threadIndex = blockIdx.x * blockDim.x + threadIdx.x and iterates
+ *   idx += blockDim.x * gridDim.x. Each iteration packs atom map[idx], where
+ *   map is the per-pulse device index map (HaloExchangeData::d_indexMap).
+ *
+ * \param[in]  data                        Full array of coordinates on this rank
+ * \param[in]  dataPacked                  Array of halo exchange entries (one per pulse)
+ * \param[in]  signalReceiverRankX         Base pointer to coordinates NVSHMEM signal objects
+ * \param[in]  signalXCounter              Signal counter value to write per entry
+ * \param[in,out] xGridSync_               Per-pulse device counters used to coordinate CTAs
+ * \param[in]  totalNumPulses          Total number of pulse/dimension entries
+ * \param[in]  coordinateShiftFirstBoxVec  Shift vector for box dimension 0
+ * \param[in]  coordinateShiftSecondBoxVec Shift vector for box dimension 1
+ * \param[in]  coordinateShiftThirdBoxVec  Shift vector for box dimension 2
+ * \param[in]  dependencyAtomOffset        Atom index boundary for dependency ordering between pulses
+ */
+__global__ void fusedPulsesPackXAndSendKernel(float3* __restrict__ data,
+                                              FusedGpuHaloExchange::HaloExchangeData* __restrict__ dataPacked,
+                                              uint64_t* __restrict__ signalReceiverRankX,
+                                              const uint64_t signalXCounter,
+                                              uint32_t* __restrict__ xGridSync_,
+                                              const int    totalNumPulses,
+                                              const float3 coordinateShiftFirstBoxVec,
+                                              const float3 coordinateShiftSecondBoxVec,
+                                              const float3 coordinateShiftThirdBoxVec,
+                                              const int    dependencyAtomOffset)
+{
+#if GMX_NVSHMEM
+    namespace ptx          = cuda::ptx;
+    int        threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+    const bool isThread0   = (threadIdx.x == 0);
+
+    for (int currPulse = blockIdx.y; currPulse < totalNumPulses; currPulse += gridDim.y)
+    {
+        FusedGpuHaloExchange::HaloExchangeData haloExchangeData = dataPacked[currPulse];
+        const int                              sendRank         = haloExchangeData.sendRankX;
+        const int                              recvRank         = haloExchangeData.recvRankX;
+        const int                              sendSize         = haloExchangeData.xSendSize;
+        const int                              recvSize         = haloExchangeData.xRecvSize;
+        const int atomOffsetXInSendRank = haloExchangeData.nvshmemData.putAtomOffsetInReceiverRankXBuf_;
+        const int    boxDimensionIndex       = haloExchangeData.boxDimensionIndex;
+        const float3 coordinateShift         = (boxDimensionIndex == 0) ? coordinateShiftFirstBoxVec
+                                               : (boxDimensionIndex == 1) ? coordinateShiftSecondBoxVec
+                                                                          : coordinateShiftThirdBoxVec;
+        const int*   map                     = haloExchangeData.d_indexMap;
+        uint64_t*    signalReceiverRankXCurr = signalReceiverRankX + currPulse;
+        uint32_t*    xGridSync               = xGridSync_ + currPulse;
+        float3* gm_remotePtr = reinterpret_cast<float3*>(haloExchangeData.nvshmemData.remoteXPeerPutPtr);
+        // When the remote is directly accessible we query and store the remote pointer at setup time.
+        const bool remoteIsDirectlyAccessible = (gm_remotePtr != nullptr);
+        const int  numOfThreadBlocksRequired  = gridDim.x;
+
+        if (sendSize > 0)
+        {
+            const bool usePBC = haloExchangeData.usePBC;
+            float3*    dest   = remoteIsDirectlyAccessible ? (gm_remotePtr + atomOffsetXInSendRank)
+                                                           : (float3*)haloExchangeData.d_sendBuf;
+            packPeerPutXNonTma(dest,
+                               sendSize,
+                               data,
+                               map,
+                               usePBC,
+                               coordinateShift,
+                               currPulse,
+                               signalXCounter,
+                               xGridSync,
+                               signalReceiverRankXCurr,
+                               sendRank,
+                               recvSize,
+                               totalNumPulses,
+                               threadIndex,
+                               numOfThreadBlocksRequired,
+                               dependencyAtomOffset);
+            if (isThread0)
+            {
+                if (!remoteIsDirectlyAccessible)
+                {
+                    float*       recvPtr = reinterpret_cast<float*>(&data[atomOffsetXInSendRank]);
+                    const float* dataPackedPtr = reinterpret_cast<const float*>(dest);
+                    manageXHaloExchangeSync<true>(xGridSync,
+                                                  signalReceiverRankXCurr,
+                                                  signalXCounter,
+                                                  sendRank,
+                                                  recvSize,
+                                                  sendSize,
+                                                  currPulse,
+                                                  totalNumPulses,
+                                                  numOfThreadBlocksRequired,
+                                                  recvPtr,
+                                                  dataPackedPtr);
+                }
+                else
+                {
+                    manageXHaloExchangeSync<false>(xGridSync,
+                                                   signalReceiverRankXCurr,
+                                                   signalXCounter,
+                                                   sendRank,
+                                                   recvSize,
+                                                   sendSize,
+                                                   currPulse,
+                                                   totalNumPulses,
+                                                   numOfThreadBlocksRequired,
+                                                   nullptr,
+                                                   nullptr);
+                }
+            }
+        }
+        else if (threadIdx.x == 0 && blockIdx.x == (gridDim.x - 1) && recvSize > 0)
+        {
+            // We need to wait for the signal completion before exiting the kernel
+            // in order to make sure the packed data received from recvRank's is complete.
+            // nvshmem_signal_wait_until(signalReceiverRankX, NVSHMEM_CMP_EQ, signalXCounter);
+            while (loadAcquireSysAsm(signalReceiverRankXCurr) != signalXCounter)
+                ;
+        }
+    }
+#endif
+}
+
 void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
 {
     // launch kernel to pack send buffer
@@ -408,72 +702,43 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
 
 void FusedGpuHaloExchange::launchPackXKernel(const matrix box)
 {
-    // Iterate over all HaloExchangeData entries and launch pack kernel per entry
-    // Use the absolute entry index as the signal/buffer/barrier offset to keep
-    // indices consistent with the pre-initialized barrier array and signal buffers.
 #if GMX_NVSHMEM
-    for (int idx = 0; idx < static_cast<int>(haloExchangeData_.size()); ++idx)
-    {
-        const auto& e               = haloExchangeData_[idx];
-        const int   signalObjOffset = idx;
-        const int   xSendSize       = e.xSendSize;
-        const int   xRecvSize       = e.xRecvSize;
-        if ((xSendSize <= 0) && (xRecvSize <= 0))
-        {
-            continue;
-        }
+    // Configure kernel launch parameters
+    KernelLaunchConfig config;
+    config.blockSize[0]     = c_fusedKernelsThreadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = maxGridXSize_;
+    config.gridSize[1]      = totalNumPulses_;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
 
-        KernelLaunchConfig config;
-        config.blockSize[0] = FusedGpuHaloExchange::c_nvshmemThreadsPerBlock;
-        config.blockSize[1] = 1;
-        config.blockSize[2] = 1;
-        // Add 1 to size to take care of case when (xSendSize_ == 0 && xRecvSize_ > 0).
-        // In such case, we still launch the kernel to signal the remote rank
-        // from which this rank receives packed data
-        config.gridSize[0]      = gmx::divideRoundUp(xSendSize + 1, c_nvshmemThreadsPerBlock);
-        config.gridSize[1]      = 1;
-        config.gridSize[2]      = 1;
-        config.sharedMemorySize = 0;
+    float3* d_x                 = asFloat3(sharedBuffers_.d_x);
+    auto    packNvShmemkernelFn = fusedPulsesPackXAndSendKernel;
 
-        const float3* d_x               = asFloat3(sharedBuffers_.d_x);
-        float3*       sendBuf           = asFloat3(e.d_sendBuf);
-        const int*    indexMap          = e.d_indexMap;
-        const int     boxDimensionIndex = e.boxDimensionIndex;
-        const float3  coordinateShift{ box[boxDimensionIndex][XX],
-                                      box[boxDimensionIndex][YY],
-                                      box[boxDimensionIndex][ZZ] };
-        auto          packNvShmemkernelFn          = e.usePBC ? packSendBufAndPutNvshmemKernel<true>
-                                                              : packSendBufAndPutNvshmemKernel<false>;
-        int           atomOffsetXInSendRank        = e.nvshmemData.putAtomOffsetInReceiverRankXBuf_;
-        int           sendRankX                    = e.sendRankX;
-        int           recvRankX                    = e.recvRankX;
-        DeviceBuffer<uint64_t> signalReceiverRankX = sharedBuffers_.d_signalReceiverRankX_;
-        DeviceBuffer<uint64_t> signalSenderRankX   = sharedBuffers_.d_signalSenderRankX_;
-        cuda::barrier<cuda::thread_scope_device>* bar = (d_xGridSync_ + idx);
+    // The coordinateShift changes between steps when we have
+    // performed a DD partition, or have updated the box e.g. when
+    // performing pressure coupling. So, for simplicity, the box
+    // is used every step to pass the shift vector as an argument of
+    // the packing kernel.
+    const float3 coordinateShiftFirstBoxVec{ box[0][XX], box[0][YY], box[0][ZZ] };
+    const float3 coordinateShiftSecondBoxVec{ box[1][XX], box[1][YY], box[1][ZZ] };
+    const float3 coordinateShiftThirdBoxVec{ box[2][XX], box[2][YY], box[2][ZZ] };
+    const auto   kernelArgs = prepareGpuKernelArguments(packNvShmemkernelFn,
+                                                      config,
+                                                      &d_x,
+                                                      &d_haloExchangeData_,
+                                                      &sharedBuffers_.d_signalReceiverRankX_,
+                                                      &signalReceiverRankXCounter_,
+                                                      &d_xGridSync_,
+                                                      &totalNumPulses_,
+                                                      &coordinateShiftFirstBoxVec,
+                                                      &coordinateShiftSecondBoxVec,
+                                                      &coordinateShiftThirdBoxVec,
+                                                      &haloExchangeData_[0].atomOffset);
 
-        const auto kernelArgs = prepareGpuKernelArguments(packNvShmemkernelFn,
-                                                          config,
-                                                          &d_x,
-                                                          &sendBuf,
-                                                          &indexMap,
-                                                          &xSendSize,
-                                                          &coordinateShift,
-                                                          &sendRankX,
-                                                          &recvRankX,
-                                                          &atomOffsetXInSendRank,
-                                                          &signalReceiverRankX,
-                                                          &signalSenderRankX,
-                                                          &signalReceiverRankXCounter_,
-                                                          &signalObjOffset,
-                                                          &bar,
-                                                          &xRecvSize);
-        launchGpuKernel(packNvShmemkernelFn,
-                        config,
-                        *haloStream_,
-                        nullptr,
-                        "Domdec GPU Apply X Halo Exchange (Fused)",
-                        kernelArgs);
-    }
+    launchGpuKernel(
+            packNvShmemkernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     signalReceiverRankXCounter_++;
 #endif
 }
