@@ -130,6 +130,49 @@ TEST_F(FmmMdpOptionsTest, FMSolvrOptionsMatchDefaultsWhenActive)
     EXPECT_EQ(opts.sparse, defaultFMSolvrOptionValues.sparse);
 }
 
+TEST_F(FmmMdpOptionsTest, DirectProviderMethodReturnsCorrectValues)
+{
+    std::string fmmActiveBackendKey;
+    fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
+    fmmActiveBackendKey.append("-");
+    fmmActiveBackendKey.append(c_fmmActiveOptionName);
+
+    std::string directProviderKey;
+    directProviderKey.append(FmmModuleInfo::sc_name);
+    directProviderKey.append("-");
+    directProviderKey.append(c_fmmExaFmmDirectProviderOptionName);
+
+    // Verify that the directProvider() method returns the default value correctly
+    {
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+
+        fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
+
+        const ExaFmmOptions  defaultExaFmmOptionValues;
+        const ExaFmmOptions& opts = fmmMdpOptions_.exaFmmOptions();
+        EXPECT_EQ(opts.directProvider, defaultExaFmmOptionValues.directProvider);
+        EXPECT_EQ(fmmMdpOptions_.directProvider(), opts.directProvider);
+    }
+
+    // Verify that the directProvider() method returns a configured non-default value correctly
+    {
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+        mdpValueBuilder.rootObject().addValue(directProviderKey,
+                                              fmmDirectProviderName(FmmDirectProvider::Fmm));
+
+        fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
+
+        const ExaFmmOptions& opts = fmmMdpOptions_.exaFmmOptions();
+        EXPECT_EQ(opts.directProvider, FmmDirectProvider::Fmm);
+        EXPECT_EQ(fmmMdpOptions_.directProvider(), opts.directProvider);
+    }
+}
+
+
 TEST_F(FmmMdpOptionsTest, ParsesNonDefaultExaFmmOrder)
 {
     // Activate ExaFMM backend with non-default order via MDP configuration

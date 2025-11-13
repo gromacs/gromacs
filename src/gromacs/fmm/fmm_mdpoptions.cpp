@@ -57,12 +57,7 @@ namespace gmx
 {
 
 FmmMdpOptions::FmmMdpOptions() :
-    exaFmmOptions_(),
-    fmSolvrOptions_(),
-    activeOptionLookup_{ nullptr, &exaFmmOptions_, &fmSolvrOptions_ },
-    directProviderLookup_{ FmmDirectProvider::Gromacs,
-                           exaFmmOptions_.directProvider,
-                           fmSolvrOptions_.directProvider }
+    exaFmmOptions_(), fmSolvrOptions_(), activeOptionLookup_{ nullptr, &exaFmmOptions_, &fmSolvrOptions_ }
 
 {
 }
@@ -137,7 +132,12 @@ const IFmmOptions* FmmMdpOptions::activeFmmOptions() const
 
 FmmDirectProvider FmmMdpOptions::directProvider() const
 {
-    return directProviderLookup_[activeFmmBackend()];
+    switch (activeFmmBackend_)
+    {
+        case ActiveFmmBackend::ExaFmm: return exaFmmOptions_.directProvider;
+        case ActiveFmmBackend::FMSolvr: return fmSolvrOptions_.directProvider;
+        default: return FmmDirectProvider::Gromacs; // case ActiveFmmBackend::Inactive
+    }
 }
 
 } // namespace gmx

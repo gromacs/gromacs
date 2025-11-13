@@ -126,8 +126,6 @@ private:
     ActiveFmmBackend activeFmmBackend_ = ActiveFmmBackend::Inactive; ///< Currently selected FMM backend
     //! Lookup table for backend-specific FMM options
     const EnumerationArray<ActiveFmmBackend, const IFmmOptions*> activeOptionLookup_;
-    //! Lookup table for direct provider
-    const EnumerationArray<ActiveFmmBackend, FmmDirectProvider> directProviderLookup_;
 };
 
 } // namespace gmx
