@@ -188,6 +188,11 @@ static std::string getExternalAffinityString(const gmx::HardwareTopology::Machin
         std::sort(packageListSorted.begin(), packageListSorted.end());
         ret += ", package(s): " + gmx::prettyPrintListAsRange(packageListSorted);
     }
+    bool haveOmpProcBindSet = messageWhenOpenMPLibraryWillSetAffinity().has_value();
+    if (haveOmpProcBindSet)
+    {
+        ret += " [*]"; // Footnote marking, used in logAffinitySettingResults below
+    }
     return ret;
 }
 
@@ -226,6 +231,14 @@ static bool logAffinitySettingResults(const gmx::MDLogger&                  mdlo
         }
         if (haveAnyMessages)
         {
+            // Search for footnote marking set in getExternalAffinityString
+            bool anyMessageHasOmpProcBindFootnote = message.find("[*]") != std::string::npos;
+            if (anyMessageHasOmpProcBindFootnote)
+            {
+                message +=
+                        "  [*]: Thread affinity may be managed by OpenMP, affecting reported "
+                        "bindings\n";
+            }
             GMX_LOG(mdlog.info).asParagraph().appendText(message);
             return true;
         }
