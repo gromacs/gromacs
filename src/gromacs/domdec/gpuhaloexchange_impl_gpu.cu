@@ -219,6 +219,29 @@ __global__ void putPackedDataUnpackRecvBufNvshmemKernel(float3* __restrict__ dat
 }
 
 /*!
+ * \brief GPU-scoped acquire load of a 32-bit value from global memory.
+ *
+ * PTX: ld.acquire.gpu.global.u32
+ *
+ * Semantics:
+ * - Acquire ordering at GPU scope: subsequent global reads/writes by this thread
+ *   cannot be reordered before this load. Ensures visibility of prior writes by
+ *   other thread blocks on the same GPU (e.g., grid-synchronization counters)
+ *   before consuming dependent data.
+ *
+ * \param[in] ptr  Address of the 32-bit value in global memory
+ * \return The loaded 32-bit value
+ */
+inline __device__ uint32_t loadAcquireGpuAsm(const uint32_t* ptr)
+{
+    uint32_t retval = 0;
+#if __CUDA_ARCH__ >= 700
+    asm("ld.acquire.gpu.global.u32 %0, [%1];" : "=r"(retval) : "l"(ptr) : "memory");
+#endif
+    return retval;
+}
+
+/*!
  * \brief System-scoped acquire load of a 64-bit value from global memory.
  *  we need system scoped ld.acquire as the signal reads though local to
  *  the gpu but are written by remote gpu.
@@ -271,6 +294,24 @@ inline __device__ void storeReleaseSysAsm(uint64_t* ptr, const uint64_t val)
 }
 
 /*!
+ * \brief System-scoped relaxed store of a 64-bit value to global memory.
+ *
+ * PTX: st.relaxed.sys.global.u64
+ *
+ * Semantics:
+ * - Relaxed ordering at system scope: does not impose ordering on prior global writes
+ *   from this thread; only this store is guaranteed visible at system scope.
+ * - Appropriate when no earlier data from this thread needs to be ordered with the signal.
+ */
+inline __device__ void stRelaxedSysAsm(uint64_t* ptr, const uint64_t val)
+{
+#if __CUDA_ARCH__ >= 700
+    asm("st.relaxed.sys.global.u64 [%0], %1;" : : "l"(ptr), "l"(val) : "memory");
+#endif
+}
+
+
+/*!
  * \brief Atomically increment counter with release semantics.
  *
  * This wraps the PTX instruction:
@@ -278,7 +319,7 @@ inline __device__ void storeReleaseSysAsm(uint64_t* ptr, const uint64_t val)
  *
  * - The counter at addr is incremented modulo (modMinusOne + 1) and the OLD value is returned.
  * - The .release qualifier ensures that all prior global writes by this thread are made visible
- *   at GPU scope before the atomic is observed by other agents. This acts as a cache-flushing
+ *   at GPU scope before the atomic is observed by others. This acts as a cache-flushing
  *   fence for data the threadBlock produced before signalling its arrival.
  * - We use modulo (numBlocks - 1) + 1 so that the last arriving block can be detected by
  *   comparing the returned old value against (numBlocks - 1).
@@ -639,6 +680,259 @@ __global__ void fusedPulsesPackXAndSendKernel(float3* __restrict__ data,
 #endif
 }
 
+/*!
+ * \brief Waits for NVSHMEM signal and then unpacks received forces.
+ *
+ * Details:
+ * - Spins (thread 0 only) until the signal at \p signalReceiverRankFCurr
+ *   reaches \p signalReceiverRankFCounter, establishing visibility of the remote writes.
+ * - Uses a grid-stride loop to copy/accumulate values from \p gm_dataSrc into
+ *   \p gm_dataDest using the provided \p map.
+ * - When \p accumulate is true, atomically accumulates the forces else overwrites.
+ * - light-weight L1 prefetch for indexMap until spinning on signal wait.
+ */
+__device__ void unpackForcesAfterSignal(const int       threadIndex,
+                                        const float3*   gm_dataSrc,
+                                        float3*         gm_dataDest,
+                                        const int*      map,
+                                        const int       recvSize,
+                                        uint64_t*       signalReceiverRankFCurr,
+                                        uint64_t        signalReceiverRankFCounter,
+                                        const bool      accumulate,
+                                        const int&      currPulse,
+                                        const int&      totalNumPulses,
+                                        const uint32_t* d_fGridSync_)
+{
+
+    int gridStride = blockDim.x * gridDim.x;
+    if (threadIdx.x == 0)
+    {
+        while (loadRelaxedSysAsm(signalReceiverRankFCurr) != signalReceiverRankFCounter)
+            ;
+    }
+
+    asm("prefetch.global.L1 [%0];" ::"l"(map + threadIndex) : "memory");
+    asm("prefetch.global.L1 [%0];" ::"l"(map + threadIndex + gridStride) : "memory");
+
+    __syncthreads();
+
+    for (int i = threadIndex; i < recvSize; i += gridStride)
+    {
+        int    mapIndex = map[i];
+        float3 srcVal   = gm_dataSrc[i];
+        if (accumulate)
+        {
+            float* gm_dataDest_ptr = (float*)(gm_dataDest + mapIndex);
+            atomicAdd(gm_dataDest_ptr, srcVal.x);
+            atomicAdd(gm_dataDest_ptr + 1, srcVal.y);
+            atomicAdd(gm_dataDest_ptr + 2, srcVal.z);
+        }
+        else
+        {
+            gm_dataDest[mapIndex] = srcVal;
+        }
+    }
+}
+
+
+/*!
+ * \brief Fused NVSHMEM force unpack kernel for F halo exchange.
+ *
+ * Algorithm overview:
+ * - The kernel runs with grid.y = total number of pulses. Each
+ *   block in grid.y processes one pulse identified by \p currPulse, iterating in
+ *   descending order to honor dependencies on later pulses.
+ * - For each pulse:
+ *   1) Determine communication path:
+ *      - Inter-node (NIC): when the peer's destination pointer is not directly accessible
+ *        (remoteDstIsDirectlyAccessible == false), this rank issues a PUT of the packed
+ *        force slice to the peer and signals it (nvshmem_float_put_signal_nbi).
+ *      - Intra-node (NVLink / same node): when the peer's destination is directly accessible,
+ *        this rank signals the peer to GET (nvshmem_ptr() non-null) and the peer pulls the data.
+ *   2) Locally unpack the received forces for this pulse:
+ *      - If a peer GET source pointer is available, read directly from that remote source + offset.
+ *      - Otherwise read from this rank's receive buffer.
+ *      - Call unpackForcesAfterSignal() which first waits on the pulse-specific NVSHMEM signal and
+ *        then performs a grid-stride accumulate-or-overwrite into the global force array.
+ *   3) If there exists a dependent earlier pulse (nextPulse = currPulse - 1), the last arriving
+ *      thread block for the current pulse signals readiness for nextPulse. This is implemented with
+ *      a release-scoped atomicInc on d_fGridSync_[currPulse] and a spin with acquire loads on
+ *      the nextPulse side.
+ *
+ * Synchronization and satisfying pulse ordering:
+ * - NVSHMEM signaling between ranks:
+ *   - First pulse that signals the peer within a dim/pulse sequence can use relaxed system store
+ *     since prior data for it is visible at sys scope from previous NBF non-local kernel; subsequent signaling uses release system
+ *     stores to ensure all prior writes are globally visible before peers observe the signal.
+ * - Intra-kernel inter-pulse ordering:
+ *   - The last thread block to finish a pulse performs atom.inc.release.gpu on d_fGridSync_.
+ *   - Consumers of the next pulse spin using load.acquire.gpu until the expected count is reached.
+ *
+ * Path selection booleans:
+ *   - remoteDstIsDirectlyAccessible: peer destination reachable via NVLink/same node.
+ *   - remoteSrcIsDirectlyAccessible: peer source pointer available for direct GET.
+ *
+ * \param[out] data                         Full array of forces to accumulate into
+ * \param[in]  dataPacked                   Array of halo exchange entries (one per pulse)
+ * \param[in]  signalReceiverRankF          Base pointer for forces NVSHMEM signal objects
+ * \param[in]  signalReceiverRankFCounter   Monotonic signal counter value to write per pulse
+ * \param[in]  totalNumPulses              Total number of pulses
+ * \param[in]  accumulateForces             Whether to accumulate (atomic) or overwrite forces
+ * \param[in,out] d_fGridSync_              Per-pulse device counters used for inter-pulse sync
+ */
+__global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
+                                                 FusedGpuHaloExchange::HaloExchangeData* __restrict__ dataPacked,
+                                                 uint64_t* __restrict__ signalReceiverRankF,
+                                                 const uint64_t signalReceiverRankFCounter,
+                                                 int            totalNumPulses,
+                                                 bool           accumulateForces,
+                                                 uint32_t* __restrict__ d_fGridSync_)
+{
+#if GMX_NVSHMEM
+    const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (int currPulse = blockIdx.y; currPulse >= 0; currPulse -= gridDim.y)
+    {
+        FusedGpuHaloExchange::HaloExchangeData haloExchangeData = dataPacked[currPulse];
+        // Reverse the send and recv ranks/sizes of X is send and recv for F
+        const int sendRank = haloExchangeData.recvRankX;
+        const int recvRank = haloExchangeData.sendRankX;
+        const int sendSize = haloExchangeData.xRecvSize;
+        const int recvSize = haloExchangeData.xSendSize;
+
+        const int atomOffset = haloExchangeData.atomOffset;
+        const int remoteGetAtomOffset = haloExchangeData.nvshmemData.putAtomOffsetInReceiverRankXBuf_;
+        const float3* remoteForcePeerGetPtr =
+                (const float3*)haloExchangeData.nvshmemData.remoteForcePeerGetPtr;
+        float3* remoteForcePeerPutPtr = (float3*)haloExchangeData.nvshmemData.remoteForcePeerPutPtr;
+        const bool remoteDstIsDirectlyAccessible = (remoteForcePeerPutPtr != nullptr);
+        float3*    recvBuf                       = (float3*)haloExchangeData.d_recvBuf;
+
+        // Accumulation behavior:
+        // - Accumulate when there are CPU-side force contributions.
+        // - If there are no CPU-side contributions, accumulate only for 2D/3D domain decomposition for all pulses,
+        //   and for 1D only from the second pulse onward (not on pulse 0 in 1D).
+        // const bool accumulate = haloExchangeData.accumulateForces ? true : accumulateForces;
+        const bool accumulate              = accumulateForces && (currPulse == 0) ? accumulateForces
+                                                                                  : haloExchangeData.accumulateForces;
+        const int* map                     = haloExchangeData.d_indexMap;
+        uint64_t*  signalReceiverRankFCurr = signalReceiverRankF + currPulse;
+
+        if (threadIndex == 0 && sendSize > 0 && currPulse == (totalNumPulses - 1))
+        {
+            // Inter-node path (NIC): use nvshmem put+signal to transfer and notify the peer.
+            if (!remoteDstIsDirectlyAccessible)
+            {
+                nvshmem_float_put_signal_nbi(reinterpret_cast<float*>(recvBuf),
+                                             reinterpret_cast<float*>(&data[atomOffset]),
+                                             sendSize * 3,
+                                             signalReceiverRankFCurr,
+                                             signalReceiverRankFCounter,
+                                             NVSHMEM_SIGNAL_SET,
+                                             sendRank);
+            }
+            else
+            {
+                // Intra-node path (NVLink): signal the peer to pull (GET) the data directly.
+                uint64_t* remoteSignalReceiverRankFCurr =
+                        reinterpret_cast<uint64_t*>(nvshmem_ptr(signalReceiverRankFCurr, sendRank));
+                GMX_ASSERT(remoteSignalReceiverRankFCurr != nullptr,
+                           "nvshmem_ptr returned null for peer signal pointer");
+                //  As this is the first dim/pulse we can make use of relaxed memory order to signal the sendRank.
+                //  As there is no prior data written by this rank to be made visible at system scope.
+                stRelaxedSysAsm(remoteSignalReceiverRankFCurr, signalReceiverRankFCounter);
+            }
+        }
+
+        if (recvSize > 0)
+        {
+            const bool    remoteSrcIsDirectlyAccessible = (remoteForcePeerGetPtr != nullptr);
+            const float3* gm_dataSrc                    = remoteSrcIsDirectlyAccessible
+                                                                  ? (remoteForcePeerGetPtr + remoteGetAtomOffset)
+                                                                  : recvBuf;
+            unpackForcesAfterSignal(threadIndex,
+                                    gm_dataSrc,
+                                    data,
+                                    map,
+                                    recvSize,
+                                    signalReceiverRankFCurr,
+                                    signalReceiverRankFCounter,
+                                    accumulate,
+                                    currPulse,
+                                    totalNumPulses,
+                                    d_fGridSync_);
+        }
+
+        if (currPulse > 0)
+        {
+            // we skip the last grid.y as the last that is 0th pulse/dim doesn't have any dependent threadblocks
+            __syncthreads();
+            if (threadIdx.x == 0)
+            {
+                uint32_t old_val = atomicIncReleaseGpu(d_fGridSync_ + currPulse, gridDim.x);
+
+                if (old_val == gridDim.x - 1)
+                {
+                    int nextPulse = currPulse - 1;
+                    if (nextPulse >= 0)
+                    {
+                        FusedGpuHaloExchange::HaloExchangeData haloExchangeData = dataPacked[nextPulse];
+                        // Reverse the send and recv ranks/sizes of X is send and recv for F
+                        const int sendRank   = haloExchangeData.recvRankX;
+                        const int sendSize   = haloExchangeData.xRecvSize;
+                        const int atomOffset = haloExchangeData.atomOffset;
+
+                        Float3* remoteForcePeerPutPtr = haloExchangeData.nvshmemData.remoteForcePeerPutPtr;
+                        const bool remoteDstIsDirectlyAccessible = (remoteForcePeerPutPtr != nullptr);
+                        Float3*   recvBuf                 = haloExchangeData.d_recvBuf;
+                        uint64_t* signalReceiverRankFNext = signalReceiverRankF + nextPulse;
+
+                        if (sendSize > 0)
+                        {
+                            uint64_t* remoteSignalReceiverRankFCurr = reinterpret_cast<uint64_t*>(
+                                    nvshmem_ptr(signalReceiverRankFNext, sendRank));
+                            GMX_ASSERT(remoteSignalReceiverRankFCurr != nullptr,
+                                       "nvshmem_ptr returned null for peer signal pointer");
+                            for (int pulseId = currPulse + 1; pulseId < totalNumPulses; pulseId++)
+                            {
+                                const uint32_t* syncOnPrevPulse = d_fGridSync_ + pulseId;
+                                while (loadAcquireGpuAsm(syncOnPrevPulse) != gridDim.x)
+                                    ;
+                            }
+                            if (!remoteDstIsDirectlyAccessible)
+                            {
+                                // for inter-node comm over NIC issue nvshmem_float_put_signal_nbi
+                                nvshmem_float_put_signal_nbi(reinterpret_cast<float*>(recvBuf),
+                                                             reinterpret_cast<float*>(&data[atomOffset]),
+                                                             sendSize * 3,
+                                                             signalReceiverRankFNext,
+                                                             signalReceiverRankFCounter,
+                                                             NVSHMEM_SIGNAL_SET,
+                                                             sendRank);
+                            }
+                            else
+                            {
+                                // For NVLink comm we just signal the sender rank using system-scoped
+                                // release store to get(pull) the forces as they are ready.
+                                storeReleaseSysAsm(remoteSignalReceiverRankFCurr, signalReceiverRankFCounter);
+                            }
+                        }
+                    }
+                    if (currPulse == 1)
+                    {
+                        // reset the grid sync before kernel exit
+                        for (int i = 0; i < totalNumPulses; i++)
+                        {
+                            d_fGridSync_[i] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+#endif
+}
+
 void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
 {
     // launch kernel to pack send buffer
@@ -745,63 +1039,32 @@ void FusedGpuHaloExchange::launchPackXKernel(const matrix box)
 
 void FusedGpuHaloExchange::launchUnpackFKernel(bool accumulateForces)
 {
-    // Iterate over all HaloExchangeData entries in reverse launch order and launch force put+unpack per entry
 #if GMX_NVSHMEM
-    for (int idx = static_cast<int>(haloExchangeData_.size()) - 1; idx >= 0; --idx)
-    {
-        int         signalObjOffset = idx;
-        const auto& e               = haloExchangeData_[idx];
-        const int   fRecvSize       = e.xSendSize;       // recv forces equals send coords size
-        const int   fSendSize       = e.xRecvSize * DIM; // send forces equals recv coords size
-        if ((fSendSize <= 0) && (fRecvSize <= 0))
-        {
-            continue;
-        }
+    KernelLaunchConfig config;
+    config.blockSize[0]     = c_fusedKernelsThreadsPerBlock;
+    config.blockSize[1]     = 1;
+    config.blockSize[2]     = 1;
+    config.gridSize[0]      = maxGridFSize_;
+    config.gridSize[1]      = totalNumPulses_;
+    config.gridSize[2]      = 1;
+    config.sharedMemorySize = 0;
 
-        KernelLaunchConfig config;
-        float3*            d_f      = asFloat3(sharedBuffers_.d_f);
-        float3*            recvBuf  = asFloat3(e.d_recvBuf);
-        const int*         indexMap = e.d_indexMap;
+    float3* d_f = asFloat3(sharedBuffers_.d_f);
 
-        // Use fused NVSHMEM grid settings if available; ensure at least one block
-        config.blockSize[0] = FusedGpuHaloExchange::c_nvshmemThreadsPerBlock;
-        config.blockSize[1] = 1;
-        config.blockSize[2] = 1;
-        // Add 1 to size to take care of case when (fRecvSize == 0 && fSendSize > 0).
-        // In such case, we still launch the kernel to signal the remote rank
-        // from which this rank receives packed data
-        config.gridSize[0] =
-                gmx::divideRoundUp(fRecvSize + 1, FusedGpuHaloExchange::c_nvshmemThreadsPerBlock);
-        config.gridSize[1]      = 1;
-        config.gridSize[2]      = 1;
-        config.sharedMemorySize = 0;
+    auto kernelFn = fusedUnPackFRecvBufNvshmemKernel;
 
-        // Accumulation behavior:
-        // - Accumulate when there are CPU-side force contributions.
-        // - If there are no CPU-side contributions, accumulate only for 2D/3D domain decomposition for all pulses,
-        //   and for 1D only from the second pulse onward (not on pulse 0 in 1D).
-        bool shouldAccumulateForces = (accumulateForces && idx == 0) ? accumulateForces : e.accumulateForces;
-        auto kernelFn = shouldAccumulateForces ? putPackedDataUnpackRecvBufNvshmemKernel<true>
-                                               : putPackedDataUnpackRecvBufNvshmemKernel<false>;
+    const auto kernelArgs = prepareGpuKernelArguments(kernelFn,
+                                                      config,
+                                                      &d_f,
+                                                      &d_haloExchangeData_,
+                                                      &sharedBuffers_.d_signalReceiverRankF_,
+                                                      &signalReceiverRankFCounter_,
+                                                      &totalNumPulses_,
+                                                      &accumulateForces,
+                                                      &d_fGridSync_);
 
-        int        atomOffset          = e.atomOffset;
-        int        sendRankF           = e.recvRankX; // F send rank is reverse of X
-        uint64_t*  signalReceiverRankF = sharedBuffers_.d_signalReceiverRankF_;
-        const auto kernelArgs          = prepareGpuKernelArguments(kernelFn,
-                                                          config,
-                                                          &d_f,
-                                                          &recvBuf,
-                                                          &indexMap,
-                                                          &fRecvSize,
-                                                          &fSendSize,
-                                                          &atomOffset,
-                                                          &sendRankF,
-                                                          &signalReceiverRankF,
-                                                          &signalReceiverRankFCounter_,
-                                                          &signalObjOffset);
-        launchGpuKernel(
-                kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange (Fused)", kernelArgs);
-    }
+    launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+
     signalReceiverRankFCounter_++;
 #endif
 }

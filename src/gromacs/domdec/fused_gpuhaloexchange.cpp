@@ -359,7 +359,11 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
             //  - keep a uniform launch shape across pulses for simplifying fused kernel impl.
             const int gridDimX =
                     gmx::divideRoundUp(data.xSendSize + 1, FusedGpuHaloExchange::c_atomsPerThreadBlock);
-            maxGridXSize_ = std::max(maxGridXSize_, gridDimX);
+            maxGridXSize_       = std::max(maxGridXSize_, gridDimX);
+            const int fRecvSize = data.xSendSize; // fRecvSize_ in Impl equals xSendSize_
+            const int gridDimF =
+                    gmx::divideRoundUp(fRecvSize + 1, FusedGpuHaloExchange::c_atomsPerThreadBlock);
+            maxGridFSize_ = std::max(maxGridFSize_, gridDimF);
             idxEntry++;
         }
     }
