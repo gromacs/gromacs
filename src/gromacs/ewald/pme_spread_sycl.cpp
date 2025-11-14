@@ -204,22 +204,18 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
     constexpr int atomsPerWarp = subGroupSize / threadsPerAtomValue;
 
     // Gridline indices, ivec
-    sycl::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
+    using GridLineIndices = StaticLocalStorage<int, atomsPerBlock * DIM>;
     // Charges
-    sycl::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
+    using Coefficients = StaticLocalStorage<float, atomsPerBlock>;
     // Spline values
-    sycl::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
-    auto                           sm_fractCoords = [&]()
-    {
-        if constexpr (computeSplines)
-        {
-            return sycl::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    using Theta = StaticLocalStorage<float, atomsPerBlock * DIM * order>;
+    // Reduction of partial force contributions
+    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, computeSplines>;
+    // These declarations must be made on the host
+    auto sm_gridlineIndicesHostStorage = GridLineIndices::makeHostStorage(cgh);
+    auto sm_thetaHostStorage           = Theta::makeHostStorage(cgh);
+    auto sm_coefficientsHostStorage    = Coefficients::makeHostStorage(cgh);
+    auto sm_fractCoordsHostStorage     = FractCoords::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
@@ -227,6 +223,18 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
         {
             return;
         }
+
+        // These declarations work on the device.
+        typename GridLineIndices::DeviceStorage sm_gridlineIndicesDeviceStorage;
+        typename Coefficients::DeviceStorage    sm_coefficientsDeviceStorage;
+        typename Theta::DeviceStorage           sm_thetaDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<int> sm_gridlineIndices = GridLineIndices::get_pointer(
+                sm_gridlineIndicesHostStorage, sm_gridlineIndicesDeviceStorage);
+        sycl::local_ptr<float> sm_coefficients =
+                Coefficients::get_pointer(sm_coefficientsHostStorage, sm_coefficientsDeviceStorage);
+        sycl::local_ptr<float> sm_theta = Theta::get_pointer(sm_thetaHostStorage, sm_thetaDeviceStorage);
+
         const int blockIndex      = itemIdx.get_group_linear_id();
         const int atomIndexOffset = blockIndex * atomsPerBlock + pipeliningParams.pipelineAtomStart;
 
@@ -250,9 +258,8 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
         }
 
         /* Charges, required for both spline and spread */
-        pmeGpuStageAtomData<float, atomsPerBlock, 1>(sm_coefficients.get_pointer(),
-                                                     gm_coefficients_0 + pipeliningParams.pipelineAtomStart,
-                                                     itemIdx);
+        pmeGpuStageAtomData<float, atomsPerBlock, 1>(
+                sm_coefficients, gm_coefficients_0 + pipeliningParams.pipelineAtomStart, itemIdx);
         itemIdx.barrier(fence_space::local_space);
         const float atomCharge = sm_coefficients[atomIndexLocal];
 
@@ -260,6 +267,8 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
         {
             // SYCL-TODO: Use prefetching? Issue #4153.
             const Float3 atomX = gm_coordinates[atomIndexGlobal];
+            // This declaration works on the device.
+            typename FractCoords::DeviceStorage sm_fractCoordsDeviceStorage;
             calculateSplines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal, numGrids, subGroupSize>(
                     atomIndexOffset,
                     atomX,
@@ -274,10 +283,10 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
                     gm_gridlineIndices,
                     gm_fractShiftsTable,
                     gm_gridlineIndicesTable,
-                    sm_theta.get_pointer(),
+                    sm_theta,
                     nullptr,
-                    sm_gridlineIndices.get_pointer(),
-                    sm_fractCoords.get_pointer(),
+                    sm_gridlineIndices,
+                    FractCoords::get_pointer(sm_fractCoordsHostStorage, sm_fractCoordsDeviceStorage),
                     itemIdx);
             subGroupBarrier(itemIdx);
         }
@@ -288,10 +297,9 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
              * as in after running the spline kernel)
              */
             /* Spline data - only thetas (dthetas will only be needed in gather) */
-            pmeGpuStageAtomData<float, atomsPerBlock, DIM * order>(sm_theta.get_pointer(), gm_theta, itemIdx);
+            pmeGpuStageAtomData<float, atomsPerBlock, DIM * order>(sm_theta, gm_theta, itemIdx);
             /* Gridline indices */
-            pmeGpuStageAtomData<int, atomsPerBlock, DIM>(
-                    sm_gridlineIndices.get_pointer(), gm_gridlineIndices, itemIdx);
+            pmeGpuStageAtomData<int, atomsPerBlock, DIM>(sm_gridlineIndices, gm_gridlineIndices, itemIdx);
 
             itemIdx.barrier(fence_space::local_space);
         }
@@ -302,35 +310,27 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
             if (!pipeliningParams.usePipeline || (atomIndexGlobal < pipeliningParams.pipelineAtomEnd))
             {
                 spread_charges<order, wrapX, wrapY, threadsPerAtom, subGroupSize>(
-                        atomCharge,
-                        realGridSize,
-                        realGridSizePadded,
-                        gm_realGrid_0,
-                        sm_gridlineIndices.get_pointer(),
-                        sm_theta.get_pointer(),
-                        itemIdx);
+                        atomCharge, realGridSize, realGridSizePadded, gm_realGrid_0, sm_gridlineIndices, sm_theta, itemIdx);
             }
         }
         if constexpr (numGrids == 2 && spreadCharges)
         {
             itemIdx.barrier(fence_space::local_space);
-            pmeGpuStageAtomData<float, atomsPerBlock, 1>(sm_coefficients.get_pointer(),
-                                                         gm_coefficients_1 + pipeliningParams.pipelineAtomStart,
-                                                         itemIdx);
+            pmeGpuStageAtomData<float, atomsPerBlock, 1>(
+                    sm_coefficients, gm_coefficients_1 + pipeliningParams.pipelineAtomStart, itemIdx);
             itemIdx.barrier(fence_space::local_space);
             const float atomCharge = sm_coefficients[atomIndexLocal];
             if (atomIndexGlobal < nAtoms)
             {
                 if (!pipeliningParams.usePipeline || (atomIndexGlobal < pipeliningParams.pipelineAtomEnd))
                 {
-                    spread_charges<order, wrapX, wrapY, threadsPerAtom, subGroupSize>(
-                            atomCharge,
-                            realGridSize,
-                            realGridSizePadded,
-                            gm_realGrid_1,
-                            sm_gridlineIndices.get_pointer(),
-                            sm_theta.get_pointer(),
-                            itemIdx);
+                    spread_charges<order, wrapX, wrapY, threadsPerAtom, subGroupSize>(atomCharge,
+                                                                                      realGridSize,
+                                                                                      realGridSizePadded,
+                                                                                      gm_realGrid_1,
+                                                                                      sm_gridlineIndices,
+                                                                                      sm_theta,
+                                                                                      itemIdx);
                 }
             }
         }

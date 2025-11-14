@@ -99,12 +99,19 @@ auto bondedKernel(sycl::handler&                   cgh,
 
     const auto electrostaticsScaleFactor = kernelParams.electrostaticsScaleFactor;
 
-    sycl::local_accessor<Float3, 1> sm_fShiftLoc{ sycl::range<1>(c_numShiftVectors), cgh };
+    using FShiftLoc              = StaticLocalStorage<Float3, c_numShiftVectors>;
+    auto sm_fShiftLocHostStorage = FShiftLoc::makeHostStorage(cgh);
 
     const PbcAiuc pbcAiuc = kernelParams.pbcAiuc;
 
     return [=](sycl::nd_item<1> itemIdx)
     {
+        // This declaration works on the device
+        typename FShiftLoc::DeviceStorage sm_fShiftLocDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<Float3> sm_fShiftLoc =
+                FShiftLoc::get_pointer(sm_fShiftLocHostStorage, sm_fShiftLocDeviceStorage);
+
         sycl::global_ptr<const t_iparams>    gm_forceParams = gm_forceParams_;
         sycl::global_ptr<const DeviceFloat4> gm_xq          = gm_xq_;
         sycl::global_ptr<Float3>             gm_f           = gm_f_;

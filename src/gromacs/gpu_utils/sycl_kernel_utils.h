@@ -35,10 +35,19 @@
 #ifndef GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H
 #define GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H
 
+#include <config.h>
+
+#include <type_traits>
+
 #include "gmxsycl.h"
+#include "gputraits_sycl.h"
 
 #if defined(__AMDGCN__)
 #    include "hip_sycl_kernel_utils.h"
+#endif
+
+#if defined(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+#    include <sycl/ext/oneapi/work_group_static.hpp>
 #endif
 
 /*! \file
@@ -256,5 +265,173 @@ static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
     itemIdx.get_sub_group().barrier();
 #endif
 }
+
+/*! \brief Shim to smooth over implementation differences
+ *
+ * This lets the classic oneAPI implementation and the handler-free
+ * extension for workgroup-static (a.k.a. local accessor) storage work
+ * smoothly in the same templated kernel when the memory is not
+ * needed for the current template instantiation. */
+template<typename T>
+struct NullptrWrapper
+{
+};
+
+#if GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION
+static constexpr bool sc_useCommandGroupHandler = false;
+#else // This is the default (and classic) implementation
+static constexpr bool sc_useCommandGroupHandler = true;
+#endif
+
+namespace detail
+{
+
+/*! \brief Type trait for implementing StaticLocalStorage
+ *
+ * Specializations of this type allow non-trivial vector-style types
+ * to work with work_group_static (which requires that the type of its
+ * array is trivial). */
+template<typename T>
+struct UnderlyingType
+{
+    static constexpr size_t sc_valueTypeMultiple = 1;
+    using Type                                   = T;
+};
+
+// Template specialization for sycl::vec
+template<typename T, size_t size>
+struct UnderlyingType<sycl::vec<T, size>>
+{
+    static constexpr size_t sc_valueTypeMultiple = size;
+    using Type                                   = T;
+};
+
+// Template specialization for gmx::BasicVector
+template<typename T>
+struct UnderlyingType<gmx::BasicVector<T>>
+{
+    static constexpr size_t sc_valueTypeMultiple = DIM;
+    using Type                                   = T;
+};
+
+} // namespace detail
+
+/*! \brief Shim for the two implementations of local storage
+ *
+ * A sycl::local_accessor works as a facet of a command-group handler,
+ * so when using handler-free submission, we must also use the
+ * extension for work-group static storage, which does not depend on a
+ * command-group handler.
+ *
+ * Because we have the above two implementation flavours for SYCL
+ * device kernels, this class permits the code to specify the base
+ * type, buffer size, and condition under which it exists in one
+ * place, and then use that correctly for both implementations of
+ * local storage.
+ *
+ * Note that the declaration of a sycl::local_accessor must be in
+ * the host code, whereas the declaration of a work_group_static
+ * must be in the kernel code.
+ **/
+template<typename T, size_t size, bool condition = true>
+class StaticLocalStorage
+{
+public:
+    //! Helper typedef
+    using Underlying = detail::UnderlyingType<T>;
+#if defined(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+    //! Helper typedef for the static array that defines the storage of a work_group_static
+    using StaticArray = typename Underlying::Type[size * Underlying::sc_valueTypeMultiple];
+    //! Convenience typedef for a work_group_static
+    using WorkGroupStatic = sycl::ext::oneapi::experimental::work_group_static<StaticArray>;
+#else
+    using WorkGroupStatic = std::nullptr_t;
+#endif
+    /*! \brief The type to declare local storage in host code, given
+     * the build configuration
+     *
+     * With sc_useCommandGroupHandler, this type
+     * (i.e. sycl::local_accessor) can only be successfully declared
+     * in the host code. */
+    using ActiveHostStorage =
+            std::conditional_t<sc_useCommandGroupHandler, sycl::local_accessor<T, 1>, std::nullptr_t>;
+    /*! \brief The type to declare local storage in device code, given
+     * the build configuration
+     *
+     * With !sc_useCommandGroupHandler, this type (ie. work_group_static)
+     * can only be successfully declared in the device kernel. */
+    using ActiveDeviceStorage =
+            std::conditional_t<sc_useCommandGroupHandler, std::nullptr_t, WorkGroupStatic>;
+    //! Type of local storage in the host code, given \c condition
+    using HostStorage = std::conditional_t<condition, ActiveHostStorage, std::nullptr_t>;
+    //! Type of local storage in the device code, given \c condition
+    using DeviceStorage = std::conditional_t<condition, ActiveDeviceStorage, std::nullptr_t>;
+    /*! \brief Helper function to make storage for the local_accessor case
+     *
+     * May only be called on the host.
+     *
+     * Note that the equivalent approach for work_group_static
+     * compiles and fails at runtime, because the address of the local
+     * storage is invalid. */
+    static HostStorage makeHostStorage(sycl::handler& cgh)
+    {
+        if constexpr (condition)
+        {
+            if constexpr (sc_useCommandGroupHandler)
+            {
+                return ActiveHostStorage{ sycl::range<1>(size), cgh };
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+    /*! \brief Helper function to make storage for the work_group_static case
+     *
+     * Should only be called on the host, to match its other implementation. */
+    static HostStorage makeHostStorage(std::nullptr_t /* cgh */) { return nullptr; }
+    //! Helper typedef for get_pointer() implementation
+    using LocalPtr = sycl::multi_ptr<T, sycl::access::address_space::local_space>;
+    /*! \brief Provide a consistent way to get a sycl::local_ptr when using sycl::local_accessor
+     *
+     * Note that the sycl::local_accessor is created on the host and
+     * is const in the device kernel, but the sycl::local_ptr obtained
+     * from it can be either const or non-const according to need. */
+    static LocalPtr get_pointer(const sycl::local_accessor<T, 1>& hostStorage,
+                                std::nullptr_t& /* deviceStorage */) noexcept
+    {
+        return hostStorage.get_pointer();
+    }
+    /*! \brief Provide a consistent way to get a sycl::local_ptr when using a work_group_static
+     *
+     * Note that the work_group_static is created on the device and
+     * can be treated as either const or non-const according to
+     * need. But since the device kernels generally need read-write access, we
+     * only need the non-const overload. */
+#if defined(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+    static LocalPtr get_pointer(const std::nullptr_t& /* hostStorage */, WorkGroupStatic& deviceStorage)
+    {
+        // Extract the pointer to raw value underlying T
+        typename detail::UnderlyingType<T>::Type* rawData = deviceStorage;
+        // Potentially reinterpret it as a pointer-to-vector, ie. T*
+        T* maybeVectorData = reinterpret_cast<T*>(rawData);
+        // Construct the sycl::local_ptr<T>
+        return LocalPtr{ maybeVectorData };
+    }
+#endif
+
+    /*! \brief Provide a consistent way to get a sycl::local_ptr
+     * containing nullptr when the storage is empty. */
+    static LocalPtr get_pointer(const std::nullptr_t& /* hostStorage */,
+                                std::nullptr_t& /* deviceStorage */) noexcept
+    {
+        return nullptr;
+    }
+};
 
 #endif /* GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H */

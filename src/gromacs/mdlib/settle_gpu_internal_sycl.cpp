@@ -73,20 +73,18 @@ auto settleKernel(sycl::handler& cgh,
                   PbcAiuc pbcAiuc)
 {
     // shmem buffer for i x+q pre-loading
-    auto sm_threadVirial = [&]()
-    {
-        if constexpr (computeVirial)
-        {
-            return sycl::local_accessor<float, 1>(sycl::range<1>(sc_workGroupSize * 6), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    using ThreadVirial = StaticLocalStorage<float, sc_workGroupSize * 6, computeVirial>;
+    // These declarations must be made on the host
+    auto sm_threadVirialHostStorage = ThreadVirial::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<1> itemIdx)
     {
+        // These declarations work on the device.
+        typename ThreadVirial::DeviceStorage sm_threadVirialDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<float> sm_threadVirial =
+                ThreadVirial::get_pointer(sm_threadVirialHostStorage, sm_threadVirialDeviceStorage);
+
         constexpr float almost_zero = real(1e-12);
         const int       settleIdx   = itemIdx.get_global_linear_id();
         const int       threadIdx = itemIdx.get_local_linear_id(); // Work-item index in work-group

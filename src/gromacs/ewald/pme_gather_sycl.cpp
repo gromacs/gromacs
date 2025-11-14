@@ -311,29 +311,26 @@ auto pmeGatherKernel(sycl::handler& cgh,
     constexpr int gridlineIndicesSize = atomsPerBlock * DIM;
 
     // Gridline indices, ivec
-    sycl::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
+    using GridLineIndices = StaticLocalStorage<int, atomsPerBlock * DIM>;
     // Spline values
-    sycl::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    using Theta = StaticLocalStorage<float, atomsPerBlock * DIM * order>;
     // Spline derivatives
-    sycl::local_accessor<float, 1> sm_dtheta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    using DTheta = StaticLocalStorage<float, atomsPerBlock * DIM * order>;
     // Coefficients prefetch cache
-    sycl::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
+    using Coefficients = StaticLocalStorage<float, atomsPerBlock>;
     // Coordinates prefetch cache
-    sycl::local_accessor<Float3, 1> sm_coordinates(sycl::range<1>(atomsPerBlock), cgh);
+    using Coordinates = StaticLocalStorage<Float3, atomsPerBlock>;
     // Reduction of partial force contributions
-    sycl::local_accessor<Float3, 1> sm_forces(sycl::range<1>(atomsPerBlock), cgh);
-
-    auto sm_fractCoords = [&]()
-    {
-        if constexpr (!readGlobal)
-        {
-            return sycl::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    using Forces      = StaticLocalStorage<Float3, atomsPerBlock>;
+    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, readGlobal>;
+    // These declarations must be made on the host
+    auto sm_gridlineIndicesHostStorage = GridLineIndices::makeHostStorage(cgh);
+    auto sm_thetaHostStorage           = Theta::makeHostStorage(cgh);
+    auto sm_dthetaHostStorage          = DTheta::makeHostStorage(cgh);
+    auto sm_coefficientsHostStorage    = Coefficients::makeHostStorage(cgh);
+    auto sm_coordinatesHostStorage     = Coordinates::makeHostStorage(cgh);
+    auto sm_forcesHostStorage          = Forces::makeHostStorage(cgh);
+    auto sm_fractCoordsHostStorage     = FractCoords::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
@@ -341,6 +338,30 @@ auto pmeGatherKernel(sycl::handler& cgh,
         {
             return;
         }
+
+        // These declarations work on the device.
+        typename GridLineIndices::DeviceStorage sm_gridlineIndicesDeviceStorage;
+        typename Theta::DeviceStorage           sm_thetaDeviceStorage;
+        typename DTheta::DeviceStorage          sm_dthetaDeviceStorage;
+        typename Coefficients::DeviceStorage    sm_coefficientsDeviceStorage;
+        typename Coordinates::DeviceStorage     sm_coordinatesDeviceStorage;
+        typename Forces::DeviceStorage          sm_forcesDeviceStorage;
+        typename FractCoords::DeviceStorage     sm_fractCoordsDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<int> sm_gridlineIndices = GridLineIndices::get_pointer(
+                sm_gridlineIndicesHostStorage, sm_gridlineIndicesDeviceStorage);
+        sycl::local_ptr<float> sm_theta = Theta::get_pointer(sm_thetaHostStorage, sm_thetaDeviceStorage);
+        sycl::local_ptr<float> sm_dtheta =
+                DTheta::get_pointer(sm_dthetaHostStorage, sm_dthetaDeviceStorage);
+        sycl::local_ptr<float> sm_coefficients =
+                Coefficients::get_pointer(sm_coefficientsHostStorage, sm_coefficientsDeviceStorage);
+        sycl::local_ptr<Float3> sm_coordinates =
+                Coordinates::get_pointer(sm_coordinatesHostStorage, sm_coordinatesDeviceStorage);
+        sycl::local_ptr<Float3> sm_forces =
+                Forces::get_pointer(sm_forcesHostStorage, sm_forcesDeviceStorage);
+        sycl::local_ptr<float> sm_fractCoords =
+                FractCoords::get_pointer(sm_fractCoordsHostStorage, sm_fractCoordsDeviceStorage);
+
         SYCL_ASSERT(blockSize == itemIdx.get_local_range().size());
         /* These are the atom indices - for the shared and global memory */
         const int atomIndexLocal = itemIdx.get_local_id(XX);
@@ -412,11 +433,9 @@ auto pmeGatherKernel(sycl::handler& cgh,
         {
             /* Recalculate  Splines  */
             /* Staging coefficients/charges */
-            pmeGpuStageAtomData<float, atomsPerBlock, 1>(
-                    sm_coefficients.get_pointer(), gm_coefficientsA, itemIdx);
+            pmeGpuStageAtomData<float, atomsPerBlock, 1>(sm_coefficients, gm_coefficientsA, itemIdx);
             /* Staging coordinates */
-            pmeGpuStageAtomData<Float3, atomsPerBlock, 1>(
-                    sm_coordinates.get_pointer(), gm_coordinates, itemIdx);
+            pmeGpuStageAtomData<Float3, atomsPerBlock, 1>(sm_coordinates, gm_coordinates, itemIdx);
             itemIdx.barrier(fence_space::local_space);
             const Float3 atomX      = sm_coordinates[atomIndexLocal];
             const float  atomCharge = sm_coefficients[atomIndexLocal];
@@ -435,10 +454,10 @@ auto pmeGatherKernel(sycl::handler& cgh,
                     nullptr,
                     gm_fractShiftsTable,
                     gm_gridlineIndicesTable,
-                    sm_theta.get_pointer(),
-                    sm_dtheta.get_pointer(),
-                    sm_gridlineIndices.get_pointer(),
-                    sm_fractCoords.get_pointer(),
+                    sm_theta,
+                    sm_dtheta,
+                    sm_gridlineIndices,
+                    sm_fractCoords,
                     itemIdx);
             subGroupBarrier(itemIdx);
         }
@@ -488,13 +507,13 @@ auto pmeGatherKernel(sycl::handler& cgh,
                                                                   atomIndexLocal,
                                                                   splineIndexBase,
                                                                   tdz,
-                                                                  sm_gridlineIndices.get_pointer(),
-                                                                  sm_theta.get_pointer(),
-                                                                  sm_dtheta.get_pointer(),
+                                                                  sm_gridlineIndices,
+                                                                  sm_theta,
+                                                                  sm_dtheta,
                                                                   gm_gridA);
         }
         reduceAtomForces<order, atomDataSize, blockSize, subGroupSize>(
-                itemIdx, sm_forces.get_pointer(), atomIndexLocal, splineIndex, lineIndex, realGridSizeFP, fx, fy, fz);
+                itemIdx, sm_forces, atomIndexLocal, splineIndex, lineIndex, realGridSizeFP, fx, fy, fz);
         itemIdx.barrier(fence_space::local_space);
 
         /* Calculating the final forces with no component branching, atomsPerBlock threads */
@@ -502,7 +521,7 @@ auto pmeGatherKernel(sycl::handler& cgh,
         const int forceIndexGlobal = atomIndexOffset + forceIndexLocal;
         if (forceIndexLocal < atomsPerBlock)
         {
-            calculateAndStoreGridForces(sm_forces.get_pointer(),
+            calculateAndStoreGridForces(sm_forces,
                                         forceIndexLocal,
                                         forceIndexGlobal,
                                         currentRecipBox0,
@@ -558,20 +577,20 @@ auto pmeGatherKernel(sycl::handler& cgh,
                                                                       atomIndexLocal,
                                                                       splineIndexBase,
                                                                       tdz,
-                                                                      sm_gridlineIndices.get_pointer(),
-                                                                      sm_theta.get_pointer(),
-                                                                      sm_dtheta.get_pointer(),
+                                                                      sm_gridlineIndices,
+                                                                      sm_theta,
+                                                                      sm_dtheta,
                                                                       gm_gridB);
             }
             // Reduction of partial force contributions
             reduceAtomForces<order, atomDataSize, blockSize, subGroupSize>(
-                    itemIdx, sm_forces.get_pointer(), atomIndexLocal, splineIndex, lineIndex, realGridSizeFP, fx, fy, fz);
+                    itemIdx, sm_forces, atomIndexLocal, splineIndex, lineIndex, realGridSizeFP, fx, fy, fz);
             itemIdx.barrier(fence_space::local_space);
 
             /* Calculating the final forces with no component branching, atomsPerBlock threads */
             if (forceIndexLocal < atomsPerBlock)
             {
-                calculateAndStoreGridForces(sm_forces.get_pointer(),
+                calculateAndStoreGridForces(sm_forces,
                                             forceIndexLocal,
                                             forceIndexGlobal,
                                             currentRecipBox0,

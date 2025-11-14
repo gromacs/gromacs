@@ -126,6 +126,9 @@ std::vector<std::string> getSyclOptionalFeatures()
 #    if GMX_HAVE_GPU_GRAPH_SUPPORT
     optionalFeatures.push_back("graphs");
 #    endif
+#    if GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION
+    optionalFeatures.push_back("experimental_enqueue_functions");
+#    endif
     return optionalFeatures;
 }
 

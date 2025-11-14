@@ -25,6 +25,7 @@ gromacs:oneapi-2025.1-sycl-mpi:configure:
   variables:
     CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION=ON"
     COMPILER_MAJOR_VERSION: 2025
 
 gromacs:oneapi-2025.1-sycl-mpi:build:

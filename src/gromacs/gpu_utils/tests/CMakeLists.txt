@@ -64,6 +64,7 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
 
     SYCL_CPP_SOURCE_FILES
         devicetransfers_sycl.cpp
+        sycl_kernel_utils.cpp
 
     NON_GPU_CPP_SOURCE_FILES
         devicetransfers.cpp

@@ -69,23 +69,14 @@ auto makeSolveKernel(sycl::handler& cgh,
                      float* __restrict__ gm_fourierGrid_)
 {
     /* Reduce 7 outputs per warp in the shared memory */
-    const int stride =
+    static constexpr int stride =
             8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
     static_assert(c_virialAndEnergyCount == 7);
-    const int reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
+    static constexpr int reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
 
-    // Help compiler eliminate local buffer when it is unused.
-    auto sm_virialAndEnergy = [&]()
-    {
-        if constexpr (computeEnergyAndVirial)
-        {
-            return sycl::local_accessor<float, 1>(sycl::range<1>(reductionBufferSize), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    using VirialAndEnergy = StaticLocalStorage<float, reductionBufferSize, computeEnergyAndVirial>;
+    // These declarations must be made on the host
+    auto sm_virialAndEnergyHostStorage = VirialAndEnergy::makeHostStorage(cgh);
 
     /* Each thread works on one cell of the Fourier space complex 3D grid (gm_grid).
      * Each block handles up to c_solveMaxWarpsPerBlock * subGroupSize cells -
@@ -98,6 +89,13 @@ auto makeSolveKernel(sycl::handler& cgh,
         {
             return;
         }
+
+        // These declarations work on the device.
+        typename VirialAndEnergy::DeviceStorage sm_virialAndEnergyDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<float> sm_virialAndEnergy = VirialAndEnergy::get_pointer(
+                sm_virialAndEnergyHostStorage, sm_virialAndEnergyDeviceStorage);
+
         /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
         int majorDim, middleDim, minorDim;
         switch (gridOrdering)

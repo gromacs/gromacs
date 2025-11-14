@@ -84,19 +84,11 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
     constexpr int          c_clusterPairSplit     = sc_gpuClusterPairSplit(layoutType);
     constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(layoutType);
 
-    /* shmem buffer for i x+q pre-loading */
-    sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
-    auto                            sm_prunedPairCount = [&]()
-    {
-        if constexpr (haveFreshList && nbnxmSortListsOnGpu())
-        {
-            return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    // Local memory buffer for i x+q pre-loading
+    using Xq              = StaticLocalStorage<Float4, c_superClusterSize * c_clSize>;
+    using PrunedPairCount = StaticLocalStorage<int, 1, haveFreshList && nbnxmSortListsOnGpu()>;
+    auto sm_xqHostStorage = Xq::makeHostStorage(cgh);
+    auto sm_prunedPairCountHostStorage = PrunedPairCount::makeHostStorage(cgh);
 
     constexpr int warpSize = sc_gpuParallelExecutionWidth(layoutType);
 
@@ -114,6 +106,13 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
      * to change). */
     return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(requiredSubGroupSize)]]
     {
+        // These declarations work on the device.
+        typename Xq::DeviceStorage              sm_xqDeviceStorage;
+        typename PrunedPairCount::DeviceStorage sm_prunedPairCountDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<Float4> sm_xq = Xq::get_pointer(sm_xqHostStorage, sm_xqDeviceStorage);
+        sycl::local_ptr<int>    sm_prunedPairCount = PrunedPairCount::get_pointer(
+                sm_prunedPairCountHostStorage, sm_prunedPairCountDeviceStorage);
         // thread/block/warp id-s
         const unsigned tidxi = itemIdx.get_local_id(2);
         const unsigned tidxj = itemIdx.get_local_id(1);

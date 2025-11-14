@@ -694,7 +694,6 @@ static auto nbnxmKernel(sycl::handler& cgh,
     constexpr int          c_clSize               = sc_gpuClusterSize(sc_layoutType);
     constexpr int          c_clSizeSq             = c_clSize * c_clSize;
     constexpr int          c_splitClSize          = sc_gpuSplitJClusterSize(sc_layoutType);
-    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(sc_layoutType);
     constexpr int          c_nbnxnGpuJgroupSize   = sc_gpuJgroupSize(sc_layoutType);
     constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(sc_layoutType);
 
@@ -718,31 +717,12 @@ static auto nbnxmKernel(sycl::handler& cgh,
     constexpr bool useShuffleReductionForceJ = gmx::isPowerOfTwo(c_superClusterSize);
 
     // Local memory buffer for i x+q pre-loading
-    sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
-
-    auto sm_atomTypeI = [&]()
-    {
-        if constexpr (!props.vdwComb)
-        {
-            return sycl::local_accessor<int, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
-
-    auto sm_ljCombI = [&]()
-    {
-        if constexpr (props.vdwComb)
-        {
-            return sycl::local_accessor<Float2, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    using Xq        = StaticLocalStorage<Float4, c_superClusterSize * c_clSize>;
+    using AtomTypeI = StaticLocalStorage<int, c_superClusterSize * c_clSize, !props.vdwComb>;
+    using LjCombI   = StaticLocalStorage<Float2, c_superClusterSize * c_clSize, props.vdwComb>;
+    auto sm_xqHostStorage        = Xq::makeHostStorage(cgh);
+    auto sm_atomTypeIHostStorage = AtomTypeI::makeHostStorage(cgh);
+    auto sm_ljCombIHostStorage   = LjCombI::makeHostStorage(cgh);
 
     /* Local memory buffer for force and energy reduction.
      * For i- and j-force reduction, we need DIM elements for each thread.
@@ -758,19 +738,11 @@ static auto nbnxmKernel(sycl::handler& cgh,
     constexpr int  sm_reductionBufferSize       = haveAnyLocalMemoryForceReduction
                                                           ? c_clSizeSq * DIM
                                                           : (needExtraElementForReduction ? 1 : 0);
-    sycl::local_accessor<float, 1> sm_reductionBuffer(sycl::range<1>(sm_reductionBufferSize), cgh);
 
-    auto sm_prunedPairCount = [&]()
-    {
-        if constexpr (doPruneNBL && nbnxmSortListsOnGpu())
-        {
-            return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }();
+    using ReductionBuffer = StaticLocalStorage<float, sm_reductionBufferSize>;
+    using PrunedPairCount = StaticLocalStorage<int, 1, doPruneNBL && nbnxmSortListsOnGpu()>;
+    auto sm_reductionBufferHostStorage = ReductionBuffer::makeHostStorage(cgh);
+    auto sm_prunedPairCountHostStorage = PrunedPairCount::makeHostStorage(cgh);
 
     /* Flag to control the calculation of exclusion forces in the kernel
      * We do that with Ewald (elec/vdw) and RF. Cut-off only has exclusion for energy terms. */
@@ -784,6 +756,24 @@ static auto nbnxmKernel(sycl::handler& cgh,
         {
             return;
         }
+
+        // These declarations work on the device.
+        typename Xq::DeviceStorage              sm_xqDeviceStorage;
+        typename AtomTypeI::DeviceStorage       sm_atomTypeIDeviceStorage;
+        typename LjCombI::DeviceStorage         sm_ljCombIDeviceStorage;
+        typename ReductionBuffer::DeviceStorage sm_reductionBufferDeviceStorage;
+        typename PrunedPairCount::DeviceStorage sm_prunedPairCountDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<Float4> sm_xq = Xq::get_pointer(sm_xqHostStorage, sm_xqDeviceStorage);
+        sycl::local_ptr<int>    sm_atomTypeI =
+                AtomTypeI::get_pointer(sm_atomTypeIHostStorage, sm_atomTypeIDeviceStorage);
+        sycl::local_ptr<Float2> sm_ljCombI =
+                LjCombI::get_pointer(sm_ljCombIHostStorage, sm_ljCombIDeviceStorage);
+        sycl::local_ptr<float> sm_reductionBuffer = ReductionBuffer::get_pointer(
+                sm_reductionBufferHostStorage, sm_reductionBufferDeviceStorage);
+        sycl::local_ptr<int> sm_prunedPairCount = PrunedPairCount::get_pointer(
+                sm_prunedPairCountHostStorage, sm_prunedPairCountDeviceStorage);
+
         /* thread/block/warp id-s */
         const unsigned tidxi = itemIdx.get_local_id(2);
         const unsigned tidxj = itemIdx.get_local_id(1);

@@ -131,11 +131,19 @@ auto lincsKernel(sycl::handler& cgh,
      * So, without virials we need max(1*3, 2) floats, and with virials we need max(1*3, 2, 6) floats.
      */
     static constexpr int smBufferElementsPerThread = computeVirial ? 6 : 3;
-    sycl::local_accessor<float, 1> sm_buffer{ sycl::range<1>(c_threadsPerBlock * smBufferElementsPerThread),
-                                              cgh };
+
+    using Buffer = StaticLocalStorage<float, c_threadsPerBlock * smBufferElementsPerThread>;
+    // These declarations must be made on the host
+    auto sm_bufferHostStorage = Buffer::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<1> itemIdx)
     {
+        // These declarations work on the device.
+        typename Buffer::DeviceStorage sm_bufferDeviceStorage;
+        // Extract the valid pointer to local storage
+        sycl::local_ptr<float> sm_buffer =
+                Buffer::get_pointer(sm_bufferHostStorage, sm_bufferDeviceStorage);
+
         const int threadIndex   = itemIdx.get_global_linear_id();
         const int threadInBlock = itemIdx.get_local_linear_id(); // Work-item index in work-group
 

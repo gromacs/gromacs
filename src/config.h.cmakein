@@ -253,6 +253,9 @@
 /* Define if CUDA Graphs or SYCL Graph support is available */
 #cmakedefine01 GMX_HAVE_GPU_GRAPH_SUPPORT
 
+/* Define to use oneAPI support for free functions for kernel submission */
+#cmakedefine01 GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION
+
 /* Define if sycl::ext::oneapi::experimental::submit and cgh.ext_codeplay_enqueue_native_command should be used */
 #cmakedefine01 GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API
 
