@@ -218,13 +218,13 @@ struct nbnxn_atomdata_t
         //! FEP param: Atom types of stateA per atom
         HostVector<int> typeA;
         //! FEP param: LJ parameters of stateA per atom for fast SIMD loading
-        HostVector<real> lj_combA;
+        HostVector<real> ljCombA;
         //! FEP param: Charges of stateA per atom
         HostVector<real> qA;
         //! FEP param: Atom types of stateB per atom
         HostVector<int> typeB;
         //! FEP param: LJ parameters of stateB per atom for fast SIMD loading
-        HostVector<real> lj_combB;
+        HostVector<real> ljCombB;
         //! FEP param: Charges of stateB per atom
         HostVector<real> qB;
         //! The number of energy groups

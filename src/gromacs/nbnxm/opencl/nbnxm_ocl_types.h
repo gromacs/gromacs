@@ -174,7 +174,11 @@ struct NbnxmGpu
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { nullptr };
+    EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { nullptr };
+    //! fep-list data structures (local and non-local)
+    EnumerationArray<InteractionLocality, std::unique_ptr<GpuFeplist>> feplist = { { nullptr } };
+    //! host buffers required for the FEP H2D copies */
+    GpuFepHostData* fephostdata = nullptr;
     //! staging area where fshift/energies get downloaded
     NBStagingData nbst;
 

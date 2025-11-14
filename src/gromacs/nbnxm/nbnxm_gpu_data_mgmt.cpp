@@ -73,6 +73,7 @@
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/atompairlist.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -217,8 +218,8 @@ static inline void set_cutoff_parameters(NBParamGpu*                nbp,
     nbp->epsfac            = ic.coulomb.epsfac;
     nbp->two_k_rf          = 2.0 * ic.coulomb.reactionFieldCoefficient;
     nbp->c_rf              = ic.coulomb.reactionFieldShift;
-    nbp->rvdw_sq           = gmx::square(ic.vdw.cutoff);
-    nbp->rcoulomb_sq       = gmx::square(ic.coulomb.cutoff);
+    nbp->rvdw_sq           = square(ic.vdw.cutoff);
+    nbp->rcoulomb_sq       = square(ic.coulomb.cutoff);
     nbp->rlistOuter_sq     = listParams.rlistOuter * listParams.rlistOuter;
     nbp->rlistInner_sq     = listParams.rlistInner * listParams.rlistInner;
     nbp->useDynamicPruning = listParams.useDynamicPruning;
@@ -272,6 +273,17 @@ GpuPairlist::~GpuPairlist()
     }
 }
 
+GpuFeplist::GpuFeplist() {}
+
+GpuFeplist::~GpuFeplist()
+{
+    freeDeviceBuffer(&iinr);
+    freeDeviceBuffer(&shift);
+    freeDeviceBuffer(&jIndex);
+    freeDeviceBuffer(&jjnr);
+    freeDeviceBuffer(&exclFep);
+}
+
 static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 {
     t->nb_h2d_t = 0.0;
@@ -294,10 +306,11 @@ static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 }
 
 /*! \brief Initialize \p atomdata first time; it only gets filled at pair-search. */
-static inline void initAtomdataFirst(NBAtomDataGpu*       atomdata,
-                                     int                  numTypes,
-                                     const DeviceContext& deviceContext,
-                                     const DeviceStream&  localStream)
+static inline void initAtomdataFirst(NBAtomDataGpu*           atomdata,
+                                     int                      numTypes,
+                                     const DeviceContext&     deviceContext,
+                                     const DeviceStream&      localStream,
+                                     const std::optional<int> nLambda)
 {
     atomdata->numTypes = numTypes;
     allocateDeviceBuffer(&atomdata->shiftVec, c_numShiftVectors, deviceContext);
@@ -306,10 +319,28 @@ static inline void initAtomdataFirst(NBAtomDataGpu*       atomdata,
     allocateDeviceBuffer(&atomdata->fShift, c_numShiftVectors, deviceContext);
     allocateDeviceBuffer(&atomdata->eLJ, 1, deviceContext);
     allocateDeviceBuffer(&atomdata->eElec, 1, deviceContext);
+    allocateDeviceBuffer(&atomdata->dvdlLJ, 1, deviceContext);
+    allocateDeviceBuffer(&atomdata->dvdlElec, 1, deviceContext);
 
     clearDeviceBufferAsync(&atomdata->fShift, 0, c_numShiftVectors, localStream);
     clearDeviceBufferAsync(&atomdata->eElec, 0, 1, localStream);
     clearDeviceBufferAsync(&atomdata->eLJ, 0, 1, localStream);
+    clearDeviceBufferAsync(&atomdata->dvdlElec, 0, 1, localStream);
+    clearDeviceBufferAsync(&atomdata->dvdlLJ, 0, 1, localStream);
+
+    if (nLambda.has_value())
+    {
+        const int nLambdaValue = nLambda.value();
+        allocateDeviceBuffer(&atomdata->eLJForeign, nLambdaValue + 1, deviceContext);
+        allocateDeviceBuffer(&atomdata->eElecForeign, nLambdaValue + 1, deviceContext);
+        allocateDeviceBuffer(&atomdata->dvdlLJForeign, nLambdaValue + 1, deviceContext);
+        allocateDeviceBuffer(&atomdata->dvdlElecForeign, nLambdaValue + 1, deviceContext);
+
+        clearDeviceBufferAsync(&atomdata->eElecForeign, 0, nLambdaValue + 1, localStream);
+        clearDeviceBufferAsync(&atomdata->eLJForeign, 0, nLambdaValue + 1, localStream);
+        clearDeviceBufferAsync(&atomdata->dvdlElecForeign, 0, nLambdaValue + 1, localStream);
+        clearDeviceBufferAsync(&atomdata->dvdlLJForeign, 0, nLambdaValue + 1, localStream);
+    }
 
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in later */
@@ -420,7 +451,8 @@ static inline void initNbparam(NBParamGpu*                     nbp,
                                const PairlistParams&           listParams,
                                const nbnxn_atomdata_t::Params& nbatParams,
                                const DeviceContext&            deviceContext,
-                               const DeviceStream&             localStream)
+                               const DeviceStream&             localStream,
+                               const std::optional<int>        nLambda)
 {
     const int numTypes = nbatParams.numTypes;
 
@@ -471,6 +503,18 @@ static inline void initNbparam(NBParamGpu*                     nbp,
                              deviceContext,
                              localStream);
     }
+
+    // Initialize allLambda coul and vdw buffers for foreign lambda calculations
+
+    if (nLambda.has_value())
+    {
+        const int nLambdaValue = nLambda.value();
+        allocateDeviceBuffer(&nbp->allLambdaCoul, nLambdaValue, deviceContext);
+        allocateDeviceBuffer(&nbp->allLambdaVdw, nLambdaValue, deviceContext);
+
+        clearDeviceBufferAsync(&nbp->allLambdaCoul, 0, nLambdaValue, localStream);
+        clearDeviceBufferAsync(&nbp->allLambdaVdw, 0, nLambdaValue, localStream);
+    }
 }
 
 using GpuPairlistByLocality = EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>>;
@@ -486,17 +530,80 @@ static GpuPairlistByLocality initializeGpuLists(bool localAndNonLocal)
     return list;
 }
 
+using GpuFeplistByLocality = EnumerationArray<InteractionLocality, std::unique_ptr<GpuFeplist>>;
+
+gmx_unused static GpuFeplistByLocality initializeGpuFepLists(bool localAndNonLocal)
+{
+    GpuFeplistByLocality fep_list;
+    fep_list[InteractionLocality::Local] = std::make_unique<GpuFeplist>();
+    if (localAndNonLocal)
+    {
+        fep_list[InteractionLocality::NonLocal] = std::make_unique<GpuFeplist>();
+    }
+    return fep_list;
+}
+
+void copy_gpu_fepparams(NbnxmGpu*   nb,
+                        const bool  bFepGpuNonBonded,
+                        const float alphaCoul,
+                        const float alphaVdw,
+                        const int   lamPower,
+                        const float sigma6WithInvalidSigma,
+                        const float sigma6Minimum,
+                        const float lambdaCoul,
+                        const float lambdaVdw,
+                        const int   nLambda,
+                        const EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>& all_lambda)
+{
+    nb->nbparam->bFepGpuNonBonded       = bFepGpuNonBonded;
+    nb->nbparam->alphaCoul              = alphaCoul;
+    nb->nbparam->alphaVdw               = alphaVdw;
+    nb->nbparam->lamPower               = lamPower;
+    nb->nbparam->sigma6WithInvalidSigma = sigma6WithInvalidSigma;
+    nb->nbparam->sigma6Minimum          = sigma6Minimum;
+    nb->nbparam->lambdaCoul             = lambdaCoul;
+    nb->nbparam->lambdaVdw              = lambdaVdw;
+    if (nLambda > 0)
+    {
+        for (int i = 0; i < nLambda; i++)
+        {
+            nb->fephostdata->allLambdaCoul[i] = static_cast<float>(
+                    all_lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)][i]);
+            nb->fephostdata->allLambdaVdw[i] = static_cast<float>(
+                    all_lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)][i]);
+        }
+
+        const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
+        copyToDeviceBuffer(&nb->nbparam->allLambdaCoul,
+                           nb->fephostdata->allLambdaCoul.data(),
+                           0,
+                           nLambda,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
+
+        copyToDeviceBuffer(&nb->nbparam->allLambdaVdw,
+                           nb->fephostdata->allLambdaVdw.data(),
+                           0,
+                           nLambda,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
+    }
+}
+
 NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
                    const bool                 bLocalAndNonlocal,
-                   const gmx_unused std::optional<int> n_lambda)
+                   const gmx_unused std::optional<int> nLambda)
 {
     auto* nb           = new NbnxmGpu();
     nb->deviceContext_ = &deviceStreamManager.context();
     nb->atdat          = new NBAtomDataGpu;
     nb->nbparam        = new NBParamGpu;
+    nb->fephostdata    = new GpuFepHostData;
 
     nb->plist = initializeGpuLists(bLocalAndNonlocal);
 
@@ -516,10 +623,31 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
     changePinningPolicy(&nb->nbst.eLJ, PinningPolicy::PinnedIfSupported);
     changePinningPolicy(&nb->nbst.eElec, PinningPolicy::PinnedIfSupported);
     changePinningPolicy(&nb->nbst.fShift, PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&nb->nbst.dvdlLJ, PinningPolicy::PinnedIfSupported);
+    changePinningPolicy(&nb->nbst.dvdlElec, PinningPolicy::PinnedIfSupported);
 
     nb->nbst.eLJ.resize(1);
     nb->nbst.eElec.resize(1);
     nb->nbst.fShift.resize(c_numShiftVectors);
+    nb->nbst.dvdlLJ.resize(1);
+    nb->nbst.dvdlElec.resize(1);
+
+    if (nLambda.has_value())
+    {
+        nb->feplist            = initializeGpuFepLists(bLocalAndNonlocal);
+        const int nLambdaValue = nLambda.value();
+        changePinningPolicy(&nb->nbst.eLJForeign, PinningPolicy::PinnedIfSupported);
+        changePinningPolicy(&nb->nbst.eElecForeign, PinningPolicy::PinnedIfSupported);
+        changePinningPolicy(&nb->nbst.dvdlLJForeign, PinningPolicy::PinnedIfSupported);
+        changePinningPolicy(&nb->nbst.dvdlElecForeign, PinningPolicy::PinnedIfSupported);
+        nb->nbst.eLJForeign.resize(nLambdaValue + 1);
+        nb->nbst.eElecForeign.resize(nLambdaValue + 1);
+        nb->nbst.dvdlLJForeign.resize(nLambdaValue + 1);
+        nb->nbst.dvdlElecForeign.resize(nLambdaValue + 1);
+        /* init all lambdas on host*/
+        nb->fephostdata->allLambdaCoul.resize(nLambdaValue);
+        nb->fephostdata->allLambdaVdw.resize(nLambdaValue);
+    }
 
     /* local/non-local GPU streams */
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(DeviceStreamType::NonBondedLocal),
@@ -538,8 +666,8 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
     const nbnxn_atomdata_t::Params& nbatParams    = nbat->params();
     const DeviceContext&            deviceContext = *nb->deviceContext_;
 
-    initNbparam(nb->nbparam, *ic, listParams, nbatParams, deviceContext, localStream);
-    initAtomdataFirst(nb->atdat, nbatParams.numTypes, deviceContext, localStream);
+    initNbparam(nb->nbparam, *ic, listParams, nbatParams, deviceContext, localStream, nLambda);
+    initAtomdataFirst(nb->atdat, nbatParams.numTypes, deviceContext, localStream, nLambda);
 
     gpu_init_platform_specific(nb);
 
@@ -730,13 +858,140 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     d_plist->haveFreshList = true;
 }
 
+void gpu_init_feppairlist(NbnxmGpu*                 nb,
+                          const AtomPairlist&       h_feplist,
+                          const InteractionLocality iloc,
+                          const GridSet&            gridSet)
+{
+    GpuFeplist*     d_feplist       = nb->feplist[iloc].get();
+    GpuFepHostData* h_fepdata       = nb->fephostdata;
+    const int*      atomIndices     = gridSet.atomIndices().data();
+    const int       atomIndicesSize = gridSet.atomIndices().size();
+
+    h_fepdata->atomIndicesInv.resize(atomIndicesSize);
+    for (int i = 0; i < atomIndicesSize; i++)
+    {
+        if (atomIndices[i] < atomIndicesSize && atomIndices[i] >= 0)
+        {
+            h_fepdata->atomIndicesInv[atomIndices[i]] = i;
+        }
+    }
+
+    // Extract pair list data
+    ArrayRef<const AtomPairlist::IEntry> iList     = h_feplist.iList();
+    ArrayRef<const AtomPairlist::JEntry> jList     = h_feplist.flatJList();
+    const int                            numiAtoms = iList.ssize();
+    const int                            numjAtoms = jList.ssize();
+
+    h_fepdata->iinrHost.resize(numiAtoms);
+    for (int i = 0; i < numiAtoms; i++)
+    {
+        h_fepdata->iinrHost[i] = h_fepdata->atomIndicesInv[iList[i].atom];
+    }
+
+    h_fepdata->jjnrHost.resize(numjAtoms);
+    for (int j = 0; j < numjAtoms; j++)
+    {
+        h_fepdata->jjnrHost[j] = h_fepdata->atomIndicesInv[jList[j].atom];
+    }
+
+    h_fepdata->jIndexHost.resize(numiAtoms + 1);
+    int count = 0;
+    for (int i = 0; i < numiAtoms; i++)
+    {
+        int incr = h_feplist.jList(i).size();
+        count += incr;
+        h_fepdata->jIndexHost[i + 1] = count;
+    }
+
+    h_fepdata->shiftHost.resize(numiAtoms);
+    for (int i = 0; i < numiAtoms; i++)
+    {
+        h_fepdata->shiftHost[i] = iList[i].shiftIndex;
+    }
+
+    h_fepdata->exclFepHost.resize(numjAtoms);
+    for (int j = 0; j < numjAtoms; j++)
+    {
+        h_fepdata->exclFepHost[j] = jList[j].interacts;
+    }
+
+    bool                bDoTime      = (nb->bDoTime && numiAtoms != 0);
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+
+    GpuTimers::Interaction& iTimers = nb->timers->interaction[iloc];
+
+    if (bDoTime)
+    {
+        iTimers.pl_h2d.openTimingRegion(deviceStream);
+        iTimers.didPairlistH2D = true;
+    }
+
+    const DeviceContext& deviceContext = *nb->deviceContext_;
+    reallocateDeviceBuffer(
+            &d_feplist->iinr, numiAtoms, &d_feplist->numiAtoms, &d_feplist->maxNumiAtoms, deviceContext);
+    copyToDeviceBuffer(&d_feplist->iinr,
+                       h_fepdata->iinrHost.data(),
+                       0,
+                       numiAtoms,
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(
+            &d_feplist->shift, numiAtoms, &d_feplist->numShift, &d_feplist->maxNumShift, deviceContext);
+    copyToDeviceBuffer(&d_feplist->shift,
+                       h_fepdata->shiftHost.data(),
+                       0,
+                       numiAtoms,
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(
+            &d_feplist->jIndex, numiAtoms + 1, &d_feplist->numjIndex, &d_feplist->maxNumjIndex, deviceContext);
+    copyToDeviceBuffer(&d_feplist->jIndex,
+                       h_fepdata->jIndexHost.data(),
+                       0,
+                       numiAtoms + 1,
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(
+            &d_feplist->jjnr, numjAtoms, &d_feplist->numjAtoms, &d_feplist->maxNumjAtoms, deviceContext);
+    copyToDeviceBuffer(&d_feplist->jjnr,
+                       h_fepdata->jjnrHost.data(),
+                       0,
+                       numjAtoms,
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(
+            &d_feplist->exclFep, numjAtoms, &d_feplist->numExcl, &d_feplist->maxNumExcl, deviceContext);
+    copyToDeviceBuffer(&d_feplist->exclFep,
+                       h_fepdata->exclFepHost.data(),
+                       0,
+                       numjAtoms,
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    if (bDoTime)
+    {
+        iTimers.pl_h2d.closeTimingRegion(deviceStream);
+    }
+}
+
 void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
-    bool                 bDoTime       = nb->bDoTime;
-    GpuTimers*           timers        = bDoTime ? nb->timers : nullptr;
-    NBAtomDataGpu*       atdat         = nb->atdat;
-    const DeviceContext& deviceContext = *nb->deviceContext_;
-    const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];
+    bool                 bDoTime          = nb->bDoTime;
+    bool                 bFepGpuNonBonded = nb->nbparam->bFepGpuNonBonded;
+    GpuTimers*           timers           = bDoTime ? nb->timers : nullptr;
+    NBAtomDataGpu*       atdat            = nb->atdat;
+    const DeviceContext& deviceContext    = *nb->deviceContext_;
+    const DeviceStream&  localStream      = *nb->deviceStreams[InteractionLocality::Local];
 
     int  numAtoms  = nbat->numAtoms();
     bool realloced = false;
@@ -769,6 +1024,18 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
             {
                 freeDeviceBuffer(&atdat->atomTypes);
             }
+            if (bFepGpuNonBonded)
+            {
+                freeDeviceBuffer(&atdat->q4);
+                if (useLjCombRule(nb->nbparam->vdwType))
+                {
+                    freeDeviceBuffer(&atdat->ljComb4);
+                }
+                else
+                {
+                    freeDeviceBuffer(&atdat->atomTypes4);
+                }
+            }
         }
 
 
@@ -783,6 +1050,19 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         else
         {
             allocateDeviceBuffer(&atdat->atomTypes, numAlloc, deviceContext);
+        }
+
+        if (bFepGpuNonBonded)
+        {
+            allocateDeviceBuffer(&atdat->q4, numAlloc, deviceContext);
+            if (useLjCombRule(nb->nbparam->vdwType))
+            {
+                allocateDeviceBuffer(&atdat->ljComb4, numAlloc, deviceContext);
+            }
+            else
+            {
+                allocateDeviceBuffer(&atdat->atomTypes4, numAlloc, deviceContext);
+            }
         }
 
         atdat->numAtomsAlloc = numAlloc;
@@ -824,6 +1104,68 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
                            bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
 
+#if GMX_GPU_CUDA
+    if (bFepGpuNonBonded)
+    {
+        nb->fephostdata->q4Host.resize(numAtoms);
+        for (int k = 0; k < numAtoms; k++)
+        {
+            nb->fephostdata->q4Host[k].x = (float)nbat->params().qA[k];
+            nb->fephostdata->q4Host[k].y = (float)nbat->params().qB[k];
+        }
+        static_assert(sizeof(atdat->q4[0]) == sizeof(Float4),
+                      "Size of the q4 parameters element should be equal to the size of float4.");
+        copyToDeviceBuffer(&atdat->q4,
+                           nb->fephostdata->q4Host.data(),
+                           0,
+                           numAtoms,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+
+        if (useLjCombRule(nb->nbparam->vdwType))
+        {
+            nb->fephostdata->ljComb4Host.resize(numAtoms);
+            for (int k = 0; k < numAtoms; k++)
+            {
+                nb->fephostdata->ljComb4Host[k].x = (float)nbat->params().ljCombA[2 * k];
+                nb->fephostdata->ljComb4Host[k].y = (float)nbat->params().ljCombA[2 * k + 1];
+                nb->fephostdata->ljComb4Host[k].z = (float)nbat->params().ljCombB[2 * k];
+                nb->fephostdata->ljComb4Host[k].w = (float)nbat->params().ljCombB[2 * k + 1];
+            }
+            static_assert(
+                    sizeof(atdat->ljComb4[0]) == sizeof(Float4),
+                    "Size of the LJ4 parameters element should be equal to the size of float4.");
+            copyToDeviceBuffer(&atdat->ljComb4,
+                               nb->fephostdata->ljComb4Host.data(),
+                               0,
+                               numAtoms,
+                               localStream,
+                               GpuApiCallBehavior::Async,
+                               bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+        }
+        else
+        {
+            nb->fephostdata->atomTypes4Host.resize(numAtoms);
+            for (int k = 0; k < numAtoms; k++)
+            {
+                nb->fephostdata->atomTypes4Host[k].x = nbat->params().typeA[k];
+                nb->fephostdata->atomTypes4Host[k].y = nbat->params().typeB[k];
+            }
+            static_assert(sizeof(atdat->atomTypes4[0]) == sizeof(Int4),
+                          "Size of the atomTypes4 parameters element should be equal to the size "
+                          "of Int4.");
+            copyToDeviceBuffer(&atdat->atomTypes4,
+                               nb->fephostdata->atomTypes4Host.data(),
+                               0,
+                               numAtoms,
+                               localStream,
+                               GpuApiCallBehavior::Async,
+                               bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+        }
+    }
+#endif
+
     if (bDoTime)
     {
         timers->atdat.closeTimingRegion(localStream);
@@ -845,6 +1187,16 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
         clearDeviceBufferAsync(&adat->fShift, 0, c_numShiftVectors, localStream);
         clearDeviceBufferAsync(&adat->eLJ, 0, 1, localStream);
         clearDeviceBufferAsync(&adat->eElec, 0, 1, localStream);
+        clearDeviceBufferAsync(&adat->dvdlLJ, 0, 1, localStream);
+        clearDeviceBufferAsync(&adat->dvdlElec, 0, 1, localStream);
+    }
+    const int nLambda = nb->fephostdata->allLambdaCoul.size();
+    if (nLambda > 0 && (nb->nbparam->alphaCoul != 0 || nb->nbparam->alphaVdw != 0))
+    {
+        clearDeviceBufferAsync(&adat->eElecForeign, 0, nLambda + 1, localStream);
+        clearDeviceBufferAsync(&adat->eLJForeign, 0, nLambda + 1, localStream);
+        clearDeviceBufferAsync(&adat->dvdlElecForeign, 0, nLambda + 1, localStream);
+        clearDeviceBufferAsync(&adat->dvdlLJForeign, 0, nLambda + 1, localStream);
     }
     issueClFlushInStream(localStream);
 }
@@ -1011,6 +1363,73 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                                  &adat->eElec,
                                  0,
                                  1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+            static_assert(sizeof(*nb->nbst.dvdlLJ.data()) == sizeof(float),
+                          "Sizes of host- and device-side DVDL LJ terms should be the same.");
+            copyFromDeviceBuffer(nb->nbst.dvdlLJ.data(),
+                                 &adat->dvdlLJ,
+                                 0,
+                                 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+            static_assert(sizeof(*nb->nbst.dvdlElec.data()) == sizeof(float),
+                          "Sizes of host- and device-side electrostatic DVDL terms should be the "
+                          "same.");
+            copyFromDeviceBuffer(nb->nbst.dvdlElec.data(),
+                                 &adat->dvdlElec,
+                                 0,
+                                 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+        }
+        // Copy back foreign lambda results
+        const int nLambda = nb->fephostdata->allLambdaCoul.size();
+        if (nLambda > 0 && stepWork.computeDhdl
+            && (nb->nbparam->alphaCoul != 0 || nb->nbparam->alphaVdw != 0))
+        {
+            static_assert(
+                    sizeof(*nb->nbst.eLJForeign.data()) == sizeof(float),
+                    "Sizes of host- and device-side LJ foreign energy terms should be the same.");
+            copyFromDeviceBuffer(nb->nbst.eLJForeign.data(),
+                                 &adat->eLJForeign,
+                                 0,
+                                 nLambda + 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+            static_assert(sizeof(*nb->nbst.eElecForeign.data()) == sizeof(float),
+                          "Sizes of host- and device-side electrostatic foreign energy terms "
+                          "should be the "
+                          "same.");
+            copyFromDeviceBuffer(nb->nbst.eElecForeign.data(),
+                                 &adat->eElecForeign,
+                                 0,
+                                 nLambda + 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+            static_assert(
+                    sizeof(*nb->nbst.dvdlLJForeign.data()) == sizeof(float),
+                    "Sizes of host- and device-side foreign DVDL LJ terms should be the same.");
+            copyFromDeviceBuffer(nb->nbst.dvdlLJForeign.data(),
+                                 &adat->dvdlLJForeign,
+                                 0,
+                                 nLambda + 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+            static_assert(
+                    sizeof(*nb->nbst.dvdlElecForeign.data()) == sizeof(float),
+                    "Sizes of host- and device-side foreign electrostatic DVDL terms should be the "
+                    "same.");
+            copyFromDeviceBuffer(nb->nbst.dvdlElecForeign.data(),
+                                 &adat->dvdlElecForeign,
+                                 0,
+                                 nLambda + 1,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
                                  bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
@@ -1258,15 +1677,40 @@ void gpu_free(NbnxmGpu* nb)
     freeDeviceBuffer(&(nb->atdat->f));
     freeDeviceBuffer(&(nb->atdat->eLJ));
     freeDeviceBuffer(&(nb->atdat->eElec));
+    freeDeviceBuffer(&(nb->atdat->dvdlLJ));
+    freeDeviceBuffer(&(nb->atdat->dvdlElec));
     freeDeviceBuffer(&(nb->atdat->fShift));
     freeDeviceBuffer(&(nb->atdat->shiftVec));
+
+    if (nbparam->bFepGpuNonBonded)
+    {
+        freeDeviceBuffer(&(nb->atdat->q4));
+        if (nb->fephostdata->allLambdaCoul.size() > 0)
+        {
+            freeDeviceBuffer(&(nb->atdat->eLJForeign));
+            freeDeviceBuffer(&(nb->atdat->eElecForeign));
+            freeDeviceBuffer(&(nb->atdat->dvdlLJForeign));
+            freeDeviceBuffer(&(nb->atdat->dvdlElecForeign));
+            freeDeviceBuffer(&(nb->nbparam->allLambdaCoul));
+            freeDeviceBuffer(&(nb->nbparam->allLambdaVdw));
+        }
+    }
+
     if (useLjCombRule(nb->nbparam->vdwType))
     {
         freeDeviceBuffer(&atdat->ljComb);
+        if (nbparam->bFepGpuNonBonded)
+        {
+            freeDeviceBuffer(&atdat->ljComb4);
+        }
     }
     else
     {
         freeDeviceBuffer(&atdat->atomTypes);
+        if (nbparam->bFepGpuNonBonded)
+        {
+            freeDeviceBuffer(&atdat->atomTypes4);
+        }
     }
 
     /* Free nbparam */

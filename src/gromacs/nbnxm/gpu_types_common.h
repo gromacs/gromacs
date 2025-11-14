@@ -146,8 +146,17 @@ struct NBStagingData
     HostVector<float> eLJ;
     //! electrostatic energy
     HostVector<float> eElec;
+    //! dvdl terms
+    HostVector<float> dvdlLJ;
+    HostVector<float> dvdlElec;
     //! shift forces
     HostVector<Float3> fShift;
+
+    //! foreign lambda terms
+    HostVector<float> eLJForeign;
+    HostVector<float> eElecForeign;
+    HostVector<float> dvdlLJForeign;
+    HostVector<float> dvdlElecForeign;
 };
 
 /** \internal
@@ -164,6 +173,8 @@ struct NBAtomDataGpu
 
     //! atom coordinates + charges, size \ref numAtoms
     DeviceBuffer<Float4> xq;
+    //! atom charge(A&B), size numAtoms, only in FEP, use Float4 for coalesencing
+    DeviceBuffer<Float4> q4;
     //! force output array, size \ref numAtoms
     DeviceBuffer<Float3> f;
 
@@ -171,6 +182,20 @@ struct NBAtomDataGpu
     DeviceBuffer<float> eLJ;
     //! Electrostatics energy input, size 1
     DeviceBuffer<float> eElec;
+
+    //! DVDL LJ output, size 1
+    DeviceBuffer<float> dvdlLJ;
+    //! DVDL Electrostatics input, size 1
+    DeviceBuffer<float> dvdlElec;
+
+    //! Foreign LJ energy output, size nLambda+1
+    DeviceBuffer<float> eLJForeign;
+    //! Foreign Elec energy output, size nLambda1
+    DeviceBuffer<float> eElecForeign;
+    //! Foreign DVDL LJ output, size nLambda+1
+    DeviceBuffer<float> dvdlLJForeign;
+    //! Foreign DVDL Elec output, size nLambda+1
+    DeviceBuffer<float> dvdlElecForeign;
 
     //! shift forces
     DeviceBuffer<Float3> fShift;
@@ -181,7 +206,10 @@ struct NBAtomDataGpu
     DeviceBuffer<int> atomTypes;
     //! sqrt(c6),sqrt(c12) size \ref numAtoms
     DeviceBuffer<Float2> ljComb;
-
+    //! atom typeA&B indices, size numAtoms, only in FEP, use Int4 for coalesencing
+    DeviceBuffer<Int4> atomTypes4;
+    //! sqrt(c6),sqrt(c12) for stateA&B, size numAtoms, only in FEP, use Float4 for coalesencing
+    DeviceBuffer<Float4> ljComb4;
     //! shifts
     DeviceBuffer<Float3> shiftVec;
     //! true if the shift vector has been uploaded
@@ -252,6 +280,21 @@ struct NBParamGpu
     DeviceBuffer<float> coulomb_tab{};
     //! texture object bound to coulomb_tab
     DeviceTexture coulomb_tab_texobj;
+
+    //! whether running nonbonded free energy calculations on GPU
+    bool  bFepGpuNonBonded       = false;
+    float alphaCoul              = 0.0;
+    float alphaVdw               = 0.0;
+    int   lamPower               = 0; // Exponent for the dependence of the soft-core on lambda
+    float sigma6WithInvalidSigma = 0.0;
+    float sigma6Minimum          = 0.0;
+    // free energy λ for coulomb interaction
+    float lambdaCoul = 0.0;
+    // free energy λ for vdw interaction
+    float lambdaVdw = 0.0;
+    // foreign free energy λ for both coul & vdw interactions
+    DeviceBuffer<float> allLambdaCoul;
+    DeviceBuffer<float> allLambdaVdw;
 };
 
 /*! \internal
@@ -428,6 +471,71 @@ public:
     //! allocated size of rolling pruning part buffer on device
     int d_rollingPruningPartAllocationSize = -1;
 };
+
+/*! \internal
+ * \brief GPU FEP list structure */
+class GpuFeplist
+{
+public:
+    GpuFeplist();
+    ~GpuFeplist();
+
+    //! Do not allow copy construct
+    GpuFeplist(const GpuFeplist&) = delete;
+    //! Do not allow move construct until device buffers have ownership semantics
+    GpuFeplist(GpuFeplist&&) = delete;
+    //! Do not allow copy assign
+    GpuFeplist& operator=(const GpuFeplist&) = delete;
+    //! Do not allow move assign until device buffers have ownership semantics
+    GpuFeplist& operator=(GpuFeplist&&) = delete;
+
+    int numiAtoms    = -1;
+    int maxNumiAtoms = -1; /* Current/max number of i particles	   */
+    int numShift     = -1;
+    int maxNumShift  = -1; /* Current/max number of shifts	   */
+    int numjIndex    = -1;
+    int maxNumjIndex = -1; /* Current/max number of jIndex	   */
+    int numjAtoms    = -1;
+    int maxNumjAtoms = -1; /* Current/max number of j particles	   */
+    int numExcl      = -1;
+    int maxNumExcl   = -1; /* Current/max number of exclusions	   */
+
+    DeviceBuffer<int> iinr;    /* The i-atom list                        */
+    DeviceBuffer<int> shift;   /* Shift vector index                    */
+    DeviceBuffer<int> jIndex;  /* Index in jjnr                         */
+    DeviceBuffer<int> jjnr;    /* The j-atom list                       */
+    DeviceBuffer<int> exclFep; /* Exclusions for FEP with Verlet scheme */
+};
+
+/*! \internal
+ * \brief GPU FEP Host Buffers */
+struct GpuFepHostData
+{
+    // Arrays of all lambda values */
+    HostVector<float> allLambdaCoul{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> allLambdaVdw{ { PinningPolicy::PinnedIfSupported } };
+
+    // The inverse of atom indices, used to find the correct atom indices
+    std::vector<int> atomIndicesInv;
+    // The i-atom list on host
+    HostVector<int> iinrHost{ { PinningPolicy::PinnedIfSupported } };
+    // The j-atom list on host
+    HostVector<int> jjnrHost{ { PinningPolicy::PinnedIfSupported } };
+    // The Indices in jjnr on host
+    HostVector<int> jIndexHost{ { PinningPolicy::PinnedIfSupported } };
+    // The shift vector index on host
+    HostVector<int> shiftHost{ { PinningPolicy::PinnedIfSupported } };
+    // The FEP exclusions on host
+    HostVector<int> exclFepHost{ { PinningPolicy::PinnedIfSupported } };
+
+    //! atom typeA&B indices, size numAtoms, only in FEP
+    HostVector<Int4> atomTypes4Host{ { PinningPolicy::PinnedIfSupported } };
+    //! sqrt(c6),sqrt(c12) for stateA&B, size numAtoms, only in FEP
+    HostVector<Float4> ljComb4Host{ { PinningPolicy::PinnedIfSupported } };
+    //! atom charge(A&B), size numAtoms, only in FEP
+    HostVector<Float4> q4Host{ { PinningPolicy::PinnedIfSupported } };
+};
+
 
 /*! \brief Set of boolean constants mimicking preprocessor macros.
  *

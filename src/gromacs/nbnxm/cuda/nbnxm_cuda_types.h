@@ -99,6 +99,10 @@ struct NbnxmGpu
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
     EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { { nullptr } };
+    /*! \brief fep-list data structures (local and non-local) */
+    EnumerationArray<InteractionLocality, std::unique_ptr<GpuFeplist>> feplist = { { nullptr } };
+    /*! \brief host buffers required for the FEP H2D copies */
+    GpuFepHostData* fephostdata = nullptr;
     /*! \brief staging area where fshift/energies get downloaded */
     NBStagingData nbst;
     /*! \brief local and non-local GPU streams */

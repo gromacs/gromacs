@@ -479,10 +479,10 @@ nbnxn_atomdata_t::Params::Params(PinningPolicy pinningPolicy) :
     lj_comb({}, { pinningPolicy }),
     q({}, { pinningPolicy }),
     typeA({}, { pinningPolicy }),
-    lj_combA({}, { pinningPolicy }),
+    ljCombA({}, { pinningPolicy }),
     qA({}, { pinningPolicy }),
     typeB({}, { pinningPolicy }),
-    lj_combB({}, { pinningPolicy }),
+    ljCombB({}, { pinningPolicy }),
     qB({}, { pinningPolicy }),
     numEnergyGroups(0)
 {
@@ -842,7 +842,6 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
     }
 }
 
-
 /* Sets the LJ combination rule parameters in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
                                             const int                 XFormat,
@@ -890,8 +889,8 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
 
     if (useGpuNonbondedFE)
     {
-        params->lj_combA.resize(gridSet.numGridAtomsTotal() * 2);
-        params->lj_combB.resize(gridSet.numGridAtomsTotal() * 2);
+        params->ljCombA.resize(gridSet.numGridAtomsTotal() * 2);
+        params->ljCombB.resize(gridSet.numGridAtomsTotal() * 2);
 
         if (params->ljCombinationRule != LJCombinationRule::None)
         {
@@ -908,33 +907,33 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
                         copy_lj_to_nbat_lj_comb<c_packX4>(params->nbfp_comb,
                                                           params->typeA.data() + atomOffset,
                                                           numAtoms,
-                                                          params->lj_combA.data() + atomOffset * 2);
+                                                          params->ljCombA.data() + atomOffset * 2);
                         copy_lj_to_nbat_lj_comb<c_packX4>(params->nbfp_comb,
                                                           params->typeB.data() + atomOffset,
                                                           numAtoms,
-                                                          params->lj_combB.data() + atomOffset * 2);
+                                                          params->ljCombB.data() + atomOffset * 2);
                     }
                     else if (XFormat == nbatX8)
                     {
                         copy_lj_to_nbat_lj_comb<c_packX8>(params->nbfp_comb,
                                                           params->typeA.data() + atomOffset,
                                                           numAtoms,
-                                                          params->lj_combA.data() + atomOffset * 2);
+                                                          params->ljCombA.data() + atomOffset * 2);
                         copy_lj_to_nbat_lj_comb<c_packX8>(params->nbfp_comb,
                                                           params->typeB.data() + atomOffset,
                                                           numAtoms,
-                                                          params->lj_combB.data() + atomOffset * 2);
+                                                          params->ljCombB.data() + atomOffset * 2);
                     }
                     else if (XFormat == nbatXYZQ)
                     {
                         copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb,
                                                    params->typeA.data() + atomOffset,
                                                    numAtoms,
-                                                   params->lj_combA.data() + atomOffset * 2);
+                                                   params->ljCombA.data() + atomOffset * 2);
                         copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb,
                                                    params->typeB.data() + atomOffset,
                                                    numAtoms,
-                                                   params->lj_combB.data() + atomOffset * 2);
+                                                   params->ljCombB.data() + atomOffset * 2);
                     }
                 }
             }

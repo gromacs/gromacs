@@ -93,8 +93,7 @@ public:
                             bool                     includeAllPairs,
                             int                      minimumIlistCountForGpuBalancing,
                             t_nrnb*                  nrnb,
-                            SearchCycleCounting*     searchCycleCounting,
-                            bool                     useGpuNonbondedFE);
+                            SearchCycleCounting*     searchCycleCounting);
 
     //! Dispatch the kernel for dynamic pairlist pruning
     void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, ArrayRef<const RVec> shift_vec);
@@ -114,6 +113,9 @@ public:
             return nullptr;
         }
     }
+
+    //! Returns a reference to the GPU fep pairlist
+    const AtomPairlist& fepGpuList() const { return **fepLists_.data(); }
 
     //! Returns the pair list parameters
     const PairlistParams& params() const { return params_; }

@@ -74,6 +74,9 @@ using DeviceFloat3 = float3;
 //! Convenience alias for 4-wide float
 using Float4 = float4;
 
+//! Convenience alias for 4-wide int
+using Int4 = int4;
+
 //! Convenience alias for 4-wide float in shared device kernels.
 struct DeviceFloat4
 {

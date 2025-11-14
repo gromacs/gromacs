@@ -498,12 +498,12 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     bool bFEP_NonBonded = (forcerec.efep != FreeEnergyPerturbationType::No)
                           && haveFepPerturbedNBInteractions(mtop);
     // whether to calculate FEP on GPUs, expanded ensemble method is not supported yet.
-    bool bFEP_GPU_NonBonded = bFEP_NonBonded && useGpuForNonbondedFE
-                              && (forcerec.efep != FreeEnergyPerturbationType::Expanded);
+    bool bFepGpuNonBonded = bFEP_NonBonded && useGpuForNonbondedFE
+                            && (forcerec.efep != FreeEnergyPerturbationType::Expanded);
 
     PairlistParams pairlistParams(
             kernelSetup.kernelType, gpuPairlistLayout, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
-    pairlistParams.haveNonbondedFEGpu_ = bFEP_GPU_NonBonded;
+    pairlistParams.haveNonbondedFEGpu_ = bFepGpuNonBonded;
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
             coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), mpiComm.comm());
@@ -562,13 +562,45 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         GMX_RELEASE_ASSERT(
                 (deviceStreamManager != nullptr),
                 "Device stream manager should be initialized in order to use GPU for non-bonded.");
-        gpu_nbv = gpu_init(
-                *deviceStreamManager,
-                forcerec.ic.get(),
-                pairlistParams,
-                nbat.get(),
-                haveMultipleDomains,
-                bFEP_GPU_NonBonded ? std::optional<int>(inputrec.fepvals->n_lambda) : std::nullopt);
+
+        gpu_nbv = gpu_init(*deviceStreamManager,
+                           forcerec.ic.get(),
+                           pairlistParams,
+                           nbat.get(),
+                           haveMultipleDomains,
+                           bFepGpuNonBonded ? std::optional<int>(inputrec.fepvals->n_lambda) : std::nullopt);
+
+        if (bFepGpuNonBonded)
+        {
+            EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> all_lambda =
+                    inputrec.fepvals->all_lambda;
+
+            const int state = inputrec.fepvals->init_fep_state;
+            float     lambdaCoul;
+            float     lambdaVdw;
+            if (state >= 0)
+            {
+                lambdaCoul = all_lambda[FreeEnergyPerturbationCouplingType::Coul][state];
+                lambdaVdw  = all_lambda[FreeEnergyPerturbationCouplingType::Vdw][state];
+            }
+            else
+            {
+                lambdaCoul = inputrec.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Coul);
+                lambdaVdw = inputrec.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Vdw);
+            }
+            // Cpoy FEP parameters to GPU
+            copy_gpu_fepparams(gpu_nbv,
+                               pairlistParams.haveNonbondedFEGpu_,
+                               forcerec.ic->softCoreParameters->alphaCoulomb,
+                               forcerec.ic->softCoreParameters->alphaVdw,
+                               forcerec.ic->softCoreParameters->lambdaPower,
+                               forcerec.ic->softCoreParameters->sigma6WithInvalidSigma,
+                               forcerec.ic->softCoreParameters->sigma6Minimum,
+                               lambdaCoul,
+                               lambdaVdw,
+                               inputrec.fepvals->n_lambda,
+                               all_lambda);
+        }
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 
@@ -598,7 +630,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                 kernelSetup,
                                                 std::move(exclusionChecker),
                                                 gpu_nbv,
-                                                bFEP_GPU_NonBonded,
+                                                bFepGpuNonBonded,
                                                 wcycle);
 }
 

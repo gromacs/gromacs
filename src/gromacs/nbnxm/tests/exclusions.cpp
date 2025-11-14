@@ -159,7 +159,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
     }
 
     pairlistSet->constructPairlists(
-            gmx::InteractionLocality::Local, gridSet, searchWork, nbat.get(), exclusions, false, 0, nullptr, nullptr, false);
+            gmx::InteractionLocality::Local, gridSet, searchWork, nbat.get(), exclusions, false, 0, nullptr, nullptr);
 
     return std::make_pair(std::move(nbat), std::move(pairlistSet));
 }
