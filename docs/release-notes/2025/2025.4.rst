@@ -107,6 +107,17 @@ but the result of the test wasn't used. This is now fixed.
 
 :issue:`5447`
 
+Fix SurfaceAreaTest failure when ARM SVE SIMD is used
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some versions of GCC miscompile test code when targeting ARM machines with SVE support,
+leading to false-positive failures in ``SurfaceAreaTest.Computes100PointsWithTriclinicPBC``.
+This has been observed with GCC 13 and 14 on systems with 256-bit and 512-bit SVE vectors.
+As a workaround, we disable compiler optimizations for the affected test function.
+This only affects test code and does not impact simulation performance.
+
+:issue:`5440`
+
 Fixes to the Colvars library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
