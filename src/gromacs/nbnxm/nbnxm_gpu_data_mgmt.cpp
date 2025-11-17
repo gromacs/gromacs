@@ -1107,16 +1107,16 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 #if GMX_GPU_CUDA
     if (bFepGpuNonBonded)
     {
-        nb->fephostdata->q4Host.resize(numAtoms);
-        for (int k = 0; k < numAtoms; k++)
+        nb->fephostdata->q4Host.resize(numAtoms * 4);
+        for (int k = 0; k < numAtoms * 4; k++)
         {
-            nb->fephostdata->q4Host[k].x = (float)nbat->params().qA[k];
-            nb->fephostdata->q4Host[k].y = (float)nbat->params().qB[k];
+            nb->fephostdata->q4Host[4 * k]     = (float)nbat->params().qA[k];
+            nb->fephostdata->q4Host[4 * k + 1] = (float)nbat->params().qB[k];
         }
         static_assert(sizeof(atdat->q4[0]) == sizeof(Float4),
                       "Size of the q4 parameters element should be equal to the size of float4.");
         copyToDeviceBuffer(&atdat->q4,
-                           nb->fephostdata->q4Host.data(),
+                           reinterpret_cast<Float4*>(nb->fephostdata->q4Host.data()),
                            0,
                            numAtoms,
                            localStream,
@@ -1125,19 +1125,19 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
         if (useLjCombRule(nb->nbparam->vdwType))
         {
-            nb->fephostdata->ljComb4Host.resize(numAtoms);
-            for (int k = 0; k < numAtoms; k++)
+            nb->fephostdata->ljComb4Host.resize(numAtoms * 4);
+            for (int k = 0; k < numAtoms * 4; k++)
             {
-                nb->fephostdata->ljComb4Host[k].x = (float)nbat->params().ljCombA[2 * k];
-                nb->fephostdata->ljComb4Host[k].y = (float)nbat->params().ljCombA[2 * k + 1];
-                nb->fephostdata->ljComb4Host[k].z = (float)nbat->params().ljCombB[2 * k];
-                nb->fephostdata->ljComb4Host[k].w = (float)nbat->params().ljCombB[2 * k + 1];
+                nb->fephostdata->ljComb4Host[4 * k]     = (float)nbat->params().ljCombA[2 * k];
+                nb->fephostdata->ljComb4Host[4 * k + 1] = (float)nbat->params().ljCombA[2 * k + 1];
+                nb->fephostdata->ljComb4Host[4 * k + 2] = (float)nbat->params().ljCombB[2 * k];
+                nb->fephostdata->ljComb4Host[4 * k + 3] = (float)nbat->params().ljCombB[2 * k + 1];
             }
             static_assert(
                     sizeof(atdat->ljComb4[0]) == sizeof(Float4),
                     "Size of the LJ4 parameters element should be equal to the size of float4.");
             copyToDeviceBuffer(&atdat->ljComb4,
-                               nb->fephostdata->ljComb4Host.data(),
+                               reinterpret_cast<Float4*>(nb->fephostdata->ljComb4Host.data()),
                                0,
                                numAtoms,
                                localStream,
@@ -1146,17 +1146,17 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         }
         else
         {
-            nb->fephostdata->atomTypes4Host.resize(numAtoms);
-            for (int k = 0; k < numAtoms; k++)
+            nb->fephostdata->atomTypes4Host.resize(numAtoms * 4);
+            for (int k = 0; k < numAtoms * 4; k++)
             {
-                nb->fephostdata->atomTypes4Host[k].x = nbat->params().typeA[k];
-                nb->fephostdata->atomTypes4Host[k].y = nbat->params().typeB[k];
+                nb->fephostdata->atomTypes4Host[4 * k]     = nbat->params().typeA[k];
+                nb->fephostdata->atomTypes4Host[4 * k + 1] = nbat->params().typeB[k];
             }
             static_assert(sizeof(atdat->atomTypes4[0]) == sizeof(Int4),
                           "Size of the atomTypes4 parameters element should be equal to the size "
                           "of Int4.");
             copyToDeviceBuffer(&atdat->atomTypes4,
-                               nb->fephostdata->atomTypes4Host.data(),
+                               reinterpret_cast<Int4*>(nb->fephostdata->atomTypes4Host.data()),
                                0,
                                numAtoms,
                                localStream,

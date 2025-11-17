@@ -71,8 +71,9 @@ auto buildKernel(sycl::handler& cgh, const int* gm_input, int* gm_output)
     auto sm_bufferHostStorage            = Buffer::makeHostStorage(cgh);
     auto sm_conditionalBufferHostStorage = ConditionalBuffer::makeHostStorage(cgh);
 
-    return [=](sycl::id<1> itemIdx)
+    return [=](sycl::nd_item<1> itemNdIdx)
     {
+        int itemIdx = itemNdIdx.get_global_linear_id();
         // These declarations work in the device kernel.
         typename Buffer::DeviceStorage            sm_bufferDeviceStorage;
         typename ConditionalBuffer::DeviceStorage sm_conditionalBufferDeviceStorage;
@@ -145,13 +146,14 @@ TEST_P(StaticLocalStorageTest, Works)
         dispatchTemplatedFunction(
                 [&](auto useConditionalStaticLocalStorage)
                 {
-                    syclSubmitWithoutEvent(deviceStream.stream(),
-                                           [&](sycl::handler& cgh)
-                                           {
-                                               auto kernel = buildKernel<useConditionalStaticLocalStorage>(
-                                                       cgh, gm_input, gm_output);
-                                               cgh.parallel_for(sycl::range<1>(numThreads), kernel);
-                                           });
+                    syclSubmitWithoutEvent(
+                            deviceStream.stream(),
+                            [&](sycl::handler& cgh)
+                            {
+                                auto kernel = buildKernel<useConditionalStaticLocalStorage>(
+                                        cgh, gm_input, gm_output);
+                                cgh.parallel_for(sycl::nd_range<1>(numThreads, numThreads), kernel);
+                            });
                 },
                 GetParam());
         deviceStream.synchronize();

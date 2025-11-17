@@ -511,7 +511,7 @@ public:
  * \brief GPU FEP Host Buffers */
 struct GpuFepHostData
 {
-    // Arrays of all lambda values */
+    // Arrays of all lambda values
     HostVector<float> allLambdaCoul{ { PinningPolicy::PinnedIfSupported } };
     HostVector<float> allLambdaVdw{ { PinningPolicy::PinnedIfSupported } };
 
@@ -529,11 +529,11 @@ struct GpuFepHostData
     HostVector<int> exclFepHost{ { PinningPolicy::PinnedIfSupported } };
 
     //! atom typeA&B indices, size numAtoms, only in FEP
-    HostVector<Int4> atomTypes4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> atomTypes4Host{ { PinningPolicy::PinnedIfSupported } };
     //! sqrt(c6),sqrt(c12) for stateA&B, size numAtoms, only in FEP
-    HostVector<Float4> ljComb4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> ljComb4Host{ { PinningPolicy::PinnedIfSupported } };
     //! atom charge(A&B), size numAtoms, only in FEP
-    HostVector<Float4> q4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> q4Host{ { PinningPolicy::PinnedIfSupported } };
 };
 
 
