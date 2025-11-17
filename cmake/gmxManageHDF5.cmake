@@ -34,14 +34,16 @@
 set(GMX_HDF5_REQUIRED_VERSION "1.10.7")
 
 macro(gmx_manage_hdf5)
-    if(HDF5_ALREADY_SEARCHED)
-        set(HDF5_FIND_QUIETLY ON)
-    endif()
-
     # Find an external hdf5 library.
-    find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} COMPONENTS C)
-    set(HDF5_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for HDF5 has already been done")
-    mark_as_advanced(HDF5_ALREADY_SEARCHED)
+    if(GMX_USE_HDF5 OR NOT DEFINED GMX_USE_HDF5)
+        if(HDF5_ALREADY_SEARCHED)
+            set(HDF5_FIND_QUIETLY ON)
+        endif()
+        find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} COMPONENTS C)
+        set(HDF5_ALREADY_SEARCHED TRUE CACHE INTERNAL "True if a search for HDF5 has already been done")
+    else()
+        set(HDF5_FOUND FALSE FORCE)  # Don't search for HDF5 if user set GMX_USE_HDF5 to OFF
+    endif()
 
     set(GMX_USE_HDF5 ${HDF5_FOUND} CACHE BOOL "Build GROMACS with HDF5 support (needed for handling files in H5MD format)")
     if(GMX_USE_HDF5)
