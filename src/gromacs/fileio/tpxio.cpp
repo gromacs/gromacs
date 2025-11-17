@@ -240,7 +240,8 @@ enum class TpxGeneration : int
     Initial = 26, //! First version is 26
     AddSizeField, //! TPR header modified for writing as a block.
     AddVSite1,    //! ftupd changed to include VSite1 type.
-    Count         //! Number of entries.
+    AddNNPotIFuncType, //! ftupd changed to include NNPotIFuncType (bumped retrospectively for commit 152bde36).
+    Count              //! Number of entries.
 };
 
 //! Value of Current TPR generation.
