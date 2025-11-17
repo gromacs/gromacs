@@ -153,6 +153,8 @@ bool gmxShouldEnableFPExceptions()
     return false; // Buggy compiler
 #elif GMX_GPU_SYCL
     return false; // avoid spurious FPE during SYCL JIT
+#elif GMX_GPU_CUDA
+    return false; // avoid spurious FPE during cuFft / cuFftMp JIT
 #else
     return true;
 #endif
