@@ -117,6 +117,16 @@ void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBui
 
     // Write groups input file as a string
     treeBuilder.addValue<std::string>(moduleName() + "-" + c_groupsStringTag, groupsString_);
+
+    //TODO: read groups from file
+    // For now, just create one dummy group
+    parameters_.ngroups_ = 1;
+    parameters_.groups_.resize(parameters_.ngroups_);
+    for (int g = 0; g < parameters_.ngroups_; ++g)
+    {
+        parameters_.groups_[g].ligand_group_ = "1SOL";
+        parameters_.groups_[g].receptor_group_ = "2SOL";
+    }
 }
 
 void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
@@ -136,6 +146,16 @@ void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
 
     parameters_.ngroups_ = 1;
     parameters_.groups_.resize(parameters_.ngroups_);
+    for (int g = 0; g < parameters_.ngroups_; ++g)
+    {
+        parameters_.groups_[g].ligand_group_ = "1SOL";
+        parameters_.groups_[g].ligand_indices_ = {1, 2, 3};
+        parameters_.groups_[g].receptor_group_ = "2SOL";
+        parameters_.groups_[g].receptor_indices_ = {4, 5, 6};
+        parameters_.groups_[g].force_ = 100.0;
+        parameters_.groups_[g].max_dist_ = 1.0;
+        parameters_.groups_[g].r_min_dist_ = 0.0025;
+    }
 }
 
 void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAndNames)

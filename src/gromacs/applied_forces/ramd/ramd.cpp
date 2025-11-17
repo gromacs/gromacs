@@ -178,6 +178,7 @@ public:
         { ramdOptions_.setLogger(logger); };
         notifiers->preProcessingNotifier_.subscribe(setLoggerFunction);
 
+        // Set input group indices during pre-processing
         const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
         { ramdOptions_.setInputGroupIndices(indexGroupsAndNames); };
         notifiers->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);

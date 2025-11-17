@@ -66,12 +66,11 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
                                                std::to_string(com_rec_prev_[g][0]) + ", " +
                                                std::to_string(com_rec_prev_[g][1]) + ", " +
                                                std::to_string(com_rec_prev_[g][2]) + "]");
-
-            // com_rec_prev[g] = pull->group[g * 2 + 1].x;
-            // com_lig_prev[g] = pull->group[g * 2 + 2].x;
-            com_rec_prev_[g] = DVec(0.0, 0.0, 0.0);
-            com_lig_prev_[g] = DVec(0.0, 0.0, 0.0);
-
+            com_lig_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].ligand_indices_);
+            GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_lig_prev_" + std::to_string(g) + " = [" +
+                                               std::to_string(com_lig_prev_[g][0]) + ", " +
+                                               std::to_string(com_lig_prev_[g][1]) + ", " +
+                                               std::to_string(com_lig_prev_[g][2]) + "]");
             if (fInput.mpiComm_.isMainRank())
             {
                 DVec curr_dist_vect;
