@@ -68,3 +68,23 @@ target_link_libraries(
     topology
     utility
 )
+
+gmx_add_unit_test(GmxlibGpuTests nonbonded-fep-gpu-test
+    HARDWARE_DETECTION
+    GPU_CPP_SOURCE_FILES
+        freeenergygpukernel.cpp
+    )
+target_link_libraries(
+    nonbonded-fep-gpu-test PRIVATE
+    ewald
+    gmxlib
+    math
+    mdlib
+    mdtypes
+    pbcutil
+    tables
+    testutils
+    topology
+    utility
+    gpu_utils
+)
