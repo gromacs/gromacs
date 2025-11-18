@@ -314,7 +314,6 @@ void gpu_launch_free_energy_kernel(NbnxmGpu*                      nb,
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               feplist      = nb->feplist[iloc].get();
-    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     KernelLaunchConfig fepConfig;

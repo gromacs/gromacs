@@ -282,7 +282,10 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
         ljcp_iAB[1] = make_float2(ljComb4_buf.z, ljComb4_buf.w);
 #    endif
         fci = make_float3(0.0F);
-#    pragma unroll
+#    if defined(__NVCC__) || defined(__NVCOMPILER)
+        // clang 18 issues -Wpass-failed=transform-warning for this loop
+#        pragma unroll
+#    endif
         for (int i = nj0; i < nj1; i += warp_size)
         {
             int j = i + tid_in_warp;
