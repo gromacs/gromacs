@@ -96,6 +96,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -823,16 +824,18 @@ static void pmeGpuWaitAndReduce(gmx_pme_t*          pme,
  * \param[in,out] enerd            Energy data structure results are reduced into
  * \param[in]     lambdaQ          The Coulomb lambda of the current system state.
  * \param[in]     stepWork         Step schedule flags
+ * \param[in]     simulationWork   Simulation schedule flags
  * \param[in]     wcycle           The wallcycle structure
  */
-static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
-                                        gmx_pme_t*          pmedata,
-                                        ForceOutputs*       forceOutputsNonbonded,
-                                        ForceOutputs*       forceOutputsPme,
-                                        gmx_enerdata_t*     enerd,
-                                        const real          lambdaQ,
-                                        const StepWorkload& stepWork,
-                                        gmx_wallcycle*      wcycle)
+static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t*       nbv,
+                                        gmx_pme_t*                pmedata,
+                                        ForceOutputs*             forceOutputsNonbonded,
+                                        ForceOutputs*             forceOutputsPme,
+                                        gmx_enerdata_t*           enerd,
+                                        const real                lambdaQ,
+                                        const StepWorkload&       stepWork,
+                                        const SimulationWorkload& simulationWork,
+                                        gmx_wallcycle*            wcycle)
 {
     bool isPmeGpuDone = false;
     bool isNbGpuDone  = false;
@@ -865,7 +868,14 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
                     AtomLocality::Local,
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
+                    (simulationWork.useGpuForeignNonbondedFE)
+                            ? &enerd->dvdl_nonlin[FreeEnergyPerturbationCouplingType::Vdw]
+                            : &enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Vdw],
+                    (simulationWork.useGpuForeignNonbondedFE)
+                            ? &enerd->dvdl_nonlin[FreeEnergyPerturbationCouplingType::Coul]
+                            : &enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Coul],
                     forceBuffersNonbonded.shiftForces(),
+                    &enerd->foreignLambdaTerms,
                     completionType);
             wallcycle_stop(wcycle, WallCycleCounter::WaitGpuNbL);
 
@@ -1802,6 +1812,11 @@ void do_force(FILE*                         fplog,
         wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         do_nb_verlet(fr, ic, enerd, stepWork, InteractionLocality::Local, enbvClearFNo, step, nrnb, wcycle);
+        /* launch local nonbonded free energy work on GPU */
+        if (domainWork.haveGpuNonbondedFreeEnergyWork && stepWork.computeNonbondedForces)
+        {
+            nbv->dispatchFreeEnergyGpuKernels(InteractionLocality::Local, simulationWork, stepWork);
+        }
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
     }
@@ -1907,6 +1922,11 @@ void do_force(FILE*                         fplog,
             wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
             wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
             do_nb_verlet(fr, ic, enerd, stepWork, InteractionLocality::NonLocal, enbvClearFNo, step, nrnb, wcycle);
+            /* launch non-local nonbonded free energy tsaks on GPU */
+            if (domainWork.haveGpuNonbondedFreeEnergyWork && stepWork.computeNonbondedForces)
+            {
+                nbv->dispatchFreeEnergyGpuKernels(InteractionLocality::NonLocal, simulationWork, stepWork);
+            }
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
         }
@@ -2079,25 +2099,23 @@ void do_force(FILE*                         fplog,
     wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
     if (domainWork.haveCpuNonbondedFreeEnergyWork && stepWork.computeNonbondedForces)
     {
-        /* Calculate the local and non-local free energy interactions here.
-         * Happens here on the CPU both with and without GPU.
-         */
-        nbv->dispatchFreeEnergyKernels(x,
-                                       &forceOutNonbonded->forceWithShiftForces(),
-                                       fr->use_simd_kernels,
-                                       fr->ntype,
-                                       *fr->ic,
-                                       fr->shift_vec,
-                                       fr->nbfp,
-                                       fr->ljpme_c6grid,
-                                       mdatoms->chargeA,
-                                       mdatoms->chargeB,
-                                       mdatoms->typeA,
-                                       mdatoms->typeB,
-                                       lambda,
-                                       enerd,
-                                       stepWork,
-                                       nrnb);
+        /* Calculate the local and non-local free energy interactions on CPU here. */
+        nbv->dispatchFreeEnergyCpuKernels(x,
+                                          &forceOutNonbonded->forceWithShiftForces(),
+                                          fr->use_simd_kernels,
+                                          fr->ntype,
+                                          *fr->ic,
+                                          fr->shift_vec,
+                                          fr->nbfp,
+                                          fr->ljpme_c6grid,
+                                          mdatoms->chargeA,
+                                          mdatoms->chargeB,
+                                          mdatoms->typeA,
+                                          mdatoms->typeB,
+                                          lambda,
+                                          enerd,
+                                          stepWork,
+                                          nrnb);
     }
 
     if (stepWork.computeNonbondedForces && !useOrEmulateGpuNb)
@@ -2322,14 +2340,14 @@ void do_force(FILE*                         fplog,
         {
             if (simulationWork.useGpuNonbonded)
             {
-                cycles_wait_gpu += gpu_wait_finish_task(
-                        nbv->gpuNbv(),
-                        stepWork,
-                        AtomLocality::NonLocal,
-                        enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
-                        enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
-                        forceWithShiftForces.shiftForces(),
-                        wcycle);
+                cycles_wait_gpu +=
+                        gpu_wait_finish_task(nbv->gpuNbv(),
+                                             stepWork,
+                                             AtomLocality::NonLocal,
+                                             (simulationWork.useGpuForeignNonbondedFE) ? true : false,
+                                             enerd,
+                                             forceWithShiftForces.shiftForces(),
+                                             wcycle);
             }
             else
             {
@@ -2462,6 +2480,7 @@ void do_force(FILE*                         fplog,
                                     enerd,
                                     lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                                     stepWork,
+                                    simulationWork,
                                     wcycle);
     }
 
@@ -2484,14 +2503,15 @@ void do_force(FILE*                         fplog,
          * of the step time.
          */
         const float gpuWaitApiOverheadMargin = 2e6F; /* cycles */
-        const float waitCycles               = gpu_wait_finish_task(
-                nbv->gpuNbv(),
-                stepWork,
-                AtomLocality::Local,
-                enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
-                enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
-                forceOutNonbonded->forceWithShiftForces().shiftForces(),
-                wcycle);
+        float       waitCycles;
+
+        waitCycles = gpu_wait_finish_task(nbv->gpuNbv(),
+                                          stepWork,
+                                          AtomLocality::Local,
+                                          (simulationWork.useGpuForeignNonbondedFE) ? true : false,
+                                          enerd,
+                                          forceOutNonbonded->forceWithShiftForces().shiftForces(),
+                                          wcycle);
 
         if (ddBalanceRegionHandler.useBalancingRegion())
         {

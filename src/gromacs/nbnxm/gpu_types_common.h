@@ -285,7 +285,7 @@ struct NBParamGpu
     bool  bFepGpuNonBonded       = false;
     float alphaCoul              = 0.0;
     float alphaVdw               = 0.0;
-    int   lamPower               = 0; // Exponent for the dependence of the soft-core on lambda
+    int   lambdaPower            = 0; // Exponent for the dependence of the soft-core on lambda
     float sigma6WithInvalidSigma = 0.0;
     float sigma6Minimum          = 0.0;
     // free energy λ for coulomb interaction

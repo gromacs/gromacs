@@ -86,6 +86,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
+#include "atompairlist.h"
 #include "nbnxm_gpu.h"
 #include "nbnxm_gpu_data_mgmt.h"
 #include "pairlistsets.h"
@@ -277,11 +278,18 @@ GpuFeplist::GpuFeplist() {}
 
 GpuFeplist::~GpuFeplist()
 {
-    freeDeviceBuffer(&iinr);
-    freeDeviceBuffer(&shift);
-    freeDeviceBuffer(&jIndex);
-    freeDeviceBuffer(&jjnr);
-    freeDeviceBuffer(&exclFep);
+    try
+    {
+        freeDeviceBuffer(&iinr);
+        freeDeviceBuffer(&shift);
+        freeDeviceBuffer(&jIndex);
+        freeDeviceBuffer(&jjnr);
+        freeDeviceBuffer(&exclFep);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of GpuFeplist: %s\n", e.what());
+    }
 }
 
 static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
@@ -547,7 +555,7 @@ void copy_gpu_fepparams(NbnxmGpu*   nb,
                         const bool  bFepGpuNonBonded,
                         const float alphaCoul,
                         const float alphaVdw,
-                        const int   lamPower,
+                        const int   lambdaPower,
                         const float sigma6WithInvalidSigma,
                         const float sigma6Minimum,
                         const float lambdaCoul,
@@ -558,7 +566,7 @@ void copy_gpu_fepparams(NbnxmGpu*   nb,
     nb->nbparam->bFepGpuNonBonded       = bFepGpuNonBonded;
     nb->nbparam->alphaCoul              = alphaCoul;
     nb->nbparam->alphaVdw               = alphaVdw;
-    nb->nbparam->lamPower               = lamPower;
+    nb->nbparam->lambdaPower            = lambdaPower;
     nb->nbparam->sigma6WithInvalidSigma = sigma6WithInvalidSigma;
     nb->nbparam->sigma6Minimum          = sigma6Minimum;
     nb->nbparam->lambdaCoul             = lambdaCoul;

@@ -106,7 +106,11 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     simulationWorkload.useGpuNonbonded   = useGpuForNonbonded;
     simulationWorkload.useCpuNonbondedFE = !useGpuForNonbondedFE;
     simulationWorkload.useGpuNonbondedFE = useGpuForNonbondedFE;
-    simulationWorkload.useCpuPme         = (pmeRunMode == PmeRunMode::CPU);
+    simulationWorkload.useGpuForeignNonbondedFE =
+            useGpuForNonbondedFE && inputrec.fepvals->n_lambda > 0
+            && inputrec.fepvals->softcoreFunction == SoftcoreType::Beutler
+            && inputrec.fepvals->sc_alpha != 0;
+    simulationWorkload.useCpuPme = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft                    = (pmeRunMode == PmeRunMode::GPU);
     simulationWorkload.useGpuBonded                    = useGpuForBonded;

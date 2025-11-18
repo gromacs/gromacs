@@ -78,12 +78,31 @@ convert_sigma_epsilon_to_c6_c12(const float sigma, const float epsilon, float* c
     *c12 = c6c12.y;
 }
 
+/*! Convert LJ C6,C12 parameters to sigma6. */
+static __forceinline__ __device__ void convert_c6_c12_to_sigma6(const float c6,
+                                                                const float c12,
+                                                                float*      sigma6,
+                                                                const float sigma6_min,
+                                                                const float sigma6_def)
+{
+    if ((c6 > 0.0F) && (c12 > 0.0F))
+    {
+        *sigma6 = 0.5F * c12 / c6;
+        if (*sigma6 < sigma6_min)
+            *sigma6 = sigma6_min;
+    }
+    else
+    {
+        *sigma6 = sigma6_def;
+    }
+}
+
 /*! Apply force switch,  force + energy version. */
 static __forceinline__ __device__ void
 calculate_force_switch_F(const NBParamGpu nbparam, float c6, float c12, float inv_r, float r2, float* F_invr)
 {
     float dummyValue = 0;
-    ljForceSwitch<false>(
+    ljForceSwitch<false, false>(
             nbparam.dispersion_shift, nbparam.repulsion_shift, nbparam.rvdw_switch, c6, c12, inv_r, r2, F_invr, &dummyValue);
 }
 
@@ -96,7 +115,7 @@ static __forceinline__ __device__ void calculate_force_switch_F_E(const NBParamG
                                                                   float*           F_invr,
                                                                   float*           E_lj)
 {
-    ljForceSwitch<true>(
+    ljForceSwitch<true, false>(
             nbparam.dispersion_shift, nbparam.repulsion_shift, nbparam.rvdw_switch, c6, c12, inv_r, r2, F_invr, E_lj);
 }
 
@@ -104,16 +123,52 @@ static __forceinline__ __device__ void calculate_force_switch_F_E(const NBParamG
 static __forceinline__ __device__ void
 calculate_potential_switch_F(const NBParamGpu& nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
-    ljPotentialSwitch<false>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_invr, E_lj);
+    ljPotentialSwitch<false, false>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_invr, E_lj);
 }
 
 /*! Apply potential switch, force + energy version. */
 static __forceinline__ __device__ void
 calculate_potential_switch_F_E(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
-    ljPotentialSwitch<true>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_invr, E_lj);
+    ljPotentialSwitch<true, false>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_invr, E_lj);
 }
 
+// Functions that calculate ForcePerDistance (f_r), used in FEP kernels. Equilvalent to potSwitchScalarForceMod.
+/*! Apply force switch,  force + energy version. */
+static __forceinline__ __device__ void
+calculate_force_switch_Fr(const NBParamGpu nbparam, float c6, float c12, float inv_r, float r2, float* F_r)
+{
+    float dummyValue = 0;
+    ljForceSwitch<false, true>(
+            nbparam.dispersion_shift, nbparam.repulsion_shift, nbparam.rvdw_switch, c6, c12, inv_r, r2, F_r, &dummyValue);
+}
+
+/*! Apply force switch, force-only version. */
+static __forceinline__ __device__ void calculate_force_switch_Fr_E(const NBParamGpu nbparam,
+                                                                   float            c6,
+                                                                   float            c12,
+                                                                   float            inv_r,
+                                                                   float            r2,
+                                                                   float*           F_r,
+                                                                   float*           E_lj)
+{
+    ljForceSwitch<true, true>(
+            nbparam.dispersion_shift, nbparam.repulsion_shift, nbparam.rvdw_switch, c6, c12, inv_r, r2, F_r, E_lj);
+}
+
+/*! Apply potential switch, force-only version. */
+static __forceinline__ __device__ void
+calculate_potential_switch_Fr(const NBParamGpu& nbparam, float inv_r, float r2, float* F_r, float* E_lj)
+{
+    ljPotentialSwitch<false, true>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_r, E_lj);
+}
+
+/*! Apply potential switch, force + energy version. */
+static __forceinline__ __device__ void
+calculate_potential_switch_Fr_E(const NBParamGpu nbparam, float inv_r, float r2, float* F_r, float* E_lj)
+{
+    ljPotentialSwitch<true, true>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_r, E_lj);
+}
 
 /*! \brief Fetch C6 grid contribution coefficients and return the product of these.
  *
@@ -551,6 +606,31 @@ reduce_energy_warp_shfl(float E_lj, float E_el, float* e_lj, float* e_el, int ti
     {
         atomicAdd(e_lj, E_lj);
         atomicAdd(e_el, E_el);
+    }
+}
+
+/*! Final i-force reduction for fep gpu kernel; this implementation works only with power of two
+ *  array sizes.
+ */
+static __forceinline__ __device__ void
+reduce_fep_force_i_warp_shfl(float3 fin, float3* fout, int tidx, int aidx, const unsigned int activemask)
+{
+    int i, sh;
+
+    sh = 1;
+#    pragma unroll 5
+    for (i = 0; i < 5; i++)
+    {
+        fin.x += __shfl_down_sync(activemask, fin.x, sh);
+        fin.y += __shfl_down_sync(activemask, fin.y, sh);
+        fin.z += __shfl_down_sync(activemask, fin.z, sh);
+        sh += sh;
+    }
+
+    /* The first thread in the warp writes the reduced energies */
+    if (tidx % warp_size == 0)
+    {
+        atomicAdd(&(fout[aidx]), fin);
     }
 }
 

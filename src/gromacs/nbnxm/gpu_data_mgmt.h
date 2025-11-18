@@ -75,7 +75,7 @@ void copy_gpu_fepparams(
         bool gmx_unused      bFepGpuNonBonded,
         float gmx_unused     alphaCoul,
         float gmx_unused     alphaVdw,
-        int gmx_unused       lamPower,
+        int gmx_unused       lambdaPower,
         float gmx_unused     sigma6WithInvalidSigma,
         float gmx_unused     sigma6Minimum,
         float gmx_unused     lambdaCoul,

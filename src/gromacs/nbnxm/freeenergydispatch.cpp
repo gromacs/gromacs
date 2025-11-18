@@ -66,6 +66,7 @@
 
 #include "atompairlist.h"
 #include "freeenergykernel.h"
+#include "nbnxm_gpu.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
 
@@ -307,24 +308,24 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<AtomPairlist>>
 
 } // namespace
 
-void FreeEnergyDispatch::dispatchFreeEnergyKernels(const PairlistSets& pairlistSets,
-                                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                                                   gmx::ForceWithShiftForces* forceWithShiftForces,
-                                                   const bool                 useSimd,
-                                                   const int                  ntype,
-                                                   const interaction_const_t& ic,
-                                                   gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                                   gmx::ArrayRef<const real>      nbfp,
-                                                   gmx::ArrayRef<const real>      nbfp_grid,
-                                                   gmx::ArrayRef<const real>      chargeA,
-                                                   gmx::ArrayRef<const real>      chargeB,
-                                                   gmx::ArrayRef<const int>       typeA,
-                                                   gmx::ArrayRef<const int>       typeB,
-                                                   gmx::ArrayRef<const real>      lambda,
-                                                   gmx_enerdata_t*                enerd,
-                                                   const gmx::StepWorkload&       stepWork,
-                                                   t_nrnb*                        nrnb,
-                                                   gmx_wallcycle*                 wcycle)
+void FreeEnergyDispatch::dispatchFreeEnergyCpuKernels(const PairlistSets& pairlistSets,
+                                                      const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
+                                                      gmx::ForceWithShiftForces* forceWithShiftForces,
+                                                      const bool                     useSimd,
+                                                      const int                      ntype,
+                                                      const interaction_const_t&     ic,
+                                                      gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                                      gmx::ArrayRef<const real>      nbfp,
+                                                      gmx::ArrayRef<const real>      nbfp_grid,
+                                                      gmx::ArrayRef<const real>      chargeA,
+                                                      gmx::ArrayRef<const real>      chargeB,
+                                                      gmx::ArrayRef<const int>       typeA,
+                                                      gmx::ArrayRef<const int>       typeB,
+                                                      gmx::ArrayRef<const real>      lambda,
+                                                      gmx_enerdata_t*                enerd,
+                                                      const gmx::StepWorkload&       stepWork,
+                                                      t_nrnb*                        nrnb,
+                                                      gmx_wallcycle*                 wcycle)
 {
     GMX_ASSERT(pairlistSets.params().haveFep_, "We should have a free-energy pairlist");
 
@@ -408,22 +409,22 @@ void FreeEnergyDispatch::dispatchFreeEnergyKernels(const PairlistSets& pairlistS
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::NonbondedFepReduction);
 }
 
-void nonbonded_verlet_t::dispatchFreeEnergyKernels(const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                                                   gmx::ForceWithShiftForces* forceWithShiftForces,
-                                                   const bool                 useSimd,
-                                                   const int                  ntype,
-                                                   const interaction_const_t& ic,
-                                                   gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                                   gmx::ArrayRef<const real>      nbfp,
-                                                   gmx::ArrayRef<const real>      nbfp_grid,
-                                                   gmx::ArrayRef<const real>      chargeA,
-                                                   gmx::ArrayRef<const real>      chargeB,
-                                                   gmx::ArrayRef<const int>       typeA,
-                                                   gmx::ArrayRef<const int>       typeB,
-                                                   gmx::ArrayRef<const real>      lambda,
-                                                   gmx_enerdata_t*                enerd,
-                                                   const gmx::StepWorkload&       stepWork,
-                                                   t_nrnb*                        nrnb)
+void nonbonded_verlet_t::dispatchFreeEnergyCpuKernels(const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
+                                                      gmx::ForceWithShiftForces* forceWithShiftForces,
+                                                      const bool                     useSimd,
+                                                      const int                      ntype,
+                                                      const interaction_const_t&     ic,
+                                                      gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                                      gmx::ArrayRef<const real>      nbfp,
+                                                      gmx::ArrayRef<const real>      nbfp_grid,
+                                                      gmx::ArrayRef<const real>      chargeA,
+                                                      gmx::ArrayRef<const real>      chargeB,
+                                                      gmx::ArrayRef<const int>       typeA,
+                                                      gmx::ArrayRef<const int>       typeB,
+                                                      gmx::ArrayRef<const real>      lambda,
+                                                      gmx_enerdata_t*                enerd,
+                                                      const gmx::StepWorkload&       stepWork,
+                                                      t_nrnb*                        nrnb)
 {
     if (!pairlistSets_->params().haveFep_)
     {
@@ -432,24 +433,34 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernels(const gmx::ArrayRefWithPaddin
 
     GMX_RELEASE_ASSERT(freeEnergyDispatch_, "Need a valid dispatch object");
 
-    freeEnergyDispatch_->dispatchFreeEnergyKernels(*pairlistSets_,
-                                                   coords,
-                                                   forceWithShiftForces,
-                                                   useSimd,
-                                                   ntype,
-                                                   ic,
-                                                   shiftvec,
-                                                   nbfp,
-                                                   nbfp_grid,
-                                                   chargeA,
-                                                   chargeB,
-                                                   typeA,
-                                                   typeB,
-                                                   lambda,
-                                                   enerd,
-                                                   stepWork,
-                                                   nrnb,
-                                                   wcycle_);
+    freeEnergyDispatch_->dispatchFreeEnergyCpuKernels(*pairlistSets_,
+                                                      coords,
+                                                      forceWithShiftForces,
+                                                      useSimd,
+                                                      ntype,
+                                                      ic,
+                                                      shiftvec,
+                                                      nbfp,
+                                                      nbfp_grid,
+                                                      chargeA,
+                                                      chargeB,
+                                                      typeA,
+                                                      typeB,
+                                                      lambda,
+                                                      enerd,
+                                                      stepWork,
+                                                      nrnb,
+                                                      wcycle_);
+}
+
+#if GMX_GPU && !GMX_GPU_CUDA
+[[noreturn]]
+#endif
+void nonbonded_verlet_t::dispatchFreeEnergyGpuKernels(gmx::InteractionLocality       iLocality,
+                                                      const gmx::SimulationWorkload& simulationWork,
+                                                      const gmx::StepWorkload&       stepWork)
+{
+    gpu_launch_free_energy_kernel(gpuNbv_, simulationWork, stepWork, iLocality);
 }
 
 } // namespace gmx

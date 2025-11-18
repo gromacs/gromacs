@@ -159,6 +159,7 @@ class MDLogger;
 class ObservablesReducerBuilder;
 template<typename>
 class Range;
+class SimulationWorkload;
 class StepWorkload;
 class UpdateGroupsCog;
 
@@ -389,23 +390,31 @@ public:
                                  ArrayRef<real>             CoulombSR,
                                  t_nrnb*                    nrnb) const;
 
-    //! Executes the non-bonded free-energy kernels, local + non-local, always runs on the CPU
-    void dispatchFreeEnergyKernels(const ArrayRefWithPadding<const RVec>& coords,
-                                   ForceWithShiftForces*                  forceWithShiftForces,
-                                   bool                                   useSimd,
-                                   int                                    ntype,
-                                   const interaction_const_t&             ic,
-                                   ArrayRef<const RVec>                   shiftvec,
-                                   ArrayRef<const real>                   nbfp,
-                                   ArrayRef<const real>                   nbfp_grid,
-                                   ArrayRef<const real>                   chargeA,
-                                   ArrayRef<const real>                   chargeB,
-                                   ArrayRef<const int>                    typeA,
-                                   ArrayRef<const int>                    typeB,
-                                   ArrayRef<const real>                   lambda,
-                                   gmx_enerdata_t*                        enerd,
-                                   const StepWorkload&                    stepWork,
-                                   t_nrnb*                                nrnb);
+    //! Executes the non-bonded free-energy kernels, local + non-local, runs on the CPU
+    void dispatchFreeEnergyCpuKernels(const ArrayRefWithPadding<const RVec>& coords,
+                                      ForceWithShiftForces*                  forceWithShiftForces,
+                                      bool                                   useSimd,
+                                      int                                    ntype,
+                                      const interaction_const_t&             ic,
+                                      ArrayRef<const RVec>                   shiftvec,
+                                      ArrayRef<const real>                   nbfp,
+                                      ArrayRef<const real>                   nbfp_grid,
+                                      ArrayRef<const real>                   chargeA,
+                                      ArrayRef<const real>                   chargeB,
+                                      ArrayRef<const int>                    typeA,
+                                      ArrayRef<const int>                    typeB,
+                                      ArrayRef<const real>                   lambda,
+                                      gmx_enerdata_t*                        enerd,
+                                      const StepWorkload&                    stepWork,
+                                      t_nrnb*                                nrnb);
+
+#if GMX_GPU && !GMX_GPU_CUDA
+    [[noreturn]]
+#endif
+    //! Executes the non-bonded free-energy kernels, local + non-local, runs on the GPU
+    void dispatchFreeEnergyGpuKernels(InteractionLocality       iLocality,
+                                      const SimulationWorkload& simulationWork,
+                                      const StepWorkload&       stepWork);
 
     /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
      * \param [in] locality         Local or non-local

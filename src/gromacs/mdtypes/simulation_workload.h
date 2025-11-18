@@ -179,6 +179,8 @@ public:
     bool useCpuNonbondedFE = false;
     //! If we have calculation of nonbonded fe on GPU
     bool useGpuNonbondedFE = false;
+    //! If we have foreign energy calculations of nonbonded fe on GPU
+    bool useGpuForeignNonbondedFE = false;
     //! If we have calculation of long range PME in GPU
     bool useCpuPme = false;
     //! If we have calculation of long range PME in GPU

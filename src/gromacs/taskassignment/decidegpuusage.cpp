@@ -484,9 +484,9 @@ bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget no
         if (!GpuConfigurationCapabilities::NonbondedFE)
         {
             GMX_THROW(NotImplementedError(
-                    "Nonbonded free energy tasks were required to run on GPUs, "
-                    "but currely it is only implemented in CUDA build. Use a CUDA visible device "
-                    "or run these calculations on the CPU."));
+                    "Nonbonded free energy tasks were required to run on GPUs, but currently it is "
+                    "only implemented in CUDA build. Use a CUDA visible device or run these "
+                    "calculations on the CPU."));
         }
         return true;
     }

@@ -1101,7 +1101,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             }
                             if constexpr (props.vdwFSwitch)
                             {
-                                ljForceSwitch<doCalcEnergies>(
+                                ljForceSwitch<doCalcEnergies, false>(
                                         dispersionShift, repulsionShift, rVdwSwitch, c6, c12, rInv, r2, &fInvR, &energyLJPair);
                             }
                             if constexpr (props.vdwEwald)
@@ -1120,7 +1120,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             } // (props.vdwEwald)
                             if constexpr (props.vdwPSwitch)
                             {
-                                ljPotentialSwitch<doCalcEnergies>(
+                                ljPotentialSwitch<doCalcEnergies, false>(
                                         vdwSwitch, rVdwSwitch, rInv, r2, &fInvR, &energyLJPair);
                             }
                             if constexpr (props.elecEwaldTwin)

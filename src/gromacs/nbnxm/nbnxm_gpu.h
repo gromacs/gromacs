@@ -43,6 +43,7 @@
 #define GMX_NBNXM_NBNXM_GPU_H
 
 #include "gromacs/gpu_utils/gpu_macros.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -60,6 +61,7 @@ namespace gmx
 struct nbnxn_atomdata_t;
 class ListedForcesGpu;
 class StepWorkload;
+class SimulationWorkload;
 class Grid;
 
 /*! \brief Returns true if LJ combination rules are used in the non-bonded kernels.
@@ -103,6 +105,17 @@ GPU_FUNC_QUALIFIER
 void gpu_launch_kernel(NbnxmGpu gmx_unused*           nb,
                        const StepWorkload gmx_unused& stepWork,
                        InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
+
+/*! \brief
+ * Launch asynchronously the nonbonded free energy calculations.
+ */
+#if GMX_GPU && !GMX_GPU_CUDA
+[[noreturn]]
+#endif
+GPU_FUNC_QUALIFIER void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused* nb,
+                                                      const SimulationWorkload gmx_unused& simulationWork,
+                                                      const StepWorkload gmx_unused& stepWork,
+                                                      InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
 
 /*! \brief
  * Launch asynchronously the nonbonded prune-only kernel.
@@ -186,7 +199,10 @@ void gpu_launch_cpyback(NbnxmGpu gmx_unused*           nb,
  * \param[in]  aloc           Atom locality identifier
  * \param[out] e_lj           Pointer to the LJ energy output to accumulate into
  * \param[out] e_el           Pointer to the electrostatics energy output to accumulate into
+ * \param[out] dvdl_lj        Pointer to the LJ DvDL output to accumulate into
+ * \param[out] dvdl_el        Pointer to the electrostatics DVDL output to accumulate into
  * \param[out] shiftForces    Shift forces buffer to accumulate into
+ * \param[out] foreign_term    Foreign lambda terms buffer to accumulate into
  * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
  * \returns                   True if the nonbonded tasks associated with \p aloc locality have completed
  */
@@ -196,7 +212,10 @@ bool gpu_try_finish_task(NbnxmGpu gmx_unused*           nb,
                          AtomLocality gmx_unused        aloc,
                          real gmx_unused*               e_lj,
                          real gmx_unused*               e_el,
+                         double gmx_unused*             dvdl_lj,
+                         double gmx_unused*             dvdl_el,
                          ArrayRef<RVec> gmx_unused      shiftForces,
+                         ForeignLambdaTerms gmx_unused* foreign_term,
                          GpuTaskCompletion gmx_unused completionKind) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief  Completes the nonbonded GPU task blocking until GPU tasks and data
@@ -209,16 +228,16 @@ bool gpu_try_finish_task(NbnxmGpu gmx_unused*           nb,
  * \param[in] nb The nonbonded data GPU structure
  * \param[in]  stepWork        Step schedule flags
  * \param[in] aloc Atom locality identifier
- * \param[out] e_lj Pointer to the LJ energy output to accumulate into
- * \param[out] e_el Pointer to the electrostatics energy output to accumulate into
+ * \param[in] haveSoftCore Whether SoftCore has been used
+ * \param[out] enerd Pointer to the energy data to accumulate energies into
  * \param[out] shiftForces Shift forces buffer to accumulate into
  * \param[out] wcycle         Pointer to wallcycle data structure               */
 GPU_FUNC_QUALIFIER
 float gpu_wait_finish_task(NbnxmGpu gmx_unused*           nb,
                            const StepWorkload gmx_unused& stepWork,
                            AtomLocality gmx_unused        aloc,
-                           real gmx_unused*               e_lj,
-                           real gmx_unused*               e_el,
+                           const bool gmx_unused          haveSoftCore,
+                           gmx_enerdata_t gmx_unused*     enerd,
                            ArrayRef<RVec> gmx_unused      shiftForces,
                            gmx_wallcycle gmx_unused*      wcycle) GPU_FUNC_TERM_WITH_RETURN(0.0);
 

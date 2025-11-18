@@ -148,6 +148,17 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     }
 }
 
+/*! Launch the Nonbonded free energy GPU kernels. */
+[[noreturn]] void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused*                 nb,
+                                                const SimulationWorkload gmx_unused& simulationWork,
+                                                const gmx::StepWorkload gmx_unused&  stepWork,
+                                                const InteractionLocality gmx_unused iloc)
+{
+    // Currently not GPU support for nonbonded free energy calculations in SYCL build. If workload flags are set correctly, it should never enter here.
+    GMX_THROW(NotImplementedError(
+            "Free energy GPU supported for SYCL build is not implemented yet."));
+}
+
 /*! \brief SYCL exclusive prefix sum kernel for list sorting.
  *
  * As of oneAPI 2024.1, \c oneapi::dpl::experimental::exclusive_scan_async for inputs <= 16384
