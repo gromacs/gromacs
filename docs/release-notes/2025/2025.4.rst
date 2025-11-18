@@ -99,6 +99,25 @@ stage with ``Could NOT find OpenMP_CUDA`` error. Added a workaround for that.
 
 :issue:`5431`
 
+Enable ``-Wpointer-arith`` flag for LLVM-based compilers
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Building |Gromacs| with LLVM-based compilers would get the ``-Wpointer-arith`` flag tested,
+but the result of the test wasn't used. This is now fixed.
+
+:issue:`5447`
+
+Fix SurfaceAreaTest failure when ARM SVE SIMD is used
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some versions of GCC miscompile test code when targeting ARM machines with SVE support,
+leading to false-positive failures in ``SurfaceAreaTest.Computes100PointsWithTriclinicPBC``.
+This has been observed with GCC 13 and 14 on systems with 256-bit and 512-bit SVE vectors.
+As a workaround, we disable compiler optimizations for the affected test function.
+This only affects test code and does not impact simulation performance.
+
+:issue:`5440`
+
 Fixes to the Colvars library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -127,3 +146,13 @@ The following is a list of bugfix pull requests in the`Colvars repository
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Disable floating point exceptions in CUDA builds
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+With CUDA 13 / NVIDIA driver 580, a floating-point exception can occur in the PTX JIT
+compiler. This is harmless in itself but would cause program termination if the
+floating-point exceptions are enabled. So, we don't enable them for CUDA builds anymore.
+
+:issue:`5493`
+

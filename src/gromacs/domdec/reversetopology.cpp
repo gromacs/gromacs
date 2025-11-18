@@ -445,7 +445,8 @@ void dd_make_reverse_top(FILE*                           fplog,
     dd->reverse_top = std::make_unique<gmx_reverse_top_t>(
             mtop, inputrec.efep != FreeEnergyPerturbationType::No, rtOptions);
 
-    dd->haveExclusions = false;
+    // we also need to check for intermolecular exclusions
+    dd->haveExclusions = !mtop.intermolecularExclusionGroup.empty();
     for (const gmx_molblock_t& molb : mtop.molblock)
     {
         const int maxNumExclusionsPerAtom = getMaxNumExclusionsPerAtom(mtop.moltype[molb.type].excls);
