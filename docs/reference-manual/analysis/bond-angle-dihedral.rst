@@ -3,10 +3,10 @@
 Bonds/distances, angles and dihedrals
 -------------------------------------
 
-| :ref:`gmx distance <gmx distance>`, :ref:`gmx angle <gmx angle>`, 
+| :ref:`gmx distance <gmx distance>`, :ref:`gmx angle <gmx angle>`,
   :ref:`gmx gangle <gmx gangle>`
 | To monitor specific *bonds* in your modules, or more generally
-  distances between points, the program 
+  distances between points, the program
   :ref:`gmx distance <gmx distance>` can calculate distances as a
   function of time, as well as the distribution of the distance. With a
   traditional index file, the groups should consist of pairs of atom

@@ -17,7 +17,7 @@ process with
 In |Gromacs| the equations are integrated with a simple, explicit scheme
 
 .. math:: \mathbf{r}_i(t+\Delta t) = \mathbf{r}_i(t) +
-          {\Delta t \over \gamma_i} \mathbf{F}_i(\mathbf{r}(t)) 
+          {\Delta t \over \gamma_i} \mathbf{F}_i(\mathbf{r}(t))
           + \sqrt{2 k_B T {\Delta t \over \gamma_i}}\, {\mathbf{r}^G}_i,
           :label: eqnbrowniandynint
 

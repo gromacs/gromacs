@@ -8,7 +8,7 @@ essential dynamics :ref:`169 <refAmadei93>`\ , can find
 correlated motions. It uses the covariance matrix :math:`C` of the
 atomic coordinates:
 
-.. math:: C_{ij} = \left \langle 
+.. math:: C_{ij} = \left \langle
           M_{ii}^{\frac{1}{2}} (x_i - \langle x_i \rangle)
           M_{jj}^{\frac{1}{2}}  (x_j - \langle x_j \rangle)
           \right \rangle
@@ -65,7 +65,7 @@ columns of the rotation matrix :math:`R`. For a symmetric and
 diagonally-dominant matrix :math:`A` of size :math:`3N \times 3N` the
 square root can be calculated as:
 
-.. math:: A^\frac{1}{2} = 
+.. math:: A^\frac{1}{2} =
           R \, \mbox{diag}(\lambda_1^\frac{1}{2},\lambda_2^\frac{1}{2},\ldots,\lambda_{3N}^\frac{1}{2}) \, R^T
           :label: eqnmatrixsquareroot
 

@@ -12,7 +12,7 @@ throughout this document:
 .. |vecex| replace:: :math:`{\mathbf{r}_i}`
 .. |lenex| replace:: :math:`r_i`
 
-.. table:: 
+.. table::
     :align: center
     :widths: auto
 
@@ -48,7 +48,7 @@ them *MD units*. The basic units in this system are nm, ps, K, electron
 charge (e) and atomic mass unit (u), see :numref:`Table %s <table-basicunits>`
 The values used in |Gromacs| are
 taken from the CODATA Internationally recommended 2010 values of
-fundamental physical constants (see `NIST homepage <http://nist.gov>`__). 
+fundamental physical constants (see `NIST homepage <http://nist.gov>`__).
 
 .. |tnm| replace:: :math:`\mathrm{nm = }10^{-9}\ m`
 .. |tu1| replace:: u (unified atomic mass unit) =
@@ -56,7 +56,7 @@ fundamental physical constants (see `NIST homepage <http://nist.gov>`__).
 .. |tti| replace:: :math:`\mathrm{ps = }10^{-12}\ s`
 .. |tc1| replace:: *e* = elementary charge =
 .. |tc2| replace:: :math:`1.602\,176\,565 \times 10^{-19}\ C`
-.. |tte| replace:: K 
+.. |tte| replace:: K
 
 .. _table-basicunits:
 
@@ -183,7 +183,7 @@ value is :math:`0.008\,314\,462\,1\mathrm{kJ~mol}^{-1} \mathrm{K}^{-1}`.
 
 .. _table-consts:
 
-.. table:: 
+.. table::
     Some Physical Constants
     :align: center
     :widths: auto
@@ -229,7 +229,7 @@ potentials:
 
 .. _table-reduced:
 
-.. table:: 
+.. table::
     Reduced Lennard-Jones quantities
     :align: center
     :widths: auto

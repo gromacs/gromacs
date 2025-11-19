@@ -1,4 +1,4 @@
-.. _lrelstat:   
+.. _lrelstat:
 
 Long Range Electrostatics
 -------------------------

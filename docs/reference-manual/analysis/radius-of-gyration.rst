@@ -3,7 +3,7 @@
 Radius of gyration and distances
 --------------------------------
 
-| :ref:`gmx gyrate <gmx gyrate>`, :ref:`gmx distance <gmx distance>`, 
+| :ref:`gmx gyrate <gmx gyrate>`, :ref:`gmx distance <gmx distance>`,
   :ref:`gmx mindist <gmx mindist>`, :ref:`gmx mdmat <gmx mdmat>`,
   :ref:`gmx pairdist <gmx pairdist>`, :ref:`gmx xpm2ps <gmx xpm2ps>`
 | To have a rough measure for the compactness of a structure, you can

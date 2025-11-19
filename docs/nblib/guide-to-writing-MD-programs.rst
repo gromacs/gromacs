@@ -55,7 +55,7 @@ Define Particle Data
        ParticleName         name = "Hw";
        Mass                 mass = 1.00784;
        C6                   c6   = 0.0;
-       C12                  c12  = 0.0;  
+       C12                  c12  = 0.0;
    };
 
    struct CMethAtom
@@ -71,7 +71,7 @@ Define Particle Data
        ParticleName         name = "Hc";
        Mass                 mass = 1.00784;
        C6                   c6   = 8.464e-05;
-       C12                  c12  = 15.129e-09;  
+       C12                  c12  = 15.129e-09;
    };
 
 There can be as many structs of this kind as there are particle types in the system.
@@ -129,7 +129,7 @@ Define ParticleTypes
        HwAtom      hwAtom;
        CMethAtom   cmethAtom;
        HcAtom      hcAtom;
-     
+
        // Create the particles
        ParticleType Ow(owAtom.name, owAtom.mass);
        ParticleType Hw(hwAtom.name, hwAtom.mass);

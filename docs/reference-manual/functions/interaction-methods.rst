@@ -75,14 +75,14 @@ for more details about pair-list generation regarding cut-offs.
            |         | Reaction field   | |CRFP|     |
            |         +------------------+------------+
            |         | Shift function   | |CSHFP|    |
-           |         +------------------+------------+ 
-           |         | Switch function  | |CSWFP|    | 
+           |         +------------------+------------+
+           |         | Switch function  | |CSWFP|    |
            +---------+------------------+------------+
            | VdW     | Plain cut-off    | |VPCOP|    |
-           |         +------------------+------------+ 
+           |         +------------------+------------+
            |         | Shift function   | |VSHFP|    |
-           |         +------------------+------------+ 
-           |         | Switch function  | |VSWFP|    | 
+           |         +------------------+------------+
+           |         | Switch function  | |VSWFP|    |
            +---------+------------------+------------+
 
 .. _virtualsites:
@@ -107,9 +107,9 @@ potential energy as:
 
 The force on the particle :math:`i` is then:
 
-.. math:: \mathbf{F}_i = -\frac{\partial V^*}{\partial \mathbf{r}_i} 
-          = -\frac{\partial V}{\partial \mathbf{r}_i} - 
-             \frac{\partial V}{\partial \mathbf{r}_s} 
+.. math:: \mathbf{F}_i = -\frac{\partial V^*}{\partial \mathbf{r}_i}
+          = -\frac{\partial V}{\partial \mathbf{r}_i} -
+             \frac{\partial V}{\partial \mathbf{r}_s}
              \frac{\partial \mathbf{r}_s}{\partial \mathbf{r}_i}
           = \mathbf{F}_i^{direct} + \mathbf{F}_i
           :label: eqnvsiteforce
@@ -300,7 +300,7 @@ In the plane of three atoms, with a fixed angle and distance (:numref:`Fig. %s <
              d \cos \theta \frac{\mathbf{r}_{ij}}{ | \mathbf{r}_{ij} | } +
              d \sin \theta \frac{\mathbf{r}_\perp}{ | \mathbf{r}_\perp | }
              ~\mbox{ where }~
-             \mathbf{r}_\perp ~=~ \mathbf{r}_{jk} - 
+             \mathbf{r}_\perp ~=~ \mathbf{r}_{jk} -
              \frac{ \mathbf{r}_{ij} \cdot \mathbf{r}_{jk} }
              { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} }
              \mathbf{r}_{ij}
@@ -319,16 +319,16 @@ In the plane of three atoms, with a fixed angle and distance (:numref:`Fig. %s <
 
    .. math:: \begin{array}{c}
                      \begin{array}{lclllll}
-                     \mathbf{F}_i &=& \mathbf{F}_{s} &-& 
+                     \mathbf{F}_i &=& \mathbf{F}_{s} &-&
                              \dfrac{d \cos \theta}{ | \mathbf{r}_{ij} | } \mathbf{F}_1 &+&
-                             \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left( 
+                             \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left(
                              \dfrac{ \mathbf{r}_{ij} \cdot \mathbf{r}_{jk} }
                                   { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} } \mathbf{F}_2     +
                              \mathbf{F}_3 \right)                                \\[3ex]
                      \mathbf{F}_j &=& &&
                              \dfrac{d \cos \theta}{ | \mathbf{r}_{ij} | } \mathbf{F}_1 &-&
                              \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left(
-                              \mathbf{F}_2 + 
+                              \mathbf{F}_2 +
                               \dfrac{ \mathbf{r}_{ij} \cdot \mathbf{r}_{jk} }
                                      { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} } \mathbf{F}_2 +
                              \mathbf{F}_3 \right)                                \\[3ex]

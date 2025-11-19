@@ -197,7 +197,7 @@ through which of the channels it has passed.
 
 A double-layered system for CompEL simulations can be easily prepared by
 duplicating an existing membrane/channel MD system in the direction of
-the membrane normal (typically :math:`z`) with 
+the membrane normal (typically :math:`z`) with
 :ref:`gmx editconf` ``-translate 0 0 <l_z>``, where ``l_z`` is the box
 length in that direction. If you have already defined index groups for
 the channel for the single-layered system, :ref:`gmx make_ndx`

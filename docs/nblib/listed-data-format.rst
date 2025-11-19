@@ -41,7 +41,7 @@ looks like this:
 
    void calc_listed(const InteractionDefinitions& idef, ...)
    {
-       // manage timing and multi-threading 
+       // manage timing and multi-threading
 
        for (InteractionFunction ftype : gmx::EnumerationWrapper<InteractionFunction>{})
        {
@@ -49,7 +49,7 @@ looks like this:
            // the type of interaction that ftype corresponds to
            // then call a function from a pointer table
 
-           bondFunction* bonded = bondedInteractionFunctions[ftype]; 
+           bondFunction* bonded = bondedInteractionFunctions[ftype];
 
            // compute all forces for ftype
            bonded(idef.iparams, idef.il[ftype], ...);
@@ -124,7 +124,7 @@ The NB-LIB listed forces pipeline
 
 Given the listed interaction data provided in the format described above,
 the steps required to calculate the corresponding forces
-are, in brief: 
+are, in brief:
 
   * Loop over all interaction types
   * Loop over all interactions for given type
@@ -230,7 +230,7 @@ of 2-center interactions:
    }
 
 We can again observe that common parts among different 2-center interaction types
-are reused. The common parts are 
+are reused. The common parts are
 
  * coordinate retrieval
  * computation of the scalar distance

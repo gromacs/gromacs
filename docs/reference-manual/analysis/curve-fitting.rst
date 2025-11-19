@@ -14,21 +14,21 @@ Levenberg-Marquardt algorithm as implemented in the lmfit package \ :ref:`162 <
 (a bare-bones version of which is included in |Gromacs| in which an
 option for error-weighted fitting was implemented).
 
-.. |exp|  replace:: :math:`e^{-t/{a_0}}`                                                       
-.. |aexp| replace:: :math:`a_1e^{-t/{a_0}}`                                                    
-.. |exp2| replace:: :math:`a_1e^{-t/{a_0}}+(1-a_1)e^{-t/{a_2}}`                                
-.. |exp5| replace:: :math:`a_1e^{-t/{a_0}}+a_3e^{-t/{a_2}}+a_4`                                
-.. |exp7| replace:: :math:`a_1e^{-t/{a_0}}+a_3e^{-t/{a_2}}+a_5e^{-t/{a_4}}+a_6`                
+.. |exp|  replace:: :math:`e^{-t/{a_0}}`
+.. |aexp| replace:: :math:`a_1e^{-t/{a_0}}`
+.. |exp2| replace:: :math:`a_1e^{-t/{a_0}}+(1-a_1)e^{-t/{a_2}}`
+.. |exp5| replace:: :math:`a_1e^{-t/{a_0}}+a_3e^{-t/{a_2}}+a_4`
+.. |exp7| replace:: :math:`a_1e^{-t/{a_0}}+a_3e^{-t/{a_2}}+a_5e^{-t/{a_4}}+a_6`
 .. |exp9| replace:: :math:`a_1e^{-t/{a_0}}+a_3e^{-t/{a_2}}+a_5e^{-t/{a_4}}+a_7e^{-t/{a_6}}+a_8`
-.. |nexp2| replace:: :math:`a_2\ge a_0\ge 0`               
-.. |nexp5| replace:: :math:`a_2\ge a_0\ge 0`               
-.. |nexp7| replace:: :math:`a_4\ge a_2\ge a_0 \ge0`        
-.. |nexp9| replace:: :math:`a_6\ge a_4\ge a_2\ge a_0\ge 0` 
+.. |nexp2| replace:: :math:`a_2\ge a_0\ge 0`
+.. |nexp5| replace:: :math:`a_2\ge a_0\ge 0`
+.. |nexp7| replace:: :math:`a_4\ge a_2\ge a_0 \ge0`
+.. |nexp9| replace:: :math:`a_6\ge a_4\ge a_2\ge a_0\ge 0`
 
 .. _table-fitfn:
 
-.. table:: Overview of fitting functions supported in (most) analysis tools 
-    that compute autocorrelation functions. The **Note** column describes 
+.. table:: Overview of fitting functions supported in (most) analysis tools
+    that compute autocorrelation functions. The **Note** column describes
     properties of the output parameters.
     :align: center
     :widths: auto

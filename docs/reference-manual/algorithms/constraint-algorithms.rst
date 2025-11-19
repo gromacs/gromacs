@@ -50,7 +50,7 @@ The displacement due to the constraint forces in the leap-frog or
 Verlet algorithm is equal to :math:`(\mathbf{G}_i/m_i)({{\Delta t}})^2`. Solving the
 Lagrange multipliers (and hence the displacements) requires the solution
 of a set of coupled equations of the second degree. These are solved
-iteratively by SHAKE. :ref:`settle` 
+iteratively by SHAKE. :ref:`settle`
 
 .. _settle:
 
@@ -147,10 +147,10 @@ equation shows how the new constrained coordinates
 coordinates :math:`\mathbf{r}_{n+1}^{unc}` by
 
 .. math::  \begin{array}{c}
-           \mathbf{r}_{n+1}=(\mathbf{I}-\mathbf{T}_n \mathbf{B}_n) \mathbf{r}_{n+1}^{unc} + {\mathbf{T}}_n \mathbf{d}=  
+           \mathbf{r}_{n+1}=(\mathbf{I}-\mathbf{T}_n \mathbf{B}_n) \mathbf{r}_{n+1}^{unc} + {\mathbf{T}}_n \mathbf{d}=
            \\[2mm]
-           \mathbf{r}_{n+1}^{unc} - 
-           {{\mathbf{M}}^{-1}}\mathbf{B}_n ({\mathbf{B}}_n {{\mathbf{M}}^{-1}}{\mathbf{B}}_n^T)^{-1} ({\mathbf{B}}_n \mathbf{r}_{n+1}^{unc} - \mathbf{d}) 
+           \mathbf{r}_{n+1}^{unc} -
+           {{\mathbf{M}}^{-1}}\mathbf{B}_n ({\mathbf{B}}_n {{\mathbf{M}}^{-1}}{\mathbf{B}}_n^T)^{-1} ({\mathbf{B}}_n \mathbf{r}_{n+1}^{unc} - \mathbf{d})
            \end{array}
            :label: eqnm0
 
@@ -210,7 +210,7 @@ The matrix :math:`\mathbf{A}_n` is symmetric and sparse
 and has zeros on the diagonal. Thus a simple trick can be used to
 calculate the inverse:
 
-.. math:: (\mathbf{I}-\mathbf{A}_n)^{-1}= 
+.. math:: (\mathbf{I}-\mathbf{A}_n)^{-1}=
           \mathbf{I} + \mathbf{A}_n + \mathbf{A}_n^2 + \mathbf{A}_n^3 + \ldots
           :label: eqnm3
 

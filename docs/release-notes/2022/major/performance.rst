@@ -45,7 +45,7 @@ up to a factor of 3.
 :issue:`2875`
 :issue:`742`
 
-       
+
 PME-PP GPU Direct Communication Pipelining
 """"""""""""""""""""""""""""""""""""""""""
 
@@ -74,10 +74,10 @@ Restricted GPU support with multiple time stepping
 
 GPUs can be used in combination with MTS, but for now this is limited
 to the setup where only the long-range nonbonded force is applied
-in longer timesteps (and computed on the CPU), while all other 
+in longer timesteps (and computed on the CPU), while all other
 components are are calculated every step (which can be on the GPU).
 
-       
+
 ``gmx grompp`` now runs 20-50% faster
 """""""""""""""""""""""""""""""""""""
 
@@ -89,10 +89,10 @@ run faster while using simpler, standard code idioms.
 PME decomposition support in mixed mode with CUDA and process-MPI
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-PME decomposition is supported now in mixed mode with CUDA backend. 
-This is supported only if |Gromacs| is compiled with external process-MPI 
+PME decomposition is supported now in mixed mode with CUDA backend.
+This is supported only if |Gromacs| is compiled with external process-MPI
 and underlying MPI implementation is CUDA-aware. This feature lacks substantial testing
-and has been disabled by default but can be enabled by setting GMX_GPU_PME_DECOMPOSITION=1 
+and has been disabled by default but can be enabled by setting GMX_GPU_PME_DECOMPOSITION=1
 environment variable.
 
 Performance improvements when running on Ampere-class Nvidia GPUs

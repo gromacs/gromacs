@@ -38,7 +38,7 @@ GROMOS-96
     yet removed the GROMOS force fields, but you should be aware of these
     issues and check if molecules in your system are affected before
     proceeding. Further information is available in
-    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ , 
+    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ ,
     and a longer explanation of our
     decision to remove physically incorrect algorithms can be found at
     `DOI:10.26434/chemrxiv.11474583.v1 <https://doi.org/10.26434/chemrxiv.11474583.v1>`_ .

@@ -140,7 +140,7 @@ follows by :ref:`gmx dipoles <gmx dipoles>`:
           :label: eqndipolecorrfunc
 
 with :math:`{\bf \mu}_i = \sum_{j \in i} {\bf r}_j q_j`. The dipole
-correlation time can be computed using :eq:`eqn. %s <eqncorrtime>`. 
+correlation time can be computed using :eq:`eqn. %s <eqncorrtime>`.
 For some applications
 see (**???**).
 

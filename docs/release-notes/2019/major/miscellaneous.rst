@@ -14,5 +14,5 @@ Using constraints=h-bonds will also improve performance.
 Documentation changed to reStructuredText
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-The complete documentation has been moved to the reStructuredText 
+The complete documentation has been moved to the reStructuredText
 markup format to allow building it together for display as html or as pdf.

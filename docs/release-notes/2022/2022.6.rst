@@ -33,7 +33,7 @@ Fix missing synchronization in GPU PME pipelining
 A missing synchronization could have caused incorrect long-range PME electrostatics
 forces/energies to be produced when GPU PME pipelining was used.
 
-Only runs with >=3 GPUs and with direct GPU communication enabled 
+Only runs with >=3 GPUs and with direct GPU communication enabled
 (``GMX_ENABLE_DIRECT_GPU_COMM`` env. var.) are affected.
 
 :issue:`4734`

@@ -23,11 +23,11 @@ Macroscopic physical properties can be distinguished by
 
 #. *static equilibrium properties*, such as the binding constant of an
    inhibitor to an enzyme, the average potential energy of a system, or the
-   radial distribution function of a liquid, and 
+   radial distribution function of a liquid, and
 
 #. *dynamic or non-equilibrium properties*, such as the viscosity of a liquid,
    diffusion processes in membranes, the dynamics of phase changes,
-   reaction kinetics, or the dynamics of defects in crystals. 
+   reaction kinetics, or the dynamics of defects in crystals.
 
 The choice of
 technique depends on the question asked and on the feasibility of the
@@ -78,12 +78,12 @@ two important consequences:
    or accelerations as response to forces \ :ref:`10 <refFraaije93>`.
 
 For the generation of a representative equilibrium ensemble two methods
-are available: 
+are available:
 
 #. *Monte Carlo simulations* and
 
-#. *Molecular Dynamics simulations*. 
-  
+#. *Molecular Dynamics simulations*.
+
 For the generation of non-equilibrium
 ensembles and for the analysis of dynamic events, only the second method
 is appropriate. While Monte Carlo simulations are more simple than MD
@@ -151,7 +151,7 @@ of the simulation. We list the approximations below.
       bond-angle vibrations are suspect, and even hydrogen-bonded
       motions as translational or librational H-bond vibrations are
       beyond the classical limit (see :numref:`Table %s <tab-vibrations>`)
-      What can we do? 
+      What can we do?
 
 .. |H2CX| replace:: H\ :math:`_2`\ CX
 .. |OHO1| replace:: O-H\ :math:`\cdots`\ O

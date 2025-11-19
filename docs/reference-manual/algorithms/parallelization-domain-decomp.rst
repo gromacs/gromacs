@@ -200,10 +200,10 @@ slightly faster with shorter interaction ranges. A list of interaction
 ranges and their default values is given in :numref:`Table %s <table-ddranges>`
 
 .. |nbrange| replace:: :math:`r_c`\ =\ max(\ :math:`r_{\mathrm{list}}`\ ,\ :math:`r_{\mathrm{VdW}}`\ ,\ :math:`r_{\mathrm{Coul}}`\ )
-.. |tbrange| replace:: max(:math:`r_{\mathrm{mb}}`\ ,\ :math:`r_c`) 
-.. |mbrange| replace:: :math:`r_{\mathrm{mb}}` 
+.. |tbrange| replace:: max(:math:`r_{\mathrm{mb}}`\ ,\ :math:`r_c`)
+.. |mbrange| replace:: :math:`r_{\mathrm{mb}}`
 .. |csrange| replace:: :math:`r_{\mathrm{con}}`
-.. |vsrange| replace:: :math:`r_{\mathrm{con}}` 
+.. |vsrange| replace:: :math:`r_{\mathrm{con}}`
 .. |mdrunr| replace:: :ref:`mdrun <gmx mdrun>` ``-rdd``
 .. |mdrunc| replace:: :ref:`mdrun <gmx mdrun>` ``-rcon``
 

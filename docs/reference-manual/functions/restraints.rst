@@ -129,8 +129,8 @@ flat-bottomed potential.
   parallel to the :math:`x`, :math:`y`, or :math:`z`-axis. The force
   acts parallel to the layer normal.
 
-  .. math:: d_g(\mathbf{r}_i;\mathbf{R}_i) = |x_i-X_i|, \;\;\;\mbox{or}\;\;\; 
-            d_g(\mathbf{r}_i;\mathbf{R}_i) = |y_i-Y_i|, \;\;\;\mbox{or}\;\;\; 
+  .. math:: d_g(\mathbf{r}_i;\mathbf{R}_i) = |x_i-X_i|, \;\;\;\mbox{or}\;\;\;
+            d_g(\mathbf{r}_i;\mathbf{R}_i) = |y_i-Y_i|, \;\;\;\mbox{or}\;\;\;
             d_g(\mathbf{r}_i;\mathbf{R}_i) = |z_i-Z_i|.
             :label: eqnfblayerposrest
 
@@ -199,7 +199,7 @@ as:
 
 .. math:: V_{dihr}(\phi') ~=~ \left\{
           \begin{array}{lcllll}
-          {\frac{1}{2}}k_{dihr}(\phi'-\Delta\phi)^2      
+          {\frac{1}{2}}k_{dihr}(\phi'-\Delta\phi)^2
                           &\mbox{for}&     \|\phi'\| & >   & \Delta\phi       \\[1.5ex]
           0               &\mbox{for}&     \|\phi'\| & \le & \Delta\phi       \\[1.5ex]
           \end{array}\right.
@@ -238,12 +238,12 @@ beyond the largest bound (see :numref:`Fig. %s <fig-dist>`).
 
 .. math:: V_{dr}(r_{ij}) ~=~ \left\{
           \begin{array}{lcllllll}
-          {\frac{1}{2}}k_{dr}(r_{ij}-r_0)^2      
+          {\frac{1}{2}}k_{dr}(r_{ij}-r_0)^2
                           &\mbox{for}&     &     & r_{ij} & < & r_0       \\[1.5ex]
           0               &\mbox{for}& r_0 & \le & r_{ij} & < & r_1       \\[1.5ex]
-          {\frac{1}{2}}k_{dr}(r_{ij}-r_1)^2      
+          {\frac{1}{2}}k_{dr}(r_{ij}-r_1)^2
                           &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
-          {\frac{1}{2}}k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)  
+          {\frac{1}{2}}k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)
                           &\mbox{for}& r_2 & \le & r_{ij} &   &
           \end{array}\right.
           :label: eqndisre
@@ -259,12 +259,12 @@ The forces are
 
 .. math:: \mathbf{F}_i~=~ \left\{
           \begin{array}{lcllllll}
-          -k_{dr}(r_{ij}-r_0)\frac{\mathbf{r}_{ij}}{r_{ij}} 
+          -k_{dr}(r_{ij}-r_0)\frac{\mathbf{r}_{ij}}{r_{ij}}
                           &\mbox{for}&     &     & r_{ij} & < & r_0       \\[1.5ex]
           0               &\mbox{for}& r_0 & \le & r_{ij} & < & r_1       \\[1.5ex]
-          -k_{dr}(r_{ij}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}} 
+          -k_{dr}(r_{ij}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}
                           &\mbox{for}& r_1 & \le & r_{ij} & < & r_2       \\[1.5ex]
-          -k_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    
+          -k_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}
                           &\mbox{for}& r_2 & \le & r_{ij} &   &
           \end{array} \right.
           :label: eqndisreforce
@@ -286,12 +286,12 @@ distance \ :ref:`91 <refTorda89>`. The forces with time averaging are:
 
 .. math:: \mathbf{F}_i~=~ \left\{
           \begin{array}{lcllllll}
-          -k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\mathbf{r}_{ij}}{r_{ij}}   
+          -k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\mathbf{r}_{ij}}{r_{ij}}
                           &\mbox{for}&     &     & \bar{r}_{ij} & < & r_0 \\[1.5ex]
           0               &\mbox{for}& r_0 & \le & \bar{r}_{ij} & < & r_1 \\[1.5ex]
-          -k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}   
+          -k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}
                           &\mbox{for}& r_1 & \le & \bar{r}_{ij} & < & r_2 \\[1.5ex]
-          -k^a_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    
+          -k^a_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}
                           &\mbox{for}& r_2 & \le & \bar{r}_{ij} &   &
           \end{array} \right.
           :label: eqntimeaveragerest
@@ -337,11 +337,11 @@ violation:
 
 .. math:: \mathbf{F}_i~=~ \left\{
           \begin{array}{lclll}
-          k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\mathbf{r}_{ij}}{r_{ij}}   
+          k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\mathbf{r}_{ij}}{r_{ij}}
               & \mbox{for} & r_{ij} < r_0 & \mbox{and} & \bar{r}_{ij} < r_0 \\[1.5ex]
           -k^a _{dr} \,
             \mbox{min}\left(\sqrt{(r_{ij}-r_1)(\bar{r}_{ij}-r_1)},r_2-r_1\right)
-            \frac{\mathbf{r}_{ij}}{r_{ij}}   
+            \frac{\mathbf{r}_{ij}}{r_{ij}}
               & \mbox{for} & r_{ij} > r_1 & \mbox{and} & \bar{r}_{ij} > r_1 \\[1.5ex]
           0               &\mbox{otherwise}
           \end{array} \right.
@@ -403,7 +403,7 @@ scalar force according to:
           \begin{array}{rcl}
           ~& 0 \hspace{4cm}  & r_{N} < r_1         \\
            & k_{dr}(r_{N}-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}} & r_1 \le r_{N} < r_2 \\
-           & k_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    & r_{N} \ge r_2 
+           & k_{dr}(r_2-r_1)\frac{\mathbf{r}_{ij}}{r_{ij}}    & r_{N} \ge r_2
           \end{array} \right.
           :label: eqnrestscalarforce
 
@@ -480,9 +480,9 @@ molecule. The tensor :math:`{{\mathbf D}}_i` is given by:
           \end{array} \right)
           :label: eqnorientdef
 
-.. math:: \mbox{with:} \quad 
+.. math:: \mbox{with:} \quad
           x=\frac{r_{i,x}}{\|\mathbf{r}_i\|}, \quad
-          y=\frac{r_{i,y}}{\|\mathbf{r}_i\|}, \quad 
+          y=\frac{r_{i,y}}{\|\mathbf{r}_i\|}, \quad
           z=\frac{r_{i,z}}{\|\mathbf{r}_i\|}
           :label: eqnorientdef2
 
@@ -599,7 +599,7 @@ given by minus the gradient of :math:`V`. The force
 :math:`\mathbf{r}_i` is:
 
 .. math:: \begin{aligned}
-          \mathbf{F}\!_i(t) 
+          \mathbf{F}\!_i(t)
           & = & - \frac{\mbox{d} V}{\mbox{d}\mathbf{r}_i} \\
           & = & -k w_i (\delta_i^c (t) -\delta_i^{exp}) \frac{\mbox{d} \delta_i (t)}{\mbox{d}\mathbf{r}_i} \\
           & = & -k w_i (\delta_i^c (t) -\delta_i^{exp})
@@ -614,7 +614,7 @@ subsystems that each contain an identical set of orientation restraints.
 The systems only interact via the orientation restraint potential which
 is defined as:
 
-.. math:: V = M \frac{1}{2} k \sum_{i=1}^N w_i 
+.. math:: V = M \frac{1}{2} k \sum_{i=1}^N w_i
           \langle \delta_i^c (t) -\delta_i^{exp} \rangle^2
           :label: eqnorrestensembleave
 
@@ -623,7 +623,7 @@ The force on vector :math:`\mathbf{r}_{i,m}` in subsystem
 
 .. math:: \mathbf{F}\!_{i,m}(t) = - \frac{\mbox{d} V}{\mbox{d}\mathbf{r}_{i,m}} =
           -k w_i \langle \delta_i^c (t) -\delta_i^{exp} \rangle \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\mathbf{r}_{i,m}}
-          :label: eqnorrestensaveforce 
+          :label: eqnorrestensaveforce
 
 Time averaging
 ^^^^^^^^^^^^^^
@@ -632,7 +632,7 @@ When using time averaging it is not possible to define a potential. We
 can still define a quantity that gives a rough idea of the energy stored
 in the restraints:
 
-.. math:: V = M \frac{1}{2} k^a \sum_{i=1}^N w_i 
+.. math:: V = M \frac{1}{2} k^a \sum_{i=1}^N w_i
           \langle \delta_i^a (t) -\delta_i^{exp} \rangle^2
           :label: eqntimeavepot
 
@@ -654,7 +654,7 @@ induces large oscillations. The force is given by:
           0 & \quad \mbox{for} \quad a\, b \leq 0 \\
           \displaystyle
           k^a w_i \frac{a}{|a|} \sqrt{a\, b} \, \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\mathbf{r}_{i,m}}
-          & \quad \mbox{for} \quad a\, b > 0 
+          & \quad \mbox{for} \quad a\, b > 0
           \end{array}
           \right.
           :label: eqntimeaveforce

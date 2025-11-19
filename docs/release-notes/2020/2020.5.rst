@@ -18,7 +18,7 @@ Fixes where mdrun could behave incorrectly
 
 Fix mdrun writing zero dH/dlambda and foreign lambda energies before checkpointing
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
- 
+
 With free-energy runs with separate-dhdl-file=no and nstdhdl not a multiple of
 nstenergy, mdrun would write zeros for dH/dlambda and foreign energies to
 the energy file for steps between the last energy frame and the checkpoint.

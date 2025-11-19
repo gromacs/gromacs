@@ -1,7 +1,7 @@
 Dihedral principal component analysis
 -------------------------------------
 
-| :ref:`gmx angle <gmx angle>`, :ref:`gmx covar <gmx covar>`, 
+| :ref:`gmx angle <gmx angle>`, :ref:`gmx covar <gmx covar>`,
   :ref:`gmx anaeig <gmx anaeig>`
 | Principal component analysis can be performed in dihedral
   space \ :ref:`172 <refMu2005a>` using |Gromacs|. You start by defining the

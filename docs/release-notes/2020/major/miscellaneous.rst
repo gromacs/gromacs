@@ -17,8 +17,8 @@ in grompp if they are not encountered while parsing the topology file
 Introduced CMake variable GMX_VERSION_STRING_OF_FORK
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 To help users and developers understand which version of |Gromacs| is
-being used, anybody providing a forked version of |Gromacs| shall set 
-GMX_VERSION_STRING_OF_FORK in the source code (or if necessary when 
+being used, anybody providing a forked version of |Gromacs| shall set
+GMX_VERSION_STRING_OF_FORK in the source code (or if necessary when
 running CMake). It will then appear in the log file and users will know
 which version and fork of the code produced the result.
 

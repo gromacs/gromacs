@@ -67,11 +67,11 @@ variable ``GMX_NN_DEVICE``. The options ``cpu`` and ``gpu`` are supported. Optio
 is deprecated, and is treated as ``gpu``.
 If multiple GPUs are available, the active device will be inherited from mdrun.
 For ``gpu``, a CUDA/HIP-aware LibTorch installation should be installed, and the
-corresponding CUDA/HIP installation should be available in your ``PATH``. 
+corresponding CUDA/HIP installation should be available in your ``PATH``.
 
 Find below an example Python code snippet to export a pretrained model in
 PyTorch using TorchScript. As an example, we use the popular ANI models
-available from `TorchANI <https://github.com/aiqm/torchani/>`_. 
+available from `TorchANI <https://github.com/aiqm/torchani/>`_.
 
 ::
 
@@ -91,9 +91,9 @@ available from `TorchANI <https://github.com/aiqm/torchani/>`_.
             self.length_conversion = 10.0   # nm --> Å
             self.energy_conversion = 2625.5 # Hartree --> kJ/mol
 
-        def forward(self, positions, atomic_numbers, 
+        def forward(self, positions, atomic_numbers,
                     box: Optional[torch.Tensor]=None, pbc: Optional[torch.Tensor]=None):
-            
+
             # Prepare the inputs for the model
             atomic_numbers = atomic_numbers.unsqueeze(0)
             positions = positions.unsqueeze(0) * self.length_conversion
@@ -106,7 +106,7 @@ available from `TorchANI <https://github.com/aiqm/torchani/>`_.
             energy = result.energies[0] * self.energy_conversion
 
             return energy
-        
+
     model = GmxNNPotModelWrapper()
 
     save_path = 'ani2x.pt'

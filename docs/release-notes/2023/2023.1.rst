@@ -90,7 +90,7 @@ by number.
 Fix early crash in ``gmx anaeig``
 """""""""""""""""""""""""""""""""
 
-An internal change in |Gromacs| 2023 caused improper handling of optional program arguments leading 
+An internal change in |Gromacs| 2023 caused improper handling of optional program arguments leading
 to a crash in the program. This might have affected some other analysis tools.
 
 :issue:`4756`
@@ -149,7 +149,7 @@ Added support for new cuFFTMp interface
 The interface to the cuFFTMp library has changed with its latest
 release in the the NVIDIA HPC SDK version 23.3, which is required for
 NVIDIA Hopper GPU support. We have now added default support to the
-new interface, while retaining support for the legacy interface. 
+new interface, while retaining support for the legacy interface.
 
 :issue:`4731`
 

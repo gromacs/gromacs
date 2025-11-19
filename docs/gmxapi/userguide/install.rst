@@ -857,7 +857,7 @@ though you have a successfully built the :py:mod:`gmxapi` package. If you want t
 troubleshoot, though, the main problems seem to be that automatic
 installation of required python packages may not work (requiring manual
 installations, such as with :command:`pip install somepackage`) and ambiguities
-between python versions. 
+between python versions.
 
 If you are working in a development branch of the repository, note that
 the upstream branch may be reset to ``main`` after a new release is

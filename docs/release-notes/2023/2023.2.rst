@@ -67,7 +67,7 @@ Fix assertion failure with annealing and multiple T-coupling groups
 Properly update the backup checkpoint
 """""""""""""""""""""""""""""""""""""
 
-In 2023 and 2023.1, the ``state_prev.cpt`` file was never 
+In 2023 and 2023.1, the ``state_prev.cpt`` file was never
 overwritten, and thus always contained the very first checkpoint
 for the run.
 
@@ -207,9 +207,9 @@ have the same effect as -1 and cause a new seed to be generated from the OS.
 Correct formulas for Nosé-Hoover thermostat
 """""""""""""""""""""""""""""""""""""""""""
 
-Several formulas describing Nosé-Hoover temperature coupling contained 
-inconsistencies. The reference manual was updated to match the actual 
-implementation. 
+Several formulas describing Nosé-Hoover temperature coupling contained
+inconsistencies. The reference manual was updated to match the actual
+implementation.
 
 :issue:`4695`
 

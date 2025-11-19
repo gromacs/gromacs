@@ -76,7 +76,7 @@ With 100 or more replicas, spaces would be missing between values and indices.
 Also other large values could lead to no whitespace being printed.
 
 :issue:`5248`
-       
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

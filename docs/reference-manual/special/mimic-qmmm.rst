@@ -32,7 +32,7 @@ The QM contribution is computed by CPMD, while the MM part is
 processed by |Gromacs| and the cross terms are treated by the
 MiMiC interface. Cross terms, i.e. the terms involving simultaneously
 atoms from the QM region and atoms from the MM region consist of
-both bonded and non-bonded interactions. 
+both bonded and non-bonded interactions.
 
 The bonded interactions are taken from the forcefield used to
 describe the MM part. Whenever there is a chemical bond crossing
@@ -45,11 +45,11 @@ in CPMD for bond capping:
 
 #. Hydrogen capping - the simplest approach is to cap the bond with a
    hydrogen atom, constraining its relative position
-   
+
 #. Link atom pseudo-potential - this strategy uses an ad-hoc pseudo-potential
    developed to cap the bond. This pseudo-potential would represent the real
    atom and, thus, will not require the bond constraint.
-   
+
 As in standard forcefields, the non-bonded contributions to :math:`E_{QM/MM}`
 can be separated into van der Waals and electrostatic contributions.
 The first contribution is again taken from the MM forcefield. The second
@@ -59,8 +59,8 @@ Hamiltonian of the system:
 
    .. math::
 
-      E_{QM/MM}^{es} = -\sum_a^{N_{mm}}Q_a\int\rho(\mathbf{r})\frac{r_{c,a}^4 
-      - |\mathbf{R_a} - \mathbf{r}|^4}{r_{c,a}^5 - |\mathbf{R_a} - \mathbf{r}|^5}d\mathbf{r} 
+      E_{QM/MM}^{es} = -\sum_a^{N_{mm}}Q_a\int\rho(\mathbf{r})\frac{r_{c,a}^4
+      - |\mathbf{R_a} - \mathbf{r}|^4}{r_{c,a}^5 - |\mathbf{R_a} - \mathbf{r}|^5}d\mathbf{r}
       + \sum_a^{N_{mm}}\sum_n^{N_{qm}}Q_aZ_n
       \frac{r_{c,a}^4 - |\mathbf{R_a} - \mathbf{R_n}|^4}
       {r_{c,a}^5 - |\mathbf{R_a} - \mathbf{R_n}|^5}
@@ -99,9 +99,9 @@ Unlike the majority of QM/MM interfaces, MiMiC uses a loose coupling between
 partner codes. This means that instead of compiling both codes into a
 single binary MiMiC builds separate executables for CPMD and |Gromacs|.
 The user will then prepare the input for both codes and run them simultaneously.
-Each of the codes is running using a separate pool of MPI processes and 
-communicate the necessary data (e.g. coordinates, energies and forces) 
-through MPI client-server mechanism. Within MiMiC framework CPMD acts 
+Each of the codes is running using a separate pool of MPI processes and
+communicate the necessary data (e.g. coordinates, energies and forces)
+through MPI client-server mechanism. Within MiMiC framework CPMD acts
 as a server and |Gromacs| becomes the client.
 
 Software prerequisites
@@ -191,7 +191,7 @@ descriptions of keywords that can be found in this part of CPMD input:
     2 14 1 2
     2 15 1 3
     &END
-    
+
     &ATOMS
     O
     1
@@ -211,17 +211,17 @@ descriptions of keywords that can be found in this part of CPMD input:
     be run -- otherwise it will cause a deadlock in CPMD! The next line
     contains the number of MM codes (1 in this case) and next :math:`N`
     lines contain paths to their respective working directories
-    
+
     ``BOX`` indicates the size of the whole simulation box in Bohr in
     an ``X Y Z`` format
 
-    ``OVERLAPS`` - sets the number and IDs of atoms within |Gromacs| that are going to be 
+    ``OVERLAPS`` - sets the number and IDs of atoms within |Gromacs| that are going to be
     treated by CPMD. The format is the following:
 
     ::
 
         <code_id> <atom_id_in_code> <host_code_id> <atom_id_in_that_code>
-    
+
     CPMD host code id is always ID 1. Therefore, in a QM/MM simulation
     |Gromacs| will have code ID 2.
 
@@ -262,7 +262,7 @@ and 240 nodes to CPMD (both codes are launched in the same folder):
     #SBATCH --error=mpi-err.%j
     #SBATCH --time=00:25:00
     #SBATCH --partition=batch
-    
+
     # *** start of job script ***
 
     srun -N2 --ntasks-per-node=6 --cpus-per-task=4 -r0 gmx_mpi_d mdrun -deffnm mimic -ntomp 4 &

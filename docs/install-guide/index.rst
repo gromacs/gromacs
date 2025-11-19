@@ -834,16 +834,16 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-10. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA 
-    Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16. 
+10. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA
+    Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16.
 11. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
-    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different 
-    target architecture than the compilation machine, ``GMX_SIMD_ARM_SVE_LENGTH`` 
-    should be set to the hardware vector length implemented by the target 
-    machine. There is no expected performance benefit from setting a smaller 
-    value than the implemented vector length, and setting a larger length can 
+    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different
+    target architecture than the compilation machine, ``GMX_SIMD_ARM_SVE_LENGTH``
+    should be set to the hardware vector length implemented by the target
+    machine. There is no expected performance benefit from setting a smaller
+    value than the implemented vector length, and setting a larger length can
     lead to unexpected crashes.
     Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1.
     For maximum performance we strongly suggest the latest gcc compilers,
@@ -1212,14 +1212,14 @@ H5MD trajectory output file format
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `H5MD`_ is a specification for output data from molecular dynamics simulations built on
-the HDF5 format. In |Gromacs| 2026 this is added as an experimental feature. 
+the HDF5 format. In |Gromacs| 2026 this is added as an experimental feature.
 
 Build instructions
 """"""""""""""""""""""""""""""
 
 To enable support for H5MD output |Gromacs| you need to have an installed copy of the
 `HDF5`_ library. The minimum supported version is |GMX_HDF5_MINIMUM_REQUIRED_VERSION|.
-If the library is installed you can build with H5MD support by 
+If the library is installed you can build with H5MD support by
 
 ::
 
@@ -1404,26 +1404,26 @@ Building with PLUMED support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 |Gromacs| bundles the interface from version 2.10 of the `PLUMED library <https://www.plumed.org/>`_
-in its source distribution. The interface is compatible with any PLUMED version. 
+in its source distribution. The interface is compatible with any PLUMED version.
 The interface is enabled by default with |Gromacs|
-unless |Gromacs| is built on Windows. You can explicitly enable the 
+unless |Gromacs| is built on Windows. You can explicitly enable the
 interface with ``-DGMX_USE_PLUMED=ON`` or deactivate it with ``-DGMX_USE_PLUMED=OFF``.
 By default the option is set to ``AUTO``, during the configuration CMake will try
 to activate PLUMED and in case it does not succeed it will output a "soft" warning.
 If the user forces the option ``ON``, when PLUMED cannot be activated the configuration
 will fail with an error message.
-The User Guide contains the instructions on how to use PLUMED in a |Gromacs| simulation. 
+The User Guide contains the instructions on how to use PLUMED in a |Gromacs| simulation.
 
 .. _installing with Neural Network potential support:
 
 Building with Neural Network potential support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To build |Gromacs| with support for Neural Network potentials, it has to be compiled 
+To build |Gromacs| with support for Neural Network potentials, it has to be compiled
 with a suitable machine learning library. At the moment, only models trained in
 `Pytorch <https://pytorch.org/>`_ are supported. To be able to load them in |Gromacs|,
 it has to be built with the Pytorch C++ API or Libtorch, which can be downloaded
-from the `Pytorch website <https://pytorch.org/get-started/locally/>`_. 
+from the `Pytorch website <https://pytorch.org/get-started/locally/>`_.
 The website offers versions including pre-CXX11 and CXX11 ABI versions on Linux.
 You must use the same ABI version as you use when building the rest of
 |Gromacs|, which does not support or test the pre-CXX11 ABI.
@@ -1431,8 +1431,8 @@ So get (or build) the CXX11 ABI version of Libtorch.
 For the same reason, it is also not possible to use the Libtorch version that ships
 with a conda installation of Pytorch, because it is built with the pre-CXX11 ABI by default.
 The NNP interface is enabled by default when a Libtorch installation is found in the
-``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or 
-``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch 
+``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or
+``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch
 installation directory. It may also be explicitly enabled with ``-DGMX_NNPOT=TORCH``
 or disabled with ``-DGMX_NNPOT=OFF``.
 
@@ -1751,7 +1751,7 @@ compiler is the ARM HPC Compiler (``armclang``).
 NVIDIA Grace
 ^^^^^^^^^^^^
 
-For best performance on Grace, use GCC >= 13.1 or LLVM >= 17, and set the 
+For best performance on Grace, use GCC >= 13.1 or LLVM >= 17, and set the
 ``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 -DCMAKE_C_FLAGS=-mcpu=neoverse-v2``
 flags when configuring |Gromacs|.
 
@@ -1760,17 +1760,17 @@ when building without GPU support), performance can be improved by also setting
 the ``-DGMX_SIMD=ARM_NEON_ASIMD`` CMake option.
 
 At minimum any compiler being used for Grace should implement
-neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant 
+neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant
 improvement in Arm performance between gcc-13 and gcc-12 so
-GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag 
+GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag
 ensures that the compiler is not defaulting to the older Armv8-A target.
 
 On both GNU and LLVM, the |Gromacs| CPU version of the short-range non
-bonded interactions implemented with ``NEON SIMD`` instructions 
-significantly outperforms the SVE version. This can be selected by setting 
+bonded interactions implemented with ``NEON SIMD`` instructions
+significantly outperforms the SVE version. This can be selected by setting
 ``GMX_SIMD=ARM_NEON_ASIMD`` at compilation. There can be a small performance
 benefit to using SVE for CPU work outside this kernel, therefore when the
-short-range non bonded interactions run on the GPU it is recommended to stay 
+short-range non bonded interactions run on the GPU it is recommended to stay
 with ``GMX_SIMD=ARM_SVE`` which is the default option when available.
 
 

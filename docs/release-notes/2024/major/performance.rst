@@ -35,7 +35,7 @@ The effect will be strongest for systems with no or weak electrostatics,
 which includes most coarse-grained systems.
 
 :issue:`4861`
-       
+
 Reduced grompp and mdrun setup time for systems with many atom types
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

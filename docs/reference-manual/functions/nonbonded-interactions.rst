@@ -219,15 +219,15 @@ thus does not depend on the path taken), and the force is the negative
 gradient of this potential. Based on the definitions of the potentials above,
 this derivative (i.e., the force) is always zero at infinite separation,
 and in the context of pair potentials this means the potential for each pair
-contribution must be the integral of the force out from infinity back to the 
-current interaction distance. 
+contribution must be the integral of the force out from infinity back to the
+current interaction distance.
 While it is perfectly valid to have an arbitrary constant factor in
 the potential, a natural choice is to define the pair interaction to
 be zero at infinite separation when particles are not really interacting.
 However, when these definitions using infinite-range potentials are
 combined with a cutoff for pair interactions we violate their consistency,
 and the force would no longer be conservative - which in particular means
-the total energy will no longer be conserved. 
+the total energy will no longer be conserved.
 One way to circumvent this is to instead modify the non-bonded
 interaction potentials such that they only have finite range, after which
 the cutoff can be applied. This can either be done as a switching function
@@ -248,16 +248,16 @@ the self-energy term will effectively make the electrostatic potential
 constant (but non-zero) outside the cutoff.
 
 For implementation reasons,
-|Gromacs| presently uses the reaction-field kernel for normal 
+|Gromacs| presently uses the reaction-field kernel for normal
 Coulomb interactions too (with :math:`{\varepsilon_{rf}}={\varepsilon_{r}}`).
 Note that this will give the appearance of a similar constant potential
 outside the cutoff for plain Coulomb electrostatics too. We will try to
 fix this in a future kernel, but since there are very few (if any) cases
-where plain Coulomb is a good choice for electrostatics it has not been 
+where plain Coulomb is a good choice for electrostatics it has not been
 a high priority.
 
 Although the present kernels only support shifting the potential, we do
-plan to bring back complete functionality for switch functions, 
+plan to bring back complete functionality for switch functions,
 so for completeness in the interface we have retained that documentation below.
 
 While the shift modifier will yield conservative forces, the forces will
@@ -287,7 +287,7 @@ force :math:`F_s(r)` can generally be written as:
 .. math::  \begin{array}{rcl}
            F_s(r)~=&~F_\alpha(r)   & r < r_1               \\
            F_s(r)~=&~F_\alpha(r)+S(r)      & r_1 \le r < r_c       \\
-           F_s(r)~=&~0             & r_c \le r     
+           F_s(r)~=&~0             & r_c \le r
            \end{array}
            :label: eqnswitchforce
 

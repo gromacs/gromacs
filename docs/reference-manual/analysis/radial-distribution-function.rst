@@ -9,7 +9,7 @@ Radial distribution functions
 .. math:: \begin{array}{rcl}
           g_{AB}(r)&=&    {\displaystyle \frac{\langle \rho_B(r) \rangle}{\langle\rho_B\rangle_{local}}}         \\
                    &=&    {\displaystyle \frac{1}{\langle\rho_B\rangle_{local}}}{\displaystyle \frac{1}{N_A}}
-                          \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} 
+                          \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B}
                           {\displaystyle \frac{\delta( r_{ij} - r )}{4 \pi r^2}}         \\
           \end{array}
           :label: eqnrdfdefine
@@ -51,8 +51,8 @@ dependent rdf :math:`g_{AB}(r,\theta)`, where the angle :math:`\theta`
 is defined with respect to a certain laboratory axis :math:`{\bf e}`,
 see :numref:`Fig. %s <fig-rdfex>` B.
 
-.. math:: g_{AB}(r,\theta) = {1 \over \langle\rho_B\rangle_{local,\:\theta }} 
-          {1 \over N_A} \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} {\delta( r_{ij} - r ) 
+.. math:: g_{AB}(r,\theta) = {1 \over \langle\rho_B\rangle_{local,\:\theta }}
+          {1 \over N_A} \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} {\delta( r_{ij} - r )
           \delta(\theta_{ij} -\theta) \over 2 \pi r^2 sin(\theta)}
           :label: eqnrdfangleaxis1
 

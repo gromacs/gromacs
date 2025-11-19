@@ -47,7 +47,7 @@ with a AWH interval length of more than 95% of the box size,
 the dimension is now made periodic.
 
 :issue:`2946`
-       
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

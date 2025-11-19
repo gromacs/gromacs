@@ -7,7 +7,7 @@ Miscellaneous
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
-Internal build of FFTW now uses version 3.3.10 
+Internal build of FFTW now uses version 3.3.10
 """"""""""""""""""""""""""""""""""""""""""""""
 
 When the ``-DGMX_BUILD_OWN_FFTW=ON`` option is enabled, we now compile FFTW 3.3.10 instead

@@ -338,12 +338,12 @@ bond lengths :math:`b_{ij}` and :math:`b_{jk}` respectively, we instead have
 
 .. math:: a = \frac{b_{jk}}{b_{ij}+b_{jk}}.
 
-If the order of atoms is changed to *k,j,i*, *a* needs to be 
+If the order of atoms is changed to *k,j,i*, *a* needs to be
 replaced by *1-a*. The energy is now given by
 
 .. math:: V_{lin} = \frac{k_{lin}}{2}\left(\mathbf{x}_j - \mathbf{x}_j^0\right)^2
 
-with :math:`k_{lin}` the force constant. For examples, and a derivation of the forces from the energy function, see ref. \ :ref:`190 <refSpoel2020>`. 
+with :math:`k_{lin}` the force constant. For examples, and a derivation of the forces from the energy function, see ref. \ :ref:`190 <refSpoel2020>`.
 
 Bond-Bond cross term
 ~~~~~~~~~~~~~~~~~~~~
@@ -390,7 +390,7 @@ where :math:`k_{r\theta}` is the force constant, :math:`r_{3e}` is the
           -r_{3e}\right)
           \frac{
                 \mathbf{r}_{i}-\mathbf{r}_j}
-                { \left| \mathbf{r}_{i}-\mathbf{r}_{j}\right| 
+                { \left| \mathbf{r}_{i}-\mathbf{r}_{j}\right|
                 }
           + \left(
             \left| \mathbf{r}_{i}-\mathbf{r}_{j}\right|
@@ -526,7 +526,7 @@ Proper dihedrals: Ryckaert-Bellemans function
   by multiplying every coefficient :math:`\displaystyle C_n` by
   :math:`\displaystyle (-1)^n`.
 
-**Note:** In a force field, the :math:`\displaystyle C_n` coefficients for 
+**Note:** In a force field, the :math:`\displaystyle C_n` coefficients for
 each Ryckaert-Bellemans dihedral should sum to the same value, ideally zero,
 to ensure consistency in the zero point of the potential energy.
 Failing that, energy values and free energy determination (through
@@ -537,7 +537,7 @@ An example of constants for :math:`C` is given in :numref:`Table %s <tab-crb>`.
 
 .. _tab-crb:
 
-.. table:: 
+.. table::
     Constants for Ryckaert-Bellemans potential (\ :math:`\mathrm{kJ mol}^{-1}`).
     :widths: auto
     :align: center

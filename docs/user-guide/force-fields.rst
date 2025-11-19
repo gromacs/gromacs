@@ -33,7 +33,7 @@ Information concerning the force field can be found using the following informat
   antechamber package, which is also distributed separately. There are scripts
   available for converting AMBER systems (set up, for example, with GAFF) to
   |Gromacs| (`amb2gmx.pl <https://github.com/choderalab/mmtools/blob/master/converters/amb2gmx.pl>`__,
-  or `ACPYPE <https://github.com/alanwilter/acpype>`_), but they do require 
+  or `ACPYPE <https://github.com/alanwilter/acpype>`_), but they do require
   `AmberTools <https://ambermd.org/AmberTools.php>`_ installation to work.
 
 .. _AMBER: http://ambermd.org/
@@ -87,7 +87,7 @@ GROMOS
     yet removed the GROMOS force fields, but you should be aware of these
     issues and check if molecules in your system are affected before
     proceeding. Further information is available in
-    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ , 
+    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ ,
     and a longer explanation of our
     decision to remove physically incorrect algorithms can be found at
     `DOI:10.26434/chemrxiv.11474583.v1 <https://doi.org/10.26434/chemrxiv.11474583.v1>`_ .

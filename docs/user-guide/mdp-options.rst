@@ -3695,7 +3695,7 @@ interface implementation follow :ref:`nnpot`.
    .. mdp-value:: mechanical
 
       Mechanical embedding scheme, NNP-MM interactions are treated classically.
-   
+
    .. mdp-value:: electrostatic-model
 
       Electrostatic embedding scheme, NNP-MM interactions are computed by the NNP model.

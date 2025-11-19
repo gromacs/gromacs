@@ -47,7 +47,7 @@ with dimensionality larger than two.
 Allow restraining the rotation of a group of atoms during energy minimization
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Avoid a segfault when using energy minimization together with enforced rotation. 
+Avoid a segfault when using energy minimization together with enforced rotation.
 
 :issue:`4865`
 
@@ -96,7 +96,7 @@ on M1 Macs (and likely other AppleSilicon GPUs).
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Fix legends in AWH data XVG extracted from AWH energy file 
+Fix legends in AWH data XVG extracted from AWH energy file
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 To avoid confusion, dimension legends, in the AWH data file XVG extracted from the AWH energy file
@@ -124,7 +124,7 @@ identical to original DSSP v4.1+.
 Fix editconf -d with -noc
 """""""""""""""""""""""""
 
-Unit cell vectors are now correctly output when running ``gmx editconf -noc -d`` 
+Unit cell vectors are now correctly output when running ``gmx editconf -noc -d``
 which sets the box size to the largest dimensions of the system, but without
 centering.
 
@@ -133,7 +133,7 @@ centering.
 Fix calculation of rotational kinetic energy in gmx traj
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Computing the rotational kinetic energy using ``gmx traj -ekr ekr.xvg`` 
+Computing the rotational kinetic energy using ``gmx traj -ekr ekr.xvg``
 now returns correct results.
 
 :issue:`4889`
@@ -149,7 +149,7 @@ Unlike libstd++, libc++ follows C++ standards more strictly and therefore
 doesn't provide removed standard library classes. To enable compiling of
 |Gromacs| with Clang 16 and libc++, legacy symbols were replaced with modern
 C++17 equivalents in the bundled clFFT sources. The issue only
-affected OpenCL builds of |Gromacs|. 
+affected OpenCL builds of |Gromacs|.
 
 |Gromacs| automatically finds oneAPI libraries in new layout
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -171,7 +171,7 @@ Fixes :issue:`4832`
 Unsupported anisotropic C-rescale rejected at preprocessing time
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-This pressure coupling setting previously resulted in an error at 
+This pressure coupling setting previously resulted in an error at
 simulation runtime instead.
 
 Fixes :issue:`4847`

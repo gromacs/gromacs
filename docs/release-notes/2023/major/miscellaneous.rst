@@ -7,7 +7,7 @@ Miscellaneous
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
-Fix documentation issues for restricted bending potential 
+Fix documentation issues for restricted bending potential
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The actual implementation in the code was correct, but the

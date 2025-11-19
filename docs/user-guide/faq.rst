@@ -81,7 +81,7 @@ Questions concerning system preparation and preprocessing
    You don't need to prepare additional files if you already have all :ref:`itp` and :ref:`top` files prepared through other tools.
 
    Examples for those can be found in the :doc:`System Preparation section of this user guide <../user-guide/system-preparation>`.
-   
+
 #. How can I build in missing atoms?
 
    |Gromacs| has no support for building coordinates of missing non-hydrogen atoms. If your system is missing some part,
