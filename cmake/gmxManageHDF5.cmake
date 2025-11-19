@@ -51,4 +51,12 @@ macro(gmx_manage_hdf5)
             message(FATAL_ERROR "Cannot find HDF5 (minimum version required ${GMX_HDF5_REQUIRED_VERSION}). Disable HDF5 by setting the option GMX_USE_HDF5 to OFF.")
         endif()
     endif()
+
+    # Mark HDF5-related CMake options as "advanced"
+    get_cmake_property(vars VARIABLES)
+    foreach (varname ${vars})
+        if (varname MATCHES "^HDF5_C_LIBRARY_.*")
+            mark_as_advanced(${varname})
+        endif()
+    endforeach()
 endmacro()

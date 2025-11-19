@@ -39,6 +39,7 @@
 # https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification
 option(Python3_ARTIFACTS_INTERACTIVE TRUE
        "Make artifacts specification global and cached.")
+mark_as_advanced(Python3_ARTIFACTS_INTERACTIVE)
 
 # Note: If necessary, the Python location can be hinted with Python3_ROOT_DIR
 # For additional parameters affecting Python installation discovery, see
