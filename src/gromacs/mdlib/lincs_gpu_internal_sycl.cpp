@@ -85,6 +85,7 @@ using mode = sycl::access_mode;
  * \tparam updateVelocities        Whether velocities should be updated this step.
  * \tparam computeVirial           Whether virial tensor should be computed this step.
  * \tparam haveCoupledConstraints  If there are coupled constraints (i.e. LINCS iterations are needed).
+ * \tparam CommandGroupHandler     Type of real or dummy command group handler
  *
  * \param[in]     cgh                            SYCL handler.
  * \param[in]     numConstraintsThreads          Total number of threads.
@@ -105,9 +106,9 @@ using mode = sycl::access_mode;
  *                                               Will be updated if \c updateVirial.
  * \param[in]     pbcAiuc                        Periodic boundary data.
  */
-template<bool updateVelocities, bool computeVirial, bool haveCoupledConstraints>
-auto lincsKernel(sycl::handler& cgh,
-                 const int      numConstraintsThreads,
+template<bool updateVelocities, bool computeVirial, bool haveCoupledConstraints, typename CommandGroupHandler>
+auto lincsKernel(CommandGroupHandler& cgh,
+                 const int            numConstraintsThreads,
                  const AtomPair* __restrict__ gm_constraints,
                  const float* __restrict__ gm_constraintsTargetLengths,
                  const int* __restrict__ gm_coupledConstraintsCounts,
@@ -464,14 +465,13 @@ static void launchLincsKernel(const DeviceStream& deviceStream, const int numCon
 
     const sycl::nd_range<1> rangeAllLincs(numConstraintsThreads, c_threadsPerBlock);
 
-    gmx::syclSubmitWithoutEvent(
-            deviceStream.stream(),
-            [&](sycl::handler& cgh)
-            {
-                auto kernel = lincsKernel<updateVelocities, computeVirial, haveCoupledConstraints>(
-                        cgh, numConstraintsThreads, std::forward<Args>(args)...);
-                cgh.parallel_for<kernelNameType>(rangeAllLincs, kernel);
-            });
+    auto kernelFunctionBuilder =
+            lincsKernel<updateVelocities, computeVirial, haveCoupledConstraints, CommandGroupHandler>;
+    syclSubmitWithoutEvent<kernelNameType>(deviceStream.stream(),
+                                           kernelFunctionBuilder,
+                                           rangeAllLincs,
+                                           numConstraintsThreads,
+                                           std::forward<Args>(args)...);
 }
 
 /*! \brief Select templated kernel and launch it. */

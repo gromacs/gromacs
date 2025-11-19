@@ -109,20 +109,18 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     const sycl::range<2> globalSize{ numAtomsMax, numColumns };
     sycl::queue          q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q,
-                                [&](sycl::handler& cgh)
-                                {
-                                    auto kernel =
-                                            nbnxmKernelTransformXToXq(nb->atdat->xq.get_pointer(),
-                                                                      d_x.get_pointer(),
-                                                                      nb->atomIndices.get_pointer(),
-                                                                      nb->cxy_na.get_pointer(),
-                                                                      nb->cxy_ind.get_pointer(),
-                                                                      grid.cellOffset(),
-                                                                      grid.numAtomsPerCell(),
-                                                                      numColumnsMax * gridId);
-                                    cgh.parallel_for<NbnxmKernelTransformXToXqName>(globalSize, kernel);
-                                });
+    auto kernelFunctionBuilder = nbnxmKernelTransformXToXq;
+    syclSubmitWithoutCghOrEvent<NbnxmKernelTransformXToXqName>(q,
+                                                               kernelFunctionBuilder,
+                                                               globalSize,
+                                                               nb->atdat->xq.get_pointer(),
+                                                               d_x.get_pointer(),
+                                                               nb->atomIndices.get_pointer(),
+                                                               nb->cxy_na.get_pointer(),
+                                                               nb->cxy_ind.get_pointer(),
+                                                               grid.cellOffset(),
+                                                               grid.numAtomsPerCell(),
+                                                               numColumnsMax * gridId);
 }
 
 } // namespace gmx

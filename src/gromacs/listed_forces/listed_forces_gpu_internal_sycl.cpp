@@ -74,8 +74,8 @@ namespace gmx
 using sycl::access::fence_space;
 using mode = sycl::access_mode;
 
-template<bool calcVir, bool calcEner>
-auto bondedKernel(sycl::handler&                   cgh,
+template<bool calcVir, bool calcEner, typename CommandGroupHandler>
+auto bondedKernel(CommandGroupHandler              cgh,
                   const BondedGpuKernelParameters& kernelParams,
                   const DeviceBuffer<t_iatom>      gm_iatoms_[numFTypesOnGpu],
                   float* __restrict__ gm_vTot,
@@ -249,20 +249,17 @@ void ListedForcesGpu::Impl::launchKernel()
     const sycl::nd_range<1> rangeAll(kernelLaunchConfig_.blockSize[0] * kernelLaunchConfig_.gridSize[0],
                                      kernelLaunchConfig_.blockSize[0]);
 
-    gmx::syclSubmitWithoutEvent(deviceStream_.stream(),
-                                [&](sycl::handler& cgh)
-                                {
-                                    auto kernel = bondedKernel<calcVir, calcEner>(
-                                            cgh,
-                                            kernelParams_,
-                                            kernelBuffers_.d_iatoms,
-                                            kernelBuffers_.d_vTot.get_pointer(),
-                                            kernelBuffers_.d_forceParams.get_pointer(),
-                                            d_xq_.get_pointer(),
-                                            d_f_.get_pointer(),
-                                            d_fShift_.get_pointer());
-                                    cgh.parallel_for<kernelNameType>(rangeAll, kernel);
-                                });
+    auto kernelFunctionBuilder = bondedKernel<calcVir, calcEner, CommandGroupHandler>;
+    syclSubmitWithoutEvent<kernelNameType>(deviceStream_.stream(),
+                                           kernelFunctionBuilder,
+                                           rangeAll,
+                                           kernelParams_,
+                                           kernelBuffers_.d_iatoms,
+                                           kernelBuffers_.d_vTot.get_pointer(),
+                                           kernelBuffers_.d_forceParams.get_pointer(),
+                                           d_xq_.get_pointer(),
+                                           d_f_.get_pointer(),
+                                           d_fShift_.get_pointer());
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);

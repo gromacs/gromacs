@@ -61,8 +61,13 @@ namespace test
 namespace
 {
 
-template<bool useConditionalStaticLocalStorage>
-auto buildKernel(sycl::handler& cgh, const int* gm_input, int* gm_output)
+//! Help produce a nice kernel name for tooling
+template<bool useConditional>
+class KernelName;
+
+//! Kernel builder function
+template<bool useConditionalStaticLocalStorage, typename CommandGroupHandler>
+auto buildKernel(CommandGroupHandler cgh, const int* gm_input, int* gm_output)
 {
     // Organize static local storage when using sycl::local_accessor
     using Buffer            = StaticLocalStorage<int, 1>;
@@ -146,14 +151,13 @@ TEST_P(StaticLocalStorageTest, Works)
         dispatchTemplatedFunction(
                 [&](auto useConditionalStaticLocalStorage)
                 {
-                    syclSubmitWithoutEvent(
+                    using TheKernelName = KernelName<useConditionalStaticLocalStorage>;
+                    syclSubmitWithoutEvent<TheKernelName>(
                             deviceStream.stream(),
-                            [&](sycl::handler& cgh)
-                            {
-                                auto kernel = buildKernel<useConditionalStaticLocalStorage>(
-                                        cgh, gm_input, gm_output);
-                                cgh.parallel_for(sycl::nd_range<1>(numThreads, numThreads), kernel);
-                            });
+                            buildKernel<useConditionalStaticLocalStorage, CommandGroupHandler>,
+                            sycl::nd_range<1>(numThreads, numThreads),
+                            gm_input,
+                            gm_output);
                 },
                 GetParam());
         deviceStream.synchronize();

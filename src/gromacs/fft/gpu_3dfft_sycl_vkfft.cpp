@@ -286,21 +286,21 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
 #if GMX_SYCL_ACPP // use AdaptiveCpp_enqueue_custom_operation
-    gmx::syclSubmitWithoutEvent(impl_->queue_,
-                                [&](sycl::handler& cgh)
-                                {
-                                    gmx::syclEnqueueCustomOp(
-                                            cgh,
-                                            [=](sycl::interop_handle& h)
-                                            {
-                                                launchVkFft(impl_->realGrid_,
-                                                            complexGrid_,
-                                                            h.get_native_queue<sc_syclBackend>(),
-                                                            dir,
-                                                            &impl_->application_,
-                                                            &impl_->launchParams_);
-                                            });
-                                });
+    syclSubmitWithCghWithoutEvent(impl_->queue_,
+                                  [&](sycl::handler& cgh)
+                                  {
+                                      gmx::syclEnqueueCustomOp(
+                                              cgh,
+                                              [=](sycl::interop_handle& h)
+                                              {
+                                                  launchVkFft(impl_->realGrid_,
+                                                              complexGrid_,
+                                                              h.get_native_queue<sc_syclBackend>(),
+                                                              dir,
+                                                              &impl_->application_,
+                                                              &impl_->launchParams_);
+                                              });
+                                  });
 #elif GMX_SYCL_DPCPP // submit directly
     launchVkFft(impl_->realGrid_,
                 complexGrid_,

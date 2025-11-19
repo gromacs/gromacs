@@ -104,13 +104,15 @@ public:
     inline void enqueueWait(const DeviceStream& deviceStream)
     {
 #    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION) || defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
-        // Submit an empty operation that depends on all the events recorded.
-        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
-                                    [&](sycl::handler& cgh)
-                                    {
-                                        cgh.depends_on(events_);
-                                        gmx::syclEnqueueCustomOp(cgh, [=](sycl::interop_handle&) {});
-                                    });
+        // Submit an empty operation that depends on all the events recorded
+        // but avoids returning a (useless) event.
+        gmx::syclSubmitWithCghWithoutEvent(deviceStream.stream(),
+                                           [&](sycl::handler& cgh)
+                                           {
+                                               cgh.depends_on(events_);
+                                               gmx::syclEnqueueCustomOp(
+                                                       cgh, [=](sycl::interop_handle&) {});
+                                           });
 #    elif defined(SYCL_EXT_ONEAPI_ENQUEUE_BARRIER)
         // Relies on sycl_ext_oneapi_enqueue_barrier extensions
         deviceStream.stream().ext_oneapi_submit_barrier(events_);

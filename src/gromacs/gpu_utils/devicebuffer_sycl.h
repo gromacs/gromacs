@@ -270,8 +270,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     }
     else
     {
-        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
-                                    [&](sycl::handler& cgh) { cgh.memcpy(dstPtr, hostBuffer, size); });
+        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), dstPtr, hostBuffer, size);
     }
 }
 
@@ -327,8 +326,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     }
     else
     {
-        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
-                                    [&](sycl::handler& cgh) { cgh.memcpy(hostBuffer, srcPtr, size); });
+        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), hostBuffer, srcPtr, size);
     }
 }
 
@@ -361,8 +359,7 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
     }
     else
     {
-        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
-                                    [&](sycl::handler& cgh) { cgh.memcpy(dstPtr, srcPtr, size); });
+        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), dstPtr, srcPtr, size);
     }
 }
 
@@ -390,10 +387,8 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
-    gmx::syclSubmitWithoutEvent(
-            deviceStream.stream(),
-            [&](sycl::handler& cgh)
-            { cgh.memset(buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType)); });
+    gmx::syclMemsetWithoutEvent(
+            deviceStream.stream(), buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType));
 }
 
 /*! \brief Create a texture object for an array of type ValueType.

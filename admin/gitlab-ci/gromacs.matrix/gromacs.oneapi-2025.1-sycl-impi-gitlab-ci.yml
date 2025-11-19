@@ -25,7 +25,6 @@ gromacs:oneapi-2025.1-sycl-mpi:configure:
   variables:
     CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION=ON"
     COMPILER_MAJOR_VERSION: 2025
 
 gromacs:oneapi-2025.1-sycl-mpi:build:
@@ -140,3 +139,36 @@ gromacs:oneapi-2025.1-sycl-mpi:regressiontest-singlerank:
   before_script:
     - !reference [.use-oneapi:base, before_script]
     - !reference [.use-impi-test:base, before_script]
+
+gromacs:oneapi-2025.1-sycl-mpi-handler-free-submission:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-oneapi:base
+   - .use-sycl
+   - .use-mpi
+  rules:
+   - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2025.1-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION=ON"
+    COMPILER_MAJOR_VERSION: 2025
+
+gromacs:oneapi-2025.1-sycl-mpi-handler-free-submission:build:
+  extends:
+    - .gromacs:base:build
+    - .use-ccache
+    - .use-oneapi:base
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2025.1-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+  needs:
+    - job: gromacs:oneapi-2025.1-sycl-mpi-handler-free-submission:configure
+
+# There's no test stage for the handler-free-submission flavour
+# because that code does not work in the current GROMACS CI
+# environment, however tests have passed with more recent drivers and
+# GPUs elsewhere.
