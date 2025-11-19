@@ -764,8 +764,6 @@ written to additional output files and which are described below.
            +------------+---------+------------+--------------------+-------+----------+
 
 
-
-
 Angle of Rotation Groups: Fixed Axis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

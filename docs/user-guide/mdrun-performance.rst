@@ -472,7 +472,6 @@ parallel hardware.
     spatial inhomogeneity of the system.
 
 
-
 Multi-level parallelization: MPI and OpenMP
 ...........................................
 

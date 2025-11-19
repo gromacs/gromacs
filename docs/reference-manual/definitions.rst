@@ -81,8 +81,6 @@ fundamental physical constants (see `NIST homepage <http://nist.gov>`__).
     +--------------+--------+-------+
 
 
-
-
 Consistent
 with these units are a set of derived units, given in
 :numref:`Table %s <table-derivedunits>`
@@ -205,7 +203,6 @@ value is :math:`0.008\,314\,462\,1\mathrm{kJ~mol}^{-1} \mathrm{K}^{-1}`.
     +----------------+----------------------+--------------------------------------------------------------------------+
 
 
-
 Reduced units
 -------------
 
@@ -255,8 +252,6 @@ potentials:
     +-------------+----------------+------------------------------------------+
     | Density     | :math:`\rho^*` | N\ :math:`\sigma ^3~V^{-1}`              |
     +-------------+----------------+------------------------------------------+
-
-
 
 
 Mixed or Double precision

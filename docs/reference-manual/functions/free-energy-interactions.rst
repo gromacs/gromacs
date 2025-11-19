@@ -483,4 +483,3 @@ by setting :math:`r_{scA}=r_{cutoffQ}` and :math:`r_{scB}=r_{cutoffQ}`.
 contribution to :math:`\partial H/ \partial \lambda`: :math:`\frac{\partial{H}}{\partial{\lambda}} = V_{Q}^B(r) - V_{Q}^A(r)`.
 
 
-

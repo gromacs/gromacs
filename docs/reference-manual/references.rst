@@ -2,7 +2,6 @@ Bibliography
 ============
 
 
-
 .. raw:: html
 
    <div id="refs" class="references">

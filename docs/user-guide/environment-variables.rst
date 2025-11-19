@@ -470,7 +470,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
    Please keep these in alphabetical order!
 
 
-
 ``GMX_OCL_DEBUG``
         Use in conjunction with ``OCL_FORCE_CPU`` or with an AMD device.
         It adds the debug flag to the compiler options (-g).

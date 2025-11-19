@@ -336,7 +336,6 @@ This object serves as a snapshot of the system that can be used for analysis or 
    SimulationState simulationState(coordinates, velocities, forces, box, topology);
 
 
-
 Writing the MD Loop
 ~~~~~~~~~~~~~~~~~~~
 

@@ -187,7 +187,6 @@ of the simulation. We list the approximations below.
         +---------------+-------------+------------+
 
 
-
 -     Well, apart from real quantum-dynamical simulations, we can do one
       of two things:
 

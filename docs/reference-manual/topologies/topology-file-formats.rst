@@ -696,7 +696,6 @@ follows:
     ...
 
 
-
     [ atoms ]
     ; nr     type     resnr    residu     atom      cgnr      charge        mass
     #ifdef DeLoof
@@ -803,7 +802,6 @@ by the ``restraint-lambdas`` component.
            +--------------------+-------+-------+-------+---------+-------+---------+---------+
            | no                 | |NOT| | |NOT| | +A    | x       | +     | +B      |         |
            +--------------------+-------+-------+-------+---------+-------+---------+---------+
-
 
 
 Below is an example of a topology which changes from 200 propanols to
