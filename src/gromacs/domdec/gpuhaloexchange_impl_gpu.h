@@ -128,48 +128,58 @@ public:
 private:
     /*! \brief Data transfer wrapper for GPU halo exchange
      * \param [in] sendPtr      send buffer address
+     * \param [in] sendOffset   Offset into send buffer from where to start sending
      * \param [in] sendSize     number of elements to send
      * \param [in] sendRank     rank of destination
      * \param [in] recvPtr      receive buffer address
+     * \param [in] recvOffset   Offset into receive buffer where to start receive data
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
      * \param [in] haloType     whether halo exchange is of coordinates or forces
      */
-    void communicateHaloData(Float3*  sendPtr,
-                             int      sendSize,
-                             int      sendRank,
-                             Float3*  recvPtr,
-                             int      recvSize,
-                             int      recvRank,
-                             HaloType haloType);
+    void communicateHaloData(DeviceBuffer<Float3> sendPtr,
+                             int                  sendOffset,
+                             int                  sendSize,
+                             int                  sendRank,
+                             DeviceBuffer<Float3> recvPtr,
+                             int                  recvOffset,
+                             int                  recvSize,
+                             int                  recvRank,
+                             HaloType             haloType);
 
     /*! \brief Data transfer for GPU halo exchange using peer-to-peer copies
      * \param [inout] sendPtr    address to send data from
+     * \param [in] sendOffset    Offset into send buffer from where to send data
      * \param [in] sendSize      number of atoms to be sent
      * \param [in] sendRank      rank to send data to
      * \param [in] remotePtr     remote address to recv data
      * \param [in] recvRank      rank to recv data from
      * \param [in] haloType      whether halo exchange is of coordinates or forces
      */
-    void communicateHaloDataPeerToPeer(Float3*  sendPtr,
-                                       int      sendSize,
-                                       int      sendRank,
-                                       Float3*  remotePtr,
-                                       int      recvRank,
-                                       HaloType haloType);
+    void communicateHaloDataPeerToPeer(DeviceBuffer<Float3>* sendPtr,
+                                       int                   sendOffset,
+                                       int                   sendSize,
+                                       int                   sendRank,
+                                       DeviceBuffer<Float3>* remotePtr,
+                                       int                   recvRank,
+                                       HaloType              haloType);
 
     /*! \brief Data transfer for GPU halo exchange using GPU-aware MPI
      * \param [in] sendPtr      send buffer address
+     * \param [in] sendOffset   Offset into send buffer from where to send data
      * \param [in] sendSize     number of elements to send
      * \param [in] sendRank     rank of destination
      * \param [in] recvPtr      receive buffer address
+     * \param [in] recvOffset   Offset into receive buffer where to start receive data
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
      */
     void communicateHaloDataGpuAwareMpi(Float3* sendPtr,
+                                        int     sendOffset,
                                         int     sendSize,
                                         int     sendRank,
                                         Float3* recvPtr,
+                                        int     recvOffset,
                                         int     recvSize,
                                         int     recvRank);
 
