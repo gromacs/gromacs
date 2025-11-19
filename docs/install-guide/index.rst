@@ -1208,6 +1208,27 @@ execution width will be restricted to be 32-wide, even on devices that support 6
 When |Gromacs| is built with explicit 64-wide execution (and conflicting support for 32-wide devices),
 any 32-wide devices detected will be not be used.
 
+H5MD trajectory output file format
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`H5MD`_ is a specification for output data from molecular dynamics simulations built on
+the HDF5 format. In |Gromacs| 2026 this is added as an experimental feature. 
+
+Build instructions
+""""""""""""""""""""""""""""""
+
+To enable support for H5MD output |Gromacs| you need to have an installed copy of the
+`HDF5`_ library. The minimum supported version is |GMX_HDF5_MINIMUM_REQUIRED_VERSION|.
+If the library is installed you can build with H5MD support by 
+
+::
+
+    cmake .. -DGMX_USE_HDF5=ON
+
+Some distributed versions of the HDF5 library may be incorrectly configured, leading
+to CMake not detecting its path or version. In such cases, adding
+``-DHDF5_C_COMPILER_EXECUTABLE=''`` (ie. passing an empty string) may solve the issue.
+
 Static linking
 ~~~~~~~~~~~~~~
 
