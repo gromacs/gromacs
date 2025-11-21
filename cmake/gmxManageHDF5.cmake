@@ -48,7 +48,7 @@ macro(gmx_manage_hdf5)
     set(GMX_USE_HDF5 ${HDF5_FOUND} CACHE BOOL "Build GROMACS with HDF5 support (needed for handling files in H5MD format)")
     if(GMX_USE_HDF5)
         if(NOT HDF5_FOUND)
-            message(FATAL_ERROR "Cannot find HDF5 (minimum version required ${GMX_HDF5_REQUIRED_VERSION}). Disable HDF5 by setting the option GMX_USE_HDF5 to OFF.")
+            message(FATAL_ERROR "Cannot build with HDF5 support since HDF5 was not found. Disable HDF5 by setting the option GMX_USE_HDF5=OFF.")
         endif()
     endif()
 
