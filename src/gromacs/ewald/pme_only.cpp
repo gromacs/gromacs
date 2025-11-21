@@ -497,10 +497,6 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             /* Receive the coordinates in place */
             nat             = 0;
             int senderCount = 0;
-            if (pme_pp->useGpuPmePpCommunication)
-            {
-                pme_pp->pmeCoordinateReceiverGpu->prepareToReceiveCoordinates();
-            }
             for (const auto& sender : pme_pp->ppRanks)
             {
                 if (sender.numAtoms > 0)

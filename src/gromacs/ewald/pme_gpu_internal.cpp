@@ -2086,18 +2086,23 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
             }
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
-            // Set up stream dependencies for the streams that
-            // launched kernels.  This is done after all kernels are
-            // launched to avoid delaying launch of any kernel. This
-            // way the dependency-management work will usually overlap
-            // with kernel execution.
-            for (const auto senderIndex : pmeCoordinateReceiverGpu->sendersThatSentCoordinates())
+            // Make the PME stream wait on all the pipeline streams,
+            // whether or not they launched kernels. This is done
+            // after all kernels are launched to avoid delaying launch
+            // of any spread-pipeline kernel. This way the
+            // dependency-management work will usually overlap with
+            // kernel execution.
+            //
+            // In the rare case of a pipeline stream with no kernel
+            // launch, we accept the cost of the unnecessary stream
+            // dependency, as it will usually overlap with the
+            // kernel-execution time of compute kernels in other
+            // pipeline streams. It simplifies the GROMACS code if we
+            // do not keep track of where kernels were launched.
+            for (int senderIndex = 0; senderIndex < numStagesInPipeline; senderIndex++)
             {
-                if (senderIndex >= 0)
-                {
-                    pmeCoordinateReceiverGpu->insertAsDependencyIntoStream(
-                            senderIndex, pmeGpu->archSpecific->pmeStream_);
-                }
+                pmeCoordinateReceiverGpu->insertAsDependencyIntoStream(
+                        senderIndex, pmeGpu->archSpecific->pmeStream_);
             }
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
