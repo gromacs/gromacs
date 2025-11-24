@@ -52,7 +52,6 @@
 #include <string_view>
 
 #include "gromacs/applied_forces/awh/read_params.h"
-#include "gromacs/applied_forces/ramd/read_params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/network.h"
@@ -2593,15 +2592,6 @@ void get_ir(const char*     mdparin,
     setStringEntry(&inp, "wall-atomtype", inputrecStrings->wall_atomtype, nullptr);
     setStringEntry(&inp, "wall-density", inputrecStrings->wall_density, nullptr);
     ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
-
-    /* RAMD */
-    printStringNewline(&inp, "RAMD");
-    ir->bRAMD = getEnum<Boolean>(&inp, "ramd", wi) != Boolean::No;
-    if (ir->bRAMD)
-    {
-        ir->ramdParams = std::make_unique<gmx::RAMDParameters>();
-        read_params(&inp, ir->ramdParams.get(), wi);
-    }
 
     /* COM pulling */
     printStringNewline(&inp, "COM PULLING");

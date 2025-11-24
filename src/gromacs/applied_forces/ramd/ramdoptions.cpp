@@ -109,12 +109,6 @@ const MDLogger& RAMDOptions::logger() const
 
 void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
 {
-    // Copy the content of the colvars input file into a string for latter save in KVT
-    if (!groupsFile_.empty())
-    {
-        groupsString_ = TextReader::readFileToString(groupsFile_);
-    }
-
     // Write groups input file as a string
     treeBuilder.addValue<std::string>(moduleName() + "-" + c_groupsStringTag, groupsString_);
 
@@ -124,18 +118,15 @@ void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBui
     parameters_.groups_.resize(parameters_.ngroups_);
     for (int g = 0; g < parameters_.ngroups_; ++g)
     {
-        parameters_.groups_[g].ligand_group_ = "1SOL";
-        parameters_.groups_[g].receptor_group_ = "2SOL";
+        parameters_.groups_[g].ligand_ = "1SOL";
+        parameters_.groups_[g].receptor_ = "2SOL";
     }
 }
 
 void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
 {
     // Check if active
-    if (!parameters_.active_)
-    {
-        return;
-    }
+    if (!parameters_.active_) return;
 
     if (!tree.keyExists(moduleName() + "-" + c_groupsStringTag))
     {
@@ -148,9 +139,9 @@ void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
     parameters_.groups_.resize(parameters_.ngroups_);
     for (int g = 0; g < parameters_.ngroups_; ++g)
     {
-        parameters_.groups_[g].ligand_group_ = "1SOL";
+        parameters_.groups_[g].ligand_ = "1SOL";
         parameters_.groups_[g].ligand_indices_ = {1, 2, 3};
-        parameters_.groups_[g].receptor_group_ = "2SOL";
+        parameters_.groups_[g].receptor_ = "2SOL";
         parameters_.groups_[g].receptor_indices_ = {4, 5, 6};
         parameters_.groups_[g].force_ = 100.0;
         parameters_.groups_[g].max_dist_ = 1.0;
@@ -166,24 +157,32 @@ void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAnd
         return;
     }
 
+    // Copy the content of the RAMD input file into a string for latter save in KVT
+    if (!groupsFile_.empty())
+    {
+        groupsString_ = TextReader::readFileToString(groupsFile_);
+        readConfigString();
+        parameters_.ngroups_ = static_cast<int>(parameters_.groups_.size());
+    }
+
     // Create input index
     for (int g = 0; g < parameters_.ngroups_; ++g)
     {
-        parameters_.groups_[g].ligand_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].ligand_group_);
-        parameters_.groups_[g].receptor_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].receptor_group_);
+        parameters_.groups_[g].ligand_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].ligand_);
+        parameters_.groups_[g].receptor_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].receptor_);
 
         // Check that group is not empty
         if (parameters_.groups_[g].ligand_indices_.empty())
         {
             GMX_THROW(InconsistentInputError(
                 formatString("Group %s defining RAMD ligand atoms should not be empty.",
-                             parameters_.groups_[g].ligand_group_.c_str())));
+                             parameters_.groups_[g].ligand_.c_str())));
         }
         if (parameters_.groups_[g].receptor_indices_.empty())
         {
             GMX_THROW(InconsistentInputError(
                 formatString("Group %s defining RAMD receptor atoms should not be empty.",
-                             parameters_.groups_[g].receptor_group_.c_str())));
+                             parameters_.groups_[g].receptor_.c_str())));
         }
     }
 
@@ -222,6 +221,62 @@ void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAnd
     //         }
     //     }
     // }
+}
+
+void RAMDOptions::readConfigString()
+{
+    std::string line, key, value;
+    std::istringstream ss(groupsString_);
+
+    while (std::getline(ss, line)) {
+        if (line.find_first_not_of(" \t") == std::string::npos) continue;
+        if (line.find_first_of("#;") != std::string::npos) continue;
+        std::istringstream lineStream(line);
+        lineStream >> key;
+        if (key == "ramd-group")
+        {
+            gmx::RAMDGroup newGroup;
+            while (std::getline(ss, line)) {
+                if (line.find_first_not_of(" \t") == std::string::npos) continue;
+                if (line.find_first_of("#;") != std::string::npos) continue;
+                std::istringstream lineStream(line);
+                lineStream >> key;
+                if (key == "}") {
+                    parameters_.groups_.push_back(newGroup);
+                    break;
+                }
+                lineStream >> value;
+                if (key == "receptor")
+                {
+                    newGroup.receptor_ = value;
+                }
+                if (key == "receptor-pbcatom")
+                {
+                    newGroup.receptor_pbcatom_ = std::stoi(value);
+                }
+                if (key == "ligand")
+                {
+                    newGroup.ligand_ = value;
+                }
+                if (key == "ligand-pbcatom")
+                {
+                    newGroup.ligand_pbcatom_ = std::stoi(value);
+                }
+                if (key == "force")
+                {
+                    newGroup.force_ = std::stod(value);
+                }
+                if (key == "max-dist")
+                {
+                    newGroup.max_dist_ = std::stod(value);
+                }
+                if (key == "r-min-dist")
+                {
+                    newGroup.r_min_dist_ = std::stod(value);
+                }
+            }
+        }
+    }
 }
 
 } // namespace gmx

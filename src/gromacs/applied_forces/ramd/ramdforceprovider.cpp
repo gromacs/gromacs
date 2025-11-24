@@ -27,10 +27,10 @@ RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
     logger_(logger),
     ramdOutputProvider_(ramdOutputProvider),
     random_spherical_direction_generator(parameters.seed_, parameters.old_angle_dist_),
-    direction_(parameters.ngroups_),
-    com_rec_prev_(parameters.ngroups_),
-    com_lig_prev_(parameters.ngroups_),
-    ligand_exited_(parameters.ngroups_, 0),
+    direction_(parameters.groups_.size()),
+    com_rec_prev_(parameters.groups_.size()),
+    com_lig_prev_(parameters.groups_.size()),
+    ligand_exited_(parameters.groups_.size(), 0),
     write_trajectory_(false)
 {}
 
@@ -59,7 +59,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     // Store COM positions for first evaluation
     if (fInput.step_ == 0)
     {
-        for (int g = 0; g < parameters_.ngroups_; ++g)
+        for (size_t g = 0; g < parameters_.groups_.size(); ++g)
         {
             com_rec_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
             GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_rec_prev_" + std::to_string(g) + " = [" +
@@ -192,7 +192,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         }
     }
 
-    for (int g = 0; g < parameters_.ngroups_; ++g)
+    for (size_t g = 0; g < parameters_.groups_.size(); ++g)
     {
         // for (int i = 0; i < 3; ++i)
         // {

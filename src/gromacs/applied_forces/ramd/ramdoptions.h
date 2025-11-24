@@ -68,6 +68,8 @@ public:
 
 private:
 
+    void readConfigString();
+
     //! Parameter values for force & energy evaluation
     RAMDParameters parameters_;
 
