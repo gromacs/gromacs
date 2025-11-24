@@ -37,14 +37,14 @@ const std::string c_seedTag = "seed";
 const std::string c_evalFreqTag = "eval-freq";
 const std::string c_groupsFileTag = "groups-file";
 const std::string c_groupsStringTag = "groups-string";
-
-
-// const std::string c_ngroupsTag = "ngroups";
-// const std::string c_groupReceptorTag = "group1-receptor";
-// const std::string c_groupLigandTag = "group1-ligand";
-// const std::string c_groupForceTag = "group1-force";
-// const std::string c_groupMaxDistTag = "group1-max-dist";
-// const std::string c_groupRMinDistTag = "group1-r-min-dist";
+const std::string c_ngroupsTag = "ngroups";
+const std::string c_groupReceptorTag = "receptor";
+const std::string c_groupReceptorIndicesTag = "receptor-indices";
+const std::string c_groupLigandTag = "ligand";
+const std::string c_groupLigandIndicesTag = "ligand-indices";
+const std::string c_groupForceTag = "force";
+const std::string c_groupMaxDistTag = "max-dist";
+const std::string c_groupRMinDistTag = "r-min-dist";
 
 } // namespace
 
@@ -107,48 +107,6 @@ const MDLogger& RAMDOptions::logger() const
     return *logger_;
 }
 
-void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
-{
-    // Write groups input file as a string
-    treeBuilder.addValue<std::string>(moduleName() + "-" + c_groupsStringTag, groupsString_);
-
-    //TODO: read groups from file
-    // For now, just create one dummy group
-    parameters_.ngroups_ = 1;
-    parameters_.groups_.resize(parameters_.ngroups_);
-    for (int g = 0; g < parameters_.ngroups_; ++g)
-    {
-        parameters_.groups_[g].ligand_ = "1SOL";
-        parameters_.groups_[g].receptor_ = "2SOL";
-    }
-}
-
-void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
-{
-    // Check if active
-    if (!parameters_.active_) return;
-
-    if (!tree.keyExists(moduleName() + "-" + c_groupsStringTag))
-    {
-        GMX_THROW(InconsistentInputError(
-                "Cannot find ramd-groups-string required for colvars simulation."));
-    }
-    groupsString_ = tree[moduleName() + "-" + c_groupsStringTag].cast<std::string>();
-
-    parameters_.ngroups_ = 1;
-    parameters_.groups_.resize(parameters_.ngroups_);
-    for (int g = 0; g < parameters_.ngroups_; ++g)
-    {
-        parameters_.groups_[g].ligand_ = "1SOL";
-        parameters_.groups_[g].ligand_indices_ = {1, 2, 3};
-        parameters_.groups_[g].receptor_ = "2SOL";
-        parameters_.groups_[g].receptor_indices_ = {4, 5, 6};
-        parameters_.groups_[g].force_ = 100.0;
-        parameters_.groups_[g].max_dist_ = 1.0;
-        parameters_.groups_[g].r_min_dist_ = 0.0025;
-    }
-}
-
 void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAndNames)
 {
     // Exit if RAMD module is not active
@@ -162,7 +120,6 @@ void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAnd
     {
         groupsString_ = TextReader::readFileToString(groupsFile_);
         readConfigString();
-        parameters_.ngroups_ = static_cast<int>(parameters_.groups_.size());
     }
 
     // Create input index
@@ -185,42 +142,42 @@ void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAnd
                              parameters_.groups_[g].receptor_.c_str())));
         }
     }
+}
 
-    // // Check that group is not empty
-    // if (params_.nnpIndices_.empty())
-    // {
-    //     GMX_THROW(InconsistentInputError(
-    //             formatString("Group %s defining NN potential input atoms should not be empty.",
-    //                          params_.inputGroup_.c_str())));
-    // }
+void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
+{
+    // Write groups input file as a string
+    treeBuilder.addValue<std::string>(moduleName() + "-" + c_groupsStringTag, groupsString_);
+    for (size_t g = 0; g < parameters_.groups_.size(); ++g)
+    {
+        std::string groupName = moduleName() + "-group-" + std::to_string(g);
+        treeBuilder.addValue<std::vector<Index>>(groupName + "-" + c_groupReceptorIndicesTag, parameters_.groups_[g].receptor_indices_);
+        treeBuilder.addValue<std::vector<Index>>(groupName + "-" + c_groupLigandIndicesTag, parameters_.groups_[g].ligand_indices_);
+    }
+}
 
-    // // Create temporary index for the whole System
-    // auto systemIndices = indexGroupsAndNames.indices("System");
+void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
+{
+    // Check if active
+    if (!parameters_.active_) return;
 
-    // // Sort nnpIndices_ and sysIndices_
-    // std::sort(params_.nnpIndices_.begin(), params_.nnpIndices_.end());
-    // std::sort(systemIndices.begin(), systemIndices.end());
+    if (!tree.keyExists(moduleName() + "-" + c_groupsStringTag))
+    {
+        GMX_THROW(InconsistentInputError(
+                "Cannot find ramd-groups-string required for colvars simulation."));
+    }
 
-    // // Create MM index
-    // params_.mmIndices_.reserve(systemIndices.size());
+    groupsString_ = tree[moduleName() + "-" + c_groupsStringTag].cast<std::string>();
+    readConfigString();
 
-    // // Position in nnpIndices_
-    // size_t j = 0;
-    // // Write to mmIndices_ only the atoms which do not belong to NNP input region
-    // for (size_t i = 0; i < systemIndices.size(); i++)
-    // {
-    //     if (systemIndices[i] != params_.nnpIndices_[j])
-    //     {
-    //         params_.mmIndices_.push_back(systemIndices[i]);
-    //     }
-    //     else
-    //     {
-    //         if (j < params_.nnpIndices_.size() - 1)
-    //         {
-    //             j++;
-    //         }
-    //     }
-    // }
+    for (size_t g = 0; g < parameters_.groups_.size(); ++g)
+    {
+        std::string groupName = moduleName() + "-group-" + std::to_string(g);
+        parameters_.groups_[g].receptor_indices_ =
+            tree[groupName + "-" + c_groupReceptorIndicesTag].cast<std::vector<Index>>();
+        parameters_.groups_[g].ligand_indices_ =
+            tree[groupName + "-" + c_groupLigandIndicesTag].cast<std::vector<Index>>();
+    }
 }
 
 void RAMDOptions::readConfigString()
@@ -277,6 +234,9 @@ void RAMDOptions::readConfigString()
             }
         }
     }
+
+    // Write number of groups for reading KeyValueTreeObject
+    parameters_.ngroups_ = static_cast<int>(parameters_.groups_.size());
 }
 
 } // namespace gmx

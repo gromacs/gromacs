@@ -168,6 +168,11 @@ public:
             return;
         }
 
+        // Set input group indices during pre-processing
+        const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
+        { ramdOptions_.setInputGroupIndices(indexGroupsAndNames); };
+        notifiers->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);
+
         // Writing internal parameters during pre-processing
         const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder)
         { ramdOptions_.writeInternalParametersToKvt(treeBuilder); };
@@ -177,11 +182,6 @@ public:
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { ramdOptions_.setLogger(logger); };
         notifiers->preProcessingNotifier_.subscribe(setLoggerFunction);
-
-        // Set input group indices during pre-processing
-        const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
-        { ramdOptions_.setInputGroupIndices(indexGroupsAndNames); };
-        notifiers->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);
     }
 
     //! Subscribe to simulation setup notifications
