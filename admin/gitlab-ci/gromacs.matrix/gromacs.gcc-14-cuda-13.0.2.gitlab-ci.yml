@@ -7,15 +7,15 @@
 #   Features: GPU direct communications (manual) + update (regression tests with dual GPU)
 #   Scope: configure, build, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 22.04
+#   OS: Ubuntu 24.04
 #   Build type: RelWithDebInfo
-#   Compiler: GCC 13.1
-#   GPU: NVHPC SDK 24.7, CUDA 12.5.1
+#   Compiler: GCC 14.2
+#   GPU: NVHPC SDK 25.9, CUDA 13.0.2
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
 
-gromacs:gcc-13-cuda-12.5.1:configureMPI:
+gromacs:gcc-14-cuda-13.0.2:configureMPI:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
@@ -23,33 +23,33 @@ gromacs:gcc-13-cuda-12.5.1:configureMPI:
     - .use-mpi
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2024/math_libs"
-    COMPILER_MAJOR_VERSION: 13
+    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/math_libs"
+    COMPILER_MAJOR_VERSION: 14
 
-gromacs:gcc-13-cuda-12.5.1:buildMPI:
+gromacs:gcc-14-cuda-13.0.2:buildMPI:
   extends:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
-    - job: gromacs:gcc-13-cuda-12.5.1:configureMPI
+    - job: gromacs:gcc-14-cuda-13.0.2:configureMPI
 
-gromacs:gcc-13-cuda-12.5.1:testMPI:
+gromacs:gcc-14-cuda-13.0.2:testMPI:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_GPU_PME_DECOMPOSITION: 1
@@ -59,9 +59,9 @@ gromacs:gcc-13-cuda-12.5.1:testMPI:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:gcc-13-cuda-12.5.1:buildMPI
+    - job: gromacs:gcc-14-cuda-13.0.2:buildMPI
 
-gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI:
+gromacs:gcc-14-cuda-13.0.2:regressiontest-gpucommupd-MPI:
   # Test parallelism np/ntomp: 4/1
   # Test parallelism GPU: direct communications, update
   extends:
@@ -69,7 +69,7 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -81,7 +81,7 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI:
   tags:
     - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:
-    - job: gromacs:gcc-13-cuda-12.5.1:buildMPI
+    - job: gromacs:gcc-14-cuda-13.0.2:buildMPI
     - job: regressiontests:prepare
   artifacts:
     paths:

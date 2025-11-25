@@ -480,7 +480,7 @@ def get_ucx(args, compiler, gdrcopy):
             return hpccm.building_blocks.ucx(
                 toolchain=toolchain,
                 gdrcopy=use_gdrcopy,
-                version="1.17.0",
+                version="1.19.0",
                 cuda=use_cuda,
                 configure_opts=configure_opts,
             )
@@ -505,7 +505,7 @@ def get_mpi(args, compiler, ucx):
                 # Version last updated April 17, 2025
                 return hpccm.building_blocks.openmpi(
                     toolchain=compiler.toolchain,
-                    version="5.0.3",
+                    version="5.0.8",
                     cuda=use_cuda,
                     ucx=use_ucx,
                     infiniband=False,
