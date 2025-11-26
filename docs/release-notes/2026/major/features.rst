@@ -57,3 +57,14 @@ such as implemented in EMLE. Furthermore, a link atom scheme is now employed to 
 bonds between the NNP and MM regions. In addition, there have been minor performance improvements,
 and the interface now supports both CUDA and ROCm/HIP-builds of LibTorch. For more details on the
 supported features and usage, please see the :ref:`NNPot section in the reference manual <nnpot>`.
+
+Added support for H5MD trajectory file format
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Trajectory data can now be written to the H5MD file format by :ref:`gmx mdrun`. Data written
+to this file format includes positions, velocities, forces, and the simulation box. Chemical bonds
+are also written to the connectivity group. For this release, only lossless output is supported.
+
+Note that support for this file format in |Gromacs| tools is experimental. Analysis tools are
+able to read all files but bugs should be expected. H5MD output from :ref:`gmx trjconv` and
+:ref:`gmx trjcat` is not implemented.

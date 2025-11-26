@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-set(GMX_HDF5_REQUIRED_VERSION "1.10.7")
+set(GMX_HDF5_MINIMUM_REQUIRED_VERSION "1.10.7")
 
 macro(gmx_manage_hdf5)
     # Find an external hdf5 library.
@@ -39,7 +39,7 @@ macro(gmx_manage_hdf5)
         if(HDF5_ALREADY_SEARCHED)
             set(HDF5_FIND_QUIETLY ON)
         endif()
-        find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} COMPONENTS C)
+        find_package(HDF5 ${GMX_HDF5_MINIMUM_REQUIRED_VERSION} COMPONENTS C)
         set(HDF5_ALREADY_SEARCHED TRUE CACHE INTERNAL "True if a search for HDF5 has already been done")
     else()
         set(HDF5_FOUND FALSE FORCE)  # Don't search for HDF5 if user set GMX_USE_HDF5 to OFF
