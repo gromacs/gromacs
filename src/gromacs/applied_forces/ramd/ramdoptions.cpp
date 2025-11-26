@@ -151,8 +151,16 @@ void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBui
     for (size_t g = 0; g < parameters_.groups_.size(); ++g)
     {
         std::string groupName = moduleName() + "-group-" + std::to_string(g);
-        treeBuilder.addValue<std::vector<Index>>(groupName + "-" + c_groupReceptorIndicesTag, parameters_.groups_[g].receptor_indices_);
-        treeBuilder.addValue<std::vector<Index>>(groupName + "-" + c_groupLigandIndicesTag, parameters_.groups_[g].ligand_indices_);
+        auto arrayBuilder = treeBuilder.addUniformArray<Index>(groupName + "-" + c_groupReceptorIndicesTag);
+        for (const auto& val : parameters_.groups_[g].receptor_indices_)
+        {
+            arrayBuilder.addValue(val);
+        }
+        auto arrayBuilder2 = treeBuilder.addUniformArray<Index>(groupName + "-" + c_groupLigandIndicesTag);
+        for (const auto& val : parameters_.groups_[g].ligand_indices_)
+        {
+            arrayBuilder2.addValue(val);
+        }
     }
 }
 
@@ -172,11 +180,21 @@ void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
 
     for (size_t g = 0; g < parameters_.groups_.size(); ++g)
     {
-        std::string groupName = moduleName() + "-group-" + std::to_string(g);
-        parameters_.groups_[g].receptor_indices_ =
-            tree[groupName + "-" + c_groupReceptorIndicesTag].cast<std::vector<Index>>();
-        parameters_.groups_[g].ligand_indices_ =
-            tree[groupName + "-" + c_groupLigandIndicesTag].cast<std::vector<Index>>();
+        std::string groupName = moduleName() + "-group-" + std::to_string(g);        
+        parameters_.groups_[g].receptor_indices_.resize(
+            tree[groupName + "-" + c_groupReceptorIndicesTag].asArray().values().size());
+        for (size_t i = 0; i < parameters_.groups_[g].receptor_indices_.size(); ++i)
+        {
+            parameters_.groups_[g].receptor_indices_[i] =
+                tree[groupName + "-" + c_groupReceptorIndicesTag].asArray().values()[i].cast<Index>();
+        }
+        parameters_.groups_[g].ligand_indices_.resize(
+            tree[groupName + "-" + c_groupLigandIndicesTag].asArray().values().size());
+        for (size_t i = 0; i < parameters_.groups_[g].ligand_indices_.size(); ++i)
+        {
+            parameters_.groups_[g].ligand_indices_[i] =
+                tree[groupName + "-" + c_groupLigandIndicesTag].asArray().values()[i].cast<Index>();
+        }
     }
 }
 
