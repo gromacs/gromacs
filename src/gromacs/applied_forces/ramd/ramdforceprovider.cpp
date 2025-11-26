@@ -84,14 +84,15 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     // Evaluate RAMD every eval_freq steps
     if (fInput.step_ % parameters_.eval_freq_ == 0)
     {
-        GMX_LOG(logger_.info).appendText("==== RAMD ==== evaluation ").appendText(std::to_string(fInput.step_));
+        GMX_LOG(logger_.warning).appendText("==== RAMD ==== evaluation ").appendText(std::to_string(fInput.step_));
         for (int g = 0; g < parameters_.ngroups_; ++g)
         {
+            std::string logPrefix = "==== RAMD group " + std::to_string(g) + " ====";
             DVec com_rec_curr = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
             DVec com_lig_curr = calc_com(fInput.x_, parameters_.groups_[g].ligand_indices_);
             DVec curr_dist_vect;
             pbc_dx_d(&pbc, com_lig_curr, com_rec_curr, curr_dist_vect);
-            // auto curr_dist = std::sqrt(curr_dist_vect.norm2());
+            auto curr_dist = std::sqrt(curr_dist_vect.norm2());
 
     //         if (mpiComm.isMainRank() and debug)
     //         {
@@ -116,50 +117,35 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     //             fprintf(out, "\t%g", curr_dist);
     //         }
 
-    //         if (curr_dist >= params.group[g].max_dist)
-    //         {
-    //             ligand_exited[g] = 1;
-    //             if (!params.connected_ligands)
-    //             {
-    //                 direction[g] = DVec(0.0, 0.0, 0.0);
-    //             }
-    //             if (mpiComm.isMainRank())
-    //             {
-    //                 fprintf(this->log,
-    //                         "==== RAMD ==== RAMD group %d has exited the binding site in step "
-    //                         "%ld\n",
-    //                         g,
-    //                         step);
-    //             }
-    //         }
-    //         else if (ligand_exited[g] == 1)
-    //         {
-    //             ligand_exited[g] = 0;
-    //         }
+            if (curr_dist >= parameters_.groups_[g].max_dist_)
+            {
+                ligand_exited_[g] = 1;
+                if (!parameters_.connected_ligands_)
+                {
+                    direction_[g] = DVec(0.0, 0.0, 0.0);
+                }
+                GMX_LOG(logger_.info).appendText(logPrefix + "group " + std::to_string(g) + " has exited the binding site in step " + std::to_string(fInput.step_));
+            }
+            else if (ligand_exited_[g] == 1)
+            {
+                ligand_exited_[g] = 0;
+            }
 
             // difference of the COM ligand-receptor distance between current and the last evaluation step
             DVec walk_dist_vect;
             pbc_dx_d(&pbc, com_lig_curr - com_rec_curr, com_lig_prev_[g] - com_rec_prev_[g], walk_dist_vect);
             auto walk_dist = std::sqrt(walk_dist_vect.norm2());
 
-    //         if (mpiComm.isMainRank() and debug)
-    //         {
-    //             fprintf(debug,
-    //                     "==== RAMD ==== Previous COM ligand position at [%g, %g, %g]\n",
-    //                     com_lig_prev[g][0],
-    //                     com_lig_prev[g][1],
-    //                     com_lig_prev[g][2]);
-    //             fprintf(debug,
-    //                     "==== RAMD ==== Previous COM receptor position at [%g, %g, %g]\n",
-    //                     com_rec_prev[g][0],
-    //                     com_rec_prev[g][1],
-    //                     com_rec_prev[g][2]);
-    //             fprintf(debug,
-    //                     "==== RAMD ==== Change in receptor-ligand distance since last RAMD "
-    //                     "evaluation "
-    //                     "is %g\n",
-    //                     walk_dist);
-    //         }
+            GMX_LOG(logger_.info).appendText(logPrefix + "Previous COM ligand position at [" +
+                                            std::to_string(com_lig_prev_[g][0]) + ", " +
+                                            std::to_string(com_lig_prev_[g][1]) + ", " +
+                                            std::to_string(com_lig_prev_[g][2]) + "]");
+            GMX_LOG(logger_.info).appendText(logPrefix + "Previous COM receptor position at [" +
+                                            std::to_string(com_rec_prev_[g][0]) + ", " +
+                                            std::to_string(com_rec_prev_[g][1]) + ", " +
+                                            std::to_string(com_rec_prev_[g][2]) + "]");
+            GMX_LOG(logger_.info).appendText(logPrefix + "Change in receptor-ligand"
+                " distance since last RAMD evaluation is " + std::to_string(walk_dist) + "\n");
 
             if (walk_dist < parameters_.groups_[0].r_min_dist_)
             {
@@ -181,8 +167,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         ramdOutputProvider_.addLine(ramdDistanceLine + '\n');
 
         // Exit if all ligand-receptor COM distances are larger than max_dist
-        // if (std::accumulate(ligand_exited_.begin(), ligand_exited_.end(), 0) == parameters_.ngroups_)
-        if (fInput.step_ == 630)
+        if (std::accumulate(ligand_exited_.begin(), ligand_exited_.end(), 0) == parameters_.ngroups_)
         {
             GMX_LOG(logger_.warning).appendTextFormatted("==== RAMD ==== GROMACS will be stopped after %ld steps.\n", fInput.step_);
             write_trajectory_ = true;
@@ -190,13 +175,9 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         }
     }
 
+    // Apply forces to ligand atoms
     for (size_t g = 0; g < parameters_.groups_.size(); ++g)
     {
-        // for (int i = 0; i < 3; ++i)
-        // {
-            // get_pull_coord_value(pull, g * 3 + i, pbc);
-            // apply_external_pull_coord_force(pull, g * 3 + i, direction[g][i] * params.group[g].force);
-        // }
         for (size_t i = 0; i < localAtoms_[g]->numAtomsLocal(); ++i)
         {
             fOutput->forceWithVirial_.force_[localAtoms_[g]->localIndex()[i]][XX] += direction_[g][XX] * parameters_.groups_[g].force_;

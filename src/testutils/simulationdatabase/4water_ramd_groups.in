@@ -1,20 +1,14 @@
 ramd-group {
     receptor 1SOL
     ligand 2SOL
-    force 250
-    max-dist 2.5
-    r-min-dist 0.05
+    force 100
+    max-dist 1.0
+    r-min-dist 0.0025
 }
-
-#ramd-group {
-#    receptor 1SOL
-#    ligand 2SOL
-#}
-
 ramd-group {
-    receptor 2SOL
+    receptor 1SOL
     ligand 3SOL
-    #force 200
-    #max-dist 2.0
-    #r-min-dist 0.003
+    force 100
+    max-dist 1.0
+    r-min-dist 0.0025
 }
