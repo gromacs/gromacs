@@ -80,16 +80,18 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
             }
         }
     }
-    else if (fInput.step_ % parameters_.eval_freq_ == 0)
+    
+    // Evaluate RAMD every eval_freq steps
+    if (fInput.step_ % parameters_.eval_freq_ == 0)
     {
         GMX_LOG(logger_.info).appendText("==== RAMD ==== evaluation ").appendText(std::to_string(fInput.step_));
-    //     for (int g = 0; g < params.ngroup; ++g)
-    //     {
-    //         DVec com_rec_curr = pull->group[g * 2 + 1].x;
-    //         DVec com_lig_curr = pull->group[g * 2 + 2].x;
-    //         DVec curr_dist_vect;
-    //         pbc_dx_d(&pbc, com_lig_curr, com_rec_curr, curr_dist_vect);
-    //         auto curr_dist = std::sqrt(curr_dist_vect.norm2());
+        for (int g = 0; g < parameters_.ngroups_; ++g)
+        {
+            DVec com_rec_curr = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
+            DVec com_lig_curr = calc_com(fInput.x_, parameters_.groups_[g].ligand_indices_);
+            DVec curr_dist_vect;
+            pbc_dx_d(&pbc, com_lig_curr, com_rec_curr, curr_dist_vect);
+            // auto curr_dist = std::sqrt(curr_dist_vect.norm2());
 
     //         if (mpiComm.isMainRank() and debug)
     //         {
@@ -135,10 +137,10 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     //             ligand_exited[g] = 0;
     //         }
 
-    //         // difference of the COM ligand-receptor distance between current and the last evaluation step
-    //         DVec walk_dist_vect;
-    //         pbc_dx_d(&pbc, com_lig_curr - com_rec_curr, com_lig_prev[g] - com_rec_prev[g], walk_dist_vect);
-    //         auto walk_dist = std::sqrt(walk_dist_vect.norm2());
+            // difference of the COM ligand-receptor distance between current and the last evaluation step
+            DVec walk_dist_vect;
+            pbc_dx_d(&pbc, com_lig_curr - com_rec_curr, com_lig_prev_[g] - com_rec_prev_[g], walk_dist_vect);
+            auto walk_dist = std::sqrt(walk_dist_vect.norm2());
 
     //         if (mpiComm.isMainRank() and debug)
     //         {
@@ -159,22 +161,18 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     //                     walk_dist);
     //         }
 
-    //         if (walk_dist < params.group[0].r_min_dist)
-    //         {
-    //             direction[g] = random_spherical_direction_generator();
-    //             if (mpiComm.isMainRank() and debug)
-    //             {
-    //                 fprintf(debug,
-    //                         "==== RAMD ==== New random direction is [%g, %g, %g]\n",
-    //                         direction[g][0],
-    //                         direction[g][1],
-    //                         direction[g][2]);
-    //             }
-    //         }
+            if (walk_dist < parameters_.groups_[0].r_min_dist_)
+            {
+                direction_[g] = random_spherical_direction_generator();
+                GMX_LOG(logger_.warning).appendText("==== RAMD ==== New random direction is [" +
+                                                std::to_string(direction_[g][0]) + ", " +
+                                                std::to_string(direction_[g][1]) + ", " +
+                                                std::to_string(direction_[g][2]) + "]");
+            }
 
-    //         com_lig_prev[g] = com_lig_curr;
-    //         com_rec_prev[g] = com_rec_curr;
-    //     }
+            com_lig_prev_[g] = com_lig_curr;
+            com_rec_prev_[g] = com_rec_curr;
+        }
     }
 
     if (fInput.step_ % parameters_.eval_freq_ == 0)
