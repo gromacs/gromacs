@@ -136,10 +136,10 @@ public:
         gmx::test::TestReferenceChecker checker(testData.rootChecker());
 
         std::unique_ptr<NNPotForceProvider> nnpotForceProvider;
-        EXPECT_NO_THROW(nnpotForceProvider =
+        ASSERT_NO_THROW(nnpotForceProvider =
                                 std::make_unique<NNPotForceProvider>(params_, logger_, mpiComm_));
         MDModulesAtomsRedistributedSignal signal{ box_, x_, std::nullopt };
-        EXPECT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices(signal));
+        ASSERT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices(signal));
 
         // Prepare input for force provider
         ForceProviderInput fInput(x_, params_.numAtoms_, {}, {}, 0.0, 0, box_, mpiComm_, dd_);
@@ -150,7 +150,7 @@ public:
         gmx_enerdata_t      enerdDummy(1, nullptr);
         ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerdDummy);
 
-        EXPECT_NO_THROW(nnpotForceProvider->calculateForces(fInput, &forceProviderOutput));
+        ASSERT_NO_THROW(nnpotForceProvider->calculateForces(fInput, &forceProviderOutput));
 
         checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100000.0, 5e-5));
         checker.checkReal(enerdDummy.term[InteractionFunction::NeuralNetworkPotentialEnergy],

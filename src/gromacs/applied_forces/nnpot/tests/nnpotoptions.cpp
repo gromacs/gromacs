@@ -216,10 +216,10 @@ TEST_F(NNPotOptionsTest, DISABLED_InternalsToKvtAndBack)
         auto                   nnpIndicesBefore = params.nnpIndices_;
         auto                   mmIndicesBefore  = params.mmIndices_;
 
-        EXPECT_NO_THROW(nnpotOptions.writeParamsToKvt(builder.rootObject()));
+        ASSERT_NO_THROW(nnpotOptions.writeParamsToKvt(builder.rootObject()));
         const auto inputTree = builder.build();
 
-        EXPECT_NO_THROW(nnpotOptions.readParamsFromKvt(inputTree));
+        ASSERT_NO_THROW(nnpotOptions.readParamsFromKvt(inputTree));
 
         // Check Internal parameters taken back from KVT
         const NNPotParameters& params2 = nnpotOptions.parameters();
