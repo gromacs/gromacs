@@ -173,12 +173,9 @@ std::string nameOfTest(const ::testing::TestParamInfo<DataSetDimensions>& info)
 
     if (testName.empty())
     {
-        return "Empty";
+        testName.assign("Empty");
     }
-    else
-    {
-        return testName;
-    }
+    return testName;
 }
 
 //! Test fixture for data set builders, inheriting parametrization capabilities.

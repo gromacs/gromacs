@@ -844,14 +844,18 @@ std::vector<int> parseCpuString(const std::string& cpuString)
             {
                 if (i < 0 || (!cpus.empty() && cpus[cpus.size() - 1] >= i))
                 {
-                    return {}; // data in string is bad
+                    // data in string is bad
+                    cpus.clear();
+                    return cpus;
                 }
                 cpus.push_back(i);
             }
         }
         else
         {
-            return {}; // string not well-formatted; interval has 0 or >2 parts
+            // string not well-formatted; interval has 0 or >2 parts
+            cpus.clear();
+            return cpus;
         }
     }
     return cpus;

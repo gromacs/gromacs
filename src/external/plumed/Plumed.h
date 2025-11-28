@@ -4261,13 +4261,16 @@ plumed plumed_create_dlopen2(const char*path,int mode) {
     pimpl=__PLUMED_WRAPPER_STATIC_CAST(plumed_implementation*, p.p);
     /* make sure the handler is closed when plumed is finalized */
     pimpl->dlclose=1;
-    return p;
+  }
+  else
+  {
+    p=plumed_create_invalid();
   }
 #else
   (void) path;
   (void) mode;
 #endif
-  return plumed_create_invalid();
+  return p;
 }
 __PLUMED_WRAPPER_C_END
 

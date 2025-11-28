@@ -2563,8 +2563,6 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
                                                              PbcType           pbcType,
                                                              ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType)
 {
-    std::unique_ptr<VirtualSitesHandler> vsite;
-
     /* check if there are vsites */
     int nvsite = 0;
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
@@ -2585,7 +2583,7 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
 
     if (nvsite == 0)
     {
-        return vsite;
+        return {};
     }
 
     return std::make_unique<VirtualSitesHandler>(mtop, domdec, pbcType, updateGroupingPerMoleculeType);

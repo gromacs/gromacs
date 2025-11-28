@@ -49,6 +49,8 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/basedefinitions.h"
+
 namespace gmx
 {
 
@@ -796,7 +798,11 @@ struct CompileTimeStringJoin
         };
         (append(inputStrings), ...);
         internalStorage[bufferLength] = 0;
+        // Named return-value-optimization is not needed at compile time,
+        // perhaps this is a compiler bug.
+        CLANG_DIAGNOSTIC_IGNORE_WNRVO;
         return internalStorage;
+        CLANG_DIAGNOSTIC_RESET_WNRVO;
     }
     // Give the joined string static storage
     static constexpr auto stringArray = impl();
