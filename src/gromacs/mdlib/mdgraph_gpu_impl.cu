@@ -131,7 +131,7 @@ void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchroni
         }
         else if (ppRank_ == 0)
         {
-            // rank 0 enqueues recieved event
+            // rank 0 enqueues received event
             GpuEventSynchronizer* eventToEnqueue;
 #    if GMX_MPI
             MPI_Recv(&eventToEnqueue,

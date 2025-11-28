@@ -204,7 +204,7 @@ static inline void atomicFetchAddLocal(T* val, const T delta)
     atomicFetchAddLocal<T>(*val, delta);
 }
 
-// \brief Staggered atomic force component accummulation into global memory to reduce clashes
+// \brief Staggered atomic force component accumulation into global memory to reduce clashes
 //
 // Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
 // accumulate different force components at the same time.
@@ -239,7 +239,7 @@ static inline T atomicLoad(T& val)
      *
      * Since we use relaxed memory order, normal loads should be safe for small datatypes.
      * Allegedly, datatypes up to 128 bytes should be fine, but we only use floats, so we have
-     * a very concervative 4-byte limit here.
+     * a very conservative 4-byte limit here.
      * As a demonstration of correctness, we don't use atomic loads in CUDA and it's doing fine.
      * See https://github.com/AdaptiveCpp/AdaptiveCpp/issues/752 */
     static_assert(sizeof(T) <= 4);

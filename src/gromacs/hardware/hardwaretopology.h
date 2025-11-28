@@ -204,7 +204,7 @@ public:
      *
      * The indices of packages, cores and PUs correspond to the  indices in this hardware
      * topology, rather than the global/physical rank in the system, meaning they are consistent
-     * with the contents of the vectors in the machine.packags[].cores[].processingUnits[] hierarchy.
+     * with the contents of the vectors in the machine.packages[].cores[].processingUnits[] hierarchy.
      */
     struct LogicalProcessor
     {

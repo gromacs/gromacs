@@ -522,14 +522,14 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
                                          : gmx::PinningPolicy::CannotBePinned);
 
-    int mimimumNumEnergyGroupNonbonded = inputrec.opts.ngener;
+    int minimumNumEnergyGroupNonbonded = inputrec.opts.ngener;
     if (inputrec.opts.ngener - inputrec.nwall == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
          * support in the non-bondeds kernels, since all non-bonded energy
          * contributions go to the first element of the energy group matrix.
          */
-        mimimumNumEnergyGroupNonbonded = 1;
+        minimumNumEnergyGroupNonbonded = 1;
     }
 
     auto nbat = std::make_unique<nbnxn_atomdata_t>(
@@ -540,7 +540,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             chooseLJPmeCombinationRule(forcerec),
             forcerec.nbfp,
             false,
-            mimimumNumEnergyGroupNonbonded,
+            minimumNumEnergyGroupNonbonded,
             (useGpuForNonbonded || emulateGpu) ? 1 : gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded));
 
     if (forcerec.ic->vdw.type == VanDerWaalsType::Pme)

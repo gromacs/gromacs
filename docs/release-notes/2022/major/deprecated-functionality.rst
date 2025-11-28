@@ -70,7 +70,7 @@ OpenCL to be removed as a GPU framework
 :issue:`3818` Work is underway for ports to AMD and Intel GPUs, and it
 is likely that those ports will not be based on the current |Gromacs|
 OpenCL port. Nvidia GPUs are targeted by the CUDA port, and no changes
-are expectd there. The core team can't maintain, test, and extend up
+are expected there. The core team can't maintain, test, and extend up
 to 4 ports with current resource levels. Since there are no prospects
 of an emerging GPU vendor in HPC needing OpenCL support, we will
 remove the OpenCL port once AMD and Intel support is established in

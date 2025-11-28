@@ -2750,7 +2750,7 @@ public:
     gmx_ddbox_t ddbox_ = { 0 };
     //! Organization of the DD grids
     DDGridSetup ddGridSetup_;
-    //! Organzation of the DD ranks
+    //! Organization of the DD ranks
     DDRankSetup ddRankSetup_;
     //! The communication setup for the domain decomposition, both PP and PME
     CommSetup commSetup_;

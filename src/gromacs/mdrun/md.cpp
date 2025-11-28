@@ -1154,7 +1154,7 @@ void gmx::LegacySimulator::do_md()
         const bool needHalfStepKineticEnergy =
                 (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
 
-        // Parrinello-Rahman requires the pressure to be availible before the update to compute
+        // Parrinello-Rahman requires the pressure to be available before the update to compute
         // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
         const bool doParrinelloRahman =
                 (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
@@ -1582,7 +1582,7 @@ void gmx::LegacySimulator::do_md()
                     if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
                         || (!runScheduleWork_->stepWork.useGpuFBufferOps))
                     {
-                        // The PME forces were recieved to the host, and reduced on the CPU with the
+                        // The PME forces were received to the host, and reduced on the CPU with the
                         // rest of the forces computed on the GPU, so the final forces have to be
                         // copied back to the GPU. Or the buffer ops were not offloaded this step,
                         // so the forces are on the host and have to be copied
@@ -1838,7 +1838,7 @@ void gmx::LegacySimulator::do_md()
         /* #############  END CALC EKIN AND PRESSURE ################# */
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of
-           the virial that should probably be addressed eventually. state->veta has better properies,
+           the virial that should probably be addressed eventually. state->veta has better properties,
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 

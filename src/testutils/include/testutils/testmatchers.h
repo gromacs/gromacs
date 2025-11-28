@@ -66,7 +66,7 @@ namespace test
 class FloatingPointTolerance;
 
 /*! \brief Make matcher for floats for use with GoogleMock that compare
- * equal when \c tolerance is satisifed.
+ * equal when \c tolerance is satisfied.
  *
  * Used like
  *
@@ -75,7 +75,7 @@ class FloatingPointTolerance;
 testing::Matcher<std::tuple<float, float>> FloatEq(const FloatingPointTolerance& tolerance);
 
 /*! \brief Make matcher for doubles for use with GoogleMock that compare
- * equal when \c tolerance is satisifed.
+ * equal when \c tolerance is satisfied.
  *
  * Used like
  *
@@ -84,7 +84,7 @@ testing::Matcher<std::tuple<float, float>> FloatEq(const FloatingPointTolerance&
 testing::Matcher<std::tuple<double, double>> DoubleEq(const FloatingPointTolerance& tolerance);
 
 /*! \brief Make matcher for reals for use with GoogleMock that compare
- * equal when \c tolerance is satisifed.
+ * equal when \c tolerance is satisfied.
  *
  * Used like
  *
@@ -93,7 +93,7 @@ testing::Matcher<std::tuple<double, double>> DoubleEq(const FloatingPointToleran
 testing::Matcher<std::tuple<real, real>> RealEq(const FloatingPointTolerance& tolerance);
 
 /*! \brief Make matcher for RVecs for use with GoogleMock that compare
- * equal when \c tolerance is satisifed.
+ * equal when \c tolerance is satisfied.
  *
  * Used like
  *

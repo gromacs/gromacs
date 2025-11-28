@@ -72,7 +72,7 @@ static __forceinline__ __device__ void atomicAdd(float3& a, const float3 b)
     atomicAdd(&a.z, b.z);
 }
 
-/* \brief Staggered atomic force component accummulation into global memory to reduce clashes
+/* \brief Staggered atomic force component accumulation into global memory to reduce clashes
  *
  * Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
  * accumulate different force components at the same time.

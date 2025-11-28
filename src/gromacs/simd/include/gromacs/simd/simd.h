@@ -763,7 +763,7 @@ using Simd4NReal = Simd4NFloat;
    GMX_SIMD_HAVE_REAL.
 
    Such code is expected to include simd.h to get those symbols
-   defined, but the actual definitions are in the implemention headers
+   defined, but the actual definitions are in the implementation headers
    included by simd.h. check-source.py is not a full preprocessor, so
    it does not see the definitions in the implementation headers as
    belonging to simd.h, thus it cannot check that simd.h is being used

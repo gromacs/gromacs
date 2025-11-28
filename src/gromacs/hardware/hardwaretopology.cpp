@@ -123,7 +123,7 @@ std::unordered_set<int> getAffinityList()
  *                                                                           *
  *****************************************************************************/
 
-/*! \brief Utlility function to renumber and translate low-level APIC info to topology
+/*! \brief Utility function to renumber and translate low-level APIC info to topology
  *
  * \param logicalProcessors Logical processor information according to the CpuInfo
  *                          structure. Note that the indices refer

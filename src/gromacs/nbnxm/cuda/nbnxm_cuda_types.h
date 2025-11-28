@@ -87,13 +87,13 @@ struct NbnxmGpu
     int* cxy_na = nullptr;
     /*! \brief number of elements in cxy_na */
     int ncxy_na = 0;
-    /*! \brief number of elements allocated allocated in device buffer */
+    /*! \brief number of elements allocated in device buffer */
     int ncxy_na_alloc = 0;
     /*! \brief x buf ops cell index mapping */
     int* cxy_ind = nullptr;
     /*! \brief number of elements in cxy_ind */
     int ncxy_ind = 0;
-    /*! \brief number of elements allocated allocated in device buffer */
+    /*! \brief number of elements allocated in device buffer */
     int ncxy_ind_alloc = 0;
     /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;

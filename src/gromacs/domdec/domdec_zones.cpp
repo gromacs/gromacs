@@ -243,7 +243,7 @@ void gmx::DomdecZones::setSizes(const gmx_domdec_t&   dd,
         {
             RVec corner;
 
-            /* Set up a zone corner at x=0, ignoring trilinic couplings */
+            /* Set up a zone corner at x=0, ignoring triclinic couplings */
             corner[XX] = 0;
             if ((c & 1) == 0)
             {

@@ -157,7 +157,7 @@ static void set_tric_dir(const gmx::IVec* numDomains, gmx_ddbox_t* ddbox, const 
          * v[i][i]=1 and v[i][d]!=0 for triclinic dimensions, while the third
          * component is zero. These are used for computing the distance
          * to a triclinic plane given the distance along dimension d.
-         * Set the trilinic skewing factor that translates
+         * Set the triclinic skewing factor that translates
          * the thickness of a slab perpendicular to this dimension
          * into the real thickness of the slab.
          */

@@ -217,7 +217,7 @@ static gmx_inline std::array<gmx::SimdBool, N> genBoolArr(F f)
 /*! \brief Returns the sum over an array of SimdReal elements
  *
  * \tparam N  The size of the array
- * \tparam a  The elements to sum over
+ * \param  a  The elements to sum over
  */
 template<size_t N>
 static gmx_inline gmx::SimdReal sumArray(const std::array<gmx::SimdReal, N>& a)
