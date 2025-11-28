@@ -26,7 +26,8 @@ gromacs:clang-18-cuda-12.6.3:configure:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON"
+    # Set CMAKE_CUDA_ARCHITECTURES to avoid compatibility issues between sm_90 PTX and sm_120 device in our CI; see #5444 for details; needed for CUDA < 12.8
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     COMPILER_MAJOR_VERSION: 18
 
