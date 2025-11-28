@@ -189,8 +189,7 @@ static void setupUnitsModule(const hid_t modulesGroup, const char* unitSystem = 
     setAttribute(group, c_urlAttributeKey, url);
 }
 } // namespace
-
-#endif
+#endif // GMX_USE_HDF5
 
 H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
 {
@@ -264,102 +263,6 @@ void H5md::flush(bool throwExceptionUponError)
 
 #else
     GMX_UNUSED_VALUE(throwExceptionUponError);
-#endif
-}
-
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::setAuthor(const std::string& authorName)
-{
-#if GMX_USE_HDF5
-    const auto [authorGroup, groupGuard] =
-            makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/author"));
-    setAttribute(authorGroup, "name", authorName);
-#else
-    GMX_UNUSED_VALUE(authorName);
-#endif
-}
-
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-std::optional<std::string> H5md::author()
-{
-#if GMX_USE_HDF5
-    if (objectExists(file_, "h5md/author"))
-    {
-        const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/author"));
-        return getAttribute<std::string>(group, "name");
-    }
-    else
-    {
-        return std::nullopt;
-    }
-
-#else
-    throw gmx::NotImplementedError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
-}
-
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::setCreatorProgramName(const std::string& creatorName)
-{
-#if GMX_USE_HDF5
-    const auto [creatorGroup, groupGuard] =
-            makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/creator"));
-    setAttribute(creatorGroup, "name", creatorName);
-#else
-    GMX_UNUSED_VALUE(creatorName);
-#endif
-}
-
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-std::optional<std::string> H5md::creatorProgramName()
-{
-#if GMX_USE_HDF5
-    if (objectExists(file_, "h5md/creator"))
-    {
-        const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/creator"));
-        return getAttribute<std::string>(group, "name");
-    }
-    else
-    {
-        return std::nullopt;
-    }
-
-#else
-    throw gmx::NotImplementedError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
-#endif
-}
-
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::setCreatorProgramVersion(const std::string& version)
-{
-#if GMX_USE_HDF5
-    const auto [creatorGroup, groupGuard] =
-            makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/creator"));
-    setAttribute(creatorGroup, "version", version);
-#else
-    GMX_UNUSED_VALUE(version);
-#endif
-}
-
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-std::optional<std::string> H5md::creatorProgramVersion()
-{
-#if GMX_USE_HDF5
-    if (objectExists(file_, "h5md/creator"))
-    {
-        const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/creator"));
-        return getAttribute<std::string>(group, "version");
-    }
-    else
-    {
-        return std::nullopt;
-    }
-
-#else
-    throw gmx::NotImplementedError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
