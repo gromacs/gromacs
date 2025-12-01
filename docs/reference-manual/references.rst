@@ -2703,4 +2703,17 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+   
+.. raw:: html
 
+   <div id="refKokh20">
+
+.. _refKokh20:
+
+:sup:`196` D. B. Kokh, B. Doser, S. Richter, F. Ormersbach, X. Cheng, and R.C. Wade, "A Workflow for Exploring Ligand Dissociation from a Macromolecule: Efficient
+    Random Acceleration Molecular Dynamics Simulation and Interaction Fingerprints Analysis of
+    Ligand Trajectories" J. Chem Phys. **158** 125102 (2020).
+
+.. raw:: html
+
+   </div>
