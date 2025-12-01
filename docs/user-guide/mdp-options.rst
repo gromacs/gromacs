@@ -2315,7 +2315,7 @@ Random Acceleration Molecular Dynamics (RAMD) is a method to carry out
 molecular dynamics simulations with an additional randomly oriented force
 applied to a molecule in the system.
 
-.. mdp:: ramd
+.. mdp:: ramd-active
 
    .. mdp-value:: no
 
@@ -2339,10 +2339,11 @@ applied to a molecule in the system.
    effect on the relative dissociation times of different compounds. It is
    recommended to use default value.
 
-.. mdp:: ramd-force-out-freq
+.. mdp:: ramd-out-freq
 
    (100)
-   This ramd parameter resets pull-nstxout and pull-nstfout.
+   Interval for writing out the COM distances of all RAMD groups
+   (0 is never) to the ``ramd.xvg`` file.
 
 .. mdp:: ramd-groups-file
 
@@ -2352,6 +2353,20 @@ applied to a molecule in the system.
    working directory when :ref:`gmx grompp` is called.
 
 .. mdp:: ramd-pbc-ref-prev-step-com
+
+   .. mdp-value:: no
+
+      Use the reference atom, defined in (:mdp:`ramd-groups-file`), for the
+      treatment of periodic boundary conditions.
+
+   .. mdp-value:: yes
+
+      Use the COM of the previous step as reference for the treatment
+      of periodic boundary conditions. The reference is initialized
+      using the reference atom, defined in (:mdp:`ramd-groups-file`), which should
+      be located centrally in the group. Using the COM from the
+      previous step can be useful if one or more pull groups are large or
+      very flexible.
 
    (yes)
    The value will be forwarded to pull-pbc-ref-prev-step-com. Default value is 'yes'.

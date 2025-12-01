@@ -56,7 +56,7 @@ struct RAMDParameters
     //! Initialization number for pseudo random number generator
     int64_t seed_ = 1234;
     
-    //! Number of MD steps in one RAMD step
+    //! Interval for evaluating the COM distance and possibly changing the force direction
     int eval_freq_ = 50;
 
     //! Number of RAMD groups
@@ -65,8 +65,11 @@ struct RAMDParameters
     //! List of RAMD receptor-ligand pairs
     std::vector<RAMDGroup> groups_ = {};
 
-    //! Every 'force_out_freq' steps detailed output of forces will be written
-    int force_out_freq_ = 100;
+    //! Interval for writing out the COM distances of all RAMD groups
+    int out_freq_ = 100;
+
+    //! Use previous step COM as PBC reference
+    bool pbc_ref_prev_step_com_ = false;
 
     //! Use old angle distribution
     bool old_angle_dist_ = false;

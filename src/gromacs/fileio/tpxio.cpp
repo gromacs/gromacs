@@ -1597,38 +1597,6 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         ir->bAdress = FALSE;
     }
 
-    /* RAMD */
-    {
-        if (file_version >= tpxv_RAMD)
-        {
-            serializer->doBool(&ir->bRAMD);
-
-            if (ir->bRAMD)
-            {
-                if (serializer->reading())
-                {
-                    ir->ramdParams = std::make_unique<gmx::RAMDParameters>();
-                }
-                serializer->doInt64(&ir->ramdParams->seed_);
-                serializer->doInt(&ir->ramdParams->ngroups_);
-                if (serializer->reading())
-                {
-                    ir->ramdParams->groups_.resize(ir->ramdParams->ngroups_);
-                }
-                for (int g = 0; g < ir->ramdParams->ngroups_; g++)
-                {
-                    serializer->doReal(&ir->ramdParams->groups_[g].force_);
-                    serializer->doReal(&ir->ramdParams->groups_[g].max_dist_);
-                    serializer->doReal(&ir->ramdParams->groups_[g].r_min_dist_);
-                }
-                serializer->doInt(&ir->ramdParams->eval_freq_);
-                serializer->doInt(&ir->ramdParams->force_out_freq_);
-                serializer->doBool(&ir->ramdParams->old_angle_dist_);
-                serializer->doBool(&ir->ramdParams->connected_ligands_);
-            }
-        }
-    }
-
     /* pull stuff */
     {
         PullingAlgorithm ePullOld = PullingAlgorithm::Umbrella;

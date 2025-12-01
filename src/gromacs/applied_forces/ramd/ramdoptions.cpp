@@ -35,9 +35,9 @@ std::string moduleName()
 const std::string c_activeTag = "active";
 const std::string c_seedTag = "seed";
 const std::string c_evalFreqTag = "eval-freq";
+const std::string c_outFreqTag = "out-freq";
 const std::string c_groupsFileTag = "groups-file";
 const std::string c_groupsStringTag = "groups-string";
-const std::string c_ngroupsTag = "ngroups";
 const std::string c_groupReceptorTag = "receptor";
 const std::string c_groupReceptorIndicesTag = "receptor-indices";
 const std::string c_groupLigandTag = "ligand";
@@ -45,6 +45,9 @@ const std::string c_groupLigandIndicesTag = "ligand-indices";
 const std::string c_groupForceTag = "force";
 const std::string c_groupMaxDistTag = "max-dist";
 const std::string c_groupRMinDistTag = "r-min-dist";
+const std::string c_pbcRefPrevStepComTag = "pbc-ref-prev-step-com";
+const std::string c_oldAngleDistTag = "old-angle-dist";
+const std::string c_connectedLigandsTag = "connected-ligands";
 
 } // namespace
 
@@ -54,7 +57,11 @@ void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
     addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
     addMdpTransformFromString<std::int64_t>(rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
     addMdpTransformFromString<int>(rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
+    addMdpTransformFromString<int>(rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_outFreqTag);
     addMdpTransformFromString<std::string>(rules, stringIdentityTransform, RAMDModuleInfo::sc_name, c_groupsFileTag);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_pbcRefPrevStepComTag);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_oldAngleDistTag);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_connectedLigandsTag);
 }
 
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -67,7 +74,12 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
     {
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_evalFreqTag, parameters_.eval_freq_);
+        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_outFreqTag, parameters_.out_freq_);
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_groupsFileTag, groupsFile_);
+        addMdpOutputValue(
+                builder, RAMDModuleInfo::sc_name, c_pbcRefPrevStepComTag, parameters_.pbc_ref_prev_step_com_);
+        addMdpOutputValue(
+                builder, RAMDModuleInfo::sc_name, c_connectedLigandsTag, parameters_.connected_ligands_);
     }
 }
 
@@ -77,7 +89,11 @@ void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
     section.addOption(Int64Option(c_seedTag.c_str()).store(&parameters_.seed_));
     section.addOption(IntegerOption(c_evalFreqTag.c_str()).store(&parameters_.eval_freq_));
+    section.addOption(IntegerOption(c_outFreqTag.c_str()).store(&parameters_.out_freq_));
     section.addOption(StringOption(c_groupsFileTag.c_str()).store(&groupsFile_));
+    section.addOption(BooleanOption(c_pbcRefPrevStepComTag.c_str()).store(&parameters_.pbc_ref_prev_step_com_));
+    section.addOption(BooleanOption(c_oldAngleDistTag.c_str()).store(&parameters_.old_angle_dist_));
+    section.addOption(BooleanOption(c_connectedLigandsTag.c_str()).store(&parameters_.connected_ligands_));
 }
 
 bool RAMDOptions::active() const
