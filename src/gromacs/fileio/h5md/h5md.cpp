@@ -49,6 +49,7 @@
 #include <optional>
 #include <string>
 
+#include "gromacs/fileio/h5md/h5md_wrapper.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/mtop_util.h"
@@ -771,7 +772,35 @@ bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
     }
     return frameWasRead;
 }
+
 #endif
+
+H5md* makeH5md(const std::filesystem::path& fileName, H5mdFileMode mode)
+{
+    return new gmx::H5md(fileName, mode);
+}
+
+void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec& inputRecord)
+{
+    h5md->setupFileFromInput(topology, inputRecord);
+}
+
+void writeNextFrame(H5md*                h5md,
+                    ArrayRef<const RVec> positions,
+                    ArrayRef<const RVec> velocities,
+                    ArrayRef<const RVec> forces,
+                    const matrix         box,
+                    const int64_t        step,
+                    const double         time)
+{
+    h5md->writeNextFrame(positions, velocities, forces, box, step, time);
+}
+
+//! Deallocate \c h5md
+void destroyH5md(H5md* h5md)
+{
+    delete h5md;
+}
 
 } // namespace gmx
 

@@ -78,6 +78,9 @@ PmeCoordinateReceiverGpu::Impl::Impl(MPI_Comm                     comm,
                 std::make_unique<GpuEventSynchronizer>(),
                 { 0, 0 } });
     }
+#if !GMX_MPI
+    GMX_UNUSED_VALUE(comm_);
+#endif
 }
 
 PmeCoordinateReceiverGpu::Impl::~Impl() = default;

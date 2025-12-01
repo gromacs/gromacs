@@ -46,7 +46,6 @@
 
 #include "gromacs/compat/pointers.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -128,34 +127,6 @@ extern template void writeKvtCheckpointValue(const real&               value,
                                              std::string_view          name,
                                              std::string_view          identifier,
                                              KeyValueTreeObjectBuilder kvtBuilder);
-
-/*! \libinternal
- * \brief Provides the MDModules with the checkpointed data on the main rank.
- */
-struct MDModulesCheckpointReadingDataOnMain
-{
-    //! The data of the MDModules that is stored in the checkpoint file
-    const KeyValueTreeObject& checkpointedData_;
-};
-
-/*! \libinternal
- * \brief Provides the MDModules with the communication record to broadcast.
- */
-struct MDModulesCheckpointReadingBroadcast
-{
-    //! The communicator
-    MPI_Comm communicator_;
-    //! Whether the run is executed in parallel
-    bool isParallelRun_;
-};
-
-/*! \libinternal \brief Writing the MDModules data to a checkpoint file.
- */
-struct MDModulesWriteCheckpointData
-{
-    //! Builder for the Key-Value-Tree to store the MDModule checkpoint data
-    KeyValueTreeObjectBuilder builder_;
-};
 
 } // namespace gmx
 

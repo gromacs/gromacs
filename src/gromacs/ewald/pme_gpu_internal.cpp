@@ -1506,9 +1506,9 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
                 &pmeGpu->nAtomsAlloc, &pmeGpu->nvshmemParams->nAtomsAlloc_symmetric, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-        int myRank     = -1;
         int numPpRanks = pmeGpu->nvshmemParams->ppRanksRef.size();
 #if GMX_MPI
+        int myRank = -1;
         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
         MPI_Bcast(&numPpRanks, 1, MPI_INT, myRank, MPI_COMM_WORLD);
 #endif

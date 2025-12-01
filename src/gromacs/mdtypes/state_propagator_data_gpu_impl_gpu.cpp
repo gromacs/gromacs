@@ -199,6 +199,8 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, MP
     {
 #    if GMX_MPI
         MPI_Allreduce(&numAtomsPadded, &maxNumAtomsPadded, 1, MPI_INT, MPI_MAX, mpiCommMySim);
+#    else
+        GMX_UNUSED_VALUE(mpiCommMySim);
 #    endif
     }
 

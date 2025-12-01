@@ -144,6 +144,9 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
                          receiver.rankId,
                          eCommType_FORCES_GPU_EVENT_RECORDED,
                          comm_);
+#else
+                GMX_UNUSED_VALUE(i);
+                GMX_UNUSED_VALUE(d_f);
 #endif
             }
             i++;

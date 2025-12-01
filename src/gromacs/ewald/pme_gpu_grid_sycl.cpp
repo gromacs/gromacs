@@ -578,6 +578,7 @@ public:
     }
 };
 
+#if GMX_MPI
 /*! \brief Submits a GPU grid kernel
  *
  * \tparam    Kernel           The class containing a static kernel() method to return
@@ -612,7 +613,6 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
             q, kernelFunctionBuilder, range, myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
 }
 
-#if GMX_MPI
 /*! \brief
  * Utility function to send and recv halo data from neighboring ranks
  */
@@ -908,6 +908,7 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
     }
 #else
     GMX_UNUSED_VALUE(pmeGpu);
+    GMX_UNUSED_VALUE(wcycle);
 #endif
 }
 
@@ -1200,6 +1201,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
     }
 #else
     GMX_UNUSED_VALUE(pmeGpu);
+    GMX_UNUSED_VALUE(wcycle);
 #endif
 }
 
