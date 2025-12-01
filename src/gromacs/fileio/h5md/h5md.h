@@ -214,40 +214,6 @@ public:
      */
     void flush(bool throwExceptionUponError = true);
 
-    /*! \brief Set the author name attribute in the H5MD file
-     * \param[in] authorName The author name.
-     * \throws FileIOError If the author name attribute could not be set.
-     */
-    void setAuthor(const std::string& authorName);
-
-    /*! \brief Get the author name attribute from the H5MD file
-     * \returns the author name if the attribute was set.
-     */
-    std::optional<std::string> author();
-
-    /*! \brief Set the name of the creating program as an attribute in the H5MD file.
-     * \param[in] creatorName The creator name, i.e. the name of the program that created the file.
-     * \throws FileIOError If the creator name attribute could not be set.
-     */
-    void setCreatorProgramName(const std::string& creatorName);
-
-    /*! \brief Get the name of the creating program attribute from the H5MD file.
-     * \returns The creator name, i.e. the name of the program that created the file,
-     * if the attribute was set.
-     */
-    std::optional<std::string> creatorProgramName();
-
-    /*! \brief Set the version of the creating program as an attribute in the H5MD file.
-     * \param[in] version The version.
-     * \throws FileIOError If the version attribute could not be set.
-     */
-    void setCreatorProgramVersion(const std::string& version);
-
-    /*! \brief Get the version of the creating program attribute from the H5MD file.
-     * \returns the version if the attribute was set.
-     */
-    std::optional<std::string> creatorProgramVersion();
-
     /*! \brief Set up the file from input data.
      *
      * \param[in] topology    Topology data of system.

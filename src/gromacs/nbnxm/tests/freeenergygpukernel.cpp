@@ -46,7 +46,6 @@
  * \author Yiqi Chen <yiqi.chen@metax-tech.com>
  * \ingroup module_gmxlib_nonbonded
  */
-
 #include "gmxpre.h"
 
 #include "config.h"
@@ -62,39 +61,10 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/ewald/ewald_utils.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/paddedvector.h"
-#include "gromacs/math/units.h"
-#include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/mdtypes/forceoutput.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/simulation_workload.h"
-#include "gromacs/nbnxm/atompairlist.h"
-#include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/tables/forcetable.h"
-#include "gromacs/topology/forcefieldparameters.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/strconvert.h"
-#include "gromacs/utility/stringstream.h"
-#include "gromacs/utility/textwriter.h"
-#include "gromacs/utility/vec.h"
-#include "gromacs/utility/vectypes.h"
-
+// Currently FEP-on-GPU calculations are only implemented on CUDA platform
 #if GMX_GPU_CUDA
+#    include "gromacs/ewald/ewald_utils.h"
+#    include "gromacs/gmxlib/nrnb.h"
 #    include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #    include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #    include "gromacs/gpu_utils/cudautils.cuh"
@@ -106,24 +76,50 @@
 #    include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #    include "gromacs/hardware/device_information.h"
 #    include "gromacs/hardware/device_management.h"
+#    include "gromacs/math/arrayrefwithpadding.h"
+#    include "gromacs/math/paddedvector.h"
+#    include "gromacs/math/units.h"
+#    include "gromacs/mdlib/forcerec.h"
+#    include "gromacs/mdtypes/enerdata.h"
+#    include "gromacs/mdtypes/forceoutput.h"
+#    include "gromacs/mdtypes/forcerec.h"
+#    include "gromacs/mdtypes/inputrec.h"
+#    include "gromacs/mdtypes/interaction_const.h"
+#    include "gromacs/mdtypes/md_enums.h"
+#    include "gromacs/mdtypes/mdatom.h"
 #    include "gromacs/mdtypes/simulation_workload.h"
+#    include "gromacs/nbnxm/atompairlist.h"
 #    include "gromacs/nbnxm/cuda/nbnxm_cuda.h"
 #    include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_utils.cuh"
 #    include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
 #    include "gromacs/nbnxm/gpu_types_common.h"
 #    include "gromacs/nbnxm/nbnxm.h"
 #    include "gromacs/nbnxm/nbnxm_gpu.h"
+#    include "gromacs/pbcutil/ishift.h"
+#    include "gromacs/pbcutil/pbc.h"
+#    include "gromacs/tables/forcetable.h"
+#    include "gromacs/topology/forcefieldparameters.h"
+#    include "gromacs/topology/idef.h"
+#    include "gromacs/topology/ifunc.h"
+#    include "gromacs/utility/arrayref.h"
+#    include "gromacs/utility/enumerationhelpers.h"
+#    include "gromacs/utility/gmxassert.h"
+#    include "gromacs/utility/real.h"
+#    include "gromacs/utility/smalloc.h"
+#    include "gromacs/utility/strconvert.h"
+#    include "gromacs/utility/stringstream.h"
+#    include "gromacs/utility/textwriter.h"
+#    include "gromacs/utility/vec.h"
+#    include "gromacs/utility/vectypes.h"
 
 /** Force & energy **/
 #    define CALC_ENERGIES
 #    include "gromacs/nbnxm/cuda/nbfe_cuda_kernels.cuh"
 #    undef CALC_ENERGIES
 
-#endif
-
-#include "testutils/refdata.h"
-#include "testutils/test_hardware_environment.h"
-#include "testutils/testasserts.h"
+#    include "testutils/refdata.h"
+#    include "testutils/test_hardware_environment.h"
+#    include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -131,8 +127,6 @@ namespace test
 {
 namespace
 {
-// Currently FEP-on-GPU calculations are only implemented on CUDA platform
-#if GMX_GPU_CUDA
 /*! Nonbonded FEP kernel function pointer type */
 typedef void (*nbfe_cu_kfunc_ptr_t)(const NBAtomDataGpu, const NBParamGpu, const GpuFeplist, bool);
 
@@ -873,6 +867,8 @@ protected:
         test::FloatingPointTolerance tolerance(
                 input_.floatToler, input_.doubleToler, 1.0e-6, 1.0e-11, 10000, 100, false);
         checker_.setDefaultTolerance(tolerance);
+        // Skip the check for unused entries to pass this test when running GPU builds on CPU-only machines.
+        checker_.disableUnusedEntriesCheck();
     }
 
     void testGpuKernel()
@@ -978,10 +974,9 @@ INSTANTIATE_TEST_SUITE_P(NBInteraction,
                                             ::testing::ValuesIn(c_softcoreCoulomb)));
 
 
-#endif
-
 } // namespace
 
 } // namespace test
 
 } // namespace gmx
+#endif

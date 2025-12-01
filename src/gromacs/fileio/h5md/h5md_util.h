@@ -113,21 +113,16 @@ inline std::optional<std::string> getHandlePath(const hid_t handle)
 inline std::optional<std::string> getHandleBaseName(const hid_t handle)
 {
     std::optional<std::string> fullName = getHandlePath(handle);
-    if (!fullName.has_value())
+    if (fullName.has_value())
     {
-        return std::nullopt;
-    }
-    size_t pos = fullName.value().find_last_of('/');
-    if (pos != std::string::npos)
-    {
-        // Return empty string for root group
-        return fullName.value().substr(pos + 1);
-    }
-    else
-    {
+        size_t pos = fullName.value().find_last_of('/');
+        if (pos != std::string::npos)
+        {
+            fullName.value().assign(fullName.value(), pos + 1);
+        }
         // If no '/' found, return the full name
-        return fullName;
     }
+    return fullName;
 }
 
 

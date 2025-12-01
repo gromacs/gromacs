@@ -149,7 +149,7 @@ class AllowAnyRankCount
 {
 public:
     /*! \brief Function called by GMX_MPI_CONDITIONAL_TEST to see
-     * whether the test conditions are satisifed */
+     * whether the test conditions are satisfied */
     static bool conditionSatisfied(const int /* numRanks */) { return true; }
     //! Reason to echo when skipping the test
     inline static const char* s_skipReason = "UNUSED - any rank count satisfies";

@@ -66,6 +66,12 @@ if (GMX_GPU_CUDA)
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
         )
+    _gmx_add_files_to_property(CUDA_SOURCES
+        pme_pp_comm_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu.cpp
+        pme_coordinate_receiver_gpu_impl_gpu.cpp
+        pme_gpu_internal.cpp
+        )
     # Clang-18 seems to emit bad ptx for these files, so we omit it from
     # the CI build that does clang-tidy analysis of a CUDA build.
     if (NOT GMX_CLANG_TIDY)

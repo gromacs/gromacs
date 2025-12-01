@@ -542,7 +542,7 @@ void pull_calc_coms(const gmx::MpiComm&  mpiComm,
         {
             if (pbc.box[m][pull->cosdim] != 0)
             {
-                gmx_fatal(FARGS, "Can not do cosine weighting for trilinic dimensions");
+                gmx_fatal(FARGS, "Can not do cosine weighting for triclinic dimensions");
             }
         }
         twopi_box = 2.0 * M_PI / pbc.box[pull->cosdim][pull->cosdim];

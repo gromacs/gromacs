@@ -274,10 +274,11 @@ inline void calculateAndStoreGridForces(sycl::local_ptr<Float3>             sm_f
  * \tparam readGlobal     Tells if we should read spline values from global memory.
  * \tparam threadsPerAtom How many threads work on each atom.
  * \tparam subGroupSize   Size of the sub-group.
+ * \tparam CommandGroupHandler  Type of real or dummy command group handler
  */
-template<int order, bool wrapX, bool wrapY, int numGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-auto pmeGatherKernel(sycl::handler& cgh,
-                     const int      nAtoms,
+template<int order, bool wrapX, bool wrapY, int numGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize, typename CommandGroupHandler>
+auto pmeGatherKernel(CommandGroupHandler cgh,
+                     const int           nAtoms,
                      const float* __restrict__ gm_gridA,
                      const float* __restrict__ gm_gridB,
                      const float* __restrict__ gm_coefficientsA,
@@ -664,35 +665,31 @@ void PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, 
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(
-            q,
-            [&](sycl::handler& cgh)
-            {
-                auto kernel =
-                        pmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>(
-                                cgh,
-                                atomParams_->nAtoms,
-                                gridParams_->d_realGrid[0].get_pointer(),
-                                gridParams_->d_realGrid[1].get_pointer(),
-                                atomParams_->d_coefficients[0].get_pointer(),
-                                atomParams_->d_coefficients[1].get_pointer(),
-                                atomParams_->d_coordinates.get_pointer(),
-                                atomParams_->d_forces.get_pointer(),
-                                atomParams_->d_theta.get_pointer(),
-                                atomParams_->d_dtheta.get_pointer(),
-                                atomParams_->d_gridlineIndices.get_pointer(),
-                                gridParams_->d_fractShiftsTable.get_pointer(),
-                                gridParams_->d_gridlineIndicesTable.get_pointer(),
-                                gridParams_->tablesOffsets,
-                                gridParams_->realGridSize,
-                                gridParams_->realGridSizeFP,
-                                gridParams_->realGridSizePadded,
-                                dynamicParams_->recipBox[0],
-                                dynamicParams_->recipBox[1],
-                                dynamicParams_->recipBox[2],
-                                dynamicParams_->scale);
-                cgh.parallel_for<kernelNameType>(range, kernel);
-            });
+    auto kernelFunctionBuilder =
+            pmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize, gmx::CommandGroupHandler>;
+    gmx::syclSubmitWithoutEvent<kernelNameType>(q,
+                                                kernelFunctionBuilder,
+                                                range,
+                                                atomParams_->nAtoms,
+                                                gridParams_->d_realGrid[0].get_pointer(),
+                                                gridParams_->d_realGrid[1].get_pointer(),
+                                                atomParams_->d_coefficients[0].get_pointer(),
+                                                atomParams_->d_coefficients[1].get_pointer(),
+                                                atomParams_->d_coordinates.get_pointer(),
+                                                atomParams_->d_forces.get_pointer(),
+                                                atomParams_->d_theta.get_pointer(),
+                                                atomParams_->d_dtheta.get_pointer(),
+                                                atomParams_->d_gridlineIndices.get_pointer(),
+                                                gridParams_->d_fractShiftsTable.get_pointer(),
+                                                gridParams_->d_gridlineIndicesTable.get_pointer(),
+                                                gridParams_->tablesOffsets,
+                                                gridParams_->realGridSize,
+                                                gridParams_->realGridSizeFP,
+                                                gridParams_->realGridSizePadded,
+                                                dynamicParams_->recipBox[0],
+                                                dynamicParams_->recipBox[1],
+                                                dynamicParams_->recipBox[2],
+                                                dynamicParams_->scale);
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();

@@ -232,8 +232,8 @@ const char* enumValueToString(CutoffScheme enumValue);
 
 /*! \brief Coulomb / VdW interaction modifiers.
  *
- * grompp replaces eintmodPOTSHIFT_VERLET_UNSUPPORTED by eintmodPOTSHIFT.
- * Exactcutoff is only used by Reaction-field-zero, and is not user-selectable.
+ * grompp replaces PotShiftVerletUnsupported by PotShift.
+ * ExactCutoff is only used by Reaction-field-zero, and is not user-selectable.
  */
 enum class InteractionModifiers : int
 {
@@ -356,11 +356,11 @@ static inline bool usingLJPme(const VanDerWaalsType& vanDerWaalsType)
 
 /*! \brief Integrator algorithm
  *
- * eiSD2 has been removed, but we keep a renamed enum entry,
+ * SD2 has been removed, but we keep a renamed enum entry,
  * so we can refuse to do MD with such .tpr files.
- * eiVV is normal velocity verlet
- * eiVVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy,
- * and the half step kinetic energy for temperature control
+ * VV is normal velocity verlet.
+ * VVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy,
+ * and the half step kinetic energy for temperature control.
  */
 enum class IntegrationAlgorithm : int
 {

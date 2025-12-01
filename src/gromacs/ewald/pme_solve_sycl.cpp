@@ -60,9 +60,10 @@ using mode = sycl::access_mode;
  * \tparam     computeEnergyAndVirial   Tells if the reciprocal energy and virial should be
  *                                        computed.
  * \tparam     subGroupSize             Describes the width of a SYCL subgroup
+ * \tparam     CommandGroupHandler      Type of real or dummy command group handler
  */
-template<GridOrdering gridOrdering, bool computeEnergyAndVirial, int subGroupSize>
-auto makeSolveKernel(sycl::handler& cgh,
+template<GridOrdering gridOrdering, bool computeEnergyAndVirial, int subGroupSize, typename CommandGroupHandler>
+auto makeSolveKernel(CommandGroupHandler cgh,
                      const float* __restrict__ gm_splineModuli,
                      SolveKernelParams solveKernelParams,
                      float* __restrict__ gm_virialAndEnergy,
@@ -441,18 +442,15 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(
-            q,
-            [&](sycl::handler& cgh)
-            {
-                auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
-                        cgh,
-                        gridParams_->d_splineModuli[gridIndex].get_pointer(),
-                        solveKernelParams_,
-                        constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
-                        gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
-                cgh.parallel_for<KernelNameType>(range, kernel);
-            });
+    auto kernelFunctionBuilder =
+            makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize, gmx::CommandGroupHandler>;
+    gmx::syclSubmitWithoutEvent<KernelNameType>(q,
+                                                kernelFunctionBuilder,
+                                                range,
+                                                gridParams_->d_splineModuli[gridIndex].get_pointer(),
+                                                solveKernelParams_,
+                                                constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
+                                                gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();

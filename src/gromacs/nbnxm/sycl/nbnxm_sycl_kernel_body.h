@@ -653,8 +653,8 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
 /*! \brief Main kernel for NBNXM.
  *
  */
-template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
-static auto nbnxmKernel(sycl::handler& cgh,
+template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, typename CommandGroupHandler>
+static auto nbnxmKernel(CommandGroupHandler cgh,
                         const Float4* __restrict__ gm_xq,
                         Float3* __restrict__ gm_f,
                         const Float3* __restrict__ gm_shiftVec,
@@ -1282,14 +1282,9 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(
-            q,
-            [&](sycl::handler& cgh)
-            {
-                auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
-                        cgh, std::forward<Args>(args)...);
-                cgh.parallel_for<kernelNameType>(range, kernel);
-            });
+    auto kernelFunctionBuilder =
+            nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType, CommandGroupHandler>;
+    syclSubmitWithoutEvent<kernelNameType>(q, kernelFunctionBuilder, range, std::forward<Args>(args)...);
 }
 
 //! \brief Select templated kernel and launch it.

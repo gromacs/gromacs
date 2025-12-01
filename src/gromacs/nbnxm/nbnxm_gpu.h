@@ -190,7 +190,7 @@ void gpu_launch_cpyback(NbnxmGpu gmx_unused*           nb,
  * for the nonbonded task (incrementing only once per task), in the GpuTaskCompletion::Wait mode
  * timing is expected to be done in the caller.
  *
- *  TODO: improve the handling of outputs e.g. by ensuring that this function explcitly returns the
+ *  TODO: improve the handling of outputs e.g. by ensuring that this function explicitly returns the
  *  force buffer (instead of that being passed only to nbnxn_gpu_launch_cpyback()) and by returning
  *  the energy and Fshift contributions for some external/centralized reduction.
  *
@@ -202,8 +202,8 @@ void gpu_launch_cpyback(NbnxmGpu gmx_unused*           nb,
  * \param[out] dvdl_lj        Pointer to the LJ DvDL output to accumulate into
  * \param[out] dvdl_el        Pointer to the electrostatics DVDL output to accumulate into
  * \param[out] shiftForces    Shift forces buffer to accumulate into
- * \param[out] foreign_term    Foreign lambda terms buffer to accumulate into
- * \param[in]  completionKind Indicates whether nnbonded task completion should only be checked rather than waited for
+ * \param[out] foreign_term   Foreign lambda terms buffer to accumulate into
+ * \param[in]  completionKind Indicates whether nonbonded task completion should only be checked rather than waited for
  * \returns                   True if the nonbonded tasks associated with \p aloc locality have completed
  */
 GPU_FUNC_QUALIFIER

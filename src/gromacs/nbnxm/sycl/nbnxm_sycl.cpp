@@ -238,31 +238,26 @@ class BucketSciSort;
 template<int workGroupSize>
 static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
-    gmx::syclSubmitWithoutEvent(
+    auto kernelFunctionBuilder = nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>;
+    syclSubmitWithoutCghOrEvent<ExclusivePrefixSum<workGroupSize>>(
             q,
-            [&](sycl::handler& cgh)
-            {
-                cgh.parallel_for<ExclusivePrefixSum<workGroupSize>>(
-                        sycl::nd_range<1>{ workGroupSize, workGroupSize },
-                        nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
-                                sorting->sciHistogram.get_pointer(), sorting->sciOffset.get_pointer()));
-            });
+            kernelFunctionBuilder,
+            sycl::nd_range<1>{ workGroupSize, workGroupSize },
+            sorting->sciHistogram.get_pointer(),
+            sorting->sciOffset.get_pointer());
 }
 
 static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
 {
-    const size_t size = plist->numSci;
-    gmx::syclSubmitWithoutEvent(
-            q,
-            [&](sycl::handler& cgh)
-            {
-                cgh.parallel_for<BucketSciSort>(
-                        sycl::range<1>{ size },
-                        nbnxnKernelBucketSciSort(plist->sci.get_pointer(),
-                                                 plist->sorting.sciCount.get_pointer(),
-                                                 plist->sorting.sciOffset.get_pointer(),
-                                                 plist->sorting.sciSorted.get_pointer()));
-            });
+    const size_t size                  = plist->numSci;
+    auto         kernelFunctionBuilder = nbnxnKernelBucketSciSort;
+    syclSubmitWithoutCghOrEvent<BucketSciSort>(q,
+                                               kernelFunctionBuilder,
+                                               sycl::range<1>{ size },
+                                               plist->sci.get_pointer(),
+                                               plist->sorting.sciCount.get_pointer(),
+                                               plist->sorting.sciOffset.get_pointer(),
+                                               plist->sorting.sciSorted.get_pointer());
 }
 static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream)
 {

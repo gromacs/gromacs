@@ -54,6 +54,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gpu_utils/capabilities.h"
+#include "gromacs/hardware/device_information.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
@@ -63,6 +65,7 @@
 #include "testutils/refdata.h"
 #include "testutils/setenv.h"
 #include "testutils/simulationdatabase.h"
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/xvgtest.h"
@@ -174,13 +177,18 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     runner_.dhdlFileName_                    = simulationDhdlFileName.string();
     runMdrun(&runner_);
 
-    // Run FEP-on-GPU tests when available
-    // Expanded ensemble simulations are also not implemented on GPUs yet.
-    if (GpuConfigurationCapabilities::NonbondedFE && simulationName != "expanded")
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        auto fep_option = std::vector<SimulationOptionTuple>();
-        fep_option.emplace_back(SimulationOptionTuple("-nbfe", "gpu"));
-        runMdrun(&runner_, fep_option);
+        // Run FEP-on-GPU tests when available
+        // Currently only implemented on CUDA devices.
+        // Expanded ensemble simulations are also not implemented on GPUs yet.
+        if (testDevice->deviceInfo().deviceVendor == DeviceVendor::Nvidia
+            && GpuConfigurationCapabilities::NonbondedFE && simulationName != "expanded")
+        {
+            auto fep_option = std::vector<SimulationOptionTuple>();
+            fep_option.emplace_back(SimulationOptionTuple("-nbfe", "gpu"));
+            runMdrun(&runner_, fep_option);
+        }
     }
 
     /* Currently used tests write trajectory (x/v/f) frames every 20 steps.

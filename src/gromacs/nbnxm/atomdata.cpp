@@ -87,11 +87,11 @@ const char* enumValueToString(LJCombinationRule enumValue)
     return s_ljCombinationRuleNames[enumValue];
 }
 
-void nbnxn_atomdata_t::resizeCoordinateBuffer(const int numAtoms, const int domainDecompositioZone)
+void nbnxn_atomdata_t::resizeCoordinateBuffer(const int numAtoms, const int domainDecompositionZone)
 {
     numAtoms_ = numAtoms;
 
-    if (domainDecompositioZone == 0)
+    if (domainDecompositionZone == 0)
     {
         numLocalAtoms_ = numAtoms;
     }

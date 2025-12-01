@@ -578,6 +578,7 @@ public:
     }
 };
 
+#if GMX_MPI
 /*! \brief Submits a GPU grid kernel
  *
  * \tparam    Kernel           The class containing a static kernel() method to return
@@ -606,17 +607,12 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
                                      gmx::divideRoundUp<size_t>(pmeSize[ZZ], threadsAlongZDim) };
     const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
-    sycl::queue q = deviceStream.stream();
-    gmx::syclSubmitWithoutEvent(q,
-                                [&](sycl::handler& cgh)
-                                {
-                                    auto kernel = Kernel::template kernel<subGroupSize>(
-                                            myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
-                                    cgh.parallel_for<Kernel>(range, kernel);
-                                });
+    sycl::queue q                     = deviceStream.stream();
+    auto        kernelFunctionBuilder = Kernel::template kernel<subGroupSize>;
+    gmx::syclSubmitWithoutCghOrEvent<Kernel>(
+            q, kernelFunctionBuilder, range, myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
 }
 
-#if GMX_MPI
 /*! \brief
  * Utility function to send and recv halo data from neighboring ranks
  */
@@ -912,6 +908,7 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
     }
 #else
     GMX_UNUSED_VALUE(pmeGpu);
+    GMX_UNUSED_VALUE(wcycle);
 #endif
 }
 
@@ -1204,6 +1201,7 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
     }
 #else
     GMX_UNUSED_VALUE(pmeGpu);
+    GMX_UNUSED_VALUE(wcycle);
 #endif
 }
 
@@ -1281,15 +1279,10 @@ public:
                                          gmx::divideRoundUp<size_t>(localFftNData[ZZ], threadsAlongZDim) };
         const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
-        sycl::queue q = deviceStream.stream();
-
-        gmx::syclSubmitWithoutEvent(q,
-                                    [&](sycl::handler& cgh)
-                                    {
-                                        auto kernel = convertKernel<subGroupSize>(
-                                                localFftNData, std::forward<Args>(args)...);
-                                        cgh.parallel_for<GridConverter<pmeToFft>>(range, kernel);
-                                    });
+        sycl::queue q                     = deviceStream.stream();
+        auto        kernelFunctionBuilder = convertKernel<subGroupSize>;
+        gmx::syclSubmitWithoutCghOrEvent<GridConverter>(
+                q, kernelFunctionBuilder, range, localFftNData, std::forward<Args>(args)...);
     }
 };
 

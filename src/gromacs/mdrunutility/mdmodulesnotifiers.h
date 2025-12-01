@@ -54,6 +54,8 @@
 #include "gromacs/mdrunutility/mdmodulesnotifier.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -74,11 +76,36 @@ class LocalAtomSetManager;
 class MDLogger;
 class IndexGroupsAndNames;
 class SeparatePmeRanksPermitted;
-struct MDModulesCheckpointReadingDataOnMain;
-struct MDModulesCheckpointReadingBroadcast;
-struct MDModulesWriteCheckpointData;
 class PlainPairlistRanges;
 enum class StartingBehavior;
+
+/*! \libinternal
+ * \brief Provides the MDModules with the checkpointed data on the main rank.
+ */
+struct MDModulesCheckpointReadingDataOnMain
+{
+    //! The data of the MDModules that is stored in the checkpoint file
+    const KeyValueTreeObject& checkpointedData_;
+};
+
+/*! \libinternal
+ * \brief Provides the MDModules with the communication record to broadcast.
+ */
+struct MDModulesCheckpointReadingBroadcast
+{
+    //! The communicator
+    MPI_Comm communicator_;
+    //! Whether the run is executed in parallel
+    bool isParallelRun_;
+};
+
+/*! \libinternal \brief Writing the MDModules data to a checkpoint file.
+ */
+struct MDModulesWriteCheckpointData
+{
+    //! Builder for the Key-Value-Tree to store the MDModule checkpoint data
+    KeyValueTreeObjectBuilder builder_;
+};
 
 /*! \libinternal \brief Notification that atoms may have been redistributed
  *

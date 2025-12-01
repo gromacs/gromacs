@@ -60,9 +60,9 @@ using mode = sycl::access_mode;
 constexpr static int sc_workGroupSize = 256;
 
 //! \brief Function returning the SETTLE kernel lambda.
-template<bool updateVelocities, bool computeVirial>
-auto settleKernel(sycl::handler& cgh,
-                  const int      numSettles,
+template<bool updateVelocities, bool computeVirial, typename CommandGroupHandler>
+auto settleKernel(CommandGroupHandler cgh,
+                  const int           numSettles,
                   const WaterMolecule* __restrict__ gm_settles,
                   SettleParameters pars,
                   const Float3* __restrict__ gm_x,
@@ -352,13 +352,9 @@ static void launchSettleKernel(const DeviceStream& deviceStream, int numSettles,
     const sycl::nd_range<1> rangeAllSettles(numSettlesRoundedUp, sc_workGroupSize);
     sycl::queue             q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q,
-                                [&](sycl::handler& cgh)
-                                {
-                                    auto kernel = settleKernel<updateVelocities, computeVirial>(
-                                            cgh, numSettles, std::forward<Args>(args)...);
-                                    cgh.parallel_for<kernelNameType>(rangeAllSettles, kernel);
-                                });
+    auto kernelFunctionBuilder = settleKernel<updateVelocities, computeVirial, CommandGroupHandler>;
+    syclSubmitWithoutEvent<kernelNameType>(
+            q, kernelFunctionBuilder, rangeAllSettles, numSettles, std::forward<Args>(args)...);
 }
 
 /*! \brief Select templated kernel and launch it. */

@@ -270,10 +270,10 @@ public:
         notifiers->preProcessingNotifier_.subscribe(writeInternalParametersFunction);
 
         // Checking for consistency with all .mdp options
-        const auto checkEnergyCaluclationFrequencyFunction =
+        const auto checkEnergyCalculationFrequencyFunction =
                 [this](EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors)
-        { densityFittingOptions_.checkEnergyCaluclationFrequency(energyCalculationFrequencyErrors); };
-        notifiers->preProcessingNotifier_.subscribe(checkEnergyCaluclationFrequencyFunction);
+        { densityFittingOptions_.checkEnergyCalculationFrequency(energyCalculationFrequencyErrors); };
+        notifiers->preProcessingNotifier_.subscribe(checkEnergyCalculationFrequencyFunction);
     }
 
     /*! \brief Request to be notified.

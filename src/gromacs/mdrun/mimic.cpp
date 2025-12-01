@@ -703,7 +703,7 @@ void gmx::LegacySimulator::do_mimic()
 
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of
-           the virial that should probably be addressed eventually. state->veta has better properies,
+           the virial that should probably be addressed eventually. state->veta has better properties,
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 

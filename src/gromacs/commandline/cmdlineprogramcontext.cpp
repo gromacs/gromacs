@@ -113,6 +113,31 @@ private:
 };
 
 /*! \brief
+ * Return the possibly corrected path to the binary
+ *
+ * \param[in] invokedName \c argv[0] the binary was invoked with.
+ * \returns   The possible corrected binary path.
+ *
+ * On Windows, this can require changing to or appending the ".exe"
+ * extension so that we can find the right binary file.
+ */
+std::filesystem::path fixBinaryNameIfOnWindows(const std::filesystem::path& invokedName)
+{
+    // On Windows & Cygwin we may need to add the .exe extension, or
+    // we won't be able to detect that the file exists.
+    if (GMX_NATIVE_WINDOWS || GMX_CYGWIN)
+    {
+        if (!invokedName.has_extension() || invokedName.extension() != ".exe")
+        {
+            std::filesystem::path searchName{ invokedName };
+            searchName.replace_extension(".exe");
+            return searchName;
+        }
+    }
+    return invokedName;
+}
+
+/*! \brief
  * Finds the absolute path of the binary from \c argv[0].
  *
  * \param[in] invokedName \c argv[0] the binary was invoked with.
@@ -125,36 +150,27 @@ private:
 std::filesystem::path findFullBinaryPath(const std::filesystem::path&  invokedName,
                                          const IExecutableEnvironment& env)
 {
-    std::filesystem::path searchName{ invokedName };
-    // On Windows & Cygwin we need to add the .exe extension,
-    // or we wont be able to detect that the file exists.
-#if GMX_NATIVE_WINDOWS || GMX_CYGWIN
-    if (!searchName.has_extension() || searchName.extension() != ".exe")
-    {
-        searchName.replace_extension(".exe");
-    }
-#endif
-    if (!searchName.has_parent_path())
+    if (!invokedName.has_parent_path())
     {
         // No directory in name means it must be in the path - search it!
         std::vector<std::filesystem::path> pathEntries = env.getExecutablePaths();
         for (const auto& path : pathEntries)
         {
             auto dir = path.empty() ? env.getWorkingDirectory() : path;
-            dir.append(searchName.string());
+            dir.append(invokedName.string());
             if (File::exists(dir, File::returnFalseOnError))
             {
                 return dir;
             }
         }
     }
-    else if (!searchName.is_absolute())
+    else if (!invokedName.is_absolute())
     {
         // Name contains directories, but is not absolute, i.e.,
         // it is relative to the current directory.
-        return env.getWorkingDirectory().append(searchName.string());
+        return env.getWorkingDirectory().append(invokedName.string());
     }
-    return searchName;
+    return invokedName;
 }
 
 /*! \brief
@@ -248,8 +264,8 @@ std::filesystem::path findInstallationPrefixPath(const std::filesystem::path& bi
         // If either path does not exist than an error is produced by
         // equivalent(). When an error is produced, the non-throwing
         // call to equivalent() returns false, which is what we want.
-        // We don't care what the error when we are merely finding a
-        // valid GROMACS installation prefix.
+        // We don't care what the error was when we are merely finding
+        // a valid GROMACS installation prefix.
         if (std::error_code c; std::filesystem::equivalent(searchPath, buildBinPath, c))
         {
             if (isAcceptableLibraryPath(std::filesystem::path(CMAKE_SOURCE_DIR).append("share/top")))
@@ -266,7 +282,12 @@ std::filesystem::path findInstallationPrefixPath(const std::filesystem::path& bi
         {
             if (isAcceptableLibraryPathPrefix(searchPath))
             {
+                // The structure of this function makes it hard for the
+                // compiler to elide the copy of a named return value,
+                // but that's OK.
+                CLANG_DIAGNOSTIC_IGNORE_WNRVO
                 return searchPath;
+                CLANG_DIAGNOSTIC_RESET_WNRVO;
             }
             searchPath = searchPath.parent_path();
         }
@@ -332,7 +353,7 @@ void CommandLineProgramContext::Impl::findBinaryPath() const
 {
     if (fullBinaryPath_.empty())
     {
-        fullBinaryPath_ = findFullBinaryPath(invokedName_, *executableEnv_);
+        fullBinaryPath_ = findFullBinaryPath(fixBinaryNameIfOnWindows(invokedName_), *executableEnv_);
         if (std::filesystem::is_symlink(fullBinaryPath_))
         {
             auto tempPath = std::filesystem::read_symlink(fullBinaryPath_);

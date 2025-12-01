@@ -28,7 +28,8 @@ gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:configureMPI:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_HEFFTE=ON"
+    # Set CMAKE_CUDA_ARCHITECTURES to avoid compatibility issues between sm_90 PTX and sm_120 device in our CI; see #5444 for details; needed for CUDA < 12.8
+    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_HEFFTE=ON -DCMAKE_CUDA_ARCHITECTURES=75"
     COMPILER_MAJOR_VERSION: 12
 
 gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:buildMPI:

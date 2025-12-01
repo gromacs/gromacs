@@ -175,6 +175,10 @@ MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h
         errorReasons.appendIf(status == GpuAwareMpiStatus::NotSupported,
                               "GPU-aware MPI not supported, so GPU halo exchange cannot be tested");
     }
+    if (std::getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr)
+    {
+        errorReasons.append("GPU-direct communication has been disabled by user request.");
+    }
     // Skip the halo exchange if it cannot work
     if (!errorReasons.isEmpty())
     {

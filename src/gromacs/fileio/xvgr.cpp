@@ -829,7 +829,10 @@ readXvgTimeSeries(const std::filesystem::path& fn, std::optional<real> startTime
     auto fullDataSet = readXvgDataInternal(fn);
     if (!startTime.has_value() && !endTime.has_value())
     {
+        // This code is only used in tests so we don't care about NRVO
+        CLANG_DIAGNOSTIC_IGNORE_WNRVO;
         return fullDataSet;
+        CLANG_DIAGNOSTIC_RESET_WNRVO;
     }
     const int numRows    = fullDataSet.extent(0);
     const int numColumns = fullDataSet.extent(1);

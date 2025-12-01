@@ -336,7 +336,7 @@ void DensityFittingOptions::readInternalParametersFromKvt(const KeyValueTreeObje
                    [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
 }
 
-void DensityFittingOptions::checkEnergyCaluclationFrequency(
+void DensityFittingOptions::checkEnergyCalculationFrequency(
         EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors) const
 {
     if (energyCalculationFrequencyErrors->energyCalculationIntervalInSteps() % parameters_.calculationIntervalInSteps_

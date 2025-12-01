@@ -447,24 +447,9 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         }
 
         /* Declare and clear i atom forces */
-        auto forceIXV = genArr<nR>(
-                [&](int gmx_unused i)
-                {
-                    SimdReal tmp = setZero();
-                    return tmp;
-                });
-        auto forceIYV = genArr<nR>(
-                [&](int gmx_unused i)
-                {
-                    SimdReal tmp = setZero();
-                    return tmp;
-                });
-        auto forceIZV = genArr<nR>(
-                [&](int gmx_unused i)
-                {
-                    SimdReal tmp = setZero();
-                    return tmp;
-                });
+        auto forceIXV = genArr<nR>([&](int gmx_unused i) { return setZero(); });
+        auto forceIYV = genArr<nR>([&](int gmx_unused i) { return setZero(); });
+        auto forceIZV = genArr<nR>([&](int gmx_unused i) { return setZero(); });
 
 
         int cjind = cjind0;

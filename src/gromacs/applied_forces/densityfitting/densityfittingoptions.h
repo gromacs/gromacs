@@ -102,7 +102,7 @@ public:
     const std::string& referenceDensityFileName() const;
 
     //! Check if input parameters are consistent with other simulation parameters
-    void checkEnergyCaluclationFrequency(EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors) const;
+    void checkEnergyCalculationFrequency(EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors) const;
 
 private:
     //! Group used for fitting

@@ -100,7 +100,7 @@ struct SimdDataTypes
 
 /*! \brief Lower limit for square interaction distances in nonbonded kernels.
  *
- * This is a mimimum on r^2 to avoid overflows when computing r^6.
+ * This is a minimum on r^2 to avoid overflows when computing r^6.
  * This will only affect results for soft-cored interaction at distances smaller
  * than 1e-6 and will limit extremely high foreign energies for overlapping atoms.
  * Note that we could use a somewhat smaller minimum in double precision.

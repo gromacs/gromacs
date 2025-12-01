@@ -158,25 +158,28 @@ inline void spread_charges(const float                  atomCharge,
  * A spline computation and charge spreading kernel function.
  *
  * Two tuning parameters can be used for additional performance. For small systems and for debugging
- * writeGlobal should be used removing the need to recalculate the theta values in the gather kernel.
- * Similarly for large systems, with useOrderThreads, using order threads per atom gives higher
- * performance than order*order threads.
+ * writeGlobal should be used removing the need to recalculate the theta values in the gather
+ * kernel. Similarly for large systems, with useOrderThreads, using order threads per atom gives
+ * higher performance than order*order threads.
  *
  * \tparam order          PME interpolation order.
  * \tparam computeSplines A boolean which tells if the spline parameter and gridline indices'
  *                        computation should be performed.
  * \tparam spreadCharges  A boolean which tells if the charge spreading should be performed.
- * \tparam wrapX          A boolean which tells if the grid overlap in dimension X should be wrapped.
- * \tparam wrapY          A boolean which tells if the grid overlap in dimension Y should be wrapped.
+ * \tparam wrapX          A boolean which tells if the grid overlap in dimension X
+ *                        should be wrapped.
+ * \tparam wrapY          A boolean which tells if the grid overlap in dimension Y
+ *                        should be wrapped.
  * \tparam numGrids       The number of grids to use in the kernel. Can be 1 or 2.
- * \tparam writeGlobal    A boolean which tells if the theta values and gridlines should be written
- *                        to global memory.
+ * \tparam writeGlobal    A boolean which tells if the theta values and gridlines
+ *                        should be written to global memory.
  * \tparam threadsPerAtom How many threads work on each atom.
  * \tparam subGroupSize   Size of the sub-group.
+ * \tparam CommandGroupHandler  Type of real or dummy command group handler
  */
-template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
-                              const int      nAtoms,
+template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize, typename CommandGroupHandler>
+auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
+                              const int           nAtoms,
                               float* __restrict__ gm_realGrid_0,
                               float* __restrict__ gm_realGrid_1,
                               float* __restrict__ gm_theta,
@@ -382,34 +385,30 @@ void PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(
-            q,
-            [&](sycl::handler& cgh)
-            {
-                auto kernel =
-                        pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>(
-                                cgh,
-                                atomParams_->nAtoms,
-                                gridParams_->d_realGrid[0].get_pointer(),
-                                gridParams_->d_realGrid[1].get_pointer(),
-                                atomParams_->d_theta.get_pointer(),
-                                atomParams_->d_dtheta.get_pointer(),
-                                atomParams_->d_gridlineIndices.get_pointer(),
-                                gridParams_->d_fractShiftsTable.get_pointer(),
-                                gridParams_->d_gridlineIndicesTable.get_pointer(),
-                                atomParams_->d_coefficients[0].get_pointer(),
-                                atomParams_->d_coefficients[1].get_pointer(),
-                                atomParams_->d_coordinates.get_pointer(),
-                                gridParams_->tablesOffsets,
-                                gridParams_->realGridSize,
-                                gridParams_->realGridSizeFP,
-                                gridParams_->realGridSizePadded,
-                                dynamicParams_->recipBox[0],
-                                dynamicParams_->recipBox[1],
-                                dynamicParams_->recipBox[2],
-                                pipeliningParams_);
-                cgh.parallel_for<kernelNameType>(range, kernel);
-            });
+    auto kernelFunctionBuilder =
+            pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize, gmx::CommandGroupHandler>;
+    gmx::syclSubmitWithoutEvent<kernelNameType>(q,
+                                                kernelFunctionBuilder,
+                                                range,
+                                                atomParams_->nAtoms,
+                                                gridParams_->d_realGrid[0].get_pointer(),
+                                                gridParams_->d_realGrid[1].get_pointer(),
+                                                atomParams_->d_theta.get_pointer(),
+                                                atomParams_->d_dtheta.get_pointer(),
+                                                atomParams_->d_gridlineIndices.get_pointer(),
+                                                gridParams_->d_fractShiftsTable.get_pointer(),
+                                                gridParams_->d_gridlineIndicesTable.get_pointer(),
+                                                atomParams_->d_coefficients[0].get_pointer(),
+                                                atomParams_->d_coefficients[1].get_pointer(),
+                                                atomParams_->d_coordinates.get_pointer(),
+                                                gridParams_->tablesOffsets,
+                                                gridParams_->realGridSize,
+                                                gridParams_->realGridSizeFP,
+                                                gridParams_->realGridSizePadded,
+                                                dynamicParams_->recipBox[0],
+                                                dynamicParams_->recipBox[1],
+                                                dynamicParams_->recipBox[2],
+                                                pipeliningParams_);
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();

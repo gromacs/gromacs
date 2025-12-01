@@ -134,15 +134,14 @@ std::vector<std::string> getSyclOptionalFeatures()
 
 std::string getSyclCompilerVersion()
 {
-    std::string                    versionStr       = getSyclVersion();
     const std::vector<std::string> optionalFeatures = getSyclOptionalFeatures();
     if (optionalFeatures.empty())
     {
-        return versionStr;
+        return getSyclVersion();
     }
     else
     {
-        return versionStr + " with " + gmx::joinStrings(optionalFeatures, ",");
+        return getSyclVersion() + " with " + gmx::joinStrings(optionalFeatures, ",");
     }
 }
 

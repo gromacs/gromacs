@@ -244,7 +244,7 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
         {
             logMsg +=
                     "Merely a note: it is unfortunately hard to know for sure which SIMD\n"
-                    "instructons will perform best on this hardware. For non-GPU runs\n"
+                    "instructions will perform best on this hardware. For non-GPU runs\n"
                     "on Intel CPUs with dual AVX-512 units, using AVX-512 can be good,\n"
                     "while AVX2 is often better for runs also using a GPU. Typically\n"
                     "this is just a few percent, so don't worry unless you are tuning.\n";

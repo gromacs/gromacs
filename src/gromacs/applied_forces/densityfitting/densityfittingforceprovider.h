@@ -49,9 +49,11 @@
 
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/math/exponentialmovingaverage.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
 enum class PbcType : int;

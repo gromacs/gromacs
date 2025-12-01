@@ -89,9 +89,6 @@ public:
      */
     void reinitCoordinateReceiver(DeviceBuffer<RVec> d_x);
 
-    /*! \brief
-     * Prepare to receive coordinates, must be called every step */
-    void prepareToReceiveCoordinates();
 
     /*! \brief
      * Receive coordinate synchronizer pointer from the PP ranks.
@@ -129,9 +126,6 @@ public:
      * \returns                  rank of sending PP task
      */
     int waitForCoordinatesFromAnyPpRank();
-
-    /*! \brief Return view of sender PP indices that sent coordinates */
-    ArrayRef<const int> sendersThatSentCoordinates() const;
 
     /*! \brief
      * Return pointer to stream associated with specific PP rank sender index

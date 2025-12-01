@@ -165,7 +165,6 @@ void PmePpCommGpu::Impl::reinit(int size)
 
 void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu)
 {
-#if GMX_MPI
     // Wait until remote PME task has pushed data, and then enqueue remote event to local stream.
 
     if (d_pmeForcesSize_ <= 0)
@@ -195,7 +194,6 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
         // them with other forces on the CPU
         pmePpCommStream_.synchronize();
     }
-#endif
 }
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static

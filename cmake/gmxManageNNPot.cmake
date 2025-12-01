@@ -33,7 +33,7 @@
 
 # Add a flag to enable neural network potential support. Currently only supports libtorch.
 gmx_option_multichoice(GMX_NNPOT
-    "Enable neural network potential interface."
+    "Enable neural network potential interface"
     AUTO
     AUTO TORCH OFF
 )

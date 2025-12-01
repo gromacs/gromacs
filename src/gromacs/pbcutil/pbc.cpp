@@ -505,7 +505,7 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
                         {
                             continue;
                         }
-                        /* A shift is only useful when it is trilinic */
+                        /* A shift is only useful when it is triclinic */
                         if (j != 0 || k != 0)
                         {
                             rvec trial;

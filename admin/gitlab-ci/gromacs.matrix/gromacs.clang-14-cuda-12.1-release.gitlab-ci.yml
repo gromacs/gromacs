@@ -29,6 +29,8 @@ gromacs:clang-14-cuda.12.1:release:configure:
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
+    # Set CMAKE_CUDA_ARCHITECTURES to avoid compatibility issues between sm_90 PTX and sm_120 device in our CI; see #5444 for details; needed for CUDA < 12.8
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_CUDA_ARCHITECTURES=75"
 
 gromacs:clang-14-cuda.12.1:release:build:
   extends:
@@ -87,4 +89,3 @@ gromacs:clang-14-cuda.12.1:release:regressiontest:
   needs:
     - job: gromacs:clang-14-cuda.12.1:release:build
     - job: regressiontests:package
-

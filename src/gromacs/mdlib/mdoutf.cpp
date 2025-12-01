@@ -50,7 +50,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/h5md/h5md.h"
+#include "gromacs/fileio/h5md/h5md_wrapper.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
@@ -87,6 +87,11 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/vec.h"
+
+namespace gmx
+{
+class H5md;
+} // namespace gmx
 
 struct gmx_mdoutf
 {
@@ -219,10 +224,10 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     {
                         make_backup(filename);
                     }
-                    of->h5md = new gmx::H5md(filename, gmx::H5mdFileMode(filemode[0]));
+                    of->h5md = gmx::makeH5md(filename, gmx::H5mdFileMode(filemode[0]));
                     if (filemode[0] == 'w')
                     {
-                        of->h5md->setupFileFromInput(top_global, *ir);
+                        gmx::setupFileFromInput(of->h5md, top_global, *ir);
                     }
                     break;
                 default: gmx_incons("Invalid full precision file format");
@@ -702,7 +707,7 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
             }
             else if (of->h5md)
             {
-                of->h5md->writeNextFrame(x, v, f, state_local->box, step, t);
+                gmx::writeNextFrame(of->h5md, x, v, f, state_local->box, step, t);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -839,7 +844,7 @@ void done_mdoutf(gmx_mdoutf_t of)
 
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
-    delete of->h5md;
+    gmx::destroyH5md(of->h5md);
 
     sfree(of);
 }

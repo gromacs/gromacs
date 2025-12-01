@@ -9,62 +9,62 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
 #   Build type: RelWithDebInfo
-#   Compiler: NVC++ 24.7
-#   GPU: CUDA 12.5.1
+#   Compiler: NVC++ 25.9
+#   GPU: CUDA 13.0.2
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/1 (regression tests with a GPU)
 
-gromacs:nvcxx-24.7-cuda-12.5.1:configureMPI:
+gromacs:nvcxx-25.9-cuda-13.0.2:configureMPI:
   extends:
     - .gromacs:base:configure
     - .use-cuda
     - .use-mpi
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_CXX_FLAGS='--diag_suppress=2828,111,1408,490,550,177,unrecognized_attribute,integer_sign_change,implicit_return_from_non_void_function,partial_override,code_is_unreachable'
-                          -DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/12.5
-                          -DCMAKE_CXX_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/bin/nvc++
-                          -DCMAKE_C_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/compilers/bin/nvc"
+                          -DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/math_libs/13.0
+                          -DCMAKE_CXX_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/compilers/bin/nvc++
+                          -DCMAKE_C_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/compilers/bin/nvc"
 
-gromacs:nvcxx-24.7-cuda-12.5.1:buildMPI:
+gromacs:nvcxx-25.9-cuda-13.0.2:buildMPI:
   extends:
     - .gromacs:base:build
     - .before_script:default
     # - .use-ccache # Disable CCache since it did not work correctly with NVC++ 24.1 (#5052)
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
-    - job: gromacs:nvcxx-24.7-cuda-12.5.1:configureMPI
+    - job: gromacs:nvcxx-25.9-cuda-13.0.2:configureMPI
 
-gromacs:nvcxx-24.7-cuda-12.5.1:testMPI:
+gromacs:nvcxx-25.9-cuda-13.0.2:testMPI:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_GPU_PME_DECOMPOSITION: 1
     # Location of CUDA FFT library, required for preload to avoid cuFFTMp on incompatible devices 
-    CUFFTLIB: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/lib64/libcufft.so"
+    CUFFTLIB: "/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/math_libs/lib64/libcufft.so"
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:nvcxx-24.7-cuda-12.5.1:buildMPI
+    - job: gromacs:nvcxx-25.9-cuda-13.0.2:buildMPI
 
-gromacs:nvcxx-24.7-cuda-12.5.1:regressiontest-gpucommupd-MPI:
+gromacs:nvcxx-25.9-cuda-13.0.2:regressiontest-gpucommupd-MPI:
   # Test parallelism np/ntomp: 4/1
   # Test parallelism GPU: direct communications, update
   extends:
@@ -72,7 +72,7 @@ gromacs:nvcxx-24.7-cuda-12.5.1:regressiontest-gpucommupd-MPI:
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -84,7 +84,7 @@ gromacs:nvcxx-24.7-cuda-12.5.1:regressiontest-gpucommupd-MPI:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:nvcxx-24.7-cuda-12.5.1:buildMPI
+    - job: gromacs:nvcxx-25.9-cuda-13.0.2:buildMPI
     - job: regressiontests:prepare
   artifacts:
     paths:

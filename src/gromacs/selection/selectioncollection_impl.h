@@ -117,7 +117,7 @@ namespace gmx
 class ExceptionInitializer;
 
 /*! \internal \brief
- * Private implemention class for SelectionCollection.
+ * Private implementation class for SelectionCollection.
  *
  * \ingroup module_selection
  */

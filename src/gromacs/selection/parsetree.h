@@ -483,7 +483,7 @@ gmx::SelectionTreeElementPointer _gmx_sel_init_arithmetic(const gmx::SelectionTr
                                                           const gmx::SelectionTreeElementPointer& right,
                                                           char     op,
                                                           yyscan_t scanner);
-/** Creates a gmx::SelectionTreeElement for comparsion expression evaluation. */
+/** Creates a gmx::SelectionTreeElement for comparison expression evaluation. */
 gmx::SelectionTreeElementPointer _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer& left,
                                                           const gmx::SelectionTreeElementPointer& right,
                                                           const char* cmpop,

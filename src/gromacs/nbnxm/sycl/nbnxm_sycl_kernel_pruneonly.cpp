@@ -64,10 +64,10 @@ class NbnxmKernelPruneOnly;
 /*! \brief Prune-only kernel for NBNXM.
  *
  */
-template<bool haveFreshList, PairlistType layoutType>
-auto nbnxmKernelPruneOnly(sycl::handler& cgh,
-                          const int      numSci,
-                          const int      numParts,
+template<bool haveFreshList, PairlistType layoutType, typename CommandGroupHandler>
+auto nbnxmKernelPruneOnly(CommandGroupHandler cgh,
+                          const int           numSci,
+                          const int           numParts,
                           const Float4* __restrict__ gm_xq,
                           const Float3* __restrict__ gm_shiftVec,
                           nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
@@ -307,13 +307,8 @@ void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numS
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q,
-                                [&](sycl::handler& cgh)
-                                {
-                                    auto kernel = nbnxmKernelPruneOnly<haveFreshList, layoutType>(
-                                            cgh, std::forward<Args>(args)...);
-                                    cgh.parallel_for<kernelNameType>(range, kernel);
-                                });
+    auto kernelFunctionBuilder = nbnxmKernelPruneOnly<haveFreshList, layoutType, CommandGroupHandler>;
+    syclSubmitWithoutEvent<kernelNameType>(q, kernelFunctionBuilder, range, std::forward<Args>(args)...);
 }
 
 //! \brief Select templated kernel and launch it.

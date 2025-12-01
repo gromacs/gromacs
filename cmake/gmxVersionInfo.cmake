@@ -252,7 +252,7 @@ set(REGRESSIONTEST_BRANCH "main")
 # directory name within the regressiontests tarball, which affects the
 # md5sum of the tarball. The matching md5sum has to go here, and if it
 # isn't right the real release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "bc07c25d81cb41219fa67f82d34b8ac1" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "ca501f2f8c662f08b01595f2295100f5" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 # If you are making a custom fork of GROMACS, please describe your
 # fork, perhaps with its version number, in the value of

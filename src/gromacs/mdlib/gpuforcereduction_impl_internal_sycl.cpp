@@ -63,8 +63,9 @@ namespace gmx
 using mode = sycl::access_mode;
 
 //! \brief Function returning the force reduction kernel lambda.
-template<bool addRvecForce, bool accumulateForce>
-static auto reduceKernel(const Float3* __restrict__ gm_nbnxmForce,
+template<bool addRvecForce, bool accumulateForce, typename CommandGroupHandler>
+static auto reduceKernel(CommandGroupHandler /* cgh */,
+                         const Float3* __restrict__ gm_nbnxmForce,
                          const Float3* __restrict__ gm_rvecForceToAdd /* used iff addRvecForce */,
                          Float3* __restrict__ gm_forceTotal,
                          const int* __restrict__ gm_cell,
@@ -102,17 +103,15 @@ static void launchReductionKernel_(const int                   numAtoms,
     const sycl::range<1> rangeNumAtoms(numAtoms);
     sycl::queue          queue = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(
-            queue,
-            [&](sycl::handler& cgh)
-            {
-                auto kernel = reduceKernel<addRvecForce, accumulateForce>(d_nbnxmForce.get_pointer(),
-                                                                          d_rvecForceToAdd.get_pointer(),
-                                                                          d_forceTotal.get_pointer(),
-                                                                          d_cell.get_pointer(),
-                                                                          atomStart);
-                cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);
-            });
+    auto kernelFunctionBuilder = reduceKernel<addRvecForce, accumulateForce, CommandGroupHandler>;
+    syclSubmitWithoutEvent<ReduceKernel<addRvecForce, accumulateForce>>(queue,
+                                                                        kernelFunctionBuilder,
+                                                                        rangeNumAtoms,
+                                                                        d_nbnxmForce.get_pointer(),
+                                                                        d_rvecForceToAdd.get_pointer(),
+                                                                        d_forceTotal.get_pointer(),
+                                                                        d_cell.get_pointer(),
+                                                                        atomStart);
 }
 
 /*! \brief Select templated Force reduction kernel and launch it. */

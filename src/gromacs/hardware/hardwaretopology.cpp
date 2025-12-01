@@ -123,7 +123,7 @@ std::unordered_set<int> getAffinityList()
  *                                                                           *
  *****************************************************************************/
 
-/*! \brief Utlility function to renumber and translate low-level APIC info to topology
+/*! \brief Utility function to renumber and translate low-level APIC info to topology
  *
  * \param logicalProcessors Logical processor information according to the CpuInfo
  *                          structure. Note that the indices refer
@@ -844,14 +844,18 @@ std::vector<int> parseCpuString(const std::string& cpuString)
             {
                 if (i < 0 || (!cpus.empty() && cpus[cpus.size() - 1] >= i))
                 {
-                    return {}; // data in string is bad
+                    // data in string is bad
+                    cpus.clear();
+                    return cpus;
                 }
                 cpus.push_back(i);
             }
         }
         else
         {
-            return {}; // string not well-formatted; interval has 0 or >2 parts
+            // string not well-formatted; interval has 0 or >2 parts
+            cpus.clear();
+            return cpus;
         }
     }
     return cpus;

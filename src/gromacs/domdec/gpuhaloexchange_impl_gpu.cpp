@@ -134,6 +134,9 @@ HaloPlan computeHaloPlan(const gmx_domdec_comm_t& comm,
                  MPI_STATUS_IGNORE);
     plan.xRecvSize = xRecv;
 #else
+    GMX_UNUSED_VALUE(mpiCommMySim);
+    GMX_UNUSED_VALUE(sendRankX);
+    GMX_UNUSED_VALUE(recvRankX);
     plan.xRecvSize = plan.xSendSize;
 #endif
 
@@ -855,11 +858,13 @@ void GpuHaloExchangeNvshmemHelper::reinit()
 
         if (isPmeRank)
         {
-            int64_t newSize              = 1;
             int64_t totalSendRecvBufSize = 1;
 
+#if GMX_MPI
+            int64_t newSize = 1;
             MPI_Allreduce(
                     &newSize, &totalSendRecvBufSize, 1, MPI_INT64_T, MPI_MAX, dd_.mpiCommMySim().comm());
+#endif
             size_t totalSendSize = static_cast<size_t>(totalSendRecvBufSize);
             size_t totalRecvSize = static_cast<size_t>(totalSendRecvBufSize);
 

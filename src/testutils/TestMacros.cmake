@@ -92,6 +92,10 @@ function (gmx_add_unit_test_library NAME)
                 gmx_target_warning_suppression(${NAME} "-Wno-old-style-cast" HAS_NO_OLD_STYLE_CAST)
             endif()
         endif()
+        # GCC 14 has false positives with -Wmaybe-uninitialized in GoogleTest
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
+            gmx_target_warning_suppression(${NAME} "-Wno-maybe-uninitialized" HAS_WARNING_NO_MAYBE_UNINITIALIZED)
+        endif()
     endif()
 endfunction ()
 
@@ -261,6 +265,10 @@ function (gmx_add_gtest_executable EXENAME)
                 # warns about when it is the host compiler
                 gmx_target_warning_suppression(${EXENAME} "-Wno-old-style-cast" HAS_NO_OLD_STYLE_CAST)
             endif()
+        endif()
+        # GCC 14 has false positives with -Wmaybe-uninitialized in GoogleTest
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15)
+            gmx_target_warning_suppression(${EXENAME} "-Wno-maybe-uninitialized" HAS_WARNING_NO_MAYBE_UNINITIALIZED)
         endif()
     endif()
 endfunction()
