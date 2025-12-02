@@ -89,6 +89,9 @@ void writeNextFrame(H5md*                h5md,
 //! Deallocate \c h5md
 void destroyH5md(H5md* h5md);
 
+//! Flush \c h5md file.
+void flushH5md(H5md* h5md);
+
 } // namespace gmx
 
 #endif

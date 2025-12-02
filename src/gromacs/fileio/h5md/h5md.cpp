@@ -802,6 +802,12 @@ void destroyH5md(H5md* h5md)
     delete h5md;
 }
 
+//! Flush \c h5md file.
+void flushH5md(H5md* h5md)
+{
+    h5md->flush();
+}
+
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET
