@@ -94,28 +94,16 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
             pbc_dx_d(&pbc, com_lig_curr, com_rec_curr, curr_dist_vect);
             auto curr_dist = std::sqrt(curr_dist_vect.norm2());
 
-    //         if (mpiComm.isMainRank() and debug)
-    //         {
-    //             fprintf(debug, "==== RAMD ==== group %d\n", g);
-    //             fprintf(debug,
-    //                     "==== RAMD ==== COM ligand position at [%g, %g, %g]\n",
-    //                     com_lig_curr[0],
-    //                     com_lig_curr[1],
-    //                     com_lig_curr[2]);
-    //             fprintf(debug,
-    //                     "==== RAMD ==== COM receptor position at [%g, %g, %g]\n",
-    //                     com_rec_curr[0],
-    //                     com_rec_curr[1],
-    //                     com_rec_curr[2]);
-    //             fprintf(debug,
-    //                     "==== RAMD ==== Distance between COM of receptor and COM of ligand is %g\n",
-    //                     curr_dist);
-    //         }
-
-    //         if (mpiComm.isMainRank() and out)
-    //         {
-    //             fprintf(out, "\t%g", curr_dist);
-    //         }
+            GMX_LOG(logger_.info).appendText(logPrefix + "Current COM ligand position at [" +
+                                            std::to_string(com_lig_curr[0]) + ", " +
+                                            std::to_string(com_lig_curr[1]) + ", " +
+                                            std::to_string(com_lig_curr[2]) + "]");
+            GMX_LOG(logger_.info).appendText(logPrefix + "Current COM receptor position at [" +
+                                            std::to_string(com_rec_curr[0]) + ", " +
+                                            std::to_string(com_rec_curr[1]) + ", " +
+                                            std::to_string(com_rec_curr[2]) + "]");
+            GMX_LOG(logger_.info).appendText(logPrefix + "Distance between COM of receptor and COM of ligand is "
+                + std::to_string(curr_dist) + "\n");
 
             if (curr_dist >= parameters_.groups_[g].max_dist_)
             {
