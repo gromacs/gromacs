@@ -71,6 +71,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxomp.h"
 
 #include "boundingbox.h"
 #include "boundingbox_simd.h"
@@ -1670,6 +1671,10 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 
     cellOffset_ = cellOffset;
 
+    // There are two types of cluster here:
+    // - the clusters on the grid, these have size geometry_.numAtomsICluster_
+    // - the clusters as passed in clusterRanges, these have size numAtomsPerCluster
+    const int numAtomsPerCluster = std::max(geometry_.numAtomsICluster_, geometry_.numAtomsJCluster_);
     const int numAtomsPerCell = geometry_.numAtomsPerCell_;
 
     // Set the cluster counts for the columns in the range of communicated columns
@@ -1727,77 +1732,89 @@ void Grid::setNonLocalGrid(const int                           ddZone,
     int numClustersTotal = 0;
 
     const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numClustersTotal) schedule(static)
-    for (int cell = 0; cell < numCellsTotal_; cell++)
+#pragma omp parallel num_threads(numThreads) reduction(+ : numClustersTotal)
     {
-        const int atomOffsetCell = (cellOffset_ + cell) * numAtomsPerCell;
+        const int thread = gmx_omp_get_thread_num();
+        // With simple grids we should divide only whole i and j-clusters over threads
+        const int pack = (geometry_.isSimple_ ? numAtomsPerCluster / geometry_.numAtomsICluster_ : 1);
+        const int cellStart = ((numCellsTotal_ * (thread + 0)) / (pack * numThreads)) * pack;
+        const int cellEnd   = ((numCellsTotal_ * (thread + 1)) / (pack * numThreads)) * pack;
 
-        // This should be removed when we remove the (identity) atomIndices
-        for (int a = atomOffsetCell; a < atomOffsetCell + numAtomsPerCell; a++)
+        for (int cell = cellStart; cell < cellEnd; cell++)
         {
-            gridSetData->atomIndices[a] = a;
-        }
+            const int atomOffsetCell = (cellOffset_ + cell) * numAtomsPerCell;
 
-        // Do not pass filler particles to fillCell()
-        int atomEnd = atomOffsetCell + numAtomsPerCell;
-        while (atomEnd > atomOffsetCell && atomInfo[atomEnd - 1] == gmx::sc_atomInfo_IsFillerParticle)
-        {
-            atomEnd--;
-        }
-
-        int numClustersInCell;
-
-        if (geometry_.isSimple_)
-        {
-            fillCell(gridSetData, nbat, atomOffsetCell, atomEnd, atomInfo, x);
-
-            int nonEmptyCell;
-            if (atomEnd > atomOffsetCell)
+            // This should be removed when we remove the (identity) atomIndices
+            for (int a = atomOffsetCell; a < atomOffsetCell + numAtomsPerCell; a++)
             {
-                numClustersInCell = 1;
-                nonEmptyCell      = cell;
+                gridSetData->atomIndices[a] = a;
+            }
+
+            // Do not pass filler particles to fillCell()
+            int atomEnd = atomOffsetCell + numAtomsPerCell;
+            while (atomEnd > atomOffsetCell && atomInfo[atomEnd - 1] == gmx::sc_atomInfo_IsFillerParticle)
+            {
+                atomEnd--;
+            }
+
+            int numClustersInCell;
+
+            if (geometry_.isSimple_)
+            {
+                fillCell(gridSetData, nbat, atomOffsetCell, atomEnd, atomInfo, x);
+
+                int nonEmptyCell;
+                if (atomEnd > atomOffsetCell)
+                {
+                    numClustersInCell = 1;
+                    nonEmptyCell      = cell;
+                }
+                else
+                {
+                    numClustersInCell = 0;
+                    // We have a cell with only filler particles, copy the previous bounding box.
+                    // Although this cell doesn't interact, the bounding boxes need to be sequential
+                    // as the pair search determines sub-ranges of cells using these bounds.
+                    nonEmptyCell = cell - 1;
+                }
+                GMX_ASSERT(nonEmptyCell >= cellStart,
+                           "We should only operate on cells in our thread range");
+                bbcz_[cell].lower = bb_[nonEmptyCell].lower.z;
+                bbcz_[cell].upper = bb_[nonEmptyCell].upper.z;
             }
             else
             {
-                numClustersInCell = 0;
-                // We have a cell with only filler particles, copy the previous bounding box
-                nonEmptyCell = cell - 1;
-            }
-            bbcz_[cell].lower = bb_[nonEmptyCell].lower.z;
-            bbcz_[cell].upper = bb_[nonEmptyCell].upper.z;
-        }
-        else
-        {
-            const int numAtomsPerCluster = geometry_.numAtomsICluster_;
+                const int numAtomsPerCluster = geometry_.numAtomsICluster_;
 
-            numClustersInCell = divideRoundUp(atomEnd - atomOffsetCell, numAtomsPerCluster);
+                numClustersInCell = divideRoundUp(atomEnd - atomOffsetCell, numAtomsPerCluster);
 
-            bbcz_[cell].lower = x[atomOffsetCell][ZZ];
-            bbcz_[cell].upper = x[atomOffsetCell][ZZ];
-            for (int c = 0; c < numClustersInCell; c++)
-            {
-                const int atomClusterStart = atomOffsetCell + c * numAtomsPerCluster;
-                const int atomClusterEnd = std::min(atomClusterStart + numAtomsPerCluster, atomEnd);
-                fillCell(gridSetData, nbat, atomClusterStart, atomClusterEnd, atomInfo, x);
+                bbcz_[cell].lower = x[atomOffsetCell][ZZ];
+                bbcz_[cell].upper = x[atomOffsetCell][ZZ];
+                for (int c = 0; c < numClustersInCell; c++)
+                {
+                    const int atomClusterStart = atomOffsetCell + c * numAtomsPerCluster;
+                    const int atomClusterEnd = std::min(atomClusterStart + numAtomsPerCluster, atomEnd);
+                    fillCell(gridSetData, nbat, atomClusterStart, atomClusterEnd, atomInfo, x);
 
 #if GMX_DOUBLE
-                GMX_RELEASE_ASSERT(false,
-                                   "GPU bounding boxes not (yet) handled with double precision");
+                    GMX_RELEASE_ASSERT(
+                            false, "GPU bounding boxes not (yet) handled with double precision");
 #else
-                for (int a = atomClusterStart; a < atomClusterEnd; a++)
-                {
-                    bbcz_[cell].lower = std::min(bbcz_[cell].lower, x[a][ZZ]);
-                    bbcz_[cell].upper = std::max(bbcz_[cell].upper, x[a][ZZ]);
-                }
+                    for (int a = atomClusterStart; a < atomClusterEnd; a++)
+                    {
+                        bbcz_[cell].lower = std::min(bbcz_[cell].lower, x[a][ZZ]);
+                        bbcz_[cell].upper = std::max(bbcz_[cell].upper, x[a][ZZ]);
+                    }
 #endif
+                }
+
+                GMX_ASSERT(bbcz_[cell].upper >= bbcz_[cell].lower,
+                           "Upper bound should be >= lower bound");
             }
 
-            GMX_ASSERT(bbcz_[cell].upper >= bbcz_[cell].lower,
-                       "Upper bound should be >= lower bound");
+            numClusters_[cell] = numClustersInCell;
+            numClustersTotal += numClustersInCell;
         }
-
-        numClusters_[cell] = numClustersInCell;
-        numClustersTotal += numClustersInCell;
     }
 
     // Store the reduced value in the member variable. The separate reduction
