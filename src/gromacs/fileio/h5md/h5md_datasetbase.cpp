@@ -81,27 +81,32 @@ public:
         // is row-major and of correct dimensions.
         if constexpr (std::is_same_v<ValueType, gmx::BasicVector<float>>)
         {
-            throwUponH5mdError(numDims_ == 0 || dims().back() != DIM,
-                               "Could not open data set: inner dimension of data set must = 3 "
-                               "for BasicVector<float>");
-            throwUponH5mdError(!valueTypeIsDataType<float>(nativeDataType_),
-                               "Could not open data set: compiled type parameter does not match "
-                               "the primitive type of the data set");
+            GMX_H5MD_THROW_UPON_ERROR(
+                    numDims_ == 0 || dims().back() != DIM,
+                    "Could not open data set: inner dimension of data set must = 3 "
+                    "for BasicVector<float>");
+            GMX_H5MD_THROW_UPON_ERROR(
+                    !valueTypeIsDataType<float>(nativeDataType_),
+                    "Could not open data set: compiled type parameter does not match "
+                    "the primitive type of the data set");
         }
         else if constexpr (std::is_same_v<ValueType, gmx::BasicVector<double>>)
         {
-            throwUponH5mdError(numDims_ == 0 || dims().back() != DIM,
-                               "Could not open data set: inner dimension of data set must = 3 "
-                               "for BasicVector<double>");
-            throwUponH5mdError(!valueTypeIsDataType<double>(nativeDataType_),
-                               "Could not open data set: compiled type parameter does not match "
-                               "the primitive type of the data set");
+            GMX_H5MD_THROW_UPON_ERROR(
+                    numDims_ == 0 || dims().back() != DIM,
+                    "Could not open data set: inner dimension of data set must = 3 "
+                    "for BasicVector<double>");
+            GMX_H5MD_THROW_UPON_ERROR(
+                    !valueTypeIsDataType<double>(nativeDataType_),
+                    "Could not open data set: compiled type parameter does not match "
+                    "the primitive type of the data set");
         }
         else
         {
-            throwUponH5mdError(!valueTypeIsDataType<ValueType>(nativeDataType_),
-                               "Could not open data set: compiled type parameter does not match "
-                               "the primitive type of the data set");
+            GMX_H5MD_THROW_UPON_ERROR(
+                    !valueTypeIsDataType<ValueType>(nativeDataType_),
+                    "Could not open data set: compiled type parameter does not match "
+                    "the primitive type of the data set");
         }
     }
 
@@ -114,8 +119,8 @@ public:
     {
         DataSetDims dataSetDims(numDims_, 0);
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet_));
-        throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
-                           "Could not read dimensions of data set");
+        GMX_H5MD_THROW_UPON_ERROR(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
+                                  "Could not read dimensions of data set");
         return dataSetDims;
     }
 
@@ -164,7 +169,7 @@ public:
 template<typename ValueType>
 H5mdDataSetBase<ValueType>::H5mdDataSetBase(const hid_t dataSetHandle)
 {
-    throwUponInvalidHid(dataSetHandle, "Invalid handle to data set.");
+    GMX_H5MD_THROW_UPON_INVALID_HID(dataSetHandle, "Invalid handle to data set.");
     impl_ = std::make_unique<Impl>(dataSetHandle);
 }
 
@@ -172,7 +177,8 @@ template<typename ValueType>
 H5mdDataSetBase<ValueType>::H5mdDataSetBase(const hid_t container, const char* name)
 {
     const hid_t dataSetHandle = H5Dopen(container, name, H5P_DEFAULT);
-    throwUponInvalidHid(dataSetHandle, gmx::formatString("Cannot open data set with name %s.", name));
+    GMX_H5MD_THROW_UPON_INVALID_HID(dataSetHandle,
+                                    gmx::formatString("Cannot open data set with name %s.", name));
     impl_ = std::make_unique<Impl>(dataSetHandle);
 }
 

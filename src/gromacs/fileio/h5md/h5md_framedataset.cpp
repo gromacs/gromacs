@@ -67,10 +67,10 @@ template<typename ValueType,
 static DataSetDims getFrameDims(const DataSetDims& dataSetDims)
 {
     DataSetDims frameDims(dataSetDims.cbegin() + 1, dataSetDims.cend());
-    throwUponH5mdError(frameDims.empty(),
-                       "Data set dimensions for BasicVector<T> must be at least 1");
-    throwUponH5mdError(frameDims.back() != DIM,
-                       "Innermost dimension of data set for BasicVector<T> must be 3");
+    GMX_H5MD_THROW_UPON_ERROR(frameDims.empty(),
+                              "Data set dimensions for BasicVector<T> must be at least 1");
+    GMX_H5MD_THROW_UPON_ERROR(frameDims.back() != DIM,
+                              "Innermost dimension of data set for BasicVector<T> must be 3");
     frameDims.pop_back();
 
     return frameDims;
@@ -79,8 +79,8 @@ static DataSetDims getFrameDims(const DataSetDims& dataSetDims)
 
 static DataSetDims getFullDims(const DataSetDims& dataSetDims)
 {
-    throwUponH5mdError(dataSetDims.empty(),
-                       "Cannot create frame data set for 0-dimensional data set");
+    GMX_H5MD_THROW_UPON_ERROR(dataSetDims.empty(),
+                              "Cannot create frame data set for 0-dimensional data set");
     DataSetDims fullDims = dataSetDims;
     if (!fullDims.empty())
     {
@@ -107,7 +107,8 @@ H5mdFrameDataSet<ValueType>::FrameDescription::FrameDescription(const DataSetDim
     memoryDataSpace_{ H5Screate_simple(frameDimsPrimitive_.size(), frameDimsPrimitive_.data(), nullptr) },
     frameOffset_(dataSetDims.size(), 0)
 {
-    throwUponInvalidHid(memoryDataSpace_, "Could not create memory data space for frame data");
+    GMX_H5MD_THROW_UPON_INVALID_HID(memoryDataSpace_,
+                                    "Could not create memory data space for frame data");
 }
 
 template<typename ValueType>
@@ -183,38 +184,39 @@ hsize_t H5mdFrameDataSet<ValueType>::numFrames() const noexcept
 template<typename ValueType>
 void H5mdFrameDataSet<ValueType>::readFrame(hsize_t index, ArrayRef<ValueType> values)
 {
-    throwUponH5mdError(index >= numFrames_, "Cannot read frame with index >= numFrames");
-    throwUponH5mdError(values.size() != frameDescription_.numValues(),
-                       formatString("Cannot read frame into buffer of incorrect size: "
-                                    "size of frame is %llu values but size of buffer is %lu",
-                                    static_cast<unsigned long long>(frameDescription_.numValues()),
-                                    values.size()));
+    GMX_H5MD_THROW_UPON_ERROR(index >= numFrames_, "Cannot read frame with index >= numFrames");
+    GMX_H5MD_THROW_UPON_ERROR(values.size() != frameDescription_.numValues(),
+                              formatString("Cannot read frame into buffer of incorrect size: "
+                                           "size of frame is %llu values but size of buffer is %lu",
+                                           static_cast<unsigned long long>(frameDescription_.numValues()),
+                                           values.size()));
 
     const auto [fileDataSpace, fileDataSpaceGuard] =
             makeH5mdDataSpaceGuard(frameDescription_.fileDataSpaceForFrame(index, Base::id()));
 
-    throwUponH5mdError(H5Dread(Base::id(),
-                               Base::nativeDataType(),
-                               frameDescription_.memoryDataSpace(),
-                               fileDataSpace,
-                               H5P_DEFAULT,
-                               values.data())
-                               < 0,
-                       "Error reading frame data.");
+    GMX_H5MD_THROW_UPON_ERROR(H5Dread(Base::id(),
+                                      Base::nativeDataType(),
+                                      frameDescription_.memoryDataSpace(),
+                                      fileDataSpace,
+                                      H5P_DEFAULT,
+                                      values.data())
+                                      < 0,
+                              "Error reading frame data.");
 }
 
 template<typename ValueType>
 void H5mdFrameDataSet<ValueType>::writeNextFrame(ArrayRef<const ValueType> values)
 {
-    throwUponH5mdError(values.size() != frameDescription_.numValues(),
-                       formatString("Cannot write buffer of incorrect size into frame: "
-                                    "size of frame is %llu values but size of buffer is %lu",
-                                    static_cast<unsigned long long>(frameDescription_.numValues()),
-                                    values.size()));
+    GMX_H5MD_THROW_UPON_ERROR(values.size() != frameDescription_.numValues(),
+                              formatString("Cannot write buffer of incorrect size into frame: "
+                                           "size of frame is %llu values but size of buffer is %lu",
+                                           static_cast<unsigned long long>(frameDescription_.numValues()),
+                                           values.size()));
 
-    throwUponH5mdError(H5Dset_extent(Base::id(), extentForNumFrames(numFrames_ + 1).data()) < 0,
-                       formatString("Could not set the number of frames in the data set to %llu",
-                                    static_cast<unsigned long long>(numFrames_ + 1)));
+    GMX_H5MD_THROW_UPON_ERROR(
+            H5Dset_extent(Base::id(), extentForNumFrames(numFrames_ + 1).data()) < 0,
+            formatString("Could not set the number of frames in the data set to %llu",
+                         static_cast<unsigned long long>(numFrames_ + 1)));
 
     const auto [fileDataSpace, fileDataSpaceGuard] =
             makeH5mdDataSpaceGuard(frameDescription_.fileDataSpaceForFrame(numFrames_, Base::id()));
@@ -225,7 +227,7 @@ void H5mdFrameDataSet<ValueType>::writeNextFrame(ArrayRef<const ValueType> value
         // If our write failed we shrink the data set back to its original number of frames before
         // throwing. Ignore any error here, as we are already handling a bigger problem.
         H5Dset_extent(Base::id(), extentForNumFrames(numFrames_).data());
-        throwUponH5mdError(true, "Error writing frame data.");
+        GMX_H5MD_THROW_UPON_ERROR(true, "Error writing frame data.");
     }
 
     // Only increment frame index if the write was successful.
@@ -236,20 +238,22 @@ template<typename ValueType>
 H5mdScalarFrameDataSet<ValueType>::H5mdScalarFrameDataSet(H5mdFrameDataSet<ValueType>&& dataSet) :
     H5mdFrameDataSet<ValueType>{ std::move(dataSet) }
 {
-    throwUponH5mdError(!this->frameDims().empty(),
-                       formatString("Could not create scalar frame data set: frame dimension "
-                                    "must be empty but had %lu values.",
-                                    this->frameDims().size()));
+    GMX_H5MD_THROW_UPON_ERROR(
+            !this->frameDims().empty(),
+            formatString("Could not create scalar frame data set: frame dimension "
+                         "must be empty but had %lu values.",
+                         this->frameDims().size()));
 }
 
 template<typename ValueType>
 H5mdScalarFrameDataSet<ValueType>::H5mdScalarFrameDataSet(const hid_t container, const char* name) :
     H5mdFrameDataSet<ValueType>(container, name)
 {
-    throwUponH5mdError(!this->frameDims().empty(),
-                       formatString("Could not create scalar frame data set: frame dimension "
-                                    "must be empty but had %lu values.",
-                                    this->frameDims().size()));
+    GMX_H5MD_THROW_UPON_ERROR(
+            !this->frameDims().empty(),
+            formatString("Could not create scalar frame data set: frame dimension "
+                         "must be empty but had %lu values.",
+                         this->frameDims().size()));
 }
 
 template<typename ValueType>

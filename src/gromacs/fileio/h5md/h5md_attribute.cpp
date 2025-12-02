@@ -67,14 +67,15 @@ void setStringAttributeByBuffer(const hid_t          container,
                                 const int            maxStrLength,
                                 ArrayRef<const char> buffer)
 {
-    throwUponH5mdError(buffer.size() < numberOfStrings * (maxStrLength + 1),
-                       formatString("Buffer size is too small for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(buffer.size() < numberOfStrings * (maxStrLength + 1),
+                              formatString("Buffer size is too small for attribute: %s", attributeName));
 
     const auto [dataType, dataTypeGuard] =
             makeH5mdTypeGuard(hdf5DataTypeForFixedSizeString(maxStrLength + 1));
-    throwUponInvalidHid(dataType, formatString("Failed to get data type for attribute: %s", attributeName));
-    throwUponH5mdError(H5Tget_class(dataType) != H5T_STRING,
-                       formatString("Data type for attribute is not a string: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataType, formatString("Failed to get data type for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Tget_class(dataType) != H5T_STRING,
+                              formatString("Data type for attribute is not a string: %s", attributeName));
 
     DataSetDims dims{ hsize_t(numberOfStrings) };
     const auto [dataSpace, dataSpaceGuard] =
@@ -82,10 +83,12 @@ void setStringAttributeByBuffer(const hid_t          container,
 
     const auto [attribute, attributeGuard] = makeH5mdAttributeGuard(
             H5Acreate(container, attributeName, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT));
-    throwUponInvalidHid(attribute, formatString("Failed to create attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(attribute,
+                                    formatString("Failed to create attribute: %s", attributeName));
 
-    throwUponH5mdError(H5Awrite(attribute, dataType, buffer.data()) < 0,
-                       formatString("Failed to write vector of strings attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(
+            H5Awrite(attribute, dataType, buffer.data()) < 0,
+            formatString("Failed to write vector of strings attribute: %s", attributeName));
 }
 
 template<typename ValueType>
@@ -100,13 +103,14 @@ std::optional<ValueType> getAttribute(const hid_t container, const char* attribu
 
     const auto [dataType, dataTypeGuard] =
             makeH5mdTypeGuard(H5Tget_native_type(H5Aget_type(attribute), H5T_DIR_DEFAULT));
-    throwUponInvalidHid(dataType, formatString("Failed to get data type for attribute: %s", attributeName));
-    throwUponH5mdError(!valueTypeIsDataType<ValueType>(dataType),
-                       formatString("Type mismatch when reading attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataType, formatString("Failed to get data type for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<ValueType>(dataType),
+                              formatString("Type mismatch when reading attribute: %s", attributeName));
 
     ValueType value{};
-    throwUponH5mdError(H5Aread(attribute, dataType, &value) < 0,
-                       formatString("Failed to read attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Aread(attribute, dataType, &value) < 0,
+                              formatString("Failed to read attribute: %s", attributeName));
     return value;
 }
 
@@ -122,14 +126,15 @@ std::optional<std::string> getAttribute<std::string>(const hid_t container, cons
 
     const auto [dataType, dataTypeGuard] =
             makeH5mdTypeGuard(H5Tget_native_type(H5Aget_type(attribute), H5T_DIR_DEFAULT));
-    throwUponInvalidHid(dataType, formatString("Failed to get data type for attribute: %s", attributeName));
-    throwUponH5mdError(!valueTypeIsDataType<std::string>(dataType),
-                       formatString("Type mismatch when reading attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataType, formatString("Failed to get data type for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<std::string>(dataType),
+                              formatString("Type mismatch when reading attribute: %s", attributeName));
 
     size_t            stringSize = H5Tget_size(dataType);
     std::vector<char> strData(stringSize);
-    throwUponH5mdError(H5Aread(attribute, dataType, strData.data()) < 0,
-                       formatString("Failed to read string attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Aread(attribute, dataType, strData.data()) < 0,
+                              formatString("Failed to read string attribute: %s", attributeName));
 
     std::string values(strData.data());
     return values;
@@ -148,18 +153,19 @@ std::optional<std::vector<ValueType>> getAttributeVector(const hid_t container, 
 
     const auto [dataType, dataTypeGuard] =
             makeH5mdTypeGuard(H5Tget_native_type(H5Aget_type(attribute), H5T_DIR_DEFAULT));
-    throwUponInvalidHid(dataType, formatString("Failed to get data type for attribute: %s", attributeName));
-    throwUponH5mdError(!valueTypeIsDataType<ValueType>(dataType),
-                       formatString("Type mismatch when reading attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataType, formatString("Failed to get data type for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<ValueType>(dataType),
+                              formatString("Type mismatch when reading attribute: %s", attributeName));
 
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Aget_space(attribute));
-    throwUponInvalidHid(dataSpace,
-                        formatString("Failed to get data space for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataSpace, formatString("Failed to get data space for attribute: %s", attributeName));
 
     // Setup the size of the vector
     DataSetDims dims = { 0 };
-    throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr) < 0,
-                       formatString("Failed to get dimensions for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr) < 0,
+                              formatString("Failed to get dimensions for attribute: %s", attributeName));
     const size_t nelems = dims[0];
     if (nelems == 0)
     {
@@ -168,8 +174,8 @@ std::optional<std::vector<ValueType>> getAttributeVector(const hid_t container, 
 
     // Read the data
     std::vector<ValueType> values(dims[0]);
-    throwUponH5mdError(H5Aread(attribute, dataType, values.data()) < 0,
-                       formatString("Failed to read vector attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Aread(attribute, dataType, values.data()) < 0,
+                              formatString("Failed to read vector attribute: %s", attributeName));
     return values;
 }
 
@@ -186,18 +192,19 @@ std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hi
 
     const auto [dataType, dataTypeGuard] =
             makeH5mdTypeGuard(H5Tget_native_type(H5Aget_type(attribute), H5T_DIR_DEFAULT));
-    throwUponInvalidHid(dataType, formatString("Failed to get data type for attribute: %s", attributeName));
-    throwUponH5mdError(!valueTypeIsDataType<std::string>(dataType),
-                       formatString("Type mismatch when reading attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataType, formatString("Failed to get data type for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<std::string>(dataType),
+                              formatString("Type mismatch when reading attribute: %s", attributeName));
 
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Aget_space(attribute));
-    throwUponInvalidHid(dataSpace,
-                        formatString("Failed to get data space for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataSpace, formatString("Failed to get data space for attribute: %s", attributeName));
 
     // Setup the size of the vector
     DataSetDims dims = { 0 };
-    throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr) < 0,
-                       formatString("Failed to get dimensions for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr) < 0,
+                              formatString("Failed to get dimensions for attribute: %s", attributeName));
     const size_t nelems = dims[0];
     if (nelems == 0)
     {
@@ -209,8 +216,9 @@ std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hi
     std::vector<std::string> values(nelems);
     std::vector<char>        buffer(nelems * stringSize);
 
-    throwUponH5mdError(H5Aread(attribute, dataType, buffer.data()) < 0,
-                       formatString("Failed to read vector of strings attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(
+            H5Aread(attribute, dataType, buffer.data()) < 0,
+            formatString("Failed to read vector of strings attribute: %s", attributeName));
     for (size_t i = 0; i < nelems; i++)
     {
         values[i] = std::string(buffer.data() + i * stringSize,
@@ -224,44 +232,47 @@ void setAttribute(const hid_t container, const char* attributeName, const ValueT
 {
     // Initialize the data space with a scalar type
     auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
-    throwUponInvalidHid(
+    GMX_H5MD_THROW_UPON_INVALID_HID(
             dataSpace, formatString("Failed to create data space for attribute: %s", attributeName));
 
     // NOTE: Throw if the attribute already exists (!5205)
-    throwUponH5mdError(H5Aexists(container, attributeName) > 0,
-                       formatString("Attribute already exists: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Aexists(container, attributeName) > 0,
+                              formatString("Attribute already exists: %s", attributeName));
 
     const auto [attribute, attributeGuard] = makeH5mdAttributeGuard(H5Acreate(
             container, attributeName, hdf5DataTypeFor<ValueType>(), dataSpace, H5P_DEFAULT, H5P_DEFAULT));
-    throwUponInvalidHid(attribute, formatString("Failed to create attribute: %s", attributeName));
-    throwUponH5mdError(H5Awrite(attribute, hdf5DataTypeFor<ValueType>(), &value) < 0,
-                       formatString("Failed to write attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(attribute,
+                                    formatString("Failed to create attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Awrite(attribute, hdf5DataTypeFor<ValueType>(), &value) < 0,
+                              formatString("Failed to write attribute: %s", attributeName));
 }
 
 void setAttribute(const hid_t container, const char* attributeName, const char* value)
 {
     const auto [dataType, dataTypeGuard] =
             makeH5mdTypeGuard(hdf5DataTypeForFixedSizeString(strlen(value) + 1));
-    throwUponInvalidHid(dataType, formatString("Failed to get data type for attribute: %s", attributeName));
-    throwUponH5mdError(H5Tget_class(dataType) != H5T_STRING,
-                       formatString("Data type for attribute is not a string: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            dataType, formatString("Failed to get data type for attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Tget_class(dataType) != H5T_STRING,
+                              formatString("Data type for attribute is not a string: %s", attributeName));
 
     // Initialize the data space with a scalar type
     auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
-    throwUponInvalidHid(
+    GMX_H5MD_THROW_UPON_INVALID_HID(
             dataSpace, formatString("Failed to create data space for attribute: %s", attributeName));
 
     // NOTE: Throw if the attribute already exists (!5205)
-    throwUponH5mdError(H5Aexists(container, attributeName) > 0,
-                       formatString("Attribute already exists: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Aexists(container, attributeName) > 0,
+                              formatString("Attribute already exists: %s", attributeName));
 
     const auto [attribute, attributeGuard] = makeH5mdAttributeGuard(
             H5Acreate2(container, attributeName, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT));
-    throwUponInvalidHid(attribute, formatString("Failed to create attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(attribute,
+                                    formatString("Failed to create attribute: %s", attributeName));
 
     // Write the attribute
-    throwUponH5mdError(H5Awrite(attribute, dataType, value) < 0,
-                       formatString("Failed to write string attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Awrite(attribute, dataType, value) < 0,
+                              formatString("Failed to write string attribute: %s", attributeName));
 }
 
 void setAttribute(const hid_t container, const char* attributeName, const std::string& value)
@@ -277,15 +288,16 @@ void setAttributeVector(const hid_t container, const char* attributeName, ArrayR
             makeH5mdDataSpaceGuard(H5Screate_simple(1, dims.data(), nullptr));
 
     // NOTE: Throw if the attribute already exists (!5205)
-    throwUponH5mdError(H5Aexists(container, attributeName) > 0,
-                       formatString("Attribute already exists: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Aexists(container, attributeName) > 0,
+                              formatString("Attribute already exists: %s", attributeName));
     const auto [attribute, attributeGuard] = makeH5mdAttributeGuard(H5Acreate(
             container, attributeName, hdf5DataTypeFor<ValueType>(), dataSpace, H5P_DEFAULT, H5P_DEFAULT));
-    throwUponInvalidHid(attribute, formatString("Failed to create attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_INVALID_HID(attribute,
+                                    formatString("Failed to create attribute: %s", attributeName));
 
     // Vector of numerical values
-    throwUponH5mdError(H5Awrite(attribute, hdf5DataTypeFor<ValueType>(), values.data()) < 0,
-                       formatString("Failed to write vector attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(H5Awrite(attribute, hdf5DataTypeFor<ValueType>(), values.data()) < 0,
+                              formatString("Failed to write vector attribute: %s", attributeName));
 }
 
 void setAttributeVector(const hid_t container, const char* attributeName, ArrayRef<const std::string> values)
@@ -324,8 +336,9 @@ std::vector<char> setAttributeStringVector(const hid_t         container,
         throw FileIOError(formatString("Unsupported string type for attribute: %s", attributeName));
     }
     size_t expectedSize = (maxStrLength + 1) * strCount;
-    throwUponH5mdError(expectedSize == 0,
-                       formatString("Cannot write empty string vector attribute: %s", attributeName));
+    GMX_H5MD_THROW_UPON_ERROR(
+            expectedSize == 0,
+            formatString("Cannot write empty string vector attribute: %s", attributeName));
     if (buffer.empty() || buffer.size() < expectedSize)
     {
         // Only enlarge the buffer when empty or the current size is smaller than needed

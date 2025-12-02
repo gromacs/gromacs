@@ -133,8 +133,8 @@ inline hid_t hdf5DataTypeForFixedSizeString(const hsize_t maxStringLength)
 {
     const hid_t dataType = H5Tcopy(H5T_C_S1_g);
     H5Tset_cset(dataType, H5T_CSET_UTF8);
-    throwUponH5mdError(H5Tset_size(dataType, maxStringLength) < 0,
-                       "Invalid fixed-size for string type");
+    GMX_H5MD_THROW_UPON_ERROR(H5Tset_size(dataType, maxStringLength) < 0,
+                              "Invalid fixed-size for string type");
     return dataType;
 }
 

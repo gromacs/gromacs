@@ -117,7 +117,7 @@ public:
     H5mdFrameDataSetBuilder& withMaxStringLength(const int maxLength)
     {
         // Use int to prevent the integer overflow if passed a negative value
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 maxLength <= 0,
                 "Cannot create fixed-size string data set with non-positive maximum length");
         Base::withMaxStringLength(maxLength);

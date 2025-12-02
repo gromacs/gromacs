@@ -74,8 +74,8 @@ H5mdTimeDataBlock<ValueType>::H5mdTimeDataBlock(H5mdFrameDataSet<ValueType>&&   
     const hsize_t numValues = valueDataSet_.numFrames();
     const hsize_t numSteps  = stepDataSet_.numFrames();
     const hsize_t numTimes = timeDataSet_.has_value() ? timeDataSet_.value().numFrames() : numValues;
-    throwUponH5mdError(numValues != numSteps || numValues != numTimes,
-                       "Input data sets have different number of frames");
+    GMX_H5MD_THROW_UPON_ERROR(numValues != numSteps || numValues != numTimes,
+                              "Input data sets have different number of frames");
     numFrames_ = static_cast<int64_t>(numValues);
 }
 
@@ -170,7 +170,7 @@ bool H5mdTimeDataBlock<ValueType>::readFrame(const int64_t       frameIndex,
 template<typename ValueType>
 void H5mdTimeDataBlock<ValueType>::writeNextFrame(ArrayRef<const ValueType> values, const int64_t step)
 {
-    throwUponH5mdError(
+    GMX_H5MD_THROW_UPON_ERROR(
             hasTime(),
             "Must not use no-time overload for writeNextFrame when a time data set exists");
     valueDataSet_.writeNextFrame(values);

@@ -210,7 +210,7 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
             break;
         default: throw NotImplementedError("Appending to H5MD is not implemented yet.");
     }
-    gmx::throwUponInvalidHid(file_, "Cannot open H5MD file.");
+    GMX_H5MD_THROW_UPON_INVALID_HID(file_, "Cannot open H5MD file.");
 
     filemode_ = mode;
 
@@ -255,7 +255,7 @@ void H5md::flush(bool throwExceptionUponError)
     if (throwExceptionUponError)
     {
         GMX_ASSERT(handleIsValid(file_), "Cannot flush an invalid H5MD file.");
-        gmx::throwUponH5mdError(H5Fflush(file_, H5F_SCOPE_LOCAL) < 0, "Error flushing H5MD.");
+        GMX_H5MD_THROW_UPON_ERROR(H5Fflush(file_, H5F_SCOPE_LOCAL) < 0, "Error flushing H5MD.");
     }
     else
     {
@@ -310,10 +310,10 @@ static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBl
 
     const auto [positionGroup, positionGroupGuard] =
             makeH5mdGroupGuard(openGroup(selectionGroup, c_positionGroupName));
-    throwUponH5mdError(
+    GMX_H5MD_THROW_UPON_ERROR(
             H5Lcreate_hard(positionGroup, c_stepName, edgesGroup, c_stepName, H5P_DEFAULT, H5P_DEFAULT) < 0,
             "Could not create hard link from position/step to box/edges/step");
-    throwUponH5mdError(
+    GMX_H5MD_THROW_UPON_ERROR(
             H5Lcreate_hard(positionGroup, c_timeName, edgesGroup, c_timeName, H5P_DEFAULT, H5P_DEFAULT) < 0,
             "Could not create hard link from position/time to box/edges/time");
 }
@@ -363,7 +363,7 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
     setupSimulationBoxGroup(selectionGroup, inputRecord);
 
     const hsize_t numAtoms = selectionIndices.empty() ? topology.natoms : selectionIndices.size();
-    throwUponH5mdError(
+    GMX_H5MD_THROW_UPON_ERROR(
             numAtoms == 0,
             formatString("Cannot setup particle group '%s': no atoms in group", selectionName.c_str()));
 
@@ -494,10 +494,10 @@ void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selecti
 #if GMX_USE_HDF5
     const auto [particlesGroup, particlesGroupGuard] =
             makeH5mdGroupGuard(openGroup(file_, c_particlesGroupPath));
-    throwUponInvalidHid(particlesGroup, "H5md trajectory file has no /particles group");
+    GMX_H5MD_THROW_UPON_INVALID_HID(particlesGroup, "H5md trajectory file has no /particles group");
     const auto [selectionGroup, selectionGroupGuard] =
             makeH5mdGroupGuard(openGroup(particlesGroup, selectionName.c_str()));
-    throwUponInvalidHid(selectionGroup, "No trajectory data found for system group");
+    GMX_H5MD_THROW_UPON_INVALID_HID(selectionGroup, "No trajectory data found for system group");
 
     H5mdParticleBlockBuilder blockBuilder;
 
@@ -634,7 +634,7 @@ void H5md::writeNextFrame(ArrayRef<const RVec> positions,
     H5mdParticleBlock& particleBlock = particleBlocks_.at(c_fullSystemGroupName).block();
     if (!positions.empty())
     {
-        throwUponH5mdError(!particleBlock.hasPosition(), blockNotFoundError("positions"));
+        GMX_H5MD_THROW_UPON_ERROR(!particleBlock.hasPosition(), blockNotFoundError("positions"));
         particleBlock.position()->writeNextFrame(positions, step, time);
         if (particleBlock.hasBox())
         {
@@ -644,12 +644,12 @@ void H5md::writeNextFrame(ArrayRef<const RVec> positions,
     }
     if (!velocities.empty())
     {
-        throwUponH5mdError(!particleBlock.hasVelocity(), blockNotFoundError("velocities"));
+        GMX_H5MD_THROW_UPON_ERROR(!particleBlock.hasVelocity(), blockNotFoundError("velocities"));
         particleBlock.velocity()->writeNextFrame(velocities, step, time);
     }
     if (!forces.empty())
     {
-        throwUponH5mdError(!particleBlock.hasForce(), blockNotFoundError("forces"));
+        GMX_H5MD_THROW_UPON_ERROR(!particleBlock.hasForce(), blockNotFoundError("forces"));
         particleBlock.force()->writeNextFrame(forces, step, time);
     }
 #else
@@ -733,15 +733,15 @@ bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
     std::optional<int64_t> stepThatWasRead = std::nullopt;
     if (!positions.empty())
     {
-        throwUponH5mdError(!block_.hasPosition(), blockNotFoundError("positions"));
+        GMX_H5MD_THROW_UPON_ERROR(!block_.hasPosition(), blockNotFoundError("positions"));
         frameWasRead = block_.position()->readFrame(nextPositionFrameToRead_, positions, step, time)
                        || frameWasRead;
         // TODO: For a constant box we must also read it!
-        throwUponH5mdError(!block_.hasBox(), blockNotFoundError("box"));
+        GMX_H5MD_THROW_UPON_ERROR(!block_.hasBox(), blockNotFoundError("box"));
         block_.box()->readFrame(nextPositionFrameToRead_,
                                 arrayRefFromArray<real>(reinterpret_cast<real*>(box), DIM * DIM));
 
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 stepThatWasRead.has_value() && *step != stepThatWasRead.value(),
                 "Tried to read trajectory data for different simulation steps as the next frame");
         stepThatWasRead = *step;
@@ -749,11 +749,11 @@ bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
     }
     if (!velocities.empty())
     {
-        throwUponH5mdError(!block_.hasVelocity(), blockNotFoundError("velocities"));
+        GMX_H5MD_THROW_UPON_ERROR(!block_.hasVelocity(), blockNotFoundError("velocities"));
         frameWasRead = block_.velocity()->readFrame(nextVelocityFrameToRead_, velocities, step, time)
                        || frameWasRead;
 
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 stepThatWasRead.has_value() && *step != stepThatWasRead.value(),
                 "Tried to read trajectory data for different simulation steps as the next frame");
         stepThatWasRead = *step;
@@ -761,10 +761,10 @@ bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
     }
     if (!forces.empty())
     {
-        throwUponH5mdError(!block_.hasForce(), blockNotFoundError("forces"));
+        GMX_H5MD_THROW_UPON_ERROR(!block_.hasForce(), blockNotFoundError("forces"));
         frameWasRead = block_.force()->readFrame(nextForceFrameToRead_, forces, step, time) || frameWasRead;
 
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 stepThatWasRead.has_value() && *step != stepThatWasRead.value(),
                 "Tried to read trajectory data for different simulation steps as the next frame");
         stepThatWasRead = *step;
