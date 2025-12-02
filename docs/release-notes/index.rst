@@ -9,18 +9,46 @@ functionality supported, whereas patch releases contain only fixes for
 issues identified in the corresponding major releases.
 
 Two version series of |Gromacs| are under active maintenance and
-within support lifetime at any time. In 2026, they are the 2026 series
-and the 2025 series. In the latter, only highly conservative fixes
+within support lifetime at any time. In 2027, they are the 2027 series
+and the 2026 series. In the latter, only highly conservative fixes
 will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2025 ends, but we keep the year of the original release in the
+year 2026 ends, but we keep the year of the original release in the
 version name so that users understand how up to date their version
 is. Such fixes will also be incorporated into the more recent release
-series, as appropriate. Around the time the 2027 release is made, the
-2025 series will no longer be maintained.
+series, as appropriate. Around the time the 2028 release is made, the
+2026 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
 can be found on the `issue tracker`_ at that issue number.
+
+|Gromacs| 2027 series
+---------------------
+
+.. todolist::
+
+Patch releases
+^^^^^^^^^^^^^^
+.. .. toctree::
+   :maxdepth: 1
+
+Major release
+^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2027/major/highlights
+   2027/major/features
+   2027/major/performance
+   2027/major/api
+   2027/major/tools
+   2027/major/bugs-fixed
+   2027/major/deprecated-functionality
+   2027/major/removed-functionality
+   2027/major/portability
+   2027/major/miscellaneous
+
 
 |Gromacs| 2026 series
 ---------------------
@@ -48,6 +76,9 @@ Major release
    2026/major/removed-functionality
    2026/major/portability
    2026/major/miscellaneous
+
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
 
 |Gromacs| 2025 series
 ---------------------
@@ -81,8 +112,6 @@ Major release
    2025/major/portability
    2025/major/miscellaneous
 
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
 
 |Gromacs| 2024 series
 ---------------------

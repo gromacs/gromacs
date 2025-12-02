@@ -366,6 +366,16 @@ if (SPHINX_FOUND)
         install-guide/exotic.rst
         reference-manual/plots/GMX_logos/gmx_logo_blue.svg
         release-notes/index.rst
+        release-notes/2027/major/highlights.rst
+        release-notes/2027/major/features.rst
+        release-notes/2027/major/performance.rst
+        release-notes/2027/major/tools.rst
+        release-notes/2027/major/bugs-fixed.rst
+        release-notes/2027/major/removed-functionality.rst
+        release-notes/2027/major/deprecated-functionality.rst
+        release-notes/2027/major/portability.rst
+        release-notes/2027/major/miscellaneous.rst
+        release-notes/2027/major/api.rst
         release-notes/2026/major/highlights.rst
         release-notes/2026/major/features.rst
         release-notes/2026/major/performance.rst
