@@ -30,3 +30,11 @@ but at least the problem conditions will no longer continue to arise for newly c
 .tpr files.
 
 :issue:`5334`
+
+Fixed missing non-bonded interactions with direct halo communication
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using the experimental direct halo communication feature combined with 8-wide SIMD
+non-bonded kernels and OpenMP threading, non-bonded interactions could be missing.
+
+:issue:`5509`
