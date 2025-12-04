@@ -57,7 +57,7 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running NBNXM kernels on the device
     static constexpr bool Nonbonded = GMX_GPU;
     //! Whether this configuration supports running NB free energy kernels on the device
-    static constexpr bool NonbondedFE = Nonbonded && GMX_GPU_CUDA;
+    static constexpr bool NonbondedFE = Nonbonded && (GMX_GPU_CUDA || GMX_GPU_HIP);
     //! Whether this configuration supports running buffer operation kernels on the device
     static constexpr bool BufferOps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running PME kernels on the device

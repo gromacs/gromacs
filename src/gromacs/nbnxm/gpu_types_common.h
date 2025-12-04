@@ -555,6 +555,10 @@ struct EnergyFunctionProperties {
     static constexpr bool vdwEwald       = (vdwEwaldCombGeom || vdwEwaldCombLB); ///< LJ_EWALD
     static constexpr bool vdwFSwitch     = (vdwType == VdwType::FSwitch); ///< LJ_FORCE_SWITCH
     static constexpr bool vdwPSwitch     = (vdwType == VdwType::PSwitch); ///< LJ_POT_SWITCH
+    //! Additional properties for FEP kernels
+    static constexpr bool doExclusionForces =
+            (elecEwald || elecRF || vdwEwald
+             || elecCutoff); ///< EXCLUSION_FORCES: Whether exclusion forces need to be calculated
 };
 
 //! \brief Templated constants to shorten kernel function declaration.
