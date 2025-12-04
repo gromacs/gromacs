@@ -57,6 +57,7 @@ namespace gmx
 template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, InteractionLocality iloc);
 
+
 // clang-format off
 extern template void launchNbnxmKernelHelper<false, false, false>(NbnxmGpu* nb, const StepWorkload&  stepWork, const InteractionLocality iloc);
 extern template void launchNbnxmKernelHelper<false, false, true>(NbnxmGpu* nb, const StepWorkload&  stepWork, const InteractionLocality iloc);

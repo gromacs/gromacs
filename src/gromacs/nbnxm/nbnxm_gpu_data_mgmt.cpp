@@ -49,6 +49,8 @@
 #include <memory>
 #include <type_traits>
 
+#include "gromacs/gpu_utils/capabilities.h"
+
 #if GMX_GPU_CUDA
 #    include "cuda/nbnxm_cuda_types.h"
 #endif
@@ -1163,64 +1165,69 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
                            bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
 
-#if GMX_GPU_CUDA
-    if (bFepGpuNonBonded)
+#if GMX_GPU_CUDA || GMX_GPU_HIP
+    if constexpr (gmx::GpuConfigurationCapabilities::NonbondedFE)
     {
-        nb->fephostdata->q4Host.resize(numAtoms * 4);
-        for (int k = 0; k < numAtoms; k++)
+        if (bFepGpuNonBonded)
         {
-            nb->fephostdata->q4Host[4 * k]     = (float)nbat->params().qA[k];
-            nb->fephostdata->q4Host[4 * k + 1] = (float)nbat->params().qB[k];
-        }
-        static_assert(sizeof(atdat->q4[0]) == sizeof(Float4),
-                      "Size of the q4 parameters element should be equal to the size of float4.");
-        copyToDeviceBuffer(&atdat->q4,
-                           reinterpret_cast<Float4*>(nb->fephostdata->q4Host.data()),
-                           0,
-                           numAtoms,
-                           localStream,
-                           GpuApiCallBehavior::Async,
-                           bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
-
-        if (useLjCombRule(nb->nbparam->vdwType))
-        {
-            nb->fephostdata->ljComb4Host.resize(numAtoms * 4);
+            nb->fephostdata->q4Host.resize(numAtoms * 4);
             for (int k = 0; k < numAtoms; k++)
             {
-                nb->fephostdata->ljComb4Host[4 * k]     = (float)nbat->params().ljCombA[2 * k];
-                nb->fephostdata->ljComb4Host[4 * k + 1] = (float)nbat->params().ljCombA[2 * k + 1];
-                nb->fephostdata->ljComb4Host[4 * k + 2] = (float)nbat->params().ljCombB[2 * k];
-                nb->fephostdata->ljComb4Host[4 * k + 3] = (float)nbat->params().ljCombB[2 * k + 1];
+                nb->fephostdata->q4Host[4 * k]     = (float)nbat->params().qA[k];
+                nb->fephostdata->q4Host[4 * k + 1] = (float)nbat->params().qB[k];
             }
             static_assert(
-                    sizeof(atdat->ljComb4[0]) == sizeof(Float4),
-                    "Size of the LJ4 parameters element should be equal to the size of float4.");
-            copyToDeviceBuffer(&atdat->ljComb4,
-                               reinterpret_cast<Float4*>(nb->fephostdata->ljComb4Host.data()),
+                    sizeof(atdat->q4[0]) == sizeof(Float4),
+                    "Size of the q4 parameters element should be equal to the size of float4.");
+            copyToDeviceBuffer(&atdat->q4,
+                               reinterpret_cast<Float4*>(nb->fephostdata->q4Host.data()),
                                0,
                                numAtoms,
                                localStream,
                                GpuApiCallBehavior::Async,
                                bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
-        }
-        else
-        {
-            nb->fephostdata->atomTypes4Host.resize(numAtoms * 4);
-            for (int k = 0; k < numAtoms; k++)
+
+            if (useLjCombRule(nb->nbparam->vdwType))
             {
-                nb->fephostdata->atomTypes4Host[4 * k]     = nbat->params().typeA[k];
-                nb->fephostdata->atomTypes4Host[4 * k + 1] = nbat->params().typeB[k];
+                nb->fephostdata->ljComb4Host.resize(numAtoms * 4);
+                for (int k = 0; k < numAtoms; k++)
+                {
+                    nb->fephostdata->ljComb4Host[4 * k] = (float)nbat->params().ljCombA[2 * k];
+                    nb->fephostdata->ljComb4Host[4 * k + 1] = (float)nbat->params().ljCombA[2 * k + 1];
+                    nb->fephostdata->ljComb4Host[4 * k + 2] = (float)nbat->params().ljCombB[2 * k];
+                    nb->fephostdata->ljComb4Host[4 * k + 3] = (float)nbat->params().ljCombB[2 * k + 1];
+                }
+                static_assert(sizeof(atdat->ljComb4[0]) == sizeof(Float4),
+                              "Size of the LJ4 parameters element should be equal to the size of "
+                              "float4.");
+                copyToDeviceBuffer(&atdat->ljComb4,
+                                   reinterpret_cast<Float4*>(nb->fephostdata->ljComb4Host.data()),
+                                   0,
+                                   numAtoms,
+                                   localStream,
+                                   GpuApiCallBehavior::Async,
+                                   bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
             }
-            static_assert(sizeof(atdat->atomTypes4[0]) == sizeof(Int4),
-                          "Size of the atomTypes4 parameters element should be equal to the size "
-                          "of Int4.");
-            copyToDeviceBuffer(&atdat->atomTypes4,
-                               reinterpret_cast<Int4*>(nb->fephostdata->atomTypes4Host.data()),
-                               0,
-                               numAtoms,
-                               localStream,
-                               GpuApiCallBehavior::Async,
-                               bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+            else
+            {
+                nb->fephostdata->atomTypes4Host.resize(numAtoms * 4);
+                for (int k = 0; k < numAtoms; k++)
+                {
+                    nb->fephostdata->atomTypes4Host[4 * k]     = nbat->params().typeA[k];
+                    nb->fephostdata->atomTypes4Host[4 * k + 1] = nbat->params().typeB[k];
+                }
+                static_assert(
+                        sizeof(atdat->atomTypes4[0]) == sizeof(Int4),
+                        "Size of the atomTypes4 parameters element should be equal to the size "
+                        "of Int4.");
+                copyToDeviceBuffer(&atdat->atomTypes4,
+                                   reinterpret_cast<Int4*>(nb->fephostdata->atomTypes4Host.data()),
+                                   0,
+                                   numAtoms,
+                                   localStream,
+                                   GpuApiCallBehavior::Async,
+                                   bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+            }
         }
     }
 #endif

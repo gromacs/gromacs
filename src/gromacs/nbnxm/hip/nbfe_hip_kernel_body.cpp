@@ -31,48 +31,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Declares nbnxn hip helper functions
- *
- * \ingroup module_nbnxm
- */
-#ifndef GMX_NBNXM_HIP_NBNXM_HIP_KERNEL_H
-#define GMX_NBNXM_HIP_NBNXM_HIP_KERNEL_H
 
-// Forward declarations
+/*! \internal \file
+ *  \brief
+ *  Explicitly instantiate NBNXM HIP FEP kernels, all flavors
+ *
+ *  \ingroup module_nbnxm
+ */
+#include "gmxpre.h"
+
+#include "nbfe_hip_kernel_body.h"
+
+#include "nbfe_foreign_hip_kernel_body.h"
+
 namespace gmx
 {
-enum class InteractionLocality;
-class StepWorkload;
-struct NbnxmGpu;
 
-/*! \brief Launch HIP NBNXM kernel.
- *
- * \param nb Non-bonded parameters.
- * \param stepWork Workload flags for the current step.
- * \param iloc Interaction locality.
- * \param doPrune Whether to do neighborlist pruning.
- */
-void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, InteractionLocality iloc, bool doPrune);
+void launchNbnxmFepKernelHelper(NbnxmGpu* nb, const InteractionLocality iloc, bool doCalcEnergies, bool doCalcVirial)
+{
+    launchNbfeKernelHelper(nb, iloc, doCalcEnergies, doCalcVirial);
+}
 
-
-/*! \brief Wrapper for HIP NBXNM FEP kernel
- *
- * \param nb Non-bonded parameters
- * \param iloc Interaction locality
- * \param stepWork Workload flags for the current step.
- */
-void launchNbnxmFepKernel(NbnxmGpu* nb, InteractionLocality iloc, const StepWorkload& stepWork);
-
-/*! \brief Wrapper for HIP NBXNM FEP kernel foreign energy contributions
- *
- * \param nb Non-bonded parameters
- * \param iloc Interaction locality
- */
-void launchNbnxmFepForeignKernelHelper(NbnxmGpu* nb, InteractionLocality iloc);
+void launchNbnxmFepForeignKernelHelper(NbnxmGpu* nb, const InteractionLocality iloc)
+{
+    launchNbfeForeignKernelHelper(nb, iloc);
+}
 
 
 } // namespace gmx
-
-#endif // GMX_NBNXM_HIP_NBNXM_HIP_KERNEL_H
