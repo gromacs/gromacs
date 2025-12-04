@@ -66,10 +66,10 @@ static DataSetDims primitiveDimsToValueTypeDims(const DataSetDims& dims)
         // A data set of type and shape BasicVector<T>[50][30] has a primitive type
         // and shape T[50][30][3], so verify that the input primitive dims has this
         // form and return without the inner value.
-        throwUponH5mdError(dims.empty(),
-                           "Data set dimensions for BasicVector<T> must be at least 1");
-        throwUponH5mdError(dims.back() != DIM,
-                           "Innermost dimension of data set for BasicVector<T> must be 3");
+        GMX_H5MD_THROW_UPON_ERROR(dims.empty(),
+                                  "Data set dimensions for BasicVector<T> must be at least 1");
+        GMX_H5MD_THROW_UPON_ERROR(dims.back() != DIM,
+                                  "Innermost dimension of data set for BasicVector<T> must be 3");
         return DataSetDims(dims.cbegin(), dims.cend() - 1);
     }
     else if constexpr (std::is_arithmetic_v<ValueType> || std::is_same_v<ValueType, std::string>)
@@ -121,7 +121,7 @@ static void readVariableSizeStringsFromDataSet(const hid_t           dataSet,
                 {
                     const auto [dataSpace, dataSpaceGuard] =
                             makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-                    throwUponH5mdError(
+                    GMX_H5MD_THROW_UPON_ERROR(
                             H5Dvlen_reclaim(
                                     nativeDataType, dataSpace, H5P_DEFAULT, readBufferPointers.data())
                                     < 0,
@@ -129,7 +129,7 @@ static void readVariableSizeStringsFromDataSet(const hid_t           dataSet,
                 }
             });
 
-    throwUponH5mdError(
+    GMX_H5MD_THROW_UPON_ERROR(
             H5Dread(dataSet, nativeDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, readBufferPointers.data()) < 0,
             "Error writing data.");
     for (int i = 0; i < gmx::ssize(stringValues); ++i)
@@ -157,8 +157,9 @@ static void writeFixedSizeStringsToDataSet(const hid_t                 dataSet,
                    "String must be null terminated");
     }
 
-    throwUponH5mdError(H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer.data()) < 0,
-                       "Error writing data.");
+    GMX_H5MD_THROW_UPON_ERROR(
+            H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer.data()) < 0,
+            "Error writing data.");
 }
 
 static void writeVariableSizeStringsToDataSet(const hid_t                 dataSet,
@@ -171,7 +172,7 @@ static void writeVariableSizeStringsToDataSet(const hid_t                 dataSe
         writeBufferPointers[i] = stringsToWrite[i].c_str();
     }
 
-    throwUponH5mdError(
+    GMX_H5MD_THROW_UPON_ERROR(
             H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBufferPointers.data()) < 0,
             "Error writing data.");
 }
@@ -207,11 +208,12 @@ hsize_t H5mdFixedDataSet<ValueType>::numValues() const
 template<typename ValueType>
 void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
 {
-    throwUponH5mdError(data.size() != numValues_,
-                       formatString("Cannot read frame into buffer of incorrect size: "
-                                    "size of data set is %llu values but size of buffer is %lu",
-                                    static_cast<unsigned long long>(numValues_),
-                                    data.size()));
+    GMX_H5MD_THROW_UPON_ERROR(
+            data.size() != numValues_,
+            formatString("Cannot read frame into buffer of incorrect size: "
+                         "size of data set is %llu values but size of buffer is %lu",
+                         static_cast<unsigned long long>(numValues_),
+                         data.size()));
 
     if constexpr (std::is_same_v<ValueType, std::string>)
     {
@@ -226,7 +228,7 @@ void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
     }
     else
     {
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 H5Dread(this->id(), this->nativeDataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data.data()) < 0,
                 "Error reading data.");
     }
@@ -235,11 +237,12 @@ void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
 template<typename ValueType>
 void H5mdFixedDataSet<ValueType>::writeData(ArrayRef<const ValueType> data) const
 {
-    throwUponH5mdError(data.size() != numValues_,
-                       formatString("Cannot write buffer of incorrect size into data set: "
-                                    "size of data set is %llu values but size of buffer is %lu",
-                                    static_cast<unsigned long long>(numValues_),
-                                    data.size()));
+    GMX_H5MD_THROW_UPON_ERROR(
+            data.size() != numValues_,
+            formatString("Cannot write buffer of incorrect size into data set: "
+                         "size of data set is %llu values but size of buffer is %lu",
+                         static_cast<unsigned long long>(numValues_),
+                         data.size()));
 
     if constexpr (std::is_same_v<ValueType, std::string>)
     {
@@ -254,7 +257,7 @@ void H5mdFixedDataSet<ValueType>::writeData(ArrayRef<const ValueType> data) cons
     }
     else
     {
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 H5Dwrite(this->id(), this->dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data.data()) < 0,
                 "Error writing data.");
     }

@@ -97,7 +97,7 @@ public:
     H5mdDataSetBuilder(const hid_t container, const std::string& name) :
         container_(container), name_(name)
     {
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 objectExists(container, name.c_str()),
                 "Cannot create data set: object with given name already exists in the container");
         accessPropertyList_   = H5Pcreate(H5P_DATASET_ACCESS);
@@ -186,7 +186,7 @@ public:
     H5mdDataSetBuilder& withMaxStringLength(const int maxLength)
     {
         // Use int to prevent the integer overflow if passed a negative value
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 maxLength <= 0,
                 "Cannot create fixed-size string data set with non-positive maximum length");
         maxStringLength_ = static_cast<size_t>(maxLength);
@@ -215,7 +215,7 @@ public:
     {
         // If we ever need the "SCALAR" data set type (HDF5 data sets for single value storage)
         // this is where we branch off
-        throwUponH5mdError(dims_.empty(), "Cannot create data set for 0 dimensions");
+        GMX_H5MD_THROW_UPON_ERROR(dims_.empty(), "Cannot create data set for 0 dimensions");
 
         // NOTE: This call finalizes dims_ and other dimension vectors and must be done
         // before they are used to create data set parameters
@@ -225,9 +225,9 @@ public:
         {
             maxDims_ = dims_;
         }
-        throwUponH5mdError(maxDims_.size() != dims_.size(),
-                           "Inconsistent input when creating data set: "
-                           "maxDims must be of same dimension as data set dims.");
+        GMX_H5MD_THROW_UPON_ERROR(maxDims_.size() != dims_.size(),
+                                  "Inconsistent input when creating data set: "
+                                  "maxDims must be of same dimension as data set dims.");
 
         if (chunkDims_.empty())
         {
@@ -240,13 +240,14 @@ public:
                 }
             }
         }
-        throwUponH5mdError(chunkDims_.size() != dims_.size(),
-                           "Inconsistent input when creating data set: "
-                           "chunkDims must be of same dimension as data set dims.");
+        GMX_H5MD_THROW_UPON_ERROR(chunkDims_.size() != dims_.size(),
+                                  "Inconsistent input when creating data set: "
+                                  "chunkDims must be of same dimension as data set dims.");
 
-        throwUponH5mdError(H5Pset_chunk(creationPropertyList_, chunkDims_.size(), chunkDims_.data()) < 0,
-                           "Cannot set chunk dimensions when creating data set.");
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
+                H5Pset_chunk(creationPropertyList_, chunkDims_.size(), chunkDims_.data()) < 0,
+                "Cannot set chunk dimensions when creating data set.");
+        GMX_H5MD_THROW_UPON_ERROR(
                 H5Pset_chunk_opts(creationPropertyList_, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS) < 0,
                 "Cannot set chunk options when creating data set.");
 
@@ -255,18 +256,18 @@ public:
         {
             cacheSize *= d;
         }
-        throwUponH5mdError(
+        GMX_H5MD_THROW_UPON_ERROR(
                 H5Pset_chunk_cache(accessPropertyList_, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT)
                         < 0,
                 "Cannot set chunk cache size when creating data set.");
 
         const auto [dataSpace, dataSpaceGuard] =
                 makeH5mdDataSpaceGuard(H5Screate_simple(dims_.size(), dims_.data(), maxDims_.data()));
-        throwUponInvalidHid(dataSpace, "Cannot create data space for data set.");
+        GMX_H5MD_THROW_UPON_INVALID_HID(dataSpace, "Cannot create data space for data set.");
 
         const hid_t dataSetHandle = H5Dcreate(
                 container_, name_.c_str(), dataType, dataSpace, H5P_DEFAULT, creationPropertyList_, accessPropertyList_);
-        throwUponInvalidHid(dataSetHandle, "Cannot create data set.");
+        GMX_H5MD_THROW_UPON_INVALID_HID(dataSetHandle, "Cannot create data set.");
 
         if (!unit_.empty())
         {

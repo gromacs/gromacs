@@ -71,8 +71,8 @@ H5mdParticleBlock H5mdParticleBlockBuilder::build()
 
 void H5mdParticleBlockBuilder::ensureParticleCountConsistency(const H5mdTimeDataBlock<RVec>& dataBlock)
 {
-    throwUponH5mdError(dataBlock.frameDims().size() != 1,
-                       "Trajectory data block does not have a 1d frame dimension");
+    GMX_H5MD_THROW_UPON_ERROR(dataBlock.frameDims().size() != 1,
+                              "Trajectory data block does not have a 1d frame dimension");
 
     const int64_t numParticlesInBlock = static_cast<int64_t>(dataBlock.frameDims()[0]);
     if (!numParticles_.has_value())
@@ -81,19 +81,21 @@ void H5mdParticleBlockBuilder::ensureParticleCountConsistency(const H5mdTimeData
     }
     else
     {
-        throwUponH5mdError(numParticles_.value() != numParticlesInBlock,
-                           formatString("Inconsistent number of particles: "
-                                        "Trying to add data set for %lld particles, but already "
-                                        "existing data sets are for %lld particles",
-                                        static_cast<long long>(numParticlesInBlock),
-                                        static_cast<long long>(numParticles_.value())));
+        GMX_H5MD_THROW_UPON_ERROR(
+                numParticles_.value() != numParticlesInBlock,
+                formatString("Inconsistent number of particles: "
+                             "Trying to add data set for %lld particles, but already "
+                             "existing data sets are for %lld particles",
+                             static_cast<long long>(numParticlesInBlock),
+                             static_cast<long long>(numParticles_.value())));
     }
 }
 
 H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setBox(H5mdFrameDataSet<real>&& box)
 {
-    throwUponH5mdError(box.frameDims().size() != 2 || box.frameDims()[0] != DIM || box.frameDims()[1] != DIM,
-                       "Simulation box does not have required dimensions { 3, 3 }");
+    GMX_H5MD_THROW_UPON_ERROR(
+            box.frameDims().size() != 2 || box.frameDims()[0] != DIM || box.frameDims()[1] != DIM,
+            "Simulation box does not have required dimensions { 3, 3 }");
     box_ = std::move(box);
     return *this;
 }

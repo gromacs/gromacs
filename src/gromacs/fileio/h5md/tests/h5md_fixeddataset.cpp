@@ -87,8 +87,9 @@ std::vector<std::string> readFixedSizeStringData(const hid_t container, const ch
 
     std::vector<char> readBuffer(numValues * maxStringSize);
 
-    throwUponH5mdError(H5Dread(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, readBuffer.data()) < 0,
-                       "Error writing data.");
+    GMX_H5MD_THROW_UPON_ERROR(
+            H5Dread(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, readBuffer.data()) < 0,
+            "Error writing data.");
 
     std::vector<std::string> stringValues;
     stringValues.reserve(numValues);
