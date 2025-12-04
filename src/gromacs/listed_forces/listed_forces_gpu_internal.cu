@@ -54,6 +54,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
@@ -84,7 +85,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                   float3*                   gm_f,
                                   float3*                   gm_fShift)
 {
-    assert(blockDim.y == 1 && blockDim.z == 1);
+    GMX_DEVICE_ASSERT(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
     float     vtot_loc     = 0.0F;
     float     vtotElec_loc = 0.0F; // Used only for InteractionFunction::LennardJones14
