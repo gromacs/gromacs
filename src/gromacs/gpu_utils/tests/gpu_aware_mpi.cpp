@@ -265,8 +265,8 @@ TEST_P(GpuAwareMpiTest, IrecvSendPair)
 INSTANTIATE_TEST_SUITE_P(WorksOnParameters,
                          GpuAwareMpiTest,
                          ::testing::ConvertGenerator<GpuAwareMpiTestParams::TupleT>(::testing::Combine(
-                                 // Ensure that both small- and medium-sized messages work
-                                 ::testing::Values(1, 12000))),
+                                 // Ensure that zero-, small-, and medium-sized messages work
+                                 ::testing::Values(0, 1, 12000))),
                          nameOfTest);
 
 } // namespace
