@@ -238,7 +238,7 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
     sm_buf[1 * sc_fBufferStride + tidx]   = f[1];
     sm_buf[2 * sc_fBufferStride + tidx]   = f[2];
 
-    subGroupBarrier(itemIdx);
+    sycl::group_barrier(itemIdx.get_sub_group());
 
     // reducing data 8-by-by elements on the leader of same threads as those storing above
     SYCL_ASSERT(itemIdx.get_sub_group().get_max_local_range()[0] >= c_clSize);
@@ -596,7 +596,7 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
                 fShiftBufZ += fz;
             }
         }
-        subGroupBarrier(itemIdx);
+        sycl::group_barrier(itemIdx.get_sub_group());
     }
     /* add up local shift forces into global mem */
     if (calcFShift)

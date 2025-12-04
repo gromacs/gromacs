@@ -251,21 +251,6 @@ static inline T atomicLoad(T& val)
 #endif
 }
 
-/*! \brief Issue an intra sub-group barrier.
- *
- * Equivalent with CUDA's \c syncwarp(c_cudaFullWarpMask).
- *
- */
-template<int Dim>
-static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
-{
-#if GMX_SYCL_ACPP
-    sycl::group_barrier(itemIdx.get_sub_group(), sycl::memory_scope::sub_group);
-#else
-    itemIdx.get_sub_group().barrier();
-#endif
-}
-
 /*! \brief Shim to smooth over implementation differences
  *
  * This lets the classic oneAPI implementation and the handler-free

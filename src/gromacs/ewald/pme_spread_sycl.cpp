@@ -291,7 +291,7 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
                     sm_gridlineIndices,
                     FractCoords::get_pointer(sm_fractCoordsHostStorage, sm_fractCoordsDeviceStorage),
                     itemIdx);
-            subGroupBarrier(itemIdx);
+            sycl::group_barrier(itemIdx.get_sub_group());
         }
         else
         {
