@@ -2704,3 +2704,14 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+.. raw:: html
+
+   <div id="refGreengard1987">
+
+.. _refGreengard1987:
+
+:sup:`196` L. Greengard and V. Rokhlin, "A fast algorithm for particle simulations", *J. Comput. Phys.* **73**, 325–348 (1987).
+
+.. raw:: html
+
+   </div>

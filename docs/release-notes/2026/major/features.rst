@@ -68,3 +68,15 @@ are also written to the connectivity group. For this release, only lossless outp
 Note that support for this file format in |Gromacs| tools is experimental. Analysis tools are
 able to read all files but bugs should be expected. H5MD output from :ref:`gmx trjconv` and
 :ref:`gmx trjcat` is not implemented.
+
+Fast Multipole Method (FMM) interface support
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Support for simulations with external FMM libraries has been added. Short-range electrostatics can 
+be computed by either |Gromacs| or the FMM library, while long-range electrostatics are handled by
+the FMM library when an FMM backend is selected. Although the FMM interface allows short-range 
+electrostatics to be configured for either |Gromacs| or the FMM backend, short-range FMM interactions 
+support in |Gromacs| is planned but not part of this release. MDP options are available for the well-known 
+FMM libraries i.e., ExaFMM and FMSolvr, and these options are validated internally by the interface.
+
+For more details, please see :ref:`the FMM section in the reference manual <fmm>`.

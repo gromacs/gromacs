@@ -224,6 +224,7 @@ if (SPHINX_FOUND)
         reference-manual/special/colvars.rst
         reference-manual/special/plumed.rst
         reference-manual/special/nnpot.rst
+        reference-manual/special/fmm.rst
         # Analysis chapter
         reference-manual/analysis/analysis.rst
         reference-manual/analysis/using-groups.rst
