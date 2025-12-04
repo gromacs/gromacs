@@ -316,6 +316,12 @@ void gpu_launch_free_energy_kernel(NbnxmGpu*                      nb,
     auto*               feplist      = nb->feplist[iloc].get();
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
+    if (feplist->numiAtoms == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with CUDA) */
+        return;
+    }
+
     KernelLaunchConfig fepConfig;
     fepConfig.blockSize[0] = 64;
     fepConfig.blockSize[1] = 1;
