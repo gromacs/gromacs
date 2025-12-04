@@ -172,14 +172,26 @@ void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const Interac
 }
 
 /*! Launch the Nonbonded free energy GPU kernels. */
-[[noreturn]] void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused*                 nb,
-                                                const SimulationWorkload gmx_unused& simulationWork,
-                                                const gmx::StepWorkload gmx_unused&  stepWork,
-                                                const InteractionLocality gmx_unused iloc)
+void gpu_launch_free_energy_kernel(NbnxmGpu*                 nb,
+                                   const SimulationWorkload& simulationWork,
+                                   const gmx::StepWorkload&  stepWork,
+                                   const InteractionLocality iloc)
 {
-    // Currently not GPU support for nonbonded free energy calculations in HIP build. If workload flags are set correctly, it should never enter here.
-    GMX_THROW(
-            NotImplementedError("Free energy GPU supported for HIP build is not implemented yet."));
+    const bool doComputeDhdl         = stepWork.computeDhdl;
+    const bool useForeignNonbondedFE = simulationWork.useGpuForeignNonbondedFE;
+
+    if (nb->feplist[iloc].get()->numiAtoms == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with HIP) */
+        return;
+    }
+
+    launchNbnxmFepKernel(nb, iloc, stepWork);
+
+    if (useForeignNonbondedFE && doComputeDhdl)
+    {
+        launchNbnxmFepForeignKernelHelper(nb, iloc);
+    }
 }
 
 } // namespace gmx

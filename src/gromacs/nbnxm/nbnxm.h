@@ -409,7 +409,7 @@ public:
                                       const StepWorkload&                    stepWork,
                                       t_nrnb*                                nrnb);
 
-#if GMX_GPU && !GMX_GPU_CUDA
+#if (GMX_GPU_SYCL || GMX_GPU_OPENCL)
     [[noreturn]]
 #endif
     //! Executes the non-bonded free-energy kernels, local + non-local, runs on the GPU

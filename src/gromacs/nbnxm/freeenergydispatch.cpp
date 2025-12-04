@@ -453,7 +453,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyCpuKernels(const gmx::ArrayRefWithPad
                                                       wcycle_);
 }
 
-#if GMX_GPU && !GMX_GPU_CUDA
+#if (GMX_GPU_SYCL || GMX_GPU_OPENCL)
 [[noreturn]]
 #endif
 void nonbonded_verlet_t::dispatchFreeEnergyGpuKernels(gmx::InteractionLocality       iLocality,
