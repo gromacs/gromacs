@@ -40,6 +40,10 @@ if(GMX_GPU_HIP)
         nbnxm_hip_kernel_pruneonly.cpp
         nbnxm_hip_kernel_sci_sort.cpp
         nbnxm_hip_kernel_sum.cpp
+        nbfe_hip_kernel.cpp
+        nbfe_hip_kernel_body_f.cpp
+        nbfe_hip_kernel_body_fv.cpp
+        nbfe_foreign_hip_kernel.cpp
     )
 
     file(GLOB NBNXM_HIP_SOURCES
@@ -47,6 +51,8 @@ if(GMX_GPU_HIP)
          nbnxm_hip.cpp
          nbnxm_hip_data_mgmt.cpp
          ${NBNXM_HIP_KERNEL_SOURCES})
+    
+    # Add FEP headers to the sources for tracking
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_HIP_SOURCES} PARENT_SCOPE)
     _gmx_add_files_to_property(HIP_SOURCES ${NBNXM_HIP_SOURCES})
 endif()

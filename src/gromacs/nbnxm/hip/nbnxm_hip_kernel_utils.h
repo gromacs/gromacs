@@ -165,6 +165,22 @@ __device__ static inline float2 fetchNbfpC6C12(const float2* nbfpComb, int type)
     return *indexedAddress(nbfpComb, type);
 }
 
+/*! \brief Convert C6 and C12 to sigma^6 for soft-core calculations */
+__device__ static inline float convertC6C12ToSigma6(const float2 c6c12,
+                                                    const float  sigma6Minimum,
+                                                    const float  sigma6WithInvalidSigma)
+{
+    if ((c6c12.x > 0.0F) && (c6c12.y > 0.0F))
+    {
+        const float sigma6 = __fmaf_rn(0.5F, __fdividef(c6c12.y, c6c12.x), 0.0F);
+        return fmaxf(sigma6, sigma6Minimum); // Use fmaxf to ensure sigma6 >= sigma6Minimum
+    }
+    else
+    {
+        return sigma6WithInvalidSigma;
+    }
+}
+
 /*! \brief Reduce c_clSize j-force components using AMD DPP instruction.
  *
  * c_clSize consecutive threads hold the force components of a j-atom which we
@@ -347,7 +363,6 @@ __device__ static inline void reduceForceI(AmdPackedFloat3* input,
             shiftForceBuffer.z += amdDppUpdateShfl<float, 0x114>(shiftForceBuffer.z);
             if (tidx == (c_clSize - 1) || tidx == (c_subWarp<pairlistType> + c_clSize - 1))
             {
-
                 atomicAdd(&(fShift[shiftBase].x), shiftForceBuffer.x);
                 atomicAdd(&(fShift[shiftBase].y), shiftForceBuffer.y);
                 atomicAdd(&(fShift[shiftBase].z), shiftForceBuffer.z);

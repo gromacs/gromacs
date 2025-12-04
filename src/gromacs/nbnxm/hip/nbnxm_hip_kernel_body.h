@@ -48,7 +48,6 @@
 #include <utility>
 
 #include "gromacs/gpu_utils/devicebuffer.h"
-#include "gromacs/gpu_utils/gpu_kernel_utils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/math/functions.h"

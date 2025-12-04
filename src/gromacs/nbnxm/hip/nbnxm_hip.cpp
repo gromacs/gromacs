@@ -46,6 +46,7 @@
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/utility/template_mp.h"
 
+#include "nbfe_foreign_hip_kernel.h"
 #include "nbnxm_hip_kernel_pruneonly.h"
 #include "nbnxm_hip_kernel_sci_sort.h"
 #include "nbnxm_hip_types.h"
@@ -169,15 +170,42 @@ void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const Interac
     }
 }
 
+template<bool doCalcEnergies, bool doCalcVirial>
+void launchNbnxmFepKernel(NbnxmGpu* nb, const InteractionLocality iloc);
+
+// clang-format off
+extern template void launchNbnxmFepKernel<false, false>(NbnxmGpu* nb, const InteractionLocality iloc);
+extern template void launchNbnxmFepKernel<false, true>(NbnxmGpu* nb, const InteractionLocality iloc);
+extern template void launchNbnxmFepKernel<true, false>(NbnxmGpu* nb, const InteractionLocality iloc);
+extern template void launchNbnxmFepKernel<true, true>(NbnxmGpu* nb, const InteractionLocality iloc);
+// clang-format on
+
 /*! Launch the Nonbonded free energy GPU kernels. */
-[[noreturn]] void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused*                 nb,
-                                                const SimulationWorkload gmx_unused& simulationWork,
-                                                const gmx::StepWorkload gmx_unused&  stepWork,
-                                                const InteractionLocality gmx_unused iloc)
+void gpu_launch_free_energy_kernel(NbnxmGpu*                 nb,
+                                   const SimulationWorkload& simulationWork,
+                                   const gmx::StepWorkload&  stepWork,
+                                   const InteractionLocality iloc)
 {
-    // Currently not GPU support for nonbonded free energy calculations in HIP build. If workload flags are set correctly, it should never enter here.
-    GMX_THROW(
-            NotImplementedError("Free energy GPU supported for HIP build is not implemented yet."));
+    const bool doComputeDhdl         = stepWork.computeDhdl;
+    const bool useForeignNonbondedFE = simulationWork.useGpuForeignNonbondedFE;
+
+    if (nb->feplist[iloc].get()->numiAtoms == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with HIP) */
+        return;
+    }
+
+    const bool doCalcEnergies = stepWork.computeEnergy;
+    const bool doCalcVirial   = stepWork.computeVirial;
+    dispatchTemplatedFunction([&](auto doCalcEnergies_, auto doCalcVirial_)
+                              { launchNbnxmFepKernel<doCalcEnergies_, doCalcVirial_>(nb, iloc); },
+                              doCalcEnergies,
+                              doCalcVirial);
+
+    if (useForeignNonbondedFE && doComputeDhdl)
+    {
+        launchNbnxmFepForeignKernel(nb, iloc);
+    }
 }
 
 } // namespace gmx

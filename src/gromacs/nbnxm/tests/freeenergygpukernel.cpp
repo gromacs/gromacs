@@ -63,8 +63,8 @@
 
 #include <gtest/gtest.h>
 
-// Currently FEP-on-GPU calculations are only implemented on CUDA platform
-#if GMX_GPU_CUDA
+// Currently FEP-on-GPU calculations are only implemented on CUDA and HIP platform
+#if GMX_GPU_CUDA || GMX_GPU_HIP
 #    include "gromacs/ewald/ewald_utils.h"
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
@@ -88,6 +88,8 @@
 #    include "gromacs/nbnxm/atompairlist.h"
 #    if GMX_GPU_CUDA
 #        include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
+#    elif GMX_GPU_HIP
+#        include "gromacs/nbnxm/hip/nbnxm_hip_types.h"
 #    endif
 #    include "gromacs/nbnxm/gpu_data_mgmt.h"
 #    include "gromacs/nbnxm/gpu_types_common.h"
