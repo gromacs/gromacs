@@ -544,6 +544,19 @@ compilation of OpenCL kernels, but they are also used in device selection.
         Currently available only for NVIDIA GPUs. See ``GMX_OCL_DUMP_LOG``
         for details about how to obtain the OpenCL build log.
 
+.. _sycl-management:
+
+SYCL management
+---------------
+
+..
+   Please keep these in alphabetical order!
+
+``GMX_SYCL_ALLOW_ALL_DEVICES``
+        Include CPUs and Accelerator SYCL devices in addition to GPUs. This
+        exists for debugging purposes and for enabling experimental
+        backends.
+
 Analysis and Core Functions
 ---------------------------
 
