@@ -232,6 +232,8 @@ def get_impi_version(oneapi_version) -> str:
     # Map oneAPI version numbers to the version numbers of
     # Intel MPI that they contain.
     version_map = {
+        "2025.3": "2021.17",
+        "2025.2": "2021.16",
         "2025.1": "2021.15",
         "2025.0": "2021.14",
         "2024.2": "2021.13",
@@ -1415,16 +1417,30 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
         os_packages += ["unzip"]
     building_blocks["extra_packages"] = []
     if args.intel_compute_runtime:
-        repo = {
-            "24.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu noble arc",
-            "22.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/gpu/ubuntu jammy client",
-            "20.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main",
-        }
-        building_blocks["extra_packages"] += hpccm.building_blocks.packages(
-            apt_keys=["https://repositories.intel.com/gpu/intel-graphics.key"],
-            apt_repositories=[repo[args.ubuntu]],
-        )
-        os_packages += _intel_compute_runtime_extra_packages
+        if args.ubuntu == "24.04":
+            # Per https://dgpu-docs.intel.com/driver/client/overview.html#ubuntu-latest
+            building_blocks["extra_packages"] += hpccm.building_blocks.packages(
+                apt_ppas=["ppa:kobuk-team/intel-graphics"]
+            )
+            os_packages += [
+                "libze-intel-gpu1",
+                "libze1",
+                "intel-metrics-discovery",
+                "intel-opencl-icd",
+                "clinfo",
+                "intel-gsc",
+            ]
+
+        else:
+            repo = {
+                "22.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/gpu/ubuntu jammy client",
+                "20.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main",
+            }
+            building_blocks["extra_packages"] += hpccm.building_blocks.packages(
+                apt_keys=["https://repositories.intel.com/gpu/intel-graphics.key"],
+                apt_repositories=[repo[args.ubuntu]],
+            )
+            os_packages += _intel_compute_runtime_extra_packages
 
     if args.ubuntu is not None and args.ubuntu == "20.04":
         building_blocks["extra_packages"] += hpccm.building_blocks.packages(
