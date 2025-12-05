@@ -120,33 +120,25 @@ class GpuAwareMpiTest : public ::testing::TestWithParam<GpuAwareMpiTestParams>
 {
 public:
     MpiComm   mpiComm_{ MPI_COMM_WORLD };
-    const int mpiTag_       = 0;
-    const int offset_       = 0;
-    const int specialValue_ = 42;
-};
-
-TEST_P(GpuAwareMpiTest, Send)
-{
-    GMX_MPI_TEST(RequireRankCount<2>);
-
-    MessageStringCollector skipReasons = getSkipMessagesIfNecessary();
-    if (!skipReasons.isEmpty())
-    {
-        GTEST_SKIP() << skipReasons.toString();
-    }
+    const int hostToDeviceTag_       = 0;
+    const int pinnedHostToDeviceTag_ = 1;
+    const int deviceToHostTag_       = 2;
+    const int deviceToPinnedHostTag_ = 3;
+    const int deviceToDeviceTag_     = 4;
+    const int offset_                = 0;
+    const int specialValue_          = 42;
 
 #if GMX_GPU
-    const TestDevice*    testDevice    = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
-    const DeviceContext& deviceContext = testDevice->deviceContext();
-    const DeviceStream&  deviceStream  = testDevice->deviceStream();
-    deviceContext.activate();
-
-    const int partnerRank           = mpiComm_.size() - 1 - mpiComm_.rank();
-    const auto [numValuesInMessage] = GetParam();
-
-    if (mpiComm_.rank() == 0)
+    void sendFromDeviceBuffer(const int partnerRank, const int mpiTag)
     {
-        HostVector<int> valuesToSend(numValuesInMessage, { PinningPolicy::PinnedIfSupported });
+        const TestDevice* testDevice = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
+        const DeviceContext& deviceContext = testDevice->deviceContext();
+        const DeviceStream&  deviceStream  = testDevice->deviceStream();
+        deviceContext.activate();
+
+        const auto [numValuesInMessage] = GetParam();
+
+        std::vector<int> valuesToSend(numValuesInMessage);
         std::iota(valuesToSend.begin(), valuesToSend.end(), specialValue_ + mpiComm_.rank());
 
         DeviceBuffer<int> sendBuffer;
@@ -161,12 +153,20 @@ TEST_P(GpuAwareMpiTest, Send)
                            nullptr);
 
         // Send to partner rank
-        MPI_Send(asMpiPointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, mpiTag_, mpiComm_.comm());
+        MPI_Send(asMpiPointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, mpiTag, mpiComm_.comm());
 
         freeDeviceBuffer(&sendBuffer);
     }
-    else
+
+    void receiveToDeviceBuffer(const int partnerRank, const int mpiTag)
     {
+        const TestDevice* testDevice = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
+        const DeviceContext& deviceContext = testDevice->deviceContext();
+        const DeviceStream&  deviceStream  = testDevice->deviceStream();
+        deviceContext.activate();
+
+        const auto [numValuesInMessage] = GetParam();
+
         DeviceBuffer<int> receiveBuffer;
         allocateDeviceBuffer(&receiveBuffer, numValuesInMessage, deviceContext);
         HostVector<int> valuesReceived(numValuesInMessage, { PinningPolicy::PinnedIfSupported });
@@ -176,7 +176,7 @@ TEST_P(GpuAwareMpiTest, Send)
                  numValuesInMessage,
                  MPI_INT,
                  partnerRank,
-                 mpiTag_,
+                 mpiTag,
                  mpiComm_.comm(),
                  MPI_STATUS_IGNORE);
 
@@ -194,6 +194,118 @@ TEST_P(GpuAwareMpiTest, Send)
         EXPECT_THAT(valuesReceived, testing::Pointwise(testing::Eq(), expectedValues));
 
         freeDeviceBuffer(&receiveBuffer);
+    }
+#endif
+};
+
+TEST_P(GpuAwareMpiTest, Send)
+{
+    GMX_MPI_TEST(RequireRankCount<2>);
+
+    MessageStringCollector skipReasons = getSkipMessagesIfNecessary();
+    if (!skipReasons.isEmpty())
+    {
+        GTEST_SKIP() << skipReasons.toString();
+    }
+
+#if GMX_GPU
+    const TestDevice*    testDevice    = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
+    const DeviceContext& deviceContext = testDevice->deviceContext();
+    deviceContext.activate();
+
+    const int partnerRank           = mpiComm_.size() - 1 - mpiComm_.rank();
+    const auto [numValuesInMessage] = GetParam();
+
+    if (mpiComm_.rank() == 0)
+    {
+        {
+            SCOPED_TRACE("Sending from host buffer to device buffer");
+            // This is used to send x from PP ranks to PME ranks after pair search
+            std::vector<int> sendBuffer(numValuesInMessage);
+            std::iota(sendBuffer.begin(), sendBuffer.end(), specialValue_ + mpiComm_.rank());
+
+            // Send to partner rank
+            MPI_Send(sendBuffer.data(), numValuesInMessage, MPI_INT, partnerRank, hostToDeviceTag_, mpiComm_.comm());
+        }
+        {
+            SCOPED_TRACE("Sending from pinned host buffer to device buffer");
+            // This is used to send x from PP ranks to PME ranks after pair search
+            HostVector<int> sendBuffer(numValuesInMessage, { PinningPolicy::PinnedIfSupported });
+            std::iota(sendBuffer.begin(), sendBuffer.end(), specialValue_ + mpiComm_.rank());
+
+            // Send to partner rank
+            MPI_Send(sendBuffer.data(), numValuesInMessage, MPI_INT, partnerRank, hostToDeviceTag_, mpiComm_.comm());
+        }
+        {
+            SCOPED_TRACE("Sending from device buffer to host buffer");
+            // This is used by PME ranks to return the force on
+            // energy+virial steps when not using staged
+            // communication.
+            sendFromDeviceBuffer(partnerRank, deviceToHostTag_);
+        }
+        {
+            SCOPED_TRACE("Sending from device buffer to pinned host buffer");
+            // This is used by PME ranks to return the force on
+            // energy+virial steps when not using staged
+            // communication.
+            sendFromDeviceBuffer(partnerRank, deviceToPinnedHostTag_);
+        }
+        {
+            SCOPED_TRACE("Sending between device buffers");
+            // This is used in PP-PME communication on most steps
+            sendFromDeviceBuffer(partnerRank, deviceToDeviceTag_);
+        }
+    }
+    else
+    {
+        {
+            SCOPED_TRACE("Sending from host buffer to device buffer");
+            receiveToDeviceBuffer(partnerRank, hostToDeviceTag_);
+        }
+        {
+            SCOPED_TRACE("Sending from pinned host buffer to device buffer");
+            receiveToDeviceBuffer(partnerRank, pinnedHostToDeviceTag_);
+        }
+        {
+            SCOPED_TRACE("Sending from device buffer to host buffer");
+            std::vector<int> receiveBuffer(numValuesInMessage);
+
+            // Post receive from partner rank
+            MPI_Recv(receiveBuffer.data(),
+                     numValuesInMessage,
+                     MPI_INT,
+                     partnerRank,
+                     deviceToHostTag_,
+                     mpiComm_.comm(),
+                     MPI_STATUS_IGNORE);
+
+            // Check result
+            std::vector<int> expectedValues(numValuesInMessage);
+            std::iota(expectedValues.begin(), expectedValues.end(), specialValue_ + partnerRank);
+            EXPECT_THAT(receiveBuffer, testing::Pointwise(testing::Eq(), expectedValues));
+        }
+        {
+            SCOPED_TRACE("Sending from device buffer to pinned host buffer");
+            HostVector<int> receiveBuffer(numValuesInMessage, { PinningPolicy::PinnedIfSupported });
+
+            // Post receive from partner rank
+            MPI_Recv(receiveBuffer.data(),
+                     numValuesInMessage,
+                     MPI_INT,
+                     partnerRank,
+                     deviceToPinnedHostTag_,
+                     mpiComm_.comm(),
+                     MPI_STATUS_IGNORE);
+
+            // Check result
+            std::vector<int> expectedValues(numValuesInMessage);
+            std::iota(expectedValues.begin(), expectedValues.end(), specialValue_ + partnerRank);
+            EXPECT_THAT(receiveBuffer, testing::Pointwise(testing::Eq(), expectedValues));
+        }
+        {
+            SCOPED_TRACE("Sending between device buffers");
+            receiveToDeviceBuffer(partnerRank, deviceToDeviceTag_);
+        }
     }
 #endif
 }
@@ -229,7 +341,13 @@ TEST_P(GpuAwareMpiTest, IrecvSendPair)
 
     // Post initial non-blocking receive from partner rank
     MPI_Request request;
-    MPI_Irecv(asMpiPointer(receiveBuffer), numValuesInMessage, MPI_INT, partnerRank, mpiTag_, mpiComm_.comm(), &request);
+    MPI_Irecv(asMpiPointer(receiveBuffer),
+              numValuesInMessage,
+              MPI_INT,
+              partnerRank,
+              deviceToDeviceTag_,
+              mpiComm_.comm(),
+              &request);
 
     // Copy H2D
     allocateDeviceBuffer(&sendBuffer, numValuesInMessage, deviceContext);
@@ -242,7 +360,7 @@ TEST_P(GpuAwareMpiTest, IrecvSendPair)
                        nullptr);
 
     // Send to partner rank
-    MPI_Send(asMpiPointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, mpiTag_, mpiComm_.comm());
+    MPI_Send(asMpiPointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, deviceToDeviceTag_, mpiComm_.comm());
     // Wait for non-blocking receive
     MPI_Wait(&request, MPI_STATUS_IGNORE);
 
