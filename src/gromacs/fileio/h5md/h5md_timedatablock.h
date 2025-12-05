@@ -165,6 +165,12 @@ public:
      */
     bool readFrame(int64_t frameIndex, ArrayRef<ValueType> values, int64_t* step, double* time);
 
+    /*! \brief Remove frames whose step values are larger than \p maxStep.
+     *
+     * \note Assumes that the step data set is ordered, so only trims "from the back".
+     */
+    void trimFramesFromMaxStep(int64_t maxStep);
+
     /*! \brief Write given values and step to their data sets as the next frame.
      *
      * \note This overload throws if a time data set is managed, and is designed

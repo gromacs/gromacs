@@ -205,6 +205,19 @@ void H5mdFrameDataSet<ValueType>::readFrame(hsize_t index, ArrayRef<ValueType> v
 }
 
 template<typename ValueType>
+void H5mdFrameDataSet<ValueType>::shrinkToNumFrames(const hsize_t newNumFrames)
+{
+    GMX_H5MD_THROW_UPON_ERROR(newNumFrames > numFrames_,
+                              formatString("Cannot shrink data set (%s): new number of frames "
+                                           "(%lld) is larger than current (%lld)",
+                                           getHandlePath(Base::id()).value_or("<unknown>").c_str(),
+                                           static_cast<long long>(newNumFrames),
+                                           static_cast<long long>(numFrames_)));
+    numFrames_ = newNumFrames;
+    H5Dset_extent(Base::id(), extentForNumFrames(numFrames_).data());
+}
+
+template<typename ValueType>
 void H5mdFrameDataSet<ValueType>::writeNextFrame(ArrayRef<const ValueType> values)
 {
     GMX_H5MD_THROW_UPON_ERROR(values.size() != frameDescription_.numValues(),

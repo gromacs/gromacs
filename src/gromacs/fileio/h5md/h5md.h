@@ -231,6 +231,22 @@ public:
      */
     void setupFromExistingFile();
 
+    /*! \brief Set up from an existing file when restarting a simulation from a checkpoint.
+     *
+     * Scans for trajectory data available in the /particles/system group
+     * of the HDF5 file. For trajectories written by GROMACS this group
+     * contains data for all atoms in the simulated system.
+     *
+     * \note Ignores trajectory data in other subgroups of /particles.
+     *
+     * \param[in] restartingFromStep Step which we are restarting the simulation from
+     * \param[in] numParticles       Number of particles in system
+     *
+     * \throws gmx::FileIOError if the existing file contents are not
+     * for a system of \p numParticles.
+     */
+    void setupFromExistingFileForAppending(int64_t restartingFromStep, int64_t numParticles);
+
     /*! \brief Read the next \p frame of the trajectory.
      *
      * \param[out] frame         Container to read data into.
@@ -275,9 +291,17 @@ private:
 
     /*! \brief Set up particle block with name \p selectionName from the existing file structure.
      *
-     * \param[in]  selectionName Name of group to set up particle block for
+     * \param[in] selectionName        Name of group to set up particle block for
+     * \param[in] restartingFromStep   (Optional) If restarting simulation, the step that we are
+     *                                 restarting from.
+     * \param[in] expectedNumParticles (Optional) Expected number of particles of block in file.
+     *
+     * \throws gmx::FileIOError if \p expectedNumParticles is given and the contents of the existing
+     * particle block does not match it.
      */
-    void setupParticleBlockForGroupFromExistingFile(const std::string& selectionName);
+    void setupParticleBlockForGroupFromExistingFile(const std::string&     selectionName,
+                                                    std::optional<int64_t> restartingFromStep,
+                                                    std::optional<int64_t> expectedNumParticles);
 
     /*! \brief Set up the H5MD metadata group according to the H5md specification.
      *

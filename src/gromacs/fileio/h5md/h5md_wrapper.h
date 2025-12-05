@@ -64,6 +64,23 @@ H5md* makeH5md(const std::filesystem::path& fileName, H5mdFileMode mode);
  */
 void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec& inputRecord);
 
+/*! \brief Set up from an existing \p h5md file for restarting with appending.
+ *
+ * Scans for trajectory data available in the /particles/system group
+ * of the HDF5 file. For trajectories written by GROMACS this group
+ * contains data for all atoms in the simulated system.
+ *
+ * \note Ignores trajectory data in other subgroups of /particles.
+ *
+ * \param[out] h5md              Handle to H5md object
+ * \param[in] restartingFromStep Step which we are restarting the simulation from
+ * \param[in]  numParticles      Number of particles in system
+ *
+ * \throws gmx::FileIOError if the existing file contents are not
+ * for a system of \p numParticles.
+ */
+void setupFromExistingFileForAppending(H5md* h5md, int64_t restartingFromStep, int64_t numParticles);
+
 /*! \brief Write input data as the next frame of the trajectory.
  *
  * \param[out] h5md         Handle to H5md object

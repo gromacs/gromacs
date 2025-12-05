@@ -617,6 +617,51 @@ TEST_P(WithFrameDims, LosslessCompressionWithShuffleWorksVector)
         EXPECT_EQ(readBuffer, valuesPerFrame[frameIndex]);
     }
 }
+
+TEST_P(WithFrameDims, ShrinkToNumFramesWorks)
+{
+    using ValueType                       = int32_t;
+    const std::vector<hsize_t>  frameDims = GetParam().frameDims_;
+    H5mdFrameDataSet<ValueType> dataSet =
+            H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "testDataSet")
+                    .withFrameDimension(frameDims)
+                    .build();
+
+    // write values 0, 1, 2, ... into the data set as 3 frames
+    std::vector<ValueType> valuesFrame0(GetParam().numValuesPerFrame_, 0);
+    std::iota(valuesFrame0.begin(), valuesFrame0.end(), 0);
+    std::vector<ValueType> valuesFrame1(GetParam().numValuesPerFrame_, 0);
+    std::iota(valuesFrame1.begin(), valuesFrame1.end(), GetParam().numValuesPerFrame_);
+    std::vector<ValueType> valuesFrame2(GetParam().numValuesPerFrame_, 0);
+    std::iota(valuesFrame2.begin(), valuesFrame2.end(), 2 * GetParam().numValuesPerFrame_);
+
+    dataSet.writeNextFrame(valuesFrame0);
+    dataSet.writeNextFrame(valuesFrame1);
+    // OOPS! We here write 2 duplicate frames to the data set!
+    // We must test shrinking the data set to contain only the good 2 frames
+    // and then resume writing!
+    dataSet.writeNextFrame(valuesFrame1);
+    dataSet.writeNextFrame(valuesFrame1);
+
+    ASSERT_EQ(dataSet.numFrames(), 4) << "Sanity check failed: must have 4 frames here";
+    dataSet.shrinkToNumFrames(2);
+    EXPECT_EQ(dataSet.numFrames(), 2) << "Must have 2 frames after shrinking";
+
+    std::vector<ValueType> readFrameBuffer(GetParam().numValuesPerFrame_, 0);
+    EXPECT_THROW(dataSet.readFrame(2, readFrameBuffer), gmx::FileIOError)
+            << "Must not be able to read frame 2 after shrinking";
+    EXPECT_THROW(dataSet.readFrame(3, readFrameBuffer), gmx::FileIOError)
+            << "Must not be able to read frame 3 after shrinking";
+
+    // Now resume writing a good frame, then assert that all frames are good
+    dataSet.writeNextFrame(valuesFrame2);
+    dataSet.readFrame(0, readFrameBuffer);
+    EXPECT_EQ(readFrameBuffer, valuesFrame0) << "Frame 0 must be unchanged after shrinking";
+    dataSet.readFrame(1, readFrameBuffer);
+    EXPECT_EQ(readFrameBuffer, valuesFrame1) << "Frame 1 must be unchanged after shrinking";
+    dataSet.readFrame(2, readFrameBuffer);
+    EXPECT_EQ(readFrameBuffer, valuesFrame2) << "Frame 2 must be correctly written after shrinking";
+}
 /**@}*/
 
 //! \brief Set of frame dimension parameters to instantiate test suite for.
@@ -722,6 +767,20 @@ TEST_F(H5mdFrameDataSetTest, WriteAfterMaxNumFramesThrowsAfterReopen)
         EXPECT_THROW(dataSet.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1)), gmx::FileIOError)
                 << "Must throw when writing more than maxNumFrames to a data set";
     }
+}
+
+TEST_F(H5mdFrameDataSetTest, ShrinkToNumFramesThrowsIfNewNumFramesIsLargerThanCurrent)
+{
+    using ValueType         = int32_t;
+    constexpr int numFrames = 5;
+
+    H5mdFrameDataSet<ValueType> dataSet =
+            H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "testDataSet")
+                    .withNumFrames(numFrames)
+                    .build();
+
+    ASSERT_NO_THROW(dataSet.shrinkToNumFrames(numFrames));
+    EXPECT_THROW(dataSet.shrinkToNumFrames(numFrames + 1), gmx::FileIOError);
 }
 
 } // namespace

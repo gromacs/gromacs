@@ -220,14 +220,18 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    if (filemode[0] == 'w')
+                    if (!restartWithAppending)
                     {
                         make_backup(filename);
                     }
                     of->h5md = gmx::makeH5md(filename, gmx::H5mdFileMode(filemode[0]));
-                    if (filemode[0] == 'w')
+                    if (!restartWithAppending)
                     {
                         gmx::setupFileFromInput(of->h5md, top_global, *ir);
+                    }
+                    else
+                    {
+                        gmx::setupFromExistingFileForAppending(of->h5md, ir->init_step, top_global.natoms);
                     }
                     break;
                 default: gmx_incons("Invalid full precision file format");
