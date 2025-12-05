@@ -101,6 +101,9 @@ public:
     void setPairlist(const MDModulesPairlistConstructedSignal& signal);
 
 private:
+    //! Prepare pairlist input for NNPot model
+    void preparePairlistInput();
+
     //! reference to NNPot parameters
     const NNPotParameters& params_;
 
@@ -126,6 +129,8 @@ private:
     //! lookup table to map model input indices [0...numInput) to global atom indices [0...numGlobal)
     std::vector<int> inputToGlobalIndex_;
 
+    //! Full pairlist from MDModules notification
+    std::vector<PairlistEntry> fullPairlist_;
     //! Interacting pairs of NNP atoms within user-provided cutoff, for NNP input
     std::vector<int> pairlistForModel_;
     //! Shift vectors indicating periodic shifts for each atom pair in pairlistForModel_
@@ -147,9 +152,8 @@ private:
     //! stores communication object
     const MpiComm& mpiComm_;
 
-    //! flag to check if MM data should be gathered
-    // added to avoid having to loop over MM atoms twice
-    bool doGatherMMData_ = false;
+    //! flag to check if pairlist data should be prepared
+    bool doPairlist_ = false;
 };
 
 } // namespace gmx
