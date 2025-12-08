@@ -156,7 +156,7 @@ void do_index(const char*                                 mdparin,
 /* Read the index file and assign grp numbers to atoms.
  */
 
-/* Routines In readpull.cpp */
+/* Routines In readpull.c */
 
 std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, WarningHandler* wi);
 /* Reads the pull parameters, returns a list of the pull group names */

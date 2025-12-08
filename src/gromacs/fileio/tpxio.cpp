@@ -63,7 +63,6 @@
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"
-#include "gromacs/applied_forces/ramd/ramdparameters.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xdr_serializer.h"
@@ -200,7 +199,6 @@ enum tpxv
     tpxv_RefScaleMultipleCOMs, /**< Add multiple COM groups for refcoord-scale */
     tpxv_InputHistogramCounts, /**< Provide input histogram counts for current expanded ensemble state */
     tpxv_NNPotIFuncType,       /**< Add interaction function type for neural network potential */
-    tpxv_RAMD,                 /**< Add RAMD information */
     tpxv_Count                 /**< the total number of tpxv versions */
 };
 

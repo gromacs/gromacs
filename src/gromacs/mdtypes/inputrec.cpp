@@ -50,7 +50,6 @@
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"
-#include "gromacs/applied_forces/ramd/ramdparameters.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/md_enums.h"
