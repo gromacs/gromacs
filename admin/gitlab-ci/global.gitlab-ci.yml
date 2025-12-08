@@ -104,21 +104,27 @@
 # Base definition for tests using IntelMPI
 .use-impi-test:base:
   variables:
-    # Activate GPU-aware MPI. This is only required for suitable
-    # multi-rank runs, but doing it here checks it is OK everywhere.
-    I_MPI_OFFLOAD: 1
     # Avoid that Intel MPI intra-node SHM protocol uses /dev/shm because
     # by default that is too small in a k8s+docker setup. See
     # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-guide-linux/2021-16/problem-mpi-limitation-for-docker.html
     # It's preferable that this is a memory-backed filesystem for performance,
     # but for testing correctness in a CI system, a normal filesystem is good enough.
     I_MPI_SHM_FILE_PREFIX_4K: /tmp/impi-shm
+  before_script:
+    - mkdir -p $I_MPI_SHM_FILE_PREFIX_4K
+
+# Base definition for tests using GPU-aware IntelMPI
+.use-impi-gpu-aware-test:base:
+  extends:
+    - .use-impi-test:base
+  variables:
+    # Activate GPU-aware MPI. This is only required for suitable
+    # multi-rank runs, but doing it here checks it is OK everywhere.
+    I_MPI_OFFLOAD: 1
     # Disable direct GPU-GPU inter-process communication, which does
     # not work on the hardware in the GROMACS CI environment. Communication
     # is routed via the host.
     I_MPI_OFFLOAD_IPC: 0
-  before_script:
-    - mkdir -p $I_MPI_SHM_FILE_PREFIX_4K
 
 # Base definition for using oneAPI IntelLLVM
 .use-oneapi-intel-llvm:base:

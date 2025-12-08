@@ -44,7 +44,7 @@ gromacs:oneapi-2025.3-sycl-mpi:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .use-impi-test:base
+    - .use-impi-gpu-aware-test:base
   rules:
     - !reference [.rules:skip-if-dual-intel-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
@@ -61,13 +61,13 @@ gromacs:oneapi-2025.3-sycl-mpi:test:
     - $GITLAB_RUNNER_TAG_2X_INTEL_GPU
   before_script:
     - !reference [.use-oneapi:base, before_script]
-    - !reference [.use-impi-test:base, before_script]
+    - !reference [.use-impi-gpu-aware-test:base, before_script]
 
 gromacs:oneapi-2025.3-sycl-mpi:test-update-cpu:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .use-impi-test:base
+    - .use-impi-gpu-aware-test:base
   rules:
     - !reference [.rules:skip-if-single-intel-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
@@ -85,8 +85,10 @@ gromacs:oneapi-2025.3-sycl-mpi:test-update-cpu:
     - $GITLAB_RUNNER_TAG_1X_INTEL_GPU
   before_script:
     - !reference [.use-oneapi:base, before_script]
-    - !reference [.use-impi-test:base, before_script]
+    - !reference [.use-impi-gpu-aware-test:base, before_script]
 
+# Uses GPUs, but not GPU-aware MPI because of #5516, which may include
+# among its causes a bug in Intel MPI and limitations of gmxtest.pl.
 gromacs:oneapi-2025.3-sycl-mpi:regressiontest:
   extends:
     - .gromacs:base:regressiontest
@@ -113,6 +115,8 @@ gromacs:oneapi-2025.3-sycl-mpi:regressiontest:
     - !reference [.use-oneapi:base, before_script]
     - !reference [.use-impi-test:base, before_script]
 
+# Uses GPUs, but not GPU-aware MPI because of #5516, which may include
+# among its causes a bug in Intel MPI and limitations of gmxtest.pl.
 gromacs:oneapi-2025.3-sycl-mpi:regressiontest-singlerank:
   extends:
     - .gromacs:base:regressiontest
