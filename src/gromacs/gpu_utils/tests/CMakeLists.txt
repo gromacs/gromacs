@@ -79,8 +79,11 @@ if (GMX_MPI OR GMX_THREAD_MPI)
     GPU_CPP_SOURCE_FILES
         gpu_aware_mpi.cpp
     )
-
-    target_link_libraries(gpu_utils-mpi-test PRIVATE gpu_utils utility)
+    # The unit test binary and target are not created with winthreads,
+    # so set up the linking conditionally.
+    if (TARGET gpu_utils-mpi-test)
+        target_link_libraries(gpu_utils-mpi-test PRIVATE gpu_utils utility)
+    endif()
 endif()
 
 if (GMX_NVSHMEM)
