@@ -34,6 +34,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/vec.h"
+#include "gromacs/utility/logger.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -53,6 +54,11 @@ TEST(RAMDTest, ForceProviderLackingInputThrows)
 
     std::unique_ptr<IMDModule> ramdModule = RAMDModuleInfo::create();
     test::fillOptionsFromMdpValues(mdpOptionsTree, ramdModule->mdpOptionProvider());
+
+    MDModulesNotifiers notifiers;
+    ramdModule->subscribeToSimulationSetupNotifications(&notifiers);
+    MDLogger logger;
+    notifiers.simulationSetupNotifier_.notify(logger);
 
     ForceProviders ramdForces;
     EXPECT_ANY_THROW(ramdModule->initForceProviders(&ramdForces));
