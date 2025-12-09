@@ -641,7 +641,7 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
                     /* accumulate i forces in registers */
                     fci += f_ij;
                     /* reduce j forces */
-                    staggeredAtomicAddForce(&(gm_f[aj]), fcj, tid);
+                    staggeredAtomicAddForce(gm_f, fcj, aj, tid);
                 }
             } // end if (j < nj1)
         } // end for (int i = nj0; i < nj1; i += warp_size)
@@ -655,7 +655,7 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
         if (bCalcFshift)
         {
             float3* fShift = asFloat3(atdat.fShift);
-            staggeredAtomicAddForce(&(fShift[gm_shift[wid_global]]), fci, tid);
+            staggeredAtomicAddForce(fShift, fci, gm_shift[wid_global], tid);
         }
         // #   endif
 
