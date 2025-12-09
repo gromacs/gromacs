@@ -2000,13 +2000,15 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
         pme_gpu_start_timing(pmeGpu, timingId);
         auto* timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
 
+        // Decide whether to pipeline spread kernels when allowed,
+        // implemented, and there is more than one PP rank sending
+        // particles.
+        const int numStagesInPipeline =
+                useGpuDirectComm ? pmeCoordinateReceiverGpu->ppCommNumRanksSendingParticles() : -1;
         kernelParamsPtr->usePipeline = char(computeSplines && spreadCharges && useGpuDirectComm
-                                            && (pmeCoordinateReceiverGpu->ppCommNumSenderRanks() > 1)
-                                            && !writeGlobalOrSaveSplines);
+                                            && (numStagesInPipeline > 1) && !writeGlobalOrSaveSplines);
         if (kernelParamsPtr->usePipeline != 0)
         {
-            const int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
-
             GpuEventSynchronizer* gridsReadyForSpread = &pmeGpu->archSpecific->pmeGridsReadyForSpread;
             // Sync on grid zeroing is required except when GPU graphs are in use,
             // In which case the sync is already present through the zeroing being
@@ -2092,12 +2094,12 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
             }
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
-        else // pipelining is not in use
+        else // pipelining is not in use (but multiple stages can exist)
         {
             if (useGpuDirectComm) // Sync all PME-PP communications to PME stream
             {
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
-                for (int i = 0; i < pmeCoordinateReceiverGpu->ppCommNumSenderRanks(); i++)
+                for (int i = 0; i < numStagesInPipeline; i++)
                 {
                     manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, false, i);
                 }

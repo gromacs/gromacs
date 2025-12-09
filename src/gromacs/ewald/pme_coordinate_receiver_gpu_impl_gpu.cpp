@@ -44,6 +44,8 @@
 
 #include "config.h"
 
+#include <algorithm>
+
 #include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/ewald/pme_pp_communication.h"
 #include "gromacs/gpu_utils/capabilities.h"
@@ -244,9 +246,11 @@ std::tuple<int, int> PmeCoordinateReceiverGpu::Impl::ppCommAtomRange(int senderI
     return ppCommManagers_[senderIndex].atomRange;
 }
 
-int PmeCoordinateReceiverGpu::Impl::ppCommNumSenderRanks()
+int PmeCoordinateReceiverGpu::Impl::ppCommNumRanksSendingParticles()
 {
-    return ppCommManagers_.size();
+    return std::count_if(ppCommManagers_.begin(),
+                         ppCommManagers_.end(),
+                         [](const PpCommManager& m) { return m.ppRank.numAtoms > 0; });
 }
 
 void PmeCoordinateReceiverGpu::Impl::insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream)
@@ -304,9 +308,9 @@ std::tuple<int, int> PmeCoordinateReceiverGpu::ppCommAtomRange(int senderIndex)
     return impl_->ppCommAtomRange(senderIndex);
 }
 
-int PmeCoordinateReceiverGpu::ppCommNumSenderRanks()
+int PmeCoordinateReceiverGpu::ppCommNumRanksSendingParticles()
 {
-    return impl_->ppCommNumSenderRanks();
+    return impl_->ppCommNumRanksSendingParticles();
 }
 
 void PmeCoordinateReceiverGpu::insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream)

@@ -145,9 +145,9 @@ public:
     std::tuple<int, int> ppCommAtomRange(int senderIndex);
 
     /*! \brief
-     * Return number of PP ranks involved in PME-PP communication
+     * Return number of PP ranks contributing particles to PME-PP communication
      */
-    int ppCommNumSenderRanks();
+    int ppCommNumRanksSendingParticles();
 
     /*! \brief Mark an event in the sender stream \p senderIndex
      * (which must be valid) and enqueue it into \p stream.
