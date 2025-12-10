@@ -100,5 +100,25 @@
             ],
             "preLaunchTask": "CMake: build tests"
         },
+        {
+            "name": "(gdb) MdrunOutputTests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/mdrun-output-test",
+            "args": ["--gtest_filter=MdrunTest.WritesHelp"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/tests",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build tests"
+        },
     ]
 }
