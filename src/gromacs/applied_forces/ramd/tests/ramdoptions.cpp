@@ -13,6 +13,7 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
+#include "gromacs/utility/logger.h"
 
 #include <cstdint>
 
@@ -47,8 +48,8 @@ public:
         KeyValueTreeBuilder mdpValueBuilder;
         mdpValueBuilder.rootObject().addValue(std::string(RAMDModuleInfo::sc_name) + "-active",
                                               std::string("true"));
-        mdpValueBuilder.rootObject().addValue(std::string(RAMDModuleInfo::sc_name) + "-ngroups",
-                                              std::string("1"));
+        mdpValueBuilder.rootObject().addValue(std::string(RAMDModuleInfo::sc_name) + "-seed",
+                                              std::string("42"));
         return mdpValueBuilder.build();
     }
 };
@@ -66,13 +67,25 @@ TEST_F(RAMDOptionsTest, OptionSetsActive)
 {
     RAMDOptions ramdOptions;
     test::fillOptionsFromMdpValues(ramdBuildMdpValues(), &ramdOptions);
+
+    EXPECT_TRUE(ramdOptions.active());
     EXPECT_TRUE(ramdOptions.parameters().active_);
-    EXPECT_EQ(1, ramdOptions.parameters().ngroups_);
-    EXPECT_EQ(1, ramdOptions.parameters().groups_.size());
-    // EXPECT_REAL_EQ(0.0025, defaultParameters.groups_[0].r_min_dist_);
+    EXPECT_EQ(42, ramdOptions.parameters().seed_);
+
+    // Write parameters to the KVT
+    KeyValueTreeBuilder builder;
+    MDLogger            logger;
+    ramdOptions.setLogger(logger);
+    ramdOptions.writeInternalParametersToKvt(builder.rootObject());
+    const auto inputTree = builder.build();
+
+    // Retrieve parameters from the KVT
+    ramdOptions.readInternalParametersFromKvt(inputTree);
+
+    EXPECT_TRUE(ramdOptions.active());
+    EXPECT_TRUE(ramdOptions.parameters().active_);
+    EXPECT_EQ(42, ramdOptions.parameters().seed_);
 }
-
-
 
 } // namespace anonymous
 } // namespace gmx
