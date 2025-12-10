@@ -67,7 +67,7 @@ void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
     addMdpOutputComment(builder, RAMDModuleInfo::sc_name, "empty-line", "");
-    addMdpOutputComment(builder, RAMDModuleInfo::sc_name, "module", "; RAMD options");
+    addMdpOutputComment(builder, RAMDModuleInfo::sc_name, "module", "; RAMD");
     addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_activeTag, parameters_.active_);
 
     if (parameters_.active_)

@@ -323,6 +323,9 @@ colvars-active           = false
 ; Neural Network potential
 nnpot-active             = false
 
+; RAMD
+ramd-active              = false
+
 ; Fast Multipole Method
 fmm-backend              = exafmm
 fmm-exafmm-order         = 6
