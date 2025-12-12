@@ -39,9 +39,17 @@ gmx_add_libgromacs_sources(
     mdmodulesnotifiers.cpp
     multisim.cpp
     plainpairlistranges.cpp
+    print_validation.cpp
     printtime.cpp
     threadaffinity.cpp
     )
+
+# Must annotate this file specially so it can include device_information.h
+if (GMX_GPU_SYCL)
+    _gmx_add_files_to_property(SYCL_SOURCES
+        print_validation.cpp
+        )
+endif()
 
 # Source files have the following private module dependencies.
 target_link_libraries(mdrunutility PRIVATE

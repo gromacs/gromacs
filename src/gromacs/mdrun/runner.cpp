@@ -128,6 +128,7 @@
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/plainpairlistranges.h"
+#include "gromacs/mdrunutility/print_validation.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/atominfo.h"
@@ -1827,6 +1828,14 @@ int Mdrunner::mdrunner()
                     gmx::APIError("No MD module subscribed to the direct provider notification, "
                                   "but direct interactions provider is reported."));
         }
+
+        logValidationMessages(mdlog,
+                              runScheduleWork.simulationWork,
+                              haveFillerParticlesInLocalState,
+                              fn2ftp(ftp2fn(efTRN, filenames.size(), filenames.data())) == efH5MD,
+                              useModularSimulator,
+                              inputrec->eI,
+                              deviceInfo);
 
         init_forcerec(fplog,
                       mdlog,
