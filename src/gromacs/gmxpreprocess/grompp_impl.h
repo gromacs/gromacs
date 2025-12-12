@@ -164,6 +164,14 @@ struct InteractionsOfType
     //! same type should be reordered. To enable this behavior, the list of first encountered
     //! dihedrals of each type (i.e. those not reordered) is kept during processing.
     std::set<std::array<int, 4>> leapDihedralIndices_;
+    //! \brief Number of dihedrals kept ordered as encountered
+    //!
+    //! Dihedrals encountered already ordered alphabetically by atom type and matching Amber LEaP.
+    size_t numLeapReorderingNotNecessary = 0;
+    //! \brief Number of reordered dihedrals
+    //!
+    //! Dihedrals reordered alphabetically by atom type to match Amber LEaP.
+    size_t numLeapReorderingPerformed = 0;
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }

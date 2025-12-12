@@ -563,6 +563,10 @@ Analysis and Core Functions
 ..
    Please keep these in alphabetical order!
 
+``GMX_AMBER_LEAP_ATOM_REORDERING_VERBOSE``
+        make :ref:`gmx grompp` print indices and types of dihedral atoms that were processed
+        for reordering to match AMBER LEaP.
+
 ``GMX_DIPOLE_SPACING``
         spacing used by :ref:`gmx dipoles`.
 

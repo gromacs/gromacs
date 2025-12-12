@@ -1147,6 +1147,33 @@ static char** read_topol(const char*                                 infile,
         }
     }
 
+    if (cpp_find_define(&handle, "_FF_AMBER_LEAP_ATOM_REORDERING") != nullptr)
+    {
+        for (auto ftype : { InteractionFunction::ProperDihedrals,
+                            InteractionFunction::RyckaertBellemansDihedrals,
+                            InteractionFunction::ImproperDihedrals,
+                            InteractionFunction::PeriodicImproperDihedrals })
+        {
+            GMX_ASSERT(interactions[ftype].leapDihedralTypes_.size()
+                               == interactions[ftype].leapDihedralIndices_.size(),
+                       "Numbers of AMBER LEaP dihedral types and their first occurrences should "
+                       "match");
+            if (!interactions[ftype].leapDihedralTypes_.empty())
+            {
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "To match AMBER LEaP ordering, reordered %zu and kept %zu %s "
+                                "ordered as encountered (%zu %s types total)\n",
+                                interactions[ftype].numLeapReorderingPerformed,
+                                interactions[ftype].numLeapReorderingNotNecessary,
+                                interaction_function[ftype].longname,
+                                interactions[ftype].leapDihedralTypes_.size(),
+                                interaction_function[ftype].longname);
+            }
+        }
+    }
+
     if (cpp_find_define(&handle, "_FF_GROMOS96") != nullptr)
     {
         wi->addWarning(
