@@ -12,7 +12,7 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
-*
+* Experimental support for `H5MD`_ as a trajectory output format for ``mdrun``.
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
