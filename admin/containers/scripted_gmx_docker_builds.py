@@ -474,6 +474,7 @@ def get_ucx(args, compiler, gdrcopy):
             # We disable `-Werror`, since there are some unknown pragmas and unused variables which upset clang
             toolchain = copy.copy(compiler.toolchain)
             toolchain.CFLAGS = "-Wno-error"
+            toolchain.CXXFLAGS = "-Wno-error"
             configure_opts = []
             if args.rocm is not None:
                 configure_opts.append("--with-rocm=/opt/rocm")
@@ -482,7 +483,7 @@ def get_ucx(args, compiler, gdrcopy):
             return hpccm.building_blocks.ucx(
                 toolchain=toolchain,
                 gdrcopy=use_gdrcopy,
-                version="1.19.0",
+                version="1.19.1",
                 cuda=use_cuda,
                 configure_opts=configure_opts,
             )
@@ -744,20 +745,14 @@ def get_adaptivecpp(args):
             "-DWITH_CUDA_BACKEND=ON",
         ]
 
-    adaptivecpp_version_opts = {}
-    if "." in args.adaptivecpp:
-        adaptivecpp_version_opts["branch"] = "v" + args.adaptivecpp
-    else:
-        adaptivecpp_version_opts["commit"] = args.adaptivecpp
-
     return hpccm.building_blocks.generic_cmake(
         repository="https://github.com/AdaptiveCpp/AdaptiveCpp.git",
+        branch=f"v{args.adaptivecpp}",
         directory="/var/tmp/AdaptiveCpp",
         prefix="/usr/local",
         recursive=True,
         preconfigure=preconfigure,
         cmake_opts=["-DCMAKE_BUILD_TYPE=Release", *cmake_opts],
-        **adaptivecpp_version_opts,
     )
 
 
@@ -1412,7 +1407,9 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
     if args.oneapi is not None:
         os_packages += ["lsb-release"]
     if args.adaptivecpp is not None:
-        os_packages += ["libboost-fiber-dev"]
+        acpp_major, acpp_minor, _ = map(int, args.adaptivecpp.split("."))
+        if acpp_major < 25 or (acpp_major == 25 and acpp_minor < 10):
+            os_packages += ["libboost-fiber-dev"]
     if args.hdf5:
         os_packages += ["libhdf5-dev"]
     if args.libtorch is not None:
