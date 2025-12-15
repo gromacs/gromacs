@@ -219,7 +219,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
  * This implicitly tests the NNPotModel as well as the input gathering functions.
  */
 // Temporary skip while we iron out version incompatibilities in CI
-TEST_F(NNPotForceProviderTest, DISABLED_CanCalculateForces)
+TEST_F(NNPotForceProviderTest, CanCalculateForces)
 {
     gmx::test::TestReferenceData data;
 

@@ -191,7 +191,7 @@ TEST_F(NNPotOptionsTest, OutputDefaultValuesWhenActive)
 }
 
 // Temporary skip while we iron out version incompatibilities in CI
-TEST_F(NNPotOptionsTest, DISABLED_InternalsToKvtAndBack)
+TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
 {
     // Set nnpot-active = true
     NNPotOptions nnpotOptions;

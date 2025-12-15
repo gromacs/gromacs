@@ -60,8 +60,12 @@ if(NOT GMX_NNPOT STREQUAL "OFF")
         endforeach()
     endif()
 
+    # Not so nice workaround because torch disables CMAKE_CUDA_ARCHITECTURES and complains if it is set
+    set(_cmake_cuda_architectures_bak "${CMAKE_CUDA_ARCHITECTURES}")
+    unset(CMAKE_CUDA_ARCHITECTURES CACHE) # yikes!
     # When we require at least CMake 4.1, finding Torch with OPTIONAL might be a good approach
     find_package(Torch 2.0.0 QUIET)
+    set(CMAKE_CUDA_ARCHITECTURES "${_cmake_cuda_architectures_bak}" CACHE STRING "")
     set(TORCH_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for libtorch has already been done")
     mark_as_advanced(TORCH_ALREADY_SEARCHED)
 

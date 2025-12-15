@@ -668,10 +668,12 @@ def get_plumed(args):
 def get_libtorch(args):
     if args.libtorch is not None:
         lt_version = args.libtorch
+        cuda_version = args.cuda.replace(".", "")
+        assert cuda_version[:-1] == "130", "Use CUDA 13.0 for libtorch"
         return hpccm.primitives.shell(
             commands=[
                 "mkdir -p /var/tmp",
-                f"wget -q -nc --no-check-certificate -O /var/tmp/libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-{lt_version}%2Bcu121.zip",
+                f"wget -q -nc --no-check-certificate -O /var/tmp/libtorch.zip https://download.pytorch.org/libtorch/cu130/libtorch-shared-with-deps-{lt_version}%2Bcu130.zip",
                 "unzip -q /var/tmp/libtorch.zip -d /usr/local/libtorch",
                 "rm -f /var/tmp/libtorch.zip",
             ]

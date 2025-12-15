@@ -287,7 +287,7 @@ parser.add_argument(
     "--libtorch",
     type=str,
     nargs="?",
-    const="2.4.0",
+    const="2.9.0",
     default=None,
     help="Add build environment for LibTorch support",
 )
