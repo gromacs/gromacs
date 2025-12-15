@@ -18,7 +18,7 @@
 #   GPU direct communication: on / default
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
-#   Libtorch: 2.4.0
+#   Libtorch: 2.4.0 (currently disabled)
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 #   Parallelism nt/ntomp: 4/1 (regression tests with dual GPU)
@@ -34,7 +34,10 @@ gromacs:gcc-12-cuda-12.1.0:configure:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=TORCH -Wno-dev"
+    # Set GMX_CUDA_TARGET_COMPUTE to avoid compatibility issues between sm_90 PTX and sm_120 device in our CI; see #5503 for details; needed for CUDA < 12.8
+    # Temporarily disable Torch for the same (#5503) reason
+    # CMAKE_EXTRA_OPTIONS: "-DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=OFF -Wno-dev"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CUDA_TARGET_COMPUTE=75"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 12
 
