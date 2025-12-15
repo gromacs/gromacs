@@ -536,6 +536,7 @@ if (SPHINX_FOUND)
         user-guide/security.rst
         user-guide/system-preparation.rst
         user-guide/terminology.rst
+        user-guide/validation.rst
         )
 
     include(SphinxMacros.cmake)

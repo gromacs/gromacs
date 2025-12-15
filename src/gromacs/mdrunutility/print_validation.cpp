@@ -113,7 +113,7 @@ void logValidationMessages(const MDLogger&            mdlog,
     validationPendingFeatures.appendIf(GMX_GPU_HIP && simulationWorkload.useGpuPmeDecomposition,
                                        "PME GPU decomposition with the AMD HIP GPU backend");
     validationPendingFeatures.appendIf(simulationWorkload.useGpuNonbondedFE,
-                                       "Non-bonded free-energy calulcations on the GPU");
+                                       "Non-bonded free-energy calculations on the GPU");
     // TODO report if NNPot force provider is active
     // TODO report if Colvars plug-in is active
     // TODO report if Plumed plug-in is active
