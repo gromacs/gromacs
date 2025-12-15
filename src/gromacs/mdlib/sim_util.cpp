@@ -1662,7 +1662,9 @@ void do_force(FILE*                         fplog,
 
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
-                       == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
+                       == ((cr->dd != nullptr)
+                           && (!cr->dd->gpuHaloExchange[0].empty()
+                               || cr->dd->gpuHaloExchangeNvshmemHelper != nullptr)),
                "The GPU halo exchange is active, but it has not been constructed.");
 
     bool gmx_used_in_debug haveCopiedXFromGpu = false;

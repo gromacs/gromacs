@@ -271,6 +271,7 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
     maxGridXSize_ = 0;
     maxGridFSize_ = 0;
     // Build per-dimension/pulse entries mirroring Impl::reinitHalo
+    changePinningPolicy(&haloExchangeData_, PinningPolicy::PinnedIfSupported);
     haloExchangeData_.resize(totalNumPulses_);
 
     const gmx_domdec_comm_t& comm     = *cr.dd->comm;
