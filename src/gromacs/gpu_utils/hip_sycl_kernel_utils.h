@@ -287,12 +287,17 @@ template<typename ValueType>
 class AmdFastBuffer
 {
 private:
-    const ValueType* buffer_;
+    ValueType* buffer_;
 
 public:
-    GMX_DEVICE_ATTRIBUTE AmdFastBuffer(const ValueType* buffer) : buffer_(buffer) {}
+    GMX_DEVICE_ATTRIBUTE AmdFastBuffer(ValueType* buffer) : buffer_(buffer) {}
     template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
     inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE const ValueType& operator[](IndexType idx) const
+    {
+        return *indexedAddress(buffer_, idx);
+    }
+    template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+    inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE ValueType& operator[](IndexType idx)
     {
         return *indexedAddress(buffer_, idx);
     }

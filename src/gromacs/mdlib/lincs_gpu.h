@@ -50,21 +50,13 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/lincs_constraint_group_sizes.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
 class InteractionDefinitions;
 
 namespace gmx
 {
-
-//! A pair of atoms indexes
-struct AtomPair
-{
-    //! First atom
-    int i;
-    //! Second atom
-    int j;
-};
 
 /* \brief LINCS parameters and GPU pointers
  *
@@ -105,6 +97,8 @@ struct LincsGpuKernelParameters
     DeviceBuffer<float> d_matrixA;
     //! Mass factors (GPU)
     DeviceBuffer<float> d_massFactors;
+    //! Sizes for constraint groups if no coupled constraints are found
+    DeviceBuffer<int> d_constraintGroupsSizes;
 };
 
 /*! \internal \brief Class with interfaces and data for GPU version of LINCS. */
