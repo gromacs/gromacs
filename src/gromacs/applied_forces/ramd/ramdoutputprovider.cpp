@@ -18,7 +18,7 @@ struct gmx_output_env_t;
 namespace gmx
 {
 
-void RAMDOutputProvider::initOutput(FILE* fplog,
+void RAMDOutputProvider::initOutput(FILE* /*fplog*/,
                                     int nfile,
                                     const t_filenm fnm[],
                                     bool bAppendFiles,
@@ -48,11 +48,35 @@ void RAMDOutputProvider::initOutput(FILE* fplog,
     }
 }
 
-void RAMDOutputProvider::addLine(const std::string& str)
+void RAMDOutputProvider::addTime(real time)
 {
     if (fpRAMD_)
     {
-        fprintf(fpRAMD_, "%s", str.c_str());
+        fprintf(fpRAMD_, "%.4f", time);
+    }
+}
+
+void RAMDOutputProvider::addDistance(real distance)
+{
+    if (fpRAMD_)
+    {
+        fprintf(fpRAMD_, "\t%9.5f", distance);
+    }
+}
+
+void RAMDOutputProvider::newLine()
+{
+    if (fpRAMD_)
+    {
+        fprintf(fpRAMD_, "\n");
+    }
+}
+
+void RAMDOutputProvider::flush()
+{
+    if (fpRAMD_)
+    {
+        fflush(fpRAMD_);
     }
 }
 

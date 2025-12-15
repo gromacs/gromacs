@@ -12,6 +12,7 @@
 #include <string>
 
 #include "gromacs/mdtypes/imdoutputprovider.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
 struct t_filenm;
@@ -32,8 +33,14 @@ public:
                     bool bAppendFiles,
                     const gmx_output_env_t* oenv) override;
 
+    //! Add time step to the RAMD output file
+    void addTime(real time);
+
     //! Add a string to the RAMD output file
-    void addLine(const std::string& str);
+    void addDistance(real distance);
+
+    void newLine();
+    void flush();
 
     //! Finalizes output from a simulation run.
     void finishOutput() override;

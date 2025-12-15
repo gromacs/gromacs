@@ -42,7 +42,6 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
 {
     t_pbc pbc;
     set_pbc(&pbc, this->pbcType_, fInput.box_);
-    std::string ramdDistanceLine;
 
     if (fInput.mpiComm_.isMainRank())
     {
@@ -52,34 +51,34 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         }
         if (fInput.step_ % parameters_.eval_freq_ == 0)
         {
-            ramdDistanceLine.append("%.4f", fInput.t_);
+            ramdOutputProvider_.addTime(fInput.t_);
         }
     }
 
-    // Store COM positions for first evaluation
-    if (fInput.step_ == 0)
-    {
-        for (size_t g = 0; g < parameters_.groups_.size(); ++g)
-        {
-            com_rec_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
-            GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_rec_prev_" + std::to_string(g) + " = [" +
-                                               std::to_string(com_rec_prev_[g][0]) + ", " +
-                                               std::to_string(com_rec_prev_[g][1]) + ", " +
-                                               std::to_string(com_rec_prev_[g][2]) + "]");
-            com_lig_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].ligand_indices_);
-            GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_lig_prev_" + std::to_string(g) + " = [" +
-                                               std::to_string(com_lig_prev_[g][0]) + ", " +
-                                               std::to_string(com_lig_prev_[g][1]) + ", " +
-                                               std::to_string(com_lig_prev_[g][2]) + "]");
-            if (fInput.mpiComm_.isMainRank())
-            {
-                DVec curr_dist_vect;
-                pbc_dx_d(&pbc, com_lig_prev_[g], com_rec_prev_[g], curr_dist_vect);
-                auto dist = std::sqrt(curr_dist_vect.norm2());
-                ramdDistanceLine.append("\t%g", dist);
-            }
-        }
-    }
+    // // Store COM positions for first evaluation
+    // if (fInput.step_ == 0)
+    // {
+    //     for (size_t g = 0; g < parameters_.groups_.size(); ++g)
+    //     {
+    //         com_rec_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
+    //         GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_rec_prev_" + std::to_string(g) + " = [" +
+    //                                            std::to_string(com_rec_prev_[g][0]) + ", " +
+    //                                            std::to_string(com_rec_prev_[g][1]) + ", " +
+    //                                            std::to_string(com_rec_prev_[g][2]) + "]");
+    //         com_lig_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].ligand_indices_);
+    //         GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_lig_prev_" + std::to_string(g) + " = [" +
+    //                                            std::to_string(com_lig_prev_[g][0]) + ", " +
+    //                                            std::to_string(com_lig_prev_[g][1]) + ", " +
+    //                                            std::to_string(com_lig_prev_[g][2]) + "]");
+    //         if (fInput.mpiComm_.isMainRank())
+    //         {
+    //             DVec curr_dist_vect;
+    //             pbc_dx_d(&pbc, com_lig_prev_[g], com_rec_prev_[g], curr_dist_vect);
+    //             real dist = std::sqrt(curr_dist_vect.norm2());
+    //             ramdOutputProvider_.addDistance(dist);
+    //         }
+    //     }
+    // }
     
     // Evaluate RAMD every eval_freq steps
     if (fInput.step_ % parameters_.eval_freq_ == 0)
@@ -92,7 +91,8 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
             DVec com_lig_curr = calc_com(fInput.x_, parameters_.groups_[g].ligand_indices_);
             DVec curr_dist_vect;
             pbc_dx_d(&pbc, com_lig_curr, com_rec_curr, curr_dist_vect);
-            auto curr_dist = std::sqrt(curr_dist_vect.norm2());
+            real curr_dist = std::sqrt(curr_dist_vect.norm2());
+            ramdOutputProvider_.addDistance(curr_dist);
 
             GMX_LOG(logger_.info).appendText(logPrefix + "Current COM ligand position at [" +
                                             std::to_string(com_lig_curr[0]) + ", " +
@@ -122,7 +122,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
             // difference of the COM ligand-receptor distance between current and the last evaluation step
             DVec walk_dist_vect;
             pbc_dx_d(&pbc, com_lig_curr - com_rec_curr, com_lig_prev_[g] - com_rec_prev_[g], walk_dist_vect);
-            auto walk_dist = std::sqrt(walk_dist_vect.norm2());
+            real walk_dist = std::sqrt(walk_dist_vect.norm2());
 
             GMX_LOG(logger_.info).appendText(logPrefix + "Previous COM ligand position at [" +
                                             std::to_string(com_lig_prev_[g][0]) + ", " +
@@ -135,7 +135,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
             GMX_LOG(logger_.info).appendText(logPrefix + "Change in receptor-ligand"
                 " distance since last RAMD evaluation is " + std::to_string(walk_dist) + "\n");
 
-            if (walk_dist < parameters_.groups_[0].r_min_dist_)
+            if (walk_dist < parameters_.groups_[0].r_min_dist_ or fInput.step_ == 0)
             {
                 direction_[g] = random_spherical_direction_generator();
                 GMX_LOG(logger_.warning).appendText("==== RAMD ==== New random direction is [" +
@@ -151,8 +151,9 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
 
     if (fInput.step_ % parameters_.eval_freq_ == 0)
     {
-        ramdDistanceLine.append("\t%g", 0.423961);
-        ramdOutputProvider_.addLine(ramdDistanceLine + '\n');
+        // Finish the RAMD output line
+        ramdOutputProvider_.newLine();
+        ramdOutputProvider_.flush();
 
         // Exit if all ligand-receptor COM distances are larger than max_dist
         if (std::accumulate(ligand_exited_.begin(), ligand_exited_.end(), 0) == parameters_.ngroups_)
