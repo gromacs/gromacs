@@ -12,6 +12,10 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
+* Expanded support for running simulations with Neural Network Potential models,
+  now including link atom treatment for NNP/MM, pairlist input, and electrostatic
+  embedding models.
+
 * Experimental support for `H5MD`_ as a trajectory output format for ``mdrun``.
 
 .. Note to developers!
