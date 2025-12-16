@@ -128,6 +128,12 @@ void GpuForceReduction::Impl::execute()
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
+    const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
+
+    if (addRvecForce && forcesReadyNvshmemFlags)
+    {
+        forcesReadyNvshmemFlagsCounter++;
+    }
 
     if (numAtoms_ != 0)
     {
@@ -137,13 +143,6 @@ void GpuForceReduction::Impl::execute()
         for (auto* synchronizer : dependencyList_)
         {
             synchronizer->enqueueWaitEvent(deviceStream_);
-        }
-
-        const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
-
-        if (addRvecForce && forcesReadyNvshmemFlags)
-        {
-            forcesReadyNvshmemFlagsCounter++;
         }
 
         launchForceReductionKernel(numAtoms_,
