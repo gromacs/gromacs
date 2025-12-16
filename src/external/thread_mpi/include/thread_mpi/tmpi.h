@@ -162,6 +162,8 @@ extern const tMPI_Datatype TMPI_POINTER;            /**< pointer (thread_mpi
 
 TMPI_EXPORT
 extern const tMPI_Datatype TMPI_INT64_T;            /**< int64_t */
+TMPI_EXPORT
+extern const tMPI_Datatype TMPI_UINT64_T;           /**< uint64_t */
 
 /*! \} */
 

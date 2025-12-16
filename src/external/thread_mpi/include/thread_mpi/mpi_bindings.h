@@ -89,6 +89,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_WCHAR               TMPI_WCHAR
 #define MPI_BYTE                TMPI_BYTE
 #define MPI_INT64_T             TMPI_INT64_T
+#define MPI_UINT64_T            TMPI_UINT64_T
 
 
 #define MPI_SUCCESS                 TMPI_SUCCESS
