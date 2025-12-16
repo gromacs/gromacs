@@ -44,6 +44,34 @@ scientifically relevant biomolecules is still pending.
 
 :issue:`4998`
 
+Added the port of AMBER's ff14SB and ff19SB protein force fields
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The latest AMBER force field for proteins, ff19SB, has been ported to |Gromacs|. The port
+encompasses all functional forms, including per-amino-acid CMAPs, which are a new feature
+of ff19SB. Furthermore, the port also includes the recommended optimal 4-point and 3-point
+charge water models, better known as OPC and OPC3, and matching ions.
+
+Older AMBER force field, ff14SB, has also been ported. For it, the TIP3P and TIP4PEW are
+considered to be the recommended water models.
+
+Due to the limited usage for production simulations thus far and possible bugs in |Gromacs|
+features that these force fields use, these ports are considered validation pending.
+
+:issue:`4998`
+
+Changed the behaviour of ``pdb2gmx -rtpres``
+""""""""""""""""""""""""""""""""""""""""""""
+
+In order to support force fields like AMBER19SB, :ref:`pdb2gmx <gmx pdb2gmx>` can now
+automatically rename residues to have the name of the chosen residue type, so that
+:ref:`grompp <gmx grompp>` can assign the CMAP terms correctly. This is handled by
+a new field in the ``[ bondedtypes ]`` description in the :ref:`residue types database<rtp>`
+that specifies that such force fields must rename the residues accordingly.
+``gmx pdb2gmx -rtpres`` now defaults to ``auto``, which means to preserve the residue name
+unless that residue-type-database setting requires renaming to match the residue type.
+It may also be set manually to ``no`` or ``yes``.
+
 Improved implementation of the neural network potential interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

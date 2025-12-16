@@ -1,0 +1,511 @@
+[ moleculetype ]
+; molname       nrexcl
+AL              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Al3+_tip4pew     1       AL              AL       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+AG2              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ag2+_tip4pew     1       AG2              AG       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+BA              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ba2+_tip4pew     1       BA              BA       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+BR              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Br-_tip4pew     1       BR              BR       1      -1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+BE              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Be2+_tip4pew     1       BE              BE       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CA              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ca2+_tip4pew     1       CA              CA       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CD              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Cd2+_tip4pew     1       CD              CD       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CE              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ce3+_tip4pew     1       CE              CE       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CL              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Cl-_tip4pew     1       CL              CL       1      -1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CO              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Co2+_tip4pew     1       CO              CO       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CR              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Cr3+_tip4pew     1       CR              CR       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CS              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Cs+_tip4pew     1       CS              CS       1      +1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CU              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Cu2+_tip4pew     1       CU              CU       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CE4              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ce4+_tip4pew     1       CE4              CE       1      +4.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+CR2              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Cr2+_tip4pew     1       CR2              CR       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+DY              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Dy3+_tip4pew     1       DY              DY       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+EU              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Eu2+_tip4pew     1       EU              EU       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+EU3              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Eu3+_tip4pew     1       EU3              EU3       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+ER              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Er3+_tip4pew     1       ER              ER       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+F              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       F-_tip4pew     1       F              F       1      -1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+FE              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Fe3+_tip4pew     1       FE              FE       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+FE2              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Fe2+_tip4pew     1       FE2              FE2       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+GD              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Gd3+_tip4pew     1       GD              GD       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+HG              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Hg2+_tip4pew     1       HG              HG       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+HF              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Hf4+_tip4pew     1       HF              HF       1      +4.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+IN              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       In3+_tip4pew     1       IN              IN       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+I              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       I-_tip4pew     1       I              I       1      -1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+K              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       K+_tip4pew     1       K              K       1      +1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+LA              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       La3+_tip4pew     1       LA              LA       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+LI              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Li+_tip4pew     1       LI              LI       1      +1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+LU              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Lu3+_tip4pew     1       LU              LU       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+MG              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Mg2+_tip4pew     1       MG              MG       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+MN              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Mn2+_tip4pew     1       MN              MN       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+NA              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Na+_tip4pew     1       NA              NA       1      +1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+NI              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ni2+_tip4pew     1       NI              NI       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+ND              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Nd3+_tip4pew     1       ND              ND       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+PB              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Pb2+_tip4pew     1       PB              PB       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+PD              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Pd2+_tip4pew     1       PD              PD       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+PR              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Pr3+_tip4pew     1       PR              PR       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+PT              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Pt2+_tip4pew     1       PT              PT       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+PU              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Pu4+_tip4pew     1       PU              PU       1      +4.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+RB              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Rb+_tip4pew     1       RB              RB       1      +1.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+RA              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Ra2+_tip4pew     1       RA              RA       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+SM              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Sm3+_tip4pew     1       SM              SM       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+SR              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Sr2+_tip4pew     1       SR              SR       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+SM2              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Sm2+_tip4pew     1       SM2              SM       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+SN              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Sn2+_tip4pew     1       SN              SN       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+TB              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Tb3+_tip4pew     1       TB              TB       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+TH              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Th4+_tip4pew     1       TH              TH       1      +4.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+TL3              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Tl3+_tip4pew     1       TL3              TL       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+TM              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Tm3+_tip4pew     1       TM              TM       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+U              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       U4+_tip4pew     1       U              U       1      +4.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+V              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       V2+_tip4pew     1       V              V       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+Y              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Y3+_tip4pew     1       Y              Y       1      +3.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+YB              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Yb2+_tip4pew     1       YB              YB2       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+ZN              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Zn2+_tip4pew     1       ZN              ZN       1      +2.000000
+
+
+[ moleculetype ]
+; molname       nrexcl
+ZR              1
+
+[ atoms ]
+; id    at type         res nr  residu name     at name  cg nr  charge
+1       Zr4+_tip4pew     1       ZR              ZR       1      +4.000000

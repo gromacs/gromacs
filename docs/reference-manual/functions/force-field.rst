@@ -138,6 +138,10 @@ AMBER
 
 -  AMBERGS \ :ref:`117 <refGarcia2002>`
 
+-  AMBER14SB \ :ref:`197 <refMaier2015>`
+
+-  AMBER19SB \ :ref:`198 <refTian2020>`
+
 Dihedrals
 ^^^^^^^^^
 
@@ -191,6 +195,13 @@ where:
 - sixth coulumn is function type (presently only ``1`` is supported),
 - seventh and eighth coulumns are grid size in ``x`` and ``y`` dimensions,
 - following ``grid size x * grid size y`` values constitute the CMAP grid.
+
+Note that AMBER19SB and newer versions require residue names to express
+the residue type so that CMAP angle terms can be correctly assigned in
+:ref:`grompp <gmx grompp>`. This is handled by the default of
+``-rtpres auto`` for that option of :ref:`pdb2gmx <gmx pdb2gmx>` in
+concert with the ``[ bondedtypes ]`` for the residue types for such
+forcefields.
 
 .. _charmmff:
 

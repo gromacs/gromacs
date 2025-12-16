@@ -284,6 +284,29 @@ INSTANTIATE_TEST_SUITE_P(AmberTip4p,
                                             ::testing::Values(efGRO),
                                             ::testing::Values(true)),
                          namesOfTests);
+INSTANTIATE_TEST_SUITE_P(
+        Amber14Sb,
+        Pdb2gmxTest,
+        ::testing::Combine(::testing::Values("amber14sb"),
+                           ::testing::Values("tip3p", "opc3"),
+                           ::testing::Values("none"),
+                           ::testing::Values("id_or_ter"),
+                           ::testing::Values("no"),
+                           ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "E.pdb"),
+                           ::testing::Values(efGRO),
+                           ::testing::Values(false)),
+        namesOfTests);
+INSTANTIATE_TEST_SUITE_P(Amber19SbHo4,
+                         Pdb2gmxTest,
+                         ::testing::Combine(::testing::Values("amber19sb"),
+                                            ::testing::Values("opc", "tip4pew"),
+                                            ::testing::Values("none"),
+                                            ::testing::Values("id_or_ter"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values("tip4p.pdb"),
+                                            ::testing::Values(efGRO),
+                                            ::testing::Values(true)),
+                         namesOfTests);
 #endif
 
 #if CHARMM

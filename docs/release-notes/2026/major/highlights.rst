@@ -12,6 +12,10 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
+* Two `protein force fields from AMBER <https://ambermd.org/AmberModels_proteins.php>`_,
+  ff14SB and ff19SB, have been ported to |Gromacs| as AMBER14SB and AMBER19SB.
+  The ports also include the new OPC and OPC3 water models as well as several others.
+
 * Expanded support for running simulations with Neural Network Potential models,
   now including link atom treatment for NNP/MM, pairlist input, and electrostatic
   embedding models.

@@ -1,0 +1,6 @@
+opc      OPC       optimal 4-point 3-charge rigid water model, recommended
+opc3     OPC3      optimal 3-point 3-charge rigid water model, also recommended
+spc      SPC       simple point charge
+spce     SPC/E     extended simple point charge
+tip3p    TIP3P     TIP 3-point
+tip4pew  TIP4P-Ew  TIP 4-point optimized with Ewald

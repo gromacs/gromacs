@@ -1574,17 +1574,28 @@ enum class WaterType : int
 {
     Select,
     None,
+    Opc,
+    Opc3,
     Spc,
     SpcE,
     Tip3p,
     Tip4p,
+    Tip4pew,
     Tip5p,
     Tips3p,
     Count
 };
-const gmx::EnumerationArray<WaterType, const char*> c_waterTypeNames = {
-    { "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", "tips3p" }
-};
+const gmx::EnumerationArray<WaterType, const char*> c_waterTypeNames = { { "select",
+                                                                           "none",
+                                                                           "opc",
+                                                                           "opc3",
+                                                                           "spc",
+                                                                           "spce",
+                                                                           "tip3p",
+                                                                           "tip4p",
+                                                                           "tip4pew",
+                                                                           "tip5p",
+                                                                           "tips3p" } };
 
 enum class MergeType : int
 {
@@ -1596,6 +1607,16 @@ enum class MergeType : int
 const gmx::EnumerationArray<MergeType, const char*> c_mergeTypeNames = {
     { "no", "all", "interactive" }
 };
+
+enum class RtpResType : int
+{
+    Auto,
+    No,
+    Yes,
+    Count
+};
+const gmx::EnumerationArray<RtpResType, const char*> c_rtpResTypeNames = { { "auto", "no", "yes" } };
+
 
 } // namespace
 
@@ -1616,6 +1637,7 @@ public:
         vsitesType_(VSitesType::None),
         waterType_(WaterType::Select),
         mergeType_(MergeType::No),
+        RTPresname_(RtpResType::Auto),
         itp_file_(nullptr),
         mHmult_(0)
     {
@@ -1654,7 +1676,6 @@ private:
     bool bVerbose_;
     bool bCmap_;
     bool bRenumRes_;
-    bool bRTPresname_;
     bool bIndexSet_;
     bool bOutputSet_;
     bool bVsites_;
@@ -1680,6 +1701,7 @@ private:
     VSitesType          vsitesType_;
     WaterType           waterType_;
     MergeType           mergeType_;
+    RtpResType          RTPresname_;
 
     FILE*                              itp_file_;
     char                               forcefield_[STRLEN];
@@ -1890,9 +1912,9 @@ void pdb2gmx::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleS
                                .store(&bRenumRes_)
                                .defaultValue(false)
                                .description("Renumber the residues consecutively in the output"));
-    options->addOption(BooleanOption("rtpres")
-                               .store(&bRTPresname_)
-                               .defaultValue(false)
+    options->addOption(EnumOption<RtpResType>("rtpres")
+                               .enumValue(c_rtpResTypeNames)
+                               .store(&RTPresname_)
                                .description("Use [REF].rtp[ref] entry names as residue names"));
     options->addOption(FileNameOption("f")
                                .legacyType(efSTX)
@@ -2076,7 +2098,9 @@ int pdb2gmx::run()
     matrix      box;
     const char* watres;
     clear_mat(box);
-    if (watermodel_ != nullptr && (std::strstr(watermodel_, "4p") || std::strstr(watermodel_, "4P")))
+    if (watermodel_ != nullptr
+        && (std::strstr(watermodel_, "4p") != nullptr || std::strstr(watermodel_, "4P") != nullptr
+            || std::string(watermodel_) == "opc" || std::string(watermodel_) == "OPC"))
     {
         watres = "HO4";
     }
@@ -2379,6 +2403,15 @@ int pdb2gmx::run()
     {
         readResidueDatabase(filename, &rtpFFDB, &atype, &symtab, logger, false);
     }
+    if (rtpFFDB[0].replaceResidueNameWithResidueType && RTPresname_ == RtpResType::No)
+    {
+        gmx_fatal(FARGS,
+                  "The selected force field requires the usage of residue types from the .rtp "
+                  "file as residue names. Please do not use -rtpres no");
+    }
+    const bool bRTPresname_ =
+            RTPresname_ == RtpResType::Yes
+            || (RTPresname_ == RtpResType::Auto && rtpFFDB[0].replaceResidueNameWithResidueType);
     if (bNewRTP_)
     {
         /* Not correct with multiple rtp input files with different bonded types */
