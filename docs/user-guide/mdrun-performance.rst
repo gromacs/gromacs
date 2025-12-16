@@ -76,6 +76,40 @@ Checking and improving performance
   counters and wall-clock time for different parts of the MD calculation. The
   PP/PME load ratio is also printed, with a warning when a lot of performance is
   lost due to imbalance.
+* Six performance metrics are reported in the ``md.log``. Select the appropriate
+  metric for benchmarking based on the purpose of the simulation.
+
+  ns/day
+    This is a commonly used metric for simulation throughput that is specific to
+    simulation systems, conditions, and hardware.
+
+  hour/ns
+    As the inverse of ns/day, hour/ns can be used to estimate the time to obtain a
+    desired simulation time.
+
+  ms/step
+    This is a time step-independent metric that directly measures the wall-time per timestep
+    and can be used to measure performance with a given system.
+
+  Matom*steps/s
+    This is a metric for simulation throughput that is timestep-independent and
+    normalized by system size. It provides a measure of simulation efficiency, as
+    the amount of work scales nearly linearly with the number of atoms, given
+    the same type of system and simulation settings.
+
+  Mnbf/s (Mega non-bonded forces per second)
+    This throughput metric is time step-independent and partially normalized by
+    system size; When non-bonded interactions dominate in the simulations,
+    Mnbf/s can be used to compare hardware or algorithmic efficiency.
+
+  MFlops (Mega floating-point operations per second)
+    This is not an MD-specific metric and gives an estimate of the achieved flop rate, 
+    which can be compared with the theoretical peak flop rate of the hardware.
+    Note that this is an estimate of the useful floating point operations in the code,
+    not the actual operations emitted by the compiler or measured during profiling.
+    MFlops and Mnbf/s are only printed when the environment variable 
+    ``GMX_DETAILED_PERF_STATS`` is set.
+
 * Adjust the number of PME ranks and/or the cut-off and PME grid-spacing when
   there is a large PP/PME imbalance. Note that even with a small reported
   imbalance, the automated PME-tuning might have reduced the initial imbalance.

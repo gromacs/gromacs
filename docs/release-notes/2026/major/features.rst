@@ -108,3 +108,17 @@ support in |Gromacs| is planned but not part of this release. MDP options are av
 FMM libraries i.e., ExaFMM and FMSolvr, and these options are validated internally by the interface.
 
 For more details, please see :ref:`the FMM section in the reference manual <fmm>`.
+Add two new performance metrics
+"""""""""""""""""""""""""""""""
+
+:ref:`gmx mdrun` reports two additional time step-independent metrics to measure the
+performance of a simulation on specific hardware. The ms/step is the average 
+wall-clock time (in milliseconds) required to compute a single timestep.
+As a direct measure of computational cost per timestep, it is useful for 
+profiling code or hardware performance for a specific system.
+Matom*steps/s considers the number of atoms and measures the throughput of 
+actions (number of steps * number of atoms) per second. This metric is suitable 
+when comparing performance across systems and hardware. A similar metric can also 
+be found from `PLUMED <https://docs.lammps.org/Speed_measure.html#examples-comparing-serial-performance>`_. 
+
+:issue:`5374`
