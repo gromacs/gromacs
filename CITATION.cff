@@ -153,7 +153,7 @@ keywords:
   - high performance computing
   - free software
 license: LGPL-2.1-or-later
-commit: v2025.3
+commit: v2026-rc
 version: '2026-rc'
 date-released: '2025-12-16'
 
