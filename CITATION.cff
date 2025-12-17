@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: GROMACS 2025.3 source code
+title: GROMACS 2026-rc source code
 message: >-
   If you use GROMACS, please cite it using the
   metadata from this file.
@@ -137,14 +137,14 @@ authors:
     orcid: "https://orcid.org/0000-0002-2734-2794"
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.16992621
+    value: 10.5281/zenodo.17944095
   - type: url
     value: >-
-      https://ftp.gromacs.org/gromacs/gromacs-2025.3.tar.gz
+      https://ftp.gromacs.org/gromacs/gromacs-2026-rc.tar.gz
     description: Download URL
 repository-code: 'https://gitlab.com/gromacs/gromacs'
 url: 'https://www.gromacs.org/'
-repository: 'https://manual.gromacs.org/2025.3/index.html'
+repository: 'https://manual.gromacs.org/2026-rc/index.html'
 abstract: "GROMACS\_is a free, open-source and high-performance software suite for molecular dynamics simulation and analysis."
 keywords:
   - molecular dynamics
@@ -154,6 +154,6 @@ keywords:
   - free software
 license: LGPL-2.1-or-later
 commit: v2025.3
-version: '2025.3'
-date-released: '2025-08-29'
+version: '2026-rc'
+date-released: '2025-12-16'
 
