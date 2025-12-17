@@ -36,6 +36,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         calc_verletbuf.cpp
         calcvir.cpp
         constr.cpp
+        constraintgroupsize.cpp
         constrtestdata.cpp
         constrtestrunners.cpp
         ebin.cpp

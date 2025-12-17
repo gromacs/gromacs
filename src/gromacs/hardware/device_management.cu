@@ -65,6 +65,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "device_information.h"
+#include "gpuinfo.h"
 
 /*! \internal \brief
  * Max number of devices supported by CUDA (for consistency checking).
@@ -95,27 +96,86 @@ static std::optional<std::array<std::byte, 16>> getCudaDeviceUuid(const cudaDevi
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo)
 {
-    if (deviceInfo.status != DeviceStatus::DeviceNotTargeted)
+    const std::string rebuildRecommendation = gmx::formatString(
+            "Consult the install guide for how to use the CMAKE_CUDA_ARCHITECTURES "
+            "CMake variable to add this architecture (the easiest solution is likely "
+            "to rebuild GROMACS with -DCMAKE_CUDA_ARCHITECTURES=%d%d and a compatible CUDA "
+            "version)",
+            deviceInfo.prop.major,
+            deviceInfo.prop.minor);
+
+    if (deviceInfo.status == DeviceStatus::DeviceNotTargeted)
     {
-        return;
+        gmx::TextLineWrapper wrapper;
+        wrapper.settings().setLineLength(80);
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendText(wrapper.wrapToString(gmx::formatString(
+                        "WARNING: The %s binary does not include support for the CUDA architecture "
+                        "of the GPU ID #%d (compute capability %d.%d). "
+                        "By default, GROMACS supports all recent NVIDIA architectures, so your GPU "
+                        "might be rare, or some architectures were disabled in the build. "
+                        "%s.",
+                        gmx::getProgramContext().displayName(),
+                        deviceInfo.id,
+                        deviceInfo.prop.major,
+                        deviceInfo.prop.minor,
+                        rebuildRecommendation.c_str())));
     }
-    gmx::TextLineWrapper wrapper;
-    wrapper.settings().setLineLength(80);
-    GMX_LOG(mdlog.warning)
-            .asParagraph()
-            .appendText(wrapper.wrapToString(gmx::formatString(
-                    "WARNING: The %s binary does not include support for the CUDA architecture of "
-                    "the GPU ID #%d (compute capability %d.%d) detected during detection. "
-                    "By default, GROMACS supports all architectures of compute "
-                    "capability >= 5.0, so your GPU "
-                    "might be rare, or some architectures were disabled in the build. "
-                    "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
-                    "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
-                    gmx::getProgramContext().displayName(),
-                    deviceInfo.id,
-                    deviceInfo.prop.major,
-                    deviceInfo.prop.minor)));
+    else if (deviceInfo.status == DeviceStatus::Compatible && !deviceInfo.haveNativeKernels)
+    {
+        gmx::TextLineWrapper wrapper;
+        wrapper.settings().setLineLength(80);
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendText(wrapper.wrapToString(gmx::formatString(
+                        "NOTE: The GPU ID #%d (compute capability %d.%d) "
+                        "is supported by GROMACS, but the current binary does not "
+                        "include kernels compiled natively for this architecture. "
+                        "Kernels will be JIT-compiled from PTX which may result in reduced "
+                        "performance or, rarely, runtime errors. "
+                        "%s",
+                        deviceInfo.id,
+                        deviceInfo.prop.major,
+                        deviceInfo.prop.minor,
+                        rebuildRecommendation.c_str())));
+    }
 }
+
+/* Check if we are explicitly compiling kernels for the given architecture.
+ *
+ * Some kernels could specialize for certain architectures, e.g. by using different amount
+ * of shared memory. If we are running a kernel built for a different architecture (via PTX JIT),
+ * we might run into problems if we assume that the kernel uses parameters specific for the
+ * architecture we are running on.
+ *
+ * We rely on our CMake setup to define CUDA_COMPILER_ARCHITECTURES.
+ *
+ * Alternatively, when compiling with NVCC, we could have used __CUDA_ARCH_LIST__,
+ * or with NVIDIA HPC SDK, NV_TARGET_SM_INTEGER_LIST. Clang, however, does not
+ * define anything like this.
+ */
+static bool haveCompiledKernelsForArch(const int major, const int minor)
+{
+    // CUDA_COMPILER_ARCHITECTURES is defined in gpuinfo.h to a string like "50;52-real;60-real;..."
+    constexpr const char* archListStr = ";" CUDA_COMPILER_ARCHITECTURES ";";
+    static_assert(std::string_view(archListStr).size() > 2,
+                  "CUDA_COMPILER_ARCHITECTURES must not be empty");
+
+    // Create search pattern like ";75" which matches ";75;" or ";75-"
+    char searchPattern[8];
+    std::snprintf(searchPattern, sizeof(searchPattern), ";%d%d", major, minor);
+
+    const char* found = std::strstr(archListStr, searchPattern);
+    if (found != nullptr)
+    {
+        // Check that it's followed by ';' or '-'
+        char nextChar = found[std::strlen(searchPattern)];
+        return (nextChar == ';' || nextChar == '-');
+    }
+    return false;
+}
+
 
 /*! \brief Runs GPU compatibility and sanity checks on the indicated device.
  *
@@ -309,10 +369,11 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         memset(&prop, 0, sizeof(cudaDeviceProp));
         stat = cudaGetDeviceProperties(&prop, i);
 
-        deviceInfoList[i]               = std::make_unique<DeviceInformation>();
-        deviceInfoList[i]->id           = i;
-        deviceInfoList[i]->prop         = prop;
-        deviceInfoList[i]->deviceVendor = DeviceVendor::Nvidia;
+        deviceInfoList[i]                    = std::make_unique<DeviceInformation>();
+        deviceInfoList[i]->id                = i;
+        deviceInfoList[i]->prop              = prop;
+        deviceInfoList[i]->haveNativeKernels = haveCompiledKernelsForArch(prop.major, prop.minor);
+        deviceInfoList[i]->deviceVendor      = DeviceVendor::Nvidia;
 
         deviceInfoList[i]->uuid = getCudaDeviceUuid(prop);
 

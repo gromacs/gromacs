@@ -138,7 +138,7 @@ std::tuple<int, int> PmeCoordinateReceiverGpu::ppCommAtomRange(int /* senderInde
     return std::make_tuple(0, 0);
 }
 
-int PmeCoordinateReceiverGpu::ppCommNumSenderRanks()
+int PmeCoordinateReceiverGpu::ppCommNumRanksSendingParticles()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

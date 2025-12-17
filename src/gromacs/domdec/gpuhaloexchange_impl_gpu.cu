@@ -59,6 +59,7 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 
@@ -836,6 +837,7 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
                 // Intra-node path (NVLink): signal the peer to pull (GET) the data directly.
                 uint64_t* remoteSignalReceiverRankFCurr =
                         reinterpret_cast<uint64_t*>(nvshmem_ptr(signalReceiverRankFCurr, sendRank));
+                GMX_DEVICE_ASSERT(remoteSignalReceiverRankFCurr != nullptr);
                 //  As this is the first dim/pulse we can make use of relaxed memory order to signal the sendRank.
                 //  As there is no prior data written by this rank to be made visible at system scope.
                 stRelaxedSysAsm(remoteSignalReceiverRankFCurr, signalReceiverRankFCounter);
@@ -889,6 +891,7 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
                         {
                             uint64_t* remoteSignalReceiverRankFCurr = reinterpret_cast<uint64_t*>(
                                     nvshmem_ptr(signalReceiverRankFNext, sendRank));
+                            GMX_DEVICE_ASSERT(remoteSignalReceiverRankFCurr != nullptr);
                             for (int pulseId = currPulse + 1; pulseId < totalNumPulses; pulseId++)
                             {
                                 const uint32_t* syncOnPrevPulse = d_fGridSync_ + pulseId;

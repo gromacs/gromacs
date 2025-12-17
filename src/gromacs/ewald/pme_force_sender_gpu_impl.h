@@ -67,7 +67,7 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 
-/*! \internal \brief Class with interfaces and data for CUDA version of PME Force sending functionality*/
+/*! \internal \brief Class with interfaces and data for GPU version of PME Force sending functionality*/
 
 typedef struct CacheLineAlignedFlag
 {

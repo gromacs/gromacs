@@ -25,18 +25,18 @@ PYTHON=${PYTHON:-$(which python3)}
 # relevant commands and pipe that to bash
 
 args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --clfft --mpi openmpi --rocm 5.4.1 --hdf5"
-args[${#args[@]}]="--ubuntu 24.04 --gcc 14 --cuda 13.0.2 --clfft --mpi openmpi --nvhpcsdk 25.9"
-args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --cuda 12.1.0 --clfft --mpi openmpi --heffte v2.4.0 --libtorch"
+args[${#args[@]}]="--ubuntu 24.04 --gcc 14 --cuda 13.0.2 --clfft --mpi openmpi --nvhpcsdk 25.9 --libtorch"
+args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --cuda 12.1.0 --clfft --mpi openmpi --heffte v2.4.0"
 args[${#args[@]}]="--ubuntu 24.04 --gcc 14 --mpi openmpi --cp2k 2024.2"
 args[${#args[@]}]="--ubuntu 24.04 --gcc 11 --mpi openmpi --cp2k 9.1"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 18 --cuda 12.1.0"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 18 --tsan"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 14 --cuda 12.1.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 19 --mpi openmpi --hdf5 --cross riscv64"
-args[${#args[@]}]="--ubuntu 22.04 --oneapi 2025.1 --intel-compute-runtime"
+args[${#args[@]}]="--ubuntu 24.04 --oneapi 2025.3 --intel-compute-runtime"
 args[${#args[@]}]="--ubuntu 22.04 --oneapi 2025.0 --rocm 6.1.3 --cuda 12.0.1 --oneapi-plugin-amd --oneapi-plugin-nvidia"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 19 --doxygen --mpi openmpi --venvs 3.9.13 3.12.5"
-args[${#args[@]}]="--ubuntu 24.04 --llvm 18 --cuda 12.6.3 --adaptivecpp 24.10.0 --rocm 6.3.1 --mpi mpich"
+args[${#args[@]}]="--ubuntu 24.04 --llvm 20 --cuda 12.8.1 --adaptivecpp 25.10.0 --rocm 7.0.2 --mpi mpich"
 args[${#args[@]}]="--ubuntu 22.04 --adaptivecpp 24.02.0 --rocm 5.7.1"
 args[${#args[@]}]="--ubuntu 24.04 --rocm 6.2.2 --mpi openmpi --plumed --heffte v2.4.0"
 

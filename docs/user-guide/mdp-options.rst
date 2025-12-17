@@ -3758,6 +3758,113 @@ interface implementation follow :ref:`nnpot`.
 
    (0.1) [nm] Distance between link atom and the bonded MM atom.
 
+
+.. _mdp-fmm:
+
+Fast Multipole Method (FMM) Interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These options enable an FMM backend and control its settings. For further details about the
+FMM interface implementation follow :ref:`fmm`.
+
+.. mdp:: fmm-backend
+
+   (inactive) Activate an FMM library for electrostatics.
+
+   .. mdp-value:: inactive
+
+      No FMM library is used.
+
+   .. mdp-value:: exafmm
+
+      Use ExaFMM as FMM library.
+
+   .. mdp-value:: fmsolvr
+
+      Use FMSolvr as FMM library.
+      
+Options controlling ExaFmm
+""""""""""""""""""""""""""
+
+.. mdp:: fmm-exafmm-direct-provider
+
+   (GROMACS) Selects direct interaction provider.
+
+   .. mdp-value:: GROMACS
+
+      Use |Gromacs| to compute direct interactions.
+
+   .. mdp-value:: FMM
+
+      Use ExaFMM to compute direct interactions.
+
+.. mdp:: fmm-exafmm-direct-range
+
+   (2) Specifies whether ExaFMM includes only immediate or also second-nearest neighboring cells in direct interactions. Accepts ``1`` or ``2``.
+   Must be ``2`` when using |Gromacs| as direct provider.
+
+.. mdp:: fmm-exafmm-order
+
+   (6) Multipole expansion order. Must be greater than ``0``.
+
+.. mdp:: fmm-exafmm-tree-type
+
+   (uniform) Tree structure used by ExaFMM.
+   
+   .. mdp-value:: uniform
+
+      Use uniform tree structure.
+
+   .. mdp-value:: adaptive
+
+      Use adaptive tree structure.
+
+.. mdp:: fmm-exafmm-tree-depth
+
+   (0) Tree depth for uniform tree.
+   Required when using ``FMM`` as direct provider. Must not be set for adaptive tree.
+
+.. mdp:: fmm-exafmm-max-particles-per-cell
+
+   (0) Maximum particles per cell for adaptive tree.
+   Required and positive when ``fmm-exafmm-tree-type = adaptive``. Must not be set for uniform tree.
+
+Options controlling FMSolvr
+"""""""""""""""""""""""""""
+
+.. mdp:: fmm-fmsolvr-order
+
+   (8) Multipole expansion order. Must be greater than ``0``.
+
+.. mdp:: fmm-fmsolvr-tree-depth
+
+   (3) Tree depth controlling spatial subdivision.
+
+.. mdp:: fmm-fmsolvr-direct-provider
+
+   (FMM) Selects direct interaction provider.
+   
+   .. mdp-value:: GROMACS
+
+      Use |Gromacs| to compute direct interactions.
+
+   .. mdp-value:: FMM
+
+      Use FMSolvr to compute direct interactions.
+
+.. mdp:: fmm-fmsolvr-direct-range
+
+   (1) Direct interaction settings. Must be ``1``, as FMSolvr currently supports direct interactions only with immediate neighboring cells.
+
+.. mdp:: fmm-fmsolvr-dipole-compensation
+
+   (yes) Enables dipole compensation.
+
+.. mdp:: fmm-fmsolvr-sparse
+
+   (no) Enable performance optimizations for sparse simulation systems with a lot of vacuum.
+
+
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^
 

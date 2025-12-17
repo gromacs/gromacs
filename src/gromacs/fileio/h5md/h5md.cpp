@@ -57,7 +57,6 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -208,7 +207,9 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
         case H5mdFileMode::Read:
             file_ = H5Fopen(fileName.string().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
             break;
-        default: throw NotImplementedError("Appending to H5MD is not implemented yet.");
+        case H5mdFileMode::Append:
+            file_ = H5Fopen(fileName.string().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+            break;
     }
     GMX_H5MD_THROW_UPON_INVALID_HID(file_, "Cannot open H5MD file.");
 
@@ -489,7 +490,9 @@ void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inpu
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selectionName)
+void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selectionName,
+                                                      const std::optional<int64_t> restartingFromStep,
+                                                      const std::optional<int64_t> expectedNumParticles)
 {
 #if GMX_USE_HDF5
     const auto [particlesGroup, particlesGroupGuard] =
@@ -527,8 +530,27 @@ void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selecti
         blockBuilder.setForce(H5mdTimeDataBlock<RVec>(selectionGroup, c_forceGroupName));
     }
     particleBlocks_.insert({ selectionName, TrajectoryReadCursor(blockBuilder.build()) });
+
+    if (restartingFromStep.has_value())
+    {
+        particleBlocks_.at(selectionName).block().trimDataSetsFromStep(restartingFromStep.value());
+    }
+
+    if (expectedNumParticles.has_value())
+    {
+        const int64_t numParticlesInBlock = particleBlocks_.at(selectionName).block().numParticles();
+        GMX_H5MD_THROW_UPON_ERROR(
+                expectedNumParticles.value() != numParticlesInBlock,
+                formatString(
+                        "System contains %lld atoms but the H5md file is set up for %lld atoms",
+                        static_cast<long long>(expectedNumParticles.value()),
+                        static_cast<long long>(numParticlesInBlock)));
+    }
+
 #else
     GMX_UNUSED_VALUE(selectionName);
+    GMX_UNUSED_VALUE(restartingFromStep);
+    GMX_UNUSED_VALUE(expectedNumParticles);
 #endif
 }
 
@@ -536,7 +558,18 @@ void H5md::setupParticleBlockForGroupFromExistingFile(const std::string& selecti
 void H5md::setupFromExistingFile()
 {
 #if GMX_USE_HDF5
-    setupParticleBlockForGroupFromExistingFile(c_fullSystemGroupName);
+    setupParticleBlockForGroupFromExistingFile(c_fullSystemGroupName, std::nullopt, std::nullopt);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupFromExistingFileForAppending(const int64_t restartingFromStep, const int64_t numParticles)
+{
+#if GMX_USE_HDF5
+    setupParticleBlockForGroupFromExistingFile(c_fullSystemGroupName, restartingFromStep, numParticles);
+#else
+    GMX_UNUSED_VALUE(restartingFromStep);
+    GMX_UNUSED_VALUE(numParticles);
 #endif
 }
 
@@ -631,6 +664,7 @@ void H5md::writeNextFrame(ArrayRef<const RVec> positions,
     // For extra debugging we leave this assert as a bread crumb.
     GMX_ASSERT(particleBlocks_.find(c_fullSystemGroupName) != particleBlocks_.cend(),
                "Could not find particle block when writing trajectory data");
+
     H5mdParticleBlock& particleBlock = particleBlocks_.at(c_fullSystemGroupName).block();
     if (!positions.empty())
     {
@@ -785,6 +819,11 @@ void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec
     h5md->setupFileFromInput(topology, inputRecord);
 }
 
+void setupFromExistingFileForAppending(H5md* h5md, const int64_t restartingFromStep, const int64_t numParticles)
+{
+    h5md->setupFromExistingFileForAppending(restartingFromStep, numParticles);
+}
+
 void writeNextFrame(H5md*                h5md,
                     ArrayRef<const RVec> positions,
                     ArrayRef<const RVec> velocities,
@@ -800,6 +839,12 @@ void writeNextFrame(H5md*                h5md,
 void destroyH5md(H5md* h5md)
 {
     delete h5md;
+}
+
+//! Flush \c h5md file.
+void flushH5md(H5md* h5md)
+{
+    h5md->flush();
 }
 
 } // namespace gmx

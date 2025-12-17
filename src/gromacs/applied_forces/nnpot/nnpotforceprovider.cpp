@@ -173,15 +173,13 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     {
         idxMM_.assign(params_.mmIndices_.begin(), params_.mmIndices_.end());
         setMMPositionsAndCharges(fInput.x_, fInput.chargeA_);
-        copy_mat(fInput.box_, box_);
     }
     // copy box
     copy_mat(fInput.box_, box_);
     // check that pairlist is available if needed
     if (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts"))
     {
-        // this assert should only trigger if something breaks in the mdmodules notifications
-        GMX_ASSERT(!pairlistForModel_.empty(), "Pairlist for NNP model is empty!");
+        preparePairlistInput();
     }
 
     // get link atom info
@@ -330,16 +328,28 @@ NNPotForceProvider::constructLinkFrontier(const std::vector<LinkFrontierAtom>& i
 
 void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& signal)
 {
+    // We don't have the updated box vectors yet here, so we can't compute the shift vectors.
+    // So, we just store the pairlist and prepare the input later in calculateForces().
+    fullPairlist_.assign(signal.excludedPairlist_.begin(), signal.excludedPairlist_.end());
+    doPairlist_ = true;
+}
+
+void NNPotForceProvider::preparePairlistInput()
+{
     // New pair list constructed: Indices in the pairlist correspond to local atom indices.
     // For now, find all pairs of NNP atoms within the cutoff (which were excluded from the
     // short-range calculation in GROMACS) so the NN potential does not have to re-compute them.
     // Thus, we're interested in the excluded pairlist, because all NNP-atom pairs are excluded
     // pairs, but not all excluded pairs are necessarily NNP-atom pairs.
     // TODO: figure out dom.dec. case.
+    if (!doPairlist_)
+    {
+        return;
+    }
+    // this assert should only trigger if something breaks in the mdmodules notifications
+    GMX_ASSERT(!fullPairlist_.empty(), "Pairlist for NNP model is empty!");
 
-    ArrayRef<const PairlistEntry> pairlistFromSignal = signal.excludedPairlist_;
-    const int                     numPairs           = gmx::ssize(pairlistFromSignal);
-
+    const int numPairs = gmx::ssize(fullPairlist_);
     pairlistForModel_.clear();
     pairlistForModel_.reserve(2 * numPairs);
     shiftVectors_.clear();
@@ -347,7 +357,7 @@ void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& s
 
     for (int i = 0; i < numPairs; i++)
     {
-        const auto [atomPair, shiftIndex] = pairlistFromSignal[i];
+        const auto [atomPair, shiftIndex] = fullPairlist_[i];
 
         // we only want to add pairs where both atoms are part of the NNP input
         // if any of the two (or more commonly both) is not, we skip this pair
@@ -371,6 +381,7 @@ void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& s
     // sanity check
     GMX_RELEASE_ASSERT(pairlistForModel_.size() == shiftVectors_.size() * 2,
                        "Inconsistent pairlist and shift vector sizes");
+    doPairlist_ = false;
 }
 
 void NNPotForceProvider::setMMPositionsAndCharges(ArrayRef<const RVec> pos, ArrayRef<const real> charges)

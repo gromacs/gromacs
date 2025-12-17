@@ -441,7 +441,7 @@ auto lincsKernel(CommandGroupHandler& cgh,
                 }
                 else
                 {
-                    subGroupBarrier(itemIdx);
+                    sycl::group_barrier(itemIdx.get_sub_group());
                 }
             }
             // First 6 threads in the block add the 6 components of virial to the global memory address

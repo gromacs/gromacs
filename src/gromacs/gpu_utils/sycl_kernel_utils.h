@@ -192,23 +192,56 @@ static inline void atomicFetchAdd(T& val, const T delta)
     }
 }
 
+/*! \brief Portability wrapper for performing an atomic value addition.
+ *
+ * \tparam        T     Type to perform atomic add for.
+ * \param[in,out] val   Destination memory for atomic add.
+ * \param[in]     delta Source value to add.
+ */
 template<typename T>
 static inline void atomicFetchAddLocal(T& val, const T delta)
 {
     atomicFetchAdd<T, sycl::memory_scope::work_group, sycl::access::address_space::local_space>(val, delta);
 }
 
+/*! \brief Portability wrapper for performing atomic add on a value in an array.
+ *
+ * \tparam        T      Type to perform atomic add for.
+ * \param[in,out] values Array of values to perform addition in.
+ * \param[in]     index  Which address in the array should be used for add.
+ * \param[in]     delta  Source value to add.
+ */
 template<typename T>
-static inline void atomicFetchAddLocal(T* val, const T delta)
+static inline void atomicFetchAddLocal(T* values, const int index, const T delta)
 {
-    atomicFetchAddLocal<T>(*val, delta);
+    atomicFetchAddLocal<T>(values[index], delta);
 }
 
-// \brief Staggered atomic force component accumulation into global memory to reduce clashes
-//
-// Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
-// accumulate different force components at the same time.
-static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int localId)
+/*! \brief Portability wrapper for performing atomic add on a single value of a composite type like RVec.
+ *
+ * \tparam        T     Type for composite type to use.
+ * \tparam        W     Type for actual additional operation.
+ * \param[in,out] val   Composite data to perform atomic add on.
+ * \param[in]     index Which field in the composite data should be used for the add.
+ * \param[in]     delta Source value to add.
+ */
+template<typename T, typename W>
+static inline void atomicFetchAddLocal(T& val, const int index, const W delta)
+{
+    atomicFetchAddLocal<W>(val[index], delta);
+}
+
+/*!\brief Staggered atomic force component accumulation into global memory to reduce clashes
+ *
+ * Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
+ * accumulate different force components at the same time.
+ *
+ * \param[in,out] gm_f    Global array of forces.
+ * \param[in]     f       Force to add.
+ * \param[in]     index   Which value in the global force array we want to add to.
+ * \param[in]     localId Which position in the thread we are in.
+ */
+static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int index, const int localId)
 {
     __builtin_assume(localId >= 0);
 
@@ -222,9 +255,9 @@ static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3
     f      = (localId % 3 <= 1) ? Float3(f[1], f[2], f[0]) : f;
     offset = (localId % 3 <= 1) ? Int3(offset[1], offset[2], offset[0]) : offset;
 
-    atomicFetchAdd(gm_f[0][offset[0]], f[0]);
-    atomicFetchAdd(gm_f[0][offset[1]], f[1]);
-    atomicFetchAdd(gm_f[0][offset[2]], f[2]);
+    atomicFetchAdd(gm_f[index][offset[0]], f[0]);
+    atomicFetchAdd(gm_f[index][offset[1]], f[1]);
+    atomicFetchAdd(gm_f[index][offset[2]], f[2]);
 }
 
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
@@ -248,21 +281,6 @@ static inline T atomicLoad(T& val)
     using sycl::access::address_space;
     sycl::atomic_ref<T, sycl::memory_order::relaxed, MemoryScope, address_space::global_space> ref(val);
     return ref.load();
-#endif
-}
-
-/*! \brief Issue an intra sub-group barrier.
- *
- * Equivalent with CUDA's \c syncwarp(c_cudaFullWarpMask).
- *
- */
-template<int Dim>
-static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
-{
-#if GMX_SYCL_ACPP
-    sycl::group_barrier(itemIdx.get_sub_group(), sycl::memory_scope::sub_group);
-#else
-    itemIdx.get_sub_group().barrier();
 #endif
 }
 

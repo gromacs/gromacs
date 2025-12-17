@@ -624,10 +624,19 @@ static void print_top_water(FILE* out, const std::filesystem::path& ffdir, const
     fprintf(out, "#endif\n");
     fprintf(out, "\n");
 
+    auto ionPerWaterPath = ffdir;
+    ionPerWaterPath.append(std::string("ions_").append(water).append(".itp"));
+
     auto ionPath = ffdir;
     ionPath.append("ions.itp");
 
-    if (fflib_fexist(ionPath))
+    if (fflib_fexist(ionPerWaterPath))
+    {
+        fprintf(out, "; Include topology for ions\n");
+        fprintf(out, "#include \"%s\"\n", ionPerWaterPath.generic_string().c_str());
+        fprintf(out, "\n");
+    }
+    else if (fflib_fexist(ionPath))
     {
         fprintf(out, "; Include topology for ions\n");
         fprintf(out, "#include \"%s\"\n", ionPath.generic_string().c_str());

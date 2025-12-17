@@ -83,7 +83,7 @@ public:
     void reinit(int size);
 
     /*! \brief Pull force buffer directly from GPU memory on PME
-     * rank to either GPU or CPU memory on PP task using CUDA
+     * rank to either GPU or CPU memory on PP task using GPU
      * Memory copy or GPU-aware MPI.
      *
      * recvPtr should be in GPU or CPU memory if recvPmeForceToGpu
@@ -101,7 +101,7 @@ public:
     void receiveForceFromPme(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
-     * task, from either GPU or CPU memory on PP task using CUDA
+     * task, from either GPU or CPU memory on PP task using GPU
      * Memory copy or GPU-aware MPI. If sending from GPU, this method should
      * be called after the local GPU coordinate buffer operations.
      * The remote PME task will automatically wait for data to be copied
@@ -122,7 +122,7 @@ public:
     std::optional<DeviceBuffer<Float3>> getGpuForceStagingPtr();
 
     /*! \brief When this thread-MPI rank has particles with PME force
-     * contribtions expected from its PME-only rank, return pointer to
+     * contributions expected from its PME-only rank, return pointer to
      * event recorded when forces are ready. */
     std::optional<GpuEventSynchronizer*> getForcesReadySynchronizer();
 
@@ -134,7 +134,7 @@ public:
 private:
     /*! \brief Receive buffer from GPU memory on PME rank to either
      * GPU or CPU memory on PP rank. Data is pushed from PME force
-     * sender object using CUDA memory copy functionality, and this
+     * sender object using GPU memory copy functionality, and this
      * method performs the necessary synchronization on that
      * communication. This method is used with thread-MPI.
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
@@ -151,7 +151,7 @@ private:
     void receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
-     * task, from either GPU or CPU memory on PP task using CUDA Memory copy.
+     * task, from either GPU or CPU memory on PP task using GPU Memory copy.
      * This method is used with Thread-MPI.
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send

@@ -46,6 +46,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 
 #include "pme_gpu_constants.h"
 #include "pme_gpu_internal.h"
@@ -118,7 +119,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     float viryz  = 0.0F;
     float virzz  = 0.0F;
 
-    assert(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
+    GMX_DEVICE_ASSERT(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
     if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
         & (gridLineIndex < gridLinesPerBlock))
     {
@@ -170,14 +171,14 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
                                + mm.z * kernelParams.current.recipBox[ZZ][ZZ];
 
             const float m2k = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
-            assert(m2k != 0.0F);
+            GMX_DEVICE_ASSERT(m2k != 0.0F);
             float vMajor  = LDG(gm_splineValueMajor + kMajor);
             float vMiddle = LDG(gm_splineValueMiddle + kMiddle);
             float vMinor  = LDG(gm_splineValueMinor + kMinor);
             float denom   = m2k * float(CUDART_PI_F) * kernelParams.current.boxVolume * vMajor
                           * vMiddle * vMinor;
-            assert(isfinite(denom));
-            assert(denom != 0.0F);
+            GMX_DEVICE_ASSERT(isfinite(denom));
+            GMX_DEVICE_ASSERT(denom != 0.0F);
 
             const float tmp1   = expf(-kernelParams.grid.ewaldFactor * m2k);
             const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
@@ -299,7 +300,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
          *       To use fewer warps, add to the conditional:
          *       && threadLocalId < activeWarps * stride
          */
-        assert(activeWarps * stride >= warp_size);
+        GMX_DEVICE_ASSERT(activeWarps * stride >= warp_size);
         if (threadLocalId < warp_size)
         {
             float output = sm_virialAndEnergy[threadLocalId];
@@ -311,7 +312,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
             /* Final output */
             if (validComponentIndex)
             {
-                assert(isfinite(output));
+                GMX_DEVICE_ASSERT(isfinite(output));
                 atomicAdd(gm_virialAndEnergy + componentIndex, output);
             }
         }

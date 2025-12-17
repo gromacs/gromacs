@@ -43,6 +43,7 @@ and search for a potential answer or ask a question from the community.
    run-time-errors
    cmdline
    terminology
+   validation
    environment-variables
    floating-point
    security

@@ -316,28 +316,13 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
             return DeviceStatus::IncompatibleClusterSize;
         }
 
-        /* Host device can not be used, because NBNXM requires sub-groups, which are not supported.
-         * Accelerators (FPGAs and their emulators) are not supported.
-         * So, the only viable options are CPUs and GPUs. */
-        const bool forceCpu = (std::getenv("GMX_SYCL_FORCE_CPU") != nullptr);
-
-        if (forceCpu && syclDevice.is_cpu())
-        {
-            return DeviceStatus::Compatible;
-        }
-        else if (!forceCpu && syclDevice.is_gpu())
-        {
-            return DeviceStatus::Compatible;
-        }
-        else if (deviceVendor == DeviceVendor::PoclCpu)
+        if (deviceVendor == DeviceVendor::PoclCpu)
         {
             // PoCL CPU not yet tested with ACPP, only allow DPCPP for now.
             return GMX_SYCL_DPCPP ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
         }
-        else
-        {
-            return DeviceStatus::Incompatible;
-        }
+
+        return DeviceStatus::Compatible;
     }
     catch (sycl::exception const&) // in case a driver bug causes get_info to throw
     {
@@ -562,9 +547,10 @@ static std::vector<sycl::device> partitionDevices(const std::vector<sycl::device
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfos(0);
-    std::vector<sycl::device>                       allDevices;
 
-    allDevices = sycl::device::get_devices();
+    const bool allowNonGpu = (std::getenv("GMX_SYCL_ALLOW_ALL_DEVICES") != nullptr);
+    const auto deviceType = allowNonGpu ? sycl::info::device_type::all : sycl::info::device_type::gpu;
+    std::vector<sycl::device> allDevices = sycl::device::get_devices(deviceType);
 
     const std::vector<sycl::device> devices = partitionDevices(std::move(allDevices));
     deviceInfos.reserve(devices.size());

@@ -50,6 +50,8 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
+#include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
+#include "gromacs/fileio/h5md/h5md_fixeddataset.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
@@ -95,6 +97,100 @@ TEST(H5mdFileTest, CanCreateAndCloseH5mdFile)
     }
     {
         gmx::H5md fileToRead(filename, H5mdFileMode::Read);
+    }
+}
+
+TEST(H5mdFileTest, OpeningFileInReadModeDoesNotAllowWrite)
+{
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+    {
+        // Create an empty file for opening in read-only mode below:
+        // closed at end of scope!
+        H5md fileToWrite(filename, H5mdFileMode::Write);
+    }
+    {
+        H5md fileToRead(filename, H5mdFileMode::Read);
+        EXPECT_THROW(createGroup(fileToRead.fileid(), "h5md"), gmx::FileIOError)
+                << "Must not be able to create group in read-mode file";
+        EXPECT_THROW(H5mdFrameDataSetBuilder<int32_t>(fileToRead.fileid(), "dataSet").build(), gmx::FileIOError)
+                << "Must not be able to create data set in read-mode file";
+    }
+}
+
+TEST(H5mdFileTest, OpeningFileInAppendModeAllowsWrite)
+{
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+
+    const std::vector<int> valuesToWrite = { 10, -1, 15, 6 };
+    {
+        SCOPED_TRACE("Open a file in write-mode and write some values into a data set");
+        H5md fileToWrite(filename, H5mdFileMode::Write);
+
+        H5mdScalarFrameDataSet<int> dataSet(
+                H5mdFrameDataSetBuilder<int>(fileToWrite.fileid(), "testDataSet").build());
+        for (const int value : valuesToWrite)
+        {
+            dataSet.writeNextFrame(value);
+        }
+    }
+    {
+        SCOPED_TRACE(
+                "Open the created file in append-mode and test writing into existing data sets");
+        H5md fileToRead(filename, H5mdFileMode::Append);
+
+        const std::vector<int> valuesToAppend = { 15, -10, 3, 7 };
+        std::vector<int32_t>   allValues      = valuesToWrite;
+
+        H5mdScalarFrameDataSet<int> dataSet(fileToRead.fileid(), "testDataSet");
+        for (const int value : valuesToAppend)
+        {
+            dataSet.writeNextFrame(value);
+            allValues.push_back(value);
+        }
+
+        EXPECT_EQ(dataSet.numFrames(), allValues.size());
+        for (int i = 0; i < gmx::ssize(allValues); ++i)
+        {
+            int value;
+            dataSet.readFrame(i, &value);
+            EXPECT_EQ(value, allValues[i]);
+        }
+    }
+}
+
+TEST(H5mdFileTest, OpeningFileInAppendModeDoesNotEraseData)
+{
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+
+    const std::vector<int32_t> valuesToWrite = { 10, -1, 15, 6 };
+    {
+        H5md h5md(filename, H5mdFileMode::Write);
+
+        const auto [creatorGroup, creatorGroupGuard] =
+                makeH5mdGroupGuard(createGroup(h5md.fileid(), "/h5md/creator"));
+        setAttribute(creatorGroup, "name", "GROMACS");
+        setAttribute(creatorGroup, "version", "2026.0");
+
+        H5mdFixedDataSet<int32_t> dataSet{ H5mdDataSetBuilder<int32_t>(h5md.fileid(), "values")
+                                                   .withDimension({ valuesToWrite.size() })
+                                                   .build() };
+        dataSet.writeData(valuesToWrite);
+    }
+    {
+        H5md file(filename, H5mdFileMode::Append);
+
+        const auto [creatorGroup, creatorGroupGuard] =
+                makeH5mdGroupGuard(openGroup(file.fileid(), "/h5md/creator"));
+        EXPECT_EQ(getAttribute<std::string>(creatorGroup, "name").value_or(""), "GROMACS");
+        EXPECT_EQ(getAttribute<std::string>(creatorGroup, "version").value_or(""), "2026.0");
+
+        H5mdFixedDataSet<int32_t> dataSet(file.fileid(), "values");
+        std::vector<int32_t>      values(valuesToWrite.size());
+        dataSet.readData(values);
+        EXPECT_EQ(values, valuesToWrite);
     }
 }
 
@@ -365,6 +461,25 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNu
     H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
     EXPECT_THROW(file().setupFromExistingFile(), gmx::FileIOError)
             << "Must throw if blocks have different numParticles";
+}
+
+TEST_F(H5mdSetupFromExistingFile, ThrowsIfParticleCountIsNotMatchingIfGiven)
+{
+    constexpr int numAtomsInParticleBlock = 3;
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
+    H5mdTimeDataBlockBuilder<RVec>(group, "position")
+            .withFrameDimension({ numAtomsInParticleBlock })
+            .build();
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
+    H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
+
+    ASSERT_NO_THROW(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock))
+            << "Sanity check failed: should not throw for numAtoms == numAtomsInParticleBlock";
+
+    EXPECT_THROW(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock - 1), gmx::FileIOError)
+            << "Must throw for numAtoms < numAtomsInParticleBlock";
+    EXPECT_THROW(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock + 1), gmx::FileIOError)
+            << "Must throw for numAtoms > numAtomsInParticleBlock";
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)

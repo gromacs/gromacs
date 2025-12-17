@@ -232,6 +232,8 @@ def get_impi_version(oneapi_version) -> str:
     # Map oneAPI version numbers to the version numbers of
     # Intel MPI that they contain.
     version_map = {
+        "2025.3": "2021.17",
+        "2025.2": "2021.16",
         "2025.1": "2021.15",
         "2025.0": "2021.14",
         "2024.2": "2021.13",
@@ -472,6 +474,7 @@ def get_ucx(args, compiler, gdrcopy):
             # We disable `-Werror`, since there are some unknown pragmas and unused variables which upset clang
             toolchain = copy.copy(compiler.toolchain)
             toolchain.CFLAGS = "-Wno-error"
+            toolchain.CXXFLAGS = "-Wno-error"
             configure_opts = []
             if args.rocm is not None:
                 configure_opts.append("--with-rocm=/opt/rocm")
@@ -480,7 +483,7 @@ def get_ucx(args, compiler, gdrcopy):
             return hpccm.building_blocks.ucx(
                 toolchain=toolchain,
                 gdrcopy=use_gdrcopy,
-                version="1.19.0",
+                version="1.19.1",
                 cuda=use_cuda,
                 configure_opts=configure_opts,
             )
@@ -666,10 +669,12 @@ def get_plumed(args):
 def get_libtorch(args):
     if args.libtorch is not None:
         lt_version = args.libtorch
+        cuda_version = args.cuda.replace(".", "")
+        assert cuda_version[:-1] == "130", "Use CUDA 13.0 for libtorch"
         return hpccm.primitives.shell(
             commands=[
                 "mkdir -p /var/tmp",
-                f"wget -q -nc --no-check-certificate -O /var/tmp/libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-{lt_version}%2Bcu121.zip",
+                f"wget -q -nc --no-check-certificate -O /var/tmp/libtorch.zip https://download.pytorch.org/libtorch/cu130/libtorch-shared-with-deps-{lt_version}%2Bcu130.zip",
                 "unzip -q /var/tmp/libtorch.zip -d /usr/local/libtorch",
                 "rm -f /var/tmp/libtorch.zip",
             ]
@@ -740,20 +745,14 @@ def get_adaptivecpp(args):
             "-DWITH_CUDA_BACKEND=ON",
         ]
 
-    adaptivecpp_version_opts = {}
-    if "." in args.adaptivecpp:
-        adaptivecpp_version_opts["branch"] = "v" + args.adaptivecpp
-    else:
-        adaptivecpp_version_opts["commit"] = args.adaptivecpp
-
     return hpccm.building_blocks.generic_cmake(
         repository="https://github.com/AdaptiveCpp/AdaptiveCpp.git",
+        branch=f"v{args.adaptivecpp}",
         directory="/var/tmp/AdaptiveCpp",
         prefix="/usr/local",
         recursive=True,
         preconfigure=preconfigure,
         cmake_opts=["-DCMAKE_BUILD_TYPE=Release", *cmake_opts],
-        **adaptivecpp_version_opts,
     )
 
 
@@ -1408,23 +1407,39 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
     if args.oneapi is not None:
         os_packages += ["lsb-release"]
     if args.adaptivecpp is not None:
-        os_packages += ["libboost-fiber-dev"]
+        acpp_major, acpp_minor, _ = map(int, args.adaptivecpp.split("."))
+        if acpp_major < 25 or (acpp_major == 25 and acpp_minor < 10):
+            os_packages += ["libboost-fiber-dev"]
     if args.hdf5:
         os_packages += ["libhdf5-dev"]
     if args.libtorch is not None:
         os_packages += ["unzip"]
     building_blocks["extra_packages"] = []
     if args.intel_compute_runtime:
-        repo = {
-            "24.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu noble arc",
-            "22.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/gpu/ubuntu jammy client",
-            "20.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main",
-        }
-        building_blocks["extra_packages"] += hpccm.building_blocks.packages(
-            apt_keys=["https://repositories.intel.com/gpu/intel-graphics.key"],
-            apt_repositories=[repo[args.ubuntu]],
-        )
-        os_packages += _intel_compute_runtime_extra_packages
+        if args.ubuntu == "24.04":
+            # Per https://dgpu-docs.intel.com/driver/client/overview.html#ubuntu-latest
+            building_blocks["extra_packages"] += hpccm.building_blocks.packages(
+                apt_ppas=["ppa:kobuk-team/intel-graphics"]
+            )
+            os_packages += [
+                "libze-intel-gpu1",
+                "libze1",
+                "intel-metrics-discovery",
+                "intel-opencl-icd",
+                "clinfo",
+                "intel-gsc",
+            ]
+
+        else:
+            repo = {
+                "22.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/gpu/ubuntu jammy client",
+                "20.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main",
+            }
+            building_blocks["extra_packages"] += hpccm.building_blocks.packages(
+                apt_keys=["https://repositories.intel.com/gpu/intel-graphics.key"],
+                apt_repositories=[repo[args.ubuntu]],
+            )
+            os_packages += _intel_compute_runtime_extra_packages
 
     if args.ubuntu is not None and args.ubuntu == "20.04":
         building_blocks["extra_packages"] += hpccm.building_blocks.packages(

@@ -68,7 +68,6 @@
 #    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/mpiinfo.h"
@@ -174,6 +173,8 @@ struct DeviceInformation
 #if GMX_GPU_CUDA
     //! CUDA device properties.
     cudaDeviceProp prop;
+    //! Whether the device architecture was explicitly targeted at compile time.
+    bool haveNativeKernels;
 #elif GMX_GPU_HIP
     //! HIP device properties.
     hipDeviceProp_t prop;

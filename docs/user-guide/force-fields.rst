@@ -19,7 +19,11 @@ AMBER
 * AMBER99SB
 * AMBER99SB-ILDN
 * AMBER03
+* AMBER14SB
+* AMBER19SB
 * AMBERGS
+
+If you intend to use AMBER19SB in |Gromacs|, please use the OPC or OPC3 model for water molecules.
 
 Information concerning the force field can be found using the following information:
 

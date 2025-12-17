@@ -123,12 +123,13 @@ template<class Buffer,
          class ShiftForce,
          class Pbc,
          std::enable_if_t<Contains<TwoCenterType, SupportedTwoCenterTypes>{}>* = nullptr>
-inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<TwoCenterType> index,
-                                                    gmx::ArrayRef<const TwoCenterType> bondInstances,
-                                                    gmx::ArrayRef<const BasicVector> x,
-                                                    Buffer*                          forces,
-                                                    gmx::ArrayRef<ShiftForce>        shiftForces,
-                                                    const Pbc&                       pbc)
+inline NBLIB_ALWAYS_INLINE KernelEnergy<BasicVectorValueType_t<BasicVector>>
+                           dispatchInteraction(InteractionIndex<TwoCenterType>    index,
+                                               gmx::ArrayRef<const TwoCenterType> bondInstances,
+                                               gmx::ArrayRef<const BasicVector>   x,
+                                               Buffer*                            forces,
+                                               gmx::ArrayRef<ShiftForce>          shiftForces,
+                                               const Pbc&                         pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
 
@@ -333,12 +334,13 @@ template<class Buffer,
          class ShiftForce,
          class Pbc,
          std::enable_if_t<Contains<ThreeCenterType, SupportedThreeCenterTypes>{}>* = nullptr>
-inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<ThreeCenterType>    index,
-                                                    gmx::ArrayRef<const ThreeCenterType> parameters,
-                                                    gmx::ArrayRef<const BasicVector>     x,
-                                                    Buffer*                              forces,
-                                                    gmx::ArrayRef<ShiftForce> shiftForces,
-                                                    const Pbc&                pbc)
+inline NBLIB_ALWAYS_INLINE KernelEnergy<BasicVectorValueType_t<BasicVector>>
+                           dispatchInteraction(InteractionIndex<ThreeCenterType>    index,
+                                               gmx::ArrayRef<const ThreeCenterType> parameters,
+                                               gmx::ArrayRef<const BasicVector>     x,
+                                               Buffer*                              forces,
+                                               gmx::ArrayRef<ShiftForce>            shiftForces,
+                                               const Pbc&                           pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
 
@@ -436,12 +438,13 @@ template<class Buffer,
          class ShiftForce,
          class Pbc,
          std::enable_if_t<Contains<FourCenterType, SupportedFourCenterTypes>{}>* = nullptr>
-inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<FourCenterType>    index,
-                                                    gmx::ArrayRef<const FourCenterType> parameters,
-                                                    gmx::ArrayRef<const BasicVector>    x,
-                                                    Buffer*                             forces,
-                                                    gmx::ArrayRef<ShiftForce>           shiftForces,
-                                                    const Pbc&                          pbc)
+inline NBLIB_ALWAYS_INLINE KernelEnergy<BasicVectorValueType_t<BasicVector>>
+                           dispatchInteraction(InteractionIndex<FourCenterType>    index,
+                                               gmx::ArrayRef<const FourCenterType> parameters,
+                                               gmx::ArrayRef<const BasicVector>    x,
+                                               Buffer*                             forces,
+                                               gmx::ArrayRef<ShiftForce>           shiftForces,
+                                               const Pbc&                          pbc)
 {
     using RealScalar = BasicVectorValueType_t<BasicVector>;
     KernelEnergy<RealScalar> energy;
@@ -510,12 +513,13 @@ template<class Buffer,
          class ShiftForce,
          class Pbc,
          std::enable_if_t<Contains<FiveCenterType, SupportedFiveCenterTypes>{}>* = nullptr>
-inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<FiveCenterType>    index,
-                                                    gmx::ArrayRef<const FiveCenterType> parameters,
-                                                    gmx::ArrayRef<const BasicVector>    x,
-                                                    Buffer*                             forces,
-                                                    [[maybe_unused]] gmx::ArrayRef<ShiftForce> shiftForces,
-                                                    const Pbc& pbc)
+inline NBLIB_ALWAYS_INLINE KernelEnergy<BasicVectorValueType_t<BasicVector>>
+                           dispatchInteraction(InteractionIndex<FiveCenterType>           index,
+                                               gmx::ArrayRef<const FiveCenterType>        parameters,
+                                               gmx::ArrayRef<const BasicVector>           x,
+                                               Buffer*                                    forces,
+                                               [[maybe_unused]] gmx::ArrayRef<ShiftForce> shiftForces,
+                                               const Pbc&                                 pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
 
@@ -561,12 +565,12 @@ inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<FiveCenterT
  * \return Computed kernel energies
  */
 template<class Index, class InteractionType, class Buffer, class ShiftForce, class Pbc>
-auto computeForces(gmx::ArrayRef<const Index>           indices,
-                   gmx::ArrayRef<const InteractionType> parameters,
-                   gmx::ArrayRef<const Vec3>            x,
-                   Buffer*                              forces,
-                   gmx::ArrayRef<ShiftForce>            shiftForces,
-                   const Pbc&                           pbc)
+KernelEnergy<BasicVectorValueType_t<Vec3>> computeForces(gmx::ArrayRef<const Index> indices,
+                                                         gmx::ArrayRef<const InteractionType> parameters,
+                                                         gmx::ArrayRef<const Vec3> x,
+                                                         Buffer*                   forces,
+                                                         gmx::ArrayRef<ShiftForce> shiftForces,
+                                                         const Pbc&                pbc)
 {
     KernelEnergy<BasicVectorValueType_t<Vec3>> energy;
 
@@ -598,11 +602,12 @@ auto computeForces(gmx::ArrayRef<const Index>           indices,
  * \return Computed kernel energies
  */
 template<class Buffer, class ShiftForce, class Pbc>
-auto reduceListedForces(const ListedInteractionData& interactions,
-                        gmx::ArrayRef<const Vec3>    x,
-                        Buffer*                      forces,
-                        gmx::ArrayRef<ShiftForce>    shiftForces,
-                        const Pbc&                   pbc)
+std::array<BasicVectorValueType_t<Vec3>, std::tuple_size<ListedInteractionData>::value>
+reduceListedForces(const ListedInteractionData& interactions,
+                   gmx::ArrayRef<const Vec3>    x,
+                   Buffer*                      forces,
+                   gmx::ArrayRef<ShiftForce>    shiftForces,
+                   const Pbc&                   pbc)
 {
     using ValueType = BasicVectorValueType_t<Vec3>;
     std::array<ValueType, std::tuple_size<ListedInteractionData>::value> energies{ 0 };

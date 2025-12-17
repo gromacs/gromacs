@@ -117,6 +117,9 @@ public:
     //! \brief Get the force data set.
     std::optional<H5mdTimeDataBlock<RVec>>& force() { return force_; }
 
+    //! \brief Trim managed data sets to a maximum of \p maxStep - 1 steps.
+    void trimDataSetsFromStep(int64_t maxStep);
+
 private:
     //! \brief Constructor.
     H5mdParticleBlock(std::optional<H5mdTimeDataBlock<RVec>>&& position,

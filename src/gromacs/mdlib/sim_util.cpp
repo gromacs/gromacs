@@ -1019,19 +1019,17 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
  * \param stepWork                  Step workload flags.
  * \param domainWork                Domain workload flags.
  * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
- * \param domainHasHomeAtoms        Whether this domain has home atoms
  * \return
  */
 static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& simulationWork,
                                                           const StepWorkload&       stepWork,
                                                           const DomainLifetimeWorkload& domainWork,
-                                                          const bool pmeSendCoordinatesFromGpu,
-                                                          const bool domainHasHomeAtoms)
+                                                          const bool pmeSendCoordinatesFromGpu)
 {
     int result = 0;
     if (stepWork.computeSlowForces)
     {
-        if (pmeSendCoordinatesFromGpu and domainHasHomeAtoms)
+        if (pmeSendCoordinatesFromGpu)
         {
             GMX_ASSERT(simulationWork.haveSeparatePmeRank,
                        "GPU PME PP communications require having a separate PME rank");
@@ -1664,7 +1662,9 @@ void do_force(FILE*                         fplog,
 
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
-                       == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
+                       == ((cr->dd != nullptr)
+                           && (!cr->dd->gpuHaloExchange[0].empty()
+                               || cr->dd->gpuHaloExchangeNvshmemHelper != nullptr)),
                "The GPU halo exchange is active, but it has not been constructed.");
 
     bool gmx_used_in_debug haveCopiedXFromGpu = false;
@@ -1690,8 +1690,9 @@ void do_force(FILE*                         fplog,
     if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps || pmeSendCoordinatesFromGpu)
     {
         GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
-        const int expectedLocalXReadyOnDeviceConsumptionCount = getExpectedLocalXReadyOnDeviceConsumptionCount(
-                simulationWork, stepWork, domainWork, pmeSendCoordinatesFromGpu, mdatoms->homenr > 0);
+        const int expectedLocalXReadyOnDeviceConsumptionCount =
+                getExpectedLocalXReadyOnDeviceConsumptionCount(
+                        simulationWork, stepWork, domainWork, pmeSendCoordinatesFromGpu);
 
         // We need to copy coordinates when:
         // 1. Update is not offloaded

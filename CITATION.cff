@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: GROMACS 2025.3 source code
+title: GROMACS 2026-rc source code
 message: >-
   If you use GROMACS, please cite it using the
   metadata from this file.
@@ -20,12 +20,12 @@ authors:
   - given-names: Brian
     family-names: Andrews
     orcid: "https://orcid.org/0000-0003-4469-3147"
-  - given-names: Vladimir
-    family-names: Basov
-    orcid: "https://orcid.org/0009-0008-3889-3891"
   - given-names: Paul
     family-names: Bauer
     orcid: "https://orcid.org/0000-0002-2268-0065"
+  - given-names: Cathrine
+    family-names: Bergh
+    orcid: "https://orcid.org/0000-0001-7540-5887"
   - given-names: Hugh
     family-names: Bird
   - given-names: Eliane
@@ -33,8 +33,13 @@ authors:
     orcid: "https://orcid.org/0000-0002-5875-6682"
   - given-names: Ania
     family-names: Brown
+    orcid: "https://orcid.org/0009-0000-7116-7535"
+  - given-names: Yiqi
+    family-names: Chen
+    orcid: "https://orcid.org/0009-0004-7932-897X"
   - given-names: Mahesh
     family-names: Doijade
+    orcid: "https://orcid.org/0009-0003-5953-0436"
   - given-names: Giacomo
     family-names: Fiorin
     orcid: "https://orcid.org/0000-0002-8793-8645"
@@ -48,8 +53,7 @@ authors:
     family-names: Gouaillardet
   - given-names: Alan
     family-names: Gray
-  - given-names: M. Eric
-    family-names: Irrgang
+    orcid: "https://orcid.org/0009-0009-7731-1855"
   - given-names: Farzaneh
     family-names: Jalalypour
     orcid: "https://orcid.org/0000-0001-5092-1914"
@@ -68,6 +72,9 @@ authors:
   - given-names: Magnus
     family-names: Lundborg
     orcid: "https://orcid.org/0000-0002-0873-7854"
+  - given-names: Julio
+    family-names: Maia
+    orcid: "https://orcid.org/0000-0003-0579-1094"
   - given-names: Pascal
     family-names: Merz
     orcid: "https://orcid.org/0000-0002-7045-8725"
@@ -80,8 +87,6 @@ authors:
   - given-names: Lukas
     family-names: Müllender
     orcid: "https://orcid.org/0009-0008-4978-624X"
-  - given-names: Julien
-    family-names: Nabet
   - given-names: Szilárd
     family-names: Páll
     orcid: "https://orcid.org/0000-0003-0603-5514"
@@ -103,9 +108,6 @@ authors:
   - given-names: Hubert
     family-names: Santuz
     orcid: "https://orcid.org/0000-0001-6149-9480"
-  - given-names: Roland
-    family-names: Schulz
-    orcid: "https://orcid.org/0000-0003-1603-2413"
   - given-names: Michael
     family-names: Shirts
     orcid: "https://orcid.org/0000-0003-3249-1097"
@@ -115,15 +117,18 @@ authors:
   - given-names: Alexey
     family-names: Shvetsov
     orcid: "https://orcid.org/0000-0003-1140-5751"
+  - given-names: Bálint
+    family-names: Soproni
+    orcid: "https://orcid.org/0009-0008-5867-6210"
   - given-names: Philip
     family-names: Turner
     orcid: "https://orcid.org/0009-0004-7127-0777"
   - given-names: Alessandra
     family-names: Villa
     orcid: "https://orcid.org/0000-0002-9573-0326"
-  - given-names: Sebastian
-    family-names: Wingbermühle
-    orcid: "https://orcid.org/0000-0001-5949-148X"
+  - given-names: Yang
+    family-names: Zhang
+    orcid: "https://orcid.org/0000-0003-0801-8064"
   - given-names: Berk
     family-names: Hess
     orcid: "https://orcid.org/0000-0002-7498-7763"
@@ -132,14 +137,14 @@ authors:
     orcid: "https://orcid.org/0000-0002-2734-2794"
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.16992621
+    value: 10.5281/zenodo.17944095
   - type: url
     value: >-
-      https://ftp.gromacs.org/gromacs/gromacs-2025.3.tar.gz
+      https://ftp.gromacs.org/gromacs/gromacs-2026-rc.tar.gz
     description: Download URL
 repository-code: 'https://gitlab.com/gromacs/gromacs'
 url: 'https://www.gromacs.org/'
-repository: 'https://manual.gromacs.org/2025.3/index.html'
+repository: 'https://manual.gromacs.org/2026-rc/index.html'
 abstract: "GROMACS\_is a free, open-source and high-performance software suite for molecular dynamics simulation and analysis."
 keywords:
   - molecular dynamics
@@ -148,7 +153,7 @@ keywords:
   - high performance computing
   - free software
 license: LGPL-2.1-or-later
-commit: v2025.3
-version: '2025.3'
-date-released: '2025-08-29'
+commit: v2026-rc
+version: '2026-rc'
+date-released: '2025-12-16'
 

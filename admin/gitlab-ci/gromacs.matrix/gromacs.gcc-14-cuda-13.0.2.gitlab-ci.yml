@@ -5,6 +5,7 @@
 #   HW: dual NVIDIA GPU
 #   MPI: OpenMPI
 #   Features: GPU direct communications (manual) + update (regression tests with dual GPU)
+#   Features: Libtorch build + NNPot module + Colvars torchANN
 #   Scope: configure, build, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 24.04
@@ -13,6 +14,7 @@
 #   GPU: NVHPC SDK 25.9, CUDA 13.0.2
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
+#   Libtorch: 2.9.0
 #   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
 
 gromacs:gcc-14-cuda-13.0.2:configureMPI:
@@ -23,11 +25,12 @@ gromacs:gcc-14-cuda-13.0.2:configureMPI:
     - .use-mpi
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/math_libs"
+    # set CUDA_NVRTC_SHORTHASH to an arbitrary value avoid CMake warning due to PyTorch issue #129777
+    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/math_libs -DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=TORCH -Wno-dev -DCUDA_NVRTC_SHORTHASH=PYTORCHISSUE129777"
     COMPILER_MAJOR_VERSION: 14
 
 gromacs:gcc-14-cuda-13.0.2:buildMPI:
@@ -37,7 +40,7 @@ gromacs:gcc-14-cuda-13.0.2:buildMPI:
     - .use-ccache
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
@@ -48,8 +51,8 @@ gromacs:gcc-14-cuda-13.0.2:testMPI:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
-    - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_GPU_PME_DECOMPOSITION: 1
@@ -69,7 +72,7 @@ gromacs:gcc-14-cuda-13.0.2:regressiontest-gpucommupd-MPI:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0

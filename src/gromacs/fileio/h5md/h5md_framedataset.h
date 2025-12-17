@@ -154,6 +154,15 @@ public:
      */
     void readFrame(hsize_t index, ArrayRef<ValueType> values);
 
+    /*! \brief Shrink the data set to contain \p newNumFrames frames.
+     *
+     * \param[in] newNumFrames New number of frames for the data set.
+     *
+     * \throws gmx::FileIOError if \p newNumFrames is larger than the current number
+     * of frames in the data set.
+     */
+    void shrinkToNumFrames(hsize_t newNumFrames);
+
     /*! \brief Write data from \p values into the next frame.
      *
      * The input buffer \p values must have a size which is identical to the size
@@ -302,6 +311,7 @@ class H5mdScalarFrameDataSet : private H5mdFrameDataSet<ValueType>
 {
 public:
     using H5mdFrameDataSet<ValueType>::numFrames;
+    using H5mdFrameDataSet<ValueType>::shrinkToNumFrames;
 
     /*! \brief Constructor to manage a given \p dataSet.
      *

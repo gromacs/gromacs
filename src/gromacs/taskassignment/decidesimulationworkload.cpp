@@ -220,7 +220,6 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     }
     domainWork.haveGpuBondedWork =
             ((fr.listedForcesGpu != nullptr) && fr.listedForcesGpu->haveInteractions());
-    // Note that haveNonbondedFreeEnergyWork is constant over the whole run
     domainWork.haveNonbondedFreeEnergyWork =
             (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
     domainWork.haveCpuNonbondedFreeEnergyWork =

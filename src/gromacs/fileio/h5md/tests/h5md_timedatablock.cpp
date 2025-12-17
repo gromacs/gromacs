@@ -55,6 +55,7 @@
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testmatchers.h"
 
@@ -818,6 +819,106 @@ TEST_F(H5mdTimeDataBlockTest, UnitsAreSetCorrectly)
                 << "The time data set unit must always be ps";
     }
 }
+
+/**@{
+ * \brief Parametrized test suite for trimming frames from a maximum step.
+ */
+
+//! Parameters for a single parametrized test.
+struct StepValueParams
+{
+    //! \brief Maximum step (exclusive)
+    int64_t maxStep_;
+    //! \brief Input steps to write into H5mdTimeDataBlock data sets.
+    std::vector<int64_t> steps_;
+    //! \brief Expected steps in H5mdTimeDataBlock after trimming from maxStep_.
+    std::vector<int64_t> expectedStepsAfterTrim_;
+};
+
+//! \brief Helper function for GTest to print dimension parameters.
+void PrintTo(const StepValueParams& info, std::ostream* os)
+{
+    const auto toString = [](const int64_t value) -> std::string { return std::to_string(value); };
+    *os << "maxStep = " << info.maxStep_ << ", inputSteps = {"
+        << formatAndJoin(info.steps_, ", ", toString) << "}";
+}
+
+//! \brief Helper function for GTest to construct test names.
+std::string nameOfTest(const ::testing::TestParamInfo<StepValueParams>& info)
+{
+    const auto  toString = [](const int64_t value) -> std::string { return std::to_string(value); };
+    std::string testName = formatString(
+            "MaxStep_%lld_InputSteps_%s",
+            static_cast<long long>(info.param.maxStep_),
+            info.param.steps_.empty() ? "Empty" : formatAndJoin(info.param.steps_, "_", toString).c_str());
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+
+    return testName;
+}
+
+//! Test fixture inheriting parametrization capabilities.
+class StepValues : public H5mdTestBase, public ::testing::WithParamInterface<StepValueParams>
+{
+};
+
+TEST_P(StepValues, Works)
+{
+    const int32_t              valueToWrite = 0;
+    H5mdTimeDataBlock<int32_t> dataBlock =
+            H5mdTimeDataBlockBuilder<int32_t>(fileid(), "testBlock").build();
+    for (int i = 0; i < gmx::ssize(GetParam().steps_); ++i)
+    {
+        dataBlock.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1), GetParam().steps_[i], 0.0);
+    }
+
+    dataBlock.trimFramesFromMaxStep(GetParam().maxStep_);
+
+    std::vector<int64_t> steps;
+    steps.reserve(dataBlock.numFrames());
+    for (int i = 0; i < dataBlock.numFrames(); ++i)
+    {
+        steps.push_back(dataBlock.readStepAtIndex(i).value());
+    }
+
+    EXPECT_EQ(steps, GetParam().expectedStepsAfterTrim_);
+}
+
+const StepValueParams g_testStepValueParams[] = {
+    // Edge case: no written frames
+    { 0, {}, {} },
+    // Edge cases: single written frames
+    { 0, { 0 }, {} },
+    { 0, { 1 }, {} },
+    { 1, { 0 }, { 0 } },
+    // Edge cases: negative values
+    { -5, { -5 }, {} },
+    { -5, { -4 }, {} },
+    { -5, { -6 }, { -6 } },
+    // Two frames
+    { 5, { 4, 4 }, { 4, 4 } },
+    { 5, { 4, 5 }, { 4 } },
+    { 5, { 4, 6 }, { 4 } },
+    { 5, { 5, 5 }, {} },
+    // Ordered larger set
+    { 5, { 0, 3, 4, 5, 10, 21 }, { 0, 3, 4 } },
+    // Unordered larger set (trims from right only)
+    { 5, { 0, 21, 3, 4, 5, 10 }, { 0, 21, 3, 4 } },
+};
+
+INSTANTIATE_TEST_SUITE_P(H5mdTimeDataBlockTrimsFromTest,
+                         StepValues,
+                         ::testing::ValuesIn(g_testStepValueParams),
+                         nameOfTest);
+/**@}*/
 
 } // namespace
 } // namespace test

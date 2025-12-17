@@ -250,7 +250,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
         __syncthreads();
         if (threadIdx.x < c_numShiftVectors)
         {
-            staggeredAtomicAddForce(&gm_fShift[threadIdx.x], sm_fShiftLoc[threadIdx.x], threadIdx.x);
+            staggeredAtomicAddForce(gm_fShift, sm_fShiftLoc[threadIdx.x], threadIdx.x, threadIdx.x);
         }
     }
 }

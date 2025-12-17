@@ -631,13 +631,26 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
 static inline int calc_shmem_required_prune(const int num_threads_z, const DeviceInformation* deviceInfo)
 {
+    /* We might use kernel built for a different architecture if we are not explicitly targeting
+     * the current device during compilation. In this case, if we are using kernels built for CC<7.0
+     * to run on a more modern device, we risk under-allocating shared memory. To prevent this, use
+     * the following (overly conservative) check: if we are JIT-compiling kernels from a different
+     * architecture *and* we are using CUDA<13, we assume we might be using old kernels.
+     * CUDA 13+ dropped support for CC<7.5, so this problem cannot arise).
+     */
+#if (!defined(CUDART_VERSION) || CUDART_VERSION < 13000)
+    const bool weMightAccidentallyUseOldKernels = !deviceInfo->haveNativeKernels;
+#else
+    const bool weMightAccidentallyUseOldKernels = false;
+#endif
+
     const int  archMajor = deviceInfo->prop.major;
     const bool preloadCj = archMajor < 7;
     int        shmem;
 
     /* i-atom x in shared memory */
     shmem = c_superClusterSize * c_clusterSize * sizeof(float4);
-    if (preloadCj)
+    if (preloadCj || weMightAccidentallyUseOldKernels)
     {
         /* cj in shared memory, for each warp separately */
         shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);

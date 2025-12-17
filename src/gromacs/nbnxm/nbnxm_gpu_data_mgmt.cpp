@@ -1116,7 +1116,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     if (bFepGpuNonBonded)
     {
         nb->fephostdata->q4Host.resize(numAtoms * 4);
-        for (int k = 0; k < numAtoms * 4; k++)
+        for (int k = 0; k < numAtoms; k++)
         {
             nb->fephostdata->q4Host[4 * k]     = (float)nbat->params().qA[k];
             nb->fephostdata->q4Host[4 * k + 1] = (float)nbat->params().qB[k];
@@ -1134,7 +1134,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         if (useLjCombRule(nb->nbparam->vdwType))
         {
             nb->fephostdata->ljComb4Host.resize(numAtoms * 4);
-            for (int k = 0; k < numAtoms * 4; k++)
+            for (int k = 0; k < numAtoms; k++)
             {
                 nb->fephostdata->ljComb4Host[4 * k]     = (float)nbat->params().ljCombA[2 * k];
                 nb->fephostdata->ljComb4Host[4 * k + 1] = (float)nbat->params().ljCombA[2 * k + 1];
@@ -1155,7 +1155,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         else
         {
             nb->fephostdata->atomTypes4Host.resize(numAtoms * 4);
-            for (int k = 0; k < numAtoms * 4; k++)
+            for (int k = 0; k < numAtoms; k++)
             {
                 nb->fephostdata->atomTypes4Host[4 * k]     = nbat->params().typeA[k];
                 nb->fephostdata->atomTypes4Host[4 * k + 1] = nbat->params().typeB[k];

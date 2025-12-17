@@ -1173,8 +1173,7 @@ AMD HIP GPU acceleration
 
 HIP is the AMD interoperability layer for the `ROCm`_ toolkit used to target AMD devices.
 
-In |Gromacs| 2025 there is only limited support for using HIP as the device backend for AMD devices,
-with only NBNxM kernels offload being available.
+In |Gromacs| 2026 there is full support for using HIP as the GPU backend on AMD devices.
 
 Build instructions
 """"""""""""""""""""""""""""""
@@ -1207,6 +1206,14 @@ execution width will be restricted to be 32-wide, even on devices that support 6
 
 When |Gromacs| is built with explicit 64-wide execution (and conflicting support for 32-wide devices),
 any 32-wide devices detected will be not be used.
+
+It is possible to select the GPU FFT backend using the
+
+``-DGMX_GPU_FFT_LIBRARY=rocFFT/VkFFT``
+
+variable. Please be aware that ``rocFFT`` only works on devices that are officially supported by `ROCm`_.
+If an incompatible device is detected, |Gromacs| will not use the it when linked against ``rocFFT``, even
+though the rest of the code is compiled to support it. In this case, select ``VkFFT`` as the GPU FFT library.
 
 H5MD trajectory output file format
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -224,6 +224,7 @@ if (SPHINX_FOUND)
         reference-manual/special/colvars.rst
         reference-manual/special/plumed.rst
         reference-manual/special/nnpot.rst
+        reference-manual/special/fmm.rst
         # Analysis chapter
         reference-manual/analysis/analysis.rst
         reference-manual/analysis/using-groups.rst
@@ -390,6 +391,7 @@ if (SPHINX_FOUND)
         release-notes/2025/2025.2.rst
         release-notes/2025/2025.3.rst
         release-notes/2025/2025.4.rst
+        release-notes/2025/2025.5.rst
         release-notes/2025/major/highlights.rst
         release-notes/2025/major/features.rst
         release-notes/2025/major/performance.rst
@@ -545,6 +547,7 @@ if (SPHINX_FOUND)
         user-guide/security.rst
         user-guide/system-preparation.rst
         user-guide/terminology.rst
+        user-guide/validation.rst
         )
 
     include(SphinxMacros.cmake)

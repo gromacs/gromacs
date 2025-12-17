@@ -175,20 +175,18 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     runner_.fullPrecisionTrajectoryFileName_ = simulationTrajectoryFileName.string();
     runner_.edrFileName_                     = simulationEdrFileName.string();
     runner_.dhdlFileName_                    = simulationDhdlFileName.string();
-    runMdrun(&runner_);
 
-    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    // Run FEP-on-GPU tests when available
+    // Expanded ensemble simulations are also not implemented on GPUs yet.
+    if (GpuConfigurationCapabilities::NonbondedFE && simulationName != "expanded"
+        && !getCompatibleDevices(s_hwinfo->deviceInfoList).empty())
     {
-        // Run FEP-on-GPU tests when available
-        // Currently only implemented on CUDA devices.
-        // Expanded ensemble simulations are also not implemented on GPUs yet.
-        if (testDevice->deviceInfo().deviceVendor == DeviceVendor::Nvidia
-            && GpuConfigurationCapabilities::NonbondedFE && simulationName != "expanded")
-        {
-            auto fep_option = std::vector<SimulationOptionTuple>();
-            fep_option.emplace_back(SimulationOptionTuple("-nbfe", "gpu"));
-            runMdrun(&runner_, fep_option);
-        }
+        std::vector<SimulationOptionTuple> mdrunOptions = { { "-nbfe", "gpu" } };
+        runMdrun(&runner_, mdrunOptions);
+    }
+    else
+    {
+        runMdrun(&runner_);
     }
 
     /* Currently used tests write trajectory (x/v/f) frames every 20 steps.

@@ -50,6 +50,8 @@
 
 #include "config.h"
 
+#include "gromacs/pbcutil/ishift.h"
+
 #if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #    include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
@@ -175,14 +177,14 @@ GMX_DEVICE_FUNC_ATTRIBUTE static inline void bonds_gpu(const int               i
         fbond *= gmxDeviceRSqrt(dr2);
 
         DeviceFloat3 fij = fbond * dx;
-        staggeredAtomicAddForce(&gm_f[ai], fij, localId);
-        staggeredAtomicAddForce(&gm_f[aj], -fij, localId);
+        staggeredAtomicAddForce(gm_f, fij, ai, localId);
+        staggeredAtomicAddForce(gm_f, -fij, aj, localId);
         if constexpr (calcVir)
         {
             if (ki != gmx::c_centralShiftIndex)
             {
-                atomicFetchAddLocal(&sm_fShiftLoc[ki], fij);
-                atomicFetchAddLocal(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fij);
+                atomicFetchAddLocal(sm_fShiftLoc, ki, fij);
+                atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, -fij);
             }
         }
     }
@@ -261,15 +263,15 @@ GMX_DEVICE_FUNC_ATTRIBUTE static inline void angles_gpu(const int               
         DeviceFloat3 f_k = ckk * r_kj - cik * r_ij;
         DeviceFloat3 f_j = -f_i - f_k;
 
-        staggeredAtomicAddForce(&gm_f[ai], f_i, localId);
-        staggeredAtomicAddForce(&gm_f[aj], f_j, localId);
-        staggeredAtomicAddForce(&gm_f[ak], f_k, localId);
+        staggeredAtomicAddForce(gm_f, f_i, ai, localId);
+        staggeredAtomicAddForce(gm_f, f_j, aj, localId);
+        staggeredAtomicAddForce(gm_f, f_k, ak, localId);
 
         if constexpr (calcVir)
         {
-            atomicFetchAddLocal(&sm_fShiftLoc[t1], f_i);
-            atomicFetchAddLocal(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
-            atomicFetchAddLocal(&sm_fShiftLoc[t2], f_k);
+            atomicFetchAddLocal(sm_fShiftLoc, t1, f_i);
+            atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, f_j);
+            atomicFetchAddLocal(sm_fShiftLoc, t2, f_k);
         }
     }
 }
@@ -348,9 +350,9 @@ urey_bradley_gpu(const int                                 i,
 
         if constexpr (calcVir)
         {
-            atomicFetchAddLocal(&sm_fShiftLoc[t1], f_i);
-            atomicFetchAddLocal(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
-            atomicFetchAddLocal(&sm_fShiftLoc[t2], f_k);
+            atomicFetchAddLocal(sm_fShiftLoc, t1, f_i);
+            atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, f_j);
+            atomicFetchAddLocal(sm_fShiftLoc, t2, f_k);
         }
     }
 
@@ -372,21 +374,21 @@ urey_bradley_gpu(const int                                 i,
         {
             if (ki != gmx::c_centralShiftIndex)
             {
-                atomicFetchAddLocal(&sm_fShiftLoc[ki], fik);
-                atomicFetchAddLocal(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
+                atomicFetchAddLocal(sm_fShiftLoc, ki, fik);
+                atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, -fik);
             }
         }
     }
 
     if ((cos_theta2 < 1.0F) || (dr2 != 0.0F))
     {
-        staggeredAtomicAddForce(&gm_f[ai], f_i, localId);
-        staggeredAtomicAddForce(&gm_f[ak], f_k, localId);
+        staggeredAtomicAddForce(gm_f, f_i, ai, localId);
+        staggeredAtomicAddForce(gm_f, f_k, ak, localId);
     }
 
     if (cos_theta2 < 1.0F)
     {
-        staggeredAtomicAddForce(&gm_f[aj], f_j, localId);
+        staggeredAtomicAddForce(gm_f, f_j, aj, localId);
     }
 }
 
@@ -515,20 +517,20 @@ GMX_DEVICE_FUNC_ATTRIBUTE static inline void do_dih_fup_gpu(const int           
         DeviceFloat3 f_j  = f_i - svec;
         DeviceFloat3 f_k  = f_l + svec;
 
-        staggeredAtomicAddForce(&gm_f[i], f_i, localId);
-        staggeredAtomicAddForce(&gm_f[j], -f_j, localId);
-        staggeredAtomicAddForce(&gm_f[k], -f_k, localId);
-        staggeredAtomicAddForce(&gm_f[l], f_l, localId);
+        staggeredAtomicAddForce(gm_f, f_i, i, localId);
+        staggeredAtomicAddForce(gm_f, -f_j, j, localId);
+        staggeredAtomicAddForce(gm_f, -f_k, k, localId);
+        staggeredAtomicAddForce(gm_f, f_l, l, localId);
 
         if constexpr (calcVir)
         {
             DeviceFloat3 dx_jl;
             int          t3 = pbcDxAiucGpu<calcVir>(pbcAiuc, gm_xq[l], gm_xq[j], dx_jl);
 
-            atomicFetchAddLocal(&sm_fShiftLoc[t1], f_i);
-            atomicFetchAddLocal(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f_j);
-            atomicFetchAddLocal(&sm_fShiftLoc[t2], -f_k);
-            atomicFetchAddLocal(&sm_fShiftLoc[t3], f_l);
+            atomicFetchAddLocal(sm_fShiftLoc, t1, f_i);
+            atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, -f_j);
+            atomicFetchAddLocal(sm_fShiftLoc, t2, -f_k);
+            atomicFetchAddLocal(sm_fShiftLoc, t3, f_l);
         }
     }
 }
@@ -785,14 +787,14 @@ GMX_DEVICE_FUNC_ATTRIBUTE static inline void pairs_gpu(const int i,
     DeviceFloat3 f     = finvr * dr;
 
     /* Add the forces */
-    staggeredAtomicAddForce(&gm_f[ai], f, localId);
-    staggeredAtomicAddForce(&gm_f[aj], -f, localId);
+    staggeredAtomicAddForce(gm_f, f, ai, localId);
+    staggeredAtomicAddForce(gm_f, -f, aj, localId);
     if constexpr (calcVir)
     {
         if (fshift_index != gmx::c_centralShiftIndex)
         {
-            atomicFetchAddLocal(&sm_fShiftLoc[fshift_index], f);
-            atomicFetchAddLocal(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f);
+            atomicFetchAddLocal(sm_fShiftLoc, fshift_index, f);
+            atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, -f);
         }
     }
 

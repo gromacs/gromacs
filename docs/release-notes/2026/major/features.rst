@@ -44,6 +44,34 @@ scientifically relevant biomolecules is still pending.
 
 :issue:`4998`
 
+Added the port of AMBER's ff14SB and ff19SB protein force fields
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The latest AMBER force field for proteins, ff19SB, has been ported to |Gromacs|. The port
+encompasses all functional forms, including per-amino-acid CMAPs, which are a new feature
+of ff19SB. Furthermore, the port also includes the recommended optimal 4-point and 3-point
+charge water models, better known as OPC and OPC3, and matching ions.
+
+Older AMBER force field, ff14SB, has also been ported. For it, the TIP3P and TIP4PEW are
+considered to be the recommended water models.
+
+Due to the limited usage for production simulations thus far and possible bugs in |Gromacs|
+features that these force fields use, these ports are considered validation pending.
+
+:issue:`4998`
+
+Changed the behaviour of ``pdb2gmx -rtpres``
+""""""""""""""""""""""""""""""""""""""""""""
+
+In order to support force fields like AMBER19SB, :ref:`pdb2gmx <gmx pdb2gmx>` can now
+automatically rename residues to have the name of the chosen residue type, so that
+:ref:`grompp <gmx grompp>` can assign the CMAP terms correctly. This is handled by
+a new field in the ``[ bondedtypes ]`` description in the :ref:`residue types database<rtp>`
+that specifies that such force fields must rename the residues accordingly.
+``gmx pdb2gmx -rtpres`` now defaults to ``auto``, which means to preserve the residue name
+unless that residue-type-database setting requires renaming to match the residue type.
+It may also be set manually to ``no`` or ``yes``.
+
 Improved implementation of the neural network potential interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -68,3 +96,29 @@ are also written to the connectivity group. For this release, only lossless outp
 Note that support for this file format in |Gromacs| tools is experimental. Analysis tools are
 able to read all files but bugs should be expected. H5MD output from :ref:`gmx trjconv` and
 :ref:`gmx trjcat` is not implemented.
+
+Fast Multipole Method (FMM) interface support
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Support for simulations with external FMM libraries has been added. Short-range electrostatics can 
+be computed by either |Gromacs| or the FMM library, while long-range electrostatics are handled by
+the FMM library when an FMM backend is selected. Although the FMM interface allows short-range 
+electrostatics to be configured for either |Gromacs| or the FMM backend, short-range FMM interactions 
+support in |Gromacs| is planned but not part of this release. MDP options are available for the well-known 
+FMM libraries i.e., ExaFMM and FMSolvr, and these options are validated internally by the interface.
+
+For more details, please see :ref:`the FMM section in the reference manual <fmm>`.
+Add two new performance metrics
+"""""""""""""""""""""""""""""""
+
+:ref:`gmx mdrun` reports two additional time step-independent metrics to measure the
+performance of a simulation on specific hardware. The ms/step is the average 
+wall-clock time (in milliseconds) required to compute a single timestep.
+As a direct measure of computational cost per timestep, it is useful for 
+profiling code or hardware performance for a specific system.
+Matom*steps/s considers the number of atoms and measures the throughput of 
+actions (number of steps * number of atoms) per second. This metric is suitable 
+when comparing performance across systems and hardware. A similar metric can also 
+be found from `PLUMED <https://docs.lammps.org/Speed_measure.html#examples-comparing-serial-performance>`_. 
+
+:issue:`5374`

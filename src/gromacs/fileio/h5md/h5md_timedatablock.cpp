@@ -168,6 +168,35 @@ bool H5mdTimeDataBlock<ValueType>::readFrame(const int64_t       frameIndex,
 }
 
 template<typename ValueType>
+void H5mdTimeDataBlock<ValueType>::trimFramesFromMaxStep(const int64_t maxStep)
+{
+    // Find the index of the last frame to preserve
+    int64_t frameIndex;
+    // Search from the end, because the last frame before the checkpoint
+    // was written is closer to the end than the beginning.
+    for (frameIndex = numFrames_ - 1; frameIndex >= 0; --frameIndex)
+    {
+        int64_t step;
+        stepDataSet_.readFrame(frameIndex, &step);
+        if (step < maxStep)
+        {
+            break;
+        }
+    }
+
+    if (const int64_t newNumFrames = frameIndex + 1; newNumFrames < numFrames_)
+    {
+        valueDataSet_.shrinkToNumFrames(newNumFrames);
+        stepDataSet_.shrinkToNumFrames(newNumFrames);
+        if (timeDataSet_.has_value())
+        {
+            timeDataSet_->shrinkToNumFrames(newNumFrames);
+        }
+        numFrames_ = newNumFrames;
+    }
+}
+
+template<typename ValueType>
 void H5mdTimeDataBlock<ValueType>::writeNextFrame(ArrayRef<const ValueType> values, const int64_t step)
 {
     GMX_H5MD_THROW_UPON_ERROR(

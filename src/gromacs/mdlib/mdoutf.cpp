@@ -220,14 +220,18 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    if (filemode[0] == 'w')
+                    if (!restartWithAppending)
                     {
                         make_backup(filename);
                     }
                     of->h5md = gmx::makeH5md(filename, gmx::H5mdFileMode(filemode[0]));
-                    if (filemode[0] == 'w')
+                    if (!restartWithAppending)
                     {
                         gmx::setupFileFromInput(of->h5md, top_global, *ir);
+                    }
+                    else
+                    {
+                        gmx::setupFromExistingFileForAppending(of->h5md, ir->init_step, top_global.natoms);
                     }
                     break;
                 default: gmx_incons("Invalid full precision file format");
@@ -544,6 +548,10 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
 {
     fflush_tng(of->tng);
     fflush_tng(of->tng_low_prec);
+    if (of->h5md != nullptr)
+    {
+        gmx::flushH5md(of->h5md);
+    }
     /* Write the checkpoint file.
      * When simulations share the state, an MPI barrier is applied before
      * renaming old and new checkpoint files to minimize the risk of

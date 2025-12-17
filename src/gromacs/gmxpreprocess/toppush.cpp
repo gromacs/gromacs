@@ -2001,6 +2001,7 @@ defaultInteractionsOfType(InteractionFunction                                   
 
             if (atomReorderingLEaP)
             {
+                bool beVerbose = std::getenv("GMX_AMBER_LEAP_ATOM_REORDERING_VERBOSE") != nullptr;
                 // reorder atoms in a dihedral by atom type, like Amber LEaP does
                 // if an atom type is not available in dihedral type (i.e. X), use the
                 // empty single-character string
@@ -2058,18 +2059,22 @@ defaultInteractionsOfType(InteractionFunction                                   
                         bondType[ftype].leapDihedralTypes_.insert(improperAtomTypes);
                         bondType[ftype].leapDihedralIndices_.insert(improperAtomIndices);
 
-                        std::fprintf(stderr,
-                                     "%s '%d %d %d %d' of type '%s %s %s %s', first such, not "
-                                     "reordering atoms",
-                                     interaction_function[ftype].longname,
-                                     improperAtomIndices[0] + 1,
-                                     improperAtomIndices[1] + 1,
-                                     improperAtomIndices[2] + 1,
-                                     improperAtomIndices[3] + 1,
-                                     improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
-                                     improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
-                                     improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
-                                     improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X");
+                        if (beVerbose)
+                        {
+                            std::fprintf(
+                                    stderr,
+                                    "%s '%d %d %d %d' of type '%s %s %s %s', first such, not "
+                                    "reordering atoms",
+                                    interaction_function[ftype].longname,
+                                    improperAtomIndices[0] + 1,
+                                    improperAtomIndices[1] + 1,
+                                    improperAtomIndices[2] + 1,
+                                    improperAtomIndices[3] + 1,
+                                    improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
+                                    improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
+                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                    improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X");
+                        }
                     }
                     else
                     {
@@ -2086,19 +2091,24 @@ defaultInteractionsOfType(InteractionFunction                                   
                             == std::array<std::pair<std::string, int>, 3>{
                                     dihedralAtoms[0], dihedralAtoms[1], dihedralAtoms[3] })
                         {
-                            std::fprintf(
-                                    stderr,
-                                    "%s '%d %d %d %d' of type '%s %s %s %s', reordering not "
-                                    "necessary",
-                                    interaction_function[ftype].longname,
-                                    improperAtomIndices[0] + 1,
-                                    improperAtomIndices[1] + 1,
-                                    improperAtomIndices[2] + 1,
-                                    improperAtomIndices[3] + 1,
-                                    improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
-                                    improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
-                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
-                                    improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X");
+                            bondType[ftype].numLeapReorderingNotNecessary++;
+
+                            if (beVerbose)
+                            {
+                                std::fprintf(
+                                        stderr,
+                                        "%s '%d %d %d %d' of type '%s %s %s %s', reordering not "
+                                        "necessary",
+                                        interaction_function[ftype].longname,
+                                        improperAtomIndices[0] + 1,
+                                        improperAtomIndices[1] + 1,
+                                        improperAtomIndices[2] + 1,
+                                        improperAtomIndices[3] + 1,
+                                        improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
+                                        improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
+                                        improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                        improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X");
+                            }
                         }
                         else
                         {
@@ -2107,45 +2117,55 @@ defaultInteractionsOfType(InteractionFunction                                   
                             // atomIndices[2] is the index of the central atom, unchanged
                             atomIndices[3] = nonCentralAtoms[2].second;
 
-                            std::fprintf(
-                                    stderr,
-                                    "%s '%d %d %d %d' of type '%s %s %s %s', reordered to '%d "
-                                    "%d %d %d' of type '%s %s %s %s'",
-                                    interaction_function[ftype].longname,
-                                    improperAtomIndices[0] + 1,
-                                    improperAtomIndices[1] + 1,
-                                    improperAtomIndices[2] + 1,
-                                    improperAtomIndices[3] + 1,
-                                    improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
-                                    improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
-                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
-                                    improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X",
-                                    nonCentralAtoms[0].second + 1,
-                                    nonCentralAtoms[1].second + 1,
-                                    improperAtomIndices[2] + 1,
-                                    nonCentralAtoms[2].second + 1,
-                                    nonCentralAtoms[0].first != " " ? nonCentralAtoms[0].first.c_str() : "X",
-                                    nonCentralAtoms[1].first != " " ? nonCentralAtoms[1].first.c_str() : "X",
-                                    improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
-                                    nonCentralAtoms[2].first != " " ? nonCentralAtoms[2].first.c_str()
-                                                                    : "X");
+                            bondType[ftype].numLeapReorderingPerformed++;
+
+                            if (beVerbose)
+                            {
+                                std::fprintf(
+                                        stderr,
+                                        "%s '%d %d %d %d' of type '%s %s %s %s', reordered to '%d "
+                                        "%d %d %d' of type '%s %s %s %s'",
+                                        interaction_function[ftype].longname,
+                                        improperAtomIndices[0] + 1,
+                                        improperAtomIndices[1] + 1,
+                                        improperAtomIndices[2] + 1,
+                                        improperAtomIndices[3] + 1,
+                                        improperAtomTypes[0] != " " ? improperAtomTypes[0].c_str() : "X",
+                                        improperAtomTypes[1] != " " ? improperAtomTypes[1].c_str() : "X",
+                                        improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                        improperAtomTypes[3] != " " ? improperAtomTypes[3].c_str() : "X",
+                                        nonCentralAtoms[0].second + 1,
+                                        nonCentralAtoms[1].second + 1,
+                                        improperAtomIndices[2] + 1,
+                                        nonCentralAtoms[2].second + 1,
+                                        nonCentralAtoms[0].first != " " ? nonCentralAtoms[0].first.c_str()
+                                                                        : "X",
+                                        nonCentralAtoms[1].first != " " ? nonCentralAtoms[1].first.c_str()
+                                                                        : "X",
+                                        improperAtomTypes[2] != " " ? improperAtomTypes[2].c_str() : "X",
+                                        nonCentralAtoms[2].first != " " ? nonCentralAtoms[2].first.c_str()
+                                                                        : "X");
+                            }
                         }
                     }
 
-                    if (prevPos->c1() == 0.0_real)
+                    if (beVerbose)
                     {
-                        // due to zero force constant, this interaction will not be present later in
-                        // the tpr dump, so here we notify the user to expect it
-                        // higher-level validation tools, that have to check all improper reorderings
-                        // in order to compare them with LEaP, can't find those with zero force
-                        // constant in the tpr dump, but can check them by processing grompp stderr
-                        std::fprintf(stderr,
-                                     " (has zero force constant and will not appear in "
-                                     "interaction list)\n");
-                    }
-                    else
-                    {
-                        std::fprintf(stderr, "\n");
+                        if (prevPos->c1() == 0.0_real)
+                        {
+                            // due to zero force constant, this interaction will not be present later in
+                            // the tpr dump, so here we notify the user to expect it
+                            // higher-level validation tools, that have to check all improper reorderings
+                            // in order to compare them with LEaP, can't find those with zero force
+                            // constant in the tpr dump, but can check them by processing grompp stderr
+                            std::fprintf(stderr,
+                                         " (has zero force constant and will not appear in "
+                                         "interaction list)\n");
+                        }
+                        else
+                        {
+                            std::fprintf(stderr, "\n");
+                        }
                     }
                 }
             }

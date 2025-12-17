@@ -406,8 +406,32 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
     if (mpiComm_.isMainRank())
     {
         // run model
-        c10::IValue out = model_.forward(inputs_);
-        outputs_ = out.isTuple() ? out.toTuple() : c10::ivalue::Tuple::create({ out.toTensor() });
+        try
+        {
+            c10::IValue out = model_.forward(inputs_);
+            outputs_ = out.isTuple() ? out.toTuple() : c10::ivalue::Tuple::create({ out.toTensor() });
+        }
+        catch (const std::runtime_error& e)
+        {
+            // Filter known errors and provide more helpful error messages
+            if (std::string(e.what()).find("RuntimeError: CUDA error: no kernel image is available")
+                != std::string::npos)
+            {
+                cudaDeviceProp prop;
+                cudaGetDeviceProperties(&prop, device_.index());
+                GMX_THROW(InternalError(formatString(
+                        "The active GPU (%d.%d) is not supported by the Libtorch build. "
+                        "Please recompile GROMACS with a Libtorch version that supports "
+                        "this architecture.",
+                        prop.major,
+                        prop.minor)));
+            }
+            else
+            {
+                GMX_THROW(InternalError("Error during evaluation of the neural network model: "
+                                        + std::string(e.what())));
+            }
+        }
     }
     else
     {

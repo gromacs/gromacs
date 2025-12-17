@@ -141,6 +141,8 @@ struct PreprocessResidue
     bool bGenerateHH14Interactions = false;
     //! Delete dihedrals also defined by impropers.
     bool bRemoveDihedralIfWithImproper = false;
+    //! Ensure that residue names are replaced with residue types
+    bool replaceResidueNameWithResidueType = false;
     //! List of bonded interactions to potentially add.
     gmx::EnumerationArray<BondedTypes, BondedInteractionList> rb;
     //! Get number of atoms in residue.

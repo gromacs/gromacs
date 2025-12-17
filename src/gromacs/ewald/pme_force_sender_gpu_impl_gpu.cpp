@@ -105,50 +105,47 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
             ind_start = ind_end;
             ind_end   = ind_start + receiver.numAtoms;
 
-            if (receiver.numAtoms > 0)
-            {
 #if GMX_MPI
-                setMpiPointer(ppCommManagers_[i].localForcePtr, asMpiPointer(d_f) + ind_start);
-                // NOLINTNEXTLINE(bugprone-sizeof-expression)
-                MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
-                         sizeof(Float3*),
-                         MPI_BYTE,
-                         receiver.rankId,
-                         eCommType_FORCES_GPU_REMOTE_GPU_PTR,
-                         comm_,
-                         MPI_STATUS_IGNORE);
-                // NOLINTNEXTLINE(bugprone-sizeof-expression)
-                MPI_Recv(&ppCommManagers_[i].pmeRemoteCpuForcePtr,
-                         sizeof(Float3*),
-                         MPI_BYTE,
-                         receiver.rankId,
-                         eCommType_FORCES_GPU_REMOTE_CPU_PTR,
-                         comm_,
-                         MPI_STATUS_IGNORE);
-                // Send address of event and associated flag to PP rank, to allow remote enqueueing
-                // NOLINTNEXTLINE(bugprone-sizeof-expression)
-                MPI_Send(&ppCommManagers_[i].event,
-                         sizeof(GpuEventSynchronizer*),
-                         MPI_BYTE,
-                         receiver.rankId,
-                         eCommType_FORCES_GPU_SYNCHRONIZER,
-                         comm_);
+            setMpiPointer(ppCommManagers_[i].localForcePtr, asMpiPointer(d_f) + ind_start);
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
+                     sizeof(Float3*),
+                     MPI_BYTE,
+                     receiver.rankId,
+                     eCommType_FORCES_GPU_REMOTE_GPU_PTR,
+                     comm_,
+                     MPI_STATUS_IGNORE);
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Recv(&ppCommManagers_[i].pmeRemoteCpuForcePtr,
+                     sizeof(Float3*),
+                     MPI_BYTE,
+                     receiver.rankId,
+                     eCommType_FORCES_GPU_REMOTE_CPU_PTR,
+                     comm_,
+                     MPI_STATUS_IGNORE);
+            // Send address of event and associated flag to PP rank, to allow remote enqueueing
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Send(&ppCommManagers_[i].event,
+                     sizeof(GpuEventSynchronizer*),
+                     MPI_BYTE,
+                     receiver.rankId,
+                     eCommType_FORCES_GPU_SYNCHRONIZER,
+                     comm_);
 
-                std::atomic<bool>* tmpPpCommEventRecordedPtr =
-                        reinterpret_cast<std::atomic<bool>*>((ppCommManagers_[i].eventRecorded.get()));
-                tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
-                // NOLINTNEXTLINE(bugprone-sizeof-expression)
-                MPI_Send(&tmpPpCommEventRecordedPtr,
-                         sizeof(std::atomic<bool>*),
-                         MPI_BYTE,
-                         receiver.rankId,
-                         eCommType_FORCES_GPU_EVENT_RECORDED,
-                         comm_);
+            std::atomic<bool>* tmpPpCommEventRecordedPtr =
+                    reinterpret_cast<std::atomic<bool>*>((ppCommManagers_[i].eventRecorded.get()));
+            tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Send(&tmpPpCommEventRecordedPtr,
+                     sizeof(std::atomic<bool>*),
+                     MPI_BYTE,
+                     receiver.rankId,
+                     eCommType_FORCES_GPU_EVENT_RECORDED,
+                     comm_);
 #else
-                GMX_UNUSED_VALUE(i);
-                GMX_UNUSED_VALUE(d_f);
+            GMX_UNUSED_VALUE(i);
+            GMX_UNUSED_VALUE(d_f);
 #endif
-            }
             i++;
         }
     }

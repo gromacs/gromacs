@@ -115,6 +115,9 @@ public:
      * Return PP co-ordinate transfer event received from PP
      * rank determined from \c senderIndex, for consumer to enqueue
      *
+     * The returned sender index corresponds to a PP rank that
+     * transferred particles this step.
+     *
      * \param[in]  senderIndex   Index of the sender within the set of PP ranks
      * \returns                  tuple with index of sending PP rank (or -1 when no
      *                           event was sent (from a PP rank with no particles)
@@ -141,9 +144,9 @@ public:
     std::tuple<int, int> ppCommAtomRange(int senderIndex);
 
     /*! \brief
-     * Return number of PP ranks involved in PME-PP communication
+     * Return number of PP ranks contributing particles to PME-PP communication
      */
-    int ppCommNumSenderRanks();
+    int ppCommNumRanksSendingParticles();
 
     /*! \brief Mark an event in the sender stream \p senderIndex
      * (which must be valid) and enqueue it into \p stream.

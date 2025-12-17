@@ -45,6 +45,7 @@
  */
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
@@ -62,7 +63,7 @@ namespace gmx
 //! Maximum number of threads in a block (for __launch_bounds__)
 constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
 
-/*  \brief Main kernel for LINCS constraints.
+/*! \brief Main kernel for LINCS constraints.
  *
  * See Hess et al., J. Comput. Chem. 18: 1463-1472 (1997) for the description of the algorithm.
  *
@@ -84,32 +85,36 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
                                                                     float3*     gm_v,
                                                                     const float invdt)
 {
-    const PbcAiuc pbcAiuc                                 = kernelParams.pbcAiuc;
-    const int     numConstraintsThreads                   = kernelParams.numConstraintsThreads;
-    const int     numIterations                           = kernelParams.numIterations;
-    const int     expansionOrder                          = kernelParams.expansionOrder;
-    const AtomPair* __restrict__ gm_constraints           = kernelParams.d_constraints;
-    const float* __restrict__ gm_constraintsTargetLengths = kernelParams.d_constraintsTargetLengths;
-    const int* __restrict__ gm_coupledConstraintsCounts   = kernelParams.d_coupledConstraintsCounts;
-    const int* __restrict__ gm_coupledConstraintsIndices = kernelParams.d_coupledConstraintsIndices;
-    const float* __restrict__ gm_massFactors             = kernelParams.d_massFactors;
-    float* __restrict__ gm_matrixA                       = kernelParams.d_matrixA;
-    const float* __restrict__ gm_inverseMasses           = kernelParams.d_inverseMasses;
-    float* __restrict__ gm_virialScaled                  = kernelParams.d_virialScaled;
+    const PbcAiuc                 pbcAiuc               = kernelParams.pbcAiuc;
+    const int                     numConstraintsThreads = kernelParams.numConstraintsThreads;
+    const int                     numIterations         = kernelParams.numIterations;
+    const int                     expansionOrder        = kernelParams.expansionOrder;
+    AmdFastBuffer<const AtomPair> gm_constraints{ kernelParams.d_constraints };
+    AmdFastBuffer<const float> gm_constraintsTargetLengths{ kernelParams.d_constraintsTargetLengths };
+    AmdFastBuffer<const int> gm_coupledConstraintsCounts{ kernelParams.d_coupledConstraintsCounts };
+    AmdFastBuffer<const int> gm_coupledConstraintsIndices{ kernelParams.d_coupledConstraintsIndices };
+    AmdFastBuffer<const float> gm_massFactors{ kernelParams.d_massFactors };
+    AmdFastBuffer<float>       gm_matrixA{ kernelParams.d_matrixA };
+    AmdFastBuffer<const float> gm_inverseMasses{ kernelParams.d_inverseMasses };
+    AmdFastBuffer<float>       gm_virialScaled{ kernelParams.d_virialScaled };
+    AmdFastBuffer<const int>   gm_constraintGroupSize{
+        kernelParams.d_constraintGroupsSizes
+    }; // # of consecutive constraints sharing i-th atom
 
     const int threadIndex = blockIdx.x * c_threadsPerBlock + threadIdx.x;
+    const int tid         = threadIdx.x;
 
     // numConstraintsThreads should be a integer multiple of blockSize (numConstraintsThreads = numBlocks*blockSize).
     // This is to ensure proper synchronizations and reduction. All array are padded to the required size.
-    assert(threadIndex < numConstraintsThreads);
+    GMX_DEVICE_ASSERT(threadIndex < numConstraintsThreads);
 
     // Vectors connecting constrained atoms before algorithm was applied.
     // Needed to construct constrain matrix A
     extern __shared__ float3 sm_r[];
 
-    AtomPair pair = gm_constraints[threadIndex];
-    int      i    = pair.i;
-    int      j    = pair.j;
+    const AtomPair& pair = gm_constraints[threadIndex];
+    const int       i    = pair.i;
+    const int       j    = pair.j;
 
     // Mass-scaled Lagrange multiplier
     float lagrangeScaled = 0.0F;
@@ -149,13 +154,13 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         xi = gm_x[i];
         xj = gm_x[j];
 
-        float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
+        const float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
-        float rlen = __frsqrt_rn(dx.x * dx.x + dx.y * dx.y + dx.z * dx.z);
-        rc         = rlen * dx;
+        const float rlen = __frsqrt_rn(dx.x * dx.x + dx.y * dx.y + dx.z * dx.z);
+        rc               = rlen * dx;
     }
 
-    sm_r[threadIdx.x] = rc;
+    sm_r[tid] = rc;
     // Make sure that all r's are saved into shared memory
     // before they are accessed in the loop below
     __syncthreads();
@@ -163,17 +168,26 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     /*
      * Constructing LINCS matrix (A)
      */
+    // float4 transactions for higher bw
+    __shared__ float4 sm_corr[c_threadsPerBlock];
+    __shared__ float4 sm_xpi[c_threadsPerBlock];
 
     // Only non-zero values are saved (for coupled constraints)
     int coupledConstraintsCount = gm_coupledConstraintsCounts[threadIndex];
     for (int n = 0; n < coupledConstraintsCount; n++)
     {
-        int index = n * numConstraintsThreads + threadIndex;
-        int c1    = gm_coupledConstraintsIndices[index];
-
-        float3 rc1        = sm_r[c1];
-        gm_matrixA[index] = gm_massFactors[index] * (rc.x * rc1.x + rc.y * rc1.y + rc.z * rc1.z);
+        const int     index = n * numConstraintsThreads + threadIndex;
+        const int     c1    = gm_coupledConstraintsIndices[index];
+        const float3& rc1   = sm_r[c1];
+        gm_matrixA[index]   = gm_massFactors[index] * (rc.x * rc1.x + rc.y * rc1.y + rc.z * rc1.z);
     }
+
+    // Keep track if we are operating on a constraint group
+    const int constraintGroupSize = gm_constraintGroupSize[threadIndex];
+    // This is only valid if the value has been changed away from -1
+    const bool haveValidConstraintGroup = constraintGroupSize != -1;
+    // Any number greater than 0 means we have grouped constraints
+    const bool haveGroupedConstraints = constraintGroupSize > 0;
 
     // Skipping in dummy threads
     if (!isDummyThread)
@@ -182,7 +196,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         xj = gm_xp[j];
     }
 
-    float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
+    const float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
     float sol = sqrtReducedMass * ((rc.x * dx.x + rc.y * dx.y + rc.z * dx.z) - targetLength);
 
@@ -196,7 +210,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     // This will use the same memory space as sm_r, which is no longer needed.
     extern __shared__ float sm_rhs[];
     // Save current right-hand-side vector in the shared memory
-    sm_rhs[threadIdx.x] = sol;
+    sm_rhs[tid] = sol;
 
     for (int rec = 0; rec < expansionOrder; rec++)
     {
@@ -206,28 +220,57 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
         for (int n = 0; n < coupledConstraintsCount; n++)
         {
-            int index = n * numConstraintsThreads + threadIndex;
-            int c1    = gm_coupledConstraintsIndices[index];
+            const int index = n * numConstraintsThreads + threadIndex;
+            const int c1    = gm_coupledConstraintsIndices[index];
             // Convolute current right-hand-side with A
             // Different, non overlapping parts of sm_rhs[..] are read during odd and even iterations
             mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + c_threadsPerBlock * (rec % 2)];
         }
         // 'Switch' rhs vectors, save current result
         // These values will be accessed in the loop above during the next iteration.
-        sm_rhs[threadIdx.x + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
-        sol                                                       = sol + mvb;
+        sm_rhs[tid + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
+        sol                                               = sol + mvb;
     }
     // Current mass-scaled Lagrange multipliers
     lagrangeScaled = sqrtReducedMass * sol;
 
     // Save updated coordinates before correction for the rotational lengthening
-    const float3 tmp = rc * lagrangeScaled;
-
-    // Writing for all but dummy constraints
-    if (!isDummyThread)
     {
-        atomicAdd(&gm_xp[i], -tmp * inverseMassi);
-        atomicAdd(&gm_xp[j], tmp * inverseMassj);
+        const float3 tmp = rc * lagrangeScaled;
+
+        if (haveValidConstraintGroup)
+        {
+            const float3 corr = -tmp * inverseMassi;
+            sm_xpi[tid]       = make_float4(xi.x, xi.y, xi.z, 0.f);
+            sm_corr[tid]      = make_float4(corr.x, corr.y, corr.z, 0.f);
+        }
+
+        __syncthreads();
+
+        // Writing for all but dummy constraints
+        if (!isDummyThread)
+        {
+            if (haveGroupedConstraints)
+            {
+                for (int gc = 0; gc <= constraintGroupSize; gc++)
+                {
+                    // thread with constraingGroupSize == 1 updates the shared memory position
+                    // Keep it in LDS - no atomics
+                    const float4 r_corr = sm_corr[tid + gc];
+                    xi += make_float3(r_corr.x, r_corr.y, r_corr.z);
+                }
+                // update the coordinates to lds
+                for (int gc = 0; gc <= constraintGroupSize; gc++)
+                {
+                    sm_xpi[tid + gc] = make_float4(xi.x, xi.y, xi.z, 0.f);
+                }
+            }
+            else if (!haveValidConstraintGroup)
+            {
+                atomicAdd(&gm_xp[i], -tmp * inverseMassi);
+            }
+            atomicAdd(&gm_xp[j], tmp * inverseMassj);
+        }
     }
 
     /*
@@ -241,14 +284,20 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
         if (!isDummyThread)
         {
-            xi = gm_xp[i];
+            if (haveValidConstraintGroup)
+            {
+                xi = make_float3(sm_xpi[tid].x, sm_xpi[tid].y, sm_xpi[tid].z);
+            }
+            else
+            {
+                xi = gm_xp[i];
+            }
             xj = gm_xp[j];
         }
 
-        dx = pbcDxAiuc(pbcAiuc, xi, xj);
-
-        float len2  = targetLength * targetLength;
-        float dlen2 = 2.0F * len2 - gmxDeviceNorm2(dx);
+        const float3 dx2   = pbcDxAiuc(pbcAiuc, xi, xj);
+        const float  len2  = targetLength * targetLength;
+        const float  dlen2 = 2.0F * len2 - gmxDeviceNorm2(dx2);
 
         // TODO A little bit more effective but slightly less readable version of the below would be:
         //      float proj = sqrtReducedMass*(targetLength - (dlen2 > 0.0f ? 1.0f : 0.0f)*dlen2*__frsqrt_rn(dlen2));
@@ -262,8 +311,8 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
             proj = sqrtReducedMass * targetLength;
         }
 
-        sm_rhs[threadIdx.x] = proj;
-        sol                 = proj;
+        sm_rhs[tid] = proj;
+        float sol2  = proj;
 
         /*
          * Same matrix inversion as above is used for updated data
@@ -281,21 +330,54 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
                 mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + c_threadsPerBlock * (rec % 2)];
             }
-            sm_rhs[threadIdx.x + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
-            sol                                                       = sol + mvb;
+            sm_rhs[tid + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
+            sol2                                              = sol2 + mvb;
         }
 
         // Add corrections to Lagrange multipliers
-        float sqrtmu_sol = sqrtReducedMass * sol;
-        lagrangeScaled += sqrtmu_sol;
+        const float sqrtmu_sol2 = sqrtReducedMass * sol2;
+        lagrangeScaled += sqrtmu_sol2;
 
         // Save updated coordinates for the next iteration
         // Dummy constraints are skipped
         if (!isDummyThread)
         {
-            const float3 tmpValue = rc * sqrtmu_sol;
-            atomicAdd(&gm_xp[i], -tmpValue * inverseMassi);
-            atomicAdd(&gm_xp[j], tmpValue * inverseMassj);
+            const float3 tmp = rc * sqrtmu_sol2;
+            if (haveValidConstraintGroup)
+            {
+                const float3 corr = -tmp * inverseMassi;
+                sm_corr[tid]      = make_float4(corr.x, corr.y, corr.z, 0.f);
+            }
+            __syncthreads();
+
+            if (haveGroupedConstraints)
+            {
+                const float3 sumI = make_float3(0.f, 0.f, 0.f);
+                for (int gc = 0; gc <= constraintGroupSize; gc++)
+                {
+                    const float4 r_corr = sm_corr[tid + gc];
+                    xi += make_float3(r_corr.x, r_corr.y, r_corr.z);
+                }
+                // update the coordinates to lds
+                for (int gc = 0; gc <= constraintGroupSize; gc++)
+                {
+                    sm_xpi[tid + gc] = make_float4(xi.x, xi.y, xi.z, 0.f);
+                }
+            }
+            else if (!haveValidConstraintGroup)
+            {
+                atomicAdd(&gm_xp[i], -tmp * inverseMassi);
+            }
+            atomicAdd(&gm_xp[j], tmp * inverseMassj);
+        }
+    }
+
+    // now flush sm_xp_i to global memory
+    if (!isDummyThread)
+    {
+        if (haveGroupedConstraints)
+        {
+            gm_xp[i] = xi;
         }
     }
 
@@ -304,10 +386,10 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     {
         if (!isDummyThread)
         {
-            const float3 tmpValue = rc * invdt * lagrangeScaled;
+            const float3 tmp = rc * invdt * lagrangeScaled;
             // we don't stall on these, so just leave it like that
-            atomicAdd(&gm_v[i], -tmpValue * inverseMassi);
-            atomicAdd(&gm_v[j], tmpValue * inverseMassj);
+            atomicAdd(&gm_v[i], -tmp * inverseMassi);
+            atomicAdd(&gm_v[j], tmp * inverseMassj);
         }
     }
 
@@ -320,6 +402,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         // followed by basic reduction for the values inside single thread block.
         // Then, the values are reduced across grid by atomicAdd(...).
         //
+
         // Save virial for each thread into the shared memory. Tensor is symmetrical, hence only
         // 6 values are saved. Dummy threads will have zeroes in their virial: targetLength,
         // lagrangeScaled and rc are all set to zero for them in the beginning of the kernel.
@@ -327,13 +410,13 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         // two are no longer in use, which we make sure by waiting for all threads in block.
         __syncthreads();
         extern __shared__ float sm_threadVirial[];
-        float                   mult                         = targetLength * lagrangeScaled;
-        sm_threadVirial[0 * c_threadsPerBlock + threadIdx.x] = mult * rc.x * rc.x;
-        sm_threadVirial[1 * c_threadsPerBlock + threadIdx.x] = mult * rc.x * rc.y;
-        sm_threadVirial[2 * c_threadsPerBlock + threadIdx.x] = mult * rc.x * rc.z;
-        sm_threadVirial[3 * c_threadsPerBlock + threadIdx.x] = mult * rc.y * rc.y;
-        sm_threadVirial[4 * c_threadsPerBlock + threadIdx.x] = mult * rc.y * rc.z;
-        sm_threadVirial[5 * c_threadsPerBlock + threadIdx.x] = mult * rc.z * rc.z;
+        const float             mult                 = targetLength * lagrangeScaled;
+        sm_threadVirial[0 * c_threadsPerBlock + tid] = mult * rc.x * rc.x;
+        sm_threadVirial[1 * c_threadsPerBlock + tid] = mult * rc.x * rc.y;
+        sm_threadVirial[2 * c_threadsPerBlock + tid] = mult * rc.x * rc.z;
+        sm_threadVirial[3 * c_threadsPerBlock + tid] = mult * rc.y * rc.y;
+        sm_threadVirial[4 * c_threadsPerBlock + tid] = mult * rc.y * rc.z;
+        sm_threadVirial[5 * c_threadsPerBlock + tid] = mult * rc.z * rc.z;
 
         __syncthreads();
 
@@ -344,13 +427,13 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         // in the beginning of the kernel).
         for (int divideBy = 2; divideBy <= static_cast<int>(c_threadsPerBlock); divideBy *= 2)
         {
-            int dividedAt = c_threadsPerBlock / divideBy;
-            if (static_cast<int>(threadIdx.x) < dividedAt)
+            const int dividedAt = c_threadsPerBlock / divideBy;
+            if (tid < dividedAt)
             {
                 for (int d = 0; d < 6; d++)
                 {
-                    sm_threadVirial[d * c_threadsPerBlock + threadIdx.x] +=
-                            sm_threadVirial[d * c_threadsPerBlock + (threadIdx.x + dividedAt)];
+                    sm_threadVirial[d * c_threadsPerBlock + tid] +=
+                            sm_threadVirial[d * c_threadsPerBlock + (tid + dividedAt)];
                 }
             }
             // Syncronize if not within one warp
@@ -364,9 +447,9 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
             }
         }
         // First 6 threads in the block add the results of 6 tensor components to the global memory address.
-        if (threadIdx.x < 6)
+        if (tid < 6)
         {
-            atomicAdd(&(gm_virialScaled[threadIdx.x]), sm_threadVirial[threadIdx.x * c_threadsPerBlock]);
+            atomicAdd(&(gm_virialScaled[tid]), sm_threadVirial[tid * c_threadsPerBlock]);
         }
     }
 }
@@ -432,4 +515,4 @@ void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
 
 } // namespace gmx
 
-#endif
+#endif // DOXYGEN

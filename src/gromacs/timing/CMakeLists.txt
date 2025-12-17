@@ -95,7 +95,7 @@ if(GMX_USE_ITT)
         PATH_SUFFIXES lib64 lib
         REQUIRED
         )
-    target_include_directories(timing INTERFACE "${ITTNOTIFY_INCLUDE_DIR}" SYSTEM)
+    target_include_directories(timing SYSTEM INTERFACE "${ITTNOTIFY_INCLUDE_DIR}")
     target_link_libraries(timing INTERFACE "${ITTNOTIFY_LIBRARY}")
 endif()
 

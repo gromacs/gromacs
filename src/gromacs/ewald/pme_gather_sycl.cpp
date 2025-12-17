@@ -460,7 +460,7 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
                     sm_gridlineIndices,
                     sm_fractCoords,
                     itemIdx);
-            subGroupBarrier(itemIdx);
+            sycl::group_barrier(itemIdx.get_sub_group());
         }
         float fx = 0.0F;
         float fy = 0.0F;

@@ -173,7 +173,6 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
     float qAi, qAj_f, r2, rpm2, rp, inv_r, inv_r2;
     float qBi, qBj_f;
 
-    // float  int_bit;
     float E_lj, E_el;
     float DVDL_lj, DVDL_el;
 
@@ -265,9 +264,13 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
 
         for (int i = nj0; i < nj1; i += warp_size)
         {
-            int j        = i + tid_in_warp;
+            int j = i + tid_in_warp;
+            if (j >= nj1)
+            {
+                continue;
+            }
             aj           = gm_jjnr[j];
-            pairIncluded = (feplist.exclFep == nullptr || (feplist.exclFep[j] && j < nj1));
+            pairIncluded = (feplist.exclFep == nullptr || (feplist.exclFep[j]));
             /* load j atom data */
             xqbuf = gm_xq[aj];
             xj    = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
@@ -554,7 +557,7 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
 
 // ELEC REACTIONFIELD part
 #    if defined EL_CUTOFF || defined EL_RF
-                if (!pairIncluded && j < nj1)
+                if (!pairIncluded)
                 {
 #        if defined EL_CUTOFF
                     float VV = -nbparam.c_rf;
@@ -575,7 +578,7 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
 #    endif
 
 #    ifdef EL_EWALD_ANY
-                if ((!pairIncluded || r2 < rCutoffCoulSq) && j < nj1)
+                if ((!pairIncluded || r2 < rCutoffCoulSq))
                 {
                     v_lr = inv_r > 0.0F ? inv_r * erff(r2 * inv_r * beta) : 2.0F * beta * M_FLOAT_1_SQRTPI;
                     if (ai == aj)
@@ -595,7 +598,6 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
                 reduce_energy_warp_shfl(
                         DVDL_lj, DVDL_el, gm_dvdl_lj + lambdaIdx, gm_dvdl_el + lambdaIdx, tid, c_fullWarpMask);
             } // end for lambdaIdx in (0, nLambda)
-            //} // end if (j < nj1)
         } // end for (int i = nj0; i < nj1; i += warp_size)
     } // end if (wid_global < numiAtoms)
 }

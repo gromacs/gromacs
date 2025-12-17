@@ -167,11 +167,6 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 {
     // Wait until remote PME task has pushed data, and then enqueue remote event to local stream.
 
-    if (d_pmeForcesSize_ <= 0)
-    {
-        return;
-    }
-
     // Spin until PME rank sets flag
     while (!(remotePmeForceSendEventRecorded_->load(std::memory_order_acquire))) {}
 
@@ -200,22 +195,17 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu)
 {
 #if GMX_LIB_MPI
-    if (recvSize == 0)
-    {
-        // Nothing to do, no forces can be expected
-        GMX_ASSERT(!coordinateSendRequestIsActive_, "No coordinates were sent");
-        return;
-    }
-
-    Float3* pmeForcePtr = receivePmeForceToGpu ? asMpiPointer(d_pmeForces_) : recvPtr;
-
-    // Wait on previous non-blocking coordinate send. This already must have completed for PME
-    // forces to be ready, but the wait is required by the MPI standard to assure completion.
-    GMX_ASSERT(coordinateSendRequestIsActive_,
-               "A coordinate send request should be active before force is received");
+    GMX_RELEASE_ASSERT(coordinateSendRequestIsActive_,
+                       "Coordinates must have been sent for a domain (even if empty)");
+    // Wait on previous non-blocking coordinate send. This already
+    // must have completed for PME forces to be ready, but the wait is
+    // required by the MPI standard to assure completion.
     MPI_Wait(&coordinateSendRequest_, MPI_STATUS_IGNORE);
     coordinateSendRequestIsActive_ = false;
 
+    // The PME rank always sends forces, even when the domain is
+    // empty, so each PP rank must always post a receive.
+    Float3* pmeForcePtr = receivePmeForceToGpu ? asMpiPointer(d_pmeForces_) : recvPtr;
     if (forceRecvRequestIsActive_)
     {
         MPI_Wait(&forceRecvRequest_, MPI_STATUS_IGNORE);
@@ -263,10 +253,8 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
                                                          bool receivePmeForceToGpu)
 {
-    if (sendSize == 0)
-    {
-        return;
-    }
+    // Post the non-blocking send first, as it is definitely on the
+    // critical path.
 
     // ensure coordinate data is available on device before we start transfer
     if (coordinatesReadyOnDeviceEvent)
@@ -276,14 +264,22 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
 
 #if GMX_LIB_MPI
     // The corresponding wait for the below non-blocking coordinate send is in receiveForceFromPmeGpuAwareMpi.
-    // Strictly, a wait is not necessary since the recieve must complete before PME forces are calculated,
-    // but it is required to avoid issues in certain MPI libraries.
     MPI_Isend(sendPtr, sendSize * DIM, MPI_FLOAT, pmeRank_, eCommType_COORD_GPU, comm_, &coordinateSendRequest_);
     coordinateSendRequestIsActive_ = true;
+#else
+    GMX_UNUSED_VALUE(sendPtr);
+    GMX_UNUSED_VALUE(sendSize);
+#endif
+
+    // The PME rank always sends forces, even when the domain is
+    // empty, so each PP rank must always post a receive. This is
+    // posted after the possible coordinate-send, so the latter is not
+    // delayed.
     if (stageLibMpiGpuCpuComm_ && !(useNvshmem_ && receivePmeForceToGpu))
     {
-        // Post non-blocking force receive request here, such that the data transfer is not blocked
-        // by other PP activities.
+#if GMX_LIB_MPI
+        // A non-blocking receive is used so that the data transfer
+        // neither blocks nor is blocked by other PP MPI activities.
         MPI_Irecv(asMpiPointer(d_pmeForces_),
                   sendSize * DIM,
                   MPI_FLOAT,
@@ -292,11 +288,8 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
                   comm_,
                   &forceRecvRequest_);
         forceRecvRequestIsActive_ = true;
-    }
-#else
-    GMX_UNUSED_VALUE(sendPtr);
-    GMX_UNUSED_VALUE(receivePmeForceToGpu);
 #endif
+    }
 }
 
 void PmePpCommGpu::Impl::sendCoordinatesToPme(const Float3*         sendPtr,

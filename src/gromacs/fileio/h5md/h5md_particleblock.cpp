@@ -60,6 +60,26 @@ H5mdParticleBlock::H5mdParticleBlock(std::optional<H5mdTimeDataBlock<RVec>>&& po
 {
 }
 
+void H5mdParticleBlock::trimDataSetsFromStep(const int64_t maxStep)
+{
+    if (hasPosition())
+    {
+        position_->trimFramesFromMaxStep(maxStep);
+    }
+    if (hasVelocity())
+    {
+        velocity_->trimFramesFromMaxStep(maxStep);
+    }
+    if (hasForce())
+    {
+        force_->trimFramesFromMaxStep(maxStep);
+    }
+    if (hasBox())
+    {
+        box_->shrinkToNumFrames(position_->numFrames());
+    }
+}
+
 H5mdParticleBlock H5mdParticleBlockBuilder::build()
 {
     return H5mdParticleBlock(std::move(position_),

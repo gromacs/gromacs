@@ -43,6 +43,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 
 #include "pme_gpu_constants.h"
@@ -68,7 +69,7 @@
 template<int order, int atomsPerWarp>
 static int __device__ __forceinline__ getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
 {
-    assert((atomWarpIndex >= 0) && (atomWarpIndex < atomsPerWarp));
+    GMX_DEVICE_ASSERT((atomWarpIndex >= 0) && (atomWarpIndex < atomsPerWarp));
     const int dimIndex    = 0;
     const int splineIndex = 0;
     // The zeroes are here to preserve the full index formula for reference
@@ -92,8 +93,8 @@ static int __device__ __forceinline__ getSplineParamIndexBase(int warpIndex, int
 template<int order, int atomsPerWarp>
 static int __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
 {
-    assert((dimIndex >= XX) && (dimIndex < DIM));
-    assert((splineIndex >= 0) && (splineIndex < order));
+    GMX_DEVICE_ASSERT((dimIndex >= XX) && (dimIndex < DIM));
+    GMX_DEVICE_ASSERT((splineIndex >= 0) && (splineIndex < order));
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
 }
 
@@ -107,7 +108,7 @@ static int __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, in
  */
 static bool __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
 {
-    assert(isfinite(coefficient));
+    GMX_DEVICE_ASSERT(isfinite(coefficient));
     return c_skipNeutralAtoms ? (coefficient != 0.0F) : true;
 }
 
@@ -127,15 +128,15 @@ static __device__ inline void assertIsFinite(T arg);
 template<>
 __device__ inline void assertIsFinite(float3 gmx_unused arg)
 {
-    assert(isfinite(static_cast<float>(arg.x)));
-    assert(isfinite(static_cast<float>(arg.y)));
-    assert(isfinite(static_cast<float>(arg.z)));
+    GMX_DEVICE_ASSERT(isfinite(static_cast<float>(arg.x)));
+    GMX_DEVICE_ASSERT(isfinite(static_cast<float>(arg.y)));
+    GMX_DEVICE_ASSERT(isfinite(static_cast<float>(arg.z)));
 }
 
 template<typename T>
 static __device__ inline void assertIsFinite(T gmx_unused arg)
 {
-    assert(isfinite(static_cast<float>(arg)));
+    GMX_DEVICE_ASSERT(isfinite(static_cast<float>(arg)));
 }
 
 /*! \brief
@@ -198,8 +199,8 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                                                          float* __restrict__ sm_dtheta,
                                                          int* __restrict__ sm_gridlineIndices)
 {
-    assert(numGrids == 1 || numGrids == 2);
-    assert(numGrids == 1 || c_skipNeutralAtoms == false);
+    GMX_DEVICE_ASSERT(numGrids == 1 || numGrids == 2);
+    GMX_DEVICE_ASSERT(numGrids == 1 || c_skipNeutralAtoms == false);
 
     /* Global memory pointers for output */
     float* __restrict__ gm_theta         = kernelParams.atoms.d_theta;
@@ -243,7 +244,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             int   tInt       = 0;
             float n          = 0.;
             float t          = 0.;
-            assert(atomIndexLocal < DIM * atomsPerBlock);
+            GMX_DEVICE_ASSERT(atomIndexLocal < DIM * atomsPerBlock);
             /* Accessing fields in fshOffset/nXYZ/recipbox/... with dimIndex offset
              * puts them into local memory(!) instead of accessing the constant memory directly.
              * That's the reason for the switch, to unroll explicitly.
@@ -279,11 +280,11 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             /* Fractional coordinates along box vectors, adding a positive shift to ensure t is positive for triclinic boxes */
             t    = (t + shift) * n;
             tInt = static_cast<int>(t);
-            assert(sharedMemoryIndex < atomsPerBlock * DIM);
+            GMX_DEVICE_ASSERT(sharedMemoryIndex < atomsPerBlock * DIM);
             sm_fractCoords[sharedMemoryIndex] = t - tInt;
             tableIndex += tInt;
-            assert(tInt >= 0);
-            assert(tInt < c_pmeNeighborUnitcellCount * n);
+            GMX_DEVICE_ASSERT(tInt >= 0);
+            GMX_DEVICE_ASSERT(tInt < c_pmeNeighborUnitcellCount * n);
 
             // TODO have shared table for both parameters to share the fetch, as index is always same?
             // TODO compare texture/LDG performance
@@ -310,7 +311,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             int o = orderIndex; // This is an index that is set once for PME_GPU_PARALLEL_SPLINE == 1
 
             const float dr = sm_fractCoords[sharedMemoryIndex];
-            assert(isfinite(dr));
+            GMX_DEVICE_ASSERT(isfinite(dr));
 
             /* dr is relative offset from lower cell limit */
             splineData[order - 1] = 0.0F;
@@ -345,8 +346,8 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                             getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
 
                     const float dtheta = ((o > 0) ? splineData[o - 1] : 0.0F) - splineData[o];
-                    assert(isfinite(dtheta));
-                    assert(thetaIndex < order * DIM * atomsPerBlock);
+                    GMX_DEVICE_ASSERT(isfinite(dtheta));
+                    GMX_DEVICE_ASSERT(thetaIndex < order * DIM * atomsPerBlock);
                     if (writeSmDtheta)
                     {
                         sm_dtheta[thetaIndex] = dtheta;
@@ -376,9 +377,9 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             {
                 const int thetaIndex =
                         getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
-                assert(thetaIndex < order * DIM * atomsPerBlock);
+                GMX_DEVICE_ASSERT(thetaIndex < order * DIM * atomsPerBlock);
                 sm_theta[thetaIndex] = splineData[o];
-                assert(isfinite(sm_theta[thetaIndex]));
+                GMX_DEVICE_ASSERT(isfinite(sm_theta[thetaIndex]));
                 if (writeGlobal)
                 {
                     const int thetaGlobalIndex = thetaGlobalOffsetBase + thetaIndex;

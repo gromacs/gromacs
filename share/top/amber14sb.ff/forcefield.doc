@@ -1,0 +1,17 @@
+AMBER14SB protein (Maier, J. A. et al. JCTC 11, 3696–3713, 2015 / Miletic, V. et al. ChemRxiv, 2025)
+
+********************************************************************
+* Amber ff14SB port, converted and validated by                    *
+* Vedran Miletic, Milosz Wieczor, Markus Rampp, Carsten Kutzner,   *
+* Bert L. de Groot, and Vytautas Gapsys.                           *
+*                                                                  *
+* The publication covering the original ff14SB is                  *
+* Maier, J. A. et al. ff14SB: Improving the Accuracy of Protein    *
+* Side Chain and Backbone Parameters from ff99SB. J. Chem. Theory  *
+* Comput. 11, 3696–3713 (2015). doi:10.1021/acs.jctc.5b00255       *
+*                                                                  *
+* If you are using this force field in GROMACS, please cite        *
+* Miletic, V. et al. ChemRxiv (2025).                              *
+* doi:10.26434/chemrxiv-2025-xxxxx                                 *
+********************************************************************
+
