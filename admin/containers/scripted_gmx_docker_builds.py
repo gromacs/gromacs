@@ -89,6 +89,7 @@ _common_packages = [
     "ca-certificates",
     "ccache",
     "cmake",
+    "gdb",
     "git",
     "gnupg",
     "gpg-agent",
