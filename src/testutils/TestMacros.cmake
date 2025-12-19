@@ -209,20 +209,12 @@ function (gmx_add_gtest_executable EXENAME)
         elseif (GMX_GPU_SYCL)
             target_sources(${EXENAME} PRIVATE ${ARG_SYCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})
             # Ensure that libsycl is properly linked when GPU source
-            # files are compiled directly into ${EXENAME}, and when
-            # libgromacs is a static library.
-            #
-            # TODO The third predicate is used in release-2025 branch
-            # to maximize stability of the default shared-library
-            # build configuration. After merging to main branch,
-            # remove the third predicate, because it may be useful and
-            # seems unlikely to cause harm.
-            if(ARG_SYCL_CPP_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES OR NOT BUILD_SHARED_LIBS)
-                add_sycl_to_target(
-                    TARGET ${EXENAME}
-                    SOURCES ${ARG_SYCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES}
-                    )
-            endif()
+            # files are compiled directly into ${EXENAME}, and also
+            # when libgromacs is linked statically to e.g. MKL
+            add_sycl_to_target(
+                TARGET ${EXENAME}
+                SOURCES ${ARG_SYCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES}
+                )
         else()
             target_sources(${EXENAME} PRIVATE ${ARG_NON_GPU_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})
         endif()
