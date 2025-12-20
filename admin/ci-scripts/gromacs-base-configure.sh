@@ -36,24 +36,7 @@ $CMAKE .. \
 EXITCODE=$?
 set -e +o pipefail
 
-if [[ "$CMAKE_GPU_OPTIONS" == *"GMX_SYCL=ACPP"* ]]; then
-    # The GROMACS CMake code sets some non-cache variables
-    # that are then set as non-forced cache variables by the
-    # AdaptiveCPP CMake config file, which seems to be
-    # recognized as two variables of the same name by
-    # _getACppCmakeFlags() during a non-initial run of CMake.
-    # Those copies are then added to _ALL_ACPP_CMAKE_FLAGS
-    # which are then cached with different values from the
-    # first run, some of which are duplicates.
-    #
-    # Maybe this can be improved but should not be attempted
-    # until after support for hipSYCL is dropped. For now, the
-    # expectation that a second run of CMake has a stable
-    # CMakeCache.txt is not applied to AdaptiveCPP builds.
-    #
-    # See issues #4716 and #4720 for related content.
-    :
-elif [[ "$CMAKE_EXTRA_OPTIONS" == *"GMX_NNPOT=TORCH"* ]]; then
+if [[ "$CMAKE_EXTRA_OPTIONS" == *"GMX_NNPOT=TORCH"* ]]; then
     # The find package from Pytorch changes which CUDA libraries it
     # uses between /usr/local/cuda and /usr/local/cuda/x.y between the
     # first and second call of CMake, so we can't require that the

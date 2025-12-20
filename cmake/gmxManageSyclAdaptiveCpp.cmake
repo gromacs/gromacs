@@ -92,41 +92,46 @@ if(${CXXFLAGS_NO_DEPRECATED_DECLARATIONS})
     list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -Wno-deprecated-declarations)
 endif()
 
-# Must be called before find_package to capture all user-set CMake variables, but not those set automatically
-_getACppCmakeFlags(_ALL_ACPP_CMAKE_FLAGS)
-
-if (adaptivecpp_FIND_QUETLY_AFTER_FIRST_RUN)
-    set (adaptivecpp_FIND_QUETLY ON)
-else ()
-    set (adaptivecpp_FIND_QUETLY OFF)
-endif ()
+if(ADAPTIVECPP_FIND_QUIETLY_AFTER_FIRST_RUN)
+    set(adaptivecpp_FIND_QUIETLY ON)
+else()
+    set(adaptivecpp_FIND_QUIETLY OFF)
+endif()
 find_package(adaptivecpp REQUIRED)
-set (adaptivecpp_FIND_QUETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find AdaptiveCpp")
+
+# Must be called after find_package so that all ACPP variables are consistently set
+# (both user-provided and those set by find_package/this script)
+_getACppCmakeFlags(_ALL_ACPP_CMAKE_FLAGS)
 # Ensure the try_compile projects below find the same adaptivecpp
 list(APPEND _ALL_ACPP_CMAKE_FLAGS -Dadaptivecpp_DIR=${adaptivecpp_DIR})
 
-# If the user-set CMake variables change (e.g. because the user changed ACPP_TARGETS), then the try_compile tests
-# below need to be re-run. Set and use an internal cache variable to detect the change and set a flag to rerun the tests.
+# If the CMake variables change (e.g. because the user changed ACPP_TARGETS), then the try_compile tests
+# below need to be re-run. Use an internal cache variable to detect the change.
+# On first run (no cached hash), always run detection. On subsequent runs, compare hashes.
 string(SHA1 _ALL_ACPP_CMAKE_FLAGS_HASH "${_ALL_ACPP_CMAKE_FLAGS}")
-if (DEFINED GMX_ALL_ACPP_CMAKE_FLAGS_HASH AND "${GMX_ALL_ACPP_CMAKE_FLAGS_HASH}" STREQUAL "${_ALL_ACPP_CMAKE_FLAGS_HASH}")
+if (NOT DEFINED GMX_ALL_ACPP_CMAKE_FLAGS_HASH)
+    # First run: save hash and run detection
+    set(_rerun_acpp_try_compile_tests TRUE)
+elseif ("${GMX_ALL_ACPP_CMAKE_FLAGS_HASH}" STREQUAL "${_ALL_ACPP_CMAKE_FLAGS_HASH}")
+    # Hash unchanged, no need to re-run
     set(_rerun_acpp_try_compile_tests FALSE)
 else()
-    # The new value should over-write the previous copy
-    set(GMX_ALL_ACPP_CMAKE_FLAGS_HASH ${_ALL_ACPP_CMAKE_FLAGS_HASH} CACHE INTERNAL "Store the hash of list of CMake variables needed for AdaptiveCpp compilation test projects")
+    # Hash changed, update and re-run
     set(_rerun_acpp_try_compile_tests TRUE)
 endif()
+set(GMX_ALL_ACPP_CMAKE_FLAGS_HASH ${_ALL_ACPP_CMAKE_FLAGS_HASH} CACHE INTERNAL "Store the hash of list of CMake variables needed for AdaptiveCpp compilation test projects")
 
 # Does the AdaptiveCpp compiler work at all for the given targets?
 if (NOT DEFINED GMX_ACPP_COMPILATION_WORKS OR _rerun_acpp_try_compile_tests)
-    if (NOT ACPP_CHECK_QUIETLY_AFTER_FIRST_RUN)
+    if (NOT ADAPTIVECPP_FIND_QUIETLY_AFTER_FIRST_RUN)
         message(STATUS "Checking for valid AdaptiveCpp compiler")
     endif()
     try_compile(GMX_ACPP_COMPILATION_WORKS "${CMAKE_BINARY_DIR}/CMakeTmpAdaptiveCppTest" "${CMAKE_SOURCE_DIR}/cmake/AdaptiveCppTest/" "AdaptiveCppTest"
         OUTPUT_VARIABLE _ACPP_COMPILATION_OUTPUT
         CMAKE_FLAGS ${_ALL_ACPP_CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
     file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeTmpAdaptiveCppTest")
-    if(GMX_ACPP_COMPILATION_WORKS)
-        if (NOT ACPP_CHECK_QUIETLY_AFTER_FIRST_RUN)
+    if (GMX_ACPP_COMPILATION_WORKS)
+        if (NOT ADAPTIVECPP_FIND_QUIETLY_AFTER_FIRST_RUN)
             message(STATUS "Checking for valid AdaptiveCpp compiler - Success")
         endif()
         foreach (target IN ITEMS CUDA HIP HIP_WAVE32 HIP_WAVE64 SPIRV GENERIC)
@@ -135,13 +140,13 @@ if (NOT DEFINED GMX_ACPP_COMPILATION_WORKS OR _rerun_acpp_try_compile_tests)
             else()
                 set(GMX_ACPP_HAVE_${target}_TARGET OFF CACHE INTERNAL "AdaptiveCpp flags/configuration have ${target} target")
             endif()
-            if (NOT ACPP_CHECK_QUIETLY_AFTER_FIRST_RUN)
+            if (NOT ADAPTIVECPP_FIND_QUIETLY_AFTER_FIRST_RUN)
                 message(STATUS "AdaptiveCpp has ${target} target enabled: ${GMX_ACPP_HAVE_${target}_TARGET}")
             endif()
         endforeach()
     endif()
 endif()
-set(ACPP_CHECK_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to check ACpp compilation")
+set(ADAPTIVECPP_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to configure AdaptiveCpp")
 
 if (NOT GMX_ACPP_COMPILATION_WORKS)
     message(FATAL_ERROR "AdaptiveCpp compiler not working:\n${_ACPP_COMPILATION_OUTPUT}")
