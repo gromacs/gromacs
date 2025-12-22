@@ -53,6 +53,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
@@ -136,6 +137,39 @@ static int computeNumGlobalPerturbedExclusions(const gmx_mtop_t& mtop)
         }
 
         numPerturbedExclusions += molblock.nmol * numPerturbedExclusionsInMol;
+    }
+
+    // Check all atom pairs in the inter-molecular exclusion group
+    gmx::ArrayRef<const int> group = mtop.intermolecularExclusionGroup;
+    for (const int globalAtomI : group)
+    {
+        int moleculeBlockI = 0;
+        int moleculeIndexI;
+        int atomIndexInMoleculeI;
+        mtopGetMolblockIndex(mtop, globalAtomI, &moleculeBlockI, &moleculeIndexI, &atomIndexInMoleculeI);
+        const gmx_moltype_t& moltypeI = mtop.moltype[mtop.molblock[moleculeBlockI].type];
+        const bool atomIIsPerturbed   = PERTURBED(moltypeI.atoms.atom[atomIndexInMoleculeI]);
+        const gmx::ArrayRef<const int> exclsI = moltypeI.excls[atomIndexInMoleculeI];
+
+        int moleculeBlockJ = moleculeBlockI;
+        for (const int globalAtomJ : group)
+        {
+            if (globalAtomJ <= globalAtomI)
+            {
+                continue;
+            }
+
+            // We count this exclusion when this is not also a "normal" intra-molecular exclusion
+            int moleculeIndexJ;
+            int atomIndexInMoleculeJ;
+            mtopGetMolblockIndex(mtop, globalAtomJ, &moleculeBlockJ, &moleculeIndexJ, &atomIndexInMoleculeJ);
+            if ((atomIIsPerturbed || PERTURBED(moltypeI.atoms.atom[atomIndexInMoleculeJ]))
+                && !(moleculeBlockJ == moleculeBlockI && moleculeIndexJ == moleculeIndexI
+                     && std::find(exclsI.begin(), exclsI.end(), atomIndexInMoleculeJ) != exclsI.end()))
+            {
+                numPerturbedExclusions++;
+            }
+        }
     }
 
     return numPerturbedExclusions;
