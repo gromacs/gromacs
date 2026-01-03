@@ -1369,12 +1369,25 @@ void push_cmaptype(Directive                                                    
                 "Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
         wi->addError(message);
     }
-    /* Set grid spacing and the number of grids (we assume these numbers to be the same for all
-     * grids so we can safely assign them each time)
-     */
-    bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_ =
-            nxcmap; /* Or nycmap, they need to be equal */
+    // Set grid spacing (when not yet set) or check that the spacing
+    // matches previous entries.
+    if (!bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.has_value())
+    {
+        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_ =
+                nxcmap; /* Or nycmap, they need to be equal */
+    }
+    else if (bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value() != nxcmap)
+    {
+        auto message = gmx::formatString(
+                "In the current implementation, each CMAP must have the same grid spacing. "
+                "Early CMAP entries used %d and then %d were found for line:\n %s",
+                bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value(),
+                nxcmap,
+                line);
+        wi->addError(message);
+    }
 
+    // Compute the number of CMAP grid values
     std::size_t ncmap = static_cast<std::size_t>(nxcmap) * static_cast<std::size_t>(nycmap);
     for (std::size_t idx = 0; idx < ncmap; idx++)
     {

@@ -203,6 +203,10 @@ the residue type so that CMAP angle terms can be correctly assigned in
 concert with the ``[ bondedtypes ]`` for the residue types for such
 forcefields.
 
+Note also that in the current implementation the grid size must be
+identical for ``x`` and ``y`` dimensions and the same for all CMAP type
+entries.
+
 .. _charmmff:
 
 CHARMM

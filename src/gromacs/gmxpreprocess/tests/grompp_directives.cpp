@@ -414,7 +414,10 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
     { "define = -DUSER_SPECIFIED_CMAPTYPE", ExpectedResult::Success, "" },
     { "define = -DUSER_SPECIFIED_CMAPTYPE_OUT_OF_BOUNDS",
       ExpectedResult::Death,
-      "Unable to assign a cmap type to torsion 1 2 3 4 and 5" }
+      "Unable to assign a cmap type to torsion 1 2 3 4 and 5" },
+    { "define = -DALL_CMAP_TYPES_MUST_USE_SAME_GRID_SPACING",
+      ExpectedResult::Death,
+      "each CMAP must have the same grid spacing" },
 };
 
 INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppCmapDirectiveTest, testing::ValuesIn(cmapValidInputOutput));
