@@ -295,7 +295,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
     process_pull_dim(dim_buf, pcrd->dim, pcrd);
 
     string2dvec(origin_buf, origin);
-    if (pcrd->group[0] != 0 && dnorm(origin) > 0)
+    if (pcrd->eGeom != PullGroupGeometry::Transformation && pcrd->group[0] != 0 && dnorm(origin) > 0)
     {
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
@@ -767,11 +767,14 @@ pull_t* set_pull_init(t_inputrec*                    ir,
         real init = 0;
 
         t_pull_coord* pcrd = &pull->coord[c];
-
-        t_pull_group* pgrp0 = &pull->group[pcrd->group[0]];
-        t_pull_group* pgrp1 = &pull->group[pcrd->group[1]];
-        fprintf(stderr, "%8d  %8zu  %8d\n", pcrd->group[0], pgrp0->ind.size(), pgrp0->pbcatom + 1);
-        fprintf(stderr, "%8d  %8zu  %8d ", pcrd->group[1], pgrp1->ind.size(), pgrp1->pbcatom + 1);
+        if (pcrd->eGeom != PullGroupGeometry::Transformation)
+        {
+            // Only pull cordinates with non-transformation geometry have groups to dump
+            t_pull_group* pgrp0 = &pull->group[pcrd->group[0]];
+            t_pull_group* pgrp1 = &pull->group[pcrd->group[1]];
+            fprintf(stderr, "%8d  %8zu  %8d\n", pcrd->group[0], pgrp0->ind.size(), pgrp0->pbcatom + 1);
+            fprintf(stderr, "%8d  %8zu  %8d ", pcrd->group[1], pgrp1->ind.size(), pgrp1->pbcatom + 1);
+        }
 
         if (pcrd->bStart)
         {

@@ -723,7 +723,10 @@ static double get_dihedral_angle_coord(PullCoordSpatialData* spatialData)
  */
 static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc& pbc, const double t)
 {
-    get_pull_coord_dr(pull, pcrd, pbc);
+    if (pcrd->params_.eGeom != PullGroupGeometry::Transformation)
+    {
+        get_pull_coord_dr(pull, pcrd, pbc);
+    }
 
     PullCoordSpatialData& spatialData = pcrd->spatialData;
 
