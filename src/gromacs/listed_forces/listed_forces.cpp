@@ -251,7 +251,7 @@ real calc_one_bond(int                                 thread,
                    InteractionFunction                 ftype,
                    const InteractionDefinitions&       idef,
                    ArrayRef<const int>                 iatoms,
-                   const int                           numNonperturbedInteractions,
+                   const bool                          havePerturbedInteractions,
                    const WorkDivision&                 workDivision,
                    const rvec                          x[],
                    rvec4                               f[],
@@ -274,8 +274,6 @@ real calc_one_bond(int                                 thread,
     GMX_ASSERT(idef.ilsort == ilsortNO_FE || idef.ilsort == ilsortFE_SORTED,
                "The topology should be marked either as no FE or sorted on FE");
 
-    const bool havePerturbedInteractions =
-            (idef.ilsort == ilsortFE_SORTED && numNonperturbedInteractions < iatoms.ssize());
     BondedKernelFlavor flavor =
             selectBondedKernelFlavor(stepWork, fr->use_simd_kernels, havePerturbedInteractions);
     FreeEnergyPerturbationCouplingType efptFTYPE;
@@ -532,12 +530,14 @@ static void calcBondedForces(const InteractionDefinitions&       idef,
                 if (!ilist.empty() && ftype_is_bonded_potential(ftype))
                 {
                     ArrayRef<const int> iatoms = gmx::makeConstArrayRef(ilist.iatoms);
-
+                    const bool          havePerturbedInteractions =
+                            (idef.ilsort == ilsortFE_SORTED
+                             && idef.numNonperturbedInteractions[ftype] < idef.il[ftype].size());
                     real v = calc_one_bond(thread,
                                            ftype,
                                            idef,
                                            iatoms,
-                                           idef.numNonperturbedInteractions[ftype],
+                                           havePerturbedInteractions,
                                            bt->workDivision,
                                            x,
                                            ft,
@@ -682,6 +682,8 @@ void calc_listed_lambda(const InteractionDefinitions&                     idef,
                         t_fcdata*                                         fcd,
                         int*                                              global_atom_index)
 {
+    GMX_ASSERT(idef.ilsort == ilsortFE_SORTED, "Must have sorted perturbed interactions to the end");
+
     WorkDivision& workDivision = bt->foreignLambdaWorkDivision;
 
     const t_pbc* pbc_null;
@@ -719,12 +721,13 @@ void calc_listed_lambda(const InteractionDefinitions&                     idef,
                 workDivision.setBound(ftype, 1, iatomsPerturbed.ssize());
 
                 gmx::StepWorkload tempFlags;
-                tempFlags.computeEnergy = true;
-                real v                  = calc_one_bond(0,
+                tempFlags.computeEnergy              = true;
+                const bool havePerturbedInteractions = true;
+                real       v                         = calc_one_bond(0,
                                        ftype,
                                        idef,
                                        iatomsPerturbed,
-                                       iatomsPerturbed.ssize(),
+                                       havePerturbedInteractions,
                                        workDivision,
                                        x,
                                        f,
