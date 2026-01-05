@@ -93,7 +93,7 @@ protected:
     LocalAtomSetManager           atomSetManager_;
     std::unique_ptr<LocalAtomSet> qmAtomSet_;
     std::unique_ptr<LocalAtomSet> mmAtomSet_;
-    PbcType                       pbcType_;
+    PbcType                       pbcType_ = PbcType::No;
     MDLogger                      logger_;
 };
 
@@ -101,7 +101,7 @@ TEST_F(QMMMForceProviderTest, CanConstructOrNot)
 {
     setDefaultParameters();
 
-    // GMX_CP2K is defined in CMakeList.txt trough set_source_files_properties()
+    // GMX_CP2K is defined in CMakeList.txt through set_source_files_properties()
     if (GMX_CP2K)
     {
         // if libcp2k linked then we do not expect throws
