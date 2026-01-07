@@ -60,7 +60,7 @@ void RAMDOutputProvider::addDistance(real distance)
 {
     if (fpRAMD_)
     {
-        fprintf(fpRAMD_, "\t%9.5f", distance);
+        fprintf(fpRAMD_, "\t%10.6f", distance);
     }
 }
 
