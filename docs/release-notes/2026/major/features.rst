@@ -108,6 +108,7 @@ support in |Gromacs| is planned but not part of this release. MDP options are av
 FMM libraries i.e., ExaFMM and FMSolvr, and these options are validated internally by the interface.
 
 For more details, please see :ref:`the FMM section in the reference manual <fmm>`.
+
 Add two new performance metrics
 """""""""""""""""""""""""""""""
 
