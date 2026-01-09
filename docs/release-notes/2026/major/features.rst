@@ -108,6 +108,7 @@ support in |Gromacs| is planned but not part of this release. MDP options are av
 FMM libraries i.e., ExaFMM and FMSolvr, and these options are validated internally by the interface.
 
 For more details, please see :ref:`the FMM section in the reference manual <fmm>`.
+
 Add two new performance metrics
 """""""""""""""""""""""""""""""
 
@@ -122,3 +123,12 @@ when comparing performance across systems and hardware. A similar metric can als
 be found from `PLUMED <https://docs.lammps.org/Speed_measure.html#examples-comparing-serial-performance>`_. 
 
 :issue:`5374`
+
+QM/MM CP2K interface updates
+""""""""""""""""""""""""""""
+
+QM/MM simulations with CP2K interface could now use GROMACS checkpoint files
+for saving QM subsystem centering translation. It greatly improves stability
+of QM/MM simulations during long trajectories and upon restarting from checkpoint. 
+
+:issue:`5529`

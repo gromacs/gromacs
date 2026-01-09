@@ -194,7 +194,7 @@ protected:
 
 TEST_F(ColvarsForceProviderTest, CanConstructOrNot)
 {
-
+    pbcType_ = PbcType::No;
     EXPECT_NO_THROW(ColvarsForceProvider forceProvider(colvarsConfigString_,
                                                        atoms_,
                                                        pbcType_,

@@ -54,7 +54,8 @@ namespace gmx
 
 /*! \brief Vector that behaves likes std::vector but has fixed capacity.
  *
- * \tparam T         Value type of elements, should be default constructible
+ * \tparam T         Value type of elements, must be default constructible
+ *                   and trivially destructible
  * \tparam capacity_ The maximum number of elements that can be stored.
  *
  * This class provides a variable size container, but with constant
@@ -84,6 +85,7 @@ template<typename T, size_t capacity_>
 class FixedCapacityVector
 {
     static_assert(std::is_default_constructible_v<T>);
+    static_assert(std::is_trivially_destructible_v<T>);
 
 public:
     //! Type of values stored in the vector
@@ -209,10 +211,6 @@ public:
     constexpr void pop_back() noexcept
     {
         GMX_ASSERT(!empty(), "Can only delete last element when present");
-        if constexpr (!std::is_trivially_destructible_v<T>)
-        {
-            back().~T();
-        }
         size_--;
     }
 

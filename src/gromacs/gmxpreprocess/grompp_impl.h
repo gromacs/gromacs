@@ -142,8 +142,8 @@ struct InteractionsOfType
 { // NOLINT (clang-analyzer-optin.performance.Padding)
     //! The different parameters in the system.
     std::vector<InteractionOfType> interactionTypes;
-    //! CMAP grid spacing.
-    int cmapGridSpacing_ = -1;
+    //! CMAP grid spacing, when used.
+    std::optional<int> cmapGridSpacing_;
     //! Number of CMAP dihedral angle pairs.
     int numCmaps_ = -1;
     //! CMAP grid data.

@@ -2474,10 +2474,11 @@ int gmx_grompp(int argc, char* argv[])
     /* If we are using CMAP, setup the pre-interpolation grid */
     if (interactions[InteractionFunction::DihedralEnergyCorrectionMap].ncmap() > 0)
     {
-        init_cmap_grid(&sys.ffparams.cmap_grid,
-                       interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
-                       interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_);
-        setup_cmap(interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_,
+        init_cmap_grid(
+                &sys.ffparams.cmap_grid,
+                interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
+                interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value());
+        setup_cmap(interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value(),
                    interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
                    interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmap,
                    &sys.ffparams.cmap_grid);

@@ -66,6 +66,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "qmmmforceprovider.h"
 #include "qmmmoptions.h"
@@ -172,6 +173,21 @@ public:
         return *logger_;
     }
 
+    /*! \brief Set the MPI communicator for QMMM during mdrun startup
+     * \param[in] mpiComm MPI communicator to be used for simulation
+     */
+    void setMpiComm(const MpiComm& mpiComm) { mpiComm_ = std::make_unique<MpiComm>(mpiComm); }
+
+    //! Get the MPI communicator
+    const MpiComm& mpiComm() const
+    {
+        if (mpiComm_ == nullptr)
+        {
+            GMX_THROW(InternalError("MPI communicator not set for QMMM simulation."));
+        }
+        return *mpiComm_;
+    }
+
 private:
     //! The local QM atom set to act on
     std::unique_ptr<LocalAtomSet> localQMAtomSet_;
@@ -185,6 +201,8 @@ private:
      * to a const MDLogger before the notification always provides the
      * actual reference. */
     const MDLogger* logger_ = nullptr;
+    //! MPI communicator for simulation
+    std::unique_ptr<MpiComm> mpiComm_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(QMMMSimulationParameterSetup);
 };
@@ -294,6 +312,7 @@ public:
      *   - the type of periodic boundary conditions that are used
      *     by taking a PeriodicBoundaryConditionType as parameter
      *   - Access MDLogger for notifications output
+     *   - Access MPI communicator for simulation
      *   - Disable PME-only ranks for QMMM runs
      *   - Request QM energy output to md.log
      */
@@ -334,6 +353,11 @@ public:
         { this->qmmmSimulationParameters_.setLogger(logger); };
         notifiers->simulationSetupNotifier_.subscribe(setLoggerFunction);
 
+        // Saving MPI communicator during simulation setup
+        const auto setMpiCommFunction = [this](const MpiComm& mpiComm)
+        { this->qmmmSimulationParameters_.setMpiComm(mpiComm); };
+        notifiers->simulationSetupNotifier_.subscribe(setMpiCommFunction);
+
         // Adding output to energy file
         const auto requestEnergyOutput = [](MDModulesEnergyOutputToQMMMRequestChecker* energyOutputRequest)
         { energyOutputRequest->energyOutputToQMMM_ = true; };
@@ -346,6 +370,16 @@ public:
                     "Separate PME-only ranks are not compatible with QMMM MdModule");
         };
         notifiers->simulationSetupNotifier_.subscribe(requestPmeRanks);
+
+        // writing checkpoint data
+        const auto checkpointDataWriting = [this](MDModulesWriteCheckpointData checkpointData)
+        { forceProvider_->writeCheckpointData(checkpointData, QMMMModuleInfo::sc_name); };
+        notifiers->checkpointingNotifier_.subscribe(checkpointDataWriting);
+
+        // reading checkpoint data
+        const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData)
+        { state_.readState(checkpointData.checkpointedData_, QMMMModuleInfo::sc_name); };
+        notifiers->checkpointingNotifier_.subscribe(checkpointDataReading);
     }
 
     //! No subscriptions to run notifications
@@ -368,7 +402,9 @@ public:
                 qmmmSimulationParameters_.localQMAtomSet(),
                 qmmmSimulationParameters_.localMMAtomSet(),
                 qmmmSimulationParameters_.periodicBoundaryConditionType(),
-                qmmmSimulationParameters_.logger());
+                qmmmSimulationParameters_.logger(),
+                qmmmSimulationParameters_.mpiComm(),
+                state_);
         forceProviders->addForceProvider(forceProvider_.get(), "QMMM");
     }
 
@@ -386,6 +422,8 @@ private:
      * simulation setup time.
      */
     QMMMSimulationParameterSetup qmmmSimulationParameters_;
+    //! Object holding the information stored in the checkpoint file
+    QMMMForceProviderState state_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(QMMM);
 };

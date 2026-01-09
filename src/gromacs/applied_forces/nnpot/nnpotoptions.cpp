@@ -659,17 +659,12 @@ void NNPotOptions::checkNNPotModel()
                             "of the energy w.r.t. the first input tensor (atom positions).");
         }
     }
-    catch (const GromacsException& e)
-    {
-        // rethrow exceptions issued by our code
-        throw;
-    }
     catch (const std::exception& e)
     {
         // we only issue a warning here instead of throwing an error, as a torch runtime error might
         // simply be due to mismatched dummy input shapes
         wi_->addWarning("There was an error while checking NN model with a dummy input: " + std::string(e.what()) + "\n"
-                        "I can't verify that the model works correctly. This might lead to errors during mdrun.");
+                        "Can't verify that the model works correctly. This might lead to errors during mdrun.");
     }
 
     // check if first input is atom-positions

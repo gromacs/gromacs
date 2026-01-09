@@ -268,6 +268,11 @@ static void tester(const void* arg)
                      k, right, myrank);
             k++;
         }
+        else
+        {
+            buf[send_left][0] = '\0';
+            buf[send_right][0] = '\0';
+        }
 
         for (i = 0; i < N*2; i++)
         {

@@ -605,7 +605,7 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 } // namespace
 
 template<CheckpointDataOperation operation>
-void StatePropagatorData::doCheckpointData(CheckpointData<operation>* checkpointData)
+void StatePropagatorData::doCheckpointData(CheckpointData<operation>* checkpointData, const bool usingDd)
 {
     checkpointVersion(checkpointData, "StatePropagatorData version", c_currentVersion);
     checkpointData->scalar("numAtoms", &totalNumAtoms_);
@@ -619,9 +619,17 @@ void StatePropagatorData::doCheckpointData(CheckpointData<operation>* checkpoint
     checkpointData->arrayRef("positions", makeCheckpointArrayRef<operation>(xGlobal_));
     checkpointData->arrayRef("velocities", makeCheckpointArrayRef<operation>(vGlobal_));
     checkpointData->tensor("box", box_);
-    checkpointData->scalar("ddpCount", &ddpCount_);
-    checkpointData->scalar("ddpCountCgGl", &ddpCountCgGl_);
-    checkpointData->arrayRef("cgGl", makeCheckpointArrayRef<operation>(cgGl_));
+    if (usingDd)
+    {
+        if constexpr (operation == CheckpointDataOperation::Write)
+        {
+            GMX_RELEASE_ASSERT(localState_ != nullptr,
+                               "Must have valid local state to write checkpoint");
+        }
+        checkpointData->scalar("ddpCount", &ddpCount_);
+        checkpointData->scalar("ddpCountCgGl", &ddpCountCgGl_);
+        checkpointData->arrayRef("cgGl", makeCheckpointArrayRef<operation>(cgGl_));
+    }
 }
 
 void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
@@ -658,7 +666,8 @@ void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckp
     }
     if (mpiComm.isMainRank())
     {
-        statePropagatorData_->doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
+        statePropagatorData_->doCheckpointData<CheckpointDataOperation::Write>(
+                &checkpointData.value(), dd != nullptr);
     }
 }
 
@@ -690,7 +699,8 @@ void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadChec
 {
     if (mpiComm.isMainRank())
     {
-        statePropagatorData_->doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
+        statePropagatorData_->doCheckpointData<CheckpointDataOperation::Read>(
+                &checkpointData.value(), dd != nullptr);
     }
 
     // Copy data to global state to be distributed by DD at setup stage
@@ -846,7 +856,8 @@ ISimulatorElement* StatePropagatorData::Element::getElementPointerImpl(
 void StatePropagatorData::readCheckpointToTrxFrame(t_trxframe* trxFrame, ReadCheckpointData readCheckpointData)
 {
     StatePropagatorData statePropagatorData;
-    statePropagatorData.doCheckpointData(&readCheckpointData);
+    const bool          usingDd = false;
+    statePropagatorData.doCheckpointData(&readCheckpointData, usingDd);
 
     trxFrame->natoms = statePropagatorData.totalNumAtoms_;
     trxFrame->bX     = true;

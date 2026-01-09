@@ -38,3 +38,8 @@ When using the experimental direct halo communication feature combined with 8-wi
 non-bonded kernels and OpenMP threading, non-bonded interactions could be missing.
 
 :issue:`5509`
+
+Allow atoms involved intermolecular-exclusion to be perturbed
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5527`

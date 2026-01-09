@@ -67,8 +67,15 @@ X-RES Y-RES X-RES X-RES Y-RES 1 2 2 0.1 0.2 0.3 0.4
 X-GES Y-MES X-XES X-MES Y-GES 1 2 2 0.1 0.2 0.3 0.4
 X-NULL Y-NULL X-NULL X-NULL Y-NULL 1 4 4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 #endif
-X Y X Y Y 1 3 3 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
-X-RES Y-RES X-RES Y-RES Y-RES 1 3 3 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9
+
+; Some correct CMAP types
+X Y X Y Y 1 2 2 0.6 0.7 0.8 0.9
+X-RES Y-RES X-RES Y-RES Y-RES 1 2 2 1.6 1.7 1.8 1.9
+
+#ifdef ALL_CMAP_TYPES_MUST_USE_SAME_GRID_SPACING
+; Mismatches with the correct CMAP types which have a grid spacing of 2
+X Y X X Y 1 3 3 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
+#endif
 
 
 [ moleculetype ]

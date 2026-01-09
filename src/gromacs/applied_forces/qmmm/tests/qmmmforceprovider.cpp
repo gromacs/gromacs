@@ -60,6 +60,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/vec.h"
@@ -80,6 +81,55 @@ public:
     void setDefaultParameters()
     {
         parameters_.active_               = true;
+        parameters_.qmFileNameBase_       = "topol_cp2k";
+        parameters_.qmInput_              = R"(
+&GLOBAL
+  PROJECT H2
+  RUN_TYPE ENERGY
+  PRINT_LEVEL LOW
+&END GLOBAL
+&FORCE_EVAL
+  METHOD Quickstep
+  &DFT
+    BASIS_SET_FILE_NAME BASIS_MOLOPT
+    POTENTIAL_FILE_NAME GTH_POTENTIALS
+    &MGRID
+      CUTOFF 400
+      REL_CUTOFF 60
+    &END MGRID
+    &SCF
+      SCF_GUESS ATOMIC
+      MAX_SCF 50
+      EPS_SCF 1.0E-6
+    &END SCF
+    &XC
+      &XC_FUNCTIONAL PBE
+      &END XC_FUNCTIONAL
+    &END XC
+  &END DFT
+  &SUBSYS
+    &CELL
+      ABC 10.0 10.0 10.0
+      PERIODIC XYZ
+    &END CELL
+    &TOPOLOGY
+      COORD_FILE_NAME topol_cp2k.pdb
+      COORD_FILE_FORMAT PDB
+      CHARGE_EXTENDED TRUE
+      CONNECTIVITY OFF
+    &END TOPOLOGY
+    &KIND H
+      BASIS_SET DZVP-MOLOPT-SR-GTH
+      POTENTIAL GTH-PBE
+    &END KIND
+  &END SUBSYS
+&END FORCE_EVAL
+)";
+        parameters_.qmPdb_                = R"(HEADER    H2 MOLECULE
+ATOM      1  H   H2     1       5.000   5.000   4.630  1.00  0.00           H
+ATOM      2  H   H2     1       5.000   5.000   5.370  1.00  0.00           H
+END
+)";
         std::vector<gmx::Index> qmIndices = { 0, 1, 2 };
         std::vector<gmx::Index> mmIndices = { 3, 4, 5 };
         LocalAtomSet            set1 = atomSetManager_.add(ArrayRef<const gmx::Index>(qmIndices));
@@ -93,26 +143,28 @@ protected:
     LocalAtomSetManager           atomSetManager_;
     std::unique_ptr<LocalAtomSet> qmAtomSet_;
     std::unique_ptr<LocalAtomSet> mmAtomSet_;
-    PbcType                       pbcType_;
+    PbcType                       pbcType_ = PbcType::No;
     MDLogger                      logger_;
+    MpiComm                       mpiComm_ = MpiComm(MpiComm::SingleRank{});
+    QMMMForceProviderState        state_;
 };
 
 TEST_F(QMMMForceProviderTest, CanConstructOrNot)
 {
     setDefaultParameters();
 
-    // GMX_CP2K is defined in CMakeList.txt trough set_source_files_properties()
+    // GMX_CP2K is defined in CMakeList.txt through set_source_files_properties()
     if (GMX_CP2K)
     {
         // if libcp2k linked then we do not expect throws
         EXPECT_NO_THROW(QMMMForceProvider forceProvider(
-                parameters_, *qmAtomSet_, *mmAtomSet_, pbcType_, logger_));
+                parameters_, *qmAtomSet_, *mmAtomSet_, pbcType_, logger_, mpiComm_, state_));
     }
     else
     {
         // if libcp2k not linked then we expect throw from constructor
         EXPECT_ANY_THROW(QMMMForceProvider forceProvider(
-                parameters_, *qmAtomSet_, *mmAtomSet_, pbcType_, logger_));
+                parameters_, *qmAtomSet_, *mmAtomSet_, pbcType_, logger_, mpiComm_, state_));
     }
 }
 
