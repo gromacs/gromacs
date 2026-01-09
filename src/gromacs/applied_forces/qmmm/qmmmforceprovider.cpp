@@ -46,11 +46,17 @@
 
 #include <libcp2k.h>
 
+#include <string_view>
+
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -77,18 +83,41 @@ void writeStringToFile(const std::string& filename, const std::string& str)
 
 } // namespace
 
-QMMMForceProvider::QMMMForceProvider(const QMMMParameters& parameters,
-                                     const LocalAtomSet&   localQMAtomSet,
-                                     const LocalAtomSet&   localMMAtomSet,
-                                     PbcType               pbcType,
-                                     const MDLogger&       logger) :
+QMMMForceProvider::QMMMForceProvider(const QMMMParameters&         parameters,
+                                     const LocalAtomSet&           localQMAtomSet,
+                                     const LocalAtomSet&           localMMAtomSet,
+                                     PbcType                       pbcType,
+                                     const MDLogger&               logger,
+                                     const MpiComm&                mpiComm,
+                                     const QMMMForceProviderState& state) :
     parameters_(parameters),
     qmAtoms_(localQMAtomSet),
     mmAtoms_(localMMAtomSet),
     pbcType_(pbcType),
     logger_(logger),
+    state_(state),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }
 {
+    // Initialize CP2K environment along with checkpointing state
+    try
+    {
+        initCP2KForceEnvironment(mpiComm);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    // Initialize checkpointing state from parameters_ if it was not read from checkpoint file
+    if (mpiComm.isMainRank() && !state_.isStateRead())
+    {
+        state_.setQMTrans(parameters_.qmTrans_);
+    }
+
+    // Broadcast state to all ranks
+    if (mpiComm.isParallel())
+    {
+        RVec qmTrans = state_.qmTrans();
+        mpiComm.sumReduce(3, qmTrans.as_vec());
+        state_.setQMTrans(qmTrans);
+    }
 }
 
 QMMMForceProvider::~QMMMForceProvider()
@@ -175,11 +204,7 @@ void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
         cp2k_init();
         cp2k_create_force_env(&force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str());
     }
-
-    // Set flag of successful initialization
-    isCp2kLibraryInitialized_ = true;
-
-} // namespace gmx
+}
 
 void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput)
 {
@@ -194,38 +219,27 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     set_pbc(&pbc, pbcType_, box_);
 
     /*
-     * 1) If calculateForce called first time, then we need to init CP2K,
-     *    as it was not possible during QMMMForceProvider constructor
-     *    due to absence of full communication record at that point.
-     */
-    if (!isCp2kLibraryInitialized_)
-    {
-        try
-        {
-            initCP2KForceEnvironment(fInput.mpiComm_);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
-
-    /*
-     * 2) We need to gather fInput.x_ in case of MPI / DD setup
+     * We need to gather fInput.x_ in case of MPI / DD setup
      */
 
     // x - coordinates (gathered across nodes in case of DD)
     std::vector<RVec> x(numAtoms, RVec({ 0.0, 0.0, 0.0 }));
 
+    // Current QM translation vector
+    RVec qmTrans = state_.qmTrans();
+
     // Fill cordinates of local QM atoms and add translation
     for (size_t i = 0; i < qmAtoms_.numAtomsLocal(); i++)
     {
         x[qmAtoms_.globalIndex()[qmAtoms_.collectiveIndex()[i]]] =
-                fInput.x_[qmAtoms_.localIndex()[i]] + parameters_.qmTrans_;
+                fInput.x_[qmAtoms_.localIndex()[i]] + qmTrans;
     }
 
     // Fill cordinates of local MM atoms and add translation
     for (size_t i = 0; i < mmAtoms_.numAtomsLocal(); i++)
     {
         x[mmAtoms_.globalIndex()[mmAtoms_.collectiveIndex()[i]]] =
-                fInput.x_[mmAtoms_.localIndex()[i]] + parameters_.qmTrans_;
+                fInput.x_[mmAtoms_.localIndex()[i]] + qmTrans;
     }
 
     // If we are in MPI / DD conditions then gather coordinates over nodes
@@ -235,10 +249,10 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     put_atoms_in_box(pbcType_, fInput.box_, ArrayRef<RVec>(x));
 
     /*
-     * 3) Cast data to double format of libcp2k
+     * Cast data to double format of libcp2k
      *    update coordinates and box in CP2K and perform QM calculation
      */
-    // x_d - coordinates casted to linear dobule vector for CP2K with parameters_.qmTrans_ added
+    // x_d - coordinates casted to linear dobule vector for CP2K with qmTrans added
     std::vector<double> x_d(3 * numAtoms, 0.0);
     for (size_t i = 0; i < numAtoms; i++)
     {
@@ -264,7 +278,7 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     cp2k_calc_energy_force(force_env_);
 
     /*
-     * 4) Get output data
+     * Get output data
      * We need to fill only local part into fOutput
      */
 
@@ -297,7 +311,7 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
                 * c_hartreeBohr2Md;
     }
 
-    // Filll forces on MM atoms then
+    // Fill forces on MM atoms
     for (size_t i = 0; i < mmAtoms_.numAtomsLocal(); i++)
     {
         fOutput->forceWithVirial_.force_[mmAtoms_.localIndex()[i]][XX] +=
@@ -312,7 +326,32 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
                 static_cast<real>(cp2kForce[3 * mmAtoms_.globalIndex()[mmAtoms_.collectiveIndex()[i]] + 2])
                 * c_hartreeBohr2Md;
     }
+
+    /*
+     * Adjust QM translation vector in state_
+     * As coordinates might be re-centered in CP2K
+     */
+    // Get positions from CP2K
+    std::vector<double> x_new_d(3 * numAtoms, 0.0);
+    cp2k_get_positions(force_env_, x_new_d.data(), 3 * numAtoms);
+
+    // Use first QM atom to calculate adjustment
+    Index firstQMGlobalIndex = qmAtoms_.globalIndex()[0];
+    for (int i = 0; i < DIM; i++)
+    {
+        qmTrans[i] += static_cast<real>(
+                (x_new_d[3 * firstQMGlobalIndex + i] - x_d[3 * firstQMGlobalIndex + i]) * c_bohr2Nm);
+    }
+
+    // Save updated translation vector into state_
+    state_.setQMTrans(qmTrans);
 };
+
+void QMMMForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
+                                            std::string_view             moduleName)
+{
+    state_.writeState(checkpointWriting.builder_, moduleName);
+}
 
 std::string qmmmDescription()
 {

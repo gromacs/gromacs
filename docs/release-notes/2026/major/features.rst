@@ -123,3 +123,12 @@ when comparing performance across systems and hardware. A similar metric can als
 be found from `PLUMED <https://docs.lammps.org/Speed_measure.html#examples-comparing-serial-performance>`_. 
 
 :issue:`5374`
+
+QM/MM CP2K interface updates
+""""""""""""""""""""""""""""
+
+QM/MM simulations with CP2K interface could now use GROMACS checkpoint files
+for saving QM subsystem centering translation. It greatly improves stability
+of QM/MM simulations during long trajectories and upon restarting from checkpoint. 
+
+:issue:`5529`
