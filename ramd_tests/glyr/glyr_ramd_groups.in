@@ -1,0 +1,35 @@
+ramd-group {
+    receptor Protein1
+    ligand INH1
+    force 600
+    max-dist 40
+    r-min-dist 0.0025
+}
+ramd-group {
+    receptor Protein2
+    ligand INH2
+    force 600
+    max-dist 40
+    r-min-dist 0.0025
+}
+ramd-group {
+    receptor Protein3
+    ligand INH3
+    force 600
+    max-dist 40
+    r-min-dist 0.0025
+}
+ramd-group {
+    receptor Protein4
+    ligand INH4
+    force 600
+    max-dist 40
+    r-min-dist 0.0025
+}
+ramd-group {
+    receptor Protein5
+    ligand INH5
+    force 600
+    max-dist 40
+    r-min-dist 0.0025
+}

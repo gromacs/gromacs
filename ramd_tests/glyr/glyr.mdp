@@ -1,0 +1,29 @@
+integrator                   = md
+dt                           = 0.002
+nsteps                       = 1000000000
+continuation                 = yes
+constraints                  = h-bonds
+constraint-algorithm         = lincs
+cutoff-scheme                = Verlet
+coulombtype                  = PME
+rcoulomb                     = 1.2
+vdwtype                      = Cut-off
+rvdw                         = 1.2
+DispCorr                     = EnerPres
+tcoupl                       = Nose-Hoover
+tc-grps                      = System
+tau-t                        = 1.0
+ref-t                        = 300
+pcoupl                       = Parrinello-Rahman
+tau-p                        = 5.0
+compressibility              = 4.5e-5
+ref-p                        = 1.0
+
+ramd-active                  = yes
+ramd-seed                    = 1234
+ramd-eval-freq               = 2
+ramd-out-freq                = 2
+ramd-old-angle-dist          = no
+ramd-connected-ligands       = no
+ramd-groups-file             = glyr_ramd_groups.in
+
