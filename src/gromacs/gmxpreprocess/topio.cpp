@@ -855,8 +855,7 @@ static char** read_topol(const char*                                 infile,
                             push_cmaptype(d,
                                           interactions,
                                           NRAL(InteractionFunction::DihedralEnergyCorrectionMap),
-                                          atypes,
-                                          &bondAtomType,
+                                          bondAtomType,
                                           pline,
                                           wi);
                             break;

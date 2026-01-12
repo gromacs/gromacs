@@ -1244,8 +1244,7 @@ void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char
 void push_cmaptype(Directive                                                       d,
                    gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bt,
                    int                                                             nral,
-                   PreprocessingAtomTypes*                                         atomtypes,
-                   PreprocessingBondAtomType*                                      bondAtomType,
+                   const PreprocessingBondAtomType&                                bondAtomType,
                    char*                                                           line,
                    WarningHandler*                                                 wi)
 {
@@ -1272,8 +1271,7 @@ void push_cmaptype(Directive                                                    
         std::istringstream atomResTypeStream(buffer);
         std::string        atomType;
         std::getline(atomResTypeStream, atomType, '-');
-        GMX_RELEASE_ASSERT(atomtypes != nullptr, "Need valid PreprocessingAtomTypes object");
-        auto atomTypeNum = atomtypes->atomTypeFromName(atomType);
+        auto atomTypeNum = bondAtomType.bondAtomTypeFromName(atomType);
         if (!atomTypeNum.has_value())
         {
             auto message =
@@ -1471,8 +1469,7 @@ void push_cmaptype(Directive                                                    
     for (int i = 0; (i < nral); i++)
     {
         /* Assign a grid number to each cmap_type */
-        GMX_RELEASE_ASSERT(bondAtomType != nullptr, "Need valid PreprocessingBondAtomType object");
-        auto cmapBondAtomType = bondAtomType->bondAtomTypeFromName(cmapAtomTypes[i]);
+        auto cmapBondAtomType = bondAtomType.bondAtomTypeFromName(cmapAtomTypes[i]);
         if (!cmapBondAtomType)
         {
             auto message = gmx::formatString(
@@ -1507,12 +1504,15 @@ void push_cmaptype(Directive                                                    
                                          bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_);
         wi->addError(message);
     }
-    std::vector<int> atomTypes = atomTypesFromAtomNames(
-            atomtypes, bondAtomType, gmx::constArrayRefFromArray(cmapAtomTypes.data(), nral), wi);
-    std::array<real, MAXFORCEPARAM> forceParam = { NOTSET };
 
+    gmx::ArrayRef<const int> allAtomTypes =
+            gmx::makeConstArrayRef(bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes);
+    gmx::ArrayRef<const int> atomTypesForThisInteraction =
+            allAtomTypes.subArray(allAtomTypes.size() - nral, nral);
+    std::array<real, MAXFORCEPARAM> forceParam = { NOTSET };
     /* Push the bond to the bondlist */
-    push_bondtype(&(bt[ftype]), InteractionOfType(atomTypes, forceParam), nral, ftype, FALSE, line, wi);
+    push_bondtype(
+            &(bt[ftype]), InteractionOfType(atomTypesForThisInteraction, forceParam), nral, ftype, FALSE, line, wi);
 }
 
 

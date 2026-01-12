@@ -91,8 +91,7 @@ void push_dihedraltype(Directive                                                
 void push_cmaptype(Directive                                                       d,
                    gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bt,
                    int                                                             nral,
-                   PreprocessingAtomTypes*                                         at,
-                   PreprocessingBondAtomType*                                      bat,
+                   const PreprocessingBondAtomType&                                bat,
                    char*                                                           line,
                    WarningHandler*                                                 wi);
 
