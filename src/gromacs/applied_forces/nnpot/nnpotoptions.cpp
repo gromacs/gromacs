@@ -545,11 +545,14 @@ void NNPotOptions::setWarninp(WarningHandler* wi)
     wi_ = wi;
 }
 
-#if !GMX_TORCH
-[[noreturn]]
-#endif
 void NNPotOptions::checkNNPotModel()
 {
+    if (std::getenv("GMX_NNPOT_SKIP_MODEL_CHECK"))
+    {
+        GMX_LOG(logger().info)
+                .appendText("Skipping NNP model check because GMX_NNPOT_SKIP_MODEL_CHECK is set.");
+        return;
+    }
 #if GMX_TORCH
 
     // try initializing the neural network model
@@ -580,16 +583,35 @@ void NNPotOptions::checkNNPotModel()
     }
 
     // check if model accepts inputs
-    // Prepare dummy input with two atoms in the NN model, so we can check the pairlist inputs
-    std::vector<int>  indices(1, 0);
-    std::vector<RVec> positions(2, RVec({ 0.0, 0.0, 0.0 }));
-    std::vector<int> atomNumbers(2, linkAtomNumber); // to check that the model can accept the link atom type
-    std::vector<int>              atomPairs{ 0, 1 };
-    std::vector<RVec>             pairShifts{ RVec({ 0.0, 0.0, 0.0 }) };
-    std::vector<real>             charges(1, 1.0);
+    // Prepare somewhat realistic dummy input
+    const size_t     numNNPAtoms = params_.nnpIndices_.size();
+    std::vector<int> indices(numNNPAtoms);
+    std::iota(indices.begin(), indices.end(), 0);
+    std::vector<RVec> positions(numNNPAtoms);
+    // set positions to arbitrary values to avoid issues with certain models
+    for (size_t i = 0; i < numNNPAtoms; i++)
+    {
+        // TODO: replace 3 here with DIM (or replacement) when macro conflicts are resolved
+        for (size_t j = 0; j < 3; j++)
+        {
+            positions[i][j] = 0.01 * static_cast<real>(i + 1) * static_cast<real>(j + 1);
+        }
+    }
+    std::vector<int> atomNumbers(
+            numNNPAtoms, linkAtomNumber); // to check that the model can accept the link atom type
+    std::vector<int> atomPairs;
+    for (size_t i = 0; i < numNNPAtoms - 1; i++)
+    {
+        for (size_t j = i + 1; j < numNNPAtoms; j++)
+        {
+            atomPairs.insert(atomPairs.end(), { indices[i], indices[j] });
+        }
+    }
+    std::vector<RVec>             pairShifts(atomPairs.size() / 2, RVec({ 0.0, 0.0, 0.0 }));
+    std::vector<real>             mmCharges(1, 1.0);
+    std::vector<int>              mmIndices(1, 1);
     matrix                        box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType                       pbc = PbcType();
-    std::vector<int>              mmIndices(1, 1);
     std::vector<LinkFrontierAtom> link;
 
     // check that inputs are not empty
@@ -614,9 +636,9 @@ void NNPotOptions::checkNNPotModel()
     bool modelOutputsForces = false;
     try
     {
-        // prepare dummy output (1 NNP and 1 MM atom)
-        gmx_enerdata_t    enerd(2, nullptr);
-        std::vector<RVec> forcesVec(2, RVec({ 0.0, 0.0, 0.0 }));
+        // prepare dummy output (NNP Atoms and 1 MM atom)
+        gmx_enerdata_t    enerd(numNNPAtoms + 1, nullptr);
+        std::vector<RVec> forcesVec(numNNPAtoms + 1, RVec({ 0.0, 0.0, 0.0 }));
         ArrayRef<RVec>    forces(forcesVec);
 
         // might throw a runtime error if the model is not compatible with the dummy input
@@ -630,7 +652,7 @@ void NNPotOptions::checkNNPotModel()
                              atomPairs,
                              pairShifts,
                              positions,
-                             charges,
+                             mmCharges,
                              params_.nnpCharge_,
                              link,
                              &box,
@@ -661,10 +683,13 @@ void NNPotOptions::checkNNPotModel()
     }
     catch (const std::exception& e)
     {
-        // we only issue a warning here instead of throwing an error, as a torch runtime error might
-        // simply be due to mismatched dummy input shapes
-        wi_->addWarning("There was an error while checking NN model with a dummy input: " + std::string(e.what()) + "\n"
-                        "Can't verify that the model works correctly. This might lead to errors during mdrun.");
+        GMX_THROW(
+                InconsistentInputError(
+                        "There was an error while checking NN model with a dummy input: "
+                        + std::string(e.what())
+                        + "\n"
+                          "Can't verify that the model works correctly. Make sure that the NNP "
+                          "model and inputs are compatible."));
     }
 
     // check if first input is atom-positions

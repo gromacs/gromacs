@@ -190,12 +190,8 @@ public:
     const MpiComm&  mpiComm() const;
 
 private:
-//! Make sure that model and model inputs are compatible
-#if !GMX_TORCH
-    [[noreturn]] static
-#endif
-            void
-            checkNNPotModel();
+    //! Make sure that model and model inputs are compatible
+    void checkNNPotModel();
 
     //! NNPot parameters
     NNPotParameters params_;

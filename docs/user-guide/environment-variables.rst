@@ -596,3 +596,11 @@ Analysis and Core Functions
 
 ``VMDDIR``
         base path of VMD installation.
+
+MDModules
+---------
+
+``GMX_NNPOT_SKIP_MODEL_CHECK``
+        skips the compatibility check between the neural network potential model and
+        its inputs. This can be useful if errors are encountered due to the dummy input,
+        or to prepare :ref:`tpr` files without a Libtorch-compatible installation.
