@@ -1,4 +1,4 @@
-AMBER14SB protein (Maier, J. A. et al. JCTC 11, 3696–3713, 2015 / Miletic, V. et al. ChemRxiv, 2025)
+AMBER14SB protein (Maier, J. A. et al. JCTC 11, 3696–3713, 2015 / Miletic, V. et al. ChemRxiv, 2026)
 
 ********************************************************************
 * Amber ff14SB port, converted and validated by                    *
@@ -11,7 +11,7 @@ AMBER14SB protein (Maier, J. A. et al. JCTC 11, 3696–3713, 2015 / Miletic, V. 
 * Comput. 11, 3696–3713 (2015). doi:10.1021/acs.jctc.5b00255       *
 *                                                                  *
 * If you are using this force field in GROMACS, please cite        *
-* Miletic, V. et al. ChemRxiv (2025).                              *
-* doi:10.26434/chemrxiv-2025-xxxxx                                 *
+* Miletic, V. et al. ChemRxiv (2026).                              *
+* doi:10.26434/chemrxiv-2026-xxxxx                                 *
 ********************************************************************
 
