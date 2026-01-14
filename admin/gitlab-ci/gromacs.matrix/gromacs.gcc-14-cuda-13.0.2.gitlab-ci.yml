@@ -5,7 +5,7 @@
 #   HW: dual NVIDIA GPU
 #   MPI: OpenMPI
 #   Features: GPU direct communications (manual) + update (regression tests with dual GPU)
-#   Features: Libtorch build + NNPot module + Colvars torchANN
+#   Features: Libtorch build + NNPot module + Colvars torchANN (with and without GPU SDK)
 #   Scope: configure, build, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 24.04
@@ -91,3 +91,32 @@ gromacs:gcc-14-cuda-13.0.2:regressiontest-gpucommupd-MPI:
       - regressiontests
     when: always
     expire_in: 1 week
+
+gromacs:gcc-14:configure-libtorch:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    # need CUDA even if not using GPU for NNPot, because libtorch is built with CUDA and needs to find it
+    - .use-cuda
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  variables:
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
+    # set CUDA_NVRTC_SHORTHASH to an arbitrary value avoid CMake warning due to PyTorch issue #129777
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug -DGMX_GPU=OFF -DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=TORCH -Wno-dev -DCUDA_NVRTC_SHORTHASH=PYTORCHISSUE129777"
+    COMPILER_MAJOR_VERSION: 14
+
+gromacs:gcc-14:build-libtorch:
+  extends:
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  variables:
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
+  needs:
+    - job: gromacs:gcc-14:configure-libtorch

@@ -414,6 +414,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
         catch (const std::runtime_error& e)
         {
             // Filter known errors and provide more helpful error messages
+#if GMX_GPU_CUDA
             if (std::string(e.what()).find("RuntimeError: CUDA error: no kernel image is available")
                 != std::string::npos)
             {
@@ -427,6 +428,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
                         prop.minor)));
             }
             else
+#endif
             {
                 GMX_THROW(InternalError("Error during evaluation of the neural network model: "
                                         + std::string(e.what())));
