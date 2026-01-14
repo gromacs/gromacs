@@ -71,6 +71,11 @@ function (gmx_add_unit_test_library NAME)
         target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H)
         target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
         target_compile_definitions(${NAME} PRIVATE TMPI_USE_VISIBILITY)
+        # These two include directories are supplied by the gmock target below
+        # but can be added after global include directories added e.g. for
+        # FFTW, which leads to unexpected mismatches. See #5141 and #5531.
+        target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/googletest/googletest/include)
+        target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/googletest/googlemock/include)
         target_link_libraries(${NAME} PRIVATE testutils gmock)
         if (GMX_BUILD_FOR_COVERAGE)
             target_link_libraries(${NAME} PRIVATE gcov)
@@ -240,6 +245,11 @@ function (gmx_add_gtest_executable EXENAME)
             target_compile_definitions(${EXENAME} PRIVATE _POSIX_C_SOURCE=200809L)
         endif()
 
+        # These two include directories are supplied by the gmock target below
+        # but can be added after global include directories added e.g. for
+        # FFTW, which leads to unexpected mismatches. See #5141 and #5531.
+        target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/googletest/googletest/include)
+        target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/googletest/googlemock/include)
         target_link_libraries(${EXENAME} PRIVATE
             testutils common libgromacs gmock
             ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
