@@ -24,6 +24,15 @@ non-bonded kernels and OpenMP threading, non-bonded interactions could be missin
 
 :issue:`5509`
 
+Prevent incorrect energy accumulation with ``GMX_ENABLE_NBNXM_CPU_VECTORIZATION``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When building with the experimental ``-DGMX_ENABLE_NBNXM_CPU_VECTORIZATION=on``
+flag for RISC-V vector unit and using multiple energy groups, the reported short-range
+non-bonded energy could have been incorrect.
+
+:issue:`5534`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
