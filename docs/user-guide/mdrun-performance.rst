@@ -904,6 +904,29 @@ as the hardware and MPI setup will permit. If the
 MPI setup is restricted to one node, then the resulting
 :ref:`gmx mdrun` will be local to that node.
 
+::
+
+    gmx mdrun -ntmpi 8 -nb gpu -pme gpu -npme 1 -bonded gpu -update gpu
+
+Starts :ref:`mdrun <gmx mdrun>` using eight thread-MPI ranks that
+will use all available CPU cores and GPUs. All interaction types that can run
+on a GPU will do so. A single GPU (and MPI rank) are dedicated to the long-range
+forces. This may be optimal on hardware using data-center GPUs.
+
+::
+
+    mpirun -np 8 gmx_mpi mdrun -nb gpu -pme gpu -npme 2 -bonded gpu -update gpu
+
+Starts :ref:`mdrun <gmx mdrun>` using eight MPI ranks that will allow
+``mpirun`` to decide on the mapping of CPU cores and GPUs to MPI ranks.
+All interaction types that can run on a GPU will do so. Two GPUs (and
+MPI ranks) are dedicated to the long-range forces, which will work
+only when |Gromacs| is configured with a suitable library for a
+distributed GPU 3D-FFT (e.g. cuFFTMp or HeFFTe), and when the
+environment variable ``GMX_GPU_PME_DECOMPOSITION`` is set (to enable
+this run path, which is currently pending validation). This may be
+optimal on an HPC node with specialized interconnects like NVLINK.
+
 .. _gmx-mdrun-multiple-nodes:
 
 Running :ref:`mdrun <gmx mdrun>` on more than one node
@@ -1064,6 +1087,21 @@ to be suitable when there are ten nodes, each with two
 GPUs, but there is no need to specify ``-gpu_id`` for the
 normal case where all the GPUs on the node are available
 for use.
+
+::
+
+    mpirun -np 16 gmx_mpi mdrun -nb gpu -pme gpu -npme 4 -bonded gpu -update gpu
+
+Starts :ref:`mdrun <gmx mdrun>` using 16 MPI ranks that will allow
+``mpirun`` to decide on the mapping of CPU cores and GPUs to MPI ranks.
+Normally you would do this on e.g. two nodes each containing eight
+GPUs. All interaction types that can run on a GPU will do so. Four
+GPUs (and MPI ranks) are dedicated to the long-range forces, which
+will work only when |Gromacs| is configured with a suitable library
+for a distributed GPU 3D-FFT (e.g. cuFFTMp or HeFFTe), and when the
+environment variable ``GMX_GPU_PME_DECOMPOSITION`` is set (to enable
+this run path, which is currently pending validation). This may be
+optimal on HPC nodes with specialized interconnects like NVLINK.
 
 Avoiding communication for constraints
 --------------------------------------
