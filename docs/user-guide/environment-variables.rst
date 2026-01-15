@@ -230,6 +230,10 @@ Performance and Run Control
         Enables GPU kernel-initiated communication using NVSHMEM in multi-rank parallel runs
         when build and simulation setup support it.
 
+``GMX_ENABLE_NVSHMEM_FORCE_HALO_SYNC``
+        Inserts a synchronization after the fused force halo exchange kernel
+        when using NVSHMEM. This is a debug/tuning knob.
+
 ``GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
         Use a staged implementation of GPU communications for PME force
         transfers from the PME GPU to the CPU memory of a PP rank for

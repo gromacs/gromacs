@@ -1064,6 +1064,11 @@ void FusedGpuHaloExchange::launchUnpackFKernel(bool accumulateForces)
 
     launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
 
+    if (enableFusedForceKernelSync_)
+    {
+        cudaStreamSynchronize(haloStream_->stream());
+    }
+
     signalReceiverRankFCounter_++;
 #endif
 }
