@@ -338,12 +338,11 @@ private:
      *
      * /h5md/modules/gromacs_topology  (group for H5md GROMACS topology module)
      * \++ version                     (attribute for the version of GROMACS topology)
-     * \++ molecule_names              (attribute for the names of molecules in the system)
+     * \++ molecule_block_names        (attribute for the names of molecules in the system)
      * \++ system_name                 (attribute for the name of the system)
-     * \-- molecule1                   (group for molecule 1, same group name as molecule_names[0])
-     *     \++ nr_particles            (attribute for the number of particles in molecule 1)
-     *     \++ nr_residues             (attribute for the number of residues in molecule 1)
-     *     \++ nr_blocks               (attribute for the number of blocks for molecule 1)
+     * \-- molecule1                   (group for molecule 1, same group name as molecule_block_names[0])
+     *     \++ particle_count            (attribute for the number of particles in molecule 1)
+     *     \++ residue_count             (attribute for the number of residues in molecule 1)
      *     \-- id                      (dataset for the atomic identifier in molecule 1)
      *     \-- mass                    (dataset for the atomic masses in molecule 1)
      *     \-- charge                  (dataset for the atomic charges in molecule 1)
@@ -366,7 +365,7 @@ private:
      * Create the following hierarchy (relative to the HDF5 root):
      *
      * /connectivity          (group for connectivity information)
-     * \++ nr_bonds           (attribute for the number of bonds in the system)
+     * \++ bond_count           (attribute for the number of bonds in the system)
      *     \-- bonds          (dataset for the bonds (shaped [numBond, 2]) in the system)
      *
      * \param[in] topology Molecular topology for the simulated system.

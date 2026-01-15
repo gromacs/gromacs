@@ -192,7 +192,7 @@ TEST_F(H5mdTopologyUtilTest, WriteFullTopologyAtomProp)
             const auto [baseContainer, baseContainerGuard] =
                     makeH5mdGroupGuard(openGroup(fileid(), formatString("/particles/%s", name).c_str()));
             // Check the correctness of the dumped atomic properties
-            auto retNrAtoms = getAttribute<int64_t>(baseContainer, "nr_particles");
+            auto retNrAtoms = getAttribute<int64_t>(baseContainer, "particle_count");
             ASSERT_TRUE(retNrAtoms.has_value());
             // 1 protein (29) + 10 water (30) = 59
             ASSERT_EQ(retNrAtoms.value(), 59);
@@ -282,7 +282,7 @@ TEST_F(H5mdTopologyUtilTest, WriteFullTopologyResInfo)
             const auto [baseContainer, baseContainerGuard] =
                     makeH5mdGroupGuard(openGroup(fileid(), formatString("/particles/%s", name).c_str()));
 
-            auto retNrResidues = getAttribute<int32_t>(baseContainer, "nr_residues");
+            auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
             ASSERT_TRUE(retNrResidues.has_value());
             // 1 protein (2) + 10 water (10)
             ASSERT_EQ(retNrResidues.value(), 12);
@@ -326,7 +326,7 @@ TEST_F(H5mdTopologyUtilTest, WriteThreeSelectedWater)
     {
         writeResidueInfo(atomRange, baseContainer, selectedAtomsIndexMap);
 
-        auto retNrResidues = getAttribute<int32_t>(baseContainer, "nr_residues");
+        auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
         ASSERT_TRUE(retNrResidues.has_value());
         EXPECT_EQ(retNrResidues.value(), 5);
 
@@ -368,7 +368,7 @@ TEST_F(H5mdTopologyUtilTest, WriteThreeSelectedWater)
         writeAtomicProperties(atomRange, baseContainer, selectedAtomsIndexMap);
 
         // Match the number of particles
-        auto retNrAtoms = getAttribute<int64_t>(baseContainer, "nr_particles");
+        auto retNrAtoms = getAttribute<int64_t>(baseContainer, "particle_count");
         ASSERT_TRUE(retNrAtoms.has_value());
         EXPECT_EQ(retNrAtoms.value(), 15);
 
@@ -436,7 +436,7 @@ TEST_F(H5mdTopologyUtilTest, WriteProteinTopology)
 
         writeResidueInfo(atomRange, baseContainer, selectedAtomsIndexMap);
 
-        auto retNrResidues = getAttribute<int32_t>(baseContainer, "nr_residues");
+        auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
         ASSERT_TRUE(retNrResidues.has_value());
         EXPECT_EQ(retNrResidues.value(), 2);
 
@@ -456,7 +456,7 @@ TEST_F(H5mdTopologyUtilTest, WriteProteinTopology)
 
         writeAtomicProperties(atomRange, baseContainer, selectedAtomsIndexMap);
 
-        auto retNrAtoms = getAttribute<int64_t>(baseContainer, "nr_particles");
+        auto retNrAtoms = getAttribute<int64_t>(baseContainer, "particle_count");
         ASSERT_TRUE(retNrAtoms.has_value());
         EXPECT_EQ(retNrAtoms.value(), protNumAtoms);
 
@@ -528,7 +528,7 @@ TEST_F(H5mdTopologyUtilTest, WriteConnectivityProteinPart)
             makeH5mdGroupGuard(createGroup(fileid(), "/connectivity/bond"));
 
     writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
-    const auto nrBonds = getAttribute<int64_t>(connectivity, "nr_bonds");
+    const auto nrBonds = getAttribute<int64_t>(connectivity, "bond_count");
     ASSERT_TRUE(nrBonds.has_value());
     EXPECT_EQ(nrBonds.value(), 22);
 
@@ -562,7 +562,7 @@ TEST_F(H5mdTopologyUtilTest, WriteConnectivityRandomSelectedWater)
 
     writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
 
-    const auto nrBonds = getAttribute<int64_t>(connectivity, "nr_bonds");
+    const auto nrBonds = getAttribute<int64_t>(connectivity, "bond_count");
     ASSERT_TRUE(nrBonds.has_value());
     EXPECT_EQ(nrBonds.value(), 10);
 
@@ -737,7 +737,8 @@ TEST_F(H5mdTopologyUtilTest, WritesMoleculeTypes)
         // Read back and check the molecule type names
         const std::vector<std::string> expectedMolNames = { "Alanine_dipeptide", "SOL" };
 
-        const auto retMoleculeNames = getAttributeVector<std::string>(gmxMol, "molecule_names");
+        const auto retMoleculeNames =
+                getAttributeVector<std::string>(gmxMol, "molecule_block_names");
         ASSERT_TRUE(retMoleculeNames.has_value());
         ASSERT_EQ(retMoleculeNames.value(), expectedMolNames);
 
@@ -797,7 +798,7 @@ TEST_F(H5mdTopologyUtilTest, WriteEmptyMoleculeTypes)
     // Write the molecule type and block information
     writeMoleculeTypes(gmxMol, makeConstArrayRef(topology.moltype));
 
-    EXPECT_EQ(getAttributeVector<std::string>(gmxMol, "molecule_names"), std::nullopt);
+    EXPECT_EQ(getAttributeVector<std::string>(gmxMol, "molecule_block_names"), std::nullopt);
 }
 
 TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocks)
@@ -839,7 +840,7 @@ TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocks)
             }
             c += 1;
         }
-        setAttributeVector(gmxMol, "molecule_names", molNames);
+        setAttributeVector(gmxMol, "molecule_block_names", molNames);
 
         // Write the molecule blocks
         writeMoleculeBlocks(gmxMol, makeConstArrayRef(topology.molblock));
@@ -852,8 +853,8 @@ TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocks)
         for (size_t i = 0; i < molNames.size(); ++i)
         {
             ASSERT_GT(H5Lexists(gmxMol, molNames[i].c_str(), H5P_DEFAULT), 0);
-            const auto retNrBlocks =
-                    getAttribute<int32_t>(openGroup(gmxMol, molNames[i].c_str()), "nr_blocks");
+            const auto retNrBlocks = getAttribute<int32_t>(openGroup(gmxMol, molNames[i].c_str()),
+                                                           "molecule_block_counts");
             ASSERT_TRUE(retNrBlocks.has_value());
             ASSERT_EQ(retNrBlocks.value(), topology.molblock[i].nmol);
 
@@ -923,7 +924,7 @@ TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocksFailsUponNumberMismatch)
                     makeH5mdGroupGuard(createGroup(topContainer, molNames.back().c_str()));
             c++;
         }
-        setAttributeVector(topContainer, "molecule_names", molNames);
+        setAttributeVector(topContainer, "molecule_block_names", molNames);
 
         EXPECT_THROW(writeMoleculeBlocks(topContainer, makeConstArrayRef(topology.molblock)), FileIOError);
     }
@@ -938,7 +939,7 @@ TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocksFailsUponNumberMismatch)
             const auto [molGroup, molGroupGuard] =
                     makeH5mdGroupGuard(createGroup(topContainer, molNames.back().c_str()));
         }
-        setAttributeVector(topContainer, "molecule_names", molNames);
+        setAttributeVector(topContainer, "molecule_block_names", molNames);
 
         std::vector<gmx_molblock_t> incompleteMolblocks(1, topology.molblock[0]);
         EXPECT_THROW(writeMoleculeBlocks(topContainer, makeConstArrayRef(incompleteMolblocks)), FileIOError);

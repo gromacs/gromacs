@@ -85,7 +85,7 @@ IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t>& selectedIn
  *
  * The result atomic properties are directly stored in the \p baseContainer.
  * Atomic information includes:
- * - attribute:nr_particles: The number of particles in the group
+ * - attribute:particle_count: The number of particles in the group
  * - dataset:particle_id: The unique identifier for the particle
  * - dataset:particle_name: The name of the particle, stored as an index to a lookup table
  * - dataset:particle_name_table (string[numUniqueNames]): The lookup table for particle names
@@ -162,10 +162,10 @@ void labelTopologyName(const hid_t baseContainer, const char* topName);
  * The hierarchy is as follows:
  *
  * /h5md/modules/gromacs_topology  (group (baseContainer) for H5md internal topology module)
- * \++ molecule_names              (attribute for the names of molecules in the system)
- * \-- molecule1                   (group for molecule 1, same group name as molecule_names[0])
- *     \++ nr_particles            (attribute for the number of particles in molecule 1)
- *     \++ nr_residues             (attribute for the number of residues in molecule 1)
+ * \++ molecule_block_names        (attribute for the names of molecules in the system)
+ * \-- molecule1                   (group for molecule 1, same group name as molecule_block_names[0])
+ *     \++ particle_count            (attribute for the number of particles in molecule 1)
+ *     \++ residue_count             (attribute for the number of residues in molecule 1)
  *     \-- id                      (dataset for the atomic identifier in molecule 1)
  *     \-- mass                    (dataset for the atomic masses in molecule 1)
  *     \-- charge                  (dataset for the atomic charges in molecule 1)
@@ -177,7 +177,7 @@ void labelTopologyName(const hid_t baseContainer, const char* topName);
  *     \-- residue_name            (dataset for the residue names (indices into residue name table) in molecule 1)
  *     \-- residue_name_table      (dataset for the residue name lookup table in molecule 1)
  *
- * \note: The molecule_names attribute is needed when writing the molecule blocks. Hence, firstly run
+ * \note: The molecule_block_names attribute is needed when writing the molecule blocks. Hence, firstly run
  *        writeMoleculeTypes() and then run writeMoleculeBlocks().
  *
  * \param[in] baseContainer The HDF5 container to write to

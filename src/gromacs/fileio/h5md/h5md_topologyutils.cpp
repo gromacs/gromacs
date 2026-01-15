@@ -76,7 +76,7 @@ constexpr char c_particleNameIndicesName[] = "particle_name";
 //! \brief Name of dataset for the particle name lookup table.
 constexpr char c_particleNameTableName[] = "particle_name_table";
 //! \brief Name of attribute for the number of the particles.
-constexpr char c_numParticlesAttributeKey[] = "nr_particles";
+constexpr char c_numParticlesAttributeKey[] = "particle_count";
 //! \brief Name of dataset for the residue identifier of the particles.
 constexpr char c_residueIdName[] = "residue_id";
 //! \brief Name of dataset for the residue names of the particles.
@@ -86,11 +86,11 @@ constexpr char c_residueNameTableName[] = "residue_name_table";
 //! \brief Name of dataset for the residue sequence.
 constexpr char c_residueSequenceName[] = "sequence";
 //! \brief Name of attribute for the number of the residues.
-constexpr char c_numResiduesAttributeKey[] = "nr_residues";
+constexpr char c_numResiduesAttributeKey[] = "residue_count";
 //! \brief Name of bond dataset inside connectivity group
 constexpr char c_bondsConnectivityName[] = "bonds";
 //! \brief Name of the attribute storing number of bonds
-constexpr char c_numberOfBondsAttributeKey[] = "nr_bonds";
+constexpr char c_numberOfBondsAttributeKey[] = "bond_count";
 //! \brief Name of disulfide bonds within the special bonds group
 constexpr char c_disulfideBondsName[] = "disulfide_bonds";
 //! \brief Name of attribute for the version of internal topology.
@@ -98,9 +98,9 @@ constexpr char c_h5mdInternalTopologyVersionAttributeKey[] = "version";
 //! \brief Name of attribute for topology name.
 constexpr char c_h5mdInternalTopologyNameAttributeKey[] = "system_name";
 //! \brief Name of attribute for the names of the molecule types.
-constexpr char c_moleculeNamesAttributeKey[] = "molecule_names";
+constexpr char c_moleculeNamesAttributeKey[] = "molecule_block_names";
 //! \brief Name of attribute for the number of blocks for each molecule types
-constexpr char c_numMolBlocksAttributeKey[] = "nr_blocks";
+constexpr char c_numMolBlocksAttributeKey[] = "molecule_block_counts";
 //! \brief Name of attribute for the position restraints of the molecules.
 constexpr char c_positionRestraintsAName[] = "posres_xA";
 constexpr char c_positionRestraintsBName[] = "posres_xB";
