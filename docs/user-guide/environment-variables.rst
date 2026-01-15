@@ -321,7 +321,7 @@ Performance and Run Control
         Sets ``heffte::plan_options::use_reorder`` to ``true`` (the default) or ``false``.
         See the `HeFFTe docs`_ for details.
 
-``GMX_IGNORE_FSYNC_FAILURE_ENV``
+``GMX_IGNORE_FSYNC_FAILURE``
         allow :ref:`gmx mdrun` to continue even if
         a file is missing.
 
