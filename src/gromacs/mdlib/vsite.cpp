@@ -2558,6 +2558,73 @@ int countInterUpdategroupVsites(const gmx_mtop_t& mtop,
     return n_intercg_vsite;
 }
 
+std::optional<std::string> checkVsiteHierarchy(const gmx_mtop_t& mtop)
+{
+    const auto& iparams = mtop.ffparams.iparams;
+
+    for (const gmx_moltype_t& moltype : mtop.moltype)
+    {
+        constexpr InteractionFunction ftypeNoVSite = InteractionFunction::Bonds;
+        static_assert(ftypeNoVSite < c_ftypeVsiteStart);
+
+        std::vector<InteractionFunction> vsiteFunctionType(moltype.atoms.nr, ftypeNoVSite);
+        for (const InteractionFunction ftype : vSiteFunctionTypes)
+        {
+            const auto& ilist = moltype.ilist[ftype];
+            for (int i = 0; i < ilist.size();)
+            {
+                vsiteFunctionType[ilist.iatoms[i + 1]] = ftype;
+
+                /* Get the number of iatom entries in this virtual site.
+                 * The 3 below for InteractionFunction::VirtualSiteN is from 1+NRAL(ftype)=3
+                 */
+                const int numIAtoms = (ftype == InteractionFunction::VirtualSiteN
+                                               ? iparams[ilist.iatoms[i]].vsiten.n * 3
+                                               : 1 + NRAL(ftype));
+                i += numIAtoms;
+            }
+        }
+        for (const InteractionFunction ftype : vSiteFunctionTypes)
+        {
+            const auto& ilist = moltype.ilist[ftype];
+            for (int i = 0; i < ilist.size();)
+            {
+                int numIAtoms = 0;
+                if (ftype == InteractionFunction::VirtualSiteN)
+                {
+                    numIAtoms = iparams[ilist.iatoms[i]].vsiten.n * 3;
+                    // The constructing atoms are i%3=2, except i=2 which is the vsite
+                    for (int j = 5; j < numIAtoms; j += 3)
+                    {
+                        if (vsiteFunctionType[ilist.iatoms[i + j]] != ftypeNoVSite)
+                        {
+                            return "Constructing atoms for virtual site type "
+                                   "VsiteN cannot be virtual sites";
+                        }
+                    }
+                }
+                else
+                {
+                    numIAtoms = 1 + NRAL(ftype);
+                    // j=0 is the parameter type, j=1 is the vsite
+                    for (int j = 2; j < numIAtoms; j++)
+                    {
+                        if (vsiteFunctionType[ilist.iatoms[i + j]] >= ftype)
+                        {
+                            return "Constructing atoms for virtual sites that are themselves "
+                                   "virtual sites can only be from virtual sites with lower "
+                                   "function types";
+                        }
+                    }
+                }
+                i += numIAtoms;
+            }
+        }
+    }
+
+    return {};
+}
+
 std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& mtop,
                                                              gmx_domdec_t*     domdec,
                                                              PbcType           pbcType,
@@ -2584,6 +2651,12 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
     if (nvsite == 0)
     {
         return {};
+    }
+
+    // This check is also done in grompp. We redo it here in case restrictions change between versions.
+    if (const auto optionalMesg = checkVsiteHierarchy(mtop))
+    {
+        GMX_THROW(InvalidInputError(optionalMesg.value()));
     }
 
     return std::make_unique<VirtualSitesHandler>(mtop, domdec, pbcType, updateGroupingPerMoleculeType);
