@@ -500,6 +500,8 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
             << "The internal topology version is 0.1 in the current implementation";
     EXPECT_EQ(getAttributeVector<std::string>(group, "molecule_block_names").value_or(std::vector<std::string>{}),
               std::vector<std::string>({ "Alanine_dipeptide", "SOL" }));
+    EXPECT_EQ(getAttributeVector<int32_t>(group, "molecule_block_counts").value_or(std::vector<int32_t>{}),
+              std::vector<int32_t>({ 1, 298 }));
     EXPECT_EQ(getAttribute<std::string>(group, "system_name").value_or("NotASystem"), *(mtop.name));
 
     for (auto& moltype : mtop.moltype)
@@ -512,7 +514,6 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
         // Check attributes for each molecule type.
         EXPECT_GT(getAttribute<int64_t>(molGroup, "particle_count").value_or(-1), 0);
         EXPECT_GT(getAttribute<int>(molGroup, "residue_count").value_or(-1), 0);
-        EXPECT_GT(getAttribute<int>(molGroup, "molecule_block_counts").value_or(-1), 0);
 
         // Check atomic properties datasets for each molecule type.
         EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(molGroup, "id"));

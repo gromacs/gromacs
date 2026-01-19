@@ -157,19 +157,19 @@ void labelInternalTopologyVersion(const hid_t baseContainer);
  */
 void labelTopologyName(const hid_t baseContainer, const char* topName);
 
-/*! \brief Write a set of molecule type blocks in \p moltypes to the HDF5 container \p baseContainer.
+/*! \brief Write the internal representation of molecules \p molTypes to the HDF5
+ * container \p baseContainer of GROMACS topology.
  *
  * The hierarchy is as follows:
  *
- * /h5md/modules/gromacs_topology  (group (baseContainer) for H5md internal topology module)
- * \++ molecule_block_names        (attribute for the names of molecules in the system)
- * \-- molecule1                   (group for molecule 1, same group name as molecule_block_names[0])
- *     \++ particle_count            (attribute for the number of particles in molecule 1)
- *     \++ residue_count             (attribute for the number of residues in molecule 1)
+ * /h5md/modules/gromacs_topology  (group (baseContainer) for the GROMACS topology)
+ * \-- molecule1                   (group for molecule 1, same group name as \p molecule_block_names[0] )
+ *     \++ particle_count          (attribute for the number of particles in molecule 1)
+ *     \++ residue_count           (attribute for the number of residues in molecule 1)
  *     \-- id                      (dataset for the atomic identifier in molecule 1)
  *     \-- mass                    (dataset for the atomic masses in molecule 1)
  *     \-- charge                  (dataset for the atomic charges in molecule 1)
- *     \-- species                 (dataset for the atomic species in molecule 1)
+ *     \-- species                 (dataset for the atomic species (atomic number) in molecule 1)
  *     \-- particle_name           (dataset for the atomic names (indices into particle name table) in molecule 1)
  *     \-- particle_name_table     (dataset for the atomic name lookup table in molecule 1)
  *     \-- residue_id              (dataset for the residue identifier in molecule 1)
@@ -177,25 +177,23 @@ void labelTopologyName(const hid_t baseContainer, const char* topName);
  *     \-- residue_name            (dataset for the residue names (indices into residue name table) in molecule 1)
  *     \-- residue_name_table      (dataset for the residue name lookup table in molecule 1)
  *
- * \note: The molecule_block_names attribute is needed when writing the molecule blocks. Hence, firstly run
- *        writeMoleculeTypes() and then run writeMoleculeBlocks().
- *
  * \param[in] baseContainer The HDF5 container to write to
- * \param[in] moltypes The molecule types to write
+ * \param[in] molTypes The molecule types to write
  */
-void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> moltypes);
+void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> molTypes);
 
-/*! \brief Write the molecule block information to the HDF5 container of GROMACS internal topology.
+/*! \brief Write the molecule block information to the HDF5 container of GROMACS topology.
  *
- * \note Write molecule type information by calling writeMoleculeTypes(), before writing molecule blocks.
- *       Without the list of molecule type names, the function will throw a file IO error.
- *       The result molecule block information will be put into the corresponding
- *       `<baseContainer>/<moleculeTypeName>` group.
+ * \note The resulting names and counts of molecule blocks are stored in the base container as attributes.
  *
  * \param[in] baseContainer The HDF5 container to write the topology information to.
  * \param[in] molBlocks The molecule blocks to write.
+ * \param[in] molTypes The molecule types corresponding to the molecule blocks,
+ *                     used for providing the name of each molecule block.
  */
-void writeMoleculeBlocks(const hid_t baseContainer, const ArrayRef<const gmx_molblock_t> molBlocks);
+void writeMoleculeBlocks(const hid_t                          baseContainer,
+                         const ArrayRef<const gmx_molblock_t> molBlocks,
+                         const ArrayRef<const gmx_moltype_t>  molTypes);
 
 
 } // namespace gmx

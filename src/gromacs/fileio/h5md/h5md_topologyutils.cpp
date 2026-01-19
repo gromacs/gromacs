@@ -101,9 +101,6 @@ constexpr char c_h5mdInternalTopologyNameAttributeKey[] = "system_name";
 constexpr char c_moleculeNamesAttributeKey[] = "molecule_block_names";
 //! \brief Name of attribute for the number of blocks for each molecule types
 constexpr char c_numMolBlocksAttributeKey[] = "molecule_block_counts";
-//! \brief Name of attribute for the position restraints of the molecules.
-constexpr char c_positionRestraintsAName[] = "posres_xA";
-constexpr char c_positionRestraintsBName[] = "posres_xB";
 
 namespace
 {
@@ -250,8 +247,8 @@ void writeAtomicProperties(AtomRange&                     atomRange,
 {
     if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
     {
-        throw InternalError(
-                "The index map is empty when writing atomic properties with selection.");
+        GMX_THROW(InternalError(
+                "The index map is empty when writing atomic properties with selection."));
     }
     const int         totalAtoms = selectedAtomsIndexMap.has_value() ? selectedAtomsIndexMap->size()
                                                                      : atomRange.end()->globalAtomNumber();
@@ -356,8 +353,8 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
 {
     if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
     {
-        throw InternalError(
-                "The index map is empty when writing atomic properties with selection.");
+        GMX_THROW(InternalError(
+                "The index map is empty when writing atomic properties with selection."));
     }
     const int totalAtoms = selectedAtomsIndexMap.has_value() ? selectedAtomsIndexMap->size()
                                                              : atomRange.end()->globalAtomNumber();
@@ -455,8 +452,8 @@ void writeBonds(const gmx_mtop_t& topology, const hid_t baseContainer, const std
 {
     if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
     {
-        throw InternalError(
-                "The index map is empty when writing atomic properties with selection.");
+        GMX_THROW(InternalError(
+                "The index map is empty when writing atomic properties with selection."));
     }
     // NOTE: Initialize the bond container and reserve enough space, assuming the
     //       number of bonds is smaller than the number of atoms
@@ -508,8 +505,8 @@ void writeDisulfideBonds(const gmx_mtop_t&              topology,
 {
     if (selectedAtomsIndexMap.has_value() && selectedAtomsIndexMap->size() == 0)
     {
-        throw InternalError(
-                "The index map is empty when writing atomic properties with selection.");
+        GMX_THROW(InternalError(
+                "The index map is empty when writing atomic properties with selection."));
     }
     // Obtain the disulfide bonds from the topology
     std::vector<int64_t> systemBonds;
@@ -562,23 +559,18 @@ void labelTopologyName(const hid_t baseContainer, const char* topName)
     setAttribute(baseContainer, c_h5mdInternalTopologyNameAttributeKey, topName);
 }
 
-void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> moltypes)
+void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> molTypes)
 {
-    const int numMolTypes = moltypes.size();
-    // Nothing to write
-    if (moltypes.empty())
+    if (molTypes.empty())
     {
         return;
     }
-
-    std::vector<std::string> moltypeNames(numMolTypes);
+    const int numMolTypes = molTypes.size();
     for (int index = 0; index < numMolTypes; ++index)
     {
-        const gmx_moltype_t& moltype     = moltypes[index];
-        const std::string&   moltypeName = *(moltype.name);
-        moltypeNames[index]              = moltypeName;
-        const auto [molContainer, molGuard] =
-                makeH5mdGroupGuard(createGroup(baseContainer, moltypeName.c_str()));
+        const gmx_moltype_t& moltype     = molTypes[index];
+        const char*          moltypeName = *(moltype.name);
+        const auto [molContainer, molGuard] = makeH5mdGroupGuard(createGroup(baseContainer, moltypeName));
 
         // Create an AtomRange to iterate over the molecule type
         gmx_mtop_t tempMtop;
@@ -593,52 +585,36 @@ void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_molt
 
         // TODO: Write interaction list and exclusions list - MR !5524/!5523
     }
-    setAttributeVector(baseContainer, c_moleculeNamesAttributeKey, moltypeNames);
 }
 
-void writeMoleculeBlocks(const hid_t baseContainer, const ArrayRef<const gmx_molblock_t> molBlocks)
+void writeMoleculeBlocks(const hid_t                          baseContainer,
+                         const ArrayRef<const gmx_molblock_t> molBlocks,
+                         const ArrayRef<const gmx_moltype_t>  molTypes)
 {
-    // Molecule types must match the number of molecule blocks
-    const auto molNames = getAttributeVector<std::string>(baseContainer, c_moleculeNamesAttributeKey);
-    if (!molNames.has_value())
+    if (molBlocks.empty())
     {
-        throw FileIOError("Failed to read molecule names attribute");
-    }
-    else if (molNames->size() != molBlocks.size())
-    {
-        throw FileIOError(
-                "Failed to match the number of molecule names with the number of molecule blocks.");
+        return;
     }
 
-    for (int index = 0; index < gmx::ssize(molBlocks); ++index)
+    // Number of unique molecule types might not match the number of molecule blocks
+    // record them separately
+    const int                numMolBlocks = molBlocks.size();
+    std::vector<std::string> namesPerBlock(numMolBlocks);
+    std::vector<int>         numMolsPerBlock(numMolBlocks);
+    for (int index = 0; index < numMolBlocks; ++index)
     {
-        const gmx_molblock_t& molBlock     = molBlocks[index];
-        const std::string&    molBlockName = molNames->at(index);
-
-        const auto [molContainer, molGuard] =
-                makeH5mdGroupGuard(openGroup(baseContainer, molBlockName.c_str()));
-
-        // Write MolBlock attributes
-        setAttribute<int32_t>(molContainer, c_numMolBlocksAttributeKey, molBlock.nmol);
-
-        if (molBlock.posres_xA.size() > 0)
+        const gmx_molblock_t& molBlock = molBlocks[index];
+        // Molecule block should always refer to a valid molecule type
+        if (molBlock.type >= gmx::ssize(molTypes))
         {
-            H5mdFixedDataSet<RVec> dataPosresX =
-                    H5mdDataSetBuilder<RVec>(molContainer, c_positionRestraintsAName)
-                            .withDimension({ molBlock.posres_xA.size() })
-                            .build();
-            dataPosresX.writeData(molBlock.posres_xA);
+            GMX_THROW(InternalError("Molecule block type points to an invalid molecule type."));
         }
-
-        if (molBlock.posres_xB.size() > 0)
-        {
-            H5mdFixedDataSet<RVec> dataPosresX =
-                    H5mdDataSetBuilder<RVec>(molContainer, c_positionRestraintsBName)
-                            .withDimension({ molBlock.posres_xB.size() })
-                            .build();
-            dataPosresX.writeData(molBlock.posres_xB);
-        }
+        namesPerBlock[index]   = *(molTypes[molBlock.type].name);
+        numMolsPerBlock[index] = molBlock.nmol;
     }
+
+    setAttributeVector(baseContainer, c_moleculeNamesAttributeKey, namesPerBlock);
+    setAttributeVector<int32_t>(baseContainer, c_numMolBlocksAttributeKey, numMolsPerBlock);
 }
 
 } // namespace gmx
