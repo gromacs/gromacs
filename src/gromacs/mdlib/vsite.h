@@ -45,6 +45,7 @@
 #include <array>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "gromacs/topology/idef.h"
