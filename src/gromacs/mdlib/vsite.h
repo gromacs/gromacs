@@ -44,6 +44,8 @@
 
 #include <array>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include "gromacs/topology/idef.h"
@@ -234,6 +236,14 @@ makeVirtualSitesHandler(const gmx_mtop_t&                 mtop,
                         gmx_domdec_t*                     domdec,
                         PbcType                           pbcType,
                         ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType);
+
+/*! \brief Checks whether constructing atom are vsites with the same or higher function type
+ *
+ * Also checks whether vsites are used as constructing atoms for VsiteN (not allowed).
+ *
+ * \returns an error string when the restrictions are not satisfied
+ */
+std::optional<std::string> checkVsiteHierarchy(const gmx_mtop_t& mtop);
 
 } // namespace gmx
 

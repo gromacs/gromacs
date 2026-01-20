@@ -418,7 +418,7 @@ void H5md::setupGromacsTopology(const gmx_mtop_t& topology)
             makeH5mdGroupGuard(createGroup(file_, pathToGromacsTopology.c_str()));
 
     writeMoleculeTypes(gmxTop, makeConstArrayRef(topology.moltype));
-    writeMoleculeBlocks(gmxTop, makeConstArrayRef(topology.molblock));
+    writeMoleculeBlocks(gmxTop, makeConstArrayRef(topology.molblock), makeConstArrayRef(topology.moltype));
     // The h5md_topologyutils module takes care of the versioning of the GROMACS topology
     labelInternalTopologyVersion(gmxTop);
     labelTopologyName(gmxTop, *(topology.name));

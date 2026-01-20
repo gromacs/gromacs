@@ -24,11 +24,30 @@ non-bonded kernels and OpenMP threading, non-bonded interactions could be missin
 
 :issue:`5509`
 
+Prevent incorrect energy accumulation with ``GMX_ENABLE_NBNXM_CPU_VECTORIZATION``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When building with the experimental ``-DGMX_ENABLE_NBNXM_CPU_VECTORIZATION=on``
+flag for RISC-V vector unit and using multiple energy groups, the reported short-range
+non-bonded energy could have been incorrect.
+
+:issue:`5534`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed compilation of tests on FreeBSD
+"""""""""""""""""""""""""""""""""""""
+
+If incompatible versions of GoogleTest and GoogleMock can be found in system include
+directories, the build process could in some cases use their headers and later fail
+during linking. This release includes a workaround that ensures that GROMACS-supplied
+versions of those libraries are always picked up before the system versions.
+
+:issue:`5141`
 
 Miscellaneous
 ^^^^^^^^^^^^^

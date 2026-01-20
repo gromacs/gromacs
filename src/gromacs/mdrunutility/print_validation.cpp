@@ -82,11 +82,9 @@ void logValidationMessages(const MDLogger&            mdlog,
                                   "VkFFT library on a non-AMD and non-Apple platform");
     experimentalFeatures.appendIf(GMX_GPU_FFT_ONEMATH, "OneMath FFT library on any platform");
     experimentalFeatures.appendIf(GMX_GPU_FFT_BBFFT, "double-batched FFT library");
+    experimentalFeatures.appendIf(GMX_GPU_HIP && simulationWorkload.useGpuPmeDecomposition,
+                                  "PME GPU decomposition with the AMD HIP GPU backend");
     experimentalFeatures.appendIf(useH5mdOutputFile, "H5md trajectory output");
-    // TODO MdModules doesn't have a way to report which
-    // ForceProviders are active (nor have they even been built at
-    // this point of mdrunner())
-    experimentalFeatures.appendIf(GMX_USE_EXT_FMM, "an external FMM library");
     experimentalFeatures.finishContext();
     if (!experimentalFeatures.isEmpty())
     {
@@ -108,12 +106,14 @@ void logValidationMessages(const MDLogger&            mdlog,
     validationPendingFeatures.appendIf(
             GMX_SYCL_ACPP && deviceInfo != nullptr && deviceInfo->deviceVendor != DeviceVendor::Amd,
             "AdaptiveCpp SYCL GPU backend on a non-AMD platform");
-    validationPendingFeatures.appendIf(GMX_GPU_HIP && simulationWorkload.useGpuNonbonded,
-                                       "AMD HIP GPU backend");
     validationPendingFeatures.appendIf(GMX_GPU_HIP && simulationWorkload.useGpuPmeDecomposition,
                                        "PME GPU decomposition with the AMD HIP GPU backend");
     validationPendingFeatures.appendIf(simulationWorkload.useGpuNonbondedFE,
                                        "Non-bonded free-energy calculations on the GPU");
+    // TODO MdModules doesn't have a way to report which
+    // ForceProviders are active (nor have they even been built at
+    // this point of mdrunner())
+    validationPendingFeatures.appendIf(GMX_USE_EXT_FMM, "an external FMM library");
     // TODO report if NNPot force provider is active
     // TODO report if Colvars plug-in is active
     // TODO report if Plumed plug-in is active

@@ -61,6 +61,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/awh_params.h"
@@ -5316,6 +5317,11 @@ void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& s
         wi->addError(
                 "Only one of the following three non-equilibrium methods is supported at a time: "
                 "constant acceleration groups, cosine acceleration, box deformation");
+    }
+
+    if (const auto optionalVsiteMesg = gmx::checkVsiteHierarchy(sys))
+    {
+        wi->addError(optionalVsiteMesg.value());
     }
 
     check_disre(sys);

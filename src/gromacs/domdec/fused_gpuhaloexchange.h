@@ -240,7 +240,7 @@ private:
     // timestep.
     uint64_t signalReceiverRankFCounter_ = 0;
     //! Whether to insert a synchronization at the fused force kernel (debug/knob).
-    //! Toggle via env var: GMX_NVSHMEM_FUSED_FORCE_KERNEL_SYNC
+    //! Toggle via env var: GMX_ENABLE_NVSHMEM_FORCE_HALO_SYNC
     bool enableFusedForceKernelSync_ = false;
     //! Total number of pulses across all dimensions
     int totalNumPulses_ = 0;

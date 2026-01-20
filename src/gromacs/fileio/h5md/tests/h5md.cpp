@@ -498,8 +498,10 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
     // Check attributes for the topology group.
     EXPECT_EQ(getAttributeVector<int>(group, "version").value_or(std::vector<int>{}), std::vector<int>({ 0, 1 }))
             << "The internal topology version is 0.1 in the current implementation";
-    EXPECT_EQ(getAttributeVector<std::string>(group, "molecule_names").value_or(std::vector<std::string>{}),
+    EXPECT_EQ(getAttributeVector<std::string>(group, "molecule_block_names").value_or(std::vector<std::string>{}),
               std::vector<std::string>({ "Alanine_dipeptide", "SOL" }));
+    EXPECT_EQ(getAttributeVector<int32_t>(group, "molecule_block_counts").value_or(std::vector<int32_t>{}),
+              std::vector<int32_t>({ 1, 298 }));
     EXPECT_EQ(getAttribute<std::string>(group, "system_name").value_or("NotASystem"), *(mtop.name));
 
     for (auto& moltype : mtop.moltype)
@@ -510,9 +512,8 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
         const auto [molGroup, molGroupGuard] = makeH5mdGroupGuard(openGroup(fileid(), molPath.c_str()));
 
         // Check attributes for each molecule type.
-        EXPECT_GT(getAttribute<int64_t>(molGroup, "nr_particles").value_or(-1), 0);
-        EXPECT_GT(getAttribute<int>(molGroup, "nr_residues").value_or(-1), 0);
-        EXPECT_GT(getAttribute<int>(molGroup, "nr_blocks").value_or(-1), 0);
+        EXPECT_GT(getAttribute<int64_t>(molGroup, "particle_count").value_or(-1), 0);
+        EXPECT_GT(getAttribute<int>(molGroup, "residue_count").value_or(-1), 0);
 
         // Check atomic properties datasets for each molecule type.
         EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(molGroup, "id"));
@@ -540,7 +541,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesConnectivity)
     EXPECT_NO_THROW(openGroup(fileid(), "/connectivity"));
     const auto [connGroup, connGroupGuard] =
             makeH5mdGroupGuard(openGroup(fileid(), "/connectivity"));
-    EXPECT_NO_THROW(getAttribute<int64_t>(connGroup, "nr_bonds"));
+    EXPECT_NO_THROW(getAttribute<int64_t>(connGroup, "bond_count"));
     EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(connGroup, "bonds"));
 }
 

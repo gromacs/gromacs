@@ -94,7 +94,7 @@ FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceContext& deviceContext,
     mpi_comm_mysim_(mpi_comm_mysim),
     mpi_comm_mysim_world_(mpi_comm_mysim_world)
 {
-    enableFusedForceKernelSync_ = (getenv("GMX_NVSHMEM_FUSED_FORCE_KERNEL_SYNC") != nullptr);
+    enableFusedForceKernelSync_ = (getenv("GMX_ENABLE_NVSHMEM_FORCE_HALO_SYNC") != nullptr);
 }
 
 FusedGpuHaloExchange::~FusedGpuHaloExchange()

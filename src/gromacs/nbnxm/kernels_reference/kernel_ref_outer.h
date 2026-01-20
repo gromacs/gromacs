@@ -297,7 +297,8 @@ void
         // Without loop vectorization we first loop over all pairs with exclusions and then loop
         // over the remaining pairs without exclusion without checking for exclusions
         int cjind = cjind0;
-#if VECTORIZE_JLOOP && defined __clang__
+        // Don't force vectorization with energy groups, see #5534
+#if VECTORIZE_JLOOP && !(defined(ENERGY_GROUPS) && defined(CALC_ENERGIES)) && defined __clang__
 #    pragma clang loop vectorize(assume_safety)
 #endif
         for (; cjind < cjind1 && (VECTORIZE_JLOOP || pairlist.cj.excl(cjind) != 0xffff); cjind++)
