@@ -29,8 +29,10 @@ can be found on the `issue tracker`_ at that issue number.
 
 Patch releases
 ^^^^^^^^^^^^^^
-.. .. toctree::
+.. toctree::
    :maxdepth: 1
+
+   2026/2026.1
 
 Major release
 ^^^^^^^^^^^^^
