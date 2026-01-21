@@ -19,6 +19,15 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+``pdb2gmx`` can now prints 7 decimals for charges and masses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``pdb2gmx`` would print charges and masses with a maximum of 6 total
+decimals. Now this is 7, which matches the floating point precision
+for charges and masses.
+
+:issue:`5543`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
