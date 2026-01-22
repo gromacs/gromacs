@@ -33,3 +33,10 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Correctly detect warp uniform variable in CUDA kernel
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+NVCC was failing to detect warp uniform variables leading to performance 
+degradation in the non-bonded force kernel. A workaround was implemented. 
+
+:issue:`5546`
