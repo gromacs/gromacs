@@ -570,7 +570,7 @@ void checkResults2dHaloWith2PulsesInDim1(const RVec* x, const gmx_domdec_t* dd, 
 //! Parameters over which halo exchange is tested
 struct HaloExchangeTestParameters
 {
-    //! Human-readable description for scoped traces
+    //! Human-readable name for test case
     std::string description;
     //! Number of home atoms
     const int numHomeAtoms;
@@ -598,7 +598,6 @@ public:
         dd_{ mpiComm_, ir_, parameters.ddDims },
         numAtomsTotal_{ parameters.numHomeAtoms + parameters.numHaloAtoms }
     {
-        SCOPED_TRACE("Testing " + parameters.description);
         dd_.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm_);
         dd_.unitCellInfo.haveScrewPBC = false;
 
@@ -633,7 +632,6 @@ public:
 
 TEST_P(HaloExchangeTest, WithParametersOnCpu)
 {
-    SCOPED_TRACE("Testing " + GetParam().description);
     GMX_MPI_TEST(RequireRankCount<4>);
 
     HaloExchangeTestData data(GetParam());
@@ -645,12 +643,11 @@ TEST_P(HaloExchangeTest, WithParametersOnCpu)
 
 TEST_P(HaloExchangeTest, WithParametersOnGpu)
 {
-    SCOPED_TRACE("Testing " + GetParam().description);
     GMX_MPI_TEST(RequireRankCount<4>);
 
     if (GMX_THREAD_MPI && !GpuConfigurationCapabilities::HaloExchangeDirectComm)
     {
-        GTEST_SKIP() << "With thread-MPI, GPU halo exchange is only supported on CUDA";
+        GTEST_SKIP() << "With thread-MPI, GPU halo exchange is only supported on CUDA and HIP";
     }
     if (GMX_LIB_MPI && !GpuConfigurationCapabilities::HaloExchangeDirectComm)
     {
@@ -676,6 +673,24 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
     }
 }
 
+//! \brief Helper function for GTest to construct test names.
+std::string nameOfTest(const ::testing::TestParamInfo<HaloExchangeTestParameters>& info)
+{
+    std::string testName = info.param.description;
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+
+    return testName;
+}
+
 static const std::vector<HaloExchangeTestParameters> c_testSetups = {
     { "1D halo with 1 pulse", 10, 2, { 0 }, define1dRankTopology, define1dHaloWith1Pulse, checkResults1dHaloWith1Pulse },
     { "1D halo with 2 pulses", 10, 5, { 0 }, define1dRankTopology, define1dHaloWith2Pulses, checkResults1dHaloWith2Pulses },
@@ -695,7 +710,7 @@ static const std::vector<HaloExchangeTestParameters> c_testSetups = {
       checkResults2dHaloWith2PulsesInDim1 },
 };
 
-INSTANTIATE_TEST_SUITE_P(Works, HaloExchangeTest, ::testing::ValuesIn(c_testSetups));
+INSTANTIATE_TEST_SUITE_P(Works, HaloExchangeTest, ::testing::ValuesIn(c_testSetups), nameOfTest);
 
 } // namespace
 } // namespace test
