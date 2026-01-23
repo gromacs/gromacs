@@ -2734,15 +2734,12 @@ void push_cmap(Directive                                                       d
 {
     const char* aaformat[] = { "%d%d%d%d%d%d", "%d%d%d%d%d%d%d", "%d%d%d%d%d%d%d%d" };
 
-    int nral, nread, ncmap_params;
+    int nral, nread;
     int aa[MAXATOMLIST];
     int cmapTypeA = NOTSET, cmapTypeB = NOTSET;
 
     InteractionFunction ftype = ifunc_index(d, 1);
     nral                      = NRAL(ftype);
-
-    ncmap_params = NRFP(ftype);
-    GMX_ASSERT(ncmap_params == 2, "CMAP only supports one parameter per state (two in total)");
 
     nread = sscanf(line, aaformat[2], &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5], &cmapTypeA, &cmapTypeB);
     if (nread < nral + 3)
