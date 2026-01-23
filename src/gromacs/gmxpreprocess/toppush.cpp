@@ -1863,76 +1863,75 @@ static bool default_nb_params(InteractionFunction                               
     return bFound;
 }
 
-static bool default_cmap_params(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bondtype,
-                                t_atoms*                at,
-                                PreprocessingAtomTypes* atypes,
-                                InteractionOfType*      p,
-                                bool                    bB,
-                                int*                    cmap_type,
-                                int*                    nparam_def,
-                                WarningHandler*         wi)
+/*! \brief Find the appropriate type for the current CMAP \c p interaction
+ *
+ * The CMAP type looked up in the list available for this forcefield, either
+ * via the index supplied in the user's topology for this interaction, or via
+ * atom-type name and/or residue-type name lookup (according to the how the forcefield
+ * does lookups for default CMAP types).
+ *
+ * When no CMAP type matches \c p, a fatal error is issued. */
+static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bondtype,
+                        const t_atoms&                                                  at,
+                        const PreprocessingAtomTypes&                                   atypes,
+                        const InteractionOfType&                                        p,
+                        WarningHandler*                                                 wi)
 {
-    if (!p->forceParam().empty() && gmx::roundToInt(p->forceParam()[0]) > 0)
+    if (!p.forceParam().empty() && gmx::roundToInt(p.forceParam()[0]) > 0)
     {
-        int fp0 = gmx::roundToInt(p->forceParam()[0]);
-        /* Check if the user-specified CMAP type exists */
+        // The user specified the CMAP interaction type for a CMAP
+        // interaction via index, rather than the default
+        // atom/residue-based lookup. User-specified types are
+        // indexed starting from 1 so we subtract that
+        const int cmapTypeIndexFromUser = gmx::roundToInt(p.forceParam()[0]) - 1;
+        // Check that the user-specified CMAP type exists
         for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
              i += NRAL(InteractionFunction::DihedralEnergyCorrectionMap) + 1)
         {
-            /* User-specified types are indexed starting from 1 so we substract that */
             if (bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
                         .cmapAtomTypes[i + NRAL(InteractionFunction::DihedralEnergyCorrectionMap)]
-                == fp0 - 1)
+                == cmapTypeIndexFromUser)
             {
-                /* Use the user-specified CMAP type */
-                *cmap_type  = fp0 - 1;
-                *nparam_def = 1;
-                return true;
+                // Use the user-specified CMAP type
+                return cmapTypeIndexFromUser;
             }
         }
-        return false;
     }
     else
     {
+        // Look up the CMAP type from the atom-type names and/or residue-type names
         auto matchResTypeOrAny = [=](const std::string& cmapResType, const std::string& cmapTypeResType) {
             return cmapTypeResType.empty() || cmapTypeResType == "*" || cmapResType == cmapTypeResType;
         };
-        auto matchAtomAndResTypes = [=](const int& cmapAtomType, const int& cmapTypeAtomType)
+        auto matchAtomAndResTypes = [&](const int& cmapAtomType, const int& cmapTypeAtomType)
         {
-            return (atypes->bondAtomTypeFromAtomType(at->atom[cmapAtomType].type)
+            return (atypes.bondAtomTypeFromAtomType(at.atom[cmapAtomType].type)
                     == bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[cmapTypeAtomType])
                    && matchResTypeOrAny(
-                           *at->resinfo[at->atom[cmapAtomType].resind].name,
+                           *at.resinfo[at.atom[cmapAtomType].resind].name,
                            bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapResTypes_[cmapTypeAtomType]);
         };
-        /* Match the current cmap angle against the list of cmap_types */
+        // Match the current cmap angle against the list of CMAP types
         for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
              i += NRAL(InteractionFunction::DihedralEnergyCorrectionMap) + 1)
         {
-            if (bB) {}
-            else
+            if (matchAtomAndResTypes(p.ai(), i) && matchAtomAndResTypes(p.aj(), i + 1)
+                && matchAtomAndResTypes(p.ak(), i + 2) && matchAtomAndResTypes(p.al(), i + 3)
+                && matchAtomAndResTypes(p.am(), i + 4))
             {
-                if (matchAtomAndResTypes(p->ai(), i) && matchAtomAndResTypes(p->aj(), i + 1)
-                    && matchAtomAndResTypes(p->ak(), i + 2) && matchAtomAndResTypes(p->al(), i + 3)
-                    && matchAtomAndResTypes(p->am(), i + 4))
-                {
-                    *cmap_type =
-                            bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
-                                    .cmapAtomTypes[i + NRAL(InteractionFunction::DihedralEnergyCorrectionMap)];
-                    *nparam_def = 1;
-                    return true;
-                }
+                return bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
+                        .cmapAtomTypes[i + NRAL(InteractionFunction::DihedralEnergyCorrectionMap)];
             }
         }
     }
 
-    /* If we did not find a matching type for this cmap torsion */
-    auto message = gmx::formatString("Unknown cmap torsion between atoms %d %d %d %d %d",
-                                     p->ai() + 1,
-                                     p->aj() + 1,
-                                     p->ak() + 1,
-                                     p->al() + 1,
-                                     p->am() + 1);
+    auto message = gmx::formatString(
+            "Unable to assign a cmap type to torsion between atoms %d %d %d %d and %d",
+            p.ai() + 1,
+            p.aj() + 1,
+            p.ak() + 1,
+            p.al() + 1,
+            p.am() + 1);
     warning_error_and_exit(wi, message, FARGS);
 }
 
@@ -2735,11 +2734,9 @@ void push_cmap(Directive                                                       d
 {
     const char* aaformat[] = { "%d%d%d%d%d%d", "%d%d%d%d%d%d%d", "%d%d%d%d%d%d%d%d" };
 
-    int  nral, nread, ncmap_params;
-    int  cmap_type;
-    int  aa[MAXATOMLIST];
-    int  cmapTypeA = NOTSET, cmapTypeB = NOTSET;
-    bool bFound;
+    int nral, nread, ncmap_params;
+    int aa[MAXATOMLIST];
+    int cmapTypeA = NOTSET, cmapTypeB = NOTSET;
 
     InteractionFunction ftype = ifunc_index(d, 1);
     nral                      = NRAL(ftype);
@@ -2805,27 +2802,12 @@ void push_cmap(Directive                                                       d
     std::array<real, MAXFORCEPARAM> forceParam = { static_cast<real>(cmapTypeA) };
     InteractionOfType               param(atoms, forceParam, "");
     /* Get the cmap type for this cmap angle */
-    bFound = default_cmap_params(bondtype, at, atypes, &param, FALSE, &cmap_type, &ncmap_params, wi);
+    int cmapType = findCmapType(bondtype, *at, *atypes, param, wi);
 
     /* We want exactly one parameter (the cmap type in state A (currently no state B) back */
-    if (bFound && ncmap_params == 1)
-    {
-        /* Put the values in the appropriate arrays */
-        param.setForceParameter(0, cmap_type);
-        add_param_to_list(&bond[ftype], param);
-    }
-    else
-    {
-        /* This is essentially the same check as in default_cmap_params() done one more time */
-        auto message =
-                gmx::formatString("Unable to assign a cmap type to torsion %d %d %d %d and %d\n",
-                                  param.ai() + 1,
-                                  param.aj() + 1,
-                                  param.ak() + 1,
-                                  param.al() + 1,
-                                  param.am() + 1);
-        warning_error_and_exit(wi, message, FARGS);
-    }
+    /* Put the values in the appropriate arrays */
+    param.setForceParameter(0, cmapType);
+    add_param_to_list(&bond[ftype], param);
 }
 
 

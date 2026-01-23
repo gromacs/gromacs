@@ -363,7 +363,9 @@ TEST_P(GromppCmapDirectiveTest, AcceptValidAndErrorOnInvalidCMAP)
 }
 
 std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInputOutput = {
-    { "", ExpectedResult::Death, "Unknown cmap torsion between atoms 1 2 3 4 5" },
+    { "",
+      ExpectedResult::Death,
+      "Unable to assign a cmap type to torsion between atoms 1 2 3 4 and 5" },
     { "define = -DNOT_A_CMAPTYPE",
       ExpectedResult::Death,
       "Unknown atomtype 1 found at position 5 in cmap type" },
@@ -406,7 +408,7 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
     { "define = -DMATCHING_RESIDUE_NAMES_IN_CMAPTYPE", ExpectedResult::Success, "" },
     { "define = -DNONMATCHING_RESIDUE_NAMES_IN_CMAPTYPE",
       ExpectedResult::Death,
-      "Unknown cmap torsion between atoms 1 2 3 4 5" },
+      "Unable to assign a cmap type to torsion between atoms 1 2 3 4 and 5" },
     { "define = -DNOT_A_CMAP_TORSION", ExpectedResult::Death, "Too few parameters on line" },
     { "define = -DINVALID_FUNCTYPE_IN_CMAP_TORSION",
       ExpectedResult::Death,
@@ -414,7 +416,7 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
     { "define = -DUSER_SPECIFIED_CMAPTYPE", ExpectedResult::Success, "" },
     { "define = -DUSER_SPECIFIED_CMAPTYPE_OUT_OF_BOUNDS",
       ExpectedResult::Death,
-      "Unable to assign a cmap type to torsion 1 2 3 4 and 5" },
+      "Unable to assign a cmap type to torsion between atoms 1 2 3 4 and 5" },
     { "define = -DALL_CMAP_TYPES_MUST_USE_SAME_GRID_SPACING",
       ExpectedResult::Death,
       "each CMAP must have the same grid spacing" },
