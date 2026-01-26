@@ -387,10 +387,10 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
       "Invalid function type for cmap type: must be 1" },
     { "define = -DRECTANGULAR_GRID_IN_CMAPTYPE",
       ExpectedResult::Death,
-      "Not the same grid spacing in x and y for cmap grid: x=2, y=3" },
-    { "define = -DUNREAL_GRID_SIZE_IN_CMAPTYPE",
+      "Not the same grid extent in x and y for cmap grid: x=2, y=3" },
+    { "define = -DUNREAL_GRID_EXTENT_IN_CMAPTYPE",
       ExpectedResult::Death,
-      "Invalid cmap type grid spacings in x and y dimensions: must be numbers,\n  found Tarydium" },
+      "Invalid cmap-type grid extents in x and y dimensions: must be numbers,\n  found Tarydium" },
     { "define = -DTOO_FEW_GRID_PARAMETERS_IN_CMAPTYPE",
       ExpectedResult::Death,
       "Error in reading cmap parameter for atomtypes X Y X X Y: found 3,\n  expected 4" },
@@ -417,9 +417,9 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
     { "define = -DUSER_SPECIFIED_CMAPTYPE_OUT_OF_BOUNDS",
       ExpectedResult::Death,
       "Unable to assign a cmap type to torsion between atoms 1 2 3 4 and 5" },
-    { "define = -DALL_CMAP_TYPES_MUST_USE_SAME_GRID_SPACING",
+    { "define = -DALL_CMAP_TYPES_MUST_USE_SAME_GRID_EXTENT",
       ExpectedResult::Death,
-      "each CMAP must have the same grid spacing" },
+      "each CMAP must have the same grid extent" },
 };
 
 INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppCmapDirectiveTest, testing::ValuesIn(cmapValidInputOutput));

@@ -369,7 +369,7 @@ static inline int ilistStride(const InteractionListHandle& ilistHandle)
 /*! \brief CMAP data for a single grid. */
 struct gmx_cmapdata_t
 {
-    /*! Has length \f$4 \times grid\_spacing \times grid\_spacing\f$,
+    /*! Has length \f$4 \times gridExtent \times gridExtent\f$,
      * there are 4 entries for each CMAP type \f$(V, dV dx, dV dy, d^2 dV dx dy)\f$
      */
     std::vector<real> cmap;
@@ -378,7 +378,7 @@ struct gmx_cmapdata_t
 /*! \brief CMAP grids. */
 struct gmx_cmap_t
 {
-    int                         grid_spacing = 0; //!< Grid spacing.
+    int                         gridExtent = 0; //!< Grid extent.
     std::vector<gmx_cmapdata_t> cmapdata; //!< Lists of grids with actual, pre-interpolated data.
 };
 

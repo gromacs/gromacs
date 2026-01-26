@@ -1402,79 +1402,79 @@ interpolate1d(double xmin, double dx, const double* ya, const double* y2a, doubl
 }
 
 
-static void setup_cmap(int grid_spacing, int nc, gmx::ArrayRef<const real> grid, gmx_cmap_t* cmap_grid)
+static void setup_cmap(int gridExtent, int nc, gmx::ArrayRef<const real> grid, gmx_cmap_t* cmap_grid)
 {
     int    i, j, k, ii, jj, kk, idx;
     int    offset;
     double dx, xmin, v, v1, v2, v12;
     double phi, psi;
 
-    std::vector<double> tmp_u(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_u2(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_yy(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_y1(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_t2(2 * grid_spacing * 2 * grid_spacing, 0.0);
-    std::vector<double> tmp_grid(2 * grid_spacing * 2 * grid_spacing, 0.0);
+    std::vector<double> tmp_u(2 * gridExtent, 0.0);
+    std::vector<double> tmp_u2(2 * gridExtent, 0.0);
+    std::vector<double> tmp_yy(2 * gridExtent, 0.0);
+    std::vector<double> tmp_y1(2 * gridExtent, 0.0);
+    std::vector<double> tmp_t2(2 * gridExtent * 2 * gridExtent, 0.0);
+    std::vector<double> tmp_grid(2 * gridExtent * 2 * gridExtent, 0.0);
 
-    dx   = 360.0 / grid_spacing;
-    xmin = -180.0 - dx * grid_spacing / 2;
+    dx   = 360.0 / gridExtent;
+    xmin = -180.0 - dx * gridExtent / 2;
 
     for (kk = 0; kk < nc; kk++)
     {
         /* Compute an offset depending on which cmap we are using
          * Offset will be the map number multiplied with the
-         * grid_spacing * grid_spacing * 2
+         * gridExtent * gridExtent * 2
          */
-        offset = kk * grid_spacing * grid_spacing * 2;
+        offset = kk * gridExtent * gridExtent * 2;
 
-        for (i = 0; i < 2 * grid_spacing; i++)
+        for (i = 0; i < 2 * gridExtent; i++)
         {
-            ii = (i + grid_spacing - grid_spacing / 2) % grid_spacing;
+            ii = (i + gridExtent - gridExtent / 2) % gridExtent;
 
-            for (j = 0; j < 2 * grid_spacing; j++)
+            for (j = 0; j < 2 * gridExtent; j++)
             {
-                jj = (j + grid_spacing - grid_spacing / 2) % grid_spacing;
-                tmp_grid[i * grid_spacing * 2 + j] = grid[offset + ii * grid_spacing + jj];
+                jj                               = (j + gridExtent - gridExtent / 2) % gridExtent;
+                tmp_grid[i * gridExtent * 2 + j] = grid[offset + ii * gridExtent + jj];
             }
         }
 
-        for (i = 0; i < 2 * grid_spacing; i++)
+        for (i = 0; i < 2 * gridExtent; i++)
         {
             spline1d(dx,
-                     &(tmp_grid[2 * grid_spacing * i]),
-                     2 * grid_spacing,
+                     &(tmp_grid[2 * gridExtent * i]),
+                     2 * gridExtent,
                      tmp_u.data(),
-                     &(tmp_t2[2 * grid_spacing * i]));
+                     &(tmp_t2[2 * gridExtent * i]));
         }
 
-        for (i = grid_spacing / 2; i < grid_spacing + grid_spacing / 2; i++)
+        for (i = gridExtent / 2; i < gridExtent + gridExtent / 2; i++)
         {
-            ii  = i - grid_spacing / 2;
+            ii  = i - gridExtent / 2;
             phi = ii * dx - 180.0;
 
-            for (j = grid_spacing / 2; j < grid_spacing + grid_spacing / 2; j++)
+            for (j = gridExtent / 2; j < gridExtent + gridExtent / 2; j++)
             {
-                jj  = j - grid_spacing / 2;
+                jj  = j - gridExtent / 2;
                 psi = jj * dx - 180.0;
 
-                for (k = 0; k < 2 * grid_spacing; k++)
+                for (k = 0; k < 2 * gridExtent; k++)
                 {
                     interpolate1d(xmin,
                                   dx,
-                                  &(tmp_grid[2 * grid_spacing * k]),
-                                  &(tmp_t2[2 * grid_spacing * k]),
+                                  &(tmp_grid[2 * gridExtent * k]),
+                                  &(tmp_t2[2 * gridExtent * k]),
                                   psi,
                                   &tmp_yy[k],
                                   &tmp_y1[k]);
                 }
 
-                spline1d(dx, tmp_yy.data(), 2 * grid_spacing, tmp_u.data(), tmp_u2.data());
+                spline1d(dx, tmp_yy.data(), 2 * gridExtent, tmp_u.data(), tmp_u2.data());
                 interpolate1d(xmin, dx, tmp_yy.data(), tmp_u2.data(), phi, &v, &v1);
-                spline1d(dx, tmp_y1.data(), 2 * grid_spacing, tmp_u.data(), tmp_u2.data());
+                spline1d(dx, tmp_y1.data(), 2 * gridExtent, tmp_u.data(), tmp_u2.data());
                 interpolate1d(xmin, dx, tmp_y1.data(), tmp_u2.data(), phi, &v2, &v12);
 
-                idx                                       = ii * grid_spacing + jj;
-                cmap_grid->cmapdata[kk].cmap[idx * 4]     = grid[offset + ii * grid_spacing + jj];
+                idx                                       = ii * gridExtent + jj;
+                cmap_grid->cmapdata[kk].cmap[idx * 4]     = grid[offset + ii * gridExtent + jj];
                 cmap_grid->cmapdata[kk].cmap[idx * 4 + 1] = v1;
                 cmap_grid->cmapdata[kk].cmap[idx * 4 + 2] = v2;
                 cmap_grid->cmapdata[kk].cmap[idx * 4 + 3] = v12;
@@ -1483,12 +1483,12 @@ static void setup_cmap(int grid_spacing, int nc, gmx::ArrayRef<const real> grid,
     }
 }
 
-static void init_cmap_grid(gmx_cmap_t* cmap_grid, int ngrid, int grid_spacing)
+static void init_cmap_grid(gmx_cmap_t* cmap_grid, int ngrid, int gridExtent)
 {
     int i, nelem;
 
-    cmap_grid->grid_spacing = grid_spacing;
-    nelem                   = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+    cmap_grid->gridExtent = gridExtent;
+    nelem                 = cmap_grid->gridExtent * cmap_grid->gridExtent;
 
     cmap_grid->cmapdata.resize(ngrid);
 
@@ -2477,8 +2477,8 @@ int gmx_grompp(int argc, char* argv[])
         init_cmap_grid(
                 &sys.ffparams.cmap_grid,
                 interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
-                interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value());
-        setup_cmap(interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value(),
+                interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value());
+        setup_cmap(interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value(),
                    interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
                    interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmap,
                    &sys.ffparams.cmap_grid);

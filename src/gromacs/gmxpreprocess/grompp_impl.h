@@ -142,16 +142,16 @@ struct InteractionsOfType
 { // NOLINT (clang-analyzer-optin.performance.Padding)
     //! The different parameters in the system.
     std::vector<InteractionOfType> interactionTypes;
-    //! CMAP grid spacing, when used.
-    std::optional<int> cmapGridSpacing_;
+    //! CMAP grid extent, when used.
+    std::optional<int> cmapGridExtent_;
     //! Number of CMAP dihedral angle pairs.
     int numCmaps_ = -1;
     //! CMAP grid data.
     std::vector<real> cmap;
     //! The five atomtypes followed by a number that identifies the type.
     std::vector<int> cmapAtomTypes;
-    //! The five residue types followed by empty string for alignment with \link cmapAtomTypes \endlink.
-    std::vector<std::string> cmapResTypes_;
+    //! The names of the five residue types followed by empty string for alignment with \link cmapAtomTypes \endlink.
+    std::vector<std::string> cmapResidueTypeNames_;
     //! \brief Processed dihedral types
     //!
     //! When Amber LEaP-like ordering is used, only dihedrals after the first one of the
@@ -177,7 +177,7 @@ struct InteractionsOfType
     size_t size() const { return interactionTypes.size(); }
     //! Elements in cmap grid data.
     std::size_t ncmap() const { return cmap.size(); }
-    //! Number of elements in cmapAtomTypes.
+    //! Number of elements in atomTypeNames.
     std::size_t nct() const { return cmapAtomTypes.size(); }
 };
 

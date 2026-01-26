@@ -498,14 +498,14 @@ static void cmp_cmap(FILE* fp, const gmx_cmap_t* cmap1, const gmx_cmap_t* cmap2,
         return;
     }
 
-    cmp_int(fp, "cmap grid_spacing", -1, cmap1->grid_spacing, cmap2->grid_spacing);
-    if (cmap1->cmapdata.size() == cmap2->cmapdata.size() && cmap1->grid_spacing == cmap2->grid_spacing)
+    cmp_int(fp, "cmap gridExtent", -1, cmap1->gridExtent, cmap2->gridExtent);
+    if (cmap1->cmapdata.size() == cmap2->cmapdata.size() && cmap1->gridExtent == cmap2->gridExtent)
     {
         for (size_t g = 0; g < cmap1->cmapdata.size(); g++)
         {
             fprintf(fp, "comparing cmap %zu\n", g);
 
-            for (int i = 0; i < 4 * cmap1->grid_spacing * cmap1->grid_spacing; i++)
+            for (int i = 0; i < 4 * cmap1->gridExtent * cmap1->gridExtent; i++)
             {
                 cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], relativeTolerance, absoluteTolerance);
             }

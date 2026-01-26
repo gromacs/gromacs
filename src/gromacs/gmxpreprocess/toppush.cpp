@@ -1254,7 +1254,7 @@ void push_cmaptype(Directive                                                    
     std::istringstream cmapLine(line);
     std::string        buffer;
 
-    std::array<std::string, MAXATOMLIST> cmapAtomTypes, cmapResTypes;
+    std::array<std::string, MAXATOMLIST> atomTypeNames, residueTypeNames;
     for (std::size_t idx = 0; idx < static_cast<std::size_t>(nral); idx++)
     {
         if (cmapLine.eof())
@@ -1268,30 +1268,30 @@ void push_cmaptype(Directive                                                    
             return;
         }
         cmapLine >> buffer;
-        std::istringstream atomResTypeStream(buffer);
-        std::string        atomType;
-        std::getline(atomResTypeStream, atomType, '-');
-        auto atomTypeNum = bondAtomType.bondAtomTypeFromName(atomType);
+        std::istringstream atomResidueTypeStream(buffer);
+        std::string        atomTypeName;
+        std::getline(atomResidueTypeStream, atomTypeName, '-');
+        std::optional<int> atomTypeNum = bondAtomType.bondAtomTypeFromName(atomTypeName);
         if (!atomTypeNum.has_value())
         {
             auto message =
                     gmx::formatString("Unknown atomtype %s found at position %d in cmap type",
-                                      atomType.c_str(),
+                                      atomTypeName.c_str(),
                                       static_cast<int>(idx + 1));
             wi->addError(message);
         }
-        cmapAtomTypes[idx] = std::move(atomType);
-        if (!atomResTypeStream.eof())
+        atomTypeNames[idx] = std::move(atomTypeName);
+        if (!atomResidueTypeStream.eof())
         {
-            std::string resType;
-            std::getline(atomResTypeStream, resType, '-');
-            cmapResTypes[idx] = std::move(resType);
+            std::string residueTypeName;
+            std::getline(atomResidueTypeStream, residueTypeName, '-');
+            residueTypeNames[idx] = std::move(residueTypeName);
         }
         else
         {
-            cmapResTypes[idx] = "";
+            residueTypeNames[idx] = "";
         }
-        if (!atomResTypeStream.eof())
+        if (!atomResidueTypeStream.eof())
         {
             auto message = gmx::formatString(
                     "Incorrect format for cmap type: %s, required atomtype or atomtype-residuetype",
@@ -1299,22 +1299,22 @@ void push_cmaptype(Directive                                                    
             wi->addError(message);
         }
     }
-    bool allResTyped  = std::all_of(cmapResTypes.cbegin(),
-                                   cmapResTypes.cbegin() + nral,
-                                   std::not_fn(std::mem_fn(&std::string::empty)));
-    bool noneResTyped = std::none_of(cmapResTypes.cbegin(),
-                                     cmapResTypes.cbegin() + nral,
-                                     std::not_fn(std::mem_fn(&std::string::empty)));
-    if (!allResTyped && !noneResTyped)
+    bool allResidueTyped  = std::all_of(residueTypeNames.cbegin(),
+                                       residueTypeNames.cbegin() + nral,
+                                       std::not_fn(std::mem_fn(&std::string::empty)));
+    bool noneResidueTyped = std::none_of(residueTypeNames.cbegin(),
+                                         residueTypeNames.cbegin() + nral,
+                                         std::not_fn(std::mem_fn(&std::string::empty)));
+    if (!allResidueTyped && !noneResidueTyped)
     {
         auto message = gmx::formatString(
                 "Incorrect format for cmap atomtypes %s %s %s %s %s, residuetypes are required for "
                 "all %d atomtypes or none",
-                cmapAtomTypes[0].c_str(),
-                cmapAtomTypes[1].c_str(),
-                cmapAtomTypes[2].c_str(),
-                cmapAtomTypes[3].c_str(),
-                cmapAtomTypes[4].c_str(),
+                atomTypeNames[0].c_str(),
+                atomTypeNames[1].c_str(),
+                atomTypeNames[2].c_str(),
+                atomTypeNames[3].c_str(),
+                atomTypeNames[4].c_str(),
                 nral);
         wi->addError(message);
     }
@@ -1346,40 +1346,40 @@ void push_cmaptype(Directive                                                    
         nxcmap = std::stoi(buffer);
         GMX_RELEASE_ASSERT(
                 nxcmap > 0,
-                "Invalid cmap type grid spacing in x dimension: must be larger than zero");
+                "Invalid cmap-type grid extent in x dimension: must be larger than zero");
         cmapLine >> buffer;
         nycmap = std::stoi(buffer);
         GMX_RELEASE_ASSERT(
                 nycmap > 0,
-                "Invalid cmap type grid spacing in y dimension: must be larger than zero");
+                "Invalid cmap-type grid extent in y dimension: must be larger than zero");
     }
     catch (...)
     {
         auto message = gmx::formatString(
-                "Invalid cmap type grid spacings in x and y dimensions: must be numbers, found %s",
+                "Invalid cmap-type grid extents in x and y dimensions: must be numbers, found %s",
                 buffer.c_str());
         wi->addError(message);
     }
-    /* Check for equal grid spacing in x and y dims */
+    /* Check for equal grid extent in x and y dims */
     if (nxcmap != nycmap)
     {
         auto message = gmx::formatString(
-                "Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
+                "Not the same grid extent in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
         wi->addError(message);
     }
-    // Set grid spacing (when not yet set) or check that the spacing
+    // Set grid extent (when not yet set) or check that the extent
     // matches previous entries.
-    if (!bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.has_value())
+    if (!bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.has_value())
     {
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_ =
+        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_ =
                 nxcmap; /* Or nycmap, they need to be equal */
     }
-    else if (bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value() != nxcmap)
+    else if (bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value() != nxcmap)
     {
         auto message = gmx::formatString(
-                "In the current implementation, each CMAP must have the same grid spacing. "
+                "In the current implementation, each CMAP must have the same grid extent. "
                 "Early CMAP entries used %d and then %d were found for line:\n %s",
-                bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_.value(),
+                bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value(),
                 nxcmap,
                 line);
         wi->addError(message);
@@ -1393,19 +1393,19 @@ void push_cmaptype(Directive                                                    
         {
             auto message = gmx::formatString(
                     "Error in reading cmap parameter for atomtypes %s %s %s %s %s",
-                    cmapAtomTypes[0].c_str(),
-                    cmapAtomTypes[1].c_str(),
-                    cmapAtomTypes[2].c_str(),
-                    cmapAtomTypes[3].c_str(),
-                    cmapAtomTypes[4].c_str());
-            if (allResTyped)
+                    atomTypeNames[0].c_str(),
+                    atomTypeNames[1].c_str(),
+                    atomTypeNames[2].c_str(),
+                    atomTypeNames[3].c_str(),
+                    atomTypeNames[4].c_str());
+            if (allResidueTyped)
             {
                 message += gmx::formatString(" residuetypes %s %s %s %s %s",
-                                             cmapResTypes[0].c_str(),
-                                             cmapResTypes[1].c_str(),
-                                             cmapResTypes[2].c_str(),
-                                             cmapResTypes[3].c_str(),
-                                             cmapResTypes[4].c_str());
+                                             residueTypeNames[0].c_str(),
+                                             residueTypeNames[1].c_str(),
+                                             residueTypeNames[2].c_str(),
+                                             residueTypeNames[3].c_str(),
+                                             residueTypeNames[4].c_str());
             }
             message += gmx::formatString(
                     ": found %d, expected %d", static_cast<int>(idx), static_cast<int>(ncmap));
@@ -1420,19 +1420,19 @@ void push_cmaptype(Directive                                                    
         catch (...)
         {
             auto message = gmx::formatString("Invalid cmap parameters for atomtypes %s %s %s %s %s",
-                                             cmapAtomTypes[0].c_str(),
-                                             cmapAtomTypes[1].c_str(),
-                                             cmapAtomTypes[2].c_str(),
-                                             cmapAtomTypes[3].c_str(),
-                                             cmapAtomTypes[4].c_str());
-            if (allResTyped)
+                                             atomTypeNames[0].c_str(),
+                                             atomTypeNames[1].c_str(),
+                                             atomTypeNames[2].c_str(),
+                                             atomTypeNames[3].c_str(),
+                                             atomTypeNames[4].c_str());
+            if (allResidueTyped)
             {
                 message += gmx::formatString(" residuetypes %s %s %s %s %s",
-                                             cmapResTypes[0].c_str(),
-                                             cmapResTypes[1].c_str(),
-                                             cmapResTypes[2].c_str(),
-                                             cmapResTypes[3].c_str(),
-                                             cmapResTypes[4].c_str());
+                                             residueTypeNames[0].c_str(),
+                                             residueTypeNames[1].c_str(),
+                                             residueTypeNames[2].c_str(),
+                                             residueTypeNames[3].c_str(),
+                                             residueTypeNames[4].c_str());
             }
             message += gmx::formatString(": must be real numbers, found %s", buffer.c_str());
             wi->addError(message);
@@ -1448,19 +1448,19 @@ void push_cmaptype(Directive                                                    
     {
         auto message = gmx::formatString(
                 "One or more unread cmap parameters exist for atomtypes %s %s %s %s %s",
-                cmapAtomTypes[0].c_str(),
-                cmapAtomTypes[1].c_str(),
-                cmapAtomTypes[2].c_str(),
-                cmapAtomTypes[3].c_str(),
-                cmapAtomTypes[4].c_str());
-        if (allResTyped)
+                atomTypeNames[0].c_str(),
+                atomTypeNames[1].c_str(),
+                atomTypeNames[2].c_str(),
+                atomTypeNames[3].c_str(),
+                atomTypeNames[4].c_str());
+        if (allResidueTyped)
         {
             message += gmx::formatString(" residuetypes %s %s %s %s %s",
-                                         cmapResTypes[0].c_str(),
-                                         cmapResTypes[1].c_str(),
-                                         cmapResTypes[2].c_str(),
-                                         cmapResTypes[3].c_str(),
-                                         cmapResTypes[4].c_str());
+                                         residueTypeNames[0].c_str(),
+                                         residueTypeNames[1].c_str(),
+                                         residueTypeNames[2].c_str(),
+                                         residueTypeNames[3].c_str(),
+                                         residueTypeNames[4].c_str());
         }
         wi->addError(message);
     }
@@ -1469,30 +1469,30 @@ void push_cmaptype(Directive                                                    
     for (int i = 0; (i < nral); i++)
     {
         /* Assign a grid number to each cmap_type */
-        auto cmapBondAtomType = bondAtomType.bondAtomTypeFromName(cmapAtomTypes[i]);
+        std::optional<int> cmapBondAtomType = bondAtomType.bondAtomTypeFromName(atomTypeNames[i]);
         if (!cmapBondAtomType)
         {
             auto message = gmx::formatString(
                     "Unknown bond_atomtype for %s in cmap atomtypes %s %s %s %s %s",
-                    cmapAtomTypes[i].c_str(),
-                    cmapAtomTypes[0].c_str(),
-                    cmapAtomTypes[1].c_str(),
-                    cmapAtomTypes[2].c_str(),
-                    cmapAtomTypes[3].c_str(),
-                    cmapAtomTypes[4].c_str());
+                    atomTypeNames[i].c_str(),
+                    atomTypeNames[0].c_str(),
+                    atomTypeNames[1].c_str(),
+                    atomTypeNames[2].c_str(),
+                    atomTypeNames[3].c_str(),
+                    atomTypeNames[4].c_str());
             wi->addError(message);
             continue;
         }
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes.emplace_back(*cmapBondAtomType);
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapResTypes_.emplace_back(
-                std::move(cmapResTypes[i]));
+        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes.emplace_back(
+                cmapBondAtomType.value());
+        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapResidueTypeNames_.emplace_back(
+                std::move(residueTypeNames[i]));
     }
 
     /* Assign a type number to this cmap */
     bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes.emplace_back(
             bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_);
-    bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapResTypes_.emplace_back(
-            ""); // align the arrays for simpliciy
+    bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapResidueTypeNames_.emplace_back(""); // align the arrays for simpliciy
     bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_++;
 
     /* Check for the correct number of atoms (again) */
@@ -1900,24 +1900,27 @@ static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsO
     else
     {
         // Look up the CMAP type from the atom-type names and/or residue-type names
-        auto matchResTypeOrAny = [=](const std::string& cmapResType, const std::string& cmapTypeResType) {
-            return cmapTypeResType.empty() || cmapTypeResType == "*" || cmapResType == cmapTypeResType;
-        };
-        auto matchAtomAndResTypes = [&](const int& cmapAtomType, const int& cmapTypeAtomType)
+        auto matchResidueTypeOrAny =
+                [=](const std::string& cmapResidueType, const std::string& cmapTypeResidueType)
         {
-            return (atypes.bondAtomTypeFromAtomType(at.atom[cmapAtomType].type)
-                    == bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[cmapTypeAtomType])
-                   && matchResTypeOrAny(
-                           *at.resinfo[at.atom[cmapAtomType].resind].name,
-                           bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapResTypes_[cmapTypeAtomType]);
+            return cmapTypeResidueType.empty() || cmapTypeResidueType == "*"
+                   || cmapResidueType == cmapTypeResidueType;
+        };
+        auto matchAtomAndResidueTypes = [&](const int& atomIndex, const int& atomIndexWithinInteraction)
+        {
+            return (atypes.bondAtomTypeFromAtomType(at.atom[atomIndex].type)
+                    == bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[atomIndexWithinInteraction])
+                   && matchResidueTypeOrAny(*at.resinfo[at.atom[atomIndex].resind].name,
+                                            bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
+                                                    .cmapResidueTypeNames_[atomIndexWithinInteraction]);
         };
         // Match the current cmap angle against the list of CMAP types
         for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
              i += NRAL(InteractionFunction::DihedralEnergyCorrectionMap) + 1)
         {
-            if (matchAtomAndResTypes(p.ai(), i) && matchAtomAndResTypes(p.aj(), i + 1)
-                && matchAtomAndResTypes(p.ak(), i + 2) && matchAtomAndResTypes(p.al(), i + 3)
-                && matchAtomAndResTypes(p.am(), i + 4))
+            if (matchAtomAndResidueTypes(p.ai(), i) && matchAtomAndResidueTypes(p.aj(), i + 1)
+                && matchAtomAndResidueTypes(p.ak(), i + 2) && matchAtomAndResidueTypes(p.al(), i + 3)
+                && matchAtomAndResidueTypes(p.am(), i + 4))
             {
                 return bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
                         .cmapAtomTypes[i + NRAL(InteractionFunction::DihedralEnergyCorrectionMap)];

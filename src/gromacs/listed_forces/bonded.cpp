@@ -3016,17 +3016,17 @@ rbdihs(int             nbonds,
 //! \endcond
 
 /*! \brief Mysterious undocumented function */
-int cmap_setup_grid_index(int ip, int grid_spacing, int* ipm1, int* ipp1, int* ipp2)
+int cmap_setup_grid_index(int ip, int gridExtent, int* ipm1, int* ipp1, int* ipp2)
 {
     int im1, ip1, ip2;
 
     if (ip < 0)
     {
-        ip = ip + grid_spacing - 1;
+        ip = ip + gridExtent - 1;
     }
-    else if (ip > grid_spacing)
+    else if (ip > gridExtent)
     {
-        ip = ip - grid_spacing - 1;
+        ip = ip - gridExtent - 1;
     }
 
     im1 = ip - 1;
@@ -3035,13 +3035,13 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int* ipm1, int* ipp1, int* i
 
     if (ip == 0)
     {
-        im1 = grid_spacing - 1;
+        im1 = gridExtent - 1;
     }
-    else if (ip == grid_spacing - 2)
+    else if (ip == gridExtent - 2)
     {
         ip2 = 0;
     }
-    else if (ip == grid_spacing - 1)
+    else if (ip == gridExtent - 1)
     {
         ip1 = 0;
         ip2 = 1;
@@ -3320,19 +3320,19 @@ real cmap_dihs(int                 nbonds,
         }
 
         /* Number of grid points */
-        real dx = 2 * M_PI / cmap_grid->grid_spacing;
+        real dx = 2 * M_PI / cmap_grid->gridExtent;
 
         /* Where on the grid are we */
         int iphi1 = static_cast<int>(xphi1 / dx);
         int iphi2 = static_cast<int>(xphi2 / dx);
 
-        iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->grid_spacing, &ip1m1, &ip1p1, &ip1p2);
-        iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->grid_spacing, &ip2m1, &ip2p1, &ip2p2);
+        iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->gridExtent, &ip1m1, &ip1p1, &ip1p2);
+        iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->gridExtent, &ip2m1, &ip2p1, &ip2p2);
 
-        const int pos1 = iphi1 * cmap_grid->grid_spacing + iphi2;
-        const int pos2 = ip1p1 * cmap_grid->grid_spacing + iphi2;
-        const int pos3 = ip1p1 * cmap_grid->grid_spacing + ip2p1;
-        const int pos4 = iphi1 * cmap_grid->grid_spacing + ip2p1;
+        const int pos1 = iphi1 * cmap_grid->gridExtent + iphi2;
+        const int pos2 = ip1p1 * cmap_grid->gridExtent + iphi2;
+        const int pos3 = ip1p1 * cmap_grid->gridExtent + ip2p1;
+        const int pos4 = iphi1 * cmap_grid->gridExtent + ip2p1;
 
         ty[0] = cmapd[pos1 * 4];
         ty[1] = cmapd[pos2 * 4];
@@ -3355,7 +3355,7 @@ real cmap_dihs(int                 nbonds,
         ty12[3] = cmapd[pos4 * 4 + 3];
 
         /* Switch to degrees */
-        dx    = 360.0 / cmap_grid->grid_spacing;
+        dx    = 360.0 / cmap_grid->gridExtent;
         xphi1 = xphi1 * gmx::c_rad2Deg;
         xphi2 = xphi2 * gmx::c_rad2Deg;
 

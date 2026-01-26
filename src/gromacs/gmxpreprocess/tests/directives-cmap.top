@@ -42,7 +42,7 @@ X Y X X Y 4 2 2 0.1 0.2 0.3 0.4
 #ifdef RECTANGULAR_GRID_IN_CMAPTYPE
 X Y X X Y 1 2 3 0.1 0.2 0.3 0.4 0.5 0.6
 #endif
-#ifdef UNREAL_GRID_SIZE_IN_CMAPTYPE
+#ifdef UNREAL_GRID_EXTENT_IN_CMAPTYPE
 X Y X X Y 1 Tarydium 2 0.1 0.2
 #endif
 #ifdef TOO_FEW_GRID_PARAMETERS_IN_CMAPTYPE
@@ -72,8 +72,8 @@ X-NULL Y-NULL X-NULL X-NULL Y-NULL 1 4 4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 X Y X Y Y 1 2 2 0.6 0.7 0.8 0.9
 X-RES Y-RES X-RES Y-RES Y-RES 1 2 2 1.6 1.7 1.8 1.9
 
-#ifdef ALL_CMAP_TYPES_MUST_USE_SAME_GRID_SPACING
-; Mismatches with the correct CMAP types which have a grid spacing of 2
+#ifdef ALL_CMAP_TYPES_MUST_USE_SAME_GRID_EXTENT
+; Mismatches with the correct CMAP types which have a grid extent of 2
 X Y X X Y 1 3 3 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
 #endif
 
