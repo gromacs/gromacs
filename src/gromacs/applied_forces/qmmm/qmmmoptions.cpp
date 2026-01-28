@@ -515,15 +515,35 @@ void QMMMOptions::processCoordinates(const CoordinatesAndBoxPreprocessed& coord)
     // Generate pdb file with point charges for CP2K
     parameters_.qmPdb_ = inpGen.generateCP2KPdb();
 
+    // CP2K by default requires orthogonal (not triclinic) box for QMMM calculations check this now
+    if (TRICLINIC(coord.box_))
+    {
+        if (parameters_.qmMethod_ != QMMMQMMethod::INPUT)
+        {
+            // Throw error if we need to generate CP2K Input
+            GMX_THROW(InconsistentInputError(
+                    "Non-orthogonal simulation boxes are not supported for QM/MM simulations by "
+                    "CP2K. Please consider to use orthogonal box or provide custom CP2K input "
+                    "using "
+                    + moduleName() + "-" + c_qmMethodTag_ + " = INPUT"));
+        }
+        else
+        {
+            // Issue a warning if user provides custom CP2K input
+            appendWarning(
+                    "Non-orthogonal simulation boxes are not supported for QM/MM simulations in "
+                    "CP2K by default. Please make sure that your provided CP2K input file "
+                    "handles this case correctly.");
+        }
+    }
+
     // In case parameters_.qmMethod_ != INPUT we should generate CP2K Input, QM box and translation
     if (parameters_.qmMethod_ != QMMMQMMethod::INPUT)
     {
         /* Check if some of the box vectors dimension lower that 1 nm.
          * For SCF stability box should be big enough.
          */
-        matrix box;
-        copy_mat(coord.box_, box);
-        if (norm(box[0]) < 1.0 || norm(box[1]) < 1.0 || norm(box[2]) < 1.0)
+        if (norm(coord.box_[0]) < 1.0 || norm(coord.box_[1]) < 1.0 || norm(coord.box_[2]) < 1.0)
         {
             GMX_THROW(InconsistentInputError(
                     "One of the box vectors is shorter than 1 nm.\n"

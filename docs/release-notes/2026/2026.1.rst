@@ -40,3 +40,12 @@ NVCC was failing to detect warp uniform variables leading to performance
 degradation in the non-bonded force kernel. A workaround was implemented. 
 
 :issue:`5546`
+
+QM/MM CP2K MDModule will check orthogonality of the cell
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+QM/MM simulations in CP2K require orthogonal periodic cells. The MDModule 
+will now check for orthogonality of the cell and abort if the cell is 
+non-orthogonal. In case of user-provided CP2K input files, a warning 
+will be issued.
+
+:issue:`5529`
