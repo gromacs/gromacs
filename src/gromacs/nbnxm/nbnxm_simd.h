@@ -72,7 +72,7 @@ static constexpr int sc_iClusterSize(const KernelLayout kernelLayout)
 {
     switch (kernelLayout)
     {
-        case KernelLayout::r4xM: return 4;
+        case KernelLayout::r4xM:
         case KernelLayout::r2xMM: return 4;
     }
 }

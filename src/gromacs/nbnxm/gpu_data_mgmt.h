@@ -54,10 +54,10 @@
 struct gmx_wallclock_gpu_nbnxn_t;
 struct interaction_const_t;
 class DeviceStream;
-class AtomPairlist;
 
 namespace gmx
 {
+class AtomPairlist;
 struct NbnxmGpu;
 struct NBAtomDataGpu;
 struct nbnxn_atomdata_t;

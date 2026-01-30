@@ -53,8 +53,6 @@
 
 #include "pairlistparams.h"
 
-struct nbnxn_atomdata_t;
-
 
 struct t_nrnb;
 
