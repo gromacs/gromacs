@@ -190,38 +190,39 @@ void Grid::resizeBoundingBoxesAndFlags(const int maxNumBins)
     {
         numClusters_.resize(maxNumBins);
     }
-    bbcz_.resize(maxNumBins);
+    binBoundingBoxesZ_.resize(maxNumBins);
 
     /* This resize also zeros the contents, this avoid possible
      * floating exceptions in SIMD with the unused bb elements.
      */
     if (geometry_.isSimple_)
     {
-        bb_.resize(maxNumBins);
+        iClusterBoundingBoxes_.resize(maxNumBins);
     }
     else
     {
         if (sc_boundingBoxCornersAsQuadruplets(geometry_.pairlistType_))
         {
-            pbb_.resize(packedBoundingBoxesIndex(maxNumBins
-                                                 * sc_gpuNumClusterPerBin(geometry_.pairlistType_)));
+            packedClusterBoundingBoxes_.resize(packedBoundingBoxesIndex(
+                    maxNumBins * sc_gpuNumClusterPerBin(geometry_.pairlistType_)));
         }
         else
         {
-            bb_.resize(maxNumBins * sc_gpuNumClusterPerBin(geometry_.pairlistType_));
+            iClusterBoundingBoxes_.resize(maxNumBins * sc_gpuNumClusterPerBin(geometry_.pairlistType_));
         }
     }
 
     if (geometry_.numAtomsJCluster_ == geometry_.numAtomsICluster_)
     {
-        bbj_ = bb_;
+        jClusterBoundingBoxes_ = iClusterBoundingBoxes_;
     }
     else
     {
         GMX_ASSERT(geometry_.isSimple_, "Only CPU lists should have different i/j cluster sizes");
 
-        bbjStorage_.resize(maxNumBins * geometry_.numAtomsICluster_ / geometry_.numAtomsJCluster_);
-        bbj_ = bbjStorage_;
+        jClusterBoundingBoxesStorage_.resize(maxNumBins * geometry_.numAtomsICluster_
+                                             / geometry_.numAtomsJCluster_);
+        jClusterBoundingBoxes_ = jClusterBoundingBoxesStorage_;
     }
 
     flags_.resize(maxNumBins);
@@ -983,7 +984,7 @@ void Grid::fillBin(GridSetData*            gridSetData,
     {
         /* Store the bounding boxes as xyz.xyz. */
         size_t       offset = atomToCluster(atomStart - binOffset_ * geometry_.numAtomsICluster_);
-        BoundingBox* bb_ptr = bb_.data() + offset;
+        BoundingBox* bb_ptr = iClusterBoundingBoxes_.data() + offset;
 
 #if GMX_SIMD
         if (2 * geometry_.numAtomsJCluster_ == geometry_.numAtomsICluster_)
@@ -991,7 +992,7 @@ void Grid::fillBin(GridSetData*            gridSetData,
             calcBoundingBoxHalves<c_packX4>(numAtoms,
                                             nbat->x().data() + atom_to_x_index<c_packX4>(atomStart),
                                             bb_ptr,
-                                            bbj_.data() + offset * 2);
+                                            jClusterBoundingBoxes_.data() + offset * 2);
         }
         else
 #endif
@@ -1004,7 +1005,7 @@ void Grid::fillBin(GridSetData*            gridSetData,
     {
         /* Store the bounding boxes as xyz.xyz. */
         size_t       offset = atomToCluster(atomStart - binOffset_ * geometry_.numAtomsICluster_);
-        BoundingBox* bb_ptr = bb_.data() + offset;
+        BoundingBox* bb_ptr = iClusterBoundingBoxes_.data() + offset;
 
         calcBoundingBoxXPacked<c_packX8>(
                 numAtoms, nbat->x().data() + atom_to_x_index<c_packX8>(atomStart), bb_ptr);
@@ -1016,7 +1017,7 @@ void Grid::fillBin(GridSetData*            gridSetData,
          */
         const int clusterIndex = ((atomStart - binOffset_ * geometry_.numAtomsPerBin_)
                                   >> geometry_.numAtomsICluster2Log_);
-        float*    pbb_ptr      = pbb_.data() + packedBoundingBoxesIndex(clusterIndex)
+        float* pbb_ptr = packedClusterBoundingBoxes_.data() + packedBoundingBoxesIndex(clusterIndex)
                          + (clusterIndex & (c_packedBoundingBoxesDimSize - 1));
 
 #if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
@@ -1046,8 +1047,8 @@ void Grid::fillBin(GridSetData*            gridSetData,
     else
     {
         /* Store the bounding boxes as xyz.xyz. */
-        BoundingBox* bb_ptr =
-                bb_.data() + atomToCluster(atomStart - binOffset_ * geometry_.numAtomsPerBin_);
+        BoundingBox* bb_ptr = iClusterBoundingBoxes_.data()
+                              + atomToCluster(atomStart - binOffset_ * geometry_.numAtomsPerBin_);
 
         calc_bounding_box(numAtoms, nbat->xstride, nbat->x().data() + atomStart * nbat->xstride, bb_ptr);
 
@@ -1057,12 +1058,12 @@ void Grid::fillBin(GridSetData*            gridSetData,
             fprintf(debug,
                     "cell %4d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
                     atomToCluster(atomStart),
-                    bb_[bbo].lower.x,
-                    bb_[bbo].lower.y,
-                    bb_[bbo].lower.z,
-                    bb_[bbo].upper.x,
-                    bb_[bbo].upper.y,
-                    bb_[bbo].upper.z);
+                    iClusterBoundingBoxes_[bbo].lower.x,
+                    iClusterBoundingBoxes_[bbo].lower.y,
+                    iClusterBoundingBoxes_[bbo].lower.z,
+                    iClusterBoundingBoxes_[bbo].upper.x,
+                    iClusterBoundingBoxes_[bbo].upper.y,
+                    iClusterBoundingBoxes_[bbo].upper.z);
         }
     }
 }
@@ -1129,8 +1130,8 @@ void Grid::sortColumnsCpuGeometry(GridSetData*            gridSetData,
             {
                 binFilled = bin;
             }
-            bbcz_[bin].lower = bb_[binFilled].lower.z;
-            bbcz_[bin].upper = bb_[binFilled].upper.z;
+            binBoundingBoxesZ_[bin].lower = iClusterBoundingBoxes_[binFilled].lower.z;
+            binBoundingBoxesZ_[bin].upper = iClusterBoundingBoxes_[binFilled].upper.z;
         }
 
         /* Set the unused atom indices to -1 */
@@ -1219,8 +1220,8 @@ void Grid::sortColumnsGpuGeometry(GridSetData*            gridSetData,
                                              divideRoundUp(numAtoms, geometry_.numAtomsICluster_));
 
                 /* Store the z-boundaries of the bounding box of the bin */
-                bbcz_[bin].lower = x[atomIndices[atomOffsetZ]][ZZ];
-                bbcz_[bin].upper = x[atomIndices[atomOffsetZ + numAtoms - 1]][ZZ];
+                binBoundingBoxesZ_[bin].lower = x[atomIndices[atomOffsetZ]][ZZ];
+                binBoundingBoxesZ_[bin].upper = x[atomIndices[atomOffsetZ + numAtoms - 1]][ZZ];
             }
 
             if (sc_gpuNumClusterPerBinY(layoutType) > 1)
@@ -1553,7 +1554,7 @@ void Grid::setBinIndices(int                  ddZone,
 
     if (geometry_.isSimple_ && geometry_.numAtomsJCluster_ == 2 * numAtomsPerBin)
     {
-        combine_bounding_box_pairs(*this, bb_, bbj_);
+        combine_bounding_box_pairs(*this, iClusterBoundingBoxes_, jClusterBoundingBoxes_);
     }
 
     if (!geometry_.isSimple_)
@@ -1810,8 +1811,8 @@ void Grid::setNonLocalGrid(const int                           ddZone,
                 }
                 GMX_ASSERT(nonEmptyBin >= binStart,
                            "We should only operate on bins in our thread range");
-                bbcz_[bin].lower = bb_[nonEmptyBin].lower.z;
-                bbcz_[bin].upper = bb_[nonEmptyBin].upper.z;
+                binBoundingBoxesZ_[bin].lower = iClusterBoundingBoxes_[nonEmptyBin].lower.z;
+                binBoundingBoxesZ_[bin].upper = iClusterBoundingBoxes_[nonEmptyBin].upper.z;
             }
             else
             {
@@ -1819,8 +1820,8 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 
                 numClustersInBin = divideRoundUp(atomEnd - atomOffsetBin, numAtomsPerClusterNonSimple);
 
-                bbcz_[bin].lower = x[atomOffsetBin][ZZ];
-                bbcz_[bin].upper = x[atomOffsetBin][ZZ];
+                binBoundingBoxesZ_[bin].lower = x[atomOffsetBin][ZZ];
+                binBoundingBoxesZ_[bin].upper = x[atomOffsetBin][ZZ];
                 for (int c = 0; c < numClustersInBin; c++)
                 {
                     const int atomClusterStart = atomOffsetBin + c * numAtomsPerClusterNonSimple;
@@ -1834,13 +1835,15 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 #else
                     for (int a = atomClusterStart; a < atomClusterEnd; a++)
                     {
-                        bbcz_[bin].lower = std::min(bbcz_[bin].lower, x[a][ZZ]);
-                        bbcz_[bin].upper = std::max(bbcz_[bin].upper, x[a][ZZ]);
+                        binBoundingBoxesZ_[bin].lower =
+                                std::min(binBoundingBoxesZ_[bin].lower, x[a][ZZ]);
+                        binBoundingBoxesZ_[bin].upper =
+                                std::max(binBoundingBoxesZ_[bin].upper, x[a][ZZ]);
                     }
 #endif
                 }
 
-                GMX_ASSERT(bbcz_[bin].upper >= bbcz_[bin].lower,
+                GMX_ASSERT(binBoundingBoxesZ_[bin].upper >= binBoundingBoxesZ_[bin].lower,
                            "Upper bound should be >= lower bound");
             }
 
@@ -1855,7 +1858,7 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 
     if (geometry_.isSimple_ && geometry_.numAtomsJCluster_ == 2 * numAtomsPerBin)
     {
-        combine_bounding_box_pairs(*this, bb_, bbj_);
+        combine_bounding_box_pairs(*this, iClusterBoundingBoxes_, jClusterBoundingBoxes_);
     }
 }
 

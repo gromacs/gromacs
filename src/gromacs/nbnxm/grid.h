@@ -241,16 +241,16 @@ public:
     unsigned int fepBits(int clusterIndex) const { return fep_[clusterIndex]; }
 
     //! Returns the i-bounding boxes for all clusters on the grid
-    ArrayRef<const BoundingBox> iBoundingBoxes() const { return bb_; }
+    ArrayRef<const BoundingBox> iBoundingBoxes() const { return iClusterBoundingBoxes_; }
 
     //! Returns the j-bounding boxes for all clusters on the grid
-    ArrayRef<const BoundingBox> jBoundingBoxes() const { return bbj_; }
+    ArrayRef<const BoundingBox> jBoundingBoxes() const { return jClusterBoundingBoxes_; }
 
     //! Returns the packed bounding boxes for all clusters on the grid, empty with a CPU list
-    ArrayRef<const float> packedBoundingBoxes() const { return pbb_; }
+    ArrayRef<const float> packedBoundingBoxes() const { return packedClusterBoundingBoxes_; }
 
     //! Returns the bounding boxes along z for all i-bins on the grid
-    ArrayRef<const BoundingBox1D> zBoundingBoxes() const { return bbcz_; }
+    ArrayRef<const BoundingBox1D> zBoundingBoxes() const { return binBoundingBoxesZ_; }
 
     //! Returns the flags for all clusters on the grid
     ArrayRef<const int> clusterFlags() const { return flags_; }
@@ -408,15 +408,15 @@ private:
 
     /* Bounding boxes */
     //! Bounding boxes in z for the i-bins
-    std::vector<BoundingBox1D> bbcz_;
+    std::vector<BoundingBox1D> binBoundingBoxesZ_;
     //! 3D bounding boxes for the clusters
-    std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bb_;
+    std::vector<BoundingBox, AlignedAllocator<BoundingBox>> iClusterBoundingBoxes_;
     //! 3D j-bounding boxes for the case where the i- and j-cluster sizes are different
-    std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bbjStorage_;
+    std::vector<BoundingBox, AlignedAllocator<BoundingBox>> jClusterBoundingBoxesStorage_;
     //! 3D j-bounding boxes
-    ArrayRef<BoundingBox> bbj_;
-    //! 3D bounding boxes in packed xxxx format per bin
-    std::vector<float, AlignedAllocator<float>> pbb_;
+    ArrayRef<BoundingBox> jClusterBoundingBoxes_;
+    //! 3D bounding boxes in packed xxxx format per cluster
+    std::vector<float, AlignedAllocator<float>> packedClusterBoundingBoxes_;
 
     //! Tells whether we have perturbed interactions, authorative source is in GridSet (never modified)
     const bool& haveFep_;
