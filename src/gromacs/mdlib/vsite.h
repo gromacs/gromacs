@@ -137,7 +137,7 @@ public:
     int numInterUpdategroupVirtualSites() const;
 
     //! Set VSites and distribute VSite work over threads, should be called after each DD partitioning
-    void setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+    void setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                          int                          numAtoms,
                          int                          homenr,
                          ArrayRef<const ParticleType> ptype);
@@ -189,11 +189,11 @@ private:
  *
  * \param[in,out] x        The coordinates
  * \param[in]     ip       Interaction parameters
- * \param[in]     ilist    The interaction list
+ * \param[in]     ilists   The interaction lists
  */
 void constructVirtualSites(ArrayRef<RVec>            x,
                            ArrayRef<const t_iparams> ip,
-                           const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist);
+                           const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists);
 
 /*! \brief Create positions of vsite atoms for the whole system assuming all molecules are wholex
  *

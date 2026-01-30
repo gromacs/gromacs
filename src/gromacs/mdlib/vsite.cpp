@@ -138,7 +138,7 @@ struct AtomIndex
 struct InterdependentTask
 {
     //! The interaction lists, only vsite entries are used
-    InteractionLists ilist;
+    InteractionLists ilists;
     //! Thread/task-local force buffer
     std::vector<RVec> force;
     //! The atom indices of the vsites of our task
@@ -147,7 +147,7 @@ struct InterdependentTask
     std::vector<bool> use;
     //! The number of entries set to true in use
     int nuse = 0;
-    //! Array of atoms indices, size nthreads, covering all nuse set elements in use
+    //! Array of atoms indices, size numThreads, covering all nuse set elements in use
     std::vector<AtomIndex> atomIndex;
     //! List of tasks (force blocks) this task spread forces to
     std::vector<int> spreadTask;
@@ -164,7 +164,7 @@ struct VsiteThread
     //! End of atom range of this task
     int rangeEnd;
     //! The interaction lists, only vsite entries are used
-    InteractionLists ilist;
+    InteractionLists ilists;
     //! Local fshift accumulation buffer
     std::array<RVec, c_numShiftVectors> fshift;
     //! Local virial dx*df accumulation buffer
@@ -213,7 +213,7 @@ public:
     VsiteThread& threadDataNonLocalDependent() { return *tData_[numThreads_]; }
 
     //! Set VSites and distribute VSite work over threads, should be called after DD partitioning
-    void setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+    void setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
                          ArrayRef<const t_iparams>                                          iparams,
                          int                          numAtoms,
                          int                          homenr,
@@ -244,7 +244,7 @@ public:
     int numInterUpdategroupVirtualSites() const { return numInterUpdategroupVirtualSites_; }
 
     //! Set VSites and distribute VSite work over threads, should be called after DD partitioning
-    void setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+    void setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
                          int                          numAtoms,
                          int                          homenr,
                          ArrayRef<const ParticleType> ptype);
@@ -284,7 +284,7 @@ private:
     const DomainInfo domainInfo_;
     //! The interaction parameters
     const ArrayRef<const t_iparams> iparams_;
-    //! The interaction lists
+    //! Pointer to the interaction lists
     const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilists_;
     //! Information for handling vsite threading
     ThreadingInfo threadingInfo_;
@@ -299,14 +299,14 @@ int VirtualSitesHandler::numInterUpdategroupVirtualSites() const
 
 /*! \brief Returns the sum of the vsite ilist sizes over all vsite types
  *
- * \param[in] ilist  The interaction list
+ * \param[in] ilists  The interaction list
  */
-static int vsiteIlistNrCount(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist)
+static int vsiteIlistNrCount(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists)
 {
     int nr = 0;
     for (InteractionFunction ftype : vSiteFunctionTypes)
     {
-        nr += (*ilist)[ftype].size();
+        nr += ilists[ftype].size();
     }
 
     return nr;
@@ -906,14 +906,14 @@ static PbcMode getPbcMode(const t_pbc* pbcPtr)
  * \param[in,out] x   Coordinates to construct vsites for
  * \param[in,out] v   Velocities are generated for virtual sites if calculateVelocity is true
  * \param[in]     ip  Interaction parameters for all interaction, only vsite parameters are used
- * \param[in]     ilist  The interaction lists, only vsites are usesd
+ * \param[in]     ilists    The interaction lists, only vsites are used
  * \param[in]     pbc_null  PBC struct, used for PBC distance calculations when !=nullptr
  */
 template<VSiteCalculatePosition calculatePosition, VSiteCalculateVelocity calculateVelocity>
 static void construct_vsites_thread(ArrayRef<RVec>            x,
                                     ArrayRef<RVec>            v,
                                     ArrayRef<const t_iparams> ip,
-                                    const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+                                    const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                                     const t_pbc* pbc_null)
 {
     if (calculateVelocity == VSiteCalculateVelocity::Yes)
@@ -941,7 +941,7 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
 
     for (InteractionFunction ftype : vSiteFunctionTypes)
     {
-        if ((*ilist)[ftype].empty())
+        if (ilists[ftype].empty())
         {
             continue;
         }
@@ -949,9 +949,9 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
         { // TODO remove me
             int nra = interaction_function[ftype].nratoms;
             int inc = 1 + nra;
-            int nr  = (*ilist)[ftype].size();
+            int nr  = ilists[ftype].size();
 
-            const t_iatom* ia = (*ilist)[ftype].iatoms.data();
+            const t_iatom* ia = ilists[ftype].iatoms.data();
 
             for (int i = 0; i < nr;)
             {
@@ -1128,16 +1128,16 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
  * \param[in,out] x   Coordinates to construct vsites for
  * \param[in,out] v   When not empty, velocities are generated for virtual sites
  * \param[in]     ip  Interaction parameters for all interaction, only vsite parameters are used
- * \param[in]     ilist  The interaction lists, only vsites are usesd
+ * \param[in]     ilists      The interaction lists, only vsites are usesd
  * \param[in]     domainInfo  Information about PBC and DD
- * \param[in]     box  Used for PBC when PBC is set in domainInfo
+ * \param[in]     box         Used for PBC when PBC is set in domainInfo
  */
 template<VSiteCalculatePosition calculatePosition, VSiteCalculateVelocity calculateVelocity>
 static void construct_vsites(const ThreadingInfo*      threadingInfo,
                              ArrayRef<RVec>            x,
                              ArrayRef<RVec>            v,
                              ArrayRef<const t_iparams> ip,
-                             const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+                             const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                              const DomainInfo& domainInfo,
                              const matrix      box)
 {
@@ -1177,7 +1177,7 @@ static void construct_vsites(const ThreadingInfo*      threadingInfo,
 
     if (threadingInfo == nullptr || threadingInfo->numThreads() == 1)
     {
-        construct_vsites_thread<calculatePosition, calculateVelocity>(x, v, ip, ilist, pbc_null);
+        construct_vsites_thread<calculatePosition, calculateVelocity>(x, v, ip, ilists, pbc_null);
     }
     else
     {
@@ -1191,7 +1191,7 @@ static void construct_vsites(const ThreadingInfo*      threadingInfo,
                            "The thread data should be initialized before calling construct_vsites");
 
                 construct_vsites_thread<calculatePosition, calculateVelocity>(
-                        x, v, ip, &tData.ilist, pbc_null);
+                        x, v, ip, tData.ilists, pbc_null);
                 if (tData.useInterdependentTask)
                 {
                     /* Here we don't need a barrier (unlike the spreading),
@@ -1199,14 +1199,14 @@ static void construct_vsites(const ThreadingInfo*      threadingInfo,
                      * or local vsites, not from non-local vsites.
                      */
                     construct_vsites_thread<calculatePosition, calculateVelocity>(
-                            x, v, ip, &tData.idTask.ilist, pbc_null);
+                            x, v, ip, tData.idTask.ilists, pbc_null);
                 }
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
         /* Now we can construct the vsites that might depend on other vsites */
         construct_vsites_thread<calculatePosition, calculateVelocity>(
-                x, v, ip, &threadingInfo->threadDataNonLocalDependent().ilist, pbc_null);
+                x, v, ip, threadingInfo->threadDataNonLocalDependent().ilists, pbc_null);
     }
 }
 
@@ -1219,15 +1219,15 @@ void VirtualSitesHandler::Impl::construct(ArrayRef<RVec> x,
     {
         case VSiteOperation::Positions:
             construct_vsites<VSiteCalculatePosition::Yes, VSiteCalculateVelocity::No>(
-                    &threadingInfo_, x, v, iparams_, ilists_, domainInfo_, box);
+                    &threadingInfo_, x, v, iparams_, *ilists_, domainInfo_, box);
             break;
         case VSiteOperation::Velocities:
             construct_vsites<VSiteCalculatePosition::No, VSiteCalculateVelocity::Yes>(
-                    &threadingInfo_, x, v, iparams_, ilists_, domainInfo_, box);
+                    &threadingInfo_, x, v, iparams_, *ilists_, domainInfo_, box);
             break;
         case VSiteOperation::PositionsAndVelocities:
             construct_vsites<VSiteCalculatePosition::Yes, VSiteCalculateVelocity::Yes>(
-                    &threadingInfo_, x, v, iparams_, ilists_, domainInfo_, box);
+                    &threadingInfo_, x, v, iparams_, *ilists_, domainInfo_, box);
             break;
         default: gmx_fatal(FARGS, "Unknown virtual site operation");
     }
@@ -1238,15 +1238,15 @@ void VirtualSitesHandler::construct(ArrayRef<RVec> x, ArrayRef<RVec> v, const ma
     impl_->construct(x, v, box, operation);
 }
 
-void constructVirtualSites(ArrayRef<RVec>                                                     x,
-                           ArrayRef<const t_iparams>                                          ip,
-                           const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist)
+void constructVirtualSites(ArrayRef<RVec>            x,
+                           ArrayRef<const t_iparams> ip,
+                           const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists)
 
 {
     // No PBC, no DD
     const DomainInfo domainInfo;
     construct_vsites<VSiteCalculatePosition::Yes, VSiteCalculateVelocity::No>(
-            nullptr, x, {}, ip, ilist, domainInfo, nullptr);
+            nullptr, x, {}, ip, ilists, domainInfo, nullptr);
 }
 
 #ifndef DOXYGEN
@@ -1319,13 +1319,13 @@ void constructVirtualSitesGlobal(const gmx_mtop_t& mtop, gmx::ArrayRef<gmx::RVec
     {
         const gmx_molblock_t& molb = mtop.molblock[mb];
         const gmx_moltype_t&  molt = mtop.moltype[molb.type];
-        if (vsiteIlistNrCount(&molt.ilist) > 0)
+        if (vsiteIlistNrCount(molt.ilist) > 0)
         {
             int atomOffset = mtop.moleculeBlockIndices[mb].globalAtomStart;
             for (int mol = 0; mol < molb.nmol; mol++)
             {
                 constructVirtualSites(
-                        x.subArray(atomOffset, molt.atoms.nr), mtop.ffparams.iparams, &molt.ilist);
+                        x.subArray(atomOffset, molt.atoms.nr), mtop.ffparams.iparams, molt.ilist);
                 atomOffset += molt.atoms.nr;
             }
         }
@@ -2108,16 +2108,16 @@ static int spread_vsiten(const t_iatom             ia[],
 #endif // DOXYGEN
 
 //! Returns the number of virtual sites in the interaction list, for VSITEN the number of atoms
-static int vsite_count(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+static int vsite_count(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                        InteractionFunction                                                ftype)
 {
     if (ftype == InteractionFunction::VirtualSiteN)
     {
-        return (*ilist)[ftype].size() / 3;
+        return ilists[ftype].size() / 3;
     }
     else
     {
-        return (*ilist)[ftype].size() / (1 + interaction_function[ftype].nratoms);
+        return ilists[ftype].size() / (1 + interaction_function[ftype].nratoms);
     }
 }
 
@@ -2128,14 +2128,14 @@ static void spreadForceForThread(ArrayRef<const RVec>      x,
                                  ArrayRef<RVec>            fshift,
                                  matrix                    dxdf,
                                  ArrayRef<const t_iparams> ip,
-                                 const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+                                 const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                                  const t_pbc* pbc_null)
 {
     /* this loop goes backwards to be able to build *
      * higher type vsites from lower types         */
     for (InteractionFunction ftype : vSiteFunctionTypesReversed)
     {
-        if ((*ilist)[ftype].empty())
+        if (ilists[ftype].empty())
         {
             continue;
         }
@@ -2143,9 +2143,9 @@ static void spreadForceForThread(ArrayRef<const RVec>      x,
         { // TODO remove me
             int nra = interaction_function[ftype].nratoms;
             int inc = 1 + nra;
-            int nr  = (*ilist)[ftype].size();
+            int nr  = ilists[ftype].size();
 
-            const t_iatom* ia = (*ilist)[ftype].iatoms.data();
+            const t_iatom* ia = ilists[ftype].iatoms.data();
 
             for (int i = 0; i < nr;)
             {
@@ -2219,7 +2219,7 @@ static void spreadForceWrapper(ArrayRef<const RVec>      x,
                                matrix                    dxdf,
                                const bool                clearDxdf,
                                ArrayRef<const t_iparams> ip,
-                               const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+                               const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                                const t_pbc* pbc_null)
 {
     if (virialHandling == VirialHandling::NonLinear && clearDxdf)
@@ -2230,13 +2230,13 @@ static void spreadForceWrapper(ArrayRef<const RVec>      x,
     switch (virialHandling)
     {
         case VirialHandling::None:
-            spreadForceForThread<VirialHandling::None>(x, f, fshift, dxdf, ip, ilist, pbc_null);
+            spreadForceForThread<VirialHandling::None>(x, f, fshift, dxdf, ip, ilists, pbc_null);
             break;
         case VirialHandling::Pbc:
-            spreadForceForThread<VirialHandling::Pbc>(x, f, fshift, dxdf, ip, ilist, pbc_null);
+            spreadForceForThread<VirialHandling::Pbc>(x, f, fshift, dxdf, ip, ilists, pbc_null);
             break;
         case VirialHandling::NonLinear:
-            spreadForceForThread<VirialHandling::NonLinear>(x, f, fshift, dxdf, ip, ilist, pbc_null);
+            spreadForceForThread<VirialHandling::NonLinear>(x, f, fshift, dxdf, ip, ilists, pbc_null);
             break;
     }
 }
@@ -2295,7 +2295,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
     if (numThreads == 1)
     {
         matrix dxdf;
-        spreadForceWrapper(x, f, virialHandling, fshift, dxdf, true, iparams_, ilists_, pbc_null);
+        spreadForceWrapper(x, f, virialHandling, fshift, dxdf, true, iparams_, *ilists_, pbc_null);
 
         if (virialHandling == VirialHandling::NonLinear)
         {
@@ -2319,7 +2319,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
                            nlDependentVSites.dxdf,
                            true,
                            iparams_,
-                           &nlDependentVSites.ilist,
+                           nlDependentVSites.ilists,
                            pbc_null);
 
 #pragma omp parallel num_threads(numThreads)
@@ -2372,7 +2372,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
                                        tData.dxdf,
                                        true,
                                        iparams_,
-                                       &tData.idTask.ilist,
+                                       tData.idTask.ilists,
                                        pbc_null);
 
                     /* We need a barrier before reducing forces below
@@ -2410,7 +2410,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
 
                 /* Spread the vsites that spread locally only */
                 spreadForceWrapper(
-                        x, f, virialHandling, fshift_t, tData.dxdf, false, iparams_, &tData.ilist, pbc_null);
+                        x, f, virialHandling, fshift_t, tData.dxdf, false, iparams_, tData.ilists, pbc_null);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -2449,18 +2449,18 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
         dd_move_f_vsites(*domainInfo_.domdec_, f, fshift);
     }
 
-    inc_nrnb(nrnb, eNR_VSITE1, vsite_count(ilists_, InteractionFunction::VirtualSite1));
-    inc_nrnb(nrnb, eNR_VSITE2, vsite_count(ilists_, InteractionFunction::VirtualSite2));
-    inc_nrnb(nrnb, eNR_VSITE2FD, vsite_count(ilists_, InteractionFunction::VirtualSite2FlexibleDistance));
-    inc_nrnb(nrnb, eNR_VSITE3, vsite_count(ilists_, InteractionFunction::VirtualSite3));
-    inc_nrnb(nrnb, eNR_VSITE3FD, vsite_count(ilists_, InteractionFunction::VirtualSite3FlexibleDistance));
-    inc_nrnb(nrnb, eNR_VSITE3FAD, vsite_count(ilists_, InteractionFunction::VirtualSite3FlexibleAngleDistance));
-    inc_nrnb(nrnb, eNR_VSITE3OUT, vsite_count(ilists_, InteractionFunction::VirtualSite3Outside));
-    inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(ilists_, InteractionFunction::VirtualSite4FlexibleDistance));
+    inc_nrnb(nrnb, eNR_VSITE1, vsite_count(*ilists_, InteractionFunction::VirtualSite1));
+    inc_nrnb(nrnb, eNR_VSITE2, vsite_count(*ilists_, InteractionFunction::VirtualSite2));
+    inc_nrnb(nrnb, eNR_VSITE2FD, vsite_count(*ilists_, InteractionFunction::VirtualSite2FlexibleDistance));
+    inc_nrnb(nrnb, eNR_VSITE3, vsite_count(*ilists_, InteractionFunction::VirtualSite3));
+    inc_nrnb(nrnb, eNR_VSITE3FD, vsite_count(*ilists_, InteractionFunction::VirtualSite3FlexibleDistance));
+    inc_nrnb(nrnb, eNR_VSITE3FAD, vsite_count(*ilists_, InteractionFunction::VirtualSite3FlexibleAngleDistance));
+    inc_nrnb(nrnb, eNR_VSITE3OUT, vsite_count(*ilists_, InteractionFunction::VirtualSite3Outside));
+    inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(*ilists_, InteractionFunction::VirtualSite4FlexibleDistance));
     inc_nrnb(nrnb,
              eNR_VSITE4FDN,
-             vsite_count(ilists_, InteractionFunction::VirtualSite4FlexibleDistanceNormalization));
-    inc_nrnb(nrnb, eNR_VSITEN, vsite_count(ilists_, InteractionFunction::VirtualSiteN));
+             vsite_count(*ilists_, InteractionFunction::VirtualSite4FlexibleDistanceNormalization));
+    inc_nrnb(nrnb, eNR_VSITEN, vsite_count(*ilists_, InteractionFunction::VirtualSiteN));
 
     wallcycle_stop(wcycle, WallCycleCounter::VsiteSpread);
 }
@@ -2727,27 +2727,30 @@ static inline void flagAtom(InterdependentTask* idTask, const int atom, const in
  * Our task local atom range is tData->rangeStart - tData->rangeEnd.
  * Vsites that depend only on local atoms, as indicated by taskIndex[]==thread,
  * are assigned to task tData->ilist. Vsites that depend on non-local atoms
- * but not on other vsites are assigned to task tData->id_task.ilist.
+ * but not on other vsites are assigned to task tData->id_task.ilists.
  * taskIndex[] is set for all vsites in our range, either to our local tasks
- * or to the single last task as taskIndex[]=2*nthreads.
+ * or to the single last task as taskIndex[]=2*numThreads.
  */
 static void assignVsitesToThread(VsiteThread*       tData,
-                                 int                thread,
-                                 int                nthread,
-                                 int                natperthread,
+                                 const int          thread,
+                                 const int          numThreads,
+                                 const int          numAtomsPerThread,
                                  gmx::ArrayRef<int> taskIndex,
-                                 const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+                                 const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
                                  ArrayRef<const t_iparams>    ip,
                                  ArrayRef<const ParticleType> ptype)
 {
+    const int c_interdependentTaskIndex = numThreads + thread;
+    const int c_separateTaskIndex       = 2 * numThreads;
+
     for (InteractionFunction ftype : vSiteFunctionTypes)
     {
-        tData->ilist[ftype].clear();
-        tData->idTask.ilist[ftype].clear();
+        tData->ilists[ftype].clear();
+        tData->idTask.ilists[ftype].clear();
 
         const int  nral1 = 1 + NRAL(ftype);
-        const int* iat   = (*ilist)[ftype].iatoms.data();
-        for (int i = 0; i < (*ilist)[ftype].size();)
+        const int* iat   = ilist[ftype].iatoms.data();
+        for (int i = 0; i < ilist[ftype].size();)
         {
             /* Get the number of iatom entries in this virtual site.
              * The 3 below for InteractionFunction::VirtualSiteN is from 1+NRAL(ftype)=3
@@ -2780,7 +2783,7 @@ static void assignVsitesToThread(VsiteThread*       tData,
                              * that is not assigned to the same thread.
                              * Put this vsite into a separate task.
                              */
-                            task = 2 * nthread;
+                            task = c_separateTaskIndex;
                             break;
                         }
 
@@ -2793,7 +2796,7 @@ static void assignVsitesToThread(VsiteThread*       tData,
                          * (or atomic reduction) and a barrier between the two
                          * tasks.
                          */
-                        task = nthread + thread;
+                        task = c_interdependentTaskIndex;
                     }
                 }
             }
@@ -2812,12 +2815,12 @@ static void assignVsitesToThread(VsiteThread*       tData,
                         if (tData->useInterdependentTask)
                         {
                             // Assign to the interdependent task
-                            task = nthread + thread;
+                            task = c_interdependentTaskIndex;
                         }
                         else
                         {
                             // Assign to the separate, non-parallel task
-                            task = 2 * nthread;
+                            task = c_separateTaskIndex;
                         }
                     }
                 }
@@ -2826,21 +2829,21 @@ static void assignVsitesToThread(VsiteThread*       tData,
             /* Update this vsite's thread index entry */
             taskIndex[iat[1 + i]] = task;
 
-            if (task == thread || task == nthread + thread)
+            if (task == thread || task == c_interdependentTaskIndex)
             {
                 /* Copy this vsite to the thread data struct of thread */
                 InteractionList* il_task;
                 if (task == thread)
                 {
-                    il_task = &tData->ilist[ftype];
+                    il_task = &tData->ilists[ftype];
                 }
                 else
                 {
-                    il_task = &tData->idTask.ilist[ftype];
+                    il_task = &tData->idTask.ilists[ftype];
                 }
                 /* Copy the vsite data to the thread-task local array */
                 il_task->push_back(iat[i], numIAtoms - 1, iat + i + 1);
-                if (task == nthread + thread)
+                if (task == c_interdependentTaskIndex)
                 {
                     /* This vsite writes outside our own task force block.
                      * Put it into the interdependent task list and flag
@@ -2851,14 +2854,14 @@ static void assignVsitesToThread(VsiteThread*       tData,
                     {
                         for (int j = i + 2; j < i + nral1; j++)
                         {
-                            flagAtom(&tData->idTask, iat[j], nthread, natperthread);
+                            flagAtom(&tData->idTask, iat[j], numThreads, numAtomsPerThread);
                         }
                     }
                     else
                     {
                         for (int j = i + 2; j < i + numIAtoms; j += 3)
                         {
-                            flagAtom(&tData->idTask, iat[j], nthread, natperthread);
+                            flagAtom(&tData->idTask, iat[j], numThreads, numAtomsPerThread);
                         }
                     }
                 }
@@ -2873,20 +2876,20 @@ static void assignVsitesToThread(VsiteThread*       tData,
 static void assignVsitesToSingleTask(VsiteThread*             tData,
                                      int                      task,
                                      gmx::ArrayRef<const int> taskIndex,
-                                     const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilist,
+                                     const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                                      ArrayRef<const t_iparams> ip)
 {
     for (InteractionFunction ftype : vSiteFunctionTypes)
     {
-        tData->ilist[ftype].clear();
-        tData->idTask.ilist[ftype].clear();
+        tData->ilists[ftype].clear();
+        tData->idTask.ilists[ftype].clear();
 
         int              nral1   = 1 + NRAL(ftype);
         int              inc     = nral1;
-        const int*       iat     = (*ilist)[ftype].iatoms.data();
-        InteractionList* il_task = &tData->ilist[ftype];
+        const int*       iat     = ilists[ftype].iatoms.data();
+        InteractionList& il_task = tData->ilists[ftype];
 
-        for (int i = 0; i < (*ilist)[ftype].size();)
+        for (int i = 0; i < ilists[ftype].size();)
         {
             if (ftype == InteractionFunction::VirtualSiteN)
             {
@@ -2897,7 +2900,7 @@ static void assignVsitesToSingleTask(VsiteThread*             tData,
             if (taskIndex[iat[1 + i]] == task)
             {
                 /* Copy the vsite data to the thread-task local array */
-                il_task->push_back(iat[i], inc - 1, iat + i + 1);
+                il_task.push_back(iat[i], inc - 1, iat + i + 1);
             }
 
             i += inc;
@@ -2905,7 +2908,7 @@ static void assignVsitesToSingleTask(VsiteThread*             tData,
     }
 }
 
-void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilists,
+void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                                     ArrayRef<const t_iparams>    iparams,
                                     const int                    numAtoms,
                                     const int                    homenr,
@@ -2929,7 +2932,7 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
      * it will also perform well.
      */
     int vsite_atom_range;
-    int natperthread;
+    int numAtomsPerThread;
     if (!useDomdec)
     {
         vsite_atom_range = -1;
@@ -2939,8 +2942,8 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
                 if (ftype != InteractionFunction::VirtualSiteN)
                 {
                     int                 nral1 = 1 + NRAL(ftype);
-                    ArrayRef<const int> iat   = (*ilists)[ftype].iatoms;
-                    for (int i = 0; i < (*ilists)[ftype].size(); i += nral1)
+                    ArrayRef<const int> iat   = ilists[ftype].iatoms;
+                    for (int i = 0; i < ilists[ftype].size(); i += nral1)
                     {
                         for (int j = i + 1; j < i + nral1; j++)
                         {
@@ -2952,10 +2955,10 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
                 {
                     int vs_ind_end;
 
-                    ArrayRef<const int> iat = (*ilists)[ftype].iatoms;
+                    ArrayRef<const int> iat = ilists[ftype].iatoms;
 
                     int i = 0;
-                    while (i < (*ilists)[ftype].size())
+                    while (i < ilists[ftype].size())
                     {
                         /* The 3 below is from 1+NRAL(ftype)=3 */
                         vs_ind_end = i + iparams[iat[i]].vsiten.n * 3;
@@ -2971,7 +2974,7 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
             }
         }
         vsite_atom_range++;
-        natperthread = gmx::divideRoundUp(vsite_atom_range, numThreads_);
+        numAtomsPerThread = gmx::divideRoundUp(vsite_atom_range, numThreads_);
     }
     else
     {
@@ -2982,17 +2985,17 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
          * When assigning vsites to threads, we should take care that the last
          * threads also covers the non-local range.
          */
-        vsite_atom_range = numAtoms;
-        natperthread     = gmx::divideRoundUp(homenr, numThreads_);
+        vsite_atom_range  = numAtoms;
+        numAtomsPerThread = gmx::divideRoundUp(homenr, numThreads_);
     }
 
     if (debug)
     {
         fprintf(debug,
-                "virtual site thread dist: natoms %d, range %d, natperthread %d\n",
+                "virtual site thread dist: natoms %d, range %d, numAtomsPerThread %d\n",
                 numAtoms,
                 vsite_atom_range,
-                natperthread);
+                numAtomsPerThread);
     }
 
     /* To simplify the vsite assignment, we make an index which tells us
@@ -3018,7 +3021,7 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
                 /* assign non-vsite particles to task thread */
                 taskIndex_[i] = thread;
             }
-            if (i == (thread + 1) * natperthread && thread < numThreads_)
+            if (i == (thread + 1) * numAtomsPerThread && thread < numThreads_)
             {
                 thread++;
             }
@@ -3080,10 +3083,10 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
             }
 
             /* Assign all vsites that can execute independently on threads */
-            tData.rangeStart = thread * natperthread;
+            tData.rangeStart = thread * numAtomsPerThread;
             if (thread < numThreads_ - 1)
             {
-                tData.rangeEnd = (thread + 1) * natperthread;
+                tData.rangeEnd = (thread + 1) * numAtomsPerThread;
             }
             else
             {
@@ -3091,7 +3094,7 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
                 tData.rangeEnd = numAtoms;
             }
             assignVsitesToThread(
-                    &tData, thread, numThreads_, natperthread, taskIndex_, ilists, iparams, ptype);
+                    &tData, thread, numThreads_, numAtomsPerThread, taskIndex_, ilists, iparams, ptype);
 
             if (tData.useInterdependentTask)
             {
@@ -3126,7 +3129,7 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    /* Assign all remaining vsites, that will have taskIndex[]=2*vsite->nthreads,
+    /* Assign all remaining vsites, that will have taskIndex[]=2*vsite->numThreads,
      * to a single task that will not run in parallel with other tasks.
      */
     assignVsitesToSingleTask(tData_[numThreads_].get(), 2 * numThreads_, taskIndex_, ilists, iparams);
@@ -3144,15 +3147,15 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
 
         for (InteractionFunction ftype : vSiteFunctionTypes)
         {
-            if (!(*ilists)[ftype].empty())
+            if (!ilists[ftype].empty())
             {
                 fprintf(debug, "%-20s thread dist:", interaction_function[ftype].longname);
                 for (int th = 0; th < numThreads_ + 1; th++)
                 {
                     fprintf(debug,
                             " %4d %4d ",
-                            tData_[th]->ilist[ftype].size(),
-                            tData_[th]->idTask.ilist[ftype].size());
+                            tData_[th]->ilists[ftype].size(),
+                            tData_[th]->idTask.ilists[ftype].size());
                 }
                 fprintf(debug, "\n");
             }
@@ -3164,7 +3167,7 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
     int nrThreaded = 0;
     for (int th = 0; th < numThreads_ + 1; th++)
     {
-        nrThreaded += vsiteIlistNrCount(&tData_[th]->ilist) + vsiteIlistNrCount(&tData_[th]->idTask.ilist);
+        nrThreaded += vsiteIlistNrCount(tData_[th]->ilists) + vsiteIlistNrCount(tData_[th]->idTask.ilists);
     }
     GMX_ASSERT(nrThreaded == nrOrig,
                "The number of virtual sites assigned to all thread task has to match the total "
@@ -3173,17 +3176,17 @@ void ThreadingInfo::setVirtualSites(const gmx::EnumerationArray<InteractionFunct
 }
 
 void VirtualSitesHandler::Impl::setVirtualSites(
-        const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilists,
+        const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
         const int                                                          numAtoms,
         const int                                                          homenr,
         ArrayRef<const ParticleType>                                       ptype)
 {
-    ilists_ = ilists;
+    ilists_ = &ilists;
 
     threadingInfo_.setVirtualSites(ilists, iparams_, numAtoms, homenr, ptype, domainInfo_.useDomdec());
 }
 
-void VirtualSitesHandler::setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>* ilists,
+void VirtualSitesHandler::setVirtualSites(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
                                           const int                    numAtoms,
                                           const int                    homenr,
                                           ArrayRef<const ParticleType> ptype)

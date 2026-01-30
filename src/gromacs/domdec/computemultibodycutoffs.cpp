@@ -275,7 +275,7 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
 
     if (moltypeHasVsite(*molt))
     {
-        gmx::constructVirtualSites(xs, ffparams->iparams, &molt->ilist);
+        gmx::constructVirtualSites(xs, ffparams->iparams, molt->ilist);
     }
 }
 

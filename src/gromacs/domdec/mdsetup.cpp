@@ -122,7 +122,7 @@ void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
 
     if (vsite)
     {
-        vsite->setVirtualSites(&top->idef.il, mdatoms->nr, mdatoms->homenr, mdatoms->ptype);
+        vsite->setVirtualSites(top->idef.il, mdatoms->nr, mdatoms->homenr, mdatoms->ptype);
     }
 
     /* Note that with DD only flexible constraints, not shells, are supported
