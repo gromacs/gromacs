@@ -1863,6 +1863,73 @@ static bool default_nb_params(InteractionFunction                               
     return bFound;
 }
 
+/*! \brief Function object for matching CMAP interactions to types
+ *
+ * The matching considers the atom-type names and/or residue-type
+ * names (as applicable to the force field). */
+class CmapTypeMatcher
+{
+public:
+    CmapTypeMatcher(gmx::ArrayRef<const int>      interactionAtomIndices,
+                    const t_atoms&                at,
+                    const PreprocessingAtomTypes& atypes)
+    {
+        // Allocate and fill the caches of atom type and residue type
+        // name for this interaction, so a lookup over potentially
+        // many CMAP interaction types is efficient.
+        atomTypes_.reserve(interactionAtomIndices.size());
+        residueTypeNames_.reserve(interactionAtomIndices.size());
+        for (const int atomIndex : interactionAtomIndices)
+        {
+            atomTypes_.emplace_back(atypes.bondAtomTypeFromAtomType(at.atom[atomIndex].type).value());
+            residueTypeNames_.emplace_back(*at.resinfo[at.atom[atomIndex].resind].name);
+        }
+    }
+
+    //! Call operator that does the actual matching
+    bool operator()(gmx::ArrayRef<const int>         cmapTypeAtomTypes,
+                    gmx::ArrayRef<const std::string> cmapTypeResidueTypeNames)
+    {
+        GMX_RELEASE_ASSERT(
+                atomTypes_.size() == cmapTypeAtomTypes.size(),
+                "Must have matching sizes for interaction atom list and CMAP atom-type list");
+        // Loop over the five atoms
+        for (size_t i = 0; i != atomTypes_.size(); ++i)
+        {
+            // If the corresponding atom types don't match, then the
+            // interaction does not match the CMAP type.
+            if (atomTypes_[i] != cmapTypeAtomTypes[i])
+            {
+                return false;
+            }
+            // Now consider the names of the residue types. (For AMBER
+            // force fields, the name of the residue type is part of the
+            // matching. For CHARMM force fields these names are empty.)
+            // If the corresponding residue type names don't match, then
+            // the interaction does not match the CMAP type.
+            if (!cmapTypeResidueTypeNames[i].empty()
+                && (cmapTypeResidueTypeNames[i] != "*"
+                    && cmapTypeResidueTypeNames[i] != residueTypeNames_[i]))
+            {
+                return false;
+            }
+        }
+        // All atom types and residue type names match, so the CMAP type
+        // matches the interaction.
+        return true;
+    }
+
+private:
+    //! The bonded atom types for this interaction
+    std::vector<int> atomTypes_;
+    /*! \brief The names of the residues for each atom of this interaction
+     *
+     * Note that the five atoms in a CMAP interaction could in
+     * principle come from different residues. This generally not
+     * the case for phi and psi peptide backbone dihdrals, however. */
+    std::vector<const char*> residueTypeNames_;
+};
+
 /*! \brief Find the appropriate type for the current CMAP \c p interaction
  *
  * The CMAP type looked up in the list available for this forcefield, either
@@ -1877,6 +1944,7 @@ static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsO
                         const InteractionOfType&                                        p,
                         WarningHandler*                                                 wi)
 {
+    const int nral = NRAL(InteractionFunction::DihedralEnergyCorrectionMap);
     if (!p.forceParam().empty() && gmx::roundToInt(p.forceParam()[0]) > 0)
     {
         // The user specified the CMAP interaction type for a CMAP
@@ -1886,10 +1954,11 @@ static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsO
         const int cmapTypeIndexFromUser = gmx::roundToInt(p.forceParam()[0]) - 1;
         // Check that the user-specified CMAP type exists
         for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
-             i += NRAL(InteractionFunction::DihedralEnergyCorrectionMap) + 1)
+             i += nral + 1)
         {
-            if (bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
-                        .cmapAtomTypes[i + NRAL(InteractionFunction::DihedralEnergyCorrectionMap)]
+            // Confusingly, the last entry in cmapAtomTypes is the
+            // index into the list of CMAP types.
+            if (bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[i + nral]
                 == cmapTypeIndexFromUser)
             {
                 // Use the user-specified CMAP type
@@ -1899,31 +1968,21 @@ static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsO
     }
     else
     {
-        // Look up the CMAP type from the atom-type names and/or residue-type names
-        auto matchResidueTypeOrAny =
-                [=](const std::string& cmapResidueType, const std::string& cmapTypeResidueType)
-        {
-            return cmapTypeResidueType.empty() || cmapTypeResidueType == "*"
-                   || cmapResidueType == cmapTypeResidueType;
-        };
-        auto matchAtomAndResidueTypes = [&](const int& atomIndex, const int& atomIndexWithinInteraction)
-        {
-            return (atypes.bondAtomTypeFromAtomType(at.atom[atomIndex].type)
-                    == bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[atomIndexWithinInteraction])
-                   && matchResidueTypeOrAny(*at.resinfo[at.atom[atomIndex].resind].name,
-                                            bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
-                                                    .cmapResidueTypeNames_[atomIndexWithinInteraction]);
-        };
-        // Match the current cmap angle against the list of CMAP types
+        // Match the current cmap angle p against the list of CMAP types
+        CmapTypeMatcher          matcher(p.atoms(), at, atypes);
+        gmx::ArrayRef<const int> cmapTypeAtomTypes =
+                bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes;
+        gmx::ArrayRef<const std::string> cmapTypeResidueTypeNames =
+                bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapResidueTypeNames_;
+        // Loop over all the CMAP types, to see if matcher can match
         for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
-             i += NRAL(InteractionFunction::DihedralEnergyCorrectionMap) + 1)
+             i += nral + 1)
         {
-            if (matchAtomAndResidueTypes(p.ai(), i) && matchAtomAndResidueTypes(p.aj(), i + 1)
-                && matchAtomAndResidueTypes(p.ak(), i + 2) && matchAtomAndResidueTypes(p.al(), i + 3)
-                && matchAtomAndResidueTypes(p.am(), i + 4))
+            if (matcher(cmapTypeAtomTypes.subArray(i, nral), cmapTypeResidueTypeNames.subArray(i, nral)))
             {
-                return bondtype[InteractionFunction::DihedralEnergyCorrectionMap]
-                        .cmapAtomTypes[i + NRAL(InteractionFunction::DihedralEnergyCorrectionMap)];
+                // Confusingly, the last entry in cmapAtomTypes is the
+                // index into the list of CMAP types.
+                return bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[i + nral];
             }
         }
     }

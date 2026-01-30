@@ -177,7 +177,7 @@ struct InteractionsOfType
     size_t size() const { return interactionTypes.size(); }
     //! Elements in cmap grid data.
     std::size_t ncmap() const { return cmap.size(); }
-    //! Number of elements in atomTypeNames.
+    //! Number of elements in cmapAtomTypes.
     std::size_t nct() const { return cmapAtomTypes.size(); }
 };
 
