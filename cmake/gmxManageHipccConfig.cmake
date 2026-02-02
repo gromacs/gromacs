@@ -188,7 +188,6 @@ if(${_cmake_build_type} STREQUAL "RELEASE")
     gmx_hip_check_single_flag("-DNDEBUG")
 elseif(${_cmake_build_type} MATCHES "DEB") # should match all builds that include debug symbols, but exclude other RELWITH* builds
     gmx_hip_check_single_flag("-ggdb")
-    gmx_hip_check_single_flag("-O0")
 endif()
 
 # This helper function creates a temporary scope in which we can set

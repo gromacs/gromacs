@@ -6,7 +6,7 @@
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 24.04
-#   Build type: Release (to avoid code gen issues)
+#   Build type: RelWithDebInfo
 #   Compiler: gcc-11
 #   MPI: OpenMPI (AMD build)
 #   SIMD: AVX2_256
@@ -23,7 +23,7 @@ gromacs:gcc-11-hip-622-mpi:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     # Use VkFFT because ROCFFT does not work with this device arch
     CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034 -DGMX_GPU_FFT_LIBRARY=VkFFT"
     COMPILER_MAJOR_VERSION: 11
