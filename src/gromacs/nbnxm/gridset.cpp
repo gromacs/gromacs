@@ -119,7 +119,7 @@ GridSet::GridSet(const PbcType      pbcType,
     gridWork_(numThreads)
 {
     clear_mat(box_);
-    changePinningPolicy(&gridSetData_.cells, pinningPolicy);
+    changePinningPolicy(&gridSetData_.bins, pinningPolicy);
     changePinningPolicy(&gridSetData_.atomIndices, pinningPolicy);
 
     grids_.reserve(numGrids(domainSetup_));
@@ -142,12 +142,12 @@ void GridSet::setLocalAtomOrder()
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 
         // Set the identity mapping
-        gridSetData_.cells.resize(grid.numCells() * grid.numAtomsPerCell());
+        gridSetData_.bins.resize(grid.numBins() * grid.numAtomsPerBin());
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int i = 0; i < grid.numCells() * grid.numAtomsPerCell(); i++)
+        for (int i = 0; i < grid.numBins() * grid.numAtomsPerBin(); i++)
         {
             gridSetData_.atomIndices[i] = i;
-            gridSetData_.cells[i]       = i;
+            gridSetData_.bins[i]        = i;
         }
     }
     else
@@ -155,14 +155,14 @@ void GridSet::setLocalAtomOrder()
         int atomIndex = 0;
         for (int cxy = 0; cxy < grid.numColumns(); cxy++)
         {
-            const int numAtoms  = grid.numAtomsInColumn(cxy);
-            int       cellIndex = grid.firstCellInColumn(cxy) * grid.geometry().numAtomsPerCell_;
+            const int numAtoms = grid.numAtomsInColumn(cxy);
+            int       binIndex = grid.firstBinInColumn(cxy) * grid.geometry().numAtomsPerBin_;
             for (int i = 0; i < numAtoms; i++)
             {
-                gridSetData_.atomIndices[cellIndex] = atomIndex;
-                gridSetData_.cells[atomIndex]       = cellIndex;
+                gridSetData_.atomIndices[binIndex] = atomIndex;
+                gridSetData_.bins[atomIndex]       = binIndex;
                 atomIndex++;
-                cellIndex++;
+                binIndex++;
             }
         }
     }
@@ -177,7 +177,7 @@ static int getGridOffset(ArrayRef<const Grid> grids, int gridIndex)
     else
     {
         const Grid& previousGrid = grids[gridIndex - 1];
-        return previousGrid.atomIndexEnd() / previousGrid.geometry().numAtomsPerCell_;
+        return previousGrid.atomIndexEnd() / previousGrid.geometry().numAtomsPerBin_;
     }
 }
 
@@ -204,7 +204,7 @@ void GridSet::putOnGrid(const matrix            box,
     numGridsInUse_ = gridIndex + 1;
 
     Grid&     grid               = grids_[gridIndex];
-    const int cellOffset         = getGridOffset(grids_, gridIndex);
+    const int binOffset          = getGridOffset(grids_, gridIndex);
     real      maxAtomGroupRadius = NAN;
 
     if (gridIndex == 0)
@@ -271,7 +271,7 @@ void GridSet::putOnGrid(const matrix            box,
 
         gridDensityRatio = generateAndFill2DGrid(&grid,
                                                  gridWork_,
-                                                 &gridSetData_.cells,
+                                                 &gridSetData_.bins,
                                                  lowerCorner,
                                                  upperCorner,
                                                  updateGroupsCog,
@@ -287,8 +287,8 @@ void GridSet::putOnGrid(const matrix            box,
         iteration++;
     }
 
-    /* Copy the already computed cell indices to the grid and sort, when needed */
-    grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, nbat);
+    /* Copy the already computed bin indices to the grid and sort, when needed */
+    grid.setBinIndices(ddZone, binOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, nbat);
 
     if (gridIndex == numGridsInUse_ - 1)
     {
@@ -314,14 +314,14 @@ ArrayRef<const int> GridSet::getLocalGridNumAtomsPerColumn() const
 
         for (int column = 0; column < grid.numColumns(); column++)
         {
-            localGridNumAtomsPerColumn_[column] = grid.numCellsInColumn(column) * grid.numAtomsPerCell();
+            localGridNumAtomsPerColumn_[column] = grid.numBinsInColumn(column) * grid.numAtomsPerBin();
         }
 
         return localGridNumAtomsPerColumn_;
     }
     else
     {
-        return grid.cxy_na();
+        return grid.numAtomsPerColumn();
     }
 }
 

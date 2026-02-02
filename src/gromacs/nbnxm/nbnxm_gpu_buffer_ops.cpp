@@ -85,7 +85,7 @@ void nbnxn_gpu_x_to_nbat_x(const Grid&           grid,
     }
 
     // avoid empty kernel launch, skip to inserting stream dependency
-    if (grid.numCells() != 0)
+    if (grid.numBins() != 0)
     {
         GMX_ASSERT(d_x, "Need a valid device pointer");
         launchNbnxmKernelTransformXToXq(grid, nb, d_x, deviceStream, numColumnsMax, gridId);

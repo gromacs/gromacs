@@ -744,7 +744,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
         if (d_plist->numAtomsPerCluster != h_plist->na_ci)
         {
             sprintf(sbuf,
-                    "In init_plist: the #atoms per cell has changed (from %d to %d)",
+                    "In init_plist: the #atoms per bin has changed (from %d to %d)",
                     d_plist->numAtomsPerCluster,
                     h_plist->na_ci);
             gmx_incons(sbuf);
@@ -1551,26 +1551,26 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
     const bool          bDoTime       = gpu_nbv->bDoTime;
     const int           maxNumColumns = gridSet.numColumnsMax();
 
-    reallocateDeviceBuffer(&gpu_nbv->cxy_na,
+    reallocateDeviceBuffer(&gpu_nbv->numAtomsPerColumn,
                            maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->ncxy_na,
-                           &gpu_nbv->ncxy_na_alloc,
+                           &gpu_nbv->numAtomsPerColumnSize,
+                           &gpu_nbv->numAtomsPerColumnAlloc,
                            *gpu_nbv->deviceContext_);
-    reallocateDeviceBuffer(&gpu_nbv->cxy_ind,
+    reallocateDeviceBuffer(&gpu_nbv->columnToBin,
                            maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->ncxy_ind,
-                           &gpu_nbv->ncxy_ind_alloc,
+                           &gpu_nbv->columnToBinSize,
+                           &gpu_nbv->columnToBinAlloc,
                            *gpu_nbv->deviceContext_);
 
     for (unsigned int g = 0; g < gridSet.grids().size(); g++)
     {
         const Grid& grid = gridSet.grid(g);
 
-        const int  numColumns      = grid.numColumns();
-        const int* atomIndices     = gridSet.atomIndices().data();
-        const int  atomIndicesSize = gridSet.atomIndices().size();
-        const int* cxy_na          = grid.cxy_na().data();
-        const int* cxy_ind         = grid.cxy_ind().data();
+        const int  numColumns        = grid.numColumns();
+        const int* atomIndices       = gridSet.atomIndices().data();
+        const int  atomIndicesSize   = gridSet.atomIndices().size();
+        const int* numAtomsPerColumn = grid.numAtomsPerColumn().data();
+        const int* columnToBin       = grid.columnToBin().data();
 
         auto* timerH2D = bDoTime ? &gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d : nullptr;
 
@@ -1608,8 +1608,8 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
                 timerH2D->openTimingRegion(localStream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->cxy_na,
-                               cxy_na,
+            copyToDeviceBuffer(&gpu_nbv->numAtomsPerColumn,
+                               numAtomsPerColumn,
                                maxNumColumns * g,
                                numColumns,
                                localStream,
@@ -1626,8 +1626,8 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
                 timerH2D->openTimingRegion(localStream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->cxy_ind,
-                               cxy_ind,
+            copyToDeviceBuffer(&gpu_nbv->columnToBin,
+                               columnToBin,
                                maxNumColumns * g,
                                numColumns,
                                localStream,
@@ -1737,8 +1737,8 @@ void gpu_free(NbnxmGpu* nb)
         destroyParamLookupTable(&nbparam->nbfp_comb, &nbparam->nbfp_comb_texobj);
     }
 
-    freeDeviceBuffer(&nb->cxy_na);
-    freeDeviceBuffer(&nb->cxy_ind);
+    freeDeviceBuffer(&nb->numAtomsPerColumn);
+    freeDeviceBuffer(&nb->columnToBin);
     freeDeviceBuffer(&nb->atomIndices);
 
     delete atdat;

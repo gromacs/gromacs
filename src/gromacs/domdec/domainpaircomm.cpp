@@ -148,19 +148,19 @@ GridColumnInfo::GridColumnInfo(const Grid& grid, const int columnIndex)
     usePackedBoundingBoxes_ =
             !geometry.isSimple_ && sc_boundingBoxCornersAsQuadruplets(grid.geometry().pairlistType_);
 
-    const int numIClustersPerCell = geometry.numAtomsPerCell_ / geometry.numAtomsICluster_;
+    const int numIClustersPerBin = geometry.numAtomsPerBin_ / geometry.numAtomsICluster_;
 
-    numClusters_ = (grid.cxy_ind()[columnIndex + 1] - grid.cxy_ind()[columnIndex]) * numIClustersPerCell;
+    numClusters_ = grid.numBinsInColumn(columnIndex) * numIClustersPerBin;
 
     if (usePackedBoundingBoxes_)
     {
         const int bbSize  = DIM * c_numBoundingBoxBounds1D;
         packedClusterBBs_ = grid.packedBoundingBoxes().subArray(
-                grid.cxy_ind()[columnIndex] * numIClustersPerCell * bbSize, numClusters_ * bbSize);
+                grid.firstBinInColumn(columnIndex) * numIClustersPerBin * bbSize, numClusters_ * bbSize);
     }
     else if (geometry.numAtomsJCluster_ <= geometry.numAtomsICluster_)
     {
-        clusterBBs_ = grid.iBoundingBoxes().subArray(grid.cxy_ind()[columnIndex], numClusters_);
+        clusterBBs_ = grid.iBoundingBoxes().subArray(grid.firstBinInColumn(columnIndex), numClusters_);
     }
     else
     {
@@ -169,7 +169,7 @@ GridColumnInfo::GridColumnInfo(const Grid& grid, const int columnIndex)
                    "i-cluster size are supported");
         // j-clusters are twice as large as i, need to divide counts by 2
         numClusters_ /= 2;
-        clusterBBs_ = grid.jBoundingBoxes().subArray(grid.cxy_ind()[columnIndex] / 2, numClusters_);
+        clusterBBs_ = grid.jBoundingBoxes().subArray(grid.firstBinInColumn(columnIndex) / 2, numClusters_);
     }
 }
 
@@ -528,7 +528,7 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
         return {};
     }
 
-    // The cells we operate on here are the largest of the i- and j-clusters,
+    // The bins we operate on here are the largest of the i- and j-clusters,
     // so we need to convert the size used in grid, which is always of the i-clusters
     const int clusterFactor = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_)
                               / grid.geometry().numAtomsICluster_;
@@ -561,7 +561,7 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
 
         if (firstClusterInRange < 0 && isInRange)
         {
-            // This cell is in range and the previous, if present, is not: start a new range
+            // This bin is in range and the previous, if present, is not: start a new range
             firstClusterInRange = cluster;
         }
 
@@ -575,23 +575,23 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
                                              firstClusterInColumn + lastClusterInRange + 1 } });
             numClustersAdded += gridClusterRanges->back().clusterRange.size();
 
-            // Mark that we no longer have an open cell range that is in range
+            // Mark that we no longer have an open bin range that is in range
             firstClusterInRange = -1;
         }
     }
 
     // With GPU grids, the number of clusters in a column needs to be a multiple of the number
-    // of clusters per cell. Here this is not guaranteed, so we might need to add some clusters,
+    // of clusters per bin. Here this is not guaranteed, so we might need to add some clusters,
     // which will then be clusters that do not actually need to be communicated.
     if (!grid.geometry().isSimple_)
     {
-        const int numClustersPerCell = grid.geometry().numAtomsPerCell_ / grid.geometry().numAtomsICluster_;
+        const int numClustersPerBin = grid.geometry().numAtomsPerBin_ / grid.geometry().numAtomsICluster_;
 
-        int numClustersModCell = (numClustersAdded % numClustersPerCell);
-        if (numClustersModCell != 0)
+        int numClustersModBin = (numClustersAdded % numClustersPerBin);
+        if (numClustersModBin != 0)
         {
             // We need to add this many clusters
-            int numClustersToAdd = numClustersPerCell - numClustersModCell;
+            int numClustersToAdd = numClustersPerBin - numClustersModBin;
 
             // First add clusters up to the end of this column
             const int numNonSelectedClustersAtEnd = firstClusterInColumn + numClustersInColumn
@@ -624,9 +624,9 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
             }
         }
 
-        GMX_ASSERT(numClustersAdded % numClustersPerCell == 0,
+        GMX_ASSERT(numClustersAdded % numClustersPerBin == 0,
                    "The number of clusters added should be a multiple of the number of clusters "
-                   "per cell");
+                   "per bin");
     }
 
     return numClustersAdded;
@@ -834,7 +834,7 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
 FastVector<std::pair<int, int>> DomainCommBackward::makeColumnsSendBuffer() const
 {
-    // Store the grid info with only index and cell count per column
+    // Store the grid info with only index and cluster range sizes per column
     FastVector<std::pair<int, int>> sendBuffer;
     sendBuffer.reserve(clusterRangesToSend_.size());
     for (const auto& clusterRange : clusterRangesToSend_)
@@ -866,7 +866,7 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
         fprintf(debug, "For zone %d, receiving %d atoms\n", zone_, numAtoms());
     }
 
-    // Store the grid info with only pairs of column indices and cell counts
+    // Store the grid info with only pairs of column indices and cluster range sizes
     const FastVector<std::pair<int, int>> sendBuffer = send.makeColumnsSendBuffer();
 
     clusterRangesReceived_.resize(receiveSizes[0]);

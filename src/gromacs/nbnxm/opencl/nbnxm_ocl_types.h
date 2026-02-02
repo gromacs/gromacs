@@ -190,17 +190,17 @@ struct NbnxmGpu
     /*! \brief size of atom indices allocated in device buffer */
     int atomIndicesSize_alloc = 0;
     /*! \brief x buf ops num of atoms */
-    DeviceBuffer<int> cxy_na;
-    /*! \brief number of elements in cxy_na */
-    int ncxy_na = 0;
+    DeviceBuffer<int> numAtomsPerColumn;
+    /*! \brief number of elements in numAtomsPerColumn */
+    int numAtomsPerColumnSize = 0;
     /*! \brief number of elements allocated in device buffer */
-    int ncxy_na_alloc = 0;
-    /*! \brief x buf ops cell index mapping */
-    DeviceBuffer<int> cxy_ind;
-    /*! \brief number of elements in cxy_ind */
-    int ncxy_ind = 0;
+    int numAtomsPerColumnAlloc = 0;
+    /*! \brief x buf ops bin index mapping */
+    DeviceBuffer<int> columnToBin;
+    /*! \brief number of elements in columnToBin */
+    int columnToBinSize = 0;
     /*! \brief number of elements allocated in device buffer */
-    int ncxy_ind_alloc = 0;
+    int columnToBinAlloc = 0;
 
     //! local and non-local GPU queues
     gmx::EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams;

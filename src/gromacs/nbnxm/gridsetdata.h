@@ -56,14 +56,14 @@ namespace gmx
 /*! \internal
  * \brief Struct that holds grid data that is shared over all grids
  *
- * To enable a single coordinate and force array, a single cell range
+ * To enable a single coordinate and force array, a single bin range
  * is needed which covers all grids.
  */
 struct GridSetData
 {
-    //! The cell indices for all atoms, the cell indices number contiguously over all grids
-    HostVector<int> cells;
-    //! The atom indices for all atoms stored in cell order
+    //! The bin indices for all atoms, the bin indices number contiguously over all grids
+    HostVector<int> bins;
+    //! The atom indices for all atoms stored in bin order
     HostVector<int> atomIndices;
 };
 

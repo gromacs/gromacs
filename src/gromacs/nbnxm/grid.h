@@ -41,8 +41,8 @@
  * on a grid for one domain decomposition zone. This grid is used for
  * generating cluster pair lists for computing non-bonded pair interactions.
  * The grid consists of a regular array of columns along dimensions x and y.
- * Along z the number of cells and their boundaries vary between the columns.
- * Each cell can hold one or more clusters of atoms, depending on the grid
+ * Along z the number of bins and their boundaries vary between the columns.
+ * Each bin can hold one or more clusters of atoms, depending on the grid
  * geometry, which is set by the pair-list type.
  *
  * \author Berk Hess <hess@kth.se>
@@ -77,7 +77,7 @@ struct GridSetData;
 struct GridWork;
 
 /*! \internal
- * \brief Bounding box for one dimension of a grid cell
+ * \brief Bounding box for one dimension of a grid bin
  */
 struct BoundingBox1D
 {
@@ -90,7 +90,7 @@ struct BoundingBox1D
 //! The physical dimensions of a grid \internal
 struct GridDimensions
 {
-    //! Returns the lower corner along dimension \p dim of the cell with index \p cellIndex
+    //! Returns the lower corner along dimension \p dim of the cell with index \p binIndex
     real cellLowerCorner(int dim, int cellIndex) const
     {
         return lowerCorner[dim] + cellIndex * cellSize[dim];
@@ -110,7 +110,7 @@ struct GridDimensions
     RVec gridSize;
     //! An estimate for the atom number density of the region targeted by the grid
     real atomDensity;
-    //! The maximum distance an atom can be outside of a cell and outside of the grid
+    //! The maximum distance an atom can be outside of a cell/bin and outside of the grid
     real maxAtomGroupRadius;
     //! Size of cell along dimension x and y
     real cellSize[DIM - 1];
@@ -125,20 +125,21 @@ struct GridDimensions
  *
  * This is a rectangular 3D grid covering a potentially non-rectangular
  * volume which is either the whole unit cell or the local zone or part
- * of a non-local zone when using domain decomposition. The grid cells
- * are even spaced along x/y and irregular along z. Each cell is sub-divided
- * into atom clusters. With a CPU geometry, each cell contains 1 or 2 clusters.
- * With a GPU geometry, each cell contains up to 8 clusters. The geometry is
+ * of a non-local zone when using domain decomposition. An uniformly space
+ * grid is used along dimensions x and y. Along dimension z atoms are
+ * organized in bins with equal atom count. Each bin is sub-divided
+ * into atom clusters. With a CPU geometry, each bin contains 1 or 2 clusters.
+ * With a GPU geometry, each bin contains 8 clusters. The geometry is
  * set by the pairlist type which is the only argument of the constructor.
  *
  * When multiple grids are used, i.e. with domain decomposition, we want
  * to avoid the overhead of multiple coordinate arrays or extra indexing.
- * Therefore each grid stores a cell offset, so a contiguous cell index
+ * Therefore each grid stores a bin offset, so a contiguous bin index
  * can be used to index atom arrays. All methods returning atom indices
  * return indices which index into a full atom array.
  *
  * Note that when atom groups, instead of individual atoms, are assigned
- * to grid cells, individual atoms can be geometrically outside the cell
+ * to grid bins, individual atoms can be geometrically outside the bin
  * and grid that they have been assigned to (as determined by the center
  * or geometry of the atom group they belong to).
  */
@@ -146,11 +147,11 @@ class Grid
 {
 public:
     /*! \internal
-     * \brief The cluster and cell geometry of a grid
+     * \brief The cluster and bin geometry of a grid
      */
     struct Geometry
     {
-        //! Constructs the cluster/cell geometry given the type of pairlist
+        //! Constructs the cluster+bin geometry given the type of pairlist
         Geometry(PairlistType pairlistType);
 
         //! Is this grid simple (CPU) or hierarchical (GPU)
@@ -159,8 +160,8 @@ public:
         int numAtomsICluster_;
         //! Number of atoms for list j-clusters
         int numAtomsJCluster_;
-        //! Number of atoms per cell
-        int numAtomsPerCell_;
+        //! Number of atoms per bin
+        int numAtomsPerBin_;
         //! 2log of na_c
         int numAtomsICluster2Log_;
         //! What type of pairlist is in use.
@@ -170,7 +171,7 @@ public:
     //! Constructs a grid given the type of pairlist
     Grid(PairlistType pairlistType, int ddZone, const bool& haveFep, PinningPolicy pinningPolicy);
 
-    //! Returns the geometry of the grid cells
+    //! Returns the geometry of the grid bins
     const Geometry& geometry() const { return geometry_; }
 
     //! Returns the zone this grid belong to
@@ -182,53 +183,50 @@ public:
     //! Returns the total number of grid columns
     int numColumns() const { return dimensions_.numCells[XX] * dimensions_.numCells[YY]; }
 
-    //! Returns the total number of grid cells
-    int numCells() const { return numCellsTotal_; }
+    //! Returns the total number of grid bins
+    int numBins() const { return numBinsTotal_; }
 
-    //! Returns the cell offset of (the first cell of) this grid in the list of cells combined over all grids
-    int cellOffset() const { return cellOffset_; }
+    //! Returns the bin offset of (the first bin of) this grid in the list of bins combined over all grids
+    int binOffset() const { return binOffset_; }
 
-    //! Returns the maximum number of grid cells in a column
-    int numCellsColumnMax() const { return numCellsColumnMax_; }
+    //! Returns the maximum number of grid bins in a column
+    int numBinsColumnMax() const { return numBinsColumnMax_; }
 
-    //! Returns the first cell index in the grid, starting at 0 in this grid
-    int firstCellInColumn(int columnIndex) const { return cxy_ind_[columnIndex]; }
+    //! Returns the first bin index in the grid, starting at 0 in this grid
+    int firstBinInColumn(int columnIndex) const { return columnToBin_[columnIndex]; }
 
-    //! Returns the number of cells in the column
-    int numCellsInColumn(int columnIndex) const
+    //! Returns the number of bins in the column
+    int numBinsInColumn(int columnIndex) const
     {
-        return cxy_ind_[columnIndex + 1LL] - cxy_ind_[columnIndex];
+        return columnToBin_[columnIndex + 1LL] - columnToBin_[columnIndex];
     }
 
     //! Returns the index of the first atom in the column
     int firstAtomInColumn(int columnIndex) const
     {
-        return (cellOffset_ + cxy_ind_[columnIndex]) * geometry_.numAtomsPerCell_;
+        return (binOffset_ + columnToBin_[columnIndex]) * geometry_.numAtomsPerBin_;
     }
 
     //! Returns the number of real atoms in the column
-    int numAtomsInColumn(int columnIndex) const { return cxy_na_[columnIndex]; }
+    int numAtomsInColumn(int columnIndex) const { return numAtomsPerColumn_[columnIndex]; }
 
-    /*! \brief Returns a view of the number of non-filler, atoms for each grid column
-     *
-     * \todo Needs a useful name. */
-    ArrayRef<const int> cxy_na() const { return cxy_na_; }
-    /*! \brief Returns a view of the grid-local cell index for each grid column
-     *
-     * \todo Needs a useful name. */
-    ArrayRef<const int> cxy_ind() const { return cxy_ind_; }
+    //! Returns a view of the number of non-filler, atoms for each grid column
+    ArrayRef<const int> numAtomsPerColumn() const { return numAtomsPerColumn_; }
 
-    //! Returns the number of real atoms in the column
-    int numAtomsPerCell() const { return geometry_.numAtomsPerCell_; }
+    //! Returns a view of the grid-local bin index for each grid column
+    ArrayRef<const int> columnToBin() const { return columnToBin_; }
+
+    //! Returns the number of atoms in a bin
+    int numAtomsPerBin() const { return geometry_.numAtomsPerBin_; }
 
     //! Returns the number of atoms in the column including padding
     int paddedNumAtomsInColumn(int columnIndex) const
     {
-        return numCellsInColumn(columnIndex) * geometry_.numAtomsPerCell_;
+        return numBinsInColumn(columnIndex) * geometry_.numAtomsPerBin_;
     }
 
     //! Returns the end of the atom index range on the grid, including padding
-    int atomIndexEnd() const { return (cellOffset_ + numCellsTotal_) * geometry_.numAtomsPerCell_; }
+    int atomIndexEnd() const { return (binOffset_ + numBinsTotal_) * geometry_.numAtomsPerBin_; }
 
     //! Returns whether any atom in the cluster is perturbed
     bool clusterIsPerturbed(int clusterIndex) const { return fep_[clusterIndex] != 0U; }
@@ -251,14 +249,14 @@ public:
     //! Returns the packed bounding boxes for all clusters on the grid, empty with a CPU list
     ArrayRef<const float> packedBoundingBoxes() const { return pbb_; }
 
-    //! Returns the bounding boxes along z for all i-cells on the grid
+    //! Returns the bounding boxes along z for all i-bins on the grid
     ArrayRef<const BoundingBox1D> zBoundingBoxes() const { return bbcz_; }
 
     //! Returns the flags for all clusters on the grid
     ArrayRef<const int> clusterFlags() const { return flags_; }
 
-    //! Returns the number of clusters for all cells on the grid, empty with a CPU geometry
-    ArrayRef<const int> numClustersPerCell() const { return numClusters_; }
+    //! Returns the number of clusters for all bins on the grid, empty with a CPU geometry
+    ArrayRef<const int> numClustersPerBin() const { return numClusters_; }
 
     //! Returns the cluster index for an atom
     int atomToCluster(int atomIndex) const
@@ -271,7 +269,7 @@ public:
     {
         if (geometry_.isSimple_)
         {
-            return numCellsTotal_;
+            return numBinsTotal_;
         }
         else
         {
@@ -279,11 +277,11 @@ public:
         }
     }
 
-    //! Returns the avarage dimension of a grid cell
-    RVec averageCellSize() const;
+    //! Returns the average spatial size of a grid bin
+    RVec averageBinSize() const;
 
-    //! Resizes the bouding box and FEP flag lists for at most \p maxNumCells
-    void resizeBoundingBoxesAndFlags(const int maxNumCells);
+    //! Resizes the bouding box and FEP flag lists for at most \p maxNumBins
+    void resizeBoundingBoxesAndFlags(int maxNumBins);
 
     /*! \brief Sets the grid dimensions
      *
@@ -303,15 +301,15 @@ public:
                        real*       atomDensity,
                        real        maxAtomGroupRadius);
 
-    //! Sets the cell indices using indices in \p gridSetData and \p gridWork
-    void setCellIndices(int                     ddZone,
-                        int                     cellOffset,
-                        GridSetData*            gridSetData,
-                        ArrayRef<GridWork>      gridWork,
-                        Range<int>              atomRange,
-                        ArrayRef<const int32_t> atomInfo,
-                        ArrayRef<const RVec>    x,
-                        nbnxn_atomdata_t*       nbat);
+    //! Sets the bin indices using indices in \p gridSetData and \p gridWork
+    void setBinIndices(int                     ddZone,
+                       int                     binOffset,
+                       GridSetData*            gridSetData,
+                       ArrayRef<GridWork>      gridWork,
+                       Range<int>              atomRange,
+                       ArrayRef<const int32_t> atomInfo,
+                       ArrayRef<const RVec>    x,
+                       nbnxn_atomdata_t*       nbat);
 
     /*! \brief Sets a non-local grid using data communicated from a different domain
      *
@@ -324,7 +322,7 @@ public:
      *                           the list should be ordered on column index, the same column
      *                           index can appear multiple times; note that the clusters
      *                           here have size of the maximum of the i- and j-sizes
-     * \param[in] cellOffset  The offset of this grid in the list of cells over all grids
+     * \param[in] binOffset   The offset of this grid in the list of bins over all grids
      * \param[in] atomInfo    A list of information for all local and non-local atoms
      * \param[in] x           The coordinates for all local and non-local atoms
      * \param[in,out] gridSetData  The data shared over all grids
@@ -333,13 +331,13 @@ public:
     void setNonLocalGrid(int                                 ddZone,
                          const GridDimensions&               dimensions,
                          ArrayRef<const std::pair<int, int>> clusterRanges,
-                         int                                 cellOffset,
+                         int                                 binOffset,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,
                          GridSetData*                        gridSetData,
                          nbnxn_atomdata_t*                   nbat);
 
-    //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
+    //! Determine in which grid columns atoms should go, store bins and atom counts in \p bins and \p numAtomsPerColumn
     static void calcColumnIndices(const GridDimensions&  gridDims,
                                   const UpdateGroupsCog* updateGroupsCog,
                                   Range<int>             atomRange,
@@ -348,20 +346,20 @@ public:
                                   const int*             move,
                                   int                    thread,
                                   int                    nthread,
-                                  ArrayRef<int>          cell,
-                                  ArrayRef<int>          cxy_na);
+                                  ArrayRef<int>          bins,
+                                  ArrayRef<int>          numAtomsPerColumn);
 
 private:
-    /*! \brief Fill a pair search cell with atoms
+    /*! \brief Fill a pair search bin with atoms
      *
      * Optionally sorts atoms and sets the interaction flags.
      */
-    void fillCell(GridSetData*            gridSetData,
-                  nbnxn_atomdata_t*       nbat,
-                  int                     atomStart,
-                  int                     atomEnd,
-                  ArrayRef<const int32_t> atomInfo,
-                  ArrayRef<const RVec>    x);
+    void fillBin(GridSetData*            gridSetData,
+                 nbnxn_atomdata_t*       nbat,
+                 int                     atomStart,
+                 int                     atomEnd,
+                 ArrayRef<const int32_t> atomInfo,
+                 ArrayRef<const RVec>    x);
 
     //! Spatially sort the atoms within the given column range, for CPU geometry
     void sortColumnsCpuGeometry(GridSetData*            gridSetData,
@@ -383,7 +381,7 @@ private:
 
     // Data members
 
-    //! The geometry of the grid clusters and cells
+    //! The geometry of the grid clusters and bins
     Geometry geometry_;
 
     // The DD zone the grid belong to
@@ -392,45 +390,41 @@ private:
     //! The physical dimensions of the grid
     GridDimensions dimensions_;
 
-    //! The total number of cells in this grid
-    int numCellsTotal_;
-    //! Index in nbs->cell corresponding to cell 0
-    int cellOffset_;
-    //! The maximum number of cells in a column
-    int numCellsColumnMax_;
+    //! The total number of bins in this grid
+    int numBinsTotal_;
+    //! Index in GridSetData corresponding to bin 0 of this grid
+    int binOffset_;
+    //! The maximum number of bins in a column
+    int numBinsColumnMax_;
 
     /* Grid data */
-    /*! \brief The number of, non-filler, atoms for each grid column.
-     *
-     * \todo Needs a useful name. */
-    HostVector<int> cxy_na_;
-    /*! \brief The grid-local cell index for each grid column
-     *
-     * \todo Needs a useful name. */
-    HostVector<int> cxy_ind_;
+    //! The number of, non-filler, atoms for each grid column.
+    HostVector<int> numAtomsPerColumn_;
+    //! The grid-local bin index for each grid column
+    HostVector<int> columnToBin_;
 
     //! The number of clusters for each column
     std::vector<int> numClusters_;
 
     /* Bounding boxes */
-    //! Bounding boxes in z for the i-cells
+    //! Bounding boxes in z for the i-bins
     std::vector<BoundingBox1D> bbcz_;
-    //! 3D bounding boxes for the sub cells
+    //! 3D bounding boxes for the clusters
     std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bb_;
     //! 3D j-bounding boxes for the case where the i- and j-cluster sizes are different
     std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bbjStorage_;
     //! 3D j-bounding boxes
     ArrayRef<BoundingBox> bbj_;
-    //! 3D bounding boxes in packed xxxx format per cell
+    //! 3D bounding boxes in packed xxxx format per bin
     std::vector<float, AlignedAllocator<float>> pbb_;
 
     //! Tells whether we have perturbed interactions, authorative source is in GridSet (never modified)
     const bool& haveFep_;
 
     /* Bit-flag information */
-    //! Flags for properties of clusters in each cell
+    //! Flags for properties of clusters in each bin
     std::vector<int> flags_;
-    //! Signal bits for atoms in each cell that tell whether an atom is perturbed
+    //! Signal bits for atoms in each cluster that tell whether an atom is perturbed
     std::vector<unsigned int> fep_;
 
     /* Statistics */
@@ -442,7 +436,7 @@ private:
  *
  * \param[in,out] grid      The pair search grid for one DD zone
  * \param[in,out] gridWork  Working data for each thread
- * \param[in,out] cells     The grid cell list
+ * \param[in,out] bins      The grid bin list
  * \param[in] lowerCorner   The minimum Cartesian coordinates of the grid
  * \param[in] upperCorner   The maximum Cartesian coordinates of the grid
  * \param[in] updateGroupsCog  The center of geometry of update groups, can be nullptr
@@ -460,7 +454,7 @@ private:
  */
 real generateAndFill2DGrid(Grid*                  grid,
                            ArrayRef<GridWork>     gridWork,
-                           HostVector<int>*       cells,
+                           HostVector<int>*       bins,
                            const rvec             lowerCorner,
                            const rvec             upperCorner,
                            const UpdateGroupsCog* updateGroupsCog,

@@ -1060,18 +1060,18 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const GridSet& gridS
         /* Loop over all columns and copy and fill */
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int c = 0; c < grid.numCells() * nsubc; c++)
+        for (int cluster = 0; cluster < grid.numBins() * nsubc; cluster++)
         {
             /* Does this cluster contain perturbed particles? */
-            if (grid.clusterIsPerturbed(c))
+            if (grid.clusterIsPerturbed(cluster))
             {
                 const int numAtomsPerCluster = grid.geometry().numAtomsICluster_;
                 for (int i = 0; i < numAtomsPerCluster; i++)
                 {
                     /* Is this a perturbed particle? */
-                    if (grid.atomIsPerturbed(c, i))
+                    if (grid.atomIsPerturbed(cluster, i))
                     {
-                        int ind = c_offset + c * numAtomsPerCluster + i;
+                        int ind = c_offset + cluster * numAtomsPerCluster + i;
                         /* Set atom type and charge to non-interacting */
                         params.type[ind]  = params.numTypes - 1;
                         q[ind * stride_q] = 0;
@@ -1575,8 +1575,8 @@ void nbnxn_atomdata_t::reduceForces(const AtomLocality locality, const GridSet& 
         reduceForcesOverThreads();
     }
 
-    const int* cellIndices =
-            (gridSet.localAtomOrderMatchesNbnxmOrder() ? nullptr : gridSet.cells().data());
+    const int* binIndices =
+            (gridSet.localAtomOrderMatchesNbnxmOrder() ? nullptr : gridSet.bins().data());
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
@@ -1598,16 +1598,16 @@ void nbnxn_atomdata_t::reduceForces(const AtomLocality locality, const GridSet& 
             switch (FFormat)
             {
                 case nbatXYZ:
-                    addNbatFXYZToFPart<STRIDE_XYZ>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    addNbatFXYZToFPart<STRIDE_XYZ>(outputBuffers_[0], atomStart, atomEnd, binIndices, f);
                     break;
                 case nbatXYZQ:
-                    addNbatFXYZToFPart<STRIDE_XYZQ>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    addNbatFXYZToFPart<STRIDE_XYZQ>(outputBuffers_[0], atomStart, atomEnd, binIndices, f);
                     break;
                 case nbatX4:
-                    addNbatFPackedToFPart<c_packX4>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    addNbatFPackedToFPart<c_packX4>(outputBuffers_[0], atomStart, atomEnd, binIndices, f);
                     break;
                 case nbatX8:
-                    addNbatFPackedToFPart<c_packX8>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    addNbatFPackedToFPart<c_packX8>(outputBuffers_[0], atomStart, atomEnd, binIndices, f);
                     break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported force format");
             }

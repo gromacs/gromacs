@@ -38,7 +38,7 @@
  * Declares the GridSet class.
  *
  * This class holds the grids for the local and non-local domain decomposition
- * zones, as well as the cell and atom data that covers all grids.
+ * zones, as well as the bin and atom data that covers all grids.
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
@@ -158,10 +158,10 @@ public:
 
         const Grid& previousGrid = grids_[gridIndex - 1];
 
-        const int cellOffset = previousGrid.cellOffset() + previousGrid.numCells();
+        const int binOffset = previousGrid.binOffset() + previousGrid.numBins();
 
         grids_[gridIndex].setNonLocalGrid(
-                ddZone, gridDimensions, columns, cellOffset, atomInfo, x, &gridSetData_, nbat);
+                ddZone, gridDimensions, columns, binOffset, atomInfo, x, &gridSetData_, nbat);
 
         numRealAtomsTotal_ = -1;
     }
@@ -193,7 +193,7 @@ public:
     //! Returns the atom order on the grid for the local atoms
     ArrayRef<const int> getLocalAtomorder() const
     {
-        /* Return the atom order for the home cell (index 0) */
+        /* Return the atom order for the home bin (index 0) */
         const int numIndices = grids_[0].atomIndexEnd() - grids_[0].firstAtomInColumn(0);
 
         return constArrayRefFromArray(atomIndices().data(), numIndices);
@@ -211,8 +211,8 @@ public:
         return constArrayRefFromArray(grids_.data(), numGridsInUse_);
     }
 
-    //! Returns the cell indices for all atoms, the cell indices number contiguously over all grids
-    ArrayRef<const int> cells() const { return gridSetData_.cells; }
+    //! Returns the bin indices for all atoms, the bin indices number contiguously over all grids
+    ArrayRef<const int> bins() const { return gridSetData_.bins; }
 
     //! Returns the grid atom indices covering all grids
     ArrayRef<const int> atomIndices() const { return gridSetData_.atomIndices; }
@@ -240,7 +240,7 @@ private:
     std::vector<Grid> grids_;
     //! The number of grids in use
     int numGridsInUse_;
-    //! The cell and atom index data which runs over all grids
+    //! The bin and atom index data which runs over all grids
     GridSetData gridSetData_;
     //! The type of pairlist that will be used with this grid set
     PairlistType pairlistType_;

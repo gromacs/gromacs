@@ -179,7 +179,7 @@ void nonbonded_verlet_t::convertCoordinatesGpu(const AtomLocality    locality,
 
 ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 {
-    return pairSearch_->gridSet().cells();
+    return pairSearch_->gridSet().bins();
 }
 
 ArrayRef<const int> nonbonded_verlet_t::getLocalGridNumAtomsPerColumn() const

@@ -84,17 +84,17 @@ struct NbnxmGpu
     /*! \brief size of atom indices allocated in device buffer */
     int atomIndicesSize_alloc = 0;
     /*! \brief x buf ops num of atoms */
-    int* cxy_na = nullptr;
-    /*! \brief number of elements in cxy_na */
-    int ncxy_na = 0;
+    int* numAtomsPerColumn = nullptr;
+    /*! \brief number of elements in numAtomsPerColumn */
+    int numAtomsPerColumnSize = 0;
     /*! \brief number of elements allocated in device buffer */
-    int ncxy_na_alloc = 0;
-    /*! \brief x buf ops cell index mapping */
-    int* cxy_ind = nullptr;
-    /*! \brief number of elements in cxy_ind */
-    int ncxy_ind = 0;
+    int numAtomsPerColumnAlloc = 0;
+    /*! \brief x buf ops bin index mapping */
+    int* columnToBin = nullptr;
+    /*! \brief number of elements in columnToBin */
+    int columnToBinSize = 0;
     /*! \brief number of elements allocated in device buffer */
-    int ncxy_ind_alloc = 0;
+    int columnToBinAlloc = 0;
     /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
