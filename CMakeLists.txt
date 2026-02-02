@@ -765,12 +765,17 @@ if(GMX_GPU)
         endif()
     endif()
 endif()
-set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X 2 CACHE STRING "Number of clusters along X in a pair-search grid cell for GPU lists")
-set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid cell for GPU lists")
-set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid cell for GPU lists")
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X)
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y)
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
+set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X 2 CACHE STRING "Number of clusters along X in a pair-search grid bin for GPU lists")
+set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid bin for GPU lists")
+set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid bin for GPU lists")
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z)
+if (DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X OR
+    DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y OR
+    DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
+    message(FATAL_ERROR "Configuration parameters GMX_GPU_NB_NUM_CLUSTER_PER_CELL_* have changed name to GMX_GPU_NB_NUM_CLUSTER_PER_BIN_*, please update accordingly")
+endif()
 
 # For build with CUDA/SYCL and Lib-MPI, check if underlying MPI implementation is GPU-aware
 # GPU-aware MPI allows direct GPU communication without staging data through host

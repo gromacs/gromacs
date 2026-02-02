@@ -1088,7 +1088,10 @@ flags for compatibility and improved performance:
 
    cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
-            -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1 -DGMX_GPU_NB_CLUSTER_SIZE=8
+            -DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_X=1 -DGMX_GPU_NB_CLUSTER_SIZE=8
+
+Note that ``GMX_GPU_NB_NUM_CLUSTER_PER_CELL`` changed its name in |Gromacs| 2027.0
+to ``GMX_GPU_NB_NUM_CLUSTER_PER_BIN`` without changing its function.
 
 You might also consider using :ref:`double-batched FFT library <bbfft installation>`.
 
@@ -1153,10 +1156,10 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
       is better. When compiling with AdaptiveCpp_, the default value is 8,
       which is the only supported value for AMD and NVIDIA devices.
 
-``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z``
+``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z``
       Sets the number of clusters along X, Y, or Z in a pair-search
-      grid cell, default 2. When targeting Intel Ponte Vecchio GPUs,
-      set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1`` and leave the
+      grid bin, default 2. When targeting Intel Ponte Vecchio GPUs,
+      set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_X=1`` and leave the
       other values as the default.
 
 ``-DGMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT``

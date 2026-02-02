@@ -1053,7 +1053,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const GridSet& gridS
     for (const Grid& grid : gridSet.grids())
     {
         const auto layoutType = grid.geometry().pairlistType_;
-        const int  nsubc = (grid.geometry().isSimple_) ? 1 : sc_gpuNumClusterPerCell(layoutType);
+        const int  nsubc = (grid.geometry().isSimple_) ? 1 : sc_gpuNumClusterPerBin(layoutType);
 
         const int c_offset = grid.firstAtomInColumn(0);
 

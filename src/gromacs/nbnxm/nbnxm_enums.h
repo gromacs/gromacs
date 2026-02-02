@@ -182,9 +182,9 @@ constexpr int c_nbnxnGpuClusterSize = 8;
  *
  * Typically all 2, but X can be 1 when targeting Intel Ponte Vecchio */
 //! \{
-constexpr int c_gpuNumClusterPerCellZ = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z;
-constexpr int c_gpuNumClusterPerCellY = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y;
-constexpr int c_gpuNumClusterPerCellX = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X;
+constexpr int c_gpuNumClusterPerBinZ = GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z;
+constexpr int c_gpuNumClusterPerBinY = GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y;
+constexpr int c_gpuNumClusterPerBinX = GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X;
 //! \}
 
 /*! \brief The number of sub-parts used for data storage for a GPU cluster pair
@@ -215,44 +215,44 @@ static constexpr int sc_gpuClusterSize(const PairlistType pairlistType)
 }
 
 //! The number of super clusters in the X dimension.
-static constexpr int sc_gpuNumClusterPerCellX(const PairlistType pairlistType)
+static constexpr int sc_gpuNumClusterPerBinX(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_gpuNumClusterPerCellX;
+        default: return detail::c_gpuNumClusterPerBinX;
     }
 }
 
 //! The number of super clusters in the X dimension.
-static constexpr int sc_gpuNumClusterPerCellY(const PairlistType pairlistType)
+static constexpr int sc_gpuNumClusterPerBinY(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_gpuNumClusterPerCellY;
+        default: return detail::c_gpuNumClusterPerBinY;
     }
 }
 
 //! The number of super clusters in the X dimension.
-static constexpr int sc_gpuNumClusterPerCellZ(const PairlistType pairlistType)
+static constexpr int sc_gpuNumClusterPerBinZ(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_gpuNumClusterPerCellZ;
+        default: return detail::c_gpuNumClusterPerBinZ;
     }
 }
 
 //! The NBNxM GPU super cluster size according to the kernel layout.
 static constexpr int sc_gpuClusterPerSuperCluster(const PairlistType pairlistType)
 {
-    return sc_gpuNumClusterPerCellX(pairlistType) * sc_gpuNumClusterPerCellY(pairlistType)
-           * sc_gpuNumClusterPerCellZ(pairlistType);
+    return sc_gpuNumClusterPerBinX(pairlistType) * sc_gpuNumClusterPerBinY(pairlistType)
+           * sc_gpuNumClusterPerBinZ(pairlistType);
 }
 
 //! The NBNxM GPU super cluster size according to the kernel layout.
-static constexpr int sc_gpuNumClusterPerCell(const PairlistType pairlistType)
+static constexpr int sc_gpuNumClusterPerBin(const PairlistType pairlistType)
 {
-    return sc_gpuNumClusterPerCellZ(pairlistType) * sc_gpuNumClusterPerCellY(pairlistType)
-           * sc_gpuNumClusterPerCellX(pairlistType);
+    return sc_gpuNumClusterPerBinZ(pairlistType) * sc_gpuNumClusterPerBinY(pairlistType)
+           * sc_gpuNumClusterPerBinX(pairlistType);
 }
 
 /*! \brief The number of sub-parts used for data storage for a GPU cluster pair

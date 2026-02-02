@@ -292,9 +292,9 @@ std::optional<std::string> nbnxmGpuClusteringDescription()
 {
 #if GMX_GPU
     return formatString("super-cluster %dx%dx%d / cluster %d (cluster-pair splitting %s)",
-                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
-                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
-                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z,
+                        GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X,
+                        GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y,
+                        GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z,
                         GMX_GPU_NB_CLUSTER_SIZE,
                         GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ? "off" : "on");
 #else

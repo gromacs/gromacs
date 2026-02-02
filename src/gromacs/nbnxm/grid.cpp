@@ -89,7 +89,7 @@ Grid::Geometry::Geometry(const PairlistType pairlistType) :
     isSimple_(pairlistType != PairlistType::Hierarchical8x8x8),
     numAtomsICluster_(IClusterSizePerListType[pairlistType]),
     numAtomsJCluster_(JClusterSizePerListType[pairlistType]),
-    numAtomsPerBin_((isSimple_ ? 1 : sc_gpuNumClusterPerCell(pairlistType)) * numAtomsICluster_),
+    numAtomsPerBin_((isSimple_ ? 1 : sc_gpuNumClusterPerBin(pairlistType)) * numAtomsICluster_),
     numAtomsICluster2Log_(get_2log(numAtomsICluster_)),
     pairlistType_(pairlistType)
 {
@@ -122,8 +122,8 @@ RVec Grid::averageBinSize() const
     const GridDimensions& dims            = dimensions();
 
     RVec ls;
-    ls[XX] = dims.cellSize[XX] / sc_gpuNumClusterPerCellX(layoutType);
-    ls[YY] = dims.cellSize[YY] / sc_gpuNumClusterPerCellY(layoutType);
+    ls[XX] = dims.cellSize[XX] / sc_gpuNumClusterPerBinX(layoutType);
+    ls[YY] = dims.cellSize[YY] / sc_gpuNumClusterPerBinY(layoutType);
     ls[ZZ] = numAtomsCluster / (dims.atomDensity * ls[XX] * ls[YY]);
 
     return ls;
@@ -160,8 +160,8 @@ static std::array<real, DIM - 1> getTargetCellLength(const Grid::Geometry& geome
     {
         /* Approximately cubic sub cells */
         real tlen = std::cbrt(geometry.numAtomsICluster_ / atomDensity);
-        return { tlen * sc_gpuNumClusterPerCellX(geometry.pairlistType_),
-                 tlen * sc_gpuNumClusterPerCellY(geometry.pairlistType_) };
+        return { tlen * sc_gpuNumClusterPerBinX(geometry.pairlistType_),
+                 tlen * sc_gpuNumClusterPerBinY(geometry.pairlistType_) };
     }
 }
 
@@ -203,12 +203,12 @@ void Grid::resizeBoundingBoxesAndFlags(const int maxNumBins)
     {
         if (sc_boundingBoxCornersAsQuadruplets(geometry_.pairlistType_))
         {
-            pbb_.resize(packedBoundingBoxesIndex(
-                    maxNumBins * sc_gpuNumClusterPerCell(geometry_.pairlistType_)));
+            pbb_.resize(packedBoundingBoxesIndex(maxNumBins
+                                                 * sc_gpuNumClusterPerBin(geometry_.pairlistType_)));
         }
         else
         {
-            bb_.resize(maxNumBins * sc_gpuNumClusterPerCell(geometry_.pairlistType_));
+            bb_.resize(maxNumBins * sc_gpuNumClusterPerBin(geometry_.pairlistType_));
         }
     }
 
@@ -791,7 +791,7 @@ static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
         {
             for (int s = 0; s < grid.numClustersPerBin()[c]; s += c_packedBoundingBoxesDimSize)
             {
-                int cs_w = (c * sc_gpuNumClusterPerCell(layoutType) + s) / c_packedBoundingBoxesDimSize;
+                int cs_w = (c * sc_gpuNumClusterPerBin(layoutType) + s) / c_packedBoundingBoxesDimSize;
                 auto boundingBoxes = grid.packedBoundingBoxes().subArray(
                         cs_w * c_packedBoundingBoxesSize, c_packedBoundingBoxesSize);
                 for (int i = 0; i < c_packedBoundingBoxesDimSize; i++)
@@ -808,7 +808,7 @@ static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
         {
             for (int s = 0; s < grid.numClustersPerBin()[c]; s++)
             {
-                const int index = c * sc_gpuNumClusterPerCell(layoutType) + s;
+                const int index = c * sc_gpuNumClusterPerBin(layoutType) + s;
                 const ArrayRef<const BoundingBox> iboundingBoxes = grid.iBoundingBoxes();
                 const auto&                       bb             = iboundingBoxes[index];
                 ba[XX] += bb.upper.x - bb.lower.x;
@@ -824,19 +824,19 @@ static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
     const real            avgClusterSizeZ =
             (dims.atomDensity > 0 ? grid.geometry().numAtomsPerBin_
                                             / (dims.atomDensity * dims.cellSize[XX] * dims.cellSize[YY]
-                                               * sc_gpuNumClusterPerCellZ(layoutType))
+                                               * sc_gpuNumClusterPerBinZ(layoutType))
                                   : 0.0);
 
     fprintf(fp,
             "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            dims.cellSize[XX] / sc_gpuNumClusterPerCellX(layoutType),
-            dims.cellSize[YY] / sc_gpuNumClusterPerCellY(layoutType),
+            dims.cellSize[XX] / sc_gpuNumClusterPerBinX(layoutType),
+            dims.cellSize[YY] / sc_gpuNumClusterPerBinY(layoutType),
             avgClusterSizeZ,
             ba[XX],
             ba[YY],
             ba[ZZ],
-            ba[XX] * sc_gpuNumClusterPerCellX(layoutType) * dims.invCellSize[XX],
-            ba[YY] * sc_gpuNumClusterPerCellY(layoutType) * dims.invCellSize[YY],
+            ba[XX] * sc_gpuNumClusterPerBinX(layoutType) * dims.invCellSize[XX],
+            ba[YY] * sc_gpuNumClusterPerBinY(layoutType) * dims.invCellSize[YY],
             dims.atomDensity > 0 ? ba[ZZ] / avgClusterSizeZ : 0.0);
 }
 
@@ -954,7 +954,7 @@ void Grid::fillBin(GridSetData*            gridSetData,
 
         /* The grid-local cluster/(sub-)cell index */
         int bin = atomToCluster(atomStart)
-                  - binOffset_ * (geometry_.isSimple_ ? 1 : sc_gpuNumClusterPerCell(layoutType));
+                  - binOffset_ * (geometry_.isSimple_ ? 1 : sc_gpuNumClusterPerBin(layoutType));
         fep_[bin] = 0;
         for (int at = atomStart; at < atomEnd; at++)
         {
@@ -1167,8 +1167,8 @@ void Grid::sortColumnsGpuGeometry(GridSetData*            gridSetData,
     const int numAtomsPerBin = geometry_.numAtomsPerBin_;
 
     const int subdiv_x = geometry_.numAtomsICluster_;
-    const int subdiv_y = sc_gpuNumClusterPerCellX(layoutType) * subdiv_x;
-    const int subdiv_z = sc_gpuNumClusterPerCellY(layoutType) * subdiv_y;
+    const int subdiv_y = sc_gpuNumClusterPerBinX(layoutType) * subdiv_x;
+    const int subdiv_z = sc_gpuNumClusterPerBinY(layoutType) * subdiv_y;
 
     /* Extract the atom index array that will be filled here */
     const ArrayRef<int>& atomIndices = gridSetData->atomIndices;
@@ -1199,23 +1199,23 @@ void Grid::sortColumnsGpuGeometry(GridSetData*            gridSetData,
                    sort_work);
 
         /* This loop goes over the cells and clusters along z at once */
-        for (int sub_z = 0; sub_z < numBinsInColumn * sc_gpuNumClusterPerCellZ(layoutType); sub_z++)
+        for (int sub_z = 0; sub_z < numBinsInColumn * sc_gpuNumClusterPerBinZ(layoutType); sub_z++)
         {
             const int atomOffsetZ = atomOffset + sub_z * subdiv_z;
             const int numAtomsZ = std::min(subdiv_z, numAtomsInColumn - (atomOffsetZ - atomOffset));
             int       cz        = -1;
             /* We have already sorted on z */
 
-            if (sub_z % sc_gpuNumClusterPerCellZ(layoutType) == 0)
+            if (sub_z % sc_gpuNumClusterPerBinZ(layoutType) == 0)
             {
-                cz            = sub_z / sc_gpuNumClusterPerCellZ(layoutType);
+                cz            = sub_z / sc_gpuNumClusterPerBinZ(layoutType);
                 const int bin = columnToBin_[cxy] + cz;
 
                 /* The number of atoms in this cell/super-cluster */
                 const int numAtoms =
                         std::min(numAtomsPerBin, numAtomsInColumn - (atomOffsetZ - atomOffset));
 
-                numClusters_[bin] = std::min(sc_gpuNumClusterPerCell(layoutType),
+                numClusters_[bin] = std::min(sc_gpuNumClusterPerBin(layoutType),
                                              divideRoundUp(numAtoms, geometry_.numAtomsICluster_));
 
                 /* Store the z-boundaries of the bounding box of the bin */
@@ -1223,7 +1223,7 @@ void Grid::sortColumnsGpuGeometry(GridSetData*            gridSetData,
                 bbcz_[bin].upper = x[atomIndices[atomOffsetZ + numAtoms - 1]][ZZ];
             }
 
-            if (sc_gpuNumClusterPerCellY(layoutType) > 1)
+            if (sc_gpuNumClusterPerBinY(layoutType) > 1)
             {
                 /* Sort the atoms along y */
                 sort_atoms(YY,
@@ -1239,16 +1239,16 @@ void Grid::sortColumnsGpuGeometry(GridSetData*            gridSetData,
                            sort_work);
             }
 
-            for (int sub_y = 0; sub_y < sc_gpuNumClusterPerCellY(layoutType); sub_y++)
+            for (int sub_y = 0; sub_y < sc_gpuNumClusterPerBinY(layoutType); sub_y++)
             {
                 const int atomOffsetY = atomOffsetZ + sub_y * subdiv_y;
                 const int numAtomsY = std::min(subdiv_y, numAtomsInColumn - (atomOffsetY - atomOffset));
 
-                if (sc_gpuNumClusterPerCellX(layoutType) > 1)
+                if (sc_gpuNumClusterPerBinX(layoutType) > 1)
                 {
                     /* Sort the atoms along x */
                     sort_atoms(XX,
-                               ((cz * sc_gpuNumClusterPerCellY(layoutType) + sub_y) & 1) != 0,
+                               ((cz * sc_gpuNumClusterPerBinY(layoutType) + sub_y) & 1) != 0,
                                dd_zone,
                                relevantAtomsAreWithinGridBounds,
                                atomIndices.data() + atomOffsetY,
@@ -1260,7 +1260,7 @@ void Grid::sortColumnsGpuGeometry(GridSetData*            gridSetData,
                                sort_work);
                 }
 
-                for (int sub_x = 0; sub_x < sc_gpuNumClusterPerCellX(layoutType); sub_x++)
+                for (int sub_x = 0; sub_x < sc_gpuNumClusterPerBinX(layoutType); sub_x++)
                 {
                     const int atomOffsetX = atomOffsetY + sub_x * subdiv_x;
                     const int numAtomsX =

@@ -336,9 +336,9 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
         GMX_LOG(mdlog.info)
                 .asParagraph()
                 .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d",
-                                     sc_gpuNumClusterPerCellX(gpuPairlistType),
-                                     sc_gpuNumClusterPerCellY(gpuPairlistType),
-                                     sc_gpuNumClusterPerCellZ(gpuPairlistType));
+                                     sc_gpuNumClusterPerBinX(gpuPairlistType),
+                                     sc_gpuNumClusterPerBinY(gpuPairlistType),
+                                     sc_gpuNumClusterPerBinZ(gpuPairlistType));
     }
 
     // Warn when using non-SIMD CPU kernels on architectures with (fast) SIMD support

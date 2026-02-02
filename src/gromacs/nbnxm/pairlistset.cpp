@@ -152,7 +152,7 @@ void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
     constexpr int c_clSize = detail::c_nbnxnGpuClusterSize;
     constexpr int c_splitClusterSize = detail::c_nbnxnGpuClusterSize / detail::c_nbnxnGpuClusterpairSplit;
 
-    constexpr int c_numClusterPerCell = sc_gpuNumClusterPerCell(sc_layoutType);
+    constexpr int c_numClusterPerCell = sc_gpuNumClusterPerBin(sc_layoutType);
 
     GMX_ASSERT(pairlist.na_ci == c_clSize,
                "The cluster size in the pairlist should match the GPU cluster size");
