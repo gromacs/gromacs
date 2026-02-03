@@ -334,11 +334,22 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
  * Performs the device-to-device data copy, synchronous or asynchronously on request.
  *
  * \tparam        ValueType                Raw value type of the \p buffer.
+ *
+ * \param[inout]  destinationDeviceBuffer  Destination device-side buffer
+ * \param[in]     sourceDeviceBuffer       Source device-side-buffer
+ * \param[in]     startingOffset           Offset (in values) at the source buffer (only) to
+ *                                         copy from.
+ * \param[in]     numValues                Number of values to copy.
+ * \param[in]     deviceStream             GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind             Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent              A pointer to the H2D copy timing event to be
+ *                                         filled in. Ignored in SYCL.
  */
 template<typename ValueType>
-void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
-                              DeviceBuffer<ValueType>* sourceDeviceBuffer,
-                              size_t                   numValues,
+void copyBetweenDeviceBuffers(ValueType*               destinationDeviceBuffer,
+                              const ValueType*         sourceDeviceBuffer,
+                              const size_t             startingOffset,
+                              const size_t             numValues,
                               const DeviceStream&      deviceStream,
                               GpuApiCallBehavior       transferKind,
                               CommandEvent* gmx_unused timingEvent)
@@ -350,8 +361,8 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
     GMX_ASSERT(destinationDeviceBuffer, "needs a destination buffer pointer");
     GMX_ASSERT(sourceDeviceBuffer, "needs a source buffer pointer");
 
-    const ValueType* srcPtr = sourceDeviceBuffer->buffer_->ptr_;
-    ValueType*       dstPtr = destinationDeviceBuffer->buffer_->ptr_;
+    const ValueType* srcPtr = sourceDeviceBuffer + startingOffset;
+    ValueType*       dstPtr = destinationDeviceBuffer;
     const size_t     size   = numValues * sizeof(ValueType);
     if (transferKind == GpuApiCallBehavior::Sync)
     {

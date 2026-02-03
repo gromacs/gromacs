@@ -197,19 +197,25 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
  * Performs the device-to-device data copy, synchronous or asynchronously on request.
  *
  * \tparam        ValueType                Raw value type of the \p buffer.
- * \param[in,out] destinationDeviceBuffer  Device-side buffer to copy to
- * \param[in]     sourceDeviceBuffer       Device-side buffer to copy from
+ *
+ * \param[inout]  destinationDeviceBuffer  Destination device-side buffer
+ * \param[in]     sourceDeviceBuffer       Source device-side-buffer
+ * \param[in]     startingOffset           Offset (in values) at the source buffer (only) to
+ *                                         copy from.
  * \param[in]     numValues                Number of values to copy.
  * \param[in]     deviceStream             GPU stream to perform asynchronous copy in.
  * \param[in]     transferKind             Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent              A pointer to the H2D copy timing event to be
+ *                                         filled in. Ignored in HIP.
  */
 template<typename ValueType>
-void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
-                              DeviceBuffer<ValueType>* sourceDeviceBuffer,
-                              size_t                   numValues,
+void copyBetweenDeviceBuffers(ValueType*               destinationDeviceBuffer,
+                              const ValueType*         sourceDeviceBuffer,
+                              const size_t             startingOffset,
+                              const size_t             numValues,
                               const DeviceStream&      deviceStream,
                               GpuApiCallBehavior       transferKind,
-                              CommandEvent* /*timingEvent*/)
+                              CommandEvent* gmx_unused timingEvent)
 {
     if (numValues == 0)
     {
@@ -223,8 +229,8 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
-            stat = hipMemcpyAsync(*destinationDeviceBuffer,
-                                  *sourceDeviceBuffer,
+            stat = hipMemcpyAsync(destinationDeviceBuffer,
+                                  sourceDeviceBuffer + startingOffset,
                                   bytes,
                                   hipMemcpyDeviceToDevice,
                                   deviceStream.stream());
@@ -232,7 +238,7 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = hipMemcpy(*destinationDeviceBuffer, *sourceDeviceBuffer, bytes, hipMemcpyDeviceToDevice);
+            stat = hipMemcpy(destinationDeviceBuffer, sourceDeviceBuffer + startingOffset, bytes, hipMemcpyDeviceToDevice);
             gmx::checkDeviceError(stat, "Synchronous D2D copy failed.");
             break;
 

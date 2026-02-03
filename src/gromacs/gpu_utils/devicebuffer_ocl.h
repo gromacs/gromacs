@@ -233,9 +233,10 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
  * \tparam        ValueType                Raw value type of the \p buffer.
  */
 template<typename ValueType>
-void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* /* destinationDeviceBuffer */,
-                              DeviceBuffer<ValueType>* /* sourceDeviceBuffer */,
-                              size_t /* numValues */,
+void copyBetweenDeviceBuffers(ValueType* /* destinationDeviceBuffer */,
+                              ValueType* /* sourceDeviceBuffer */,
+                              const size_t /* startingOffset */,
+                              const size_t /* numValues */,
                               const DeviceStream& /* deviceStream */,
                               GpuApiCallBehavior /* transferKind */,
                               CommandEvent* /*timingEvent*/)

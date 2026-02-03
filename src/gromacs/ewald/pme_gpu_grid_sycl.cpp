@@ -1364,8 +1364,9 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         int fftSize = localFftSize[ZZ] * localFftSize[YY] * localFftNData[XX];
         if (pmeToFft)
         {
-            copyBetweenDeviceBuffers(d_fftRealGrid,
-                                     &pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
+            copyBetweenDeviceBuffers(asMpiPointer(*d_fftRealGrid),
+                                     asMpiPointer(pmeGpu->kernelParams->grid.d_realGrid[gridIndex]),
+                                     0,
                                      fftSize,
                                      pmeGpu->archSpecific->pmeStream_,
                                      pmeGpu->settings.transferKind,
@@ -1373,8 +1374,9 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         }
         else
         {
-            copyBetweenDeviceBuffers(&pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
-                                     d_fftRealGrid,
+            copyBetweenDeviceBuffers(asMpiPointer(pmeGpu->kernelParams->grid.d_realGrid[gridIndex]),
+                                     asMpiPointer(*d_fftRealGrid),
+                                     0,
                                      fftSize,
                                      pmeGpu->archSpecific->pmeStream_,
                                      pmeGpu->settings.transferKind,

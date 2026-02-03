@@ -137,15 +137,15 @@ private:
      * \param [in] recvRank     rank of source
      * \param [in] haloType     whether halo exchange is of coordinates or forces
      */
-    void communicateHaloData(DeviceBuffer<Float3> sendPtr,
-                             int                  sendOffset,
-                             int                  sendSize,
-                             int                  sendRank,
-                             DeviceBuffer<Float3> recvPtr,
-                             int                  recvOffset,
-                             int                  recvSize,
-                             int                  recvRank,
-                             HaloType             haloType);
+    void communicateHaloData(Float3*  sendPtr,
+                             int      sendOffset,
+                             int      sendSize,
+                             int      sendRank,
+                             Float3*  recvPtr,
+                             int      recvOffset,
+                             int      recvSize,
+                             int      recvRank,
+                             HaloType haloType);
 
     /*! \brief Data transfer for GPU halo exchange using peer-to-peer copies
      * \param [inout] sendPtr    address to send data from
@@ -156,13 +156,13 @@ private:
      * \param [in] recvRank      rank to recv data from
      * \param [in] haloType      whether halo exchange is of coordinates or forces
      */
-    void communicateHaloDataPeerToPeer(DeviceBuffer<Float3>* sendPtr,
-                                       int                   sendOffset,
-                                       int                   sendSize,
-                                       int                   sendRank,
-                                       DeviceBuffer<Float3>* remotePtr,
-                                       int                   recvRank,
-                                       HaloType              haloType);
+    void communicateHaloDataPeerToPeer(Float3*  sendPtr,
+                                       int      sendOffset,
+                                       int      sendSize,
+                                       int      sendRank,
+                                       Float3*  remotePtr,
+                                       int      recvRank,
+                                       HaloType haloType);
 
     /*! \brief Data transfer for GPU halo exchange using GPU-aware MPI
      * \param [in] sendPtr      send buffer address
@@ -262,10 +262,10 @@ private:
     int fRecvSize_ = 0;
     //! number of home atoms - offset of local halo region
     int numHomeAtoms_ = 0;
-    //! remote GPU coordinates buffer pointer for pushing data
-    DeviceBuffer<Float3> remoteXPtr_ = nullptr;
-    //! remote GPU force buffer pointer for pushing data
-    DeviceBuffer<Float3> remoteFPtr_ = nullptr;
+    //! remote GPU coordinates buffer pointer for pushing data, not to be freed
+    Float3* remoteXPtr_ = nullptr;
+    //! remote GPU force buffer pointer for pushing data, not to be freed
+    Float3* remoteFPtr_ = nullptr;
     //! Periodic Boundary Conditions for this rank
     bool usePBC_ = false;
     //! force shift buffer on device
