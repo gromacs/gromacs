@@ -49,3 +49,12 @@ non-orthogonal. In case of user-provided CP2K input files, a warning
 will be issued.
 
 :issue:`5529`
+
+New DFT functionals and D3 dispersion corrections for QM/MM with CP2K
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+QM/MM simulations with CP2K could now use hybrid DFT functionals B3LYP, PBE0 and
+range-separated hybrid functionals CAM-B3LYP, wB97X, wB97X-D3 in combination with
+all-electrons 6-31G* basis set. In addition, the option of using D3 dispersion 
+corrections has been added to all functionals.
+
+:issue:`5529`

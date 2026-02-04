@@ -59,6 +59,95 @@ enum class PbcType : int;
 namespace gmx
 {
 
+namespace
+{
+
+bool isBuiltInFunctional(QMMMQMMethod method)
+{
+    return method == QMMMQMMethod::PBE || method == QMMMQMMethod::PBE_D3
+           || method == QMMMQMMethod::BLYP || method == QMMMQMMethod::BLYP_D3
+           || method == QMMMQMMethod::PBE0 || method == QMMMQMMethod::PBE0_D3
+           || method == QMMMQMMethod::B3LYP || method == QMMMQMMethod::B3LYP_D3;
+}
+
+/*! The strings with various functional-dependent parameters
+ * 0) Name of functional as accepted by CP2K within &XC_FUNCTIONAL
+ * 1) Name of the REFERENCE_FUNCTIONAL for D3 dispersion correction
+ * 2) Basis set file name
+ * 3) Basis set name
+ * 4) Potential file name
+ * 5) Potential name
+ * 6) For hybrid/range-separated functionals: INTERACTION_TYPE within &INTERACTION_POTENTIAL
+ * 7) For range-separated functionals: OMEGA within &INTERACTION_POTENTIAL
+ * 8) For range-separated functionals: SCALE_COULOMB within &INTERACTION_POTENTIAL
+ * 9) For range-separated functionals: SCALE_LONGRANGE within &INTERACTION_POTENTIAL
+ */
+static const EnumerationArray<QMMMQMMethod, std::array<const char*, 10>> sc_functionalParameters = { {
+        { "PBE", nullptr, "BASIS_MOLOPT", "DZVP-MOLOPT-GTH", "POTENTIAL", "GTH-PBE", nullptr, nullptr, nullptr, nullptr },
+        { "PBE", "PBE", "BASIS_MOLOPT", "DZVP-MOLOPT-GTH", "POTENTIAL", "GTH-PBE", nullptr, nullptr, nullptr, nullptr },
+        { "BLYP", nullptr, "BASIS_MOLOPT", "DZVP-MOLOPT-GTH", "POTENTIAL", "GTH-BLYP", nullptr, nullptr, nullptr, nullptr },
+        { "BLYP", "BLYP", "BASIS_MOLOPT", "DZVP-MOLOPT-GTH", "POTENTIAL", "GTH-BLYP", nullptr, nullptr, nullptr, nullptr },
+        { "PBE0", nullptr, "EMSL_BASIS_SETS", "6-31G*", "POTENTIAL", "ALL", "TRUNCATED", nullptr, nullptr, nullptr },
+        { "PBE0", "PBE0", "EMSL_BASIS_SETS", "6-31G*", "POTENTIAL", "ALL", "TRUNCATED", nullptr, nullptr, nullptr },
+        { "B3LYP", nullptr, "EMSL_BASIS_SETS", "6-31G*", "POTENTIAL", "ALL", "TRUNCATED", nullptr, nullptr, nullptr },
+        { "B3LYP", "B3LYP", "EMSL_BASIS_SETS", "6-31G*", "POTENTIAL", "ALL", "TRUNCATED", nullptr, nullptr, nullptr },
+        { "HYB_GGA_XC_CAM_B3LYP",
+          nullptr,
+          "EMSL_BASIS_SETS",
+          "6-31G*",
+          "POTENTIAL",
+          "ALL",
+          "MIX_CL_TRUNC",
+          "0.33",
+          "0.19",
+          "0.46" },
+        { "HYB_GGA_XC_CAM_B3LYP",
+          "CAMB3LYP",
+          "EMSL_BASIS_SETS",
+          "6-31G*",
+          "POTENTIAL",
+          "ALL",
+          "MIX_CL_TRUNC",
+          "0.33",
+          "0.19",
+          "0.46" },
+        { "HYB_GGA_XC_WB97X",
+          nullptr,
+          "EMSL_BASIS_SETS",
+          "6-31G*",
+          "POTENTIAL",
+          "ALL",
+          "MIX_CL_TRUNC",
+          "0.3",
+          "0.157706",
+          "0.842294" },
+        { "HYB_GGA_XC_WB97X_D3",
+          nullptr,
+          "EMSL_BASIS_SETS",
+          "6-31G*",
+          "POTENTIAL",
+          "ALL",
+          "MIX_CL_TRUNC",
+          "0.25",
+          "0.195728",
+          "0.804272" },
+        { "INPUT", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
+} };
+
+/*! \brief Helper function that minimum length among box vectors
+ *  \param[in] box Matrix with box vectors
+ *  \return minimum length among box vectors
+ */
+float minBoxVectorNorm(const matrix& box)
+{
+    real res = norm(box[0]);
+    res      = norm(box[1]) < res ? norm(box[1]) : res;
+    res      = norm(box[2]) < res ? norm(box[2]) : res;
+    return static_cast<float>(res);
+}
+
+} // namespace
+
 QMMMInputGenerator::QMMMInputGenerator(const QMMMParameters& parameters,
                                        PbcType               pbcType,
                                        const matrix          box,
@@ -192,8 +281,10 @@ std::string QMMMInputGenerator::generateDFTSection() const
     }
 
     // Basis files, Grid setup and SCF parameters
-    res += "    BASIS_SET_FILE_NAME  BASIS_MOLOPT\n";
-    res += "    POTENTIAL_FILE_NAME  POTENTIAL\n";
+    res += formatString("    BASIS_SET_FILE_NAME  %s\n",
+                        sc_functionalParameters[parameters_.qmMethod_][2]);
+    res += formatString("    POTENTIAL_FILE_NAME  %s\n",
+                        sc_functionalParameters[parameters_.qmMethod_][4]);
     res += "    &MGRID\n";
     res += "      NGRIDS 5\n";
     res += "      CUTOFF 450\n";
@@ -220,11 +311,73 @@ std::string QMMMInputGenerator::generateDFTSection() const
     res += "      DENSITY_CUTOFF     1.0E-12\n";
     res += "      GRADIENT_CUTOFF    1.0E-12\n";
     res += "      TAU_CUTOFF         1.0E-12\n";
-    res += formatString("      &XC_FUNCTIONAL %s\n", c_qmmmQMMethodNames[parameters_.qmMethod_]);
-    res += "      &END XC_FUNCTIONAL\n";
+
+    // Write main functional section
+    if (isBuiltInFunctional(parameters_.qmMethod_))
+    {
+        res += formatString("      &XC_FUNCTIONAL %s\n",
+                            sc_functionalParameters[parameters_.qmMethod_][0]);
+        res += "      &END XC_FUNCTIONAL\n";
+    }
+    else
+    {
+        res += "      &XC_FUNCTIONAL\n";
+        res += formatString("        &%s\n", sc_functionalParameters[parameters_.qmMethod_][0]);
+        res += formatString("        &END %s\n", sc_functionalParameters[parameters_.qmMethod_][0]);
+        res += "      &END XC_FUNCTIONAL\n";
+    }
+
+    // Write D3 dispersion correction section if needed
+    if (sc_functionalParameters[parameters_.qmMethod_][1])
+    {
+        res += "      &VDW_POTENTIAL\n";
+        res += "          POTENTIAL_TYPE  PAIR_POTENTIAL\n";
+        res += "          &PAIR_POTENTIAL\n";
+        res += "            TYPE  DFTD3\n";
+        res += formatString("            REFERENCE_FUNCTIONAL %s\n",
+                            sc_functionalParameters[parameters_.qmMethod_][1]);
+        res += "            CALCULATE_C9_TERM  T\n";
+        res += "          &END PAIR_POTENTIAL\n";
+        res += "      &END VDW_POTENTIAL\n";
+    }
+
+    // Write for hybrid/range-separated functionals exact exchange section
+    if (sc_functionalParameters[parameters_.qmMethod_][6])
+    {
+        res += "      &HF\n";
+        res += "        &SCREENING\n";
+        res += "          EPS_SCHWARZ 1.0E-10\n";
+        res += "        &END SCREENING\n";
+        res += "        &INTERACTION_POTENTIAL\n";
+        res += formatString("          POTENTIAL_TYPE %s\n",
+                            sc_functionalParameters[parameters_.qmMethod_][6]);
+        res += formatString("          CUTOFF_RADIUS %.1f\n", minBoxVectorNorm(qmBox_) / 2.0 * 10.0 - 0.1);
+
+        // For range-separated functionals also write OMEGA, SCALE_COULOMB and SCALE_LONGRANGE
+        if (sc_functionalParameters[parameters_.qmMethod_][7])
+        {
+            res += formatString("          OMEGA %s\n", sc_functionalParameters[parameters_.qmMethod_][7]);
+            res += formatString("          SCALE_COULOMB %s\n",
+                                sc_functionalParameters[parameters_.qmMethod_][8]);
+            res += formatString("          SCALE_LONGRANGE %s\n",
+                                sc_functionalParameters[parameters_.qmMethod_][9]);
+        }
+        res += "        &END INTERACTION_POTENTIAL\n";
+        res += "      &END HF\n";
+    }
+
     res += "    &END XC\n";
     res += "    &QS\n";
-    res += "     METHOD GPW\n";
+
+    // For hybrid/range-separated functionals use GAPW method, otherwise GPW
+    if (sc_functionalParameters[parameters_.qmMethod_][6])
+    {
+        res += "     METHOD GAPW\n";
+    }
+    else
+    {
+        res += "     METHOD GPW\n";
+    }
     res += "     EPS_DEFAULT 1.0E-10\n";
     res += "     EXTRAPOLATION ASPC\n";
     res += "     EXTRAPOLATION_ORDER  4\n";
@@ -339,8 +492,6 @@ std::string QMMMInputGenerator::generateSubsysSection() const
 
     // Init some numbers
     size_t nQm = parameters_.qmIndices_.size();
-    size_t nMm = parameters_.mmIndices_.size();
-    size_t nAt = nQm + nMm;
 
     // Count the numbers of individual QM atoms per type
     std::vector<int> num_atoms(periodic_system.size(), 0);
@@ -368,11 +519,6 @@ std::string QMMMInputGenerator::generateSubsysSection() const
     res += "      COORD_FILE_FORMAT PDB\n";
     res += "      CHARGE_EXTENDED TRUE\n";
     res += "      CONNECTIVITY OFF\n";
-    res += "      &GENERATE\n";
-    res += "         &ISOLATED_ATOMS\n";
-    res += formatString("            LIST %d..%d\n", 1, static_cast<int>(nAt));
-    res += "         &END\n";
-    res += "      &END GENERATE\n";
     res += "    &END TOPOLOGY\n";
 
     // Now we will print basises for all types of QM atoms
@@ -383,9 +529,8 @@ std::string QMMMInputGenerator::generateSubsysSection() const
         {
             res += "    &KIND " + periodic_system[i] + "\n";
             res += "      ELEMENT " + periodic_system[i] + "\n";
-            res += "      BASIS_SET DZVP-MOLOPT-GTH\n";
-            res += "      POTENTIAL GTH-" + std::string(c_qmmmQMMethodNames[parameters_.qmMethod_]);
-            res += "\n";
+            res += formatString("      BASIS_SET %s\n", sc_functionalParameters[parameters_.qmMethod_][3]);
+            res += formatString("      POTENTIAL %s\n", sc_functionalParameters[parameters_.qmMethod_][5]);
             res += "    &END KIND\n";
         }
     }

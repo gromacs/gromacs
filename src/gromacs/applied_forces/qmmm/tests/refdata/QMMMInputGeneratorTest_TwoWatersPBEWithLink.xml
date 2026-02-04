@@ -121,11 +121,6 @@
       COORD_FILE_FORMAT PDB
       CHARGE_EXTENDED TRUE
       CONNECTIVITY OFF
-      &amp;GENERATE
-         &amp;ISOLATED_ATOMS
-            LIST 1..6
-         &amp;END
-      &amp;END GENERATE
     &amp;END TOPOLOGY
     &amp;KIND H  
       ELEMENT H  

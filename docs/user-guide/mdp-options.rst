@@ -3602,9 +3602,48 @@ For further details about QM/MM interface implementation follow :ref:`qmmm`.
 
       DFT using PBE functional and DZVP-MOLOPT basis set.
 
+   .. mdp-value:: PBE-D3
+
+      DFT using PBE functional, DZVP-MOLOPT basis set and D3 dispersion correction.   
+
    .. mdp-value:: BLYP
 
       DFT using BLYP functional and DZVP-MOLOPT basis set.
+
+   .. mdp-value:: BLYP-D3
+
+      DFT using BLYP functional, DZVP-MOLOPT basis set and D3 dispersion correction.
+
+   .. mdp-value:: B3LYP
+
+      DFT using B3LYP hybrid functional and 6-31G* basis set.
+
+   .. mdp-value:: B3LYP-D3
+
+      DFT using B3LYP hybrid functional, 6-31G* basis set and D3 dispersion correction.
+   .. mdp-value:: PBE0
+
+      DFT using PBE0 hybrid functional and 6-31G* basis set.
+
+   .. mdp-value:: PBE0-D3
+
+      DFT using PBE0 hybrid functional, 6-31G* basis set and D3 dispersion correction.
+
+   .. mdp-value:: CAM-B3LYP
+
+      DFT using CAM-B3LYP range-separated functional and 6-31G* basis set.
+
+   .. mdp-value:: CAM-B3LYP-D3
+      
+      DFT using CAM-B3LYP range-separated functional, 6-31G* basis set and D3 dispersion correction.
+
+   .. mdp-value:: WB97X
+
+      DFT using wB97X range-separated functional and 6-31G* basis set.
+
+   .. mdp-value:: WB97X-D3
+
+      DFT using wB97X-D3 range-separated functional with built-in D3 dispersion correction and 6-31G* basis set.
 
    .. mdp-value:: INPUT
 
