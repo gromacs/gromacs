@@ -119,7 +119,7 @@ public:
         path_.insert(path_.end(), elements.begin(), elements.end());
     }
     //! Removes the last element in the path, making it the parent path.
-    void pop_back() { return path_.pop_back(); }
+    void pop_back() { path_.pop_back(); }
     //! Removes and returns the last element in the path.
     std::string pop_last()
     {

@@ -116,7 +116,7 @@ public:
     const IVec& shift(int zone) const { return shifts_[zone]; }
 
     //! Returns the atom index range for zone \p zone
-    const Range<int> atomRange(int zone) const
+    Range<int> atomRange(int zone) const
     {
         GMX_ASSERT(zone <= lastAtomRangeEndSet_, "Cannot access zones beyond the last one set");
 

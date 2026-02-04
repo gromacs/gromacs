@@ -4947,7 +4947,7 @@ static inline SimdFloat maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
  */
 static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdFloat x0, SimdFloat x1, SimdFloat* out0, SimdFloat* out1)
 {
-    return invsqrtPair(x0, x1, out0, out1);
+    invsqrtPair(x0, x1, out0, out1);
 }
 
 /*! \brief Calculate 1/x for SIMD float, only targeting single accuracy.

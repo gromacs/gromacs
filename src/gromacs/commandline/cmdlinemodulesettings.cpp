@@ -62,7 +62,7 @@ CommandLineModuleSettings::~CommandLineModuleSettings() {}
 
 CommandLineModuleSettings::CommandLineModuleSettings(CommandLineModuleSettings&& old) noexcept = default;
 
-CommandLineModuleSettings& CommandLineModuleSettings::operator=(CommandLineModuleSettings&& other) = default;
+CommandLineModuleSettings& CommandLineModuleSettings::operator=(CommandLineModuleSettings&& other) noexcept = default;
 
 int CommandLineModuleSettings::defaultNiceLevel() const
 {

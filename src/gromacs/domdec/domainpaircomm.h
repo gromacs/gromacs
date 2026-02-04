@@ -173,8 +173,8 @@ public:
      */
     void selectHaloAtoms(const gmx_domdec_t&      dd,
                          const Grid&              grid,
-                         const real               cutoffTwoBody,
-                         const real               cutoffMultiBody,
+                         real                     cutoffTwoBody,
+                         real                     cutoffMultiBody,
                          const ivec               dimensionIsTriclinic,
                          ArrayRef<const RVec>     normal,
                          const std::vector<bool>& isClusterMissingLinks);
