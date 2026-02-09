@@ -273,7 +273,8 @@ void atoms2md(const gmx_mtop_t&        mtop,
             md->cU2.resize(md->nr);
         }
     }
-    int molb = 0;
+
+    MTopLookUp mTopLookUp(mtop);
 
     const unsigned short numTypes   = mtop.ffparams.atnr;
     const t_atom         fillerAtom = {
@@ -282,7 +283,7 @@ void atoms2md(const gmx_mtop_t&        mtop,
 
     // In grompp, OpenMP is not initialized and nthreads_get returns 0. We want 1 thread in this case.
     const int gmx_unused nthreads = std::max(gmx_omp_nthreads_get(ModuleMultiThread::Default), 1);
-#pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
+#pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(mTopLookUp)
     for (int i = 0; i < md->nr; i++)
     {
         try
@@ -300,7 +301,7 @@ void atoms2md(const gmx_mtop_t&        mtop,
             }
             const bool isValidAtom = isValidGlobalAtom(ag);
 
-            const t_atom& atom = (isValidAtom ? mtopGetAtomParameters(mtop, ag, &molb) : fillerAtom);
+            const t_atom& atom = (isValidAtom ? mTopLookUp.getAtomParameters(ag) : fillerAtom);
 
             if (!md->cFREEZE.empty())
             {

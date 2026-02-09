@@ -140,18 +140,15 @@ static int computeNumGlobalPerturbedExclusions(const gmx_mtop_t& mtop)
     }
 
     // Check all atom pairs in the inter-molecular exclusion group
+    MTopLookUp               mtopLookUp(mtop);
     gmx::ArrayRef<const int> group = mtop.intermolecularExclusionGroup;
     for (const int globalAtomI : group)
     {
-        int moleculeBlockI = 0;
-        int moleculeIndexI;
-        int atomIndexInMoleculeI;
-        mtopGetMolblockIndex(mtop, globalAtomI, &moleculeBlockI, &moleculeIndexI, &atomIndexInMoleculeI);
-        const gmx_moltype_t& moltypeI = mtop.moltype[mtop.molblock[moleculeBlockI].type];
-        const bool atomIIsPerturbed   = PERTURBED(moltypeI.atoms.atom[atomIndexInMoleculeI]);
-        const gmx::ArrayRef<const int> exclsI = moltypeI.excls[atomIndexInMoleculeI];
+        const auto           indexI           = mtopLookUp.getMolblockAtomIndex(globalAtomI);
+        const gmx_moltype_t& moltypeI         = mtop.moltype[mtop.molblock[indexI.molBlock].type];
+        const bool           atomIIsPerturbed = PERTURBED(moltypeI.atoms.atom[indexI.atomIndex]);
+        const gmx::ArrayRef<const int> exclsI = moltypeI.excls[indexI.atomIndex];
 
-        int moleculeBlockJ = moleculeBlockI;
         for (const int globalAtomJ : group)
         {
             if (globalAtomJ <= globalAtomI)
@@ -160,12 +157,10 @@ static int computeNumGlobalPerturbedExclusions(const gmx_mtop_t& mtop)
             }
 
             // We count this exclusion when this is not also a "normal" intra-molecular exclusion
-            int moleculeIndexJ;
-            int atomIndexInMoleculeJ;
-            mtopGetMolblockIndex(mtop, globalAtomJ, &moleculeBlockJ, &moleculeIndexJ, &atomIndexInMoleculeJ);
-            if ((atomIIsPerturbed || PERTURBED(moltypeI.atoms.atom[atomIndexInMoleculeJ]))
-                && !(moleculeBlockJ == moleculeBlockI && moleculeIndexJ == moleculeIndexI
-                     && std::find(exclsI.begin(), exclsI.end(), atomIndexInMoleculeJ) != exclsI.end()))
+            const auto indexJ = mtopLookUp.getMolblockAtomIndex(globalAtomJ);
+            if ((atomIIsPerturbed || PERTURBED(moltypeI.atoms.atom[indexJ.atomIndex]))
+                && !(indexJ.molBlock == indexI.molBlock && indexJ.molIndex == indexI.molIndex
+                     && std::find(exclsI.begin(), exclsI.end(), indexJ.atomIndex) != exclsI.end()))
             {
                 numPerturbedExclusions++;
             }

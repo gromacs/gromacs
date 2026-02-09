@@ -189,7 +189,6 @@ static void clust_size(const char*             ndx,
     }
     max_clust_size = 1;
     max_clust_ind  = -1;
-    int molb       = 0;
     do
     {
         if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0)))
@@ -352,13 +351,14 @@ static void clust_size(const char*             ndx,
                 /* Loop over clusters and for each cluster compute 1/2 m v^2 */
                 if (max_clust_ind >= 0)
                 {
+                    MTopLookUp mTopLookUp(mtop);
                     ekin = 0;
                     for (i = 0; (i < nindex); i++)
                     {
                         if (clust_index[i] == max_clust_ind)
                         {
                             ai     = index[i];
-                            real m = mtopGetAtomMass(mtop, ai, &molb);
+                            real m = mTopLookUp.getAtomParameters(ai).m;
                             ekin += 0.5 * m * iprod(v[ai], v[ai]);
                         }
                     }

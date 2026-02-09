@@ -1880,12 +1880,13 @@ static void init_pull_group_index(FILE*               fplog,
 
     const SimulationGroups& groups = mtop.groups;
 
+    MTopLookUp mTopLookUp(mtop);
+
     /* Count frozen dimensions and (weighted) mass */
     int    nfrozen = 0;
     double tmass   = 0;
     double wmass   = 0;
     double wwmass  = 0;
-    int    molb    = 0;
     for (int i = 0; i < int(pg->params_.ind.size()); i++)
     {
         int ii = pg->params_.ind[i];
@@ -1900,7 +1901,7 @@ static void init_pull_group_index(FILE*               fplog,
                 }
             }
         }
-        const t_atom& atom = mtopGetAtomParameters(mtop, ii, &molb);
+        const t_atom& atom = mTopLookUp.getAtomParameters(ii);
         real          m;
         if (ir->efep == FreeEnergyPerturbationType::No)
         {

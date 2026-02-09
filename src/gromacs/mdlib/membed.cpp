@@ -126,17 +126,16 @@ typedef struct
  * molblock from the global atom nr. */
 static int get_mol_id(int at, const gmx_mtop_t& mtop, int* type, int* block)
 {
-    int mol_id = 0;
-    int i;
-    int atnr_mol;
+    MTopLookUp mTopLookUp(mtop);
+    const auto mbai = mTopLookUp.getMolblockAtomIndex(at);
 
-    *block = 0;
-    mtopGetMolblockIndex(mtop, at, block, &mol_id, &atnr_mol);
-    for (i = 0; i < *block; i++)
+    int mol_id = 0;
+    for (int i = 0; i < *block; i++)
     {
         mol_id += mtop.molblock[i].nmol;
     }
-    *type = mtop.molblock[*block].type;
+    *type  = mtop.molblock[mbai.molBlock].type;
+    *block = mbai.molBlock;
 
     return mol_id;
 }

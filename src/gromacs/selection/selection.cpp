@@ -178,7 +178,7 @@ void computeMassesAndCharges(const gmx_mtop_t*    top,
     GMX_ASSERT(top != nullptr, "Should not have been called with NULL topology");
     masses->clear();
     charges->clear();
-    int molb = 0;
+    MTopLookUp mTopLookUp(*top);
     for (int b = 0; b < pos.count(); ++b)
     {
         real mass   = 0.0;
@@ -186,7 +186,7 @@ void computeMassesAndCharges(const gmx_mtop_t*    top,
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b + 1]; ++i)
         {
             const int     index = pos.m.mapb.a[i];
-            const t_atom& atom  = mtopGetAtomParameters(*top, index, &molb);
+            const t_atom& atom  = mTopLookUp.getAtomParameters(index);
             mass += atom.m;
             charge += atom.q;
         }

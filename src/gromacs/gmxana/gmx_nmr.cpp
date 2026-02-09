@@ -431,8 +431,6 @@ int gmx_nmr(int argc, char* argv[])
     double   sumaver, sumt;
     int *    set = nullptr, i, j, k, nset, sss;
     std::vector<std::string> pairleg, odtleg, otenleg, leg;
-    const char *             anm_j, *anm_k, *resnm_j, *resnm_k;
-    int                      resnr_j, resnr_k;
     const char*              orinst_sub = "@ subtitle \"instantaneous\"\n";
     gmx_output_env_t*        oenv;
     t_enxblock*              blk_disre = nullptr;
@@ -678,16 +676,20 @@ int gmx_nmr(int argc, char* argv[])
                               ndisre,
                               ilist.size() / 3);
                 }
-                int molb = 0;
+                MTopLookUp mTopLookUp(*topInfo.mtop());
                 for (i = 0; i < ndisre; i++)
                 {
                     j = fa[3 * i + 1];
                     k = fa[3 * i + 2];
                     GMX_ASSERT(topInfo.hasTopology(), "Need to have a valid topology");
-                    mtopGetAtomAndResidueName(*topInfo.mtop(), j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
-                    mtopGetAtomAndResidueName(*topInfo.mtop(), k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
-                    pairleg.emplace_back(gmx::formatString(
-                            "%d %s %d %s (%d)", resnr_j, anm_j, resnr_k, anm_k, ip[fa[3 * i]].disres.label));
+                    const auto resJ = mTopLookUp.getAtomAndResidueNameAndNumber(j);
+                    const auto resK = mTopLookUp.getAtomAndResidueNameAndNumber(k);
+                    pairleg.emplace_back(gmx::formatString("%d %s %d %s (%d)",
+                                                           resJ.residueNumber,
+                                                           resJ.atomName,
+                                                           resK.residueNumber,
+                                                           resK.atomName,
+                                                           ip[fa[3 * i]].disres.label));
                 }
                 set = select_it(ndisre, pairleg, &nset);
                 for (i = 0; (i < nset); i++)

@@ -1334,12 +1334,12 @@ static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
 
     /* evaluate masses (reference structure) */
     snew(edi->sref.m, edi->sref.nr);
-    int molb = 0;
+    MTopLookUp mTopLookUp(mtop);
     for (i = 0; i < edi->sref.nr; i++)
     {
         if (edi->fitmas)
         {
-            edi->sref.m[i] = mtopGetAtomMass(mtop, edi->sref.anrs[i], &molb);
+            edi->sref.m[i] = mTopLookUp.getAtomParameters(edi->sref.anrs[i]).m;
         }
         else
         {
@@ -1370,7 +1370,7 @@ static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
     snew(edi->sav.m, edi->sav.nr);
     for (i = 0; i < edi->sav.nr; i++)
     {
-        edi->sav.m[i] = mtopGetAtomMass(mtop, edi->sav.anrs[i], &molb);
+        edi->sav.m[i] = mTopLookUp.getAtomParameters(edi->sav.anrs[i]).m;
         if (edi->pcamas)
         {
             edi->sav.sqrtm[i] = std::sqrt(edi->sav.m[i]);

@@ -278,10 +278,9 @@ static void write_constr_pdb(const char*          fn,
                              ArrayRef<const RVec> x,
                              const matrix         box)
 {
-    char        fname[STRLEN];
-    FILE*       out;
-    int         dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
-    const char *anm, *resnm;
+    char  fname[STRLEN];
+    FILE* out;
+    int   dd_ac0 = 0, dd_ac1 = 0, i, ii;
 
     if (dd)
     {
@@ -303,7 +302,7 @@ static void write_constr_pdb(const char*          fn,
 
     fprintf(out, "TITLE     %s\n", title);
     gmx_write_pdb_box(out, PbcType::Unset, box);
-    int molb = 0;
+    MTopLookUp mTopLookUp(mtop);
     for (i = start; i < start + homenr; i++)
     {
         if (dd != nullptr)
@@ -322,15 +321,15 @@ static void write_constr_pdb(const char*          fn,
         {
             ii = i;
         }
-        mtopGetAtomAndResidueName(mtop, ii, &molb, &anm, &resnr, &resnm, nullptr);
+        const auto res = mTopLookUp.getAtomAndResidueNameAndNumber(ii);
         gmx_fprintf_pdb_atomline(out,
                                  PdbRecordType::Atom,
                                  ii + 1,
-                                 anm,
+                                 res.atomName,
                                  ' ',
-                                 resnm,
+                                 res.residueName,
                                  ' ',
-                                 resnr,
+                                 res.residueNumber,
                                  ' ',
                                  10 * x[i][XX],
                                  10 * x[i][YY],

@@ -79,13 +79,13 @@ void gmx_calc_com(const gmx_mtop_t* top, rvec x[], int nrefat, const int index[]
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
+    MTopLookUp mTopLookUp(*top);
     clear_rvec(xout);
     real mtot = 0;
-    int  molb = 0;
     for (int m = 0; m < nrefat; ++m)
     {
         const int  ai   = index[m];
-        const real mass = mtopGetAtomMass(*top, ai, &molb);
+        const real mass = mTopLookUp.getAtomParameters(ai).m;
         for (int j = 0; j < DIM; ++j)
         {
             xout[j] += mass * x[ai][j];
@@ -106,13 +106,13 @@ void gmx_calc_cog_f(const gmx_mtop_t* top, rvec f[], int nrefat, const int index
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
+    MTopLookUp mTopLookUp(*top);
     clear_rvec(fout);
     real mtot = 0;
-    int  molb = 0;
     for (int m = 0; m < nrefat; ++m)
     {
         const int  ai   = index[m];
-        const real mass = mtopGetAtomMass(*top, ai, &molb);
+        const real mass = mTopLookUp.getAtomParameters(ai).m;
         for (int j = 0; j < DIM; ++j)
         {
             fout[j] += f[ai][j] / mass;
@@ -248,13 +248,13 @@ void gmx_calc_com_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
     /* First simple calculation */
+    MTopLookUp mTopLookUp(*top);
     clear_rvec(xout);
     real mtot = 0;
-    int  molb = 0;
     for (int m = 0; m < nrefat; ++m)
     {
         const int  ai   = index[m];
-        const real mass = mtopGetAtomMass(*top, ai, &molb);
+        const real mass = mTopLookUp.getAtomParameters(ai).m;
         for (int j = 0; j < DIM; ++j)
         {
             xout[j] += mass * x[ai][j];
@@ -270,12 +270,11 @@ void gmx_calc_com_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
         do
         {
             bChanged = false;
-            molb     = 0;
             for (int m = 0; m < nrefat; ++m)
             {
                 rvec       dx, xtest;
                 const int  ai   = index[m];
-                const real mass = mtopGetAtomMass(*top, ai, &molb) / mtot;
+                const real mass = mTopLookUp.getAtomParameters(ai).m / mtot;
                 pbc_dx(pbc, x[ai], xout, dx);
                 rvec_add(xout, dx, xtest);
                 for (int j = 0; j < DIM; ++j)
@@ -351,7 +350,7 @@ void gmx_calc_com_block(const gmx_mtop_t* top, rvec x[], const t_block* block, c
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
-    int molb = 0;
+    MTopLookUp mTopLookUp(*top);
     for (int b = 0; b < block->nr; ++b)
     {
         rvec xb;
@@ -360,7 +359,7 @@ void gmx_calc_com_block(const gmx_mtop_t* top, rvec x[], const t_block* block, c
         for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int  ai   = index[i];
-            const real mass = mtopGetAtomMass(*top, ai, &molb);
+            const real mass = mTopLookUp.getAtomParameters(ai).m;
             for (int d = 0; d < DIM; ++d)
             {
                 xb[d] += mass * x[ai][d];
@@ -382,7 +381,7 @@ void gmx_calc_cog_f_block(const gmx_mtop_t* top, rvec f[], const t_block* block,
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(top),
                        "No masses available while mass weighting was requested");
-    int molb = 0;
+    MTopLookUp mTopLookUp(*top);
     for (int b = 0; b < block->nr; ++b)
     {
         rvec fb;
@@ -391,7 +390,7 @@ void gmx_calc_cog_f_block(const gmx_mtop_t* top, rvec f[], const t_block* block,
         for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int  ai   = index[i];
-            const real mass = mtopGetAtomMass(*top, ai, &molb);
+            const real mass = mTopLookUp.getAtomParameters(ai).m;
             for (int d = 0; d < DIM; ++d)
             {
                 fb[d] += f[ai][d] / mass;

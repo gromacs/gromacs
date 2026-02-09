@@ -207,21 +207,21 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
     const gmx_ga2la_t& ga2la = *dd->ga2la;
     int                nral  = NRAL(InteractionFunction::SETTLE);
 
-    int mb = 0;
+    MTopLookUp mTopLookUp(mtop);
+
     for (int a = cg_start; a < cg_end; a++)
     {
         if (atomInfo[a] & gmx::sc_atomInfo_Settle)
         {
-            int a_gl  = dd->globalAtomIndices[a];
-            int a_mol = 0;
-            mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
+            const int  a_gl = dd->globalAtomIndices[a];
+            const auto mbai = mTopLookUp.getMolblockAtomIndex(a_gl);
 
-            const gmx_molblock_t* molb   = &mtop.molblock[mb];
-            int                   settle = at2settle_mt[molb->type][a_mol];
+            const gmx_molblock_t* molb   = &mtop.molblock[mbai.molBlock];
+            int                   settle = at2settle_mt[molb->type][mbai.atomIndex];
 
             if (settle >= 0)
             {
-                int offset = a_gl - a_mol;
+                const int offset = a_gl - mbai.atomIndex;
 
                 const int* ia1 =
                         mtop.moltype[molb->type].ilist[InteractionFunction::SETTLE].iatoms.data();
@@ -287,18 +287,17 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
     dc->con_gl.clear();
     dc->con_nlocat.clear();
 
-    int mb    = 0;
+    MTopLookUp mTopLookUp(mtop);
+
     int nhome = 0;
     for (int a = 0; a < dd->numHomeAtoms; a++)
     {
         if (atomInfo[a] & gmx::sc_atomInfo_Constraint)
         {
-            int a_gl  = dd->globalAtomIndices[a];
-            int molnr = 0;
-            int a_mol = 0;
-            mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
+            const int  a_gl = dd->globalAtomIndices[a];
+            const auto mbai = mTopLookUp.getMolblockAtomIndex(a_gl);
 
-            const gmx_molblock_t& molb = mtop.molblock[mb];
+            const gmx_molblock_t& molb = mtop.molblock[mbai.molBlock];
 
             gmx::ArrayRef<const int> ia1 =
                     mtop.moltype[molb.type].ilist[InteractionFunction::Constraints].iatoms;
@@ -309,17 +308,18 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
              * This is only required for the global index to make sure
              * that we use each constraint only once.
              */
-            const int con_offset = dc->molb_con_offset[mb] + molnr * dc->molb_ncon_mol[mb];
+            const int con_offset = dc->molb_con_offset[mbai.molBlock]
+                                   + mbai.molIndex * dc->molb_ncon_mol[mbai.molBlock];
 
             /* The global atom number offset for this molecule */
-            const int offset = a_gl - a_mol;
+            const int offset = a_gl - mbai.atomIndex;
             /* Loop over the constraints connected to atom a_mol in the molecule */
             const auto& at2con = at2con_mt[molb.type];
-            for (const int con : at2con[a_mol])
+            for (const int con : at2con[mbai.atomIndex])
             {
                 const int* iap   = constr_iatomptr(ia1, ia2, con);
                 int        b_mol = 0;
-                if (a_mol == iap[1])
+                if (mbai.atomIndex == iap[1])
                 {
                     b_mol = iap[2];
                 }
@@ -330,7 +330,7 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
                 if (const int* a_loc = ga2la.findHome(offset + b_mol))
                 {
                     /* Add this fully home constraint at the first atom */
-                    if (a_mol < b_mol)
+                    if (mbai.atomIndex < b_mol)
                     {
                         dc->con_gl.push_back(con_offset + con);
                         dc->con_nlocat.push_back(2);

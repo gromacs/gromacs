@@ -3530,13 +3530,15 @@ static void init_rot_group(FILE*               fplog,
     {
         snew(erg->m_loc, erg->rotg->nat);
     }
+
+    MTopLookUp mTopLookUp(mtop);
+
     totalmass = 0.0;
-    int molb  = 0;
     for (int i = 0; i < erg->rotg->nat; i++)
     {
         if (erg->rotg->bMassW)
         {
-            mass = mtopGetAtomMass(mtop, erg->rotg->ind[i], &molb);
+            mass = mTopLookUp.getAtomParameters(erg->rotg->ind[i]).m;
         }
         else
         {

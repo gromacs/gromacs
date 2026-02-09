@@ -176,10 +176,8 @@ void write_dd_pdb(const char*         fn,
                   const rvec          x[],
                   const matrix        box)
 {
-    char        fname[STRLEN], buf[22];
-    FILE*       out;
-    int         resnr;
-    const char *atomname, *resname;
+    char  fname[STRLEN], buf[22];
+    FILE* out;
 
     if (natoms == -1)
     {
@@ -192,7 +190,9 @@ void write_dd_pdb(const char*         fn,
 
     fprintf(out, "TITLE     %s\n", title);
     gmx_write_pdb_box(out, dd.unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
-    int molb = 0;
+
+    MTopLookUp mTopLookUp(mtop);
+
     for (int i = 0; i < natoms; i++)
     {
         int ii = dd.globalAtomIndices[i];
@@ -200,9 +200,9 @@ void write_dd_pdb(const char*         fn,
         {
             continue;
         }
-        mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
-        int  c;
-        real b;
+        const auto res = mTopLookUp.getAtomAndResidueNameAndNumber(ii);
+        int        c;
+        real       b;
         if (i < dd.comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
@@ -223,11 +223,11 @@ void write_dd_pdb(const char*         fn,
         gmx_fprintf_pdb_atomline(out,
                                  PdbRecordType::Atom,
                                  ii + 1,
-                                 atomname,
+                                 res.atomName,
                                  ' ',
-                                 resname,
+                                 res.residueName,
                                  ' ',
-                                 resnr,
+                                 res.residueNumber,
                                  ' ',
                                  10 * x[i][XX],
                                  10 * x[i][YY],

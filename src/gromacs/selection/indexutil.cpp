@@ -739,15 +739,12 @@ static bool next_group_index(int atomIndex, const gmx_mtop_t* top, e_index_t typ
         case INDEX_ATOM: *id = atomIndex; break;
         case INDEX_RES:
         {
-            int resind, molb = 0;
-            mtopGetAtomAndResidueName(*top, atomIndex, &molb, nullptr, nullptr, nullptr, &resind);
-            *id = resind;
+            *id = MTopLookUp(*top).getGlobalResidueIndex(atomIndex);
             break;
         }
         case INDEX_MOL:
         {
-            int molb = 0;
-            *id      = mtopGetMoleculeIndex(*top, atomIndex, &molb);
+            *id = MTopLookUp(*top).getMoleculeIndex(atomIndex);
             break;
         }
         case INDEX_UNKNOWN:
@@ -837,9 +834,9 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
         t->nalloc_index = g->isize + 1;
     }
     /* Clear counters */
-    t->nr    = 0;
-    int id   = -1;
-    int molb = 0;
+    t->nr         = 0;
+    int        id = -1;
+    MTopLookUp mTopLookUp(*top);
     for (int i = 0; i < g->isize; ++i)
     {
         const int ai = g->index[i];
@@ -857,23 +854,22 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
                 {
                     case INDEX_RES:
                     {
-                        int molnr, atnr_mol;
-                        mtopGetMolblockIndex(*top, ai, &molb, &molnr, &atnr_mol);
-                        const t_atoms& mol_atoms    = top->moltype[top->molblock[molb].type].atoms;
-                        int            last_atom    = atnr_mol + 1;
-                        const int      currentResid = mol_atoms.atom[atnr_mol].resind;
+                        const auto mbai = mTopLookUp.getMolblockAtomIndex(ai);
+                        const t_atoms& mol_atoms = top->moltype[top->molblock[mbai.molBlock].type].atoms;
+                        int       last_atom    = mbai.atomIndex + 1;
+                        const int currentResid = mol_atoms.atom[mbai.atomIndex].resind;
                         while (last_atom < mol_atoms.nr && mol_atoms.atom[last_atom].resind == currentResid)
                         {
                             ++last_atom;
                         }
-                        int first_atom = atnr_mol - 1;
+                        int first_atom = mbai.atomIndex - 1;
                         while (first_atom >= 0 && mol_atoms.atom[first_atom].resind == currentResid)
                         {
                             --first_atom;
                         }
-                        const MoleculeBlockIndices& molBlock = top->moleculeBlockIndices[molb];
-                        int                         first_mol_atom = molBlock.globalAtomStart;
-                        first_mol_atom += molnr * molBlock.numAtomsPerMolecule;
+                        const MoleculeBlockIndices& molBlock = top->moleculeBlockIndices[mbai.molBlock];
+                        int first_mol_atom = molBlock.globalAtomStart;
+                        first_mol_atom += mbai.molIndex * molBlock.numAtomsPerMolecule;
                         first_atom = first_mol_atom + first_atom + 1;
                         last_atom  = first_mol_atom + last_atom - 1;
                         for (int j = first_atom; j <= last_atom; ++j)
@@ -884,10 +880,10 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
                     }
                     case INDEX_MOL:
                     {
-                        int molnr, atnr_mol;
-                        mtopGetMolblockIndex(*top, ai, &molb, &molnr, &atnr_mol);
-                        const MoleculeBlockIndices& blockIndices = top->moleculeBlockIndices[molb];
-                        const int                   atomStart    = blockIndices.globalAtomStart
+                        const auto                  mbai = mTopLookUp.getMolblockAtomIndex(ai);
+                        const MoleculeBlockIndices& blockIndices =
+                                top->moleculeBlockIndices[mbai.molBlock];
+                        const int atomStart = blockIndices.globalAtomStart
                                               + (id - blockIndices.moleculeIndexStart)
                                                         * blockIndices.numAtomsPerMolecule;
                         for (int j = 0; j < blockIndices.numAtomsPerMolecule; ++j)
@@ -1007,22 +1003,17 @@ bool gmx_ana_index_has_full_ablocks(gmx_ana_index_t* g, t_blocka* b)
 /*!
  * \brief Returns if an atom is at a residue boundary.
  *
- * \param[in]     top   Topology data.
+ * \param[in,out] mTopLookUp  A pointer to a molecular topology look-up object
  * \param[in]     a     Atom index to check, should be -1 <= \p a < top->natoms.
- * \param[in,out] molb  The molecule block of atom a
  * \returns       true if atoms \p a and \p a + 1 are in different residues, false otherwise.
  */
-static bool is_at_residue_boundary(const gmx_mtop_t& top, int a, int* molb)
+static bool is_at_residue_boundary(MTopLookUp* mTopLookUp, int a)
 {
-    if (a == -1 || a + 1 == top.natoms)
+    if (a == -1 || a + 1 == mTopLookUp->mtop().natoms)
     {
         return true;
     }
-    int resindA;
-    mtopGetAtomAndResidueName(top, a, molb, nullptr, nullptr, nullptr, &resindA);
-    int resindAPlusOne;
-    mtopGetAtomAndResidueName(top, a + 1, molb, nullptr, nullptr, nullptr, &resindAPlusOne);
-    return resindAPlusOne != resindA;
+    return mTopLookUp->getGlobalResidueIndex(a) != mTopLookUp->getGlobalResidueIndex(a + 1);
 }
 
 /*!
@@ -1055,19 +1046,19 @@ bool gmx_ana_index_has_complete_elems(gmx_ana_index_t* g, e_index_t type, const 
 
         case INDEX_RES:
         {
-            int molb  = 0;
-            int aPrev = -1;
+            MTopLookUp mTopLookUp(*top);
+            int        aPrev = -1;
             for (int i = 0; i < g->isize; ++i)
             {
                 const int a = g->index[i];
                 // Check if a is consecutive or on a residue boundary
                 if (a != aPrev + 1)
                 {
-                    if (!is_at_residue_boundary(*top, aPrev, &molb))
+                    if (!is_at_residue_boundary(&mTopLookUp, aPrev))
                     {
                         return false;
                     }
-                    if (!is_at_residue_boundary(*top, a - 1, &molb))
+                    if (!is_at_residue_boundary(&mTopLookUp, a - 1))
                     {
                         return false;
                     }
@@ -1076,7 +1067,7 @@ bool gmx_ana_index_has_complete_elems(gmx_ana_index_t* g, e_index_t type, const 
             }
             GMX_ASSERT(g->isize > 0, "We return above when isize=0");
             const int a = g->index[g->isize - 1];
-            if (!is_at_residue_boundary(*top, a, &molb))
+            if (!is_at_residue_boundary(&mTopLookUp, a))
             {
                 return false;
             }
