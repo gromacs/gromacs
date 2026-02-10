@@ -57,7 +57,7 @@ function(gmx_add_hipcc_flag_if_supported _output_variable_name_to_append_to _fla
     if (NOT DEFINED ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if hipcc accepts flags ${ARGN}")
         execute_process(
-                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} --offload-arch=gfx90a -Werror "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
+                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} -x hip --offload-arch=gfx90a -Werror "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
             RESULT_VARIABLE _hip_success
             OUTPUT_QUIET
             ERROR_QUIET

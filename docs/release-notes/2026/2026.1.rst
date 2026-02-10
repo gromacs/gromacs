@@ -31,6 +31,14 @@ for charges and masses.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix device arch setup with newer version of amdclang
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+Newer versions of the compiler would fail to correctly configure the project due
+to not treating the test file as HIP input.
+
+:issue:`5558`
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
