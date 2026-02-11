@@ -834,9 +834,14 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
         t->nalloc_index = g->isize + 1;
     }
     /* Clear counters */
-    t->nr         = 0;
-    int        id = -1;
-    MTopLookUp mTopLookUp(*top);
+    t->nr  = 0;
+    int id = -1;
+    // prevent nullptr dereference
+    std::optional<MTopLookUp> mTopLookUp;
+    if (bComplete)
+    {
+        mTopLookUp.emplace(*top);
+    }
     for (int i = 0; i < g->isize; ++i)
     {
         const int ai = g->index[i];
@@ -854,7 +859,7 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
                 {
                     case INDEX_RES:
                     {
-                        const auto mbai = mTopLookUp.getMolblockAtomIndex(ai);
+                        const auto mbai = mTopLookUp->getMolblockAtomIndex(ai);
                         const t_atoms& mol_atoms = top->moltype[top->molblock[mbai.molBlock].type].atoms;
                         int       last_atom    = mbai.atomIndex + 1;
                         const int currentResid = mol_atoms.atom[mbai.atomIndex].resind;
@@ -880,7 +885,7 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
                     }
                     case INDEX_MOL:
                     {
-                        const auto                  mbai = mTopLookUp.getMolblockAtomIndex(ai);
+                        const auto                  mbai = mTopLookUp->getMolblockAtomIndex(ai);
                         const MoleculeBlockIndices& blockIndices =
                                 top->moleculeBlockIndices[mbai.molBlock];
                         const int atomStart = blockIndices.globalAtomStart
