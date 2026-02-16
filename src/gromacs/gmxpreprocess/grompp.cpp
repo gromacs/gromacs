@@ -286,14 +286,14 @@ void MoleculeInformation::fullCleanUp()
     done_block(&mols);
 }
 
-static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
+static int rm_interactions(InteractionFunction ftype, gmx::ArrayRef<MoleculeInformation> mols)
 {
     int n = 0;
     /* For all the molecule types */
     for (auto& mol : mols)
     {
-        n += mol.interactions[ifunc].size();
-        mol.interactions[ifunc].interactionTypes.clear();
+        n += mol.interactions[ftype].size();
+        mol.interactions[ftype].interactionTypes.clear();
     }
     return n;
 }
@@ -376,7 +376,6 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandl
      */
     int  min_steps_warn = 5;
     int  min_steps_note = 10;
-    int  ftype;
     int  i, a1, a2, w_a1, w_a2, j;
     real twopi2, limit2, fc, re, m1, m2, period2, w_period2;
     bool bFound, bWater, bWarn;
@@ -396,11 +395,12 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandl
     {
         const t_atom*           atom  = moltype.atoms.atom;
         const InteractionLists& ilist = moltype.ilist;
-        const InteractionList&  ilc   = ilist[F_CONSTR];
-        const InteractionList&  ils   = ilist[F_SETTLE];
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        const InteractionList&  ilc   = ilist[InteractionFunction::Constraints];
+        const InteractionList&  ils   = ilist[InteractionFunction::SETTLE];
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if (!(ftype == F_BONDS || ftype == F_G96BONDS || ftype == F_HARMONIC))
+            if (!(ftype == InteractionFunction::Bonds || ftype == InteractionFunction::GROMOS96Bonds
+                  || ftype == InteractionFunction::HarmonicPotential))
             {
                 continue;
             }
@@ -410,7 +410,7 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandl
             {
                 fc = ip[ilb.iatoms[i]].harmonic.krA;
                 re = ip[ilb.iatoms[i]].harmonic.rA;
-                if (ftype == F_G96BONDS)
+                if (ftype == InteractionFunction::GROMOS96Bonds)
                 {
                     /* Convert squared sqaure fc to harmonic fc */
                     fc = 2 * fc * re;
@@ -532,7 +532,7 @@ static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, WarningHandl
 
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
-static int nint_ftype(gmx_mtop_t* mtop, gmx::ArrayRef<const MoleculeInformation> mi, int ftype)
+static int nint_ftype(gmx_mtop_t* mtop, gmx::ArrayRef<const MoleculeInformation> mi, InteractionFunction ftype)
 {
     int nint = 0;
     for (const gmx_molblock_t& molb : mtop->molblock)
@@ -619,16 +619,16 @@ static void new_status(const char*                                 topfile,
                        gmx_mtop_t*                                 sys,
                        std::vector<MoleculeInformation>*           mi,
                        std::unique_ptr<MoleculeInformation>*       intermolecular_interactions,
-                       gmx::ArrayRef<InteractionsOfType>           interactions,
-                       CombinationRule*                            comb,
-                       double*                                     reppow,
-                       real*                                       fudgeQQ,
-                       gmx_bool                                    bMorse,
-                       WarningHandler*                             wi,
-                       const gmx::MDLogger&                        logger)
+                       gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
+                       CombinationRule*                                                comb,
+                       double*                                                         reppow,
+                       real*                                                           fudgeQQ,
+                       gmx_bool                                                        bMorse,
+                       WarningHandler*                                                 wi,
+                       const gmx::MDLogger&                                            logger)
 {
     std::vector<gmx_molblock_t> molblock;
-    int                         i, nmismatch;
+    int                         nmismatch;
     bool                        ffParametrizedWithHBondConstraints;
 
     /* TOPOLOGY processing */
@@ -692,7 +692,7 @@ static void new_status(const char*                                 topfile,
 
     if (ir->eDisre == DistanceRestraintRefinement::None)
     {
-        i = rm_interactions(F_DISRES, *mi);
+        int i = rm_interactions(InteractionFunction::DistanceRestraints, *mi);
         if (i > 0)
         {
             wi->setFileAndLineNumber("unknown", -1);
@@ -703,7 +703,7 @@ static void new_status(const char*                                 topfile,
     }
     if (!opts->bOrire)
     {
-        i = rm_interactions(F_ORIRES, *mi);
+        int i = rm_interactions(InteractionFunction::OrientationRestraints, *mi);
         if (i > 0)
         {
             wi->setFileAndLineNumber("unknown", -1);
@@ -723,7 +723,7 @@ static void new_status(const char*                                 topfile,
      * constraints only. Do not print note with large timesteps or vsites.
      */
     if (opts->nshake == eshALLBONDS && ffParametrizedWithHBondConstraints && ir->delta_t < 0.0026
-        && gmx_mtop_ftype_count(*sys, F_VSITE3FD) == 0)
+        && gmx_mtop_ftype_count(*sys, InteractionFunction::VirtualSite3FlexibleDistance) == 0)
     {
         wi->setFileAndLineNumber("unknown", -1);
         wi->addNote(
@@ -801,8 +801,10 @@ static void new_status(const char*                                 topfile,
     }
     {
         bool bHasNormalConstraints =
-                0 < (nint_ftype(sys, *mi, F_CONSTR) + nint_ftype(sys, *mi, F_CONSTRNC));
-        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, *mi, F_SETTLE);
+                0 < (nint_ftype(sys, *mi, InteractionFunction::Constraints)
+                     + nint_ftype(sys, *mi, InteractionFunction::ConstraintsNoCoupling));
+        bool bHasAnyConstraints =
+                bHasNormalConstraints || 0 < nint_ftype(sys, *mi, InteractionFunction::SETTLE);
         double_check(ir, state->box, bHasNormalConstraints, bHasAnyConstraints, wi);
     }
 
@@ -829,8 +831,10 @@ static void new_status(const char*                                 topfile,
     }
     else if (EI_STATE_VELOCITY(ir->eI))
     {
-        bool velocitiesAreZero = !std::any_of(
-                state->v.begin(), state->v.end(), [](const auto& v) { return norm2(v) > 0; });
+        bool velocitiesAreZero =
+                !std::any_of(state->v.begin(),
+                             state->v.end(),
+                             [](const auto& velocity) { return norm2(velocity) > 0; });
         GMX_LOG(logger.info)
                 .asParagraph()
                 .appendTextFormatted("Taking velocities from '%s'%s",
@@ -1020,9 +1024,11 @@ static void read_posres(gmx_mtop_t*                              mtop,
     snew(hadAtom, natoms);
     for (gmx_molblock_t& molb : mtop->molblock)
     {
-        nat_molb                       = molb.nmol * mtop->moltype[molb.type].atoms.nr;
-        const InteractionsOfType* pr   = &(molinfo[molb.type].interactions[F_POSRES]);
-        const InteractionsOfType* prfb = &(molinfo[molb.type].interactions[F_FBPOSRES]);
+        nat_molb = molb.nmol * mtop->moltype[molb.type].atoms.nr;
+        const InteractionsOfType* pr =
+                &(molinfo[molb.type].interactions[InteractionFunction::PositionRestraints]);
+        const InteractionsOfType* prfb =
+                &(molinfo[molb.type].interactions[InteractionFunction::FlatBottomedPositionRestraints]);
         if (pr->size() > 0 || prfb->size() > 0)
         {
             for (const auto& restraint : pr->interactionTypes)
@@ -1396,79 +1402,79 @@ interpolate1d(double xmin, double dx, const double* ya, const double* y2a, doubl
 }
 
 
-static void setup_cmap(int grid_spacing, int nc, gmx::ArrayRef<const real> grid, gmx_cmap_t* cmap_grid)
+static void setup_cmap(int gridExtent, int nc, gmx::ArrayRef<const real> grid, gmx_cmap_t* cmap_grid)
 {
     int    i, j, k, ii, jj, kk, idx;
     int    offset;
     double dx, xmin, v, v1, v2, v12;
     double phi, psi;
 
-    std::vector<double> tmp_u(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_u2(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_yy(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_y1(2 * grid_spacing, 0.0);
-    std::vector<double> tmp_t2(2 * grid_spacing * 2 * grid_spacing, 0.0);
-    std::vector<double> tmp_grid(2 * grid_spacing * 2 * grid_spacing, 0.0);
+    std::vector<double> tmp_u(2 * gridExtent, 0.0);
+    std::vector<double> tmp_u2(2 * gridExtent, 0.0);
+    std::vector<double> tmp_yy(2 * gridExtent, 0.0);
+    std::vector<double> tmp_y1(2 * gridExtent, 0.0);
+    std::vector<double> tmp_t2(2 * gridExtent * 2 * gridExtent, 0.0);
+    std::vector<double> tmp_grid(2 * gridExtent * 2 * gridExtent, 0.0);
 
-    dx   = 360.0 / grid_spacing;
-    xmin = -180.0 - dx * grid_spacing / 2;
+    dx   = 360.0 / gridExtent;
+    xmin = -180.0 - dx * gridExtent / 2;
 
     for (kk = 0; kk < nc; kk++)
     {
         /* Compute an offset depending on which cmap we are using
          * Offset will be the map number multiplied with the
-         * grid_spacing * grid_spacing * 2
+         * gridExtent * gridExtent * 2
          */
-        offset = kk * grid_spacing * grid_spacing * 2;
+        offset = kk * gridExtent * gridExtent * 2;
 
-        for (i = 0; i < 2 * grid_spacing; i++)
+        for (i = 0; i < 2 * gridExtent; i++)
         {
-            ii = (i + grid_spacing - grid_spacing / 2) % grid_spacing;
+            ii = (i + gridExtent - gridExtent / 2) % gridExtent;
 
-            for (j = 0; j < 2 * grid_spacing; j++)
+            for (j = 0; j < 2 * gridExtent; j++)
             {
-                jj = (j + grid_spacing - grid_spacing / 2) % grid_spacing;
-                tmp_grid[i * grid_spacing * 2 + j] = grid[offset + ii * grid_spacing + jj];
+                jj                               = (j + gridExtent - gridExtent / 2) % gridExtent;
+                tmp_grid[i * gridExtent * 2 + j] = grid[offset + ii * gridExtent + jj];
             }
         }
 
-        for (i = 0; i < 2 * grid_spacing; i++)
+        for (i = 0; i < 2 * gridExtent; i++)
         {
             spline1d(dx,
-                     &(tmp_grid[2 * grid_spacing * i]),
-                     2 * grid_spacing,
+                     &(tmp_grid[2 * gridExtent * i]),
+                     2 * gridExtent,
                      tmp_u.data(),
-                     &(tmp_t2[2 * grid_spacing * i]));
+                     &(tmp_t2[2 * gridExtent * i]));
         }
 
-        for (i = grid_spacing / 2; i < grid_spacing + grid_spacing / 2; i++)
+        for (i = gridExtent / 2; i < gridExtent + gridExtent / 2; i++)
         {
-            ii  = i - grid_spacing / 2;
+            ii  = i - gridExtent / 2;
             phi = ii * dx - 180.0;
 
-            for (j = grid_spacing / 2; j < grid_spacing + grid_spacing / 2; j++)
+            for (j = gridExtent / 2; j < gridExtent + gridExtent / 2; j++)
             {
-                jj  = j - grid_spacing / 2;
+                jj  = j - gridExtent / 2;
                 psi = jj * dx - 180.0;
 
-                for (k = 0; k < 2 * grid_spacing; k++)
+                for (k = 0; k < 2 * gridExtent; k++)
                 {
                     interpolate1d(xmin,
                                   dx,
-                                  &(tmp_grid[2 * grid_spacing * k]),
-                                  &(tmp_t2[2 * grid_spacing * k]),
+                                  &(tmp_grid[2 * gridExtent * k]),
+                                  &(tmp_t2[2 * gridExtent * k]),
                                   psi,
                                   &tmp_yy[k],
                                   &tmp_y1[k]);
                 }
 
-                spline1d(dx, tmp_yy.data(), 2 * grid_spacing, tmp_u.data(), tmp_u2.data());
+                spline1d(dx, tmp_yy.data(), 2 * gridExtent, tmp_u.data(), tmp_u2.data());
                 interpolate1d(xmin, dx, tmp_yy.data(), tmp_u2.data(), phi, &v, &v1);
-                spline1d(dx, tmp_y1.data(), 2 * grid_spacing, tmp_u.data(), tmp_u2.data());
+                spline1d(dx, tmp_y1.data(), 2 * gridExtent, tmp_u.data(), tmp_u2.data());
                 interpolate1d(xmin, dx, tmp_y1.data(), tmp_u2.data(), phi, &v2, &v12);
 
-                idx                                       = ii * grid_spacing + jj;
-                cmap_grid->cmapdata[kk].cmap[idx * 4]     = grid[offset + ii * grid_spacing + jj];
+                idx                                       = ii * gridExtent + jj;
+                cmap_grid->cmapdata[kk].cmap[idx * 4]     = grid[offset + ii * gridExtent + jj];
                 cmap_grid->cmapdata[kk].cmap[idx * 4 + 1] = v1;
                 cmap_grid->cmapdata[kk].cmap[idx * 4 + 2] = v2;
                 cmap_grid->cmapdata[kk].cmap[idx * 4 + 3] = v12;
@@ -1477,12 +1483,12 @@ static void setup_cmap(int grid_spacing, int nc, gmx::ArrayRef<const real> grid,
     }
 }
 
-static void init_cmap_grid(gmx_cmap_t* cmap_grid, int ngrid, int grid_spacing)
+static void init_cmap_grid(gmx_cmap_t* cmap_grid, int ngrid, int gridExtent)
 {
     int i, nelem;
 
-    cmap_grid->grid_spacing = grid_spacing;
-    nelem                   = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+    cmap_grid->gridExtent = gridExtent;
+    nelem                 = cmap_grid->gridExtent * cmap_grid->gridExtent;
 
     cmap_grid->cmapdata.resize(ngrid);
 
@@ -1502,12 +1508,13 @@ static int count_constraints(const gmx_mtop_t*                        mtop,
     count = 0;
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
-        count_mol                                            = 0;
-        gmx::ArrayRef<const InteractionsOfType> interactions = mi[molb.type].interactions;
+        count_mol = 0;
+        const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions =
+                mi[molb.type].interactions;
 
-        for (int i = 0; i < F_NRE; i++)
+        for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if (i == F_SETTLE)
+            if (i == InteractionFunction::SETTLE)
             {
                 count_mol += 3 * interactions[i].size();
             }
@@ -1604,10 +1611,11 @@ static void checkForUnboundAtoms(const gmx_moltype_t* molt,
 
     std::vector<int> count(atoms->nr, 0);
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if (((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) == 2 && ftype != F_CONNBONDS)
-            || (interaction_function[ftype].flags & IF_CONSTRAINT) || ftype == F_SETTLE)
+        if (((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) == 2
+             && ftype != InteractionFunction::ConnectBonds)
+            || (interaction_function[ftype].flags & IF_CONSTRAINT) || ftype == InteractionFunction::SETTLE)
         {
             const InteractionList& il   = molt->ilist[ftype];
             const int              nral = NRAL(ftype);
@@ -1679,7 +1687,8 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
                                    gmx::ArrayRef<const t_iparams> iparams,
                                    real                           massFactorThreshold)
 {
-    if (molt.ilist[F_CONSTR].empty() && molt.ilist[F_CONSTRNC].empty())
+    if (molt.ilist[InteractionFunction::Constraints].empty()
+        && molt.ilist[InteractionFunction::ConstraintsNoCoupling].empty())
     {
         return false;
     }
@@ -1690,7 +1699,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
             gmx::make_at2con(molt, iparams, gmx::FlexibleConstraintTreatment::Exclude);
 
     bool haveDecoupledMode = false;
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (interaction_function[ftype].flags & IF_ATYPE)
         {
@@ -2315,9 +2324,9 @@ int gmx_grompp(int argc, char* argv[])
         wi.addError(warningMessage);
     }
 
-    std::array<InteractionsOfType, F_NRE> interactions;
-    gmx_mtop_t                            sys;
-    PreprocessingAtomTypes                atypes;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> interactions;
+    gmx_mtop_t                                                     sys;
+    PreprocessingAtomTypes                                         atypes;
     if (debug)
     {
         pr_symtab(debug, 0, "Just opened", &sys.symtab);
@@ -2403,7 +2412,8 @@ int gmx_grompp(int argc, char* argv[])
      */
     check_warning_error(wi, FARGS);
 
-    if (nint_ftype(&sys, mi, F_POSRES) > 0 || nint_ftype(&sys, mi, F_FBPOSRES) > 0)
+    if (nint_ftype(&sys, mi, InteractionFunction::PositionRestraints) > 0
+        || nint_ftype(&sys, mi, InteractionFunction::FlatBottomedPositionRestraints) > 0)
     {
         if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
             || ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
@@ -2417,58 +2427,60 @@ int gmx_grompp(int argc, char* argv[])
             wi.addNote(warningMessage);
         }
 
-        const char* fn = opt2fn("-r", NFILE, fnm);
-        const char* fnB;
+        const char* fnRestraint = opt2fn("-r", NFILE, fnm);
+        const char* fnRestraintB;
 
-        if (!gmx_fexist(fn))
+        if (!gmx_fexist(fnRestraint))
         {
             gmx_fatal(FARGS,
                       "Cannot find position restraint file %s (option -r).\n"
                       "From GROMACS-2018, you need to specify the position restraint "
                       "coordinate files explicitly to avoid mistakes, although you can "
                       "still use the same file as you specify for the -c option.",
-                      fn);
+                      fnRestraint);
         }
 
         if (opt2bSet("-rb", NFILE, fnm))
         {
-            fnB = opt2fn("-rb", NFILE, fnm);
-            if (!gmx_fexist(fnB))
+            fnRestraintB = opt2fn("-rb", NFILE, fnm);
+            if (!gmx_fexist(fnRestraintB))
             {
                 gmx_fatal(FARGS,
                           "Cannot find B-state position restraint file %s (option -rb).\n"
                           "From GROMACS-2018, you need to specify the position restraint "
                           "coordinate files explicitly to avoid mistakes, although you can "
                           "still use the same file as you specify for the -c option.",
-                          fnB);
+                          fnRestraintB);
             }
         }
         else
         {
-            fnB = fn;
+            fnRestraintB = fnRestraint;
         }
 
         if (bVerbose)
         {
-            std::string message = gmx::formatString("Reading position restraint coords from %s", fn);
-            if (std::strcmp(fn, fnB) != 0)
+            std::string message =
+                    gmx::formatString("Reading position restraint coords from %s", fnRestraint);
+            if (std::strcmp(fnRestraint, fnRestraintB) != 0)
             {
-                message += gmx::formatString(" and %s", fnB);
+                message += gmx::formatString(" and %s", fnRestraintB);
             }
             GMX_LOG(logger.info).asParagraph().appendText(message);
         }
-        gen_posres(&sys, mi, fn, fnB, ir->pressureCouplingOptions.refcoord_scaling, ir->pbcType, &wi);
+        gen_posres(&sys, mi, fnRestraint, fnRestraintB, ir->pressureCouplingOptions.refcoord_scaling, ir->pbcType, &wi);
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (interactions[F_CMAP].ncmap() > 0)
+    if (interactions[InteractionFunction::DihedralEnergyCorrectionMap].ncmap() > 0)
     {
-        init_cmap_grid(&sys.ffparams.cmap_grid,
-                       interactions[F_CMAP].numCmaps_,
-                       interactions[F_CMAP].cmapGridSpacing_);
-        setup_cmap(interactions[F_CMAP].cmapGridSpacing_,
-                   interactions[F_CMAP].numCmaps_,
-                   interactions[F_CMAP].cmap,
+        init_cmap_grid(
+                &sys.ffparams.cmap_grid,
+                interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
+                interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value());
+        setup_cmap(interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value(),
+                   interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
+                   interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmap,
                    &sys.ffparams.cmap_grid);
     }
 
@@ -2681,7 +2693,8 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     //! Must be done after do_index, so we do it here before the triple check
-    if ((gmx_mtop_ftype_count(sys, F_POSRES) != 0 || gmx_mtop_ftype_count(sys, F_FBPOSRES) != 0)
+    if ((gmx_mtop_ftype_count(sys, InteractionFunction::PositionRestraints) != 0
+         || gmx_mtop_ftype_count(sys, InteractionFunction::FlatBottomedPositionRestraints) != 0)
         && ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::Com)
     {
         ir->posresCom  = calcPosresCom(&sys, false, ir->pbcType, state.box, logger);
@@ -2838,7 +2851,8 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     {
-        double      cio = compute_io(ir, sys.natoms, sys.groups, F_NRE, 1);
+        double cio =
+                compute_io(ir, sys.natoms, sys.groups, static_cast<int>(InteractionFunction::Count), 1);
         std::string warningMessage =
                 gmx::formatString("This run will generate roughly %.0f Mb of data", cio);
         const double minimumOutputMebibytesForWarning = 20000;

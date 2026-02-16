@@ -402,7 +402,7 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
             fColvars[i][2] = atoms_new_colvar_forces[i].z;
         }
 
-        forceProviderOutput->enerd_.term[F_COM_PULL] += biasEnergy;
+        forceProviderOutput->enerd_.term[InteractionFunction::CenterOfMassPullingEnergy] += biasEnergy;
 
         // Copy last whole positions into State struct.
         for (int i = 0; i < nColvarsAtoms; i++)

@@ -104,7 +104,7 @@ const char* enumValueToString(Directive d)
     return directiveNames[d];
 }
 
-int ifunc_index(Directive d, int type)
+InteractionFunction ifunc_index(Directive d, int type)
 {
     switch (d)
     {
@@ -112,80 +112,80 @@ int ifunc_index(Directive d, int type)
         case Directive::d_bonds:
             switch (type)
             {
-                case 1: return F_BONDS;
-                case 2: return F_G96BONDS;
-                case 3: return F_MORSE;
-                case 4: return F_CUBICBONDS;
-                case 5: return F_CONNBONDS;
-                case 6: return F_HARMONIC;
-                case 7: return F_FENEBONDS;
-                case 8: return F_TABBONDS;
-                case 9: return F_TABBONDSNC;
-                case 10: return F_RESTRBONDS;
+                case 1: return InteractionFunction::Bonds;
+                case 2: return InteractionFunction::GROMOS96Bonds;
+                case 3: return InteractionFunction::MorsePotential;
+                case 4: return InteractionFunction::CubicBonds;
+                case 5: return InteractionFunction::ConnectBonds;
+                case 6: return InteractionFunction::HarmonicPotential;
+                case 7: return InteractionFunction::FENEBonds;
+                case 8: return InteractionFunction::TabulatedBonds;
+                case 9: return InteractionFunction::TabulatedBondsNoCoupling;
+                case 10: return InteractionFunction::RestraintBonds;
                 default: gmx_fatal(FARGS, "Invalid bond type %d", type);
             }
         case Directive::d_angles:
         case Directive::d_angletypes:
             switch (type)
             {
-                case 1: return F_ANGLES;
-                case 2: return F_G96ANGLES;
-                case 3: return F_CROSS_BOND_BONDS;
-                case 4: return F_CROSS_BOND_ANGLES;
-                case 5: return F_UREY_BRADLEY;
-                case 6: return F_QUARTIC_ANGLES;
-                case 8: return F_TABANGLES;
-                case 9: return F_LINEAR_ANGLES;
-                case 10: return F_RESTRANGLES;
+                case 1: return InteractionFunction::Angles;
+                case 2: return InteractionFunction::GROMOS96Angles;
+                case 3: return InteractionFunction::CrossBondBonds;
+                case 4: return InteractionFunction::CrossBondAngles;
+                case 5: return InteractionFunction::UreyBradleyPotential;
+                case 6: return InteractionFunction::QuarticAngles;
+                case 8: return InteractionFunction::TabulatedAngles;
+                case 9: return InteractionFunction::LinearAngles;
+                case 10: return InteractionFunction::RestrictedBendingPotential;
                 default: gmx_fatal(FARGS, "Invalid angle type %d", type);
             }
         case Directive::d_pairs:
         case Directive::d_pairtypes:
             if (type == 1 || (d == Directive::d_pairtypes && type == 2))
             {
-                return F_LJ14;
+                return InteractionFunction::LennardJones14;
             }
             else if (type == 2)
             {
-                return F_LJC14_Q;
+                return InteractionFunction::LennardJonesCoulomb14Q;
             }
             else
             {
                 gmx_fatal(FARGS, "Invalid pairs type %d", type);
             }
-        case Directive::d_pairs_nb: return F_LJC_PAIRS_NB;
+        case Directive::d_pairs_nb: return InteractionFunction::LennardJonesCoulombNonBondedPairs;
         case Directive::d_dihedrals:
         case Directive::d_dihedraltypes:
             switch (type)
             {
-                case 1: return F_PDIHS;
-                case 2: return F_IDIHS;
-                case 3: return F_RBDIHS;
-                case 4: return F_PIDIHS;
-                case 5: return F_FOURDIHS;
-                case 8: return F_TABDIHS;
+                case 1: return InteractionFunction::ProperDihedrals;
+                case 2: return InteractionFunction::ImproperDihedrals;
+                case 3: return InteractionFunction::RyckaertBellemansDihedrals;
+                case 4: return InteractionFunction::PeriodicImproperDihedrals;
+                case 5: return InteractionFunction::FourierDihedrals;
+                case 8: return InteractionFunction::TabulatedDihedrals;
                 case 9:
-                    return F_PDIHS; /* proper dihedrals where we allow multiple terms over single bond */
-                case 10: return F_RESTRDIHS;
-                case 11: return F_CBTDIHS;
+                    return InteractionFunction::ProperDihedrals; /* proper dihedrals where we allow multiple terms over single bond */
+                case 10: return InteractionFunction::RestrictedTorsionPotential;
+                case 11: return InteractionFunction::CombinedBendingTorsionPotential;
                 default: gmx_fatal(FARGS, "Invalid dihedral type %d", type);
             }
         case Directive::d_cmaptypes:
-        case Directive::d_cmap: return F_CMAP;
+        case Directive::d_cmap: return InteractionFunction::DihedralEnergyCorrectionMap;
 
         case Directive::d_nonbond_params:
             if (type == 1)
             {
-                return F_LJ;
+                return InteractionFunction::LennardJonesShortRange;
             }
             else
             {
-                return F_BHAM;
+                return InteractionFunction::BuckinghamShortRange;
             }
         case Directive::d_vsites1:
             if (type == 1)
             {
-                return F_VSITE1;
+                return InteractionFunction::VirtualSite1;
             }
             else
             {
@@ -194,57 +194,57 @@ int ifunc_index(Directive d, int type)
         case Directive::d_vsites2:
             switch (type)
             {
-                case 1: return F_VSITE2;
-                case 2: return F_VSITE2FD;
+                case 1: return InteractionFunction::VirtualSite2;
+                case 2: return InteractionFunction::VirtualSite2FlexibleDistance;
                 default: gmx_fatal(FARGS, "Invalid vsites2 type %d", type);
             }
         case Directive::d_vsites3:
             switch (type)
             {
-                case 1: return F_VSITE3;
-                case 2: return F_VSITE3FD;
-                case 3: return F_VSITE3FAD;
-                case 4: return F_VSITE3OUT;
+                case 1: return InteractionFunction::VirtualSite3;
+                case 2: return InteractionFunction::VirtualSite3FlexibleDistance;
+                case 3: return InteractionFunction::VirtualSite3FlexibleAngleDistance;
+                case 4: return InteractionFunction::VirtualSite3Outside;
                 default: gmx_fatal(FARGS, "Invalid vsites3 type %d", type);
             }
         case Directive::d_vsites4:
             switch (type)
             {
-                case 1: return F_VSITE4FD;
-                case 2: return F_VSITE4FDN;
+                case 1: return InteractionFunction::VirtualSite4FlexibleDistance;
+                case 2: return InteractionFunction::VirtualSite4FlexibleDistanceNormalization;
                 default: gmx_fatal(FARGS, "Invalid vsites4 type %d", type);
             }
-        case Directive::d_vsitesn: return F_VSITEN;
+        case Directive::d_vsitesn: return InteractionFunction::VirtualSiteN;
         case Directive::d_constraints:
         case Directive::d_constrainttypes:
             switch (type)
             {
-                case 1: return F_CONSTR;
-                case 2: return F_CONSTRNC;
+                case 1: return InteractionFunction::Constraints;
+                case 2: return InteractionFunction::ConstraintsNoCoupling;
                 default: gmx_fatal(FARGS, "Invalid constraints type %d", type);
             }
-        case Directive::d_settles: return F_SETTLE;
+        case Directive::d_settles: return InteractionFunction::SETTLE;
         case Directive::d_position_restraints:
             switch (type)
             {
-                case 1: return F_POSRES;
-                case 2: return F_FBPOSRES;
+                case 1: return InteractionFunction::PositionRestraints;
+                case 2: return InteractionFunction::FlatBottomedPositionRestraints;
                 default: gmx_fatal(FARGS, "Invalid position restraint type %d", type);
             }
         case Directive::d_polarization:
             switch (type)
             {
-                case 1: return F_POLARIZATION;
-                case 2: return F_ANHARM_POL;
+                case 1: return InteractionFunction::Polarization;
+                case 2: return InteractionFunction::AnharmonicPolarization;
                 default: gmx_fatal(FARGS, "Invalid polarization type %d", type);
             }
-        case Directive::d_thole_polarization: return F_THOLE_POL;
-        case Directive::d_water_polarization: return F_WATER_POL;
-        case Directive::d_angle_restraints: return F_ANGRES;
-        case Directive::d_angle_restraints_z: return F_ANGRESZ;
-        case Directive::d_distance_restraints: return F_DISRES;
-        case Directive::d_orientation_restraints: return F_ORIRES;
-        case Directive::d_dihedral_restraints: return F_DIHRES;
+        case Directive::d_thole_polarization: return InteractionFunction::TholePolarization;
+        case Directive::d_water_polarization: return InteractionFunction::WaterPolarization;
+        case Directive::d_angle_restraints: return InteractionFunction::AngleRestraints;
+        case Directive::d_angle_restraints_z: return InteractionFunction::AngleZAxisRestraints;
+        case Directive::d_distance_restraints: return InteractionFunction::DistanceRestraints;
+        case Directive::d_orientation_restraints: return InteractionFunction::OrientationRestraints;
+        case Directive::d_dihedral_restraints: return InteractionFunction::DihedralRestraints;
         default:
             gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)", enumValueToString(d), __FILE__, __LINE__);
     }

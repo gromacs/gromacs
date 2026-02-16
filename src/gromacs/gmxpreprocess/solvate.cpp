@@ -759,14 +759,13 @@ static void update_top(t_atoms*        atoms,
     char        buf[STRLEN * 2], buf2[STRLEN], *temp;
     const char* topinout;
     bool        bSystem;
-    int         i;
     double      mtot;
     real        vol, mm;
 
     int nsol = atoms->nres - firstSolventResidueIndex;
 
     mtot = 0;
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         aps->setAtomProperty(epropMass,
                              std::string(*atoms->resinfo[atoms->atom[i].resind].name),

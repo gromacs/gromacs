@@ -50,7 +50,7 @@
 
 #include "settletestrunners.h"
 
-#if GPU_SETTLE_SUPPORTED
+#if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
 #include "gromacs/gpu_utils/gputraits.h"
@@ -62,7 +62,9 @@ namespace test
 {
 class SettleTestData;
 
-#if GPU_SETTLE_SUPPORTED
+// We would like to do this just with the GpuConfigurationCapabilities,
+// but those methods are lacking the appropriate implementation stubs
+#if GMX_GPU && !GMX_GPU_OPENCL
 
 void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
                                          const t_pbc     pbc,
@@ -112,7 +114,7 @@ void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
     freeDeviceBuffer(&d_v);
 }
 
-#else // GPU_SETTLE_SUPPORTED
+#else // GMX_GPU
 
 void SettleDeviceTestRunner::applySettle(SettleTestData* /* testData */,
                                          const t_pbc /* pbc */,
@@ -124,7 +126,7 @@ void SettleDeviceTestRunner::applySettle(SettleTestData* /* testData */,
     FAIL() << "Dummy SETTLE GPU function was called instead of the real one in the SETTLE test.";
 }
 
-#endif // GPU_SETTLE_SUPPORTED
+#endif // GMX_GPU
 
 } // namespace test
 } // namespace gmx

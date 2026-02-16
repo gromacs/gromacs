@@ -986,26 +986,26 @@ void labelCoveredPoints(const std::vector<bool>& visited,
 
         /* Lower end. For periodic boundaries the last upper end not visited point becomes the low-end not visited point.
            For non-periodic boundaries there is no lower end point so a dummy value is used. */
-        int notVisitedHigh = firstNotVisited;
-        int notVisitedLow  = period > 0 ? (lastNotVisited - period) : -(coverRadius + 1);
+        int notVisitedBoundaryHigh = firstNotVisited;
+        int notVisitedBoundaryLow  = period > 0 ? (lastNotVisited - period) : -(coverRadius + 1);
 
-        int notCoveredLow  = notVisitedLow + coverRadius;
-        int notCoveredHigh = notVisitedHigh - coverRadius;
+        int notCoveredLow  = notVisitedBoundaryLow + coverRadius;
+        int notCoveredHigh = notVisitedBoundaryHigh - coverRadius;
 
-        for (int i = 0; i <= notVisitedHigh; i++)
+        for (int i = 0; i <= notVisitedBoundaryHigh; i++)
         {
             /* For non-periodic boundaries notCoveredLow = -1 will impose no restriction. */
             covered[i] = static_cast<int>((i > notCoveredLow) && (i < notCoveredHigh));
         }
 
         /* Upper end. Same as for lower end but in the other direction. */
-        notVisitedHigh = period > 0 ? (firstNotVisited + period) : (numPoints + coverRadius);
-        notVisitedLow  = lastNotVisited;
+        notVisitedBoundaryHigh = period > 0 ? (firstNotVisited + period) : (numPoints + coverRadius);
+        notVisitedBoundaryLow = lastNotVisited;
 
-        notCoveredLow  = notVisitedLow + coverRadius;
-        notCoveredHigh = notVisitedHigh - coverRadius;
+        notCoveredLow  = notVisitedBoundaryLow + coverRadius;
+        notCoveredHigh = notVisitedBoundaryHigh - coverRadius;
 
-        for (int i = notVisitedLow; i <= numPoints - 1; i++)
+        for (int i = notVisitedBoundaryLow; i <= numPoints - 1; i++)
         {
             /* For non-periodic boundaries notCoveredHigh = numPoints will impose no restriction. */
             covered[i] = static_cast<int>((i > notCoveredLow) && (i < notCoveredHigh));

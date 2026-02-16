@@ -467,11 +467,11 @@ static void evaluate_resnr(const gmx::SelMethodEvalContext& context,
                            gmx_ana_selvalue_t*              out,
                            void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        mtopGetAtomAndResidueName(*context.top_, g->index[i], &molb, nullptr, &out->u.i[i], nullptr, nullptr);
+        out->u.i[i] = mTopLookUp.getAtomAndResidueNameAndNumber(g->index[i]).residueNumber;
     }
 }
 
@@ -486,13 +486,11 @@ static void evaluate_resindex(const gmx::SelMethodEvalContext& context,
                               gmx_ana_selvalue_t*              out,
                               void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        int resind;
-        mtopGetAtomAndResidueName(*context.top_, g->index[i], &molb, nullptr, nullptr, nullptr, &resind);
-        out->u.i[i] = resind + 1;
+        out->u.i[i] = mTopLookUp.getGlobalResidueIndex(g->index[i]) + 1;
     }
 }
 
@@ -518,11 +516,11 @@ static void evaluate_molindex(const gmx::SelMethodEvalContext& context,
                               gmx_ana_selvalue_t*              out,
                               void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.i[i] = mtopGetMoleculeIndex(*context.top_, g->index[i], &molb) + 1;
+        out->u.i[i] = mTopLookUp.getMoleculeIndex(g->index[i]) + 1;
     }
 }
 
@@ -537,13 +535,11 @@ static void evaluate_atomname(const gmx::SelMethodEvalContext& context,
                               gmx_ana_selvalue_t*              out,
                               void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        const char* atom_name;
-        mtopGetAtomAndResidueName(*context.top_, g->index[i], &molb, &atom_name, nullptr, nullptr, nullptr);
-        out->u.s[i] = const_cast<char*>(atom_name);
+        out->u.s[i] = const_cast<char*>(mTopLookUp.getAtomAndResidueNameAndNumber(g->index[i]).atomName);
     }
 }
 
@@ -558,11 +554,11 @@ static void evaluate_pdbatomname(const gmx::SelMethodEvalContext& context,
                                  gmx_ana_selvalue_t*              out,
                                  void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        const char* s = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).atomnm;
+        const char* s = mTopLookUp.getAtomAndResidueNameAndNumber(g->index[i]).atomName;
         while (std::isspace(*s))
         {
             ++s;
@@ -591,14 +587,13 @@ static void evaluate_atomtype(const gmx::SelMethodEvalContext& context,
                               gmx_ana_selvalue_t*              out,
                               void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        int atomIndexInMolecule;
-        mtopGetMolblockIndex(*context.top_, g->index[i], &molb, nullptr, &atomIndexInMolecule);
-        const gmx_moltype_t& moltype = context.top_->moltype[context.top_->molblock[molb].type];
-        out->u.s[i]                  = *moltype.atoms.atomtype[atomIndexInMolecule];
+        const auto mbai = mTopLookUp.getMolblockAtomIndex(g->index[i]);
+        const gmx_moltype_t& moltype = context.top_->moltype[context.top_->molblock[mbai.molBlock].type];
+        out->u.s[i] = *moltype.atoms.atomtype[mbai.atomIndex];
     }
 }
 
@@ -613,11 +608,11 @@ static void evaluate_resname(const gmx::SelMethodEvalContext& context,
                              gmx_ana_selvalue_t*              out,
                              void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *mtopGetResidueInfo(*context.top_, g->index[i], &molb).name;
+        out->u.s[i] = *mTopLookUp.getResidueInfo(g->index[i]).name;
     }
 }
 
@@ -632,11 +627,11 @@ static void evaluate_insertcode(const gmx::SelMethodEvalContext& context,
                                 gmx_ana_selvalue_t*              out,
                                 void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = mtopGetResidueInfo(*context.top_, g->index[i], &molb).ic;
+        out->u.s[i][0] = mTopLookUp.getResidueInfo(g->index[i]).ic;
     }
 }
 
@@ -651,11 +646,11 @@ static void evaluate_chain(const gmx::SelMethodEvalContext& context,
                            gmx_ana_selvalue_t*              out,
                            void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = mtopGetResidueInfo(*context.top_, g->index[i], &molb).chainid;
+        out->u.s[i][0] = mTopLookUp.getResidueInfo(g->index[i]).chainid;
     }
 }
 
@@ -671,11 +666,11 @@ static void evaluate_mass(const gmx::SelMethodEvalContext& context,
                           void* /* data */)
 {
     GMX_RELEASE_ASSERT(gmx_mtop_has_masses(context.top_), "Masses not available for evaluation");
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomMass(*context.top_, g->index[i], &molb);
+        out->u.r[i] = mTopLookUp.getAtomParameters(g->index[i]).m;
     }
 }
 
@@ -699,11 +694,11 @@ static void evaluate_charge(const gmx::SelMethodEvalContext& context,
                             gmx_ana_selvalue_t*              out,
                             void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomParameters(*context.top_, g->index[i], &molb).q;
+        out->u.r[i] = mTopLookUp.getAtomParameters(g->index[i]).q;
     }
 }
 
@@ -726,11 +721,11 @@ static void evaluate_altloc(const gmx::SelMethodEvalContext& context,
                             gmx_ana_selvalue_t*              out,
                             void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).altloc;
+        out->u.s[i][0] = mTopLookUp.getAtomPdbInfo(g->index[i]).altloc;
     }
 }
 
@@ -746,11 +741,11 @@ static void evaluate_occupancy(const gmx::SelMethodEvalContext& context,
                                gmx_ana_selvalue_t*              out,
                                void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).occup;
+        out->u.r[i] = mTopLookUp.getAtomPdbInfo(g->index[i]).occup;
     }
 }
 
@@ -766,11 +761,11 @@ static void evaluate_betafactor(const gmx::SelMethodEvalContext& context,
                                 gmx_ana_selvalue_t*              out,
                                 void* /* data */)
 {
-    out->nr  = g->isize;
-    int molb = 0;
+    out->nr = g->isize;
+    MTopLookUp mTopLookUp(*context.top_);
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = mtopGetAtomPdbInfo(*context.top_, g->index[i], &molb).bfac;
+        out->u.r[i] = mTopLookUp.getAtomPdbInfo(g->index[i]).bfac;
     }
 }
 

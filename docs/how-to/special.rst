@@ -192,7 +192,7 @@ Taken from Robert Johnson's posts on the `gmx-users mailing list archive`_.
   chemical bond. Thus, when you use :ref:`grompp <gmx grompp>` you won't get an error
   about a single bonded C.
 
- 
+
 Andrea Minoia's tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -142,10 +142,10 @@ static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
  * \param deviceVendor Device vendor.
  * \return the list of sub-group sizes supported by the device
  */
-static FixedCapacityVector<int, 10> fillSupportedSubGroupSizes(const cl_device_id devId,
+static FixedCapacityVector<int, 12> fillSupportedSubGroupSizes(const cl_device_id devId,
                                                                const DeviceVendor deviceVendor)
 {
-    FixedCapacityVector<int, 10> result;
+    FixedCapacityVector<int, 12> result;
 
     switch (deviceVendor)
     {
@@ -713,3 +713,9 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 }
 
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
+
+int maximumGridSize(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of non-implemented method in OpenCL");
+    return -1;
+}

@@ -36,6 +36,7 @@
 
 #include <cstdio>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -124,6 +125,8 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  * \param[in]  tabpfn             Table potential file for pair interactions
  * \param[in]  tabbfnm            Table potential files for bonded interactions
  * \param[in]  print_force        Print forces for atoms with force >= print_force
+ * \param[in]  anMDModuleProvidesDirectCoulomb  If not set, any module choice is not needed and NBNxM kernels are used
+
  */
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
@@ -137,6 +140,7 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   real                             print_force);
+                   real                             print_force,
+                   std::optional<bool>              anMDModuleProvidesDirectCoulomb);
 
 #endif

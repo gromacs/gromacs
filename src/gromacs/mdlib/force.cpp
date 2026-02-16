@@ -344,8 +344,8 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                 ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul];
         enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Vdw] +=
                 ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Vdw];
-        enerd->term[F_COUL_RECIP] = Vlr_q + ewaldOutput.Vcorr_q;
-        enerd->term[F_LJ_RECIP]   = Vlr_lj + ewaldOutput.Vcorr_lj;
+        enerd->term[InteractionFunction::CoulombReciprocalSpace] = Vlr_q + ewaldOutput.Vcorr_q;
+        enerd->term[InteractionFunction::LennardJonesReciprocalSpace] = Vlr_lj + ewaldOutput.Vcorr_lj;
 
         if (debug)
         {
@@ -353,13 +353,13 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                     "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n",
                     Vlr_q,
                     ewaldOutput.Vcorr_q,
-                    enerd->term[F_COUL_RECIP]);
+                    enerd->term[InteractionFunction::CoulombReciprocalSpace]);
             pr_rvecs(debug, 0, "vir_el_recip after corr", ewaldOutput.vir_q, DIM);
             fprintf(debug,
                     "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
                     Vlr_lj,
                     ewaldOutput.Vcorr_lj,
-                    enerd->term[F_LJ_RECIP]);
+                    enerd->term[InteractionFunction::LennardJonesReciprocalSpace]);
             pr_rvecs(debug, 0, "vir_lj_recip after corr", ewaldOutput.vir_lj, DIM);
         }
     }

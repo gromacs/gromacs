@@ -137,8 +137,8 @@ static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t& mtop,
                 int i = ril.index[a];
                 while (i < ril.index[a + 1])
                 {
-                    int ftype = ril.il[i++];
-                    int nral  = NRAL(ftype);
+                    InteractionFunction ftype = static_cast<InteractionFunction>(ril.il[i++]);
+                    int                 nral  = NRAL(ftype);
                     /* Skip the ifunc index */
                     i++;
                     for (int j = 0; j < nral; j++)
@@ -154,22 +154,23 @@ static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t& mtop,
 
                 if (mtop.bIntermolecularInteractions)
                 {
-                    int i = ril_intermol.index[atomIndex];
-                    while (i < ril_intermol.index[atomIndex + 1])
+                    int j = ril_intermol.index[atomIndex];
+                    while (j < ril_intermol.index[atomIndex + 1])
                     {
-                        int ftype = ril_intermol.il[i++];
-                        int nral  = NRAL(ftype);
+                        InteractionFunction ftype =
+                                static_cast<InteractionFunction>(ril_intermol.il[j++]);
+                        int nral = NRAL(ftype);
                         /* Skip the ifunc index */
-                        i++;
-                        for (int j = 0; j < nral; j++)
+                        j++;
+                        for (int k = 0; k < nral; k++)
                         {
                             /* Here we assume we have no charge groups;
                              * this has been checked above.
                              */
-                            int aj = ril_intermol.il[i + j];
+                            int aj = ril_intermol.il[j + k];
                             check_link(&linksForOneAtom, aj);
                         }
-                        i += nral_rt(ftype);
+                        j += nral_rt(ftype);
                     }
                 }
                 if (!linksForOneAtom.empty())
@@ -213,7 +214,7 @@ static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t& mtop,
                     std::transform(linksForAtomInPreviousMolecule.begin(),
                                    linksForAtomInPreviousMolecule.end(),
                                    linksForAtom.begin(),
-                                   [&molt](const auto a) { return a + molt.atoms.nr; });
+                                   [&molt](const auto atom) { return atom + molt.atoms.nr; });
                     if (!linksForAtom.empty()
                         && atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock
                                    < gmx::ssize(atomInfoOfMoleculeBlock->atomInfo))

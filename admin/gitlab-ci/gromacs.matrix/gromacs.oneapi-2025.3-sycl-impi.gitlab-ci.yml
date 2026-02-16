@@ -1,0 +1,178 @@
+# Test goal: Newest ICPX build with SYCL and Intel MPI
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: ICPX newest supported
+#   GPU: SYCL with Intel GPUs
+#   FFT: MKL
+#   MPI: Intel MPI (in GPU-aware mode when multiple GPUs are tested)
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 24.04
+#   Build type: RelWithAssert
+#   Compiler: ICPX 2025.3
+#   SIMD: AVX2_256
+#   Parallelism nt/ntomp: 4/2
+
+gromacs:oneapi-2025.3-sycl-mpi:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-oneapi:base
+   - .use-sycl
+   - .use-mpi
+  rules:
+   - !reference [.rules:merge-and-post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    COMPILER_MAJOR_VERSION: 2025
+
+gromacs:oneapi-2025.3-sycl-mpi:build:
+  extends:
+    - .gromacs:base:build
+    - .use-ccache
+    - .use-oneapi:base
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+  needs:
+    - job: gromacs:oneapi-2025.3-sycl-mpi:configure
+
+gromacs:oneapi-2025.3-sycl-mpi:test:
+  extends:
+    - .gromacs:base:test
+    - .use-oneapi:base
+    - .use-impi-gpu-aware-test:base
+  rules:
+    - !reference [.rules:skip-if-dual-intel-gpus-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
+  needs:
+    - job: gromacs:oneapi-2025.3-sycl-mpi:build
+  tags:
+    - $GITLAB_RUNNER_TAG_2X_INTEL_GPU
+  before_script:
+    - !reference [.use-oneapi:base, before_script]
+    - !reference [.use-impi-gpu-aware-test:base, before_script]
+
+gromacs:oneapi-2025.3-sycl-mpi:test-update-cpu:
+  extends:
+    - .gromacs:base:test
+    - .use-oneapi:base
+    - .use-impi-gpu-aware-test:base
+  rules:
+    - !reference [.rules:skip-if-single-intel-gpu-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 1
+  needs:
+    - job: gromacs:oneapi-2025.3-sycl-mpi:build
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_INTEL_GPU
+  before_script:
+    - !reference [.use-oneapi:base, before_script]
+    - !reference [.use-impi-gpu-aware-test:base, before_script]
+
+# Uses GPUs, but not GPU-aware MPI because of #5516, which may include
+# among its causes a bug in Intel MPI and limitations of gmxtest.pl.
+gromacs:oneapi-2025.3-sycl-mpi:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-oneapi:base
+    - .use-impi-test:base
+  rules:
+    - !reference [.rules:skip-if-dual-intel-gpus-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    REGRESSIONTEST_PARALLEL: "-np"
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 2
+  needs:
+    - job: gromacs:oneapi-2025.3-sycl-mpi:build
+    - job: regressiontests:prepare
+  tags:
+    - $GITLAB_RUNNER_TAG_2X_INTEL_GPU
+  before_script:
+    - !reference [.use-oneapi:base, before_script]
+    - !reference [.use-impi-test:base, before_script]
+
+# Uses GPUs, but not GPU-aware MPI because of #5516, which may include
+# among its causes a bug in Intel MPI and limitations of gmxtest.pl.
+gromacs:oneapi-2025.3-sycl-mpi:regressiontest-singlerank:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-oneapi:base
+    - .use-impi-test:base
+  rules:
+    - !reference [.rules:skip-if-single-intel-gpu-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    ONEAPI_DEVICE_SELECTOR: "level_zero:gpu"
+    # Default not working, see #2980
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 1
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    REGRESSIONTEST_PARALLEL: "-np"
+    GPU_VENDOR: "INTEL"
+    GPU_COUNT: 1
+  needs:
+    - job: gromacs:oneapi-2025.3-sycl-mpi:build
+    - job: regressiontests:prepare
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_INTEL_GPU
+  before_script:
+    - !reference [.use-oneapi:base, before_script]
+    - !reference [.use-impi-test:base, before_script]
+
+gromacs:oneapi-2025.3-sycl-mpi-handler-free-submission:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-oneapi:base
+   - .use-sycl
+   - .use-mpi
+  rules:
+   - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION=ON"
+    COMPILER_MAJOR_VERSION: 2025
+
+gromacs:oneapi-2025.3-sycl-mpi-handler-free-submission:build:
+  extends:
+    - .gromacs:base:build
+    - .use-ccache
+    - .use-oneapi:base
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-oneapi-2025.3-intel-compute-runtime
+  variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+  needs:
+    - job: gromacs:oneapi-2025.3-sycl-mpi-handler-free-submission:configure
+
+# There's no test stage for the handler-free-submission flavour
+# because that code does not work in the current GROMACS CI
+# environment, however tests have passed with more recent drivers and
+# GPUs elsewhere.

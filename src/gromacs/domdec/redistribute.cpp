@@ -994,16 +994,16 @@ void dd_redistribute_cg(FILE*         fplog,
                 {
                     comm->cggl_flag[mc].resize((nat[mc] + 1) * DD_CGIBS);
                 }
-                size_t nvr = nat[mc] * (1 + nvec);
-                if (nvr + 1 + nvec > comm->cgcm_state[mc].size())
+                size_t nvrMc = nat[mc] * (1 + nvec);
+                if (nvrMc + 1 + nvec > comm->cgcm_state[mc].size())
                 {
-                    comm->cgcm_state[mc].resize(nvr + 1 + nvec);
+                    comm->cgcm_state[mc].resize(nvrMc + 1 + nvec);
                 }
                 /* Copy from the receive to the send buffers */
                 std::memcpy(comm->cggl_flag[mc].data() + nat[mc] * DD_CGIBS,
                             flagBuffer.buffer.data() + cg * DD_CGIBS,
                             DD_CGIBS * sizeof(int));
-                std::memcpy(comm->cgcm_state[mc][nvr],
+                std::memcpy(comm->cgcm_state[mc][nvrMc],
                             rvecBuffer.buffer.data() + buf_pos,
                             (1 + nvec) * sizeof(rvec));
                 buf_pos += 1 + nvec;

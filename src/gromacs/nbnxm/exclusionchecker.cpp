@@ -53,6 +53,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
@@ -136,6 +137,34 @@ static int computeNumGlobalPerturbedExclusions(const gmx_mtop_t& mtop)
         }
 
         numPerturbedExclusions += molblock.nmol * numPerturbedExclusionsInMol;
+    }
+
+    // Check all atom pairs in the inter-molecular exclusion group
+    MTopLookUp               mtopLookUp(mtop);
+    gmx::ArrayRef<const int> group = mtop.intermolecularExclusionGroup;
+    for (const int globalAtomI : group)
+    {
+        const auto           indexI           = mtopLookUp.getMolblockAtomIndex(globalAtomI);
+        const gmx_moltype_t& moltypeI         = mtop.moltype[mtop.molblock[indexI.molBlock].type];
+        const bool           atomIIsPerturbed = PERTURBED(moltypeI.atoms.atom[indexI.atomIndex]);
+        const gmx::ArrayRef<const int> exclsI = moltypeI.excls[indexI.atomIndex];
+
+        for (const int globalAtomJ : group)
+        {
+            if (globalAtomJ <= globalAtomI)
+            {
+                continue;
+            }
+
+            // We count this exclusion when this is not also a "normal" intra-molecular exclusion
+            const auto indexJ = mtopLookUp.getMolblockAtomIndex(globalAtomJ);
+            if ((atomIIsPerturbed || PERTURBED(moltypeI.atoms.atom[indexJ.atomIndex]))
+                && !(indexJ.molBlock == indexI.molBlock && indexJ.molIndex == indexI.molIndex
+                     && std::find(exclsI.begin(), exclsI.end(), indexJ.atomIndex) != exclsI.end()))
+            {
+                numPerturbedExclusions++;
+            }
+        }
     }
 
     return numPerturbedExclusions;

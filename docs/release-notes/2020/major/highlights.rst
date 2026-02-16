@@ -13,7 +13,7 @@ interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
 * Density-guided simulations allow "fitting" atoms into three-dimensional
-  density maps. 
+  density maps.
 * Inclusion of gmxapi 0.1, an API and user interface for managing
   complex simulations, data flow, and pluggable molecular dynamics extension code.
 * New modular simulator that can be built from individual objects describing different

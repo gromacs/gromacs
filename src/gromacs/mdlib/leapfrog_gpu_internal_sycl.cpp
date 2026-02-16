@@ -157,35 +157,9 @@ static void launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms,
 
     const sycl::range<1> rangeAllAtoms(numAtoms);
 
-    gmx::syclSubmitWithoutEvent(
-            deviceStream.stream(),
-            [&](sycl::handler& cgh)
-            {
-                auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
-                        std::forward<Args>(args)...);
-                cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
-            });
-}
-
-//! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
-static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numTempScaleValues)
-{
-    if (!doTemperatureScaling)
-    {
-        return NumTempScaleValues::None;
-    }
-    else if (numTempScaleValues == 1)
-    {
-        return NumTempScaleValues::Single;
-    }
-    else if (numTempScaleValues > 1)
-    {
-        return NumTempScaleValues::Multiple;
-    }
-    else
-    {
-        gmx_incons("Temperature coupling was requested with no temperature coupling groups.");
-    }
+    auto kernelFunctionBuilder = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>;
+    syclSubmitWithoutCghOrEvent<kernelNameType>(
+            deviceStream.stream(), kernelFunctionBuilder, rangeAllAtoms, std::forward<Args>(args)...);
 }
 
 /*! \brief Select templated kernel and launch it. */

@@ -390,7 +390,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     {
         // calculate corresponding potential energy
         const real energy = -similarity * parameters_.forceConstant_ * state_.adaptiveForceConstantScale_;
-        forceProviderOutput->enerd_.term[F_DENSITYFITTING] += energy;
+        forceProviderOutput->enerd_.term[InteractionFunction::DensityFitting] += energy;
     }
 
     if (expAverageSimilarity_.has_value())

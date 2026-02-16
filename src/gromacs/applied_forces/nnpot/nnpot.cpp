@@ -45,6 +45,7 @@
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/mdrunutility/plainpairlistranges.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
@@ -173,6 +174,15 @@ public:
         const auto setCommFunction = [this](const MpiComm& mpiComm)
         { nnpotOptions_.setComm(mpiComm); };
         notifiers->simulationSetupNotifier_.subscribe(setCommFunction);
+
+        // set pairlist range
+        if (nnpotOptions_.parameters().modelNeedsInput("atom-pairs")
+            || nnpotOptions_.parameters().modelNeedsInput("pairs-shifts"))
+        {
+            const auto setPlainPairlistRangeFunction = [this](PlainPairlistRanges* plainPairlistRanges)
+            { plainPairlistRanges->addRange(nnpotOptions_.parameters().pairCutoff_); };
+            notifiers->simulationSetupNotifier_.subscribe(setPlainPairlistRangeFunction);
+        }
     }
 
     /*! \brief Requests to be notified during the simulation.
@@ -191,9 +201,18 @@ public:
         }
 
         // subscribe to DD notification to trigger atom number and index gathering
-        const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/)
-        { nnpotForceProvider_->gatherAtomNumbersIndices(); };
+        const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& signal)
+        { nnpotForceProvider_->gatherAtomNumbersIndices(signal); };
         notifiers->simulationRunNotifier_.subscribe(notifyDDFunction);
+
+        // subscribe to pairlist construction notification
+        if (nnpotOptions_.parameters().modelNeedsInput("atom-pairs")
+            || nnpotOptions_.parameters().modelNeedsInput("pairs-shifts"))
+        {
+            const auto notifyPairlistFunction = [this](const MDModulesPairlistConstructedSignal& signal)
+            { nnpotForceProvider_->setPairlist(signal); };
+            notifiers->simulationRunNotifier_.subscribe(notifyPairlistFunction);
+        }
     }
 
     void initForceProviders(ForceProviders* forceProviders) override

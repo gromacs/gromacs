@@ -116,9 +116,10 @@ TEST_F(BoxDeformationTest, flowDoesNotAffectEkin)
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         auto relativeTolerance = relativeToleranceAsFloatingPoint(0.01, GMX_DOUBLE ? 1e-6 : 1e-4);
-        EnergyTermsToCompare energyTermsToCompare{ { interaction_function[F_EKIN].longname,
-                                                     relativeTolerance } };
-        TestReferenceData    refData;
+        EnergyTermsToCompare energyTermsToCompare{
+            { interaction_function[InteractionFunction::KineticEnergy].longname, relativeTolerance }
+        };
+        TestReferenceData refData;
         auto checker = refData.rootChecker().checkCompound("Simulation", simulationName);
         checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
     }
@@ -160,8 +161,8 @@ TEST_F(BoxDeformationTest, EnergiesWithinTolerances)
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1e-6 : 1e-4);
         EnergyTermsToCompare energyTermsToCompare{
-            { { interaction_function[F_EPOT].longname, relativeTolerance },
-              { interaction_function[F_EKIN].longname, relativeTolerance } }
+            { { interaction_function[InteractionFunction::PotentialEnergy].longname, relativeTolerance },
+              { interaction_function[InteractionFunction::KineticEnergy].longname, relativeTolerance } }
         };
         TestReferenceData refData;
         auto checker = refData.rootChecker().checkCompound("Simulation", simulationName);
@@ -213,9 +214,10 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1.5e-2 : 5e-2);
-        EnergyTermsToCompare energyTermsToCompare{ { { interaction_function[F_POSRES].longname,
-                                                       relativeTolerance } } };
-        TestReferenceData    refData;
+        EnergyTermsToCompare energyTermsToCompare{
+            { { interaction_function[InteractionFunction::PositionRestraints].longname, relativeTolerance } }
+        };
+        TestReferenceData refData;
         auto checker = refData.rootChecker().checkCompound("Simulation", simulationName);
         checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
     }

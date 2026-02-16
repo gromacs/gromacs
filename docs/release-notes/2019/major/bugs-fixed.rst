@@ -1,7 +1,7 @@
 Bugs fixed
 ^^^^^^^^^^
 
-Fix type bug in trilinic DD code
+Fix type bug in triclinic DD code
 """"""""""""""""""""""""""""""""""""""""""""""""""
 
 Fix bug with unusual off-diagonal elements communicating too few atoms.

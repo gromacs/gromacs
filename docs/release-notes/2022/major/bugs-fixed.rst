@@ -81,7 +81,7 @@ explicitly allowed by grompp.
 Fixed progress display in trjconv and trjcat
 """"""""""""""""""""""""""""""""""""""""""""
 
-The progress information (frame number and time) shown during trajectory 
+The progress information (frame number and time) shown during trajectory
 operations in trjconv and trjcat is now correctly displayed.
 
 :issue:`4320`

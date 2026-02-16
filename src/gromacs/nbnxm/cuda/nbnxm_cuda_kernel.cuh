@@ -84,6 +84,10 @@ namespace gmx
 #    define LJ_COMB
 #endif
 
+#if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
+#    define HAVE_ELECTROSTATICS
+#endif
+
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
@@ -196,7 +200,9 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
     float beta        = nbparam.ewald_beta;
     float ewald_shift = nbparam.sh_ewald;
 #        else
+#            if defined EL_RF || defined EL_CUTOFF
     float reactionFieldShift = nbparam.c_rf;
+#            endif
 #        endif /* EL_EWALD_ANY */
     float* e_lj = atdat.eLJ;
     float* e_el = atdat.eElec;
@@ -220,8 +226,11 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #    ifndef LJ_COMB
     int typei, typej;
 #    endif
-    int   i, jm, jPacked, wexcl_idx;
-    float qi, qj_f, r2, inv_r, inv_r2;
+    int i, jm, jPacked, wexcl_idx;
+#    ifdef HAVE_ELECTROSTATICS
+    float qi, qj_f;
+#    endif
+    float r2, inv_r, inv_r2;
 #    if !defined LJ_COMB_LB || defined CALC_ENERGIES
     float inv_r6, c6, c12;
 #    endif
@@ -373,7 +382,7 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
         /* we have the diagonal: add the charge and LJ self interaction energy term */
         for (i = 0; i < c_superClusterSize; i++)
         {
-#            if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
+#            ifdef HAVE_ELECTROSTATICS
             qi = xqib[i * c_clusterSize + tidxi].w;
             E_el += qi * qi;
 #            endif
@@ -451,7 +460,9 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
                     /* load j atom data */
                     xqbuf = xq[aj];
                     xj    = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
-                    qj_f  = xqbuf.w;
+#    ifdef HAVE_ELECTROSTATICS
+                    qj_f = xqbuf.w;
+#    endif
 #    ifndef LJ_COMB
                     typej = atom_types[aj];
 #    else
@@ -496,8 +507,10 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
                             if ((r2 < rcoulomb_sq) * int_bit)
 #    endif
                             {
+#    ifdef HAVE_ELECTROSTATICS
                                 /* load the rest of the i-atom parameters */
                                 qi = xqbuf.w;
+#    endif
 
 #    ifndef LJ_COMB
                                 /* LJ 6*C6 and 12*C12 */
@@ -738,5 +751,6 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #undef LJ_EWALD
 
 #undef LJ_COMB
+#undef HAVE_ELECTROSTATICS
 
 } // namespace gmx

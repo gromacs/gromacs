@@ -173,6 +173,7 @@ static void tester(const void* arg)
             {
                 printf("ERROR: MPI_Send error");
                 fflush(0);
+                exit(1);
             }
         }
         else
@@ -191,12 +192,14 @@ static void tester(const void* arg)
                 {
                     printf("ERROR: MPI_Recv error");
                     fflush(0);
+                    exit(1);
                 }
                 if (status.MPI_ERROR != MPI_SUCCESS)
                 {
                     printf("ERROR: got receive status error on rank %d",
                            myrank);
                     fflush(0);
+                    exit(1);
                 }
                 printf("Received: '%s'\n", message);
             }
@@ -223,11 +226,13 @@ static void tester(const void* arg)
         {
             printf("ERROR: MPI_Sendrecv error");
             fflush(0);
+            exit(1);
         }
         if (status.MPI_ERROR != MPI_SUCCESS)
         {
             printf("ERROR: got receive status error on rank %d", myrank);
             fflush(0);
+            exit(1);
         }
         if (myrank == 0)
         {
@@ -263,6 +268,11 @@ static void tester(const void* arg)
                      k, right, myrank);
             k++;
         }
+        else
+        {
+            buf[send_left][0] = '\0';
+            buf[send_right][0] = '\0';
+        }
 
         for (i = 0; i < N*2; i++)
         {
@@ -293,9 +303,16 @@ static void tester(const void* arg)
             memcpy(buf[send_left], buf[recv_right], MSG_SIZE);
         }
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
 
-    send_recv_data_tester();
+    // Run with MPI_Waitall
+    send_recv_data_tester(true);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Run with MPI_Waitany
+    send_recv_data_tester(false);
 
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -361,6 +378,7 @@ static void tester(const void* arg)
                 MPI_SUCCESS)
             {
                 printf("MPI_Gather returned error\n"); fflush(0);
+                exit(1);
             }
 
             if (myrank == k)
@@ -402,6 +420,7 @@ static void tester(const void* arg)
             MPI_SUCCESS)
         {
             printf("MPI_Scatter returned error\n"); fflush(0);
+            exit(1);
         }
 
         /* now receive messages back */
@@ -453,6 +472,7 @@ static void tester(const void* arg)
             MPI_SUCCESS)
         {
             printf("MPI_Alltoall returned error\n"); fflush(0);
+            exit(1);
         }
 
         /* now receive messages back */
@@ -563,7 +583,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "thread_mpi test program.\n");
         fprintf(stderr, "Usage: mpithreads -nt <nthreads>\n");
-        exit(0);
+        exit(1);
     }
     else
     {

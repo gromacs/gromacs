@@ -35,10 +35,19 @@
 #ifndef GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H
 #define GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H
 
+#include <config.h>
+
+#include <type_traits>
+
 #include "gmxsycl.h"
+#include "gputraits_sycl.h"
 
 #if defined(__AMDGCN__)
 #    include "hip_sycl_kernel_utils.h"
+#endif
+
+#if defined(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+#    include <sycl/ext/oneapi/work_group_static.hpp>
 #endif
 
 /*! \file
@@ -183,23 +192,56 @@ static inline void atomicFetchAdd(T& val, const T delta)
     }
 }
 
+/*! \brief Portability wrapper for performing an atomic value addition.
+ *
+ * \tparam        T     Type to perform atomic add for.
+ * \param[in,out] val   Destination memory for atomic add.
+ * \param[in]     delta Source value to add.
+ */
 template<typename T>
 static inline void atomicFetchAddLocal(T& val, const T delta)
 {
     atomicFetchAdd<T, sycl::memory_scope::work_group, sycl::access::address_space::local_space>(val, delta);
 }
 
+/*! \brief Portability wrapper for performing atomic add on a value in an array.
+ *
+ * \tparam        T      Type to perform atomic add for.
+ * \param[in,out] values Array of values to perform addition in.
+ * \param[in]     index  Which address in the array should be used for add.
+ * \param[in]     delta  Source value to add.
+ */
 template<typename T>
-static inline void atomicFetchAddLocal(T* val, const T delta)
+static inline void atomicFetchAddLocal(T* values, const int index, const T delta)
 {
-    atomicFetchAddLocal<T>(*val, delta);
+    atomicFetchAddLocal<T>(values[index], delta);
 }
 
-// \brief Staggered atomic force component accummulation into global memory to reduce clashes
-//
-// Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
-// accumulate different force components at the same time.
-static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int localId)
+/*! \brief Portability wrapper for performing atomic add on a single value of a composite type like RVec.
+ *
+ * \tparam        T     Type for composite type to use.
+ * \tparam        W     Type for actual additional operation.
+ * \param[in,out] val   Composite data to perform atomic add on.
+ * \param[in]     index Which field in the composite data should be used for the add.
+ * \param[in]     delta Source value to add.
+ */
+template<typename T, typename W>
+static inline void atomicFetchAddLocal(T& val, const int index, const W delta)
+{
+    atomicFetchAddLocal<W>(val[index], delta);
+}
+
+/*!\brief Staggered atomic force component accumulation into global memory to reduce clashes
+ *
+ * Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
+ * accumulate different force components at the same time.
+ *
+ * \param[in,out] gm_f    Global array of forces.
+ * \param[in]     f       Force to add.
+ * \param[in]     index   Which value in the global force array we want to add to.
+ * \param[in]     localId Which position in the thread we are in.
+ */
+static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int index, const int localId)
 {
     __builtin_assume(localId >= 0);
 
@@ -213,9 +255,9 @@ static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3
     f      = (localId % 3 <= 1) ? Float3(f[1], f[2], f[0]) : f;
     offset = (localId % 3 <= 1) ? Int3(offset[1], offset[2], offset[0]) : offset;
 
-    atomicFetchAdd(gm_f[0][offset[0]], f[0]);
-    atomicFetchAdd(gm_f[0][offset[1]], f[1]);
-    atomicFetchAdd(gm_f[0][offset[2]], f[2]);
+    atomicFetchAdd(gm_f[index][offset[0]], f[0]);
+    atomicFetchAdd(gm_f[index][offset[1]], f[1]);
+    atomicFetchAdd(gm_f[index][offset[2]], f[2]);
 }
 
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
@@ -230,7 +272,7 @@ static inline T atomicLoad(T& val)
      *
      * Since we use relaxed memory order, normal loads should be safe for small datatypes.
      * Allegedly, datatypes up to 128 bytes should be fine, but we only use floats, so we have
-     * a very concervative 4-byte limit here.
+     * a very conservative 4-byte limit here.
      * As a demonstration of correctness, we don't use atomic loads in CUDA and it's doing fine.
      * See https://github.com/AdaptiveCpp/AdaptiveCpp/issues/752 */
     static_assert(sizeof(T) <= 4);
@@ -242,43 +284,172 @@ static inline T atomicLoad(T& val)
 #endif
 }
 
-/*! \brief Issue an intra sub-group barrier.
+/*! \brief Shim to smooth over implementation differences
  *
- * Equivalent with CUDA's \c syncwarp(c_cudaFullWarpMask).
- *
- */
-template<int Dim>
-static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
-{
-#if GMX_SYCL_ACPP
-    sycl::group_barrier(itemIdx.get_sub_group(), sycl::memory_scope::sub_group);
-#else
-    itemIdx.get_sub_group().barrier();
-#endif
-}
-
-#if GMX_SYCL_ACPP && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
-namespace sycl
-{
-/*! \brief Popcount instruction for SYCL
- *
- * sycl::popcount is missing in AdaptiveCpp prior to 24.02.0.
- * This is very basic version using Clang built-in.
- */
+ * This lets the classic oneAPI implementation and the handler-free
+ * extension for workgroup-static (a.k.a. local accessor) storage work
+ * smoothly in the same templated kernel when the memory is not
+ * needed for the current template instantiation. */
 template<typename T>
-T popcount(T x)
+struct NullptrWrapper
 {
-    if constexpr (sizeof(T) == 4)
-    {
-        return __builtin_popcount(x);
-    }
-    else
-    {
-        static_assert(sizeof(T) == 8);
-        return __builtin_popcountll(x);
-    }
-}
-} // namespace sycl
+};
+
+#if GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION
+static constexpr bool sc_useCommandGroupHandler = false;
+#else // This is the default (and classic) implementation
+static constexpr bool sc_useCommandGroupHandler = true;
 #endif
+
+namespace detail
+{
+
+/*! \brief Type trait for implementing StaticLocalStorage
+ *
+ * Specializations of this type allow non-trivial vector-style types
+ * to work with work_group_static (which requires that the type of its
+ * array is trivial). */
+template<typename T>
+struct UnderlyingType
+{
+    static constexpr size_t sc_valueTypeMultiple = 1;
+    using Type                                   = T;
+};
+
+// Template specialization for sycl::vec
+template<typename T, size_t size>
+struct UnderlyingType<sycl::vec<T, size>>
+{
+    static constexpr size_t sc_valueTypeMultiple = size;
+    using Type                                   = T;
+};
+
+// Template specialization for gmx::BasicVector
+template<typename T>
+struct UnderlyingType<gmx::BasicVector<T>>
+{
+    static constexpr size_t sc_valueTypeMultiple = DIM;
+    using Type                                   = T;
+};
+
+} // namespace detail
+
+/*! \brief Shim for the two implementations of local storage
+ *
+ * A sycl::local_accessor works as a facet of a command-group handler,
+ * so when using handler-free submission, we must also use the
+ * extension for work-group static storage, which does not depend on a
+ * command-group handler.
+ *
+ * Because we have the above two implementation flavours for SYCL
+ * device kernels, this class permits the code to specify the base
+ * type, buffer size, and condition under which it exists in one
+ * place, and then use that correctly for both implementations of
+ * local storage.
+ *
+ * Note that the declaration of a sycl::local_accessor must be in
+ * the host code, whereas the declaration of a work_group_static
+ * must be in the kernel code.
+ **/
+template<typename T, size_t size, bool condition = true>
+class StaticLocalStorage
+{
+public:
+    //! Helper typedef
+    using Underlying = detail::UnderlyingType<T>;
+#if defined(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+    //! Helper typedef for the static array that defines the storage of a work_group_static
+    using StaticArray = typename Underlying::Type[size * Underlying::sc_valueTypeMultiple];
+    //! Convenience typedef for a work_group_static
+    using WorkGroupStatic = sycl::ext::oneapi::experimental::work_group_static<StaticArray>;
+#else
+    using WorkGroupStatic = std::nullptr_t;
+#endif
+    /*! \brief The type to declare local storage in host code, given
+     * the build configuration
+     *
+     * With sc_useCommandGroupHandler, this type
+     * (i.e. sycl::local_accessor) can only be successfully declared
+     * in the host code. */
+    using ActiveHostStorage =
+            std::conditional_t<sc_useCommandGroupHandler, sycl::local_accessor<T, 1>, std::nullptr_t>;
+    /*! \brief The type to declare local storage in device code, given
+     * the build configuration
+     *
+     * With !sc_useCommandGroupHandler, this type (ie. work_group_static)
+     * can only be successfully declared in the device kernel. */
+    using ActiveDeviceStorage =
+            std::conditional_t<sc_useCommandGroupHandler, std::nullptr_t, WorkGroupStatic>;
+    //! Type of local storage in the host code, given \c condition
+    using HostStorage = std::conditional_t<condition, ActiveHostStorage, std::nullptr_t>;
+    //! Type of local storage in the device code, given \c condition
+    using DeviceStorage = std::conditional_t<condition, ActiveDeviceStorage, std::nullptr_t>;
+    /*! \brief Helper function to make storage for the local_accessor case
+     *
+     * May only be called on the host.
+     *
+     * Note that the equivalent approach for work_group_static
+     * compiles and fails at runtime, because the address of the local
+     * storage is invalid. */
+    static HostStorage makeHostStorage(sycl::handler& cgh)
+    {
+        if constexpr (condition)
+        {
+            if constexpr (sc_useCommandGroupHandler)
+            {
+                return ActiveHostStorage{ sycl::range<1>(size), cgh };
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+    /*! \brief Helper function to make storage for the work_group_static case
+     *
+     * Should only be called on the host, to match its other implementation. */
+    static HostStorage makeHostStorage(std::nullptr_t /* cgh */) { return nullptr; }
+    //! Helper typedef for get_pointer() implementation
+    using LocalPtr = sycl::multi_ptr<T, sycl::access::address_space::local_space>;
+    /*! \brief Provide a consistent way to get a sycl::local_ptr when using sycl::local_accessor
+     *
+     * Note that the sycl::local_accessor is created on the host and
+     * is const in the device kernel, but the sycl::local_ptr obtained
+     * from it can be either const or non-const according to need. */
+    static LocalPtr get_pointer(const sycl::local_accessor<T, 1>& hostStorage,
+                                std::nullptr_t& /* deviceStorage */) noexcept
+    {
+        return hostStorage.get_pointer();
+    }
+    /*! \brief Provide a consistent way to get a sycl::local_ptr when using a work_group_static
+     *
+     * Note that the work_group_static is created on the device and
+     * can be treated as either const or non-const according to
+     * need. But since the device kernels generally need read-write access, we
+     * only need the non-const overload. */
+#if defined(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+    static LocalPtr get_pointer(const std::nullptr_t& /* hostStorage */, WorkGroupStatic& deviceStorage)
+    {
+        // Extract the pointer to raw value underlying T
+        typename detail::UnderlyingType<T>::Type* rawData = deviceStorage;
+        // Potentially reinterpret it as a pointer-to-vector, ie. T*
+        T* maybeVectorData = reinterpret_cast<T*>(rawData);
+        // Construct the sycl::local_ptr<T>
+        return LocalPtr{ maybeVectorData };
+    }
+#endif
+
+    /*! \brief Provide a consistent way to get a sycl::local_ptr
+     * containing nullptr when the storage is empty. */
+    static LocalPtr get_pointer(const std::nullptr_t& /* hostStorage */,
+                                std::nullptr_t& /* deviceStorage */) noexcept
+    {
+        return nullptr;
+    }
+};
 
 #endif /* GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H */

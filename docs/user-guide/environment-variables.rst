@@ -179,9 +179,6 @@ Performance and Run Control
         to the :ref:`log` file. The resulting output is the way performance summary is reported in versions
         4.5.x and thus may be useful for anyone using scripts to parse :ref:`log` files or standard output.
 
-``GMX_DISABLE_CUDA_TIMING``
-        Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
-
 ``GMX_DISABLE_DYNAMICPRUNING``
         disables dynamic pair-list pruning. Note that :ref:`gmx mdrun` will
         still tune nstlist to the optimal value picked assuming dynamic pruning. Thus
@@ -232,6 +229,10 @@ Performance and Run Control
 ``GMX_ENABLE_NVSHMEM``
         Enables GPU kernel-initiated communication using NVSHMEM in multi-rank parallel runs
         when build and simulation setup support it.
+
+``GMX_ENABLE_NVSHMEM_FORCE_HALO_SYNC``
+        Inserts a synchronization after the fused force halo exchange kernel
+        when using NVSHMEM. This is a debug/tuning knob.
 
 ``GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
         Use a staged implementation of GPU communications for PME force
@@ -324,7 +325,7 @@ Performance and Run Control
         Sets ``heffte::plan_options::use_reorder`` to ``true`` (the default) or ``false``.
         See the `HeFFTe docs`_ for details.
 
-``GMX_IGNORE_FSYNC_FAILURE_ENV``
+``GMX_IGNORE_FSYNC_FAILURE``
         allow :ref:`gmx mdrun` to continue even if
         a file is missing.
 
@@ -427,6 +428,11 @@ Performance and Run Control
 ``GMX_PULL_PARTICIPATE_ALL``
         disable the default heuristic for when to use a separate pull MPI communicator (at >=32 ranks).
 
+``GMX_REPORT_CPU_AFFINITY``
+        print to the log file the CPU affinity of each MPI rank at startup. This prints the effective
+        affinity mask of the main thread before OpenMP and GPU offload are initialized (unless they
+        do so on library load, as is the case with ``libgomp``).
+
 ``GMX_REQUIRE_SHELL_INIT``
         require that shell positions are initiated.
 
@@ -466,7 +472,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
 
 ..
    Please keep these in alphabetical order!
-
 
 
 ``GMX_OCL_DEBUG``
@@ -542,11 +547,28 @@ compilation of OpenCL kernels, but they are also used in device selection.
         Currently available only for NVIDIA GPUs. See ``GMX_OCL_DUMP_LOG``
         for details about how to obtain the OpenCL build log.
 
+.. _sycl-management:
+
+SYCL management
+---------------
+
+..
+   Please keep these in alphabetical order!
+
+``GMX_SYCL_ALLOW_ALL_DEVICES``
+        Include CPUs and Accelerator SYCL devices in addition to GPUs. This
+        exists for debugging purposes and for enabling experimental
+        backends.
+
 Analysis and Core Functions
 ---------------------------
 
 ..
    Please keep these in alphabetical order!
+
+``GMX_AMBER_LEAP_ATOM_REORDERING_VERBOSE``
+        make :ref:`gmx grompp` print indices and types of dihedral atoms that were processed
+        for reordering to match AMBER LEaP.
 
 ``GMX_DIPOLE_SPACING``
         spacing used by :ref:`gmx dipoles`.
@@ -578,3 +600,11 @@ Analysis and Core Functions
 
 ``VMDDIR``
         base path of VMD installation.
+
+MDModules
+---------
+
+``GMX_NNPOT_SKIP_MODEL_CHECK``
+        skips the compatibility check between the neural network potential model and
+        its inputs. This can be useful if errors are encountered due to the dummy input,
+        or to prepare :ref:`tpr` files without a Libtorch-compatible installation.

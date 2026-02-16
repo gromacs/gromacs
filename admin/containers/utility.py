@@ -92,7 +92,7 @@ parser.add_argument(
     "--cmake",
     nargs="*",
     type=str,
-    default=["3.28.0", "3.29.8", "3.30.3"],
+    default=["3.28.0", "3.30.3", "4.0.5"],
     help="Selection of CMake version to provide to base image. (default: %(default)s)",
 )
 
@@ -287,7 +287,7 @@ parser.add_argument(
     "--libtorch",
     type=str,
     nargs="?",
-    const="2.4.0",
+    const="2.9.0",
     default=None,
     help="Add build environment for LibTorch support",
 )

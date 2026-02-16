@@ -1442,26 +1442,26 @@ static void set_lincs_matrix(Lincs* li, ArrayRef<const real> invmass, real lambd
 
 int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con)
 {
-    const int ncon1    = ilist[F_CONSTR].size() / 3;
-    const int ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;
+    const int ncon1    = ilist[InteractionFunction::Constraints].size() / 3;
+    const int ncon_tot = ncon1 + ilist[InteractionFunction::ConstraintsNoCoupling].size() / 3;
 
-    gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
-    gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
+    gmx::ArrayRef<const int> ia1 = ilist[InteractionFunction::Constraints].iatoms;
+    gmx::ArrayRef<const int> ia2 = ilist[InteractionFunction::ConstraintsNoCoupling].iatoms;
 
     int ncon_triangle = 0;
     for (int c0 = 0; c0 < ncon_tot; c0++)
     {
         bool       bTriangle = FALSE;
-        const int* iap       = constr_iatomptr(ia1, ia2, c0);
-        const int  a00       = iap[1];
-        const int  a01       = iap[2];
+        const int* iap0      = constr_iatomptr(ia1, ia2, c0);
+        const int  a00       = iap0[1];
+        const int  a01       = iap0[2];
         for (const int c1 : at2con[a01])
         {
             if (c1 != c0)
             {
-                const int* iap = constr_iatomptr(ia1, ia2, c1);
-                const int  a10 = iap[1];
-                const int  a11 = iap[2];
+                const int* iap1 = constr_iatomptr(ia1, ia2, c1);
+                const int  a10  = iap1[1];
+                const int  a11  = iap1[2];
                 int        ac1;
                 if (a10 == a01)
                 {
@@ -1475,9 +1475,9 @@ int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<
                 {
                     if (c2 != c0 && c2 != c1)
                     {
-                        const int* iap = constr_iatomptr(ia1, ia2, c2);
-                        const int  a20 = iap[1];
-                        const int  a21 = iap[2];
+                        const int* iap2 = constr_iatomptr(ia1, ia2, c2);
+                        const int  a20  = iap2[1];
+                        const int  a21  = iap2[2];
                         if (a20 == a00 || a21 == a00)
                         {
                             bTriangle = TRUE;
@@ -1498,11 +1498,11 @@ int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<
 //! Finds sequences of sequential constraints.
 static bool more_than_two_sequential_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con)
 {
-    const int ncon1    = ilist[F_CONSTR].size() / 3;
-    const int ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;
+    const int ncon1    = ilist[InteractionFunction::Constraints].size() / 3;
+    const int ncon_tot = ncon1 + ilist[InteractionFunction::ConstraintsNoCoupling].size() / 3;
 
-    gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
-    gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
+    gmx::ArrayRef<const int> ia1 = ilist[InteractionFunction::Constraints].iatoms;
+    gmx::ArrayRef<const int> ia2 = ilist[InteractionFunction::ConstraintsNoCoupling].iatoms;
 
     for (int c = 0; c < ncon_tot; c++)
     {
@@ -1539,7 +1539,8 @@ Lincs* init_lincs(FILE*                            fplog,
 
     li = new Lincs;
 
-    li->ncg      = gmx_mtop_ftype_count(mtop, F_CONSTR) + gmx_mtop_ftype_count(mtop, F_CONSTRNC);
+    li->ncg = gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints)
+              + gmx_mtop_ftype_count(mtop, InteractionFunction::ConstraintsNoCoupling);
     li->ncg_flex = nflexcon_global;
 
     li->nIter  = nIter;
@@ -2055,8 +2056,8 @@ void set_lincs(const InteractionDefinitions& idef,
         li->task[li->ntask].updateConstraintIndices1.clear();
     }
 
-    /* This is the local topology, so there are only F_CONSTR constraints */
-    if (idef.il[F_CONSTR].empty())
+    /* This is the local topology, so there are only InteractionFunction::Constraints constraints */
+    if (idef.il[InteractionFunction::Constraints].empty())
     {
         /* There are no constraints,
          * we do not need to fill any data structures.
@@ -2091,7 +2092,7 @@ void set_lincs(const InteractionDefinitions& idef,
     const ListOfLists<int> at2con =
             make_at2con(natoms, idef.il, idef.iparams, flexibleConstraintTreatment(bDynamics));
 
-    const int ncon_tot = idef.il[F_CONSTR].size() / 3;
+    const int ncon_tot = idef.il[InteractionFunction::Constraints].size() / 3;
 
     /* Ensure we have enough padding for aligned loads for each thread */
     const int numEntries = ncon_tot + li->ntask * simd_width;
@@ -2114,7 +2115,7 @@ void set_lincs(const InteractionDefinitions& idef,
     li->tmp4.resize(numEntries);
     li->mlambda.resize(numEntries);
 
-    gmx::ArrayRef<const int> iatom = idef.il[F_CONSTR].iatoms;
+    gmx::ArrayRef<const int> iatom = idef.il[InteractionFunction::Constraints].iatoms;
 
     li->blnr[0] = li->ncc;
 

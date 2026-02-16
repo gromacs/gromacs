@@ -36,6 +36,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         calc_verletbuf.cpp
         calcvir.cpp
         constr.cpp
+        constraintgroupsize.cpp
         constrtestdata.cpp
         constrtestrunners.cpp
         ebin.cpp
@@ -57,6 +58,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         simulationsignal.cpp
         updategroups.cpp
         updategroupscog.cpp
+        vsite.cpp
     GPU_CPP_SOURCE_FILES
         constrtestrunners_gpu.cpp
         leapfrogtestrunners_gpu.cpp

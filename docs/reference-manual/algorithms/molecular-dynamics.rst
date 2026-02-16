@@ -9,7 +9,7 @@ Molecular Dynamics
 
 --------------
 
-| 
+|
 | **1. Input initial conditions**
 | Potential interaction :math:`V` as a function of atom positions
 | Positions :math:`\mathbf{r}` of all atoms in the system
@@ -18,12 +18,12 @@ Molecular Dynamics
 
 --------------
 
-| 
+|
 | **repeat 2,3,4** for the required number of steps:
 
 --------------
 
-| 
+|
 | **2. Compute forces**
 | The force on any atom
 | :math:`\mathbf{F}_i = - \displaystyle\frac{\partial V}{\partial \mathbf{r}_i}`
@@ -39,7 +39,7 @@ Molecular Dynamics
   equations of motion
 | :math:`\displaystyle \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} = \frac{\mathbf{F}_i}{m_i}`
 | or
-| :math:`\displaystyle   \frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} = \mathbf{v}_i ; \;\;   \frac{{\mbox{d}}\mathbf{v}_i}{{\mbox{d}}t} = \frac{\mathbf{F}_i}{m_i}` 
+| :math:`\displaystyle   \frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} = \mathbf{v}_i ; \;\;   \frac{{\mbox{d}}\mathbf{v}_i}{{\mbox{d}}t} = \frac{\mathbf{F}_i}{m_i}`
 | :math:`\Downarrow`
 | **4.** if required: **Output step**
 | write positions, velocities, energies, temperature, pressure, etc.
@@ -799,7 +799,7 @@ thus the temperature only at time :math:`t`; the kinetic energy is then
 a sum over all particles
 
 .. math:: \begin{aligned}
-          KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}\mathbf{v}_i(t)\right)^2 \nonumber\\ 
+          KE_{\mathrm{full}}(t) &=& \sum_i \left(\frac{1}{2m_i}\mathbf{v}_i(t)\right)^2 \nonumber\\
                 &=& \sum_i \frac{1}{2m_i}\left(\frac{1}{2}\mathbf{v}_i(t-{{\frac{1}{2}}{{\Delta t}}})+\frac{1}{2}\mathbf{v}_i(t+{{\frac{1}{2}}{{\Delta t}}})\right)^2,\end{aligned}
           :label: eqnTrotterEkin
 
@@ -876,7 +876,7 @@ decomposition and is therefore reversible and symplectic.
 
 In order to allow tuning this for each system, the integrator makes it
 possible to specify different types of bonded and non-bonded interactions
-for multiple-time step integration. 
+for multiple-time step integration.
 To avoid integration errors, it is still imperative that the integration
 interval used for each force component is short enough, and there is no
 universal formula that allows the algorithm to detect this. Since the
@@ -1086,7 +1086,7 @@ energy and the reference temperature.
 In this formulation, the particles' equations of motion in
 the global :ref:`MD scheme <gmx-md-scheme>` are replaced by:
 
-.. math:: \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} = \frac{\mathbf{F}_i}{m_i} - 
+.. math:: \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} = \frac{\mathbf{F}_i}{m_i} -
           \frac{p_{\xi}}{Q}\frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} ,
           :label: eqnNHeqnofmotion
 
@@ -1096,8 +1096,8 @@ where the equation of motion for the heat bath parameter :math:`\xi` is:
           :label: eqnNHheatbath
 
 The reference temperature is denoted :math:`T_0`, while :math:`T` is
-the current instantaneous temperature of the system, :math:`N_f` is the total 
-number of degrees of freedom and :math:`k` is Boltzmann’s 
+the current instantaneous temperature of the system, :math:`N_f` is the total
+number of degrees of freedom and :math:`k` is Boltzmann’s
 constant (see chapter :ref:`defunits`). The strength of the
 coupling is determined by the constant :math:`Q` (usually called the
 *mass parameter* of the reservoir) in combination with the reference
@@ -1315,7 +1315,7 @@ anisotropically, the system has to be rotated in order to obey
 scaling, which is usually less than :math:`10^{-4}`. The actual scaling
 matrix :math:`\mu'` is
 
-.. math:: \mathbf{\mu'} = 
+.. math:: \mathbf{\mu'} =
           \left(\begin{array}{ccc}
           \mu_{xx} & \mu_{xy} + \mu_{yx} & \mu_{xz} + \mu_{zx} \\
           0        & \mu_{yy}            & \mu_{yz} + \mu_{zy} \\
@@ -1517,7 +1517,7 @@ be calculated from the difference between the normal and the lateral
 pressure
 
 .. math:: \begin{aligned}
-          \gamma(t) & = & 
+          \gamma(t) & = &
           \frac{1}{n} \int_0^{L_z}
           \left\{ P_{zz}(z,t) - \frac{P_{xx}(z,t) + P_{yy}(z,t)}{2} \right\} \mbox{d}z \\
           & = &
@@ -1542,7 +1542,7 @@ factor for the box length in the :math:`x`/:math:`y`-direction is
 
 .. math:: \mu_{x/y} = 1 + \frac{\Delta t}{2\,\tau_p} \beta_{x/y}
           \left( \frac{n \gamma_0}{\mu_{zz} L_z}
-          - \left\{ P_{zz}(t)+\Delta P_{zz} - \frac{P_{xx}(t) + P_{yy}(t)}{2} \right\} 
+          - \left\{ P_{zz}(t)+\Delta P_{zz} - \frac{P_{xx}(t) + P_{yy}(t)}{2} \right\}
           \right)
           :label: eqnboxlengthcorr
 
@@ -1624,9 +1624,9 @@ coupling constants of the thermostats of the barostats, we get
           \frac{\dot{{{\mathbf{p}}}}_i}{m_i} &=& \frac{1}{m_i}{{\mathbf{F}}}_i - \alpha\frac{{p_{\epsilon}}}{W} \frac{{{\mathbf{p}}}_i}{m_i} - \frac{p_{\xi_1}}{Q_1}\frac{{{\mathbf{p}}}_i}{m_i}\nonumber \\
           \dot{\epsilon} &=& \frac{{p_{\epsilon}}}{W} \nonumber \\
           \frac{\dot{{p_{\epsilon}}}}{W} &=& \frac{3V}{W}(\alpha P_{\mathrm{kin}} - P_{\mathrm{vir}} - P) -\frac{p_{\eta_1}}{Q^{\prime}_1}{p_{\epsilon}}\nonumber \\
-          \dot{\xi}_k &=& \frac{p_{\xi_k}}{Q_k} \nonumber \\ 
+          \dot{\xi}_k &=& \frac{p_{\xi_k}}{Q_k} \nonumber \\
           \dot{\eta}_k &=& \frac{p_{\eta_k}}{Q^{\prime}_k} \nonumber \\
-          \dot{p}_{\xi_k} &=& G_k - \frac{p_{\xi_{k+1}}}{Q_{k+1}} \;\;\;\; k=1,\ldots, M-1 \nonumber \\ 
+          \dot{p}_{\xi_k} &=& G_k - \frac{p_{\xi_{k+1}}}{Q_{k+1}} \;\;\;\; k=1,\ldots, M-1 \nonumber \\
           \dot{p}_{\eta_k} &=& G^\prime_k - \frac{p_{\eta_{k+1}}}{Q^\prime_{k+1}} \;\;\;\; k=1,\ldots, M-1 \nonumber \\
           \dot{p}_{\xi_M} &=& G_M \nonumber \\
           \dot{p}_{\eta_M} &=& G^\prime_M, \nonumber \\\end{aligned}
@@ -1771,7 +1771,7 @@ The complete update algorithm
 
 --------------
 
- 
+
  Given:
  Positions :math:`\mathbf{r}` of all atoms at time
  :math:`t`

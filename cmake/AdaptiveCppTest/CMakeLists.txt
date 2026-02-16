@@ -35,10 +35,7 @@ cmake_minimum_required(VERSION 3.28)
 cmake_policy(VERSION 3.28)
 
 project(AdaptiveCppTest)
-find_package(adaptivecpp QUIET)
-if(NOT adaptivecpp_FOUND)
-    find_package(hipsycl REQUIRED)
-endif()
+find_package(adaptivecpp REQUIRED)
 
 # This project will fail compilation if it can't use AdaptiveCpp compiler,
 # and will emit a warning for each of the known compilation targets:

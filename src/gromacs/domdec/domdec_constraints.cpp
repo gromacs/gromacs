@@ -63,7 +63,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -206,25 +205,26 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
                              std::vector<int>*                     ireq)
 {
     const gmx_ga2la_t& ga2la = *dd->ga2la;
-    int                nral  = NRAL(F_SETTLE);
+    int                nral  = NRAL(InteractionFunction::SETTLE);
 
-    int mb = 0;
+    MTopLookUp mTopLookUp(mtop);
+
     for (int a = cg_start; a < cg_end; a++)
     {
         if (atomInfo[a] & gmx::sc_atomInfo_Settle)
         {
-            int a_gl  = dd->globalAtomIndices[a];
-            int a_mol = 0;
-            mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
+            const int  a_gl = dd->globalAtomIndices[a];
+            const auto mbai = mTopLookUp.getMolblockAtomIndex(a_gl);
 
-            const gmx_molblock_t* molb   = &mtop.molblock[mb];
-            int                   settle = at2settle_mt[molb->type][a_mol];
+            const gmx_molblock_t* molb   = &mtop.molblock[mbai.molBlock];
+            int                   settle = at2settle_mt[molb->type][mbai.atomIndex];
 
             if (settle >= 0)
             {
-                int offset = a_gl - a_mol;
+                const int offset = a_gl - mbai.atomIndex;
 
-                const int* ia1 = mtop.moltype[molb->type].ilist[F_SETTLE].iatoms.data();
+                const int* ia1 =
+                        mtop.moltype[molb->type].ilist[InteractionFunction::SETTLE].iatoms.data();
 
                 int      a_gls[3];
                 gmx_bool bAssign = FALSE;
@@ -287,37 +287,39 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
     dc->con_gl.clear();
     dc->con_nlocat.clear();
 
-    int mb    = 0;
+    MTopLookUp mTopLookUp(mtop);
+
     int nhome = 0;
     for (int a = 0; a < dd->numHomeAtoms; a++)
     {
         if (atomInfo[a] & gmx::sc_atomInfo_Constraint)
         {
-            int a_gl  = dd->globalAtomIndices[a];
-            int molnr = 0;
-            int a_mol = 0;
-            mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
+            const int  a_gl = dd->globalAtomIndices[a];
+            const auto mbai = mTopLookUp.getMolblockAtomIndex(a_gl);
 
-            const gmx_molblock_t& molb = mtop.molblock[mb];
+            const gmx_molblock_t& molb = mtop.molblock[mbai.molBlock];
 
-            gmx::ArrayRef<const int> ia1 = mtop.moltype[molb.type].ilist[F_CONSTR].iatoms;
-            gmx::ArrayRef<const int> ia2 = mtop.moltype[molb.type].ilist[F_CONSTRNC].iatoms;
+            gmx::ArrayRef<const int> ia1 =
+                    mtop.moltype[molb.type].ilist[InteractionFunction::Constraints].iatoms;
+            gmx::ArrayRef<const int> ia2 =
+                    mtop.moltype[molb.type].ilist[InteractionFunction::ConstraintsNoCoupling].iatoms;
 
             /* Calculate the global constraint number offset for the molecule.
              * This is only required for the global index to make sure
              * that we use each constraint only once.
              */
-            const int con_offset = dc->molb_con_offset[mb] + molnr * dc->molb_ncon_mol[mb];
+            const int con_offset = dc->molb_con_offset[mbai.molBlock]
+                                   + mbai.molIndex * dc->molb_ncon_mol[mbai.molBlock];
 
             /* The global atom number offset for this molecule */
-            const int offset = a_gl - a_mol;
+            const int offset = a_gl - mbai.atomIndex;
             /* Loop over the constraints connected to atom a_mol in the molecule */
             const auto& at2con = at2con_mt[molb.type];
-            for (const int con : at2con[a_mol])
+            for (const int con : at2con[mbai.atomIndex])
             {
                 const int* iap   = constr_iatomptr(ia1, ia2, con);
                 int        b_mol = 0;
-                if (a_mol == iap[1])
+                if (mbai.atomIndex == iap[1])
                 {
                     b_mol = iap[2];
                 }
@@ -328,7 +330,7 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
                 if (const int* a_loc = ga2la.findHome(offset + b_mol))
                 {
                     /* Add this fully home constraint at the first atom */
-                    if (a_mol < b_mol)
+                    if (mbai.atomIndex < b_mol)
                     {
                         dc->con_gl.push_back(con_offset + con);
                         dc->con_nlocat.push_back(2);
@@ -371,13 +373,13 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
     }
 }
 
-int dd_make_local_constraints(gmx_domdec_t*                  dd,
-                              int                            at_start,
-                              const struct gmx_mtop_t&       mtop,
-                              gmx::ArrayRef<const int32_t>   atomInfo,
-                              gmx::Constraints*              constr,
-                              int                            nrec,
-                              gmx::ArrayRef<InteractionList> il_local)
+int dd_make_local_constraints(gmx_domdec_t*                                                dd,
+                              int                                                          at_start,
+                              const struct gmx_mtop_t&                                     mtop,
+                              gmx::ArrayRef<const int32_t>                                 atomInfo,
+                              gmx::Constraints*                                            constr,
+                              int                                                          nrec,
+                              gmx::EnumerationArray<InteractionFunction, InteractionList>& il_local)
 {
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
@@ -396,8 +398,8 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
 
     gmx_domdec_constraints_t* dc = dd->constraints.get();
 
-    InteractionList* ilc_local = &il_local[F_CONSTR];
-    InteractionList* ils_local = &il_local[F_SETTLE];
+    InteractionList* ilc_local = &il_local[InteractionFunction::Constraints];
+    InteractionList* ils_local = &il_local[InteractionFunction::SETTLE];
 
     dc->ncon = 0;
     gmx::ArrayRef<const ListOfLists<int>> at2con_mt;
@@ -499,7 +501,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
         /* Fill in the missing indices */
         gmx::HashedMap<int>* ga2la_specat = dd->constraints->ga2la.get();
 
-        int nral1 = 1 + NRAL(F_CONSTR);
+        int nral1 = 1 + NRAL(InteractionFunction::Constraints);
         for (int i = 0; i < ilc_local->size(); i += nral1)
         {
             int* iap = ilc_local->iatoms.data() + i;
@@ -514,7 +516,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
             }
         }
 
-        nral1 = 1 + NRAL(F_SETTLE);
+        nral1 = 1 + NRAL(InteractionFunction::SETTLE);
         for (int i = 0; i < ils_local->size(); i += nral1)
         {
             int* iap = ils_local->iatoms.data() + i;
@@ -556,8 +558,9 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop)
     {
         const gmx_molblock_t* molb = &mtop.molblock[mb];
         dc->molb_con_offset[mb]    = ncon;
-        dc->molb_ncon_mol[mb]      = mtop.moltype[molb->type].ilist[F_CONSTR].size() / 3
-                                + mtop.moltype[molb->type].ilist[F_CONSTRNC].size() / 3;
+        dc->molb_ncon_mol[mb] =
+                mtop.moltype[molb->type].ilist[InteractionFunction::Constraints].size() / 3
+                + mtop.moltype[molb->type].ilist[InteractionFunction::ConstraintsNoCoupling].size() / 3;
         ncon += molb->nmol * dc->molb_ncon_mol[mb];
     }
 

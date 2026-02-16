@@ -71,6 +71,7 @@ class ForceBuffersView;
 class ImdSession;
 struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
+class SimulationWorkload;
 class VirtualSitesHandler;
 } // namespace gmx
 
@@ -80,17 +81,18 @@ class VirtualSitesHandler;
  * \param mtop Pointer to a global system topology object.
  * \param nflexcon Number of flexible constraints.
  * \param nstcalcenergy How often are energies calculated. Must be provided for sanity check.
- * \param usingDomainDecomposition Whether domain decomposition is used. Must be provided for sanity check.
- * \param haveGpuCoordinates Set to true if GPU is handling coordinate transformation or PME. Necessary for proper buffer initialization.
+ * \param usingDomainDecomposition Whether domain decomposition is used.
+ *                                 Must be provided for sanity check.
+ * \param simulationWork The simulation workload.
  *
  * \returns a pointer to an initialized \c shellfc object.
  */
-gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
-                                  const gmx_mtop_t& mtop,
-                                  int               nflexcon,
-                                  int               nstcalcenergy,
-                                  bool              usingDomainDecomposition,
-                                  bool              haveGpuCoordinates);
+gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
+                                  const gmx_mtop_t&              mtop,
+                                  int                            nflexcon,
+                                  int                            nstcalcenergy,
+                                  bool                           usingDomainDecomposition,
+                                  const gmx::SimulationWorkload& simulationWork);
 
 /* Optimize shell positions */
 void relax_shell_flexcon(FILE*                               log,

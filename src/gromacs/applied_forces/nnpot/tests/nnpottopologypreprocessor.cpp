@@ -42,23 +42,29 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/applied_forces/nnpot/nnpottopologypreprocessor.h"
-
 #include <filesystem>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/nnpot/nnpot.h"
+#include "gromacs/applied_forces/nnpot/nnpotoptions.h"
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/path.h"
@@ -83,7 +89,7 @@ namespace test
  *
  * Provides a temporary file manager and a gmx_mtop_t struct for testing.
  */
-class NNPotTopologyPreprocessorTest : public ::testing::Test
+class NNPotTopologyPreprocessorTest : public ::testing::TestWithParam<NNPotEmbedding>
 {
 public:
     /*! \brief Generates tpr file from *.top and *.gro existing in the simulation database directory
@@ -125,109 +131,256 @@ public:
         return mtop;
     }
 
+    //! \brief Generates a default mdp values for NNPotOptions
+    static KeyValueTreeObject nnpotBuildMdpValues(const std::map<std::string, std::string>& additionalValues = {})
+    {
+        // Prepare MDP inputs
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(std::string(NNPotModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        for (const auto& [key, value] : additionalValues)
+        {
+            mdpValueBuilder.rootObject().addValue(std::string(NNPotModuleInfo::sc_name) + "-" + key, value);
+        }
+        return mdpValueBuilder.build();
+    }
+
+    //! \brief Creates an IndexGroupsAndNames object with the given atom indices
+    static IndexGroupsAndNames indexGroupsAndNames(const std::vector<int>& nnpAtomIndices)
+    {
+        // Create an IndexGroupsAndNames object
+        std::vector<IndexGroup> indexGroups;
+        // "System" is the default group name for NNPot
+        indexGroups.push_back({ "System", nnpAtomIndices });
+        return IndexGroupsAndNames(indexGroups);
+    }
+
+    //! \brief Helper function to create an NNPotOptions object
+    NNPotOptions buildDefaultOptions(const std::vector<int>& nnpAtomIndices, WarningHandler* wi)
+    {
+        NNPotOptions options;
+        test::fillOptionsFromMdpValues(nnpotBuildMdpValues(), &options);
+        options.setLogger(logHelper_.logger());
+        options.setWarninp(wi);
+        options.setInputGroupIndices(indexGroupsAndNames(nnpAtomIndices));
+        return options;
+    }
+
+    NNPotOptions buildOptionsWithValues(const std::vector<int>&                   nnpAtomIndices,
+                                        WarningHandler*                           wi,
+                                        const std::map<std::string, std::string>& additionalValues)
+    {
+        NNPotOptions options;
+        test::fillOptionsFromMdpValues(nnpotBuildMdpValues(additionalValues), &options);
+        options.setLogger(logHelper_.logger());
+        options.setWarninp(wi);
+        options.setInputGroupIndices(indexGroupsAndNames(nnpAtomIndices));
+        return options;
+    }
+
+    //! \brief Helper function to expect a log message
+    void expectLogMessage(const char* msg)
+    {
+        logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, msg);
+    }
+
 protected:
     LoggerTestHelper logHelper_;
 };
 
-TEST_F(NNPotTopologyPreprocessorTest, CanConstruct)
+TEST_P(NNPotTopologyPreprocessorTest, FourWatersFirstInNNPRegion)
 {
-    std::vector<Index> nnpIndices = { 0, 1, 2 };
-    EXPECT_NO_THROW(NNPotTopologyPreprocessor topPrep(nnpIndices));
-}
-
-TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInQMRegion)
-{
+    const NNPotEmbedding embedding = GetParam();
     // Reference input 4x SPCE waters from database 4waters.top
     // First water is NNP input
-    std::vector<Index>          nnpAtomIndices = { 0, 1, 2 };
+    std::vector<int>            nnpAtomIndices = { 0, 1, 2 };
     std::unique_ptr<gmx_mtop_t> mtop           = makeMtopFromFile("4water", "");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of embedded NNP atoms: 3\nNumber of regular atoms: 9\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 3\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 1 \\(replaced by 2 F_CONNBONDS\\) \n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    NNPotOptions   options;
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        options = buildOptionsWithValues(
+                nnpAtomIndices, &wi, { { "embedding", "electrostatic-model" } });
+    }
+    else
+    {
+        options = buildDefaultOptions(nnpAtomIndices, &wi);
+    }
+
+    expectLogMessage("Neural network potential interface is active, topology was modified!");
+    expectLogMessage("Number of embedded NNP atoms: 3\nNumber of regular atoms: 9\n");
+    expectLogMessage("Number of exclusions made: 3\n");
+    expectLogMessage(
+            "Number of settles removed: 1 \\(replaced by 2 "
+            "InteractionFunction::ConnectBonds\\) \n");
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        expectLogMessage("Electrostatic embedding scheme is used.\n");
+        expectLogMessage(
+                "Total charge of the classical system \\(before modifications\\): 0.00000");
+        expectLogMessage("Classical charge removed from embedded atoms: 0.00000\n");
+    }
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
-TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInQMRegion)
+TEST_P(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInNNPRegion)
 {
+    const NNPotEmbedding embedding = GetParam();
     // Reference input 4x SPCE waters from database 4waters.top
     // second and fourth are NNP input
-    std::vector<Index>          nnpAtomIndices = { 3, 4, 5, 9, 10, 11 };
+    std::vector<int>            nnpAtomIndices = { 3, 4, 5, 9, 10, 11 };
     std::unique_ptr<gmx_mtop_t> mtop           = makeMtopFromFile("4water", "");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of embedded NNP atoms: 6\nNumber of regular atoms: 6\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 2 \\(replaced by 4 F_CONNBONDS\\) \n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    WarningHandler wi(true, 0);
+    NNPotOptions   options;
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        options = buildOptionsWithValues(
+                nnpAtomIndices, &wi, { { "embedding", "electrostatic-model" } });
+    }
+    else
+    {
+        options = buildDefaultOptions(nnpAtomIndices, &wi);
+    }
+
+    expectLogMessage("Neural network potential interface is active, topology was modified!");
+    expectLogMessage("Number of embedded NNP atoms: 6\nNumber of regular atoms: 6\n");
+    expectLogMessage("Number of exclusions made: 6\n");
+    expectLogMessage(
+            "Number of settles removed: 2 \\(replaced by 4 "
+            "InteractionFunction::ConnectBonds\\) \n");
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        expectLogMessage("Electrostatic embedding scheme is used.\n");
+        expectLogMessage(
+                "Total charge of the classical system \\(before modifications\\): 0.00000");
+        expectLogMessage("Classical charge removed from embedded atoms: 0.00000\n");
+    }
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
-TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints)
+TEST_P(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints)
 {
+    const NNPotEmbedding embedding = GetParam();
     // Reference input alanine_vacuo.top
-    std::vector<Index> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
-    auto               mtop           = makeMtopFromFile("alanine_vacuo", "");
+    std::vector<int> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
+    auto             mtop           = makeMtopFromFile("alanine_vacuo", "");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 8\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
-                                        "Number of F_CONNBONDS \\(type 5 bonds\\) added: 5\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
-                                        "Number of dihedrals removed: 9\n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    NNPotOptions   options;
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        options = buildOptionsWithValues(
+                nnpAtomIndices, &wi, { { "embedding", "electrostatic-model" } });
+    }
+    else
+    {
+        options = buildDefaultOptions(nnpAtomIndices, &wi);
+    }
+
+    expectLogMessage("Neural network potential interface is active, topology was modified!");
+    expectLogMessage("Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
+    expectLogMessage("Number of exclusions made: 6\n");
+    expectLogMessage("Number of bonds removed: 8\n");
+    expectLogMessage("Number of InteractionFunction::ConnectBonds \\(type 5 bonds\\) added: 5\n");
+    expectLogMessage("Number of angles removed: 11\n");
+    expectLogMessage("Number of dihedrals removed: 9\n");
+    expectLogMessage("Number of link bonds added: 2\n");
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        expectLogMessage("Electrostatic embedding scheme is used.\n");
+        expectLogMessage(
+                "Total charge of the classical system \\(before modifications\\): 0.00000");
+        expectLogMessage("Classical charge removed from embedded atoms: 0.11440\n");
+    }
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
-TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstraints)
+TEST_P(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstraints)
 {
+    const NNPotEmbedding embedding = GetParam();
     // Reference input alanine_vacuo.top with constraints=all-bonds
-    std::vector<Index> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
-    auto               mtop = makeMtopFromFile("alanine_vacuo", "constraints = all-bonds");
+    std::vector<int> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
+    auto             mtop           = makeMtopFromFile("alanine_vacuo", "constraints = all-bonds");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 3\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
-                                        "Number of dihedrals removed: 9\n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    NNPotOptions   options;
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        options = buildOptionsWithValues(
+                nnpAtomIndices, &wi, { { "embedding", "electrostatic-model" } });
+    }
+    else
+    {
+        options = buildDefaultOptions(nnpAtomIndices, &wi);
+    }
+
+    expectLogMessage("Neural network potential interface is active, topology was modified!");
+    expectLogMessage("Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
+    expectLogMessage("Number of exclusions made: 6\n");
+    expectLogMessage("Number of bonds removed: 3\n");
+    expectLogMessage("Number of angles removed: 11\n");
+    expectLogMessage("Number of dihedrals removed: 9\n");
+    expectLogMessage("Number of link bonds added: 2\n");
+    if (GetParam() == NNPotEmbedding::ElectrostaticModel)
+    {
+        expectLogMessage("Electrostatic embedding scheme is used.\n");
+        expectLogMessage(
+                "Total charge of the classical system \\(before modifications\\): 0.00000");
+        expectLogMessage("Classical charge removed from embedded atoms: 0.11440\n");
+    }
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
+
+    // expect one warning about constrained bonds
+    int numWarnings = embedding == NNPotEmbedding::ElectrostaticModel ? 2 : 1;
+    ASSERT_EQ(wi.warningCount(), numWarnings);
 }
+
+TEST_P(NNPotTopologyPreprocessorTest, RemovingChargeOnVSites)
+{
+    const NNPotEmbedding embedding = GetParam();
+    // Reference input vistes_test.top
+    std::unique_ptr<gmx_mtop_t> mtop = makeMtopFromFile("vsite_test", "");
+    std::vector<int> qmIndices       = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+    WarningHandler wi(true, 0);
+    NNPotOptions   options;
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        options = buildOptionsWithValues(qmIndices, &wi, { { "embedding", "electrostatic-model" } });
+    }
+    else
+    {
+        options = buildDefaultOptions(qmIndices, &wi);
+    }
+
+    expectLogMessage("Neural network potential interface is active, topology was modified!");
+    expectLogMessage("Number of embedded NNP atoms: 16\nNumber of regular atoms: 8\n");
+    expectLogMessage("Number of exclusions made: 16\n");
+    expectLogMessage("Number of bonds removed: 28\n");
+    expectLogMessage("Number of InteractionFunction::ConnectBonds \\(type 5 bonds\\) added: 15\n");
+    expectLogMessage("Number of angles removed: 14\n");
+    expectLogMessage("Number of dihedrals removed: 13\n");
+    if (embedding == NNPotEmbedding::ElectrostaticModel)
+    {
+        expectLogMessage("Electrostatic embedding scheme is used.\n");
+        expectLogMessage(
+                "Total charge of the classical system \\(before modifications\\): 0.00000");
+        expectLogMessage("Classical charge removed from embedded atoms: 0.00000\n");
+        expectLogMessage(
+                "Note: There are 8 virtual sites found, which are built from embedded atoms only. "
+                "Classical charges on them have been removed as well.\n");
+    }
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
+}
+
+INSTANTIATE_TEST_SUITE_P(NNPotTopologyPreprocessorTests,
+                         NNPotTopologyPreprocessorTest,
+                         ::testing::Values(NNPotEmbedding::Mechanical, NNPotEmbedding::ElectrostaticModel));
 
 } // namespace test
 

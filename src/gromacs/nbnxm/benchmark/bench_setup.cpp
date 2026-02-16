@@ -237,7 +237,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
 
     PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, pinPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
@@ -286,7 +286,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
                         system.coordinates,
                         nullptr);
 
-    nbv->constructPairlist(InteractionLocality::Local, system.excls, 0, &nrnb);
+    nbv->constructPairlist(InteractionLocality::Local, system.excls, false, 0, &nrnb);
 
     nbv->setAtomProperties(system.atomTypes, system.charges, atomInfo);
 

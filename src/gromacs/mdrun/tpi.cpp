@@ -609,10 +609,10 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
 
     if (usingRF(fr_.ic->coulomb.type))
     {
-        enerd_.term[F_EPOT] += rfExclusionEnergy_;
+        enerd_.term[InteractionFunction::PotentialEnergy] += rfExclusionEnergy_;
     }
 
-    const double epot                = enerd_.term[F_EPOT];
+    const double epot                = enerd_.term[InteractionFunction::PotentialEnergy];
     bool         isEnergyOutOfBounds = false;
 
     /* If the compiler doesn't optimize this check away
@@ -673,7 +673,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
         }
         if (haveDispCorr_)
         {
-            sum_UgembU_[e++] += enerd_.term[F_DISPCORR] * embU;
+            sum_UgembU_[e++] += enerd_.term[InteractionFunction::DispersionCorrection] * embU;
         }
         if (haveElectrostatics_)
         {
@@ -689,7 +689,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
             }
             if (usingFullElectrostatics(fr_.ic->coulomb.type))
             {
-                sum_UgembU_[e++] += enerd_.term[F_COUL_RECIP] * embU;
+                sum_UgembU_[e++] += enerd_.term[InteractionFunction::CoulombReciprocalSpace] * embU;
             }
         }
     }
@@ -819,9 +819,10 @@ double TestParticleInsertion::insertIntoFrame(const double           t,
                     box, 1, xInit, xInit, nullptr, testAtomsRange_, testAtomsRange_.size(), -1, fr_.atomInfo, x, nullptr);
 
             /* TODO: Avoid updating all atoms at every bNS step */
-            fr_.nbv->setAtomProperties(mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo);
+            fr_.nbv->setAtomProperties(
+                    mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo, mdatoms_.typeB, mdatoms_.chargeB);
 
-            fr_.nbv->constructPairlist(InteractionLocality::Local, top_.excls, step, nrnb);
+            fr_.nbv->constructPairlist(InteractionLocality::Local, top_.excls, false, step, nrnb);
 
             constructPairList = FALSE;
         }
@@ -1163,16 +1164,16 @@ void LegacySimulator::do_tpi()
         frame_step_prev = frame_step;
 
         /* Copy the coordinates from the input trajectory */
-        auto x = makeArrayRef(stateGlobal_->x);
+        auto xFrame = makeArrayRef(stateGlobal_->x);
         for (int i = 0; i < rerun_fr.natoms; i++)
         {
-            copy_rvec(rerun_fr.x[i], x[i]);
+            copy_rvec(rerun_fr.x[i], xFrame[i]);
         }
         copy_mat(rerun_fr.box, stateGlobal_->box);
         const matrix& box    = stateGlobal_->box;
         const double  volume = det(box);
 
-        put_atoms_in_box(fr_->pbcType, box, x);
+        put_atoms_in_box(fr_->pbcType, box, xFrame);
 
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
@@ -1186,7 +1187,7 @@ void LegacySimulator::do_tpi()
                                  *testAtomsRange.begin(),
                                  -1,
                                  fr_->atomInfo,
-                                 x,
+                                 xFrame,
                                  nullptr);
 
         gmx_edsam* const ed = nullptr;

@@ -102,6 +102,7 @@ static const char *tmpi_errmsg[] =
     "Error in MPI_Status",
     "Error getting/setting processor layout/affinity",
     "Transmission failure",
+    "Invalid datatype argument",
     "Unknown tMPI error"
 };
 

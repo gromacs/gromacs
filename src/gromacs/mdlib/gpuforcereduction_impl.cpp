@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/mdlib/gpuforcereduction_impl_internal.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -127,6 +128,12 @@ void GpuForceReduction::Impl::execute()
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
+    const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
+
+    if (addRvecForce && forcesReadyNvshmemFlags)
+    {
+        forcesReadyNvshmemFlagsCounter++;
+    }
 
     if (numAtoms_ != 0)
     {
@@ -136,13 +143,6 @@ void GpuForceReduction::Impl::execute()
         for (auto* synchronizer : dependencyList_)
         {
             synchronizer->enqueueWaitEvent(deviceStream_);
-        }
-
-        const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
-
-        if (addRvecForce && forcesReadyNvshmemFlags)
-        {
-            forcesReadyNvshmemFlagsCounter++;
         }
 
         launchForceReductionKernel(numAtoms_,
@@ -183,7 +183,14 @@ void GpuForceReduction::Impl::execute()
 
 GpuForceReduction::Impl::~Impl()
 {
-    freeDeviceBuffer(&cellInfo_.d_cell);
+    try
+    {
+        freeDeviceBuffer(&cellInfo_.d_cell);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of GpuForceReduction: %s\n", e.what());
+    }
 }
 
 GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,

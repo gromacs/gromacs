@@ -11,4 +11,4 @@ void print_match_err(int myrank, int *buf_recv, int *buf_expt, int size);
 
 
 
-void send_recv_data_tester(void);
+void send_recv_data_tester(bool waitall);

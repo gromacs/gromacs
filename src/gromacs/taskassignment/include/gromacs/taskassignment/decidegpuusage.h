@@ -92,7 +92,7 @@ struct DevelopmentFeatureFlags
 class MDAtoms;
 
 
-bool canUseGpusForNonbonded(const t_inputrec& ir, const bool doRerun, std::string* error);
+bool canUseGpusForNonbonded(const t_inputrec& ir, bool doRerun, std::string* error);
 
 /*! \brief Decide whether this thread-MPI simulation will run
  * nonbonded tasks on GPUs.
@@ -192,6 +192,17 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
                                         bool                    binaryReproducibilityRequested,
                                         bool                    gpusWereDetected);
 
+/*! \brief Decide whether the simulation will try to run nonbonde FE tasks on GPUs.
+ *
+ * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  nonBondedFeTarget         The user's choice for mdrun -nbfe for where to assign tasks.
+ *
+ * \returns    Whether the simulation will run nonbonded fe tasks on GPUs.
+ *
+ * \throws     std::bad_alloc          If out of memory
+ *             InconsistentInputError  If the user requirements are inconsistent. */
+bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget nonBondedFeTarget);
+
 /*! \brief Decide whether the simulation will try to run tasks of
  * different types on GPUs.
  *
@@ -267,6 +278,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
                                      int               numPmeRanksPerSimulation,
                                      bool              gpusWereDetected);
 
+
 /*! \brief Decide whether to use GPU for update.
  *
  * \param[in]  isDomainDecomposition        Whether there more than one domain.
@@ -316,6 +328,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
  * \param[in]  useReplicaExchange           Whether replica exchange is used
  * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
+ * \param[in]  gpusWereDetected             Whether we have any GPUs
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether the MPI-parallel runs can use direct GPU communication.
@@ -324,6 +337,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus mpiStat
                                                   bool                   haveMts,
                                                   bool                   useReplicaExchange,
                                                   bool                   haveSwapCoords,
+                                                  bool                   gpusWereDetected,
                                                   const gmx::MDLogger&   mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.

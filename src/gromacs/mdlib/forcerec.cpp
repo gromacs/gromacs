@@ -210,8 +210,8 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                 
 enum class ConstraintTypeForAtom : int
 {
     None,       //!< No constraint active
-    Constraint, //!< F_CONSTR or F_CONSTRNC active
-    Settle,     //! F_SETTLE active
+    Constraint, //!< InteractionFunction::Constraints or InteractionFunction::ConstraintsNoCoupling active
+    Settle, //! InteractionFunction::SETTLE active
 };
 
 static std::vector<gmx::AtomInfoWithinMoleculeBlock>
@@ -279,7 +279,7 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
 
         /* Set constraints flags for constrained atoms */
         std::vector<ConstraintTypeForAtom> constraintTypeOfAtom(molt.atoms.nr, ConstraintTypeForAtom::None);
-        for (int ftype = 0; ftype < F_NRE; ftype++)
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             if (interaction_function[ftype].flags & IF_CONSTRAINT)
             {
@@ -289,8 +289,8 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
                     for (int a = 0; a < nral; a++)
                     {
                         constraintTypeOfAtom[molt.ilist[ftype].iatoms[ia + 1 + a]] =
-                                (ftype == F_SETTLE ? ConstraintTypeForAtom::Settle
-                                                   : ConstraintTypeForAtom::Constraint);
+                                (ftype == InteractionFunction::SETTLE ? ConstraintTypeForAtom::Settle
+                                                                      : ConstraintTypeForAtom::Constraint);
                     }
                 }
             }
@@ -473,19 +473,19 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
  * \c ncount. It will contain zero for every bonded interaction index
  * for which no interactions are present in the topology.
  */
-static void count_tables(const int                ftype1,
-                         const std::optional<int> ftype2,
-                         const gmx_mtop_t&        mtop,
-                         int*                     ncount,
-                         int**                    count)
+static void count_tables(const InteractionFunction                ftype1,
+                         const std::optional<InteractionFunction> ftype2,
+                         const gmx_mtop_t&                        mtop,
+                         int*                                     ncount,
+                         int**                                    count)
 {
-    int ftype, i, j, tabnr;
+    int i, j, tabnr;
 
     // Loop over all moleculetypes
     for (const gmx_moltype_t& molt : mtop.moltype)
     {
         // Loop over all interaction types
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             // If the current interaction type is one of the types whose tables we're trying to count...
             if (ftype == ftype1 || (ftype2.has_value() && ftype == ftype2.value()))
@@ -529,9 +529,9 @@ static void count_tables(const int                ftype1,
  *
  * A fatal error occurs if no matching filename is found.
  */
-static std::vector<bondedtable_t> make_bonded_tables(FILE*                            fplog,
-                                                     const int                        ftype1,
-                                                     const std::optional<int>         ftype2,
+static std::vector<bondedtable_t> make_bonded_tables(FILE*                     fplog,
+                                                     const InteractionFunction ftype1,
+                                                     const std::optional<InteractionFunction> ftype2,
                                                      const gmx_mtop_t&                mtop,
                                                      gmx::ArrayRef<const std::string> tabbfnm,
                                                      const char*                      tabext)
@@ -686,7 +686,8 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   real                             print_force)
+                   real                             print_force,
+                   std::optional<bool>              anMDModuleProvidesDirectCoulomb)
 {
     /* The CMake default turns SIMD kernels on, but it might be turned off further down... */
     forcerec->use_simd_kernels = GMX_USE_SIMD_KERNELS;
@@ -751,7 +752,7 @@ void init_forcerec(FILE*                            fplog,
         }
     }
 
-    forcerec->haveBuckingham = (mtop.ffparams.functype[0] == F_BHAM);
+    forcerec->haveBuckingham = (mtop.ffparams.functype[0] == InteractionFunction::BuckinghamShortRange);
 
     /* Neighbour searching stuff */
     forcerec->pbcType = inputrec.pbcType;
@@ -769,7 +770,8 @@ void init_forcerec(FILE*                            fplog,
         // Check and set up PBC for Ewald surface corrections or orientation restraints
         const bool useEwaldSurfaceCorrection =
                 (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
-        const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
+        const bool haveOrientationRestraints =
+                (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0);
         const bool moleculesAreAlwaysWhole =
                 (haveDDAtomOrdering(*commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
         // WholeMoleculeTransform is only supported with a single PP rank
@@ -812,8 +814,8 @@ void init_forcerec(FILE*                            fplog,
     bool systemHasNetCharge = set_chargesum(fplog, forcerec, mtop);
 
     /* Make data structure used by kernels */
-    forcerec->ic = std::make_unique<interaction_const_t>(
-            init_interaction_const(fplog, inputrec, mtop, systemHasNetCharge));
+    forcerec->ic = std::make_unique<interaction_const_t>(init_interaction_const(
+            fplog, inputrec, mtop, systemHasNetCharge, anMDModuleProvidesDirectCoulomb));
     init_interaction_const_tables(fplog, forcerec->ic.get(), forcerec->rlist, inputrec.tabext);
 
     const interaction_const_t* interactionConst = forcerec->ic.get();
@@ -910,9 +912,10 @@ void init_forcerec(FILE*                            fplog,
     }
 
     const bool haveDirectVirialContributionsFast =
-            forcerec->forceProviders->hasForceProvider() || gmx_mtop_ftype_count(mtop, F_POSRES) > 0
-            || gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 || inputrec.nwall > 0 || inputrec.bPull
-            || inputrec.bRot || inputrec.bIMD;
+            forcerec->forceProviders->hasForceProvider()
+            || gmx_mtop_ftype_count(mtop, InteractionFunction::PositionRestraints) > 0
+            || gmx_mtop_ftype_count(mtop, InteractionFunction::FlatBottomedPositionRestraints) > 0
+            || inputrec.nwall > 0 || inputrec.bPull || inputrec.bRot || inputrec.bIMD;
     const bool haveDirectVirialContributionsSlow = usingFullElectrostatics(interactionConst->coulomb.type)
                                                    || usingLJPme(interactionConst->vdw.type);
     for (int i = 0; i < (simulationWork.useMts ? 2 : 1); i++)
@@ -995,8 +998,9 @@ void init_forcerec(FILE*                            fplog,
     /* We want to use unmodified tables for 1-4 coulombic
      * interactions, so we must in general have an extra set of
      * tables. */
-    if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0
-        || gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
+    if (gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJones14) > 0
+        || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulomb14Q) > 0
+        || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulombNonBondedPairs) > 0)
     {
         forcerec->pairsTable = make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
     }
@@ -1018,10 +1022,20 @@ void init_forcerec(FILE*                            fplog,
         try
         {
             // TODO move these tables into a separate struct and store reference in ListedForces
-            fcdata.bondtab = make_bonded_tables(fplog, F_TABBONDS, F_TABBONDSNC, mtop, tabbfnm, "b");
-            fcdata.angletab =
-                    make_bonded_tables(fplog, F_TABANGLES, std::nullopt, mtop, tabbfnm, "a");
-            fcdata.dihtab = make_bonded_tables(fplog, F_TABDIHS, std::nullopt, mtop, tabbfnm, "d");
+            fcdata.bondtab  = make_bonded_tables(fplog,
+                                                InteractionFunction::TabulatedBonds,
+                                                InteractionFunction::TabulatedBondsNoCoupling,
+                                                mtop,
+                                                tabbfnm,
+                                                "b");
+            fcdata.angletab = make_bonded_tables(
+                    fplog, InteractionFunction::TabulatedAngles, std::nullopt, mtop, tabbfnm, "a");
+            fcdata.dihtab = make_bonded_tables(fplog,
+                                               InteractionFunction::TabulatedDihedrals,
+                                               std::nullopt,
+                                               mtop,
+                                               tabbfnm,
+                                               "d");
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

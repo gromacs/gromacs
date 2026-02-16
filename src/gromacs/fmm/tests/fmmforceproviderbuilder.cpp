@@ -66,6 +66,8 @@ namespace test
 class FmmForceProviderBuilderTest : public ::testing::Test
 {
 public:
+    FmmForceProviderBuilderTest() {}
+
     void notifyFmmModuleSimulationSetup()
     {
         fmmModule_->subscribeToSimulationSetupNotifications(&notifiers_);
@@ -82,9 +84,10 @@ protected:
     MDModulesNotifiers         notifiers_;
 
     // default settings
-    MDLogger   logger_;
-    PbcType    pbcType_ = PbcType::Xyz;
-    gmx_mtop_t mtop_;
+    MDLogger                logger_;
+    PbcType                 pbcType_ = PbcType::Xyz;
+    gmx_mtop_t              mtop_;
+    MDModulesDirectProvider mdModuleCoulombDirectProvider;
 };
 
 TEST_F(FmmForceProviderBuilderTest, ThrowsIfBuilderNotReady)
@@ -99,9 +102,8 @@ TEST_F(FmmForceProviderBuilderTest, ThrowsIfBuilderNotReady)
 
     fmmModule_ = FmmModuleInfo::create();
     fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-
     // Throws (internal error) because FmmForceProviderBuilder is not ready
-    EXPECT_THROW(initializeForceProviders(), InternalError);
+    EXPECT_THROW(initializeForceProviders(), MDModuleSetupError);
 }
 
 TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
@@ -117,6 +119,8 @@ TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
     fmmModule_ = FmmModuleInfo::create();
     fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
     notifyFmmModuleSimulationSetup();
+    mdModuleCoulombDirectProvider.isDirectProvider = true;
+    notifiers_.simulationSetupNotifier_.notify(&mdModuleCoulombDirectProvider);
 
     if (GMX_USE_EXT_FMM)
     {
@@ -128,6 +132,24 @@ TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
         // Throws (internal error) from FmmForceProvider stub due to FMM selected without -DGMX_USE_EXT_FMM=ON
         EXPECT_THROW(initializeForceProviders(), InternalError);
     }
+}
+
+TEST_F(FmmForceProviderBuilderTest, ThrowIfFmmNotNotifiedOfDirectProvider)
+{
+    KeyValueTreeBuilder mdpValueBuilder;
+    std::string         fmmActiveBackendKey;
+    fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
+    fmmActiveBackendKey.append("-");
+    fmmActiveBackendKey.append(c_fmmActiveOptionName);
+    mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
+    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
+
+    fmmModule_ = FmmModuleInfo::create();
+    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
+    notifyFmmModuleSimulationSetup();
+
+    // Expect MDModuleSetupError because the FMM backend was not notified about any direct provider at all
+    EXPECT_THROW(initializeForceProviders(), MDModuleSetupError);
 }
 
 } // namespace test

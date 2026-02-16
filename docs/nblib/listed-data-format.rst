@@ -9,13 +9,13 @@ The current format for listed forces in |Gromacs| looks like this:
    struct InteractionDefinitions
    {
        std::vector<t_iparams> iparams;
-       std::array<std::vector<int>, F_NRE> il;
+       gmx::EnumerationArray<InteractionFunction, InteractionList> il;
    };
 
 The format covers all interaction types, i.e. \ ``t_iparams`` is a union
 type which can hold the parameters of any type.
 The other member called ``il`` contains the
-indices for each interaction type, where ``F_NRE`` is the number of
+indices for each interaction type, where ``InteractionFunction::Count`` is the number of
 interaction types that |Gromacs| supports. More precisely, each
 member of ``il``, a ``std::vector<int>``, is a flattened list of all
 interactions for a given interaction type. The vector contains ``N+1`` integer indices
@@ -41,15 +41,15 @@ looks like this:
 
    void calc_listed(const InteractionDefinitions& idef, ...)
    {
-       // manage timing and multi-threading 
+       // manage timing and multi-threading
 
-       for (int ftype = 0; ftype < F_NRE; ++type)
+       for (InteractionFunction ftype : gmx::EnumerationWrapper<InteractionFunction>{})
        {
            // branch out and descend stack for 2 intermediate functions based on
            // the type of interaction that ftype corresponds to
            // then call a function from a pointer table
 
-           bondFunction* bonded = bondedInteractionFunctions[ftype]; 
+           bondFunction* bonded = bondedInteractionFunctions[ftype];
 
            // compute all forces for ftype
            bonded(idef.iparams, idef.il[ftype], ...);
@@ -124,7 +124,7 @@ The NB-LIB listed forces pipeline
 
 Given the listed interaction data provided in the format described above,
 the steps required to calculate the corresponding forces
-are, in brief: 
+are, in brief:
 
   * Loop over all interaction types
   * Loop over all interactions for given type
@@ -230,7 +230,7 @@ of 2-center interactions:
    }
 
 We can again observe that common parts among different 2-center interaction types
-are reused. The common parts are 
+are reused. The common parts are
 
  * coordinate retrieval
  * computation of the scalar distance

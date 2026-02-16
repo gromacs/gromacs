@@ -242,8 +242,10 @@ public:
     real binWidth() const { return binWidth_; }
     //! Whether values beyond the edges are mapped to the edge bins.
     bool includeAll() const { return bAll_; }
-    //! Returns a zero-based bin index for a value, or -1 if not in range.
+    //! Returns a zero-based bin index for a value, or \c npos if not in range.
     size_t findBin(real y) const;
+
+    static constexpr size_t npos = static_cast<size_t>(-1);
 
 private:
     real   firstEdge_;

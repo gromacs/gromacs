@@ -116,7 +116,7 @@ public:
     const IVec& shift(int zone) const { return shifts_[zone]; }
 
     //! Returns the atom index range for zone \p zone
-    const Range<int> atomRange(int zone) const
+    Range<int> atomRange(int zone) const
     {
         GMX_ASSERT(zone <= lastAtomRangeEndSet_, "Cannot access zones beyond the last one set");
 
@@ -173,10 +173,7 @@ public:
      * \param[in]     ddbox       The domain decomposition box struct
      * \param[in]     zoneRange   The range of zones to set sizes for
      */
-    void setSizes(const gmx_domdec_t&   dd,
-                  const matrix          box,
-                  const gmx_ddbox_t*    ddbox,
-                  const gmx::Range<int> zoneRange);
+    void setSizes(const gmx_domdec_t& dd, const matrix box, const gmx_ddbox_t* ddbox, gmx::Range<int> zoneRange);
 
 private:
     //! The number of zones including the home zone

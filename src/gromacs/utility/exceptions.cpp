@@ -277,6 +277,11 @@ int ModularSimulatorError::errorCode() const
     return eeModularSimulator;
 }
 
+int MDModuleSetupError::errorCode() const
+{
+    return eeMDModuleSetup;
+}
+
 
 /********************************************************************
  * Global functions

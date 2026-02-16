@@ -60,7 +60,7 @@ cases which already support GPU-resident steps (where all force and
 update calculations are GPU-accelerated). This offers performance
 advantages, especially for small cases, through reduction in both CPU
 and GPU side scheduling overheads. The feature can optionally be
-activated via the ``GMX_CUDA_GRAPH`` environment variable. 
+activated via the ``GMX_CUDA_GRAPH`` environment variable.
 
 :issue:`4277`
 

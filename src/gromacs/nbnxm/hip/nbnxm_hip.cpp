@@ -153,4 +153,15 @@ void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const Interac
     }
 }
 
+/*! Launch the Nonbonded free energy GPU kernels. */
+[[noreturn]] void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused*                 nb,
+                                                const SimulationWorkload gmx_unused& simulationWork,
+                                                const gmx::StepWorkload gmx_unused&  stepWork,
+                                                const InteractionLocality gmx_unused iloc)
+{
+    // Currently not GPU support for nonbonded free energy calculations in HIP build. If workload flags are set correctly, it should never enter here.
+    GMX_THROW(
+            NotImplementedError("Free energy GPU supported for HIP build is not implemented yet."));
+}
+
 } // namespace gmx

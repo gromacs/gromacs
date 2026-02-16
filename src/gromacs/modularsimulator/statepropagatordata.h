@@ -234,7 +234,7 @@ private:
 
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
-    void doCheckpointData(CheckpointData<operation>* checkpointData);
+    void doCheckpointData(CheckpointData<operation>* checkpointData, bool usingDd);
 
     // Access to legacy state
     //! Give ownership of local state resources in legacy format

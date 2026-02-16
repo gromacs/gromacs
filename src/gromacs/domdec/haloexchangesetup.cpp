@@ -162,29 +162,31 @@ inline bool isMissingALink(const ArrayRef<const int>& links, const gmx_ga2la_t& 
 }
 
 //! Return a list of of bools for grid cells, which tell if a cell has non-local bonded interactions
-std::vector<bool> flagCellsForBondcomm(const gmx_domdec_t&           dd,
-                                       const ArrayRef<const int32_t> atinfo,
-                                       const nonbonded_verlet_t&     nbv)
+std::vector<bool> flagClustersForBondcomm(const gmx_domdec_t&           dd,
+                                          const ArrayRef<const int32_t> atinfo,
+                                          const nonbonded_verlet_t&     nbv)
 {
     const auto& bondedLinks = *dd.comm->bondedLinks;
 
-    // Note: numAtomsPerCell should match what is used in DomainCommBackward::selectHaloAtoms()
-    const int numAtomsPerCell = nbv.localGrid().geometry().numAtomsPerCell_;
+    // Note: numAtomsPerCluster should match what is used in DomainCommBackward::selectHaloAtoms()
+    const int numAtomsPerCluster = std::max(nbv.localGrid().geometry().numAtomsICluster_,
+                                            nbv.localGrid().geometry().numAtomsJCluster_);
 
     ArrayRef<const int> atomOrder = nbv.getLocalAtomOrder();
 
-    const int numCells = atomOrder.ssize() / numAtomsPerCell;
-    GMX_ASSERT(numCells * numAtomsPerCell == atomOrder.ssize(),
+    const int numClusters = atomOrder.ssize() / numAtomsPerCluster;
+    GMX_ASSERT(numClusters * numAtomsPerCluster == atomOrder.ssize(),
                "The number of atoms on the grid and in the sort struct should match");
 
-    std::vector<bool> isCellMissingLinks(numCells);
+    std::vector<bool> isClusterMissingLinks(numClusters);
 
     /* Loop over all cells of the local grid */
-    for (int c = 0; c < numCells; c++)
+    for (int c = 0; c < numClusters; c++)
     {
         /* Loop over all atoms in this cell */
-        bool thisCellIsMissingALink = false;
-        for (int i = c * numAtomsPerCell; i < (c + 1) * numAtomsPerCell && !thisCellIsMissingALink; i++)
+        bool thisClusterIsMissingALink = false;
+        for (int i = c * numAtomsPerCluster; i < (c + 1) * numAtomsPerCluster && !thisClusterIsMissingALink;
+             i++)
         {
             const int a = atomOrder[i];
 
@@ -193,15 +195,15 @@ std::vector<bool> flagCellsForBondcomm(const gmx_domdec_t&           dd,
             {
                 if (isMissingALink(bondedLinks[dd.globalAtomIndices[a]], *dd.ga2la))
                 {
-                    thisCellIsMissingALink = true;
+                    thisClusterIsMissingALink = true;
                 }
             }
 
-            isCellMissingLinks[c] = thisCellIsMissingALink;
+            isClusterMissingLinks[c] = thisClusterIsMissingALink;
         }
     }
 
-    return isCellMissingLinks;
+    return isClusterMissingLinks;
 }
 
 //! Sets the atom info structures.
@@ -376,14 +378,21 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
     std::vector<bool> missingLinkInCells;
     if (comm.systemInfo.filterBondedCommunication)
     {
-        /* Create a boolean array for cells telling if bondeds linked to atoms
+        /* Create a boolean array for clusters telling if bondeds linked to atoms
          * are not locally present, so we need to communicate those cells.
          */
-        missingLinkInCells = flagCellsForBondcomm(*dd, atomInfo, nbv);
+        missingLinkInCells = flagClustersForBondcomm(*dd, atomInfo, nbv);
     }
 
     zones.setAtomRangeEnd(0, dd->numHomeAtoms, true);
     comm.atomRanges.setEnd(DDAtomRanges::Type::Home, dd->numHomeAtoms);
+
+    // We need to call getZoneCorners() outside the next loop, as it does MPI communication
+    // and this can not be done OpenMP parallel
+    for (DomainPairComm& dpc : domainPairComm_)
+    {
+        dpc.backward().getTargetZoneCorners(*dd, localState->box, dpc);
+    }
 
     /* Here we distribute the comm setup calculation over threads.
      * Note that selectHaloAtomsForDomainPair() is actually not very time consuming.
@@ -412,14 +421,8 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
         if (domainIsInRange)
         {
             // Determine which atoms we need to send
-            send.selectHaloAtoms(*dd,
-                                 nbv.localGrid(),
-                                 comm.systemInfo.cutoff,
-                                 comm.cutoff_mbody,
-                                 localState->box,
-                                 ddbox.tric_dir,
-                                 normal,
-                                 missingLinkInCells);
+            send.selectHaloAtoms(
+                    *dd, nbv.localGrid(), comm.systemInfo.cutoff, comm.cutoff_mbody, ddbox.tric_dir, normal, missingLinkInCells);
         }
         else
         {
@@ -498,7 +501,7 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
         nbv.setNonLocalGrid(nbnxmGridIndex,
                             receive.zone(),
                             gridDimensions,
-                            receive.columnsReceived(),
+                            receive.clusterRangesReceived(),
                             fr->atomInfo,
                             localState->x);
         nbnxmGridIndex++;

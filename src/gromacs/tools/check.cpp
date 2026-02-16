@@ -249,7 +249,7 @@ static void chk_forces(int frame, int natoms, rvec* f)
 
 static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec* x, matrix box, real tol)
 {
-    int   ftype, k, ai, aj, type;
+    int   k, ai, aj, type;
     real  b0, blen, deviation;
     t_pbc pbc;
     rvec  dx;
@@ -257,7 +257,7 @@ static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec*
     gmx::ArrayRef<const t_iparams> iparams = idef->iparams;
 
     set_pbc(&pbc, pbcType, box);
-    for (ftype = 0; (ftype < F_NRE); ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND)
         {
@@ -269,11 +269,13 @@ static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec*
                 b0   = 0;
                 switch (ftype)
                 {
-                    case F_BONDS: b0 = iparams[type].harmonic.rA; break;
-                    case F_G96BONDS: b0 = std::sqrt(iparams[type].harmonic.rA); break;
-                    case F_MORSE: b0 = iparams[type].morse.b0A; break;
-                    case F_CUBICBONDS: b0 = iparams[type].cubic.b0; break;
-                    case F_CONSTR: b0 = iparams[type].constr.dA; break;
+                    case InteractionFunction::Bonds: b0 = iparams[type].harmonic.rA; break;
+                    case InteractionFunction::GROMOS96Bonds:
+                        b0 = std::sqrt(iparams[type].harmonic.rA);
+                        break;
+                    case InteractionFunction::MorsePotential: b0 = iparams[type].morse.b0A; break;
+                    case InteractionFunction::CubicBonds: b0 = iparams[type].cubic.b0; break;
+                    case InteractionFunction::Constraints: b0 = iparams[type].constr.dA; break;
                     default: break;
                 }
                 if (b0 != 0)

@@ -10,7 +10,7 @@
 #ifndef COLVARCOMP_TORCH_H
 #define COLVARCOMP_TORCH_H
 
-// Declaration of torchann 
+// Declaration of torchann
 
 #include <memory>
 
@@ -18,7 +18,7 @@
 #include "colvarcomp.h"
 #include "colvarmodule.h"
 
-#ifdef COLVARS_TORCH 
+#ifdef COLVARS_TORCH
 
 #include <torch/torch.h>
 #include <torch/script.h>
@@ -29,8 +29,8 @@ class colvar::torchANN
 protected:
     torch::jit::script::Module nn;
     /// the index of nn output component
-    size_t m_output_index;
-    bool use_double_input;
+    size_t m_output_index = 0;
+    bool use_double_input = false;
     //bool use_gpu;
     // 1d tensor, concatenation of values of sub-cvcs
     torch::Tensor input_tensor;
@@ -59,6 +59,5 @@ public:
     virtual void calc_value();
 };
 #endif // COLVARS_TORCH checking
-       
-#endif 
 
+#endif

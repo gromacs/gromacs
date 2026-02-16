@@ -47,9 +47,9 @@
 
 static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* cmap_grid, gmx_bool bShowNumbers)
 {
-    const real dx = cmap_grid->grid_spacing != 0 ? 360.0 / cmap_grid->grid_spacing : 0;
+    const real dx = cmap_grid->gridExtent != 0 ? 360.0 / cmap_grid->gridExtent : 0;
 
-    const int nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+    const int nelem = cmap_grid->gridExtent * cmap_grid->gridExtent;
 
     if (available(fp, cmap_grid, indent, title))
     {
@@ -64,7 +64,7 @@ static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* c
 
             for (int j = 0; j < nelem; j++)
             {
-                if ((j % cmap_grid->grid_spacing) == 0)
+                if ((j % cmap_grid->gridExtent) == 0)
                 {
                     fprintf(fp, "%8.1f\n", idx);
                     idx += dx;

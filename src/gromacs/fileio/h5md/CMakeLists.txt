@@ -40,13 +40,15 @@ if(GMX_USE_HDF5)
     target_sources(h5md PRIVATE
         h5md.cpp
         h5md_attribute.cpp
-        h5md_dataset.cpp
         h5md_datasetbase.cpp
         h5md_error.cpp
+        h5md_fixeddataset.cpp
+        h5md_framedataset.cpp
         h5md_group.cpp
         h5md_guard.cpp
-        h5md_read.cpp
-        h5md_write.cpp
+        h5md_particleblock.cpp
+        h5md_timedatablock.cpp
+        h5md_topologyutils.cpp
     )
 
     target_include_directories(h5md SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
@@ -61,7 +63,9 @@ target_link_libraries(h5md PRIVATE
     legacy_api
     legacy_modules
     math
-    utility)
+    topology
+    utility
+)
 
 if (BUILD_SHARED_LIBS)
     set_target_properties(h5md PROPERTIES POSITION_INDEPENDENT_CODE ON)

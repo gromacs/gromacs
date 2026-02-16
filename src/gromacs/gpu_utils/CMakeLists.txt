@@ -66,6 +66,7 @@ elseif(GMX_GPU_CUDA)
     _gmx_add_files_to_property(CUDA_SOURCES
         binary_information.cpp
         device_stream_manager.cpp
+        nvshmem_manager.cpp
         )
 elseif(GMX_GPU_HIP)
     gmx_add_libgromacs_sources(

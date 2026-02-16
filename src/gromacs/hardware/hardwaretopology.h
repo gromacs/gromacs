@@ -51,8 +51,12 @@
 #include <string>
 #include <vector>
 
+
 namespace gmx
 {
+
+template<typename T>
+class ArrayRef;
 
 /*! \libinternal \brief Information about packages, cores, processing units, numa, caches
  *
@@ -200,16 +204,17 @@ public:
      *
      * The indices of packages, cores and PUs correspond to the  indices in this hardware
      * topology, rather than the global/physical rank in the system, meaning they are consistent
-     * with the contents of the vectors in the machine.packags[].cores[].processingUnits[] hierarchy.
+     * with the contents of the vectors in the machine.packages[].cores[].processingUnits[] hierarchy.
      */
     struct LogicalProcessor
     {
-        int puId;                     //!< Index of PU in hardware topology
-        int osId;                     //!<  index assigned by the operating system
-        int packageRankInTopology;    //!<  index of package in machine
-        int coreRankInPackage;        //!<  index of core in package
-        int processingUnitRankInCore; //!<  index of processing unit in core
-        int numaNodeId;               //!< Index of numa node
+        int  puId;                     //!< Index of PU in hardware topology
+        int  osId;                     //!<  index assigned by the operating system
+        int  packageRankInTopology;    //!<  index of package in machine
+        int  coreRankInPackage;        //!<  index of core in package
+        int  processingUnitRankInCore; //!<  index of processing unit in core
+        int  numaNodeId;               //!< Index of numa node
+        bool isAssignedToProcess;      //!< Whether this PU is a part of process affinity set
     };
 
     /*! \libinternal \brief Hardware topology information about the entire machine
@@ -275,6 +280,17 @@ public:
      * Intended for testing of code that uses the hardware topology.
      */
     explicit HardwareTopology(int logicalProcessorCount);
+    /*! \brief Creates mock topology with given number of logical cores and rank affinity set.
+     *
+     * \param logicalProcessorCount Number of CPU cores in the created topology; should be positive.
+     *
+     * \param externalAffinitySet   List of CPU core indices that constitute the affinity set of
+     *                              the GROMACS process. Should be non-empty; values in range
+     *                              [0; \p logicalProcessorCount).
+     *
+     * Intended for testing of code that uses the hardware topology.
+     */
+    explicit HardwareTopology(int logicalProcessorCount, ArrayRef<const int> externalAffinitySet);
 
     /*! \brief Creates mock topology based on APIC (or similar) CPU indices
      *
@@ -347,7 +363,37 @@ public:
      *                            that should be retained in the topology, mocking the
      *                            logical processors that are enabled in our cpu mask.
      */
-    explicit HardwareTopology(const std::string& filesystemRoot, const std::vector<int>& allowedProcessors);
+    explicit HardwareTopology(const std::string& filesystemRoot, ArrayRef<const int> allowedProcessors);
+
+    /*! \brief Creates mock topology by parsing mock Linux sys/fs path
+     *
+     * Create mock hardware topology by attempting to parse processor
+     * information from mock Linux sys/fs path.
+     *
+     * Intended for testing of code that uses the hardware topology.
+     *
+     * \param filesystemRoot      Path to (fake) filesystem where we will first find all
+     *                            logical cpus from /sys/devices/system/cpu/possible,
+     *                            after which the topology indices for processor XX are
+     *                            read from the directory /sys/devices/system/cpu/cpuXX/topology .
+     *                            The package id is read from the file physical_package_id,
+     *                            the core id in the package from core_id, and then we
+     *                            assume the hardware thread/processing unit ids are assigned
+     *                            in the enumeration order of the logical processors.
+     *                            After this, we also look for cpu load limits specified
+     *                            with cgroups, as described in the other constructor above.
+     *                            The tests directory in the hardware module contains a simple
+     *                            script that can capture these files from a Linux system.
+     * \param allowedProcessors   Vector containing the logical (OS) processor indices
+     *                            that should be retained in the topology, mocking the
+     *                            logical processors that are enabled in our cpu mask.
+     * \param externalAffinitySet Vector containing the logical (OS) processor indices
+     *                            that should be included in the external affinity mask
+     *                            in the created topology.
+     */
+    explicit HardwareTopology(const std::string&  filesystemRoot,
+                              ArrayRef<const int> allowedProcessors,
+                              ArrayRef<const int> externalAffinitySet);
 
     /*! \brief Check what topology information is available and valid
      *

@@ -86,8 +86,8 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
  *
  * \param[in] buffer  Pointer to the buffer to free.
  */
-template<typename DeviceBuffer>
-void freeDeviceBuffer(DeviceBuffer* buffer)
+template<typename ValueType>
+void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     if (*buffer)
@@ -233,9 +233,10 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
  * \tparam        ValueType                Raw value type of the \p buffer.
  */
 template<typename ValueType>
-void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* /* destinationDeviceBuffer */,
-                              DeviceBuffer<ValueType>* /* sourceDeviceBuffer */,
-                              size_t /* numValues */,
+void copyBetweenDeviceBuffers(ValueType* /* destinationDeviceBuffer */,
+                              ValueType* /* sourceDeviceBuffer */,
+                              const size_t /* startingOffset */,
+                              const size_t /* numValues */,
                               const DeviceStream& /* deviceStream */,
                               GpuApiCallBehavior /* transferKind */,
                               CommandEvent* /*timingEvent*/)
@@ -387,4 +388,9 @@ ValueType* asMpiPointer(DeviceBuffer<ValueType>& /*buffer*/)
     return nullptr;
 }
 
+template<typename ValueType>
+void setMpiPointer(DeviceBuffer<ValueType>& /* buffer */, ValueType* /* ptr */)
+{
+    assert(false);
+}
 #endif

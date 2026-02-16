@@ -211,6 +211,22 @@ struct nbnxn_atomdata_t
         HostVector<real> lj_comb;
         //! Charges per atom, not set with format nbatXYZQ
         HostVector<real> q;
+        /* The charges and types of the perturbed atoms are set to non-interacting by the nbnxn_atomdata_mask_fep function.
+         * Therefore, separate arrays are used to store the A and B state parameters in FEP calculations.
+         * These arrays will have correct values for all particles in the system (perturbed and non-perturbed).
+         */
+        //! FEP param: Atom types of stateA per atom
+        HostVector<int> typeA;
+        //! FEP param: LJ parameters of stateA per atom for fast SIMD loading
+        HostVector<real> ljCombA;
+        //! FEP param: Charges of stateA per atom
+        HostVector<real> qA;
+        //! FEP param: Atom types of stateB per atom
+        HostVector<int> typeB;
+        //! FEP param: LJ parameters of stateB per atom for fast SIMD loading
+        HostVector<real> ljCombB;
+        //! FEP param: Charges of stateB per atom
+        HostVector<real> qB;
         //! The number of energy groups
         int numEnergyGroups;
         //! The list of energy groups per i-cluster
@@ -383,14 +399,19 @@ private:
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0);
 
 //! Sets the atomdata after pair search
-void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
-                        const GridSet&          gridSet,
-                        ArrayRef<const int>     atomTypes,
-                        ArrayRef<const real>    atomCharges,
-                        ArrayRef<const int32_t> atomInfo);
+void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
+                        const GridSet gmx_unused&          gridSet,
+                        ArrayRef<const int> gmx_unused     atomTypesA,
+                        ArrayRef<const int> gmx_unused     atomTypesB,
+                        ArrayRef<const real> gmx_unused    atomChargesA,
+                        ArrayRef<const real> gmx_unused    atomChargesB,
+                        ArrayRef<const int32_t> gmx_unused atomInfo,
+                        bool gmx_unused                    useGpuNonbondedFE);
 
 //! Copy the shift vectors to nbat
-void nbnxn_atomdata_copy_shiftvec(bool dynamic_box, ArrayRef<RVec> shift_vec, nbnxn_atomdata_t* nbat);
+void nbnxn_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,
+                                  ArrayRef<const RVec> shiftVectors,
+                                  nbnxn_atomdata_t*    nbat);
 
 /*! \brief Transform coordinates to xbat layout
  *
@@ -427,6 +448,47 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const GridSet&        gridSet,
 
 //! Add the fshift force stored in nbat to fshift
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, ArrayRef<RVec> fshift);
+
+//! Returns the coordinates of atoms \p a
+static inline RVec getCoordinate(const nbnxn_atomdata_t& nbat, const int a)
+{
+    RVec x;
+
+    switch (nbat.XFormat)
+    {
+        case nbatXYZQ:
+            x[XX] = nbat.x()[a * STRIDE_XYZQ];
+            x[YY] = nbat.x()[a * STRIDE_XYZQ + 1];
+            x[ZZ] = nbat.x()[a * STRIDE_XYZQ + 2];
+            break;
+        case nbatXYZ:
+            x[XX] = nbat.x()[a * STRIDE_XYZ];
+            x[YY] = nbat.x()[a * STRIDE_XYZ + 1];
+            x[ZZ] = nbat.x()[a * STRIDE_XYZ + 2];
+            break;
+        case nbatX4:
+        {
+            const int i = atom_to_x_index<c_packX4>(a);
+
+            x[XX] = nbat.x()[i + XX * c_packX4];
+            x[YY] = nbat.x()[i + YY * c_packX4];
+            x[ZZ] = nbat.x()[i + ZZ * c_packX4];
+            break;
+        }
+        case nbatX8:
+        {
+            const int i = atom_to_x_index<c_packX8>(a);
+
+            x[XX] = nbat.x()[i + XX * c_packX8];
+            x[YY] = nbat.x()[i + YY * c_packX8];
+            x[ZZ] = nbat.x()[i + ZZ * c_packX8];
+            break;
+        }
+        default: GMX_ASSERT(false, "Unsupported nbnxn_atomdata_t format");
+    }
+
+    return x;
+}
 
 } // namespace gmx
 

@@ -62,6 +62,9 @@ endif()
 target_include_directories(linearalgebra PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_include_directories(linearalgebra PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if (GMX_EXTERNAL_BLAS AND GMX_EXTERNAL_LAPACK AND GMX_FFT_MKL)
+    target_link_libraries(linearalgebra PRIVATE MKL::MKL)
+endif()
 
 gmx_target_compile_options(linearalgebra)
 target_compile_definitions(linearalgebra PRIVATE HAVE_CONFIG_H)

@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
@@ -137,16 +138,16 @@ void print_top_mols(FILE*                                      out,
                     gmx::ArrayRef<const std::filesystem::path> incls,
                     gmx::ArrayRef<const t_mols>                mols);
 
-void write_top(FILE*                                   out,
-               const std::filesystem::path&            pr,
-               const char*                             molname,
-               t_atoms*                                at,
-               bool                                    bRTPresname,
-               gmx::ArrayRef<const int>                bts,
-               gmx::ArrayRef<const InteractionsOfType> plist,
-               t_excls                                 excls[],
-               PreprocessingAtomTypes*                 atype,
-               int                                     nrexcl);
+void write_top(FILE*                                                                 out,
+               const std::filesystem::path&                                          pr,
+               const char*                                                           molname,
+               t_atoms*                                                              at,
+               bool                                                                  bRTPresname,
+               gmx::ArrayRef<const int>                                              bts,
+               const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               t_excls                                                               excls[],
+               PreprocessingAtomTypes*                                               atype,
+               int                                                                   nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 void pdb2top(FILE*                                  top_file,

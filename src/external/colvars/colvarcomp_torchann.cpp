@@ -15,6 +15,7 @@
 
 #include "colvarcomp_torchann.h"
 
+
 #ifdef COLVARS_TORCH
 
 colvar::torchANN::torchANN()
@@ -40,8 +41,14 @@ int colvar::torchANN::init(std::string const &conf) {
     return cvm::error("Error: couldn't load libtorch model (see below).\n" + cvm::to_str(e.what()),
                       COLVARS_INPUT_ERROR);
   }
-  get_keyval(conf, "m_output_index", m_output_index, 0);
-  get_keyval(conf, "doubleInputTensor", use_double_input, false);
+
+  auto const legacy_keyword = get_keyval(conf, "m_output_index", m_output_index, m_output_index);
+  if (legacy_keyword) {
+    cvm::log("Warning: m_output_index is a deprecated keyword, please use output_component instead.\n");
+  }
+  get_keyval(conf, "output_component", m_output_index, m_output_index);
+
+  get_keyval(conf, "doubleInputTensor", use_double_input, use_double_input);
   //get_keyval(conf, "useGPU", use_gpu, false);
 
   cvc_indices.resize(cv.size(),0);
@@ -63,10 +70,10 @@ int colvar::torchANN::init(std::string const &conf) {
   if (use_gpu) {
     if (torch::cuda::is_available()) {
       try {
-	nn.to(torch::kCUDA);
+        nn.to(torch::kCUDA);
       } catch(const std::exception & e) {
-	cvm::error("Failed to move model to GPU.");
-	use_gpu = false;
+        cvm::error("Failed to move model to GPU.");
+        use_gpu = false;
       }
     } else {
       use_gpu = false;
@@ -103,6 +110,8 @@ int colvar::torchANN::init(std::string const &conf) {
                              COLVARS_INPUT_ERROR);
   }
 
+  x.type(colvarvalue::type_scalar);
+
   return error_code;
 }
 
@@ -124,10 +133,10 @@ void colvar::torchANN::calc_value() {
     for (size_t i_cv = 0; i_cv < cv.size(); ++i_cv) {
       const colvarvalue& current_cv_value = cv[i_cv]->value();
       if (current_cv_value.type() == colvarvalue::type_scalar) {
-	input_tensor[0][l++] = cv[i_cv]->sup_coeff * (cvm::pow(current_cv_value.real_value, cv[i_cv]->sup_np));
+        input_tensor[0][l++] = cv[i_cv]->sup_coeff * (cvm::pow(current_cv_value.real_value, cv[i_cv]->sup_np));
       } else {
-	for (size_t j_elem = 0; j_elem < current_cv_value.size(); ++j_elem)
-	  input_tensor[0][l++] = cv[i_cv]->sup_coeff * current_cv_value[j_elem];
+        for (size_t j_elem = 0; j_elem < current_cv_value.size(); ++j_elem)
+          input_tensor[0][l++] = cv[i_cv]->sup_coeff * current_cv_value[j_elem];
       }
     }
   }
@@ -163,13 +172,15 @@ void colvar::torchANN::calc_gradients() {
       // get the initial index of this cvc
       size_t l = cvc_indices[i_cv];
       for (size_t j_elem = 0; j_elem < cv[i_cv]->value().size(); ++j_elem) {
-	// get derivative of neural network wrt its input
-	const cvm::real factor = input_grad[l+j_elem].item<double>();
-	for (size_t k_ag = 0 ; k_ag < cv[i_cv]->atom_groups.size(); ++k_ag) {
-	  for (size_t l_atom = 0; l_atom < (cv[i_cv]->atom_groups)[k_ag]->size(); ++l_atom) {
-	    (*(cv[i_cv]->atom_groups)[k_ag])[l_atom].grad = factor_polynomial * factor * (*(cv[i_cv]->atom_groups)[k_ag])[l_atom].grad;
-	  }
-	}
+        // get derivative of neural network wrt its input
+        const cvm::real factor = input_grad[l+j_elem].item<double>();
+        for (size_t k_ag = 0 ; k_ag < cv[i_cv]->atom_groups.size(); ++k_ag) {
+          for (size_t l_atom = 0; l_atom < (cv[i_cv]->atom_groups)[k_ag]->size(); ++l_atom) {
+            (cv[i_cv]->atom_groups)[k_ag]->grad_x(l_atom) *= factor_polynomial * factor;
+            (cv[i_cv]->atom_groups)[k_ag]->grad_y(l_atom) *= factor_polynomial * factor;
+            (cv[i_cv]->atom_groups)[k_ag]->grad_z(l_atom) *= factor_polynomial * factor;
+          }
+        }
       }
     }
   }
@@ -192,7 +203,7 @@ void colvar::torchANN::apply_force(colvarvalue const &force) {
       // get the initial index of this cvc
       size_t l = cvc_indices[i_cv];
       for (size_t j_elem = 0; j_elem < current_cv_value.size(); ++j_elem) {
-	cv_force[j_elem] = factor_polynomial * input_grad[l+j_elem].item<double>() * force.real_value;
+        cv_force[j_elem] = factor_polynomial * input_grad[l+j_elem].item<double>() * force.real_value;
       }
       cv[i_cv]->apply_force(cv_force);
     }

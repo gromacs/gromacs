@@ -27,7 +27,7 @@ simulations and hardware. The new features are:
   enabling initialization of `init-lambda-counts` and `init-wl-histogram-counts`
   through mdp options.
 
-* GPU-direct communication is now used by default when the MPI library 
+* GPU-direct communication is now used by default when the MPI library
   supports it.
 
 * Enhanced PP halo exchange using GPU kernel-initiated communication implemented using NVSHMEM, improving

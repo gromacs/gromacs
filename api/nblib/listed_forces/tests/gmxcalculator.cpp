@@ -107,7 +107,8 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
 
     fr.natoms_force = numParticles;
 
-    mdatoms_.nr = nP;
+    mdatoms_.nr         = nP;
+    mdatoms_.nPerturbed = 0;
 }
 
 void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,

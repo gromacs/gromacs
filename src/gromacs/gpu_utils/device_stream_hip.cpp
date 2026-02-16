@@ -50,21 +50,27 @@ DeviceStream::DeviceStream(const DeviceContext& /* deviceContext */,
                            const bool /* useTiming */)
 {
     hipError_t stat;
+    // Note that the device we're running on does not have to
+    // support priorities, because we are querying the priority
+    // range, which in that case will be a single value.
+    int lowestPriority;
+    int highestPriority;
+    stat = hipDeviceGetStreamPriorityRange(&lowestPriority, &highestPriority);
+    gmx::checkDeviceError(stat, "Could not query HIP stream priority range.");
+    int middlePriority = (lowestPriority + highestPriority) / 2;
 
-    if (priority == DeviceStreamPriority::Normal)
+    if (priority == DeviceStreamPriority::Low)
     {
-        stat = hipStreamCreate(&stream_);
-        gmx::checkDeviceError(stat, "Could not create HIP stream.");
+        stat = hipStreamCreateWithPriority(&stream_, hipStreamDefault, lowestPriority);
+        gmx::checkDeviceError(stat, "Could not create HIP stream with low priority.");
+    }
+    else if (priority == DeviceStreamPriority::Normal)
+    {
+        stat = hipStreamCreateWithPriority(&stream_, hipStreamDefault, middlePriority);
+        gmx::checkDeviceError(stat, "Could not create HIP stream with normal priority.");
     }
     else if (priority == DeviceStreamPriority::High)
     {
-        // Note that the device we're running on does not have to
-        // support priorities, because we are querying the priority
-        // range, which in that case will be a single value.
-        int highestPriority;
-        stat = hipDeviceGetStreamPriorityRange(nullptr, &highestPriority);
-        gmx::checkDeviceError(stat, "Could not query HIP stream priority range.");
-
         stat = hipStreamCreateWithPriority(&stream_, hipStreamDefault, highestPriority);
         gmx::checkDeviceError(stat, "Could not create HIP stream with high priority.");
     }

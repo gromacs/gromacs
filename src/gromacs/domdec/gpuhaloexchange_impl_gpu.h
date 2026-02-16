@@ -54,8 +54,8 @@
 
 #include "domdec_internal.h"
 
-#if GMX_NVSHMEM
-#    include <cuda/barrier>
+#if GMX_GPU_HIP
+#    include "gromacs/gpu_utils/gputraits_hip.h"
 #endif
 
 #if GMX_GPU_SYCL
@@ -74,44 +74,6 @@ enum class HaloType
     Forces,
 };
 
-/*! \internal \brief Struct encapsulating data for NVSHMEM Enabled GPU Halo Exchange */
-struct nvshmemHaloExchangeOps
-{
-    //! offset of remote PP rank coord buffer used for nvshmem_put
-    int putAtomOffsetInReceiverRankXBuf_ = 0;
-    //! signal object used for notifying rank which will produce/put the halo coordinates
-    // about readiness of the coordinates buffer.
-    DeviceBuffer<uint64_t> d_signalSenderRankX_ = nullptr;
-    //! signal object used for notifying rank which will consume the halo forces
-    // about completion of the puts.
-    DeviceBuffer<uint64_t> d_signalReceiverRankF_ = nullptr;
-    //! Forces communication signal counter,  used to synchronize with the send-to(put)
-    // and recv-from ranks for the current timestep. Typically the value for the
-    // signal counter is the timestep value and is same for all the pulse/dim in same
-    // timestep.
-    uint64_t signalReceiverRankFCounter_ = 0;
-    //! signal object used for notifying rank which will consume the halo coordinates
-    // about completion of the puts.
-    DeviceBuffer<uint64_t> d_signalReceiverRankX_ = nullptr;
-    //! Coordinates communication signal counter, used to synchronize with the send-to(put)
-    // and recv-from ranks for the current timestep. Typically the value for the
-    // signal counter is the timestep value and is same for all the pulse/dim in same
-    // timestep.
-    uint64_t signalReceiverRankXCounter_ = 0;
-    //! value to initialize the arrive-wait barrier, this is grid size of X kernel.
-    uint32_t arriveWaitBarrierVal_ = 0;
-    //! Grid size of X kernel.
-    uint32_t gridDimX_ = 0;
-#if GMX_NVSHMEM
-    //! device scoped arrive-wait barrier to sync threadblocks for signalling writes
-    cuda::barrier<cuda::thread_scope_device>* d_arriveWaitBarrier_ = nullptr;
-#endif
-    //! offset from which signal object for the given pulse/dim should be used.
-    int signalObjOffset_ = 0;
-    //! Thread block size for NVSHMEM based X and F kernels.
-    const static int c_nvshmemThreadsPerBlock = 256 * 4;
-};
-
 /*! \internal \brief Class with interfaces and data for GPU Halo Exchange */
 class GpuHaloExchange::Impl
 {
@@ -125,7 +87,6 @@ public:
      * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
-     * \param [in]    useNvshmem               use NVSHMEM for communication
      * \param [in]    wcycle                   The wallclock counter
      */
     Impl(gmx_domdec_t*        dd,
@@ -134,7 +95,6 @@ public:
          MPI_Comm             mpi_comm_mysim_world,
          const DeviceContext& deviceContext,
          int                  pulse,
-         bool                 useNvshmem,
          gmx_wallcycle*       wcycle);
     ~Impl();
 
@@ -144,14 +104,6 @@ public:
      * \param [in] d_forcesBuffer       pointer to forces buffer in GPU memory
      */
     void reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer, DeviceBuffer<Float3> d_forcesBuffer);
-
-    /*! \brief
-     * (Re-) Initialization for NVSHMEM Signal objects
-     * \param [in] d_syncBuffer        Device buffer for the signals
-     * \param [in] totalPulsesAndDims  Total number of DD pulses and dimensions
-     * \param [in] signalObjOffset     Offset of the signal object corresponding to given pulse/dim.
-     */
-    void reinitNvshmemSignal(DeviceBuffer<uint64_t> d_syncBuffer, int totalPulsesAndDims, int signalObjOffset);
 
     /*! \brief
      * GPU halo exchange of coordinates buffer
@@ -173,30 +125,31 @@ public:
      */
     GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
 
-    /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
-     */
-    void destroyGpuHaloExchangeNvshmemBuf();
-
 private:
     /*! \brief Data transfer wrapper for GPU halo exchange
      * \param [in] sendPtr      send buffer address
+     * \param [in] sendOffset   Offset into send buffer from where to start sending
      * \param [in] sendSize     number of elements to send
      * \param [in] sendRank     rank of destination
      * \param [in] recvPtr      receive buffer address
+     * \param [in] recvOffset   Offset into receive buffer where to start receive data
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
      * \param [in] haloType     whether halo exchange is of coordinates or forces
      */
     void communicateHaloData(Float3*  sendPtr,
+                             int      sendOffset,
                              int      sendSize,
                              int      sendRank,
                              Float3*  recvPtr,
+                             int      recvOffset,
                              int      recvSize,
                              int      recvRank,
                              HaloType haloType);
 
     /*! \brief Data transfer for GPU halo exchange using peer-to-peer copies
      * \param [inout] sendPtr    address to send data from
+     * \param [in] sendOffset    Offset into send buffer from where to send data
      * \param [in] sendSize      number of atoms to be sent
      * \param [in] sendRank      rank to send data to
      * \param [in] remotePtr     remote address to recv data
@@ -204,6 +157,7 @@ private:
      * \param [in] haloType      whether halo exchange is of coordinates or forces
      */
     void communicateHaloDataPeerToPeer(Float3*  sendPtr,
+                                       int      sendOffset,
                                        int      sendSize,
                                        int      sendRank,
                                        Float3*  remotePtr,
@@ -212,16 +166,20 @@ private:
 
     /*! \brief Data transfer for GPU halo exchange using GPU-aware MPI
      * \param [in] sendPtr      send buffer address
+     * \param [in] sendOffset   Offset into send buffer from where to send data
      * \param [in] sendSize     number of elements to send
      * \param [in] sendRank     rank of destination
      * \param [in] recvPtr      receive buffer address
+     * \param [in] recvOffset   Offset into receive buffer where to start receive data
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
      */
     void communicateHaloDataGpuAwareMpi(Float3* sendPtr,
+                                        int     sendOffset,
                                         int     sendSize,
                                         int     sendRank,
                                         Float3* recvPtr,
+                                        int     recvOffset,
                                         int     recvSize,
                                         int     recvRank);
 
@@ -261,10 +219,6 @@ private:
      * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates/forces are ready to device.
      */
     void enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
-
-    //! NVSHMEM-specific function for setting the grid size and
-    // initialize the arrive wait barrier for X kernel.
-    void reinitXGridSizeAndDevBarrier();
 
     //! Domain decomposition object
     gmx_domdec_t* dd_ = nullptr;
@@ -308,10 +262,10 @@ private:
     int fRecvSize_ = 0;
     //! number of home atoms - offset of local halo region
     int numHomeAtoms_ = 0;
-    //! remote GPU coordinates buffer pointer for pushing data
-    DeviceBuffer<Float3> remoteXPtr_ = nullptr;
-    //! remote GPU force buffer pointer for pushing data
-    DeviceBuffer<Float3> remoteFPtr_ = nullptr;
+    //! remote GPU coordinates buffer pointer for pushing data, not to be freed
+    Float3* remoteXPtr_ = nullptr;
+    //! remote GPU force buffer pointer for pushing data, not to be freed
+    Float3* remoteFPtr_ = nullptr;
     //! Periodic Boundary Conditions for this rank
     bool usePBC_ = false;
     //! force shift buffer on device
@@ -344,11 +298,6 @@ private:
     gmx_wallcycle* wcycle_ = nullptr;
     //! The atom offset for receive (x) or send (f) for dimension index and pulse corresponding to this halo exchange instance
     int atomOffset_ = 0;
-    //! whether nvshmem should be used.
-    bool useNvshmem_ = false;
-    // Contains all the objects and metadata required for NVSHMEM enabled
-    // PP Halo exchange.
-    nvshmemHaloExchangeOps nvshmemHaloExchange_;
     //! Event triggered when coordinate halo has been launched
     GpuEventSynchronizer coordinateHaloLaunched_;
     //! flag on whether the recieve for this halo exchange is performed in-place

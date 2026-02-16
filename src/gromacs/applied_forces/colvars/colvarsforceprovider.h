@@ -89,7 +89,7 @@ struct ColvarsForceProviderState
     std::int64_t nColvarsAtoms_ = 0;
 
     /*! \brief String naming variable holding the number of colvars atoms.
-     * \note Changing this name will break backwards compability for checkpoint file writing.
+     * \note Changing this name will break backwards compatibility for checkpoint file writing.
      */
     static const std::string sc_nColvarsAtomsName_;
 
@@ -98,7 +98,7 @@ struct ColvarsForceProviderState
     rvec* xOldWhole_ = nullptr;
 
     /*! \brief String naming variable holding the last known whole positions of the colvars atoms
-     * \note Changing this name will break backwards compability for checkpoint file writing.
+     * \note Changing this name will break backwards compatibility for checkpoint file writing.
      */
     static const std::string sc_xOldWholeName_;
 
@@ -107,12 +107,12 @@ struct ColvarsForceProviderState
     std::vector<unsigned char> colvarStateFile_;
 
     /*! \brief String naming variable holding the content of the unformatted Colvars state file.
-     * \note Changing this name will break backwards compability for checkpoint file writing.
+     * \note Changing this name will break backwards compatibility for checkpoint file writing.
      */
     static const std::string sc_colvarStateFileName_;
 
     /*! \brief String naming variable holding the size of the unformatted Colvars state file.
-     * \note Changing this name will break backwards compability for checkpoint file writing.
+     * \note Changing this name will break backwards compatibility for checkpoint file writing.
      */
     static const std::string sc_colvarStateFileSizeName_;
 
@@ -229,7 +229,7 @@ public:
     void writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting, std::string_view moduleName);
 
     /*! \brief Process atomsRedistributedSignal notification during mdrun.
-     * \param[in] atomsRedistributedSignal signal recieved
+     * \param[in] atomsRedistributedSignal signal received
      */
     void processAtomsRedistributedSignal(const MDModulesAtomsRedistributedSignal& atomsRedistributedSignal);
 

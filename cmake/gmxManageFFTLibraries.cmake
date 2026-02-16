@@ -105,7 +105,9 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
   elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-    find_path(MKLROOT "include/mkl.h" NO_DEFAULT_PATH HINTS ENV MKLROOT /opt/intel/oneapi/mkl/latest)
+    # Find the root for an installation of MKL by looking for
+    # its master header
+    find_path(MKLROOT "include/mkl.h" "include/mkl/mkl.h" PATHS ENV MKLROOT /opt/intel/oneapi/mkl/latest)
     if(NOT MKLROOT)
         message(FATAL_ERROR "Linking with MKL was requested but not found. Set MKLROOT.")
     endif()
@@ -125,7 +127,8 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         target_link_libraries(MKL::MKL INTERFACE -lpthread -lm -ldl)
     endif()
     target_link_directories(MKL::MKL INTERFACE "${MKLROOT}/lib" "${MKLROOT}/lib/intel64")
-    target_include_directories(MKL::MKL INTERFACE "${MKLROOT}/include")
+    find_path(MKL_INCLUDE_PATH "mkl.h" PATH_SUFFIXES "include" "include/mkl" HINTS ${MKLROOT})
+    target_include_directories(MKL::MKL INTERFACE "${MKL_INCLUDE_PATH}")
 
     set(FFT_LIBRARIES MKL::MKL)
 

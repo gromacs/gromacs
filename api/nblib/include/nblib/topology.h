@@ -48,6 +48,7 @@
 
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -207,10 +208,11 @@ private:
 //! array of length numParticles()
 template<class F>
 inline auto expandQuantity(const Topology& topology, F&& particleTypeExtractor)
+        -> std::vector<std::invoke_result_t<decltype(particleTypeExtractor), ParticleType>>
 {
-    using ValueType = decltype((std::declval<ParticleType>().*std::declval<F>())());
+    using QuantityType = std::invoke_result_t<decltype(particleTypeExtractor), ParticleType>;
 
-    std::vector<ValueType> ret;
+    std::vector<QuantityType> ret;
     ret.reserve(topology.numParticles());
 
     const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();

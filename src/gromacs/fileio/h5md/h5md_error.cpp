@@ -48,8 +48,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "h5md_util.h"
-
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
@@ -67,18 +65,10 @@ void printHdf5ErrorsDebug()
 #endif
 }
 
-void throwUponH5mdError(const bool errorExists, const std::string& message)
+void throwH5mdError(const std::string& message)
 {
-    if (errorExists)
-    {
-        gmx::printHdf5ErrorsDebug();
-        throw gmx::FileIOError(message.c_str());
-    }
-}
-
-void throwUponInvalidHid(const hid_t id, const std::string& message)
-{
-    throwUponH5mdError(!handleIsValid(id), message);
+    gmx::printHdf5ErrorsDebug();
+    throw gmx::FileIOError(message.c_str());
 }
 
 } // namespace gmx

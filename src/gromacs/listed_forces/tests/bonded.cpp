@@ -133,7 +133,7 @@ struct iListInput
 {
 public:
     //! Function type
-    int ftype = -1;
+    std::optional<InteractionFunction> ftype;
     //! Tolerance for float evaluation
     float ftoler = 1e-6;
     //! Tolerance for double evaluation
@@ -169,7 +169,7 @@ public:
      * \param[in] krB Force constant B
      * \return The structure itself.
      */
-    iListInput setHarmonic(int ft, real rA, real krA, real rB, real krB)
+    iListInput setHarmonic(InteractionFunction ft, real rA, real krA, real rB, real krB)
     {
         iparams.harmonic.rA  = rA;
         iparams.harmonic.rB  = rB;
@@ -186,7 +186,10 @@ public:
      * \param[in] krA Force constant
      * \return The structure itself.
      */
-    iListInput setHarmonic(int ft, real rA, real krA) { return setHarmonic(ft, rA, krA, rA, krA); }
+    iListInput setHarmonic(InteractionFunction ft, real rA, real krA)
+    {
+        return setHarmonic(ft, rA, krA, rA, krA);
+    }
     /*! \brief Set parameters for cubic potential
      *
      * \param[in] b0   Equilibrium bond length
@@ -196,7 +199,7 @@ public:
      */
     iListInput setCubic(real b0, real kb, real kcub)
     {
-        ftype              = F_CUBICBONDS;
+        ftype              = InteractionFunction::CubicBonds;
         iparams.cubic.b0   = b0;
         iparams.cubic.kb   = kb;
         iparams.cubic.kcub = kcub;
@@ -216,7 +219,7 @@ public:
      */
     iListInput setMorse(real b0A, real cbA, real betaA, real b0B, real cbB, real betaB)
     {
-        ftype               = F_MORSE;
+        ftype               = InteractionFunction::MorsePotential;
         iparams.morse.b0A   = b0A;
         iparams.morse.cbA   = cbA;
         iparams.morse.betaA = betaA;
@@ -245,7 +248,7 @@ public:
      */
     iListInput setFene(real bm, real kb)
     {
-        ftype           = F_FENEBONDS;
+        ftype           = InteractionFunction::FENEBonds;
         iparams.fene.bm = bm;
         iparams.fene.kb = kb;
         return *this;
@@ -262,7 +265,7 @@ public:
      */
     iListInput setLinearAngle(real klinA, real aA, real klinB, real aB)
     {
-        ftype                  = F_LINEAR_ANGLES;
+        ftype                  = InteractionFunction::LinearAngles;
         iparams.linangle.klinA = klinA;
         iparams.linangle.aA    = aA;
         iparams.linangle.klinB = klinB;
@@ -294,7 +297,7 @@ public:
     iListInput
     setUreyBradley(real thetaA, real kthetaA, real r13A, real kUBA, real thetaB, real kthetaB, real r13B, real kUBB)
     {
-        ftype               = F_UREY_BRADLEY;
+        ftype               = InteractionFunction::UreyBradleyPotential;
         iparams.u_b.thetaA  = thetaA;
         iparams.u_b.kthetaA = kthetaA;
         iparams.u_b.r13A    = r13A;
@@ -327,7 +330,7 @@ public:
      */
     iListInput setCrossBondBonds(real r1e, real r2e, real krr)
     {
-        ftype                = F_CROSS_BOND_BONDS;
+        ftype                = InteractionFunction::CrossBondBonds;
         iparams.cross_bb.r1e = r1e;
         iparams.cross_bb.r2e = r2e;
         iparams.cross_bb.krr = krr;
@@ -343,7 +346,7 @@ public:
      */
     iListInput setCrossBondAngles(real r1e, real r2e, real r3e, real krt)
     {
-        ftype                = F_CROSS_BOND_ANGLES;
+        ftype                = InteractionFunction::CrossBondAngles;
         iparams.cross_ba.r1e = r1e;
         iparams.cross_ba.r2e = r2e;
         iparams.cross_ba.r3e = r3e;
@@ -358,7 +361,7 @@ public:
      */
     iListInput setQuarticAngles(real theta, const real c[5])
     {
-        ftype                = F_QUARTIC_ANGLES;
+        ftype                = InteractionFunction::QuarticAngles;
         iparams.qangle.theta = theta;
         iparams.qangle.c[0]  = c[0];
         iparams.qangle.c[1]  = c[1];
@@ -379,7 +382,7 @@ public:
      * \param[in] cpB  Force constant B
      * \return The structure itself.
      */
-    iListInput setPDihedrals(int ft, real phiA, real cpA, int mult, real phiB, real cpB)
+    iListInput setPDihedrals(InteractionFunction ft, real phiA, real cpA, int mult, real phiB, real cpB)
     {
         ftype              = ft;
         iparams.pdihs.phiA = phiA;
@@ -398,7 +401,7 @@ public:
      * \param[in] mult Multiplicity of the angle
      * \return The structure itself.
      */
-    iListInput setPDihedrals(int ft, real phiA, real cpA, int mult)
+    iListInput setPDihedrals(InteractionFunction ft, real phiA, real cpA, int mult)
     {
         return setPDihedrals(ft, phiA, cpA, mult, phiA, cpA);
     }
@@ -412,7 +415,7 @@ public:
      */
     iListInput setRbDihedrals(const real rbcA[NR_RBDIHS], const real rbcB[NR_RBDIHS])
     {
-        ftype = F_RBDIHS;
+        ftype = InteractionFunction::RyckaertBellemansDihedrals;
         fep   = false;
         for (int i = 0; i < NR_RBDIHS; i++)
         {
@@ -435,7 +438,7 @@ public:
      */
     iListInput setPolarization(real alpha)
     {
-        ftype                  = F_POLARIZATION;
+        ftype                  = InteractionFunction::Polarization;
         fep                    = false;
         iparams.polarize.alpha = alpha;
         return *this;
@@ -450,7 +453,7 @@ public:
      */
     iListInput setAnharmPolarization(real alpha, real drcut, real khyp)
     {
-        ftype                         = F_ANHARM_POL;
+        ftype                         = InteractionFunction::AnharmonicPolarization;
         fep                           = false;
         iparams.anharm_polarize.alpha = alpha;
         iparams.anharm_polarize.drcut = drcut;
@@ -466,7 +469,7 @@ public:
      */
     iListInput setTholePolarization(real a, real alpha1, real alpha2)
     {
-        ftype                = F_THOLE_POL;
+        ftype                = InteractionFunction::TholePolarization;
         fep                  = false;
         iparams.thole.a      = a;
         iparams.thole.alpha1 = alpha1;
@@ -485,7 +488,7 @@ public:
      */
     iListInput setWaterPolarization(real alpha_x, real alpha_y, real alpha_z, real rOH, real rHH, real rOD)
     {
-        ftype             = F_WATER_POL;
+        ftype             = InteractionFunction::WaterPolarization;
         fep               = false;
         iparams.wpol.al_x = alpha_x;
         iparams.wpol.al_y = alpha_y;
@@ -501,16 +504,16 @@ public:
 std::ostream& operator<<(std::ostream& out, const iListInput& input)
 {
     using std::endl;
-    out << "Function type " << input.ftype << " called " << interaction_function[input.ftype].name
-        << " ie. labelled '" << interaction_function[input.ftype].longname << "' in an energy file"
-        << endl;
+    const InteractionFunction ftype = input.ftype.value();
+    out << "Function type " << static_cast<int>(ftype) << " called " << interaction_function[ftype].name
+        << " ie. labelled '" << interaction_function[ftype].longname << "' in an energy file" << endl;
 
     // Organize to print the legacy C union t_iparams, whose
     // relevant contents vary with ftype.
     StringOutputStream stream;
     {
         TextWriter writer(&stream);
-        printInteractionParameters(&writer, input.ftype, input.iparams);
+        printInteractionParameters(&writer, input.ftype.value(), input.iparams);
     }
     out << "Function parameters " << stream.toString();
     out << "Parameters trigger FEP? " << (input.fep ? "true" : "false") << endl;
@@ -522,14 +525,13 @@ std::ostream& operator<<(std::ostream& out, const iListInput& input)
  * \param[in]  ftype  Function type
  * \param[out] iatoms Pointer to iatoms struct
  */
-void fillIatoms(int ftype, std::vector<t_iatom>* iatoms)
+void fillIatoms(std::optional<InteractionFunction> ftype, std::vector<t_iatom>* iatoms)
 {
-    std::unordered_map<int, std::vector<int>> ia = { { 2, { 0, 0, 1, 0, 1, 2, 0, 2, 3 } },
-                                                     { 3, { 0, 0, 1, 2, 0, 1, 2, 3 } },
-                                                     { 4, { 0, 0, 1, 2, 3 } },
-                                                     { 5, { 0, 0, 1, 2, 3, 0 } } };
-    EXPECT_TRUE(ftype >= 0 && ftype < F_NRE);
-    int nral = interaction_function[ftype].nratoms;
+    std::unordered_map<int, std::vector<int>> ia   = { { 2, { 0, 0, 1, 0, 1, 2, 0, 2, 3 } },
+                                                       { 3, { 0, 0, 1, 2, 0, 1, 2, 3 } },
+                                                       { 4, { 0, 0, 1, 2, 3 } },
+                                                       { 5, { 0, 0, 1, 2, 3, 0 } } };
+    int                                       nral = interaction_function[ftype.value()].nratoms;
     for (auto& i : ia[nral])
     {
         iatoms->push_back(i);
@@ -566,8 +568,9 @@ protected:
         // std::acos) differ by enough to require quite large
         // tolerances for the shift forces in mixed precision.
         float singleShiftForcesAbsoluteTolerance =
-                ((input_.ftype == F_POLARIZATION) || (input_.ftype == F_ANHARM_POL)
-                                 || (IS_ANGLE(input_.ftype))
+                ((input_.ftype == InteractionFunction::Polarization)
+                                 || (input_.ftype == InteractionFunction::AnharmonicPolarization)
+                                 || (IS_ANGLE(input_.ftype.value()))
                          ? 5e-3
                          : 5e-5);
         // Note that std::numeric_limits isn't required by the standard to
@@ -601,7 +604,7 @@ protected:
         {
             SCOPED_TRACE("Testing bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor]);
             OutputQuantities output;
-            output.energy = calculateSimpleBond(input_.ftype,
+            output.energy = calculateSimpleBond(input_.ftype.value(),
                                                 iatoms.size(),
                                                 iatoms.data(),
                                                 &input_.iparams,
@@ -637,8 +640,9 @@ protected:
     }
     void testIfunc()
     {
+        EXPECT_TRUE(input_.ftype.has_value() && input_.ftype < InteractionFunction::Count);
         TestReferenceChecker thisChecker =
-                checker_.checkCompound("FunctionType", interaction_function[input_.ftype].name)
+                checker_.checkCompound("FunctionType", interaction_function[input_.ftype.value()].name)
                         .checkCompound("FEP", (input_.fep ? "Yes" : "No"));
         std::vector<t_iatom> iatoms;
         fillIatoms(input_.ftype, &iatoms);
@@ -666,10 +670,10 @@ TEST_P(ListedForcesTest, Ifunc)
 
 //! Function types for testing bonds. Add new terms at the end.
 std::vector<iListInput> c_InputBonds = {
-    { iListInput(2e-6F, 1e-8).setHarmonic(F_BONDS, 0.15, 500.0) },
-    { iListInput(2e-6F, 1e-8).setHarmonic(F_BONDS, 0.15, 500.0, 0.17, 400.0) },
-    { iListInput(1e-4F, 1e-8).setHarmonic(F_G96BONDS, 0.15, 50.0) },
-    { iListInput().setHarmonic(F_G96BONDS, 0.15, 50.0, 0.17, 40.0) },
+    { iListInput(2e-6F, 1e-8).setHarmonic(InteractionFunction::Bonds, 0.15, 500.0) },
+    { iListInput(2e-6F, 1e-8).setHarmonic(InteractionFunction::Bonds, 0.15, 500.0, 0.17, 400.0) },
+    { iListInput(1e-4F, 1e-8).setHarmonic(InteractionFunction::GROMOS96Bonds, 0.15, 50.0) },
+    { iListInput().setHarmonic(InteractionFunction::GROMOS96Bonds, 0.15, 50.0, 0.17, 40.0) },
     { iListInput().setCubic(0.16, 50.0, 2.0) },
     { iListInput(2e-6F, 1e-8).setMorse(0.15, 50.0, 2.0, 0.17, 40.0, 1.6) },
     { iListInput(2e-6F, 1e-8).setMorse(0.15, 30.0, 2.7) },
@@ -681,10 +685,10 @@ const real cQuarticAngles[5] = { 1.1, 2.3, 4.6, 7.8, 9.2 };
 
 //! Function types for testing angles. Add new terms at the end.
 std::vector<iListInput> c_InputAngles = {
-    { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 100.0, 50.0) },
-    { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 100.15, 50.0, 95.0, 30.0) },
-    { iListInput(8e-3, 1e-8).setHarmonic(F_G96ANGLES, 100.0, 50.0) },
-    { iListInput(8e-3, 1e-8).setHarmonic(F_G96ANGLES, 100.0, 50.0, 95.0, 30.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(InteractionFunction::Angles, 100.0, 50.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(InteractionFunction::Angles, 100.15, 50.0, 95.0, 30.0) },
+    { iListInput(8e-3, 1e-8).setHarmonic(InteractionFunction::GROMOS96Angles, 100.0, 50.0) },
+    { iListInput(8e-3, 1e-8).setHarmonic(InteractionFunction::GROMOS96Angles, 100.0, 50.0, 95.0, 30.0) },
     { iListInput().setLinearAngle(50.0, 0.4) },
     { iListInput().setLinearAngle(50.0, 0.4, 40.0, 0.6) },
     { iListInput(2e-6, 1e-8).setCrossBondBonds(0.8, 0.7, 45.0) },
@@ -705,10 +709,10 @@ const real rbc[NR_RBDIHS] = { -7.35, 13.6, 8.4, -16.7, 1.3, 12.4 };
 
 //! Function types for testing dihedrals. Add new terms at the end.
 std::vector<iListInput> c_InputDihs = {
-    { iListInput(5e-4, 1e-8).setPDihedrals(F_PDIHS, -100.0, 10.0, 2, -80.0, 20.0) },
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -105.0, 15.0, 2) },
-    { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.0, 50.0) },
-    { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.15, 50.0, 95.0, 30.0) },
+    { iListInput(5e-4, 1e-8).setPDihedrals(InteractionFunction::ProperDihedrals, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(InteractionFunction::ProperDihedrals, -105.0, 15.0, 2) },
+    { iListInput(2e-4, 1e-8).setHarmonic(InteractionFunction::ImproperDihedrals, 100.0, 50.0) },
+    { iListInput(2e-4, 1e-8).setHarmonic(InteractionFunction::ImproperDihedrals, 100.15, 50.0, 95.0, 30.0) },
     { iListInput(4e-4, 1e-8).setRbDihedrals(rbcA, rbcB) },
     { iListInput(4e-4, 1e-8).setRbDihedrals(rbc) }
 };
@@ -723,22 +727,22 @@ std::vector<iListInput> c_InputPols = {
 
 //! Function types for testing polarization. Add new terms at the end.
 std::vector<iListInput> c_InputRestraints = {
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRES, -100.0, 10.0, 2, -80.0, 20.0) },
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRES, -105.0, 15.0, 2) },
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRESZ, -100.0, 10.0, 2, -80.0, 20.0) },
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_ANGRESZ, -105.0, 15.0, 2) },
-    { iListInput(2e-3, 1e-8).setHarmonic(F_RESTRANGLES, 100.0, 50.0) },
-    { iListInput(2e-3, 1e-8).setHarmonic(F_RESTRANGLES, 100.0, 50.0, 110.0, 45.0) }
+    { iListInput(1e-4, 1e-8).setPDihedrals(InteractionFunction::AngleRestraints, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(InteractionFunction::AngleRestraints, -105.0, 15.0, 2) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(InteractionFunction::AngleZAxisRestraints, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(1e-4, 1e-8).setPDihedrals(InteractionFunction::AngleZAxisRestraints, -105.0, 15.0, 2) },
+    { iListInput(2e-3, 1e-8).setHarmonic(InteractionFunction::RestrictedBendingPotential, 100.0, 50.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(InteractionFunction::RestrictedBendingPotential, 100.0, 50.0, 110.0, 45.0) }
 };
 
 //! Function types for testing bond with zero length, has zero reference length to make physical sense.
 std::vector<iListInput> c_InputBondsZeroLength = {
-    { iListInput().setHarmonic(F_BONDS, 0.0, 500.0) },
+    { iListInput().setHarmonic(InteractionFunction::Bonds, 0.0, 500.0) },
 };
 
 //! Function types for testing angles with zero angle, has zero reference angle to make physical sense.
 std::vector<iListInput> c_InputAnglesZeroAngle = {
-    { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 0.0, 50.0) },
+    { iListInput(2e-3, 1e-8).setHarmonic(InteractionFunction::Angles, 0.0, 50.0) },
 };
 
 } // namespace

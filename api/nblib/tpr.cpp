@@ -107,7 +107,8 @@ TprReader::TprReader(std::string filename)
                   nullptr,
                   nullptr,
                   gmx::ArrayRef<const std::string>{},
-                  -1);
+                  -1,
+                  std::nullopt);
 
     nonbondedParameters_ = makeNonBondedParameterLists(molecularTopology.ffparams.atnr,
                                                        false,

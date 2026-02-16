@@ -63,7 +63,7 @@ void DummyOutputModule::checkAbilityDependencies(const unsigned long abilities) 
     if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
         std::string errorMessage = "Unhandled module requirements.";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
 }
 

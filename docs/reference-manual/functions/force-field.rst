@@ -38,7 +38,7 @@ GROMOS-96
     yet removed the GROMOS force fields, but you should be aware of these
     issues and check if molecules in your system are affected before
     proceeding. Further information is available in
-    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ , 
+    `GitLab Issue 2884 <https://gitlab.com/gromacs/gromacs/-/issues/2884>`_ ,
     and a longer explanation of our
     decision to remove physically incorrect algorithms can be found at
     `DOI:10.26434/chemrxiv.11474583.v1 <https://doi.org/10.26434/chemrxiv.11474583.v1>`_ .
@@ -138,6 +138,43 @@ AMBER
 
 -  AMBERGS \ :ref:`117 <refGarcia2002>`
 
+-  AMBER14SB \ :ref:`197 <refMaier2015>`
+
+-  AMBER19SB \ :ref:`198 <refTian2020>`
+
+Dihedrals
+^^^^^^^^^
+
+|Gromacs| supports reordering atoms in select dihedrals to match
+topologies produced by AMBER LEaP.
+
+When this atom reordering is enabled, dihedral atoms
+:math:`a_i`, :math:`a_j`, :math:`a_k`, and :math:`a_l` are reordered to
+:math:`(a_l, a_k, a_j, a_i)` instead of :math:`(a_i, a_j, a_k, a_l)` if
+:math:`at_i > at_l` or :math:`at_i = at_l` and :math:`at_j > at_k`, where
+operator greater than is considered in lexicographical ordering,
+:math:`at_i`, :math:`at_j`, :math:`at_k`, and :math:`at_l` are atom type
+strings from the matching dihedral type, except in case of the wildcard
+type X, which is replaced by space. This reordering doesn't affect the
+resulting energies, but it is a necessity for what follows.
+
+Additionally, but only for improper dihedrals, the third atom (:math:`a_k`
+or :math:`a_j`) is taken to be central, while the remaining atoms
+(:math:`a_i`, :math:`a_j`, and :math:`a_l` or :math:`a_l`, :math:`a_k`,
+and :math:`a_i`) are then reordered by atom type from the matching
+improper dihedral type. This can affect the resulting energies.
+
+The reordering is performed by :ref:`gmx grompp` only when the
+preprocessor define ``_FF_AMBER_LEAP_ATOM_REORDERING`` is encountered,
+which enables this functionality only for select force fields (such as
+AMBER19SB). In addition, preprocessor define-based enablement allows
+fine-grained control in the topology file by combining ``#define`` and
+``#undef`` statements, which can be useful for further force field
+research and experimentation.
+
+CMAPs
+^^^^^
+
 AMBER19SB and newer versions provide support for amino-acid-specific
 energy correction maps (CMAPs). When these force fields are used with
 :ref:`pdb2gmx <gmx pdb2gmx>`, the default option is to enable CMAPs.
@@ -156,8 +193,20 @@ where:
 
 - first five columns are pairs of atom and residue types,
 - sixth coulumn is function type (presently only ``1`` is supported),
-- seventh and eighth coulumns are grid size in ``x`` and ``y`` dimensions,
-- following ``grid size x * grid size y`` values constitute the CMAP grid.
+- seventh and eighth coulumns are grid extent in ``x`` and ``y`` dimensions,
+- the following ``grid extent x * grid extent y`` values constitute
+  the CMAP grid.
+
+Note that AMBER19SB and newer versions require residue names to express
+the residue type so that CMAP angle terms can be correctly assigned in
+:ref:`grompp <gmx grompp>`. This is handled by the default of
+``-rtpres auto`` for that option of :ref:`pdb2gmx <gmx pdb2gmx>` in
+concert with the ``[ bondedtypes ]`` for the residue types for such
+forcefields.
+
+Note also that in the current implementation the grid extent must be
+identical for ``x`` and ``y`` dimensions and the same for all CMAP type
+entries.
 
 .. _charmmff:
 

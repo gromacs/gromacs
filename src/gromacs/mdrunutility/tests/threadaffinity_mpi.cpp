@@ -34,14 +34,20 @@
 #include "gmxpre.h"
 
 #include <array>
+#include <numeric>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxomp.h"
 
 #include "testutils/mpitest.h"
+#include "testutils/testfilemanager.h"
+
+#include "programs/mdrun/tests/moduletest.h"
 
 #include "threadaffinitytest.h"
 
@@ -128,6 +134,108 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
     helper.setAffinityOption(ThreadAffinity::On);
     helper.setLogicalProcessorCount(threadsPerRank * getNumberOfTestMpiRanks() - 1);
     helper.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
+    helper.setAffinity(threadsPerRank);
+}
+
+TEST(ThreadAffinityMultiRankTest, PinsWithExternalAffinityDifferent)
+{
+    GMX_MPI_TEST(AllowAnyRankCount);
+    ThreadAffinityTestHelper helper;
+    const int                threadsPerRank = 1;
+    const int                cpusPerRank    = threadsPerRank + 2;
+    const int                nRanks         = getNumberOfTestMpiRanks();
+
+    helper.setAffinityOption(ThreadAffinity::Inherit);
+    helper.setLogicalProcessorCount(cpusPerRank * nRanks);
+    std::vector<int> externalAffinitySet(cpusPerRank);
+    for (int i = 0; i < cpusPerRank; ++i)
+    {
+        externalAffinitySet[i] = (gmx_node_rank() * cpusPerRank) + i;
+    }
+    helper.setExternalAffinitySet(externalAffinitySet);
+    helper.expectAffinitySet({ externalAffinitySet[0] });
+    helper.setAffinity(threadsPerRank);
+}
+
+TEST(ThreadAffinityMultiRankTest, PinsWithExternalAffinitySame)
+{
+    GMX_MPI_TEST(AllowAnyRankCount);
+    ThreadAffinityTestHelper helper;
+    const int                threadsPerRank = 1;
+    const int                cpusPerRank    = threadsPerRank + 2;
+    const int                nRanks         = getNumberOfTestMpiRanks();
+
+    helper.setAffinityOption(ThreadAffinity::Inherit);
+    helper.setLogicalProcessorCount(cpusPerRank * nRanks);
+    std::vector<int> externalAffinitySet;
+    for (int r = 0; r < nRanks; ++r)
+    {
+        for (int t = 0; t < threadsPerRank; ++t)
+        {
+            externalAffinitySet.emplace_back(r * cpusPerRank + t);
+        }
+    }
+    helper.setExternalAffinitySet(externalAffinitySet);
+    helper.expectAffinitySet({ gmx_node_rank() * cpusPerRank });
+    helper.setAffinity(threadsPerRank);
+}
+
+#if GMX_OPENMP
+TEST(ThreadAffinityMultiRankTest, PinsWithExternalAffinitySameOpenmp)
+{
+    GMX_MPI_TEST(AllowAnyRankCount);
+    ThreadAffinityTestHelper helper;
+    const int                threadsPerRank = gmx_omp_get_num_procs();
+    const int                cpusPerRank    = threadsPerRank + 1;
+    const int                nRanks         = getNumberOfTestMpiRanks();
+    const int                rank           = gmx_node_rank();
+
+    helper.setAffinityOption(ThreadAffinity::Inherit);
+    helper.setLogicalProcessorCount(cpusPerRank * nRanks);
+    std::vector<int> externalAffinitySet, expectedAffinitySet;
+    for (int r = 0; r < nRanks; ++r)
+    {
+        for (int t = 0; t < threadsPerRank; ++t)
+        {
+            externalAffinitySet.emplace_back(r * cpusPerRank + t);
+            if (rank == r)
+            {
+                expectedAffinitySet.emplace_back(r * cpusPerRank + t);
+            }
+        }
+    }
+    helper.setExternalAffinitySet(externalAffinitySet);
+    helper.expectAffinitySet(expectedAffinitySet);
+    helper.setAffinity(threadsPerRank);
+}
+#endif
+
+TEST(ThreadAffinityMultiRankTest, PinsWithExternalAffinityBroken)
+{
+    GMX_MPI_TEST(RequireMinimumRankCount<2>);
+    ThreadAffinityTestHelper helper;
+    const int                threadsPerRank = 1;
+    const int                cpusPerRank    = threadsPerRank + 2;
+    const int                nRanks         = getNumberOfTestMpiRanks();
+
+    helper.setAffinityOption(ThreadAffinity::Inherit);
+    helper.setLogicalProcessorCount(cpusPerRank * nRanks);
+    std::vector<int> externalAffinitySet(cpusPerRank);
+    int              rank = gmx_node_rank();
+    for (int i = 0; i < cpusPerRank; ++i)
+    {
+        if (rank == 1)
+        {
+            externalAffinitySet[i] = 1 + i; // Have partial overlap with rank 0
+        }
+        else
+        {
+            externalAffinitySet[i] = (rank * cpusPerRank) + i;
+        }
+    }
+    helper.setExternalAffinitySet(externalAffinitySet);
+    helper.expectWarningMatchingRegex("Cannot inherit external affinity");
+
     helper.setAffinity(threadsPerRank);
 }
 

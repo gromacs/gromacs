@@ -58,6 +58,7 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/stdiohelper.h"
+#include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/trajectoryreader.h"
 
@@ -79,6 +80,15 @@ TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
     if (!GMX_USE_TNG && std::strstr(GetParam(), ".tng") != nullptr)
     {
         GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
+    }
+    if (!GMX_USE_HDF5 && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
     }
     auto& cmdline = commandLine();
 
@@ -108,6 +118,15 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
     {
         GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
     }
+    if (!GMX_USE_HDF5 && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
+    }
     auto& cmdline = commandLine();
 
     setInputFile("-f", GetParam());
@@ -134,7 +153,8 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
  * molecules, which were generated via trjconv from the .gro
  * version. */
 const char* const trajectoryFileNames[] = { "spc2-traj.trr", "spc2-traj.tng", "spc2-traj.xtc",
-                                            "spc2-traj.gro", "spc2-traj.pdb", "spc2-traj.g96" };
+                                            "spc2-traj.gro", "spc2-traj.pdb", "spc2-traj.g96",
+                                            "spc2-traj.h5md" };
 //! Help GoogleTest name our test cases
 std::string nameOfTrjconvWithDifferentInputFormatsTest(const testing::TestParamInfo<const char*>& info)
 {
@@ -170,6 +190,15 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     if (!GMX_USE_TNG && std::strstr(std::get<0>(GetParam()), ".tng") != nullptr)
     {
         GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
+    }
+    if (!GMX_USE_HDF5 && std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
     }
     auto& cmdline = commandLine();
 

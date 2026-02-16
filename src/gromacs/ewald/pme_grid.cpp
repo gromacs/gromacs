@@ -264,7 +264,7 @@ void gmx_sum_qgrid_dd(gmx_pme_t* pme, gmx::ArrayRef<real> grid, const int direct
 
 int copy_pmegrid_to_fftgrid(const gmx_pme_t* pme, PmeAndFftGrids* grids)
 {
-    const real* gmx_restrict pmegrid = grids->pmeGrids.grid.grid.data();
+    const real* gmx_restrict pmegrid = grids->pmeGrids.grid.grid().data();
     real* gmx_restrict       fftgrid = grids->fftgrid;
 
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
@@ -364,7 +364,7 @@ static gmx_cycles_t omp_cyc_end(gmx_cycles_t c)
 int copy_fftgrid_to_pmegrid(const gmx_pme_t* pme, PmeAndFftGrids* grids, int nthread, int thread)
 {
     const real* gmx_restrict fftgrid = grids->fftgrid;
-    real* gmx_restrict       pmegrid = grids->pmeGrids.grid.grid.data();
+    real* gmx_restrict       pmegrid = grids->pmeGrids.grid.grid().data();
 
     ivec local_fft_ndata, local_fft_offset, local_fft_size;
     ivec local_pme_size;
@@ -574,7 +574,7 @@ static void pmegrid_init(pmegrid_t*           grid,
 {
     GMX_RELEASE_ASSERT(gridStorage != nullptr, "We need storage");
 
-    int nz, gridsize;
+    int nz;
 
     grid->ci[XX]     = cx;
     grid->ci[YY]     = cy;
@@ -599,42 +599,31 @@ static void pmegrid_init(pmegrid_t*           grid,
     }
 
     grid->order = pme_order;
-    gridsize    = grid->s[XX] * grid->s[YY] * grid->s[ZZ];
+
+    const size_t gridsize = grid->s[XX] * grid->s[YY] * grid->s[ZZ];
 
     GMX_RELEASE_ASSERT(gridStorage != nullptr, "Need storage");
 
-    if (gridStorage->empty())
+    if (gridStorage->size() < gridsize)
     {
-        // Allocate new padded memory and point grid to that
+        // Allocate new or more padded memory
         gridStorage->resize(gridsize);
-
-        grid->grid = *gridStorage;
     }
-    else
-    {
-        // Use already allocated memory
-        gmx::ArrayRef<real> memoryView = *gridStorage;
 
-        GMX_RELEASE_ASSERT(memoryView.ssize() >= gridsize,
-                           "memoryView should be sufficiently large");
-
-        // When using aligned SIMD4 operations, check the alignment of the memory
+    // When using aligned SIMD4 operations, check the alignment of the memory
 #ifdef PME_SIMD4_SPREAD_GATHER
-        if (pme_order == 5
+    if (pme_order == 5
 #    if !PME_4NSIMD_GATHER
-            || pme_order == 4
+        || pme_order == 4
 #    endif
-        )
-        {
-            GMX_RELEASE_ASSERT(
-                    reinterpret_cast<std::uintptr_t>(memoryView.data()) % (4 * sizeof(real)) == 0,
-                    "Start of memoryView should be SIMD4 aligned");
-        }
+    )
+    {
+        GMX_RELEASE_ASSERT(reinterpret_cast<std::uintptr_t>(gridStorage->data()) % (4 * sizeof(real)) == 0,
+                           "Start of memoryView should be SIMD4 aligned");
+    }
 #endif
 
-        // Set the memory view
-        grid->grid = memoryView.subArray(0, gridsize);
-    }
+    grid->setGridStorage(gridStorage, gridsize);
 }
 
 static void make_subgrid_division(const ivec n, int ovl, int nthread, ivec nsub)
@@ -748,8 +737,6 @@ void pmegrids_init(pmegrids_t*                        grids,
 
         grids->grid_th.resize(grids->nthread);
 
-        const int threadGridSize = nst[XX] * nst[YY] * nst[ZZ];
-
 #pragma omp parallel for num_threads(nthread) schedule(static)
         for (int thread = 0; thread < nthread; thread++)
         {
@@ -758,15 +745,6 @@ void pmegrids_init(pmegrids_t*                        grids,
             const int z = thread % grids->nc[ZZ];
 
             AlignedVector<real>& gridStorage = gridsStorage[1 + thread];
-            if (gridStorage.empty())
-            {
-                gridStorage.resize(threadGridSize);
-            }
-            else
-            {
-                GMX_RELEASE_ASSERT(gmx::ssize(gridStorage) >= threadGridSize,
-                                   "Passed storage should be sufficiently large");
-            }
 
             pmegrid_init(&grids->grid_th[thread],
                          x,

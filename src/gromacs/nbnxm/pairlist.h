@@ -154,6 +154,16 @@ constexpr double c_nbnxnMinDistanceSquared = 1.0e-36;
 constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 #endif
 
+//! Returns the index of atom with index \p atomIndex within a split (or whole when not split) cluster-pair
+template<PairlistType layoutType>
+static inline int atomIndexInClusterpairSplit(const int atomIndex)
+{
+    constexpr int c_nbnxmClusterpairSplitSize =
+            detail::c_nbnxnGpuClusterSize / sc_gpuClusterPairSplit(layoutType);
+
+    return atomIndex & (c_nbnxmClusterpairSplitSize - 1);
+}
+
 //! Whether we want to use GPU for neighbour list sorting
 constexpr bool nbnxmSortListsOnGpu()
 {

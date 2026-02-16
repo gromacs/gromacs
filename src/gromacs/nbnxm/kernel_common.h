@@ -73,7 +73,8 @@ typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu&    nbl,
 //! \brief Lookup function for Coulomb kernel type
 CoulombKernelType getCoulombKernelType(EwaldExclusionType     ewaldExclusionType,
                                        CoulombInteractionType coulombInteractionType,
-                                       bool                   haveEqualCoulombVwdRadii);
+                                       bool                   haveEqualCoulombVwdRadii,
+                                       bool                   nbnxmIsDirectCoulombProvider);
 
 /*! \brief Kinds of Van der Waals treatments in NBNxM SIMD kernels
  *

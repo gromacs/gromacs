@@ -39,10 +39,88 @@
 #    error Including header specific for HIP device code without compiling the file with the correct compiler
 #endif
 
+static __forceinline__ __host__ __device__ float3 operator-(const float3& a)
+{
+    return make_float3(-a.x, -a.y, -a.z);
+}
+static __forceinline__ __host__ __device__ float3 operator+(float3 a, float3 b)
+{
+    return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+static __forceinline__ __host__ __device__ float3 operator-(float3 a, float3 b)
+{
+    return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+static __forceinline__ __host__ __device__ float3 operator*(float3 a, float k)
+{
+    return make_float3(k * a.x, k * a.y, k * a.z);
+}
+static __forceinline__ __host__ __device__ float3 operator*(float k, float3 a)
+{
+    return make_float3(k * a.x, k * a.y, k * a.z);
+}
 // NOLINTNEXTLINE(google-runtime-references)
-static __forceinline__ __device__ float gmxDeviceRSqrt(float& input)
+static __forceinline__ __host__ __device__ void operator+=(float3& a, float4 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+}
+static __forceinline__ __host__ __device__ float3 operator*(float3 a, float3 b)
+{
+    return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+// NOLINTNEXTLINE(google-runtime-references)
+static __forceinline__ __host__ __device__ void operator*=(float3& a, float b)
+{
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+}
+static __forceinline__ __host__ __device__ float4 operator+(float4 a, float4 b)
+{
+    return make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+static __forceinline__ __host__ __device__ float4 operator+(float4 a, float3 b)
+{
+    return make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w);
+}
+static __forceinline__ __host__ __device__ float4 operator-(float4 a, float4 b)
+{
+    return make_float4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+}
+static __forceinline__ __host__ __device__ float4 operator*(float4 a, float k)
+{
+    return make_float4(k * a.x, k * a.y, k * a.z, k * a.w);
+}
+// NOLINTNEXTLINE(google-runtime-references)
+static __forceinline__ __host__ __device__ void operator+=(float4& a, float3 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+}
+// NOLINTNEXTLINE(google-runtime-references)
+static __forceinline__ __host__ __device__ void operator-=(float4& a, float3 b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+}
+
+static float __forceinline__ __device__ gmxDeviceSqrt(float input)
+{
+    return sqrtf(input);
+}
+
+static __forceinline__ __device__ float gmxDeviceRSqrt(float input)
 {
     return __frsqrt_rn(input);
+}
+
+static __forceinline__ __device__ float gmxDeviceAcos(float input)
+{
+    return acosf(input);
 }
 
 #endif /* GMX_GPU_UTILS_VECTYPE_OPS_HIP_BASE_MATH_H */

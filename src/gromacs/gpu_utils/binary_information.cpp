@@ -126,20 +126,22 @@ std::vector<std::string> getSyclOptionalFeatures()
 #    if GMX_HAVE_GPU_GRAPH_SUPPORT
     optionalFeatures.push_back("graphs");
 #    endif
+#    if GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION
+    optionalFeatures.push_back("experimental_enqueue_functions");
+#    endif
     return optionalFeatures;
 }
 
 std::string getSyclCompilerVersion()
 {
-    std::string                    versionStr       = getSyclVersion();
     const std::vector<std::string> optionalFeatures = getSyclOptionalFeatures();
     if (optionalFeatures.empty())
     {
-        return versionStr;
+        return getSyclVersion();
     }
     else
     {
-        return versionStr + " with " + gmx::joinStrings(optionalFeatures, ",");
+        return getSyclVersion() + " with " + gmx::joinStrings(optionalFeatures, ",");
     }
 }
 
@@ -223,6 +225,7 @@ std::unordered_map<std::string, std::string> gpuDescriptions()
     descriptions["CUDA compiler"] = CUDA_COMPILER_INFO;
     descriptions["CUDA compiler flags"] =
             std::string(CUDA_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS;
+    descriptions["CUDA targets"] = std::string(CUDA_COMPILER_ARCHITECTURES);
     descriptions["CUDA driver"]  = getCudaDriverVersionString();
     descriptions["CUDA runtime"] = getCudaRuntimeVersionString();
 #    if GMX_NVSHMEM

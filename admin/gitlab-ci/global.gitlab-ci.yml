@@ -32,7 +32,14 @@
 .use-hip:
   variables:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
-    CMAKE_GPU_OPTIONS: -DGMX_GPU=HIP -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++
+    # The CMake config files distributed with ROCm require a minimum
+    # CMake version that has subsequently been deprecated by Kitware,
+    # and leads to warnings. This is suppressed by the use of
+    # CMAKE_WARN_DEPRECATED=OFF. This can be removed when the config
+    # files distributed with the minimum required ROCm version
+    # themselves require a minimum CMake version that current CMake
+    # does not consider deprecated.
+    CMAKE_GPU_OPTIONS: -DGMX_GPU=HIP -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++ -DCMAKE_WARN_DEPRECATED=off
 
 .use-mpi:
   variables:
@@ -93,6 +100,31 @@
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
+
+# Base definition for tests using IntelMPI
+.use-impi-test:base:
+  variables:
+    # Avoid that Intel MPI intra-node SHM protocol uses /dev/shm because
+    # by default that is too small in a k8s+docker setup. See
+    # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-guide-linux/2021-16/problem-mpi-limitation-for-docker.html
+    # It's preferable that this is a memory-backed filesystem for performance,
+    # but for testing correctness in a CI system, a normal filesystem is good enough.
+    I_MPI_SHM_FILE_PREFIX_4K: /tmp/impi-shm
+  before_script:
+    - mkdir -p $I_MPI_SHM_FILE_PREFIX_4K
+
+# Base definition for tests using GPU-aware IntelMPI
+.use-impi-gpu-aware-test:base:
+  extends:
+    - .use-impi-test:base
+  variables:
+    # Activate GPU-aware MPI. This is only required for suitable
+    # multi-rank runs, but doing it here checks it is OK everywhere.
+    I_MPI_OFFLOAD: 1
+    # Disable direct GPU-GPU inter-process communication, which does
+    # not work on the hardware in the GROMACS CI environment. Communication
+    # is routed via the host.
+    I_MPI_OFFLOAD_IPC: 0
 
 # Base definition for using oneAPI IntelLLVM
 .use-oneapi-intel-llvm:base:

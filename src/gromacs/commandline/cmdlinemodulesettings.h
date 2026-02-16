@@ -66,7 +66,7 @@ public:
     //! Move constructor
     explicit CommandLineModuleSettings(CommandLineModuleSettings&& old) noexcept;
     //! Move assignment
-    CommandLineModuleSettings& operator=(CommandLineModuleSettings&& other);
+    CommandLineModuleSettings& operator=(CommandLineModuleSettings&& other) noexcept;
 
     //! Returns the default nice level for this module.
     int defaultNiceLevel() const;

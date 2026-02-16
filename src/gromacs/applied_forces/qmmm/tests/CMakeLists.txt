@@ -36,6 +36,7 @@ gmx_add_unit_test(QMMMAppliedForcesUnitTest qmmm_applied_forces-test
         qmmminputgenerator.cpp
         qmmmtopologypreprocessor.cpp
         qmmmoptions.cpp
+        qmmmforceproviderstate.cpp
         qmmmforceprovider.cpp
         qmmm.cpp
         )

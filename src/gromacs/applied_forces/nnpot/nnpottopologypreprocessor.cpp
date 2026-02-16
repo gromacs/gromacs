@@ -77,7 +77,7 @@ void NNPotTopologyPreprocessor::preprocess(gmx_mtop_t* mtop, const MDLogger& log
     // 3) Build atomNumbers vector with atomic numbers of all atoms
     buildQMMMAtomNumbers(*mtop);
 
-    // 4) Make F_CONNBOND between atoms within NNP region
+    // 4) Make InteractionFunction::ConnectBonds between atoms within NNP region
     modifyQMMMTwoCenterInteractions(mtop, nnpIndices_, isNNPBlock, logger);
 
     // 5) Remove angles and settles containing 2 or more NNP atoms

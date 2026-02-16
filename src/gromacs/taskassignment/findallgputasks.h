@@ -60,6 +60,8 @@ using GpuTasksOnRanks = std::vector<std::vector<GpuTask>>;
  * \param[in]  haveGpusOnThisPhysicalNode Whether there are any GPUs on this physical node.
  * \param[in]  nonbondedTarget            The user's choice for mdrun -nb for where to assign
  *                                        short-ranged nonbonded interaction tasks.
+ * \param[in]  nonbondedFeTarget          The user's choice for mdrun -nbfe for where to assign
+ *                                        nonbonded fe interaction tasks.
  * \param[in]  pmeTarget                  The user's choice for mdrun -pme for where to assign
  *                                        long-ranged PME nonbonded interaction tasks.
  * \param[in]  bondedTarget               The user's choice for mdrun -bonded for where to assign tasks.
@@ -71,6 +73,7 @@ using GpuTasksOnRanks = std::vector<std::vector<GpuTask>>;
  */
 std::vector<GpuTask> findGpuTasksOnThisRank(bool       haveGpusOnThisPhysicalNode,
                                             TaskTarget nonbondedTarget,
+                                            TaskTarget nonbondedFeTarget,
                                             TaskTarget pmeTarget,
                                             TaskTarget bondedTarget,
                                             TaskTarget updateTarget,

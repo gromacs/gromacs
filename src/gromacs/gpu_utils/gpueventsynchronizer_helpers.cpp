@@ -44,9 +44,10 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/utility/gmxassert.h"
 
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_HIP
 // Enable event consumption tracking in debug builds, see #3988.
 // In OpenCL and SYCL builds, g_useEventConsumptionCounting is constexpr true.
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -60,8 +61,9 @@ namespace gmx::internal
 {
 void disableGpuEventConsumptionCounting()
 {
-    GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "Can only be called in CUDA builds");
-#if GMX_GPU_CUDA
+    GMX_RELEASE_ASSERT(GpuConfigurationCapabilities::DisableEventCounting,
+                       "Disable event counting called in unsupported build configuration");
+#if GMX_GPU_CUDA || GMX_GPU_HIP
     /* With threadMPI, we can have a race between different threads setting and reading this flag.
      * However, either all ranks call this function or no one does,
      * so the expected value is the same for all threads,

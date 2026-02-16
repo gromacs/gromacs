@@ -100,9 +100,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                                 constr ? constr->numFlexibleConstraints() : 0,
                                 inputrec->nstcalcenergy,
                                 haveDDAtomOrdering(*cr),
-                                runScheduleWork->simulationWork.useGpuPme
-                                        || runScheduleWork->simulationWork.useGpuXBufferOpsWhenAllowed
-                                        || runScheduleWork->simulationWork.useGpuFBufferOpsWhenAllowed)),
+                                runScheduleWork->simulationWork)),
     doShellFC_(shellfc_ != nullptr),
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),

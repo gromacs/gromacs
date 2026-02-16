@@ -94,7 +94,7 @@ std::string SelectionOptionStorage::formatSingleValue(const Selection& value) co
 }
 
 
-std::vector<Any> SelectionOptionStorage::normalizeValues(const std::vector<Any>& /*values*/) const
+[[noreturn]] std::vector<Any> SelectionOptionStorage::normalizeValues(const std::vector<Any>& /*values*/) const
 {
     GMX_THROW(NotImplementedError("Selection options not supported in this context"));
 }

@@ -163,7 +163,7 @@ edi
 ---
 
 Files with the edi file extension contain information for :ref:`gmx mdrun`
-to run Molecular Dynamics with Essential Dynamics constraints. 
+to run Molecular Dynamics with Essential Dynamics constraints.
 It used to be possible to generate those through the options
 provided in the `WHAT IF <https://swift.cmbi.umcn.nl/whatif/>`_ program.
 
@@ -360,7 +360,7 @@ from :ref:`gmx xpm2ps`.
     x-minorticklen           = 4.0          ; x-minorticklength
     x-label                  =              ; Used when there is none in the .xpm
     x-fontsize               = 16           ; Font size (pt)
-    x-font                   = Times-Roman  ; A PostScript Font 
+    x-font                   = Times-Roman  ; A PostScript Font
     x-tickfontsize           = 10           ; Font size (pt)
     x-tickfont               = Helvetica    ; A PostScript Font
     y-major                  = 20
@@ -369,7 +369,7 @@ from :ref:`gmx xpm2ps`.
     y-majorat0               = no
     y-majorticklen           = 8.0
     y-minorticklen           = 4.0
-    y-label                  = 
+    y-label                  =
     y-fontsize               = 16
     y-font                   = Times-Roman
     y-tickfontsize           = 10
@@ -411,7 +411,7 @@ force field being used.
 
     coulombtype              = PME
     rcoulomb                 = 1.0
-    
+
     vdwtype                  = Cut-off
     rvdw                     = 1.0
     DispCorr                 = EnerPres
@@ -493,8 +493,8 @@ An example file (``share/top/gromos53a5.ff/atomname2type.n2t``) is here:
 ::
 
     H       H    0.408  1.008  1  O     0.1
-    O       OA  -0.674 15.9994 2  C     0.14 H 0.1               
-    C       CH3  0.000 15.035  1  C     0.15         
+    O       OA  -0.674 15.9994 2  C     0.14 H 0.1
+    C       CH3  0.000 15.035  1  C     0.15
     C       CH0  0.266 12.011  4  C     0.15 C 0.15     C 0.15     O 0.14
 
 A short description of the file format follows:

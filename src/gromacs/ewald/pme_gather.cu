@@ -43,6 +43,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 
 #include "pme_gpu_calculate_splines.cuh"
@@ -62,7 +63,7 @@ __device__ __forceinline__ float read_grid_size(const float* realGridSizeFP, con
         case YY: return realGridSizeFP[YY];
         case ZZ: return realGridSizeFP[ZZ];
     }
-    assert(false);
+    GMX_DEVICE_ASSERT(false);
     return 0.0F;
 }
 
@@ -183,8 +184,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
             __syncthreads();
         }
 
-        assert((blockSize / warp_size) >= DIM);
-        // assert (atomsPerBlock <= warp_size);
+        GMX_DEVICE_ASSERT((blockSize / warp_size) >= DIM);
 
         const int warpIndex = lineIndex / warp_size;
         const int dimIndex  = warpIndex;
@@ -285,9 +285,9 @@ __device__ __forceinline__ void sumForceComponents(float* __restrict__ fx,
                 ix -= nx;
             }
             const int gridIndexGlobal = ix * pny * pnz + constOffset;
-            assert(gridIndexGlobal >= 0);
+            GMX_DEVICE_ASSERT(gridIndexGlobal >= 0);
             const float gridValue = gm_grid[gridIndexGlobal];
-            assert(isfinite(gridValue));
+            GMX_DEVICE_ASSERT(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float2 tdx  = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
             const float  fxy1 = sm_theta[splineIndexZ] * gridValue;
@@ -460,7 +460,7 @@ template<int order, bool wrapX, bool wrapY, int numGrids, bool readGlobal, Threa
 __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         void pme_gather_kernel(const PmeGpuKernelParams kernelParams)
 {
-    assert(numGrids == 1 || numGrids == 2);
+    GMX_DEVICE_ASSERT(numGrids == 1 || numGrids == 2);
 
     /* Global memory pointers */
     const float* __restrict__ gm_coefficientsA = kernelParams.atoms.d_coefficients[0];
@@ -486,7 +486,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     const int atomsPerWarp = warp_size / atomDataSize;
 
     const int blockSize = atomsPerBlock * atomDataSize;
-    assert(blockSize == blockDim.x * blockDim.y * blockDim.z);
+    GMX_DEVICE_ASSERT(blockSize == blockDim.x * blockDim.y * blockDim.z);
 
     /* These are the atom indices - for the shared and global memory */
     const int atomIndexLocal  = threadIdx.z;
@@ -527,7 +527,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         if (localGridlineIndicesIndex < gridlineIndicesSize)
         {
             sm_gridlineIndices[localGridlineIndicesIndex] = gm_gridlineIndices[globalGridlineIndicesIndex];
-            assert(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
+            GMX_DEVICE_ASSERT(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
         }
         /* The loop needed for order threads per atom to make sure we load all data values, as each thread must load multiple values
            with order*order threads per atom, it is only required for each thread to load one data value */
@@ -545,8 +545,8 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
             {
                 sm_theta[localSplineParamsIndex]  = gm_theta[globalSplineParamsIndex];
                 sm_dtheta[localSplineParamsIndex] = gm_dtheta[globalSplineParamsIndex];
-                assert(isfinite(sm_theta[localSplineParamsIndex]));
-                assert(isfinite(sm_dtheta[localSplineParamsIndex]));
+                GMX_DEVICE_ASSERT(isfinite(sm_theta[localSplineParamsIndex]));
+                GMX_DEVICE_ASSERT(isfinite(sm_dtheta[localSplineParamsIndex]));
             }
         }
         __syncthreads();
@@ -555,7 +555,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     {
         const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
         /* Recalculate  Splines  */
-        if (c_useAtomDataPrefetch)
+        if constexpr (c_useAtomDataPrefetch)
         {
             // charges
             __shared__ float sm_coefficients[atomsPerBlock];
@@ -645,7 +645,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     }
 
     __syncwarp();
-    assert(atomsPerBlock <= warp_size);
+    GMX_DEVICE_ASSERT(atomsPerBlock <= warp_size);
 
     /* Writing or adding the final forces component-wise, single warp */
     constexpr int blockForcesSize = atomsPerBlock * DIM;
@@ -660,11 +660,11 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 
         /* We must sync here since the same shared memory is used as above. */
         __syncthreads();
-        fx                    = 0.0F;
-        fy                    = 0.0F;
-        fz                    = 0.0F;
-        const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
-        if (chargeCheck)
+        fx                     = 0.0F;
+        fy                     = 0.0F;
+        fz                     = 0.0F;
+        const int chargeCheckB = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
+        if (chargeCheckB)
         {
             sumForceComponents<order, atomsPerWarp, wrapX, wrapY>(&fx,
                                                                   &fy,

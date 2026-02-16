@@ -440,18 +440,12 @@ static void init_em(FILE*                        fplog,
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
 
-        const auto& simulationWork     = runScheduleWork.simulationWork;
-        const bool  useGpuForPme       = simulationWork.useGpuPme;
-        const bool  useGpuForBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed
-                                        || simulationWork.useGpuFBufferOpsWhenAllowed;
-
-
         *shellfc = init_shell_flexcon(stdout,
                                       top_global,
                                       constr ? constr->numFlexibleConstraints() : 0,
                                       ir->nstcalcenergy,
                                       haveDDAtomOrdering(*cr),
-                                      useGpuForPme || useGpuForBufferOps);
+                                      runScheduleWork.simulationWork);
     }
     else
     {
@@ -511,7 +505,8 @@ static void init_em(FILE*                        fplog,
     if (constr)
     {
         // TODO how should this cross-module support dependency be managed?
-        if (ir->eConstrAlg == ConstraintAlgorithm::Shake && gmx_mtop_ftype_count(top_global, F_CONSTR) > 0)
+        if (ir->eConstrAlg == ConstraintAlgorithm::Shake
+            && gmx_mtop_ftype_count(top_global, InteractionFunction::Constraints) > 0)
         {
             gmx_fatal(FARGS,
                       "Can not do energy minimization with %s, use %s\n",
@@ -1149,7 +1144,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         wallcycle_stop(wcycle, WallCycleCounter::MoveE);
     }
 
-    ems->epot = enerd->term[F_EPOT];
+    ems->epot = enerd->term[InteractionFunction::PotentialEnergy];
 
     if (constr)
     {
@@ -1172,7 +1167,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                       computeVirial,
                       shake_vir,
                       gmx::ConstraintVariable::ForceDispl);
-        enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+        enerd->term[InteractionFunction::dHdLambdaConstraint] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
     }
     else
@@ -1181,7 +1176,8 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     }
 
     clear_mat(ekin);
-    enerd->term[F_PRES] = calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
+    enerd->term[InteractionFunction::Pressure] =
+            calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
     if (inputrec->efep != FreeEnergyPerturbationType::No)
     {
@@ -2307,12 +2303,12 @@ void LegacySimulator::do_lbfgs()
 
     /* Set the gradient from the force */
     bool converged = false;
-    for (int step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
+    for (int stepGrad = 0; (number_steps < 0 || stepGrad <= number_steps) && !converged; stepGrad++)
     {
 
         /* Write coordinates if necessary */
-        const bool do_x = do_per_step(step, inputRec_->nstxout);
-        const bool do_f = do_per_step(step, inputRec_->nstfout);
+        const bool do_x = do_per_step(stepGrad, inputRec_->nstxout);
+        const bool do_f = do_per_step(stepGrad, inputRec_->nstfout);
 
         int mdof_flags = 0;
         if (do_x)
@@ -2336,8 +2332,8 @@ void LegacySimulator::do_lbfgs()
                                          outf,
                                          mdof_flags,
                                          topGlobal_.natoms,
-                                         step,
-                                         static_cast<real>(step),
+                                         stepGrad,
+                                         static_cast<real>(stepGrad),
                                          &ems.s,
                                          stateGlobal_,
                                          observablesHistory_,
@@ -2455,7 +2451,7 @@ void LegacySimulator::do_lbfgs()
 
         neval++;
         // Calculate energy for the trial step in position C
-        energyEvaluator.run(sc, mu_tot, vir, pres, step, FALSE, step);
+        energyEvaluator.run(sc, mu_tot, vir, pres, stepGrad, FALSE, stepGrad);
 
         // Calc line gradient in position C
         real* gmx_restrict fc  = static_cast<real*>(sc->f.view().force()[0]);
@@ -2536,7 +2532,7 @@ void LegacySimulator::do_lbfgs()
 
                 neval++;
                 // Calculate energy for the trial step in point B
-                energyEvaluator.run(sb, mu_tot, vir, pres, step, FALSE, step);
+                energyEvaluator.run(sb, mu_tot, vir, pres, stepGrad, FALSE, stepGrad);
                 fnorm = sb->fnorm;
 
                 // Calculate gradient in point B
@@ -2738,7 +2734,7 @@ void LegacySimulator::do_lbfgs()
                 double sqrtNumAtoms = std::sqrt(static_cast<double>(stateGlobal_->numAtoms()));
                 fprintf(stderr,
                         "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-                        step,
+                        stepGrad,
                         ems.epot,
                         ems.fnorm / sqrtNumAtoms,
                         ems.fmax,
@@ -2749,7 +2745,7 @@ void LegacySimulator::do_lbfgs()
             matrix nullBox = {};
             energyOutput.addDataAtEnergyStep(false,
                                              false,
-                                             static_cast<double>(step),
+                                             static_cast<double>(stepGrad),
                                              mdatoms->tmass,
                                              enerd_,
                                              nullptr,
@@ -2762,28 +2758,28 @@ void LegacySimulator::do_lbfgs()
                                              mu_tot,
                                              constr_);
 
-            do_log = do_per_step(step, inputRec_->nstlog);
-            do_ene = do_per_step(step, inputRec_->nstenergy);
+            do_log = do_per_step(stepGrad, inputRec_->nstlog);
+            do_ene = do_per_step(stepGrad, inputRec_->nstenergy);
 
-            imdSession_->fillEnergyRecord(step, TRUE);
+            imdSession_->fillEnergyRecord(stepGrad, TRUE);
 
             if (do_log)
             {
-                EnergyOutput::printHeader(fpLog_, step, step);
+                EnergyOutput::printHeader(fpLog_, stepGrad, stepGrad);
             }
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf),
                                                do_ene,
                                                FALSE,
                                                FALSE,
                                                do_log ? fpLog_ : nullptr,
-                                               step,
-                                               step,
+                                               stepGrad,
+                                               stepGrad,
                                                fr_->fcdata.get(),
                                                nullptr);
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
-        if (imdSession_->run(step, TRUE, stateGlobal_->box, stateGlobal_->x, 0) && isMainRank)
+        if (imdSession_->run(stepGrad, TRUE, stateGlobal_->box, stateGlobal_->x, 0) && isMainRank)
         {
             imdSession_->sendPositionsAndEnergies();
         }

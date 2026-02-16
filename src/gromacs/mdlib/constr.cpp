@@ -229,7 +229,8 @@ bool Constraints::havePerturbedConstraints() const
 
     for (size_t i = 0; i < ffparams.functype.size(); i++)
     {
-        if ((ffparams.functype[i] == F_CONSTR || ffparams.functype[i] == F_CONSTRNC)
+        if ((ffparams.functype[i] == InteractionFunction::Constraints
+             || ffparams.functype[i] == InteractionFunction::ConstraintsNoCoupling)
             && ffparams.iparams[i].constr.dA != ffparams.iparams[i].constr.dB)
         {
             return true;
@@ -277,10 +278,9 @@ static void write_constr_pdb(const char*          fn,
                              ArrayRef<const RVec> x,
                              const matrix         box)
 {
-    char        fname[STRLEN];
-    FILE*       out;
-    int         dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
-    const char *anm, *resnm;
+    char  fname[STRLEN];
+    FILE* out;
+    int   dd_ac0 = 0, dd_ac1 = 0, i, ii;
 
     if (dd)
     {
@@ -302,7 +302,7 @@ static void write_constr_pdb(const char*          fn,
 
     fprintf(out, "TITLE     %s\n", title);
     gmx_write_pdb_box(out, PbcType::Unset, box);
-    int molb = 0;
+    MTopLookUp mTopLookUp(mtop);
     for (i = start; i < start + homenr; i++)
     {
         if (dd != nullptr)
@@ -321,15 +321,15 @@ static void write_constr_pdb(const char*          fn,
         {
             ii = i;
         }
-        mtopGetAtomAndResidueName(mtop, ii, &molb, &anm, &resnr, &resnm, nullptr);
+        const auto res = mTopLookUp.getAtomAndResidueNameAndNumber(ii);
         gmx_fprintf_pdb_atomline(out,
                                  PdbRecordType::Atom,
                                  ii + 1,
-                                 anm,
+                                 res.atomName,
                                  ' ',
-                                 resnm,
+                                 res.residueName,
                                  ' ',
-                                 resnr,
+                                 res.residueNumber,
                                  ' ',
                                  10 * x[i][XX],
                                  10 * x[i][YY],
@@ -469,8 +469,8 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
     {
         clear_mat(constraintsVirial);
     }
-    const InteractionList& settle = idef->il[F_SETTLE];
-    nsettle                       = settle.size() / (1 + NRAL(F_SETTLE));
+    const InteractionList& settle = idef->il[InteractionFunction::SETTLE];
+    nsettle                       = settle.size() / (1 + NRAL(InteractionFunction::SETTLE));
 
     if (nsettle > 0)
     {
@@ -666,7 +666,8 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
                             settle_proj(*settled,
                                         econq,
                                         end_th - start_th,
-                                        settle.iatoms.data() + start_th * (1 + NRAL(F_SETTLE)),
+                                        settle.iatoms.data()
+                                                + start_th * (1 + NRAL(InteractionFunction::SETTLE)),
                                         pbc_null,
                                         x.unpaddedArrayRef(),
                                         xprime.unpaddedArrayRef(),
@@ -704,8 +705,8 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
 
             if (bSettleErrorHasOccurred0)
             {
-                char buf[STRLEN];
-                sprintf(buf,
+                char msgBuf[STRLEN];
+                sprintf(msgBuf,
                         "\nstep "
                         "%" PRId64
                         ": One or more water molecules can not be settled.\n"
@@ -713,9 +714,9 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
                         step);
                 if (log)
                 {
-                    fprintf(log, "%s", buf);
+                    fprintf(log, "%s", msgBuf);
                 }
-                fprintf(stderr, "%s", buf);
+                fprintf(stderr, "%s", msgBuf);
                 warncount_settle++;
                 if (warncount_settle > maxwarn)
                 {
@@ -863,11 +864,11 @@ FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegra
 /*! \brief Returns a block struct to go from atoms to constraints
  *
  * The block struct will contain constraint indices with lower indices
- * directly matching the order in F_CONSTR and higher indices matching
- * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
+ * directly matching the order in InteractionFunction::Constraints and higher indices matching
+ * the order in InteractionFunction::ConstraintsNoCoupling offset by the number of constraints in InteractionFunction::Constraints.
  *
  * \param[in]  numAtoms  The number of atoms to construct the list for
- * \param[in]  ilists    The interaction lists, size F_NRE
+ * \param[in]  ilists    The interaction lists, size InteractionFunction::Count
  * \param[in]  iparams   Interaction parameters, can be null when
  *                       \p flexibleConstraintTreatment==Include
  * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment,
@@ -875,17 +876,19 @@ FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegra
  *
  * \returns a block struct with all constraints for each atom
  */
-static ListOfLists<int> makeAtomsToConstraintsList(int                             numAtoms,
-                                                   ArrayRef<const InteractionList> ilists,
-                                                   ArrayRef<const t_iparams>       iparams,
-                                                   FlexibleConstraintTreatment flexibleConstraintTreatment)
+static ListOfLists<int>
+makeAtomsToConstraintsList(int numAtoms,
+                           const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilists,
+                           ArrayRef<const t_iparams>   iparams,
+                           FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
     GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || !iparams.empty(),
                "With flexible constraint detection we need valid iparams");
 
     std::vector<int> count(numAtoms);
 
-    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    for (InteractionFunction ftype :
+         { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
     {
         const InteractionList& ilist  = ilists[ftype];
         const int              stride = 1 + NRAL(ftype);
@@ -911,11 +914,12 @@ static ListOfLists<int> makeAtomsToConstraintsList(int                          
     }
     std::vector<int> elements(listRanges[numAtoms]);
 
-    /* The F_CONSTRNC constraints have constraint numbers
-     * that continue after the last F_CONSTR constraint.
+    /* The InteractionFunction::ConstraintsNoCoupling constraints have constraint numbers
+     * that continue after the last InteractionFunction::Constraints constraint.
      */
     int numConstraints = 0;
-    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+    for (InteractionFunction ftype :
+         { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
     {
         const InteractionList& ilist  = ilists[ftype];
         const int              stride = 1 + NRAL(ftype);
@@ -937,10 +941,10 @@ static ListOfLists<int> makeAtomsToConstraintsList(int                          
     return ListOfLists<int>(std::move(listRanges), std::move(elements));
 }
 
-ListOfLists<int> make_at2con(int                             numAtoms,
-                             ArrayRef<const InteractionList> ilist,
-                             ArrayRef<const t_iparams>       iparams,
-                             FlexibleConstraintTreatment     flexibleConstraintTreatment)
+ListOfLists<int> make_at2con(int numAtoms,
+                             const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
+                             ArrayRef<const t_iparams>   iparams,
+                             FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
     return makeAtomsToConstraintsList(numAtoms, ilist, iparams, flexibleConstraintTreatment);
 }
@@ -949,28 +953,7 @@ ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
                              gmx::ArrayRef<const t_iparams> iparams,
                              FlexibleConstraintTreatment    flexibleConstraintTreatment)
 {
-    return makeAtomsToConstraintsList(
-            moltype.atoms.nr, makeConstArrayRef(moltype.ilist), iparams, flexibleConstraintTreatment);
-}
-
-//! Return the number of flexible constraints in the \c ilist and \c iparams.
-int countFlexibleConstraints(ArrayRef<const InteractionList> ilist, ArrayRef<const t_iparams> iparams)
-{
-    int nflexcon = 0;
-    for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
-    {
-        const int numIatomsPerConstraint = 3;
-        for (int i = 0; i < ilist[ftype].size(); i += numIatomsPerConstraint)
-        {
-            const int type = ilist[ftype].iatoms[i];
-            if (iparams[type].constr.dA == 0 && iparams[type].constr.dB == 0)
-            {
-                nflexcon++;
-            }
-        }
-    }
-
-    return nflexcon;
+    return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist, iparams, flexibleConstraintTreatment);
 }
 
 //! Returns the index of the settle to which each atom belongs.
@@ -979,7 +962,7 @@ static std::vector<int> make_at2settle(int natoms, const InteractionList& ilist)
     /* Set all to no settle */
     std::vector<int> at2s(natoms, -1);
 
-    const int stride = 1 + NRAL(F_SETTLE);
+    const int stride = 1 + NRAL(InteractionFunction::SETTLE);
 
     for (int s = 0; s < ilist.size(); s += stride)
     {
@@ -1026,10 +1009,10 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
             if (dd)
             {
                 // We are using the local topology, so there are only
-                // F_CONSTR constraints.
-                GMX_RELEASE_ASSERT(idef->il[F_CONSTRNC].empty(),
+                // InteractionFunction::Constraints constraints.
+                GMX_RELEASE_ASSERT(idef->il[InteractionFunction::ConstraintsNoCoupling].empty(),
                                    "Here we should not have no-connect constraints");
-                make_shake_sblock_dd(shaked.get(), idef->il[F_CONSTR]);
+                make_shake_sblock_dd(shaked.get(), idef->il[InteractionFunction::Constraints]);
             }
             else
             {
@@ -1041,7 +1024,8 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
     if (settled)
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::SetSettle);
-        settled->setConstraints(idef->il[F_SETTLE], numHomeAtoms_, masses_, inverseMasses_);
+        settled->setConstraints(
+                idef->il[InteractionFunction::SETTLE], numHomeAtoms_, masses_, inverseMasses_);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::SetSettle);
     }
 
@@ -1162,11 +1146,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
     {
         at2con_mt = makeAtomToConstraintMappings(mtop, flexibleConstraintTreatment(EI_DYNAMICS(ir.eI)));
 
-        for (const gmx_molblock_t& molblock : mtop.molblock)
-        {
-            int count = countFlexibleConstraints(mtop.moltype[molblock.type].ilist, mtop.ffparams.iparams);
-            nflexcon += molblock.nmol * count;
-        }
+        nflexcon = gmx_mtop_flexible_constraint_count(mtop);
 
         if (nflexcon > 0)
         {
@@ -1247,8 +1227,8 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
         /* Make an atom to settle index for use in domain decomposition */
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {
-            at2settle_mt.emplace_back(
-                    make_at2settle(mtop.moltype[mt].atoms.nr, mtop.moltype[mt].ilist[F_SETTLE]));
+            at2settle_mt.emplace_back(make_at2settle(
+                    mtop.moltype[mt].atoms.nr, mtop.moltype[mt].ilist[InteractionFunction::SETTLE]));
         }
 
         /* Allocate thread-local work arrays */

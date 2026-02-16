@@ -1322,33 +1322,33 @@ static void sim_data_impose_times(sim_data_t* sd, double begin, double end)
         {
             for (j = 0; j < sc->nsamples; j++)
             {
-                double start_t, end_t;
+                double startTime, finishTime;
 
-                start_t = sc->s[j]->start_time;
-                end_t   = sc->s[j]->start_time;
+                startTime  = sc->s[j]->start_time;
+                finishTime = sc->s[j]->start_time;
                 if (sc->s[j]->hist)
                 {
-                    end_t += sc->s[j]->delta_time * sc->s[j]->hist->sum;
+                    finishTime += sc->s[j]->delta_time * sc->s[j]->hist->sum;
                 }
                 else
                 {
                     if (sc->s[j]->t)
                     {
-                        end_t = sc->s[j]->t[sc->s[j]->ndu - 1];
+                        finishTime = sc->s[j]->t[sc->s[j]->ndu - 1];
                     }
                     else
                     {
-                        end_t += sc->s[j]->delta_time * sc->s[j]->ndu;
+                        finishTime += sc->s[j]->delta_time * sc->s[j]->ndu;
                     }
                 }
 
-                if (start_t < first_t || first_t < 0)
+                if (startTime < first_t || first_t < 0)
                 {
-                    first_t = start_t;
+                    first_t = startTime;
                 }
-                if (end_t > last_t)
+                if (finishTime > last_t)
                 {
-                    last_t = end_t;
+                    last_t = finishTime;
                 }
             }
             sc = sc->next;
@@ -3039,7 +3039,6 @@ static samples_t* read_edr_hist_block(int*          nsamples,
 
 static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
 {
-    int            i, j;
     ener_file_t    fp;
     t_enxframe*    fr;
     int            nre;
@@ -3074,7 +3073,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
         double rtemp = 0;
 
         /* count the blocks and handle collection information: */
-        for (i = 0; i < fr->nblock; i++)
+        for (int i = 0; i < fr->nblock; i++)
         {
             if (fr->block[i].id == enxDHHIST)
             {
@@ -3144,7 +3143,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                         gmx_fatal(FARGS, "No lambda vector, but start_lambda=%f\n", old_start_lambda);
                     }
                     n_lambda_vec = fr->block[i].sub[1].ival[1];
-                    for (j = 0; j < n_lambda_vec; j++)
+                    for (int j = 0; j < n_lambda_vec; j++)
                     {
                         const char* name =
                                 enumValueToStringSingular(static_cast<FreeEnergyPerturbationCouplingType>(
@@ -3161,7 +3160,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                     }
                     lambda_vec_init(&start_lambda, &(sd->lc));
                     start_lambda.index = fr->block[i].sub[1].ival[0];
-                    for (j = 0; j < n_lambda_vec; j++)
+                    for (int j = 0; j < n_lambda_vec; j++)
                     {
                         start_lambda.val[j] = fr->block[i].sub[0].dval[5 + j];
                     }
@@ -3194,7 +3193,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
             snew(npts, nsamples);
             snew(lambdas, nsamples);
             snew(samples_rawdh, nsamples);
-            for (i = 0; i < nsamples; i++)
+            for (int i = 0; i < nsamples; i++)
             {
                 nhists[i]        = 0;
                 npts[i]          = 0;
@@ -3232,7 +3231,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
             if ((std::abs(last_t - start_time) > 2 * delta_time) && last_t >= 0)
             {
                 /* it didn't. We need to store our samples and reallocate */
-                for (i = 0; i < nsamples; i++)
+                for (int i = 0; i < nsamples; i++)
                 {
                     if (samples_rawdh[i])
                     {
@@ -3248,7 +3247,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
 
         /* and read them */
         k = 0; /* counter for the lambdas, etc. arrays */
-        for (i = 0; i < fr->nblock; i++)
+        for (int i = 0; i < fr->nblock; i++)
         {
             if (fr->block[i].id == enxDH)
             {
@@ -3278,7 +3277,6 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                 int type = static_cast<int>(fr->block[i].sub[1].lval[1]);
                 if (type == dhbtDH || type == dhbtDHDL)
                 {
-                    int        j;
                     int        nb = 0;
                     samples_t* s; /* this is where the data will go */
                     s = read_edr_hist_block(
@@ -3290,7 +3288,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                     }
                     k++;
                     /* and insert the new sample immediately */
-                    for (j = 0; j < nb; j++)
+                    for (int j = 0; j < nb; j++)
                     {
                         lambda_data_list_insert_sample(sd->lb, s + j);
                     }
@@ -3299,7 +3297,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
         }
     }
     /* Now store all our extant sample collections */
-    for (i = 0; i < nsamples; i++)
+    for (int i = 0; i < nsamples; i++)
     {
         if (samples_rawdh[i])
         {
@@ -3314,7 +3312,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
         printf("\n");
         lambda_vec_print(native_lambda, buf, FALSE);
         printf("%s: %.1f - %.1f; lambda = %s\n    foreign lambdas:\n", fn, first_t, last_t, buf);
-        for (i = 0; i < nsamples; i++)
+        for (int i = 0; i < nsamples; i++)
         {
             if (lambdas[i])
             {

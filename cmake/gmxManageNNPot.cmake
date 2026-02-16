@@ -33,7 +33,7 @@
 
 # Add a flag to enable neural network potential support. Currently only supports libtorch.
 gmx_option_multichoice(GMX_NNPOT
-    "Enable neural network potential interface."
+    "Enable neural network potential interface"
     AUTO
     AUTO TORCH OFF
 )
@@ -44,8 +44,28 @@ endif()
 
 set(GMX_TORCH OFF)
 if(NOT GMX_NNPOT STREQUAL "OFF")
+    if(GMX_GPU_CUDA AND NOT TORCH_CUDA_ARCH_LIST)
+        set(TORCH_CUDA_ARCH_LIST)
+        foreach(_arch IN LISTS GMX_CUDA_ARCHITECTURES)
+            if(_arch MATCHES "^[0-9]+[a-z]?(-virtual)?$")
+                # Convert _arch from 75 or 75-virtual to 7.5+PTX
+                string(REGEX REPLACE "^([0-9]+)([0-9][a-z]?)(-virtual)?$" "\\1.\\2+PTX" arch_ptx "${_arch}")
+            elseif(_arch MATCHES "^[0-9]+[a-z]?-real$")
+                # Convert _arch from 75-real to 7.5
+                string(REGEX REPLACE "^([0-9]+)([0-9][a-z]?)-real$" "\\1.\\2" arch_ptx "${_arch}")
+            else()
+                message(FATAL_ERROR "Unknown CUDA architecture: ${_arch}")
+            endif()
+            set(TORCH_CUDA_ARCH_LIST "${TORCH_CUDA_ARCH_LIST} ${arch_ptx}")
+        endforeach()
+    endif()
 
+    # Not so nice workaround because torch disables CMAKE_CUDA_ARCHITECTURES and complains if it is set
+    set(_cmake_cuda_architectures_bak "${CMAKE_CUDA_ARCHITECTURES}")
+    unset(CMAKE_CUDA_ARCHITECTURES CACHE) # yikes!
+    # When we require at least CMake 4.1, finding Torch with OPTIONAL might be a good approach
     find_package(Torch 2.0.0 QUIET)
+    set(CMAKE_CUDA_ARCHITECTURES "${_cmake_cuda_architectures_bak}" CACHE STRING "")
     set(TORCH_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for libtorch has already been done")
     mark_as_advanced(TORCH_ALREADY_SEARCHED)
 

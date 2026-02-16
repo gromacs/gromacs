@@ -70,7 +70,7 @@ namespace detail
  * \param[in]  exceptionPtr   If the current MPI rank threw an exception, points
  *                            to that exception, otherwise nullptr.
  */
-static void coordinateMpiRanks(MPI_Comm communicator, const bool thisRankThrew, const std::exception_ptr exceptionPtr)
+static void coordinateMpiRanks(MPI_Comm communicator, const bool thisRankThrew, const std::exception_ptr& exceptionPtr)
 {
     // There is nothing to do with no MPI, or before thread-MPI has
     // launched ranks, as there is only one rank. We default this

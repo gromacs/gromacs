@@ -54,7 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vectypes.h"
 
-static gmx_bool ip_pert(int ftype, const t_iparams* ip)
+static gmx_bool ip_pert(InteractionFunction ftype, const t_iparams* ip)
 {
     if (NRFPB(ftype) == 0)
     {
@@ -64,39 +64,39 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
     bool bPert = false;
     switch (ftype)
     {
-        case F_BONDS:
-        case F_G96BONDS:
-        case F_HARMONIC:
-        case F_ANGLES:
-        case F_G96ANGLES:
-        case F_IDIHS:
+        case InteractionFunction::Bonds:
+        case InteractionFunction::GROMOS96Bonds:
+        case InteractionFunction::HarmonicPotential:
+        case InteractionFunction::Angles:
+        case InteractionFunction::GROMOS96Angles:
+        case InteractionFunction::ImproperDihedrals:
             bPert = (ip->harmonic.rA != ip->harmonic.rB || ip->harmonic.krA != ip->harmonic.krB);
             break;
-        case F_MORSE:
+        case InteractionFunction::MorsePotential:
             bPert = (ip->morse.b0A != ip->morse.b0B || ip->morse.cbA != ip->morse.cbB
                      || ip->morse.betaA != ip->morse.betaB);
             break;
-        case F_RESTRBONDS:
+        case InteractionFunction::RestraintBonds:
             bPert = (ip->restraint.lowA != ip->restraint.lowB || ip->restraint.up1A != ip->restraint.up1B
                      || ip->restraint.up2A != ip->restraint.up2B
                      || ip->restraint.kA != ip->restraint.kB);
             break;
-        case F_UREY_BRADLEY:
+        case InteractionFunction::UreyBradleyPotential:
             bPert = (ip->u_b.thetaA != ip->u_b.thetaB || ip->u_b.kthetaA != ip->u_b.kthetaB
                      || ip->u_b.r13A != ip->u_b.r13B || ip->u_b.kUBA != ip->u_b.kUBB);
             break;
-        case F_LINEAR_ANGLES:
+        case InteractionFunction::LinearAngles:
             bPert = (ip->linangle.klinA != ip->linangle.klinB || ip->linangle.aA != ip->linangle.aB);
             break;
-        case F_PDIHS:
-        case F_PIDIHS:
-        case F_ANGRES:
-        case F_ANGRESZ:
+        case InteractionFunction::ProperDihedrals:
+        case InteractionFunction::PeriodicImproperDihedrals:
+        case InteractionFunction::AngleRestraints:
+        case InteractionFunction::AngleZAxisRestraints:
             bPert = (ip->pdihs.phiA != ip->pdihs.phiB || ip->pdihs.cpA != ip->pdihs.cpB);
             break;
         /* Fourier dihedrals have been converted to Ryckaert-Bellemans by now. Treat them the same way. */
-        case F_RBDIHS:
-        case F_FOURDIHS:
+        case InteractionFunction::RyckaertBellemansDihedrals:
+        case InteractionFunction::FourierDihedrals:
             bPert = FALSE;
             for (int i = 0; i < NR_RBDIHS; i++)
             {
@@ -106,11 +106,11 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
                 }
             }
             break;
-        case F_TABBONDS:
-        case F_TABBONDSNC:
-        case F_TABANGLES:
-        case F_TABDIHS: bPert = (ip->tab.kA != ip->tab.kB); break;
-        case F_POSRES:
+        case InteractionFunction::TabulatedBonds:
+        case InteractionFunction::TabulatedBondsNoCoupling:
+        case InteractionFunction::TabulatedAngles:
+        case InteractionFunction::TabulatedDihedrals: bPert = (ip->tab.kA != ip->tab.kB); break;
+        case InteractionFunction::PositionRestraints:
             bPert = FALSE;
             for (int i = 0; i < DIM; i++)
             {
@@ -120,21 +120,21 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
                 }
             }
             break;
-        case F_DIHRES:
+        case InteractionFunction::DihedralRestraints:
             bPert = ((ip->dihres.phiA != ip->dihres.phiB) || (ip->dihres.dphiA != ip->dihres.dphiB)
                      || (ip->dihres.kfacA != ip->dihres.kfacB));
             break;
-        case F_LJ14:
+        case InteractionFunction::LennardJones14:
             bPert = (ip->lj14.c6A != ip->lj14.c6B || ip->lj14.c12A != ip->lj14.c12B);
             break;
-        case F_CMAP: bPert = FALSE; break;
-        case F_RESTRANGLES:
+        case InteractionFunction::DihedralEnergyCorrectionMap: bPert = FALSE; break;
+        case InteractionFunction::RestrictedBendingPotential:
             bPert = (ip->harmonic.rA != ip->harmonic.rB) || (ip->harmonic.krA != ip->harmonic.krB);
             break;
-        case F_RESTRDIHS:
+        case InteractionFunction::RestrictedTorsionPotential:
             bPert = (ip->pdihs.phiA != ip->pdihs.phiB) || (ip->pdihs.cpA != ip->pdihs.cpB);
             break;
-        case F_CBTDIHS:
+        case InteractionFunction::CombinedBendingTorsionPotential:
             bPert = false;
             for (int i = 0; i < NR_CBTDIHS && !bPert; i++)
             {
@@ -147,7 +147,9 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
                       interaction_function[ftype].longname);
     }
 
-    if (bPert && (ftype == F_RESTRANGLES || ftype == F_RESTRDIHS || ftype == F_CBTDIHS))
+    if (bPert
+        && (ftype == InteractionFunction::RestrictedBendingPotential || ftype == InteractionFunction::RestrictedTorsionPotential
+            || ftype == InteractionFunction::CombinedBendingTorsionPotential))
     {
         gmx_fatal(FARGS,
                   "Function type %s does not currently support being perturbed in free energy "
@@ -172,7 +174,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
     gmx_bool bPert = FALSE;
     for (int i = 0; i < ffparams->numTypes(); i++)
     {
-        int ftype = ffparams->functype[i];
+        const InteractionFunction ftype = ffparams->functype[i];
         if (interaction_function[ftype].flags & IF_BOND)
         {
             if (ip_pert(ftype, &ffparams->iparams[i]))
@@ -185,9 +187,9 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
     /* Check perturbed charges for 1-4 interactions */
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
-        const t_atom*            atom = mtop->moltype[molb.type].atoms.atom;
-        const InteractionList&   il   = mtop->moltype[molb.type].ilist[F_LJ14];
-        gmx::ArrayRef<const int> ia   = il.iatoms;
+        const t_atom* atom = mtop->moltype[molb.type].atoms.atom;
+        const InteractionList& il = mtop->moltype[molb.type].ilist[InteractionFunction::LennardJones14];
+        gmx::ArrayRef<const int> ia = il.iatoms;
         for (int i = 0; i < il.size(); i += 3)
         {
             if (atomHasPerturbedCharge(atom[ia[i + 1]]) || atomHasPerturbedCharge(atom[ia[i + 2]]))
@@ -207,7 +209,7 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int32_t
     int      iabuf_nalloc = 0;
     t_iatom* iabuf        = nullptr;
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (interaction_function[ftype].flags & IF_BOND)
         {
@@ -221,7 +223,7 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int32_t
             {
                 /* Check if this interaction is perturbed */
                 if (ip_pert(ftype, idef->iparams.data() + iatoms[i])
-                    || (ftype == F_LJ14
+                    || (ftype == InteractionFunction::LennardJones14
                         && (hasPerturbedCharge(iatoms[i + 1], atomInfo)
                             || hasPerturbedCharge(iatoms[i + 2], atomInfo))))
                 {

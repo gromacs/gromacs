@@ -134,9 +134,9 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
     int bstart, bnr;
 
     /* Since we are processing the local topology,
-     * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.
+     * the InteractionFunction::ConstraintsNoCoupling ilist has been concatenated to the InteractionFunction::Constraints ilist.
      */
-    const int ncons = idef->il[F_CONSTR].size() / 3;
+    const int ncons = idef->il[InteractionFunction::Constraints].size() / 3;
 
     gmx::ListOfLists<int> sblocks = gen_sblocks(nullptr, numAtoms, *idef, false);
 
@@ -157,7 +157,7 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
      * sort the constraints in order of the sblock number
      * and the atom numbers, really sorting a segment of the array!
      */
-    gmx::ArrayRef<int>       iatom = idef->il[F_CONSTR].iatoms;
+    gmx::ArrayRef<int>       iatom = idef->il[InteractionFunction::Constraints].iatoms;
     std::vector<t_sortblock> sb(ncons);
     for (int i = 0; i < ncons; i++)
     {
@@ -710,7 +710,7 @@ static bool bshakef(FILE*                         log,
     int  i, n0, ncon, blen, type, ll;
     int  tnit = 0, trij = 0;
 
-    ncon = idef.il[F_CONSTR].size() / 3;
+    ncon = idef.il[InteractionFunction::Constraints].size() / 3;
 
     for (ll = 0; ll < ncon; ll++)
     {
@@ -720,7 +720,7 @@ static bool bshakef(FILE*                         log,
     // TODO Rewrite this block so that it is obvious that i, iatoms
     // and lam are all iteration variables. Is this easier if the
     // sblock data structure is organized differently?
-    const int*     iatoms = &(idef.il[F_CONSTR].iatoms[shaked->sblock[0]]);
+    const int*     iatoms = &(idef.il[InteractionFunction::Constraints].iatoms[shaked->sblock[0]]);
     ArrayRef<real> lam    = shaked->scaled_lagrange_multiplier;
     for (i = 0; (i < shaked->numShakeBlocks());)
     {
@@ -774,7 +774,7 @@ static bool bshakef(FILE*                         log,
             dvdl = 0;
             for (ll = 0; ll < ncon; ll++)
             {
-                type = idef.il[F_CONSTR].iatoms[3 * ll];
+                type = idef.il[InteractionFunction::Constraints].iatoms[3 * ll];
 
                 /* Per equations in the manual, dv/dl = -2 \sum_ll lagrangian_ll * r_ll * (d_B - d_A) */
                 /* The vector scaled_lagrange_multiplier[ll] contains the value -2 r_ll eta_ll

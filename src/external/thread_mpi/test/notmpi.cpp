@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "notmpi program.\n");
         fprintf(stderr, "Usage: notmpi -nt <nthreads>\n");
-        exit(0);
+        exit(1);
     }
     else
     {

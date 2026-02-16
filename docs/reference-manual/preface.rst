@@ -36,9 +36,9 @@ on our `issue tracker`_. Corrections can also be made in the |Gromacs| git
 source repository and uploaded to the |Gromacs| `GitLab`_.
 
 We release an updated version of the manual whenever
-we release a new version of the software, so in general 
+we release a new version of the software, so in general
 it is a good idea to use a manual with the same major and
-minor release number as your |Gromacs| installation. 
+minor release number as your |Gromacs| installation.
 
 Citation information
 --------------------

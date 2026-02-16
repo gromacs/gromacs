@@ -114,12 +114,13 @@ TEST_P(FileTypeTest, CorrectValueForExtension)
 }
 
 const std::vector<TypeAndName> testParams = {
-    { 0, ".mdp" },  { 4, ".trr" },  { 6, ".xtc" },  { 7, ".tng" },  { 8, ".edr" },  { 11, ".gro" },
-    { 12, ".g96" }, { 13, ".pdb" }, { 14, ".brk" }, { 15, ".ent" }, { 16, ".esp" }, { 17, ".pqr" },
-    { 18, ".cpt" }, { 19, ".log" }, { 20, ".xvg" }, { 21, ".out" }, { 22, ".ndx" }, { 23, ".top" },
-    { 24, ".itp" }, { 26, ".tpr" }, { 27, ".tex" }, { 28, ".rtp" }, { 29, ".atp" }, { 30, ".hdb" },
-    { 31, ".dat" }, { 32, ".dlg" }, { 33, ".map" }, { 34, ".eps" }, { 35, ".mat" }, { 36, ".m2p" },
-    { 37, ".mtx" }, { 38, ".edi" }, { 39, ".cub" }, { 40, ".xpm" }, { 42, ".csv" }, { 43, ".inp" }
+    { 0, ".mdp" },  { 4, ".trr" },  { 6, ".xtc" },  { 7, ".tng" },  { 8, ".h5md" }, { 9, ".edr" },
+    { 12, ".gro" }, { 13, ".g96" }, { 14, ".pdb" }, { 15, ".brk" }, { 16, ".ent" }, { 17, ".esp" },
+    { 18, ".pqr" }, { 19, ".cpt" }, { 20, ".log" }, { 21, ".xvg" }, { 22, ".out" }, { 23, ".ndx" },
+    { 24, ".top" }, { 25, ".itp" }, { 27, ".tpr" }, { 28, ".tex" }, { 29, ".rtp" }, { 30, ".atp" },
+    { 31, ".hdb" }, { 32, ".dat" }, { 33, ".dlg" }, { 34, ".map" }, { 35, ".eps" }, { 36, ".mat" },
+    { 37, ".m2p" }, { 38, ".mtx" }, { 39, ".edi" }, { 40, ".cub" }, { 41, ".xpm" }, { 43, ".csv" },
+    { 44, ".inp" }
 };
 
 const std::vector<std::string> prefixes = { "",

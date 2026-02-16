@@ -65,7 +65,7 @@ namespace gmx
  *                           supplied by the user to mdrun -gpu_id.
  *                           Must contain only unique decimal digits, or only decimal
  *                           digits separated by comma delimiters. A terminal
- *                           comma is accceptable (and required to specify a
+ *                           comma is acceptable (and required to specify a
  *                           single ID that is larger than 9).
  *
  * \returns  A vector of unique GPU IDs.
@@ -88,7 +88,7 @@ std::vector<int> parseUserGpuIdString(const std::string& gpuIdString);
  *                                          supplied by the user to mdrun -gpu_id.
  *                                          Must contain only unique decimal digits, or only decimal
  *                                          digits separated by comma delimiters. A terminal
- *                                          comma is accceptable (and required to specify a
+ *                                          comma is acceptable (and required to specify a
  *                                          single ID that is larger than 9).
  *
  * \returns  A vector of unique compatible GPU IDs on this physical node.
@@ -108,7 +108,7 @@ std::vector<int> makeListOfAvailableDevices(gmx::ArrayRef<const std::unique_ptr<
  *                           supplied by the user to mdrun -gputasks.
  *                           Must contain only decimal digits, or only decimal
  *                           digits separated by comma delimiters. A terminal
- *                           comma is accceptable (and required to specify a
+ *                           comma is acceptable (and required to specify a
  *                           single ID that is larger than 9).
  *
  * \returns  A vector of GPU IDs.

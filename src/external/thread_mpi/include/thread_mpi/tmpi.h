@@ -162,6 +162,8 @@ extern const tMPI_Datatype TMPI_POINTER;            /**< pointer (thread_mpi
 
 TMPI_EXPORT
 extern const tMPI_Datatype TMPI_INT64_T;            /**< int64_t */
+TMPI_EXPORT
+extern const tMPI_Datatype TMPI_UINT64_T;           /**< uint64_t */
 
 /*! \} */
 
@@ -197,6 +199,7 @@ enum
     TMPI_ERR_PROCNR,             /*!< Hardware processor number (such as for
                                       thread affinity) error */
     TMPI_FAILURE,                /*!< Transmission failure */
+    TMPI_ERR_TYPE,               /*!< Invalid datatype argument */
     TMPI_ERR_UNKNOWN,            /*!< Unknown error */
     N_TMPI_ERR                   /* this must be the last one */
 };
@@ -851,6 +854,14 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
 int tMPI_Type_commit(tMPI_Datatype *datatype);
+
+
+/** Free the datatype.
+
+    \param[in,out] datatype  The datatype to destroy.
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+TMPI_EXPORT
+int tMPI_Type_free(tMPI_Datatype *datatype);
 /*! \} */
 
 

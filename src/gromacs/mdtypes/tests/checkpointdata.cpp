@@ -492,5 +492,29 @@ TEST_F(CheckpointDataTest, MultiDataTest)
     }
 }
 
+TEST_F(CheckpointDataTest, EmptyVectorTest)
+{
+    const std::vector<int> testInts{};
+    {
+        WriteCheckpointDataHolder writeCheckpointDataHolder;
+        WriteCheckpointData writeCheckpointData = writeCheckpointDataHolder.checkpointData("test");
+        writeCheckpointData.arrayRef("empty vector of int", makeConstArrayRef(testInts));
+        XdrSerializer serializer(filename_, "w");
+        writeCheckpointDataHolder.serialize(&serializer);
+    }
+    // Deserialize values and test against reference
+    {
+        XdrSerializer deserializer(filename_, "r");
+
+        ReadCheckpointDataHolder readCheckpointDataHolder;
+        readCheckpointDataHolder.deserialize(&deserializer);
+
+        ReadCheckpointData readCheckpointData = readCheckpointDataHolder.checkpointData("test");
+        std::vector<int>   readInts;
+        readCheckpointData.arrayRef("empty vector of int", makeArrayRef(readInts));
+        EXPECT_THAT(readInts, ::testing::ContainerEq(testInts));
+    }
+}
+
 } // namespace
 } // namespace gmx::test

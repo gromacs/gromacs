@@ -78,9 +78,9 @@ void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, gm
         if (dd->numCells[dim] > 2)
         {
             /* Pulse the grid forward and backward */
-            const gmx_specatsend_t* spas = spac->spas[d];
-            int                     n0   = spas[0].nrecv;
-            int                     n1   = spas[1].nrecv;
+            const gmx_specatsend_t* specAtSends = spac->spas[d];
+            int                     n0          = specAtSends[0].nrecv;
+            int                     n1          = specAtSends[1].nrecv;
             n -= n1 + n0;
             rvec* vbuf = as_rvec_array(spac->vbuf.data());
             /* Send and receive the coordinates */
@@ -89,11 +89,11 @@ void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, gm
                               as_rvec_array(f + n + n1),
                               n0,
                               vbuf,
-                              spas[0].a.size(),
+                              specAtSends[0].a.size(),
                               as_rvec_array(f + n),
                               n1,
-                              vbuf + spas[0].a.size(),
-                              spas[1].a.size());
+                              vbuf + specAtSends[0].a.size(),
+                              specAtSends[1].a.size());
             for (int dir = 0; dir < 2; dir++)
             {
                 bool bPBC   = ((dir == 0 && dd->ci[dim] == 0)
@@ -203,7 +203,7 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
         if (dd->numCells[dim] > 2)
         {
             /* Pulse the grid forward and backward */
-            gmx::RVec* vbuf = spac->vbuf.data();
+            gmx::RVec* vbufCoord = spac->vbuf.data();
             for (int dir = 0; dir < 2; dir++)
             {
                 bool bPBC   = false;
@@ -233,8 +233,8 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
                         /* Only copy */
                         for (int a : spas->a)
                         {
-                            *vbuf = x[a];
-                            vbuf++;
+                            *vbufCoord = x[a];
+                            vbufCoord++;
                         }
                     }
                     else if (!bScrew)
@@ -242,8 +242,8 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
                         /* Shift coordinates */
                         for (int a : spas->a)
                         {
-                            *vbuf = x[a] + shift;
-                            vbuf++;
+                            *vbufCoord = x[a] + shift;
+                            vbufCoord++;
                         }
                     }
                     else
@@ -251,10 +251,10 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
                         /* Shift and rotate coordinates */
                         for (int a : spas->a)
                         {
-                            (*vbuf)[XX] = x[a][XX] + shift[XX];
-                            (*vbuf)[YY] = box[YY][YY] - x[a][YY] + shift[YY];
-                            (*vbuf)[ZZ] = box[ZZ][ZZ] - x[a][ZZ] + shift[ZZ];
-                            vbuf++;
+                            (*vbufCoord)[XX] = x[a][XX] + shift[XX];
+                            (*vbufCoord)[YY] = box[YY][YY] - x[a][YY] + shift[YY];
+                            (*vbufCoord)[ZZ] = box[ZZ][ZZ] - x[a][ZZ] + shift[ZZ];
+                            vbufCoord++;
                         }
                     }
                 }
@@ -302,7 +302,7 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
         {
             const gmx_specatsend_t* spas = &spac->spas[d][0];
             /* Copy the required coordinates to the send buffer */
-            gmx::RVec* vbuf = spac->vbuf.data();
+            gmx::RVec* vbufCoord = spac->vbuf.data();
             for (int v = 0; v < nvec; v++)
             {
                 const gmx::RVec* x = (v == 0 ? x0 : x1);
@@ -314,18 +314,18 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
                      */
                     for (int a : spas->a)
                     {
-                        (*vbuf)[XX] = x[a][XX];
-                        (*vbuf)[YY] = box[YY][YY] - x[a][YY];
-                        (*vbuf)[ZZ] = box[ZZ][ZZ] - x[a][ZZ];
-                        vbuf++;
+                        (*vbufCoord)[XX] = x[a][XX];
+                        (*vbufCoord)[YY] = box[YY][YY] - x[a][YY];
+                        (*vbufCoord)[ZZ] = box[ZZ][ZZ] - x[a][ZZ];
+                        vbufCoord++;
                     }
                 }
                 else
                 {
                     for (int a : spas->a)
                     {
-                        *vbuf = x[a];
-                        vbuf++;
+                        *vbufCoord = x[a];
+                        vbufCoord++;
                     }
                 }
             }

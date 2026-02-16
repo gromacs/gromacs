@@ -212,10 +212,6 @@ void gmx::LegacySimulator::do_md()
     t_extmass MassQ;
     char      sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
-    /* PME load balancing data for GPU kernels */
-    gmx_bool bPMETune         = FALSE;
-    gmx_bool bPMETunePrinting = FALSE;
-
     bool bInteractiveMDstep = false;
 
     SimulationSignals signals;
@@ -359,8 +355,6 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForPme       = simulationWork.useGpuPme;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
-    const bool  useGpuForBufferOps =
-            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
 
     /* Check for polarizable models and flexible constraints */
     gmx_shellfc_t* shellfc = init_shell_flexcon(fpLog_,
@@ -368,7 +362,7 @@ void gmx::LegacySimulator::do_md()
                                                 constr_ ? constr_->numFlexibleConstraints() : 0,
                                                 ir->nstcalcenergy,
                                                 haveDDAtomOrdering(*cr_),
-                                                useGpuForPme || useGpuForBufferOps);
+                                                simulationWork);
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
@@ -556,17 +550,14 @@ void gmx::LegacySimulator::do_md()
     {
         repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_);
     }
-    /* PME tuning is only supported in the Verlet scheme, with PME for
-     * Coulomb. It is not supported with only LJ PME.
-     * Disable PME tuning with GPU PME decomposition */
-    bPMETune = (mdrunOptions_.tunePme && usingPme(fr_->ic->coulomb.type) && !mdrunOptions_.reproducible
-                && ir->cutoff_scheme != CutoffScheme::Group && !simulationWork.useGpuPmeDecomposition);
 
-    pme_load_balancing_t* pme_loadbal = nullptr;
-    if (bPMETune)
+    // PME tuning is only supported with PME for Coulomb. It is not supported with only LJ PME
+    std::unique_ptr<PmeLoadBalancing> pmeLoadBal;
+    if (mdrunOptions_.tunePme
+        && pmeTuningIsSupported(fr_->ic->coulomb.type, mdrunOptions_.reproducible, simulationWork))
     {
-        pme_loadbal_init(
-                &pme_loadbal, cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
+        pmeLoadBal = std::make_unique<PmeLoadBalancing>(
+                cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, simulationWork);
     }
 
     if (!ir->bContinuation)
@@ -685,7 +676,7 @@ void gmx::LegacySimulator::do_md()
                         state_->box,
                         &bSumEkinhOld,
                         cglo_flags_iteration,
-                        step,
+                        step - 1, // Pass step-1 to signal that v is from minus a half step
                         &observablesReducer);
         // Clean up after pre-step use of compute_globals()
         observablesReducer.markAsReadyToReduce();
@@ -762,7 +753,7 @@ void gmx::LegacySimulator::do_md()
             }
             if (EI_STATE_VELOCITY(ir->eI))
             {
-                real temp = enerd_->term[F_TEMP];
+                real temp = enerd_->term[InteractionFunction::Temperature];
                 if (ir->eI != IntegrationAlgorithm::VV)
                 {
                     /* Result of Ekin averaged over velocities of -half
@@ -879,7 +870,7 @@ void gmx::LegacySimulator::do_md()
         /* Determine if this is a neighbor search step */
         const bool bNStList = (ir->nstlist > 0 && step % ir->nstlist == 0);
 
-        if (bPMETune && bNStList)
+        if (pmeLoadBal && bNStList)
         {
             // This has to be here because PME load balancing is called so early.
             // TODO: Move to after all booleans are defined.
@@ -889,19 +880,13 @@ void gmx::LegacySimulator::do_md()
                 stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
             }
             /* PME grid + cut-off optimization with GPUs or PME nodes */
-            pme_loadbal_do(pme_loadbal,
-                           (mdrunOptions_.verbose && isMainRank) ? stderr : nullptr,
-                           fpLog_,
-                           mdLog_,
-                           *ir,
-                           fr_,
-                           state_->box,
-                           state_->x,
-                           wallCycleCounters_,
-                           step,
-                           step_rel,
-                           &bPMETunePrinting,
-                           simulationWork.useGpuPmePpCommunication);
+            pmeLoadBal->addCycles((mdrunOptions_.verbose && isMainRank) ? stderr : nullptr,
+                                  fr_,
+                                  state_->box,
+                                  state_->x,
+                                  wallCycleCounters_,
+                                  step,
+                                  step_rel);
         }
 
         wallcycle_start(wallCycleCounters_, WallCycleCounter::Step);
@@ -1036,7 +1021,7 @@ void gmx::LegacySimulator::do_md()
                                     constr_,
                                     nrnb_,
                                     wallCycleCounters_,
-                                    do_verbose && !bPMETunePrinting);
+                                    do_verbose && !(pmeLoadBal && pmeLoadBal->isPrintingLoad()));
                 upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
                 fr_->longRangeNonbondeds->updateAfterPartition(*md);
             }
@@ -1067,7 +1052,7 @@ void gmx::LegacySimulator::do_md()
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
-            int cglo_flags = CGLO_GSTAT | CGLO_TEMPERATURE;
+            int cgloFlagsExchanged = CGLO_GSTAT | CGLO_COMPUTEEKIN;
             compute_globals(gstat,
                             cr_->commMyGroup,
                             ir,
@@ -1088,8 +1073,8 @@ void gmx::LegacySimulator::do_md()
                             &nullSignaller,
                             state_->box,
                             &bSumEkinhOld,
-                            cglo_flags,
-                            step,
+                            cgloFlagsExchanged,
+                            step - 1, // Pass step-1 to indicate that v is from minus half a step
                             &observablesReducer);
         }
         clear_mat(force_vir);
@@ -1169,7 +1154,7 @@ void gmx::LegacySimulator::do_md()
         const bool needHalfStepKineticEnergy =
                 (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
 
-        // Parrinello-Rahman requires the pressure to be availible before the update to compute
+        // Parrinello-Rahman requires the pressure to be available before the update to compute
         // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
         const bool doParrinelloRahman =
                 (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
@@ -1597,13 +1582,13 @@ void gmx::LegacySimulator::do_md()
                     if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
                         || (!runScheduleWork_->stepWork.useGpuFBufferOps))
                     {
-                        // The PME forces were recieved to the host, and reduced on the CPU with the
+                        // The PME forces were received to the host, and reduced on the CPU with the
                         // rest of the forces computed on the GPU, so the final forces have to be
                         // copied back to the GPU. Or the buffer ops were not offloaded this step,
                         // so the forces are on the host and have to be copied
                         stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
                     }
-                    const bool doTemperatureScaling =
+                    const bool doTemperatureScalingGpu =
                             (ir->etc != TemperatureCoupling::No
                              && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
 
@@ -1615,7 +1600,7 @@ void gmx::LegacySimulator::do_md()
                             true,
                             bCalcVir,
                             shake_vir,
-                            doTemperatureScaling,
+                            doTemperatureScalingGpu,
                             ekind_->tcstat,
                             doParrinelloRahman,
                             ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
@@ -1716,7 +1701,7 @@ void gmx::LegacySimulator::do_md()
                     updatePrevStepPullCom(pullWork_, state_->pull_com_prev_step);
                 }
 
-                enerd_->term[F_DVDL_CONSTR] += dvdl_constr;
+                enerd_->term[InteractionFunction::dHdLambdaConstraint] += dvdl_constr;
             }
         }
 
@@ -1732,7 +1717,7 @@ void gmx::LegacySimulator::do_md()
                 // or with an odd nstlist, since the odd/even step
                 // pruning pattern will change
                 bool forceGraphReinstantiation =
-                        pme_loadbal_is_active(pme_loadbal) || ((ir->nstlist % 2) == 1);
+                        (pmeLoadBal && pmeLoadBal->isActive()) || ((ir->nstlist % 2) == 1);
                 mdGraph->createExecutableGraph(forceGraphReinstantiation);
             }
             if (mdGraph->useGraphThisStep())
@@ -1853,7 +1838,7 @@ void gmx::LegacySimulator::do_md()
         /* #############  END CALC EKIN AND PRESSURE ################# */
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of
-           the virial that should probably be addressed eventually. state->veta has better properies,
+           the virial that should probably be addressed eventually. state->veta has better properties,
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
@@ -1922,20 +1907,23 @@ void gmx::LegacySimulator::do_md()
             /* use the directly determined last velocity, not actually the averaged half steps */
             if (bTrotter && ir->eI == IntegrationAlgorithm::VV)
             {
-                enerd_->term[F_EKIN] = last_ekin;
+                enerd_->term[InteractionFunction::KineticEnergy] = last_ekin;
             }
-            enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
+            enerd_->term[InteractionFunction::TotalEnergy] =
+                    enerd_->term[InteractionFunction::PotentialEnergy]
+                    + enerd_->term[InteractionFunction::KineticEnergy];
 
             if (integratorHasConservedEnergyQuantity(ir))
             {
                 if (EI_VV(ir->eI))
                 {
-                    enerd_->term[F_ECONSERVED] = enerd_->term[F_ETOT] + saved_conserved_quantity;
+                    enerd_->term[InteractionFunction::ConservedEnergy] =
+                            enerd_->term[InteractionFunction::TotalEnergy] + saved_conserved_quantity;
                 }
                 else
                 {
-                    enerd_->term[F_ECONSERVED] =
-                            enerd_->term[F_ETOT]
+                    enerd_->term[InteractionFunction::ConservedEnergy] =
+                            enerd_->term[InteractionFunction::TotalEnergy]
                             + NPT_energy(ir->pressureCouplingOptions,
                                          ir->etc,
                                          gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
@@ -2041,7 +2029,8 @@ void gmx::LegacySimulator::do_md()
             state_->fep_state = awh->fepLambdaState();
         }
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms_, isMainRank) && (do_verbose || gmx_got_usr_signal()) && !bPMETunePrinting)
+        if (isMainSimMainRank(ms_, isMainRank) && (do_verbose || gmx_got_usr_signal())
+            && !(pmeLoadBal && pmeLoadBal->isPrintingLoad()))
         {
             if (shellfc)
             {
@@ -2157,8 +2146,17 @@ void gmx::LegacySimulator::do_md()
         }
 #endif
 
-        resetHandler->resetCounters(
-                step, step_rel, mdLog_, fpLog_, cr_, fr_->nbv.get(), nrnb_, fr_->pmedata, pme_loadbal, wallCycleCounters_, wallTimeAccounting_);
+        resetHandler->resetCounters(step,
+                                    step_rel,
+                                    mdLog_,
+                                    fpLog_,
+                                    cr_,
+                                    fr_->nbv.get(),
+                                    nrnb_,
+                                    fr_->pmedata,
+                                    pmeLoadBal.get(),
+                                    wallCycleCounters_,
+                                    wallTimeAccounting_);
 
         /* If bIMD is TRUE, the main updates the IMD energy record and sends positions to VMD client */
         imdSession_->updateEnergyRecordAndSendPositionsAndEnergies(bInteractiveMDstep, step, bCalcEner);
@@ -2206,9 +2204,10 @@ void gmx::LegacySimulator::do_md()
     }
     done_mdoutf(outf);
 
-    if (bPMETune)
+    if (pmeLoadBal)
     {
-        pme_loadbal_done(pme_loadbal, fpLog_, mdLog_, fr_->nbv->useGpu());
+        pmeLoadBal->printSettings();
+        pmeLoadBal.reset(nullptr);
     }
 
     done_shellfc(fpLog_, shellfc, step_rel);

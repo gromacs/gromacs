@@ -96,8 +96,8 @@ int UpdateGroupsCog::addCogsThread(ArrayRef<const int>  globalAtomIndices,
                                    const Range<int>&    threadAtomRange)
 {
     // Prefetch the global update group indices, as we can OpenMP parallelize this
-    int numUpdateGroups = 0;
-    int moleculeBlock   = 0;
+    MTopLookUp mTopLookUp(mtop_);
+    int        numUpdateGroups = 0;
     for (int localAtom : threadAtomRange)
     {
         const int globalAtom = globalAtomIndices[localAtom];
@@ -109,18 +109,16 @@ int UpdateGroupsCog::addCogsThread(ArrayRef<const int>  globalAtomIndices,
             continue;
         }
 
-        int moleculeIndex;
-        int atomIndexInMolecule;
-        mtopGetMolblockIndex(mtop_, globalAtom, &moleculeBlock, &moleculeIndex, &atomIndexInMolecule);
-        const auto& indicesForBlock        = indicesPerMoleculeblock_[moleculeBlock];
+        const auto  mbai                   = mTopLookUp.getMolblockAtomIndex(globalAtom);
+        const auto& indicesForBlock        = indicesPerMoleculeblock_[mbai.molBlock];
         const int   globalUpdateGroupIndex = indicesForBlock.groupStart_
-                                           + moleculeIndex * indicesForBlock.numGroupsPerMolecule_
-                                           + indicesForBlock.groupIndex_[atomIndexInMolecule];
+                                           + mbai.molIndex * indicesForBlock.numGroupsPerMolecule_
+                                           + indicesForBlock.groupIndex_[mbai.atomIndex];
 
         // Temporarily store the global update group index in cogIndices_
         cogIndices_[localAtom] = globalUpdateGroupIndex;
 
-        if (isFirstAtomInUpdateGroup_[moleculeBlock][atomIndexInMolecule])
+        if (isFirstAtomInUpdateGroup_[mbai.molBlock][mbai.atomIndex])
         {
             numUpdateGroups++;
         }

@@ -192,12 +192,12 @@ size_t AnalysisHistogramSettings::findBin(real y) const
 {
     if (y < firstEdge_)
     {
-        return bAll_ ? 0 : -1;
+        return bAll_ ? 0 : npos;
     }
     size_t bin = static_cast<size_t>((y - firstEdge_) * inverseBinWidth_);
     if (bin >= binCount_)
     {
-        return bAll_ ? binCount_ - 1 : -1;
+        return bAll_ ? binCount_ - 1 : npos;
     }
     return bin;
 }
@@ -629,8 +629,8 @@ void AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRe
     {
         if (points.present(i))
         {
-            const int bin = settings().findBin(points.y(i));
-            if (bin != -1)
+            const size_t bin = settings().findBin(points.y(i));
+            if (bin != AnalysisHistogramSettings::npos)
             {
                 handle.value(bin) += 1;
             }
@@ -777,8 +777,8 @@ void AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSet
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(points.y(0));
-    if (bin != -1)
+    size_t bin = settings().findBin(points.y(0));
+    if (bin != AnalysisHistogramSettings::npos)
     {
         Impl::FrameLocalData::DataSetHandle handle =
                 impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
@@ -905,8 +905,8 @@ void AnalysisDataBinAverageModule::pointsAdded(const AnalysisDataPointSetRef& po
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(points.y(0));
-    if (bin != -1)
+    size_t bin = settings().findBin(points.y(0));
+    if (bin != AnalysisHistogramSettings::npos)
     {
         AnalysisDataFrameAverager& averager = impl_->averagers_[points.dataSetIndex()];
         for (int i = 1; i < points.columnCount(); ++i)

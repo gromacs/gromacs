@@ -200,7 +200,7 @@ static void check_viol(FILE*                          log,
     {
         vvindex[j] = 0;
     }
-    nat = interaction_function[F_DISRES].nratoms + 1;
+    nat = interaction_function[InteractionFunction::DistanceRestraints].nratoms + 1;
     // Check internal consistency of disres.label
     // The label for a distance restraint should be at most one larger
     // than the previous label.
@@ -416,7 +416,7 @@ static void dump_stats(FILE*                          log,
     fprintf(log, "\n");
     fprintf(log, "++++++++++++++ STATISTICS ++++++++++++++++++++++++\n");
     snew(drs, dd.nres);
-    const int nra = interaction_function[F_DISRES].nratoms + 1;
+    const int nra = interaction_function[InteractionFunction::DistanceRestraints].nratoms + 1;
     for (int j = 0; j < disres.size(); j += nra)
     {
         // Note that the restraint i can be used by multiple pairs
@@ -493,7 +493,7 @@ static void dump_clust_stats(FILE*                           fp,
         {
             gmx_fatal(FARGS, "Inconsistency with cluster %d. Invalid name", k);
         }
-        nra  = interaction_function[F_DISRES].nratoms + 1;
+        nra  = interaction_function[InteractionFunction::DistanceRestraints].nratoms + 1;
         sumV = sumVT3 = sumVT6 = maxV = maxVT3 = maxVT6 = 0;
 
         // Use a map to process each restraint only once while looping over all pairs
@@ -609,16 +609,16 @@ static void dump_disre_matrix(const char*                   fn,
     {
         snew(mat[i], n_res);
     }
-    nratoms = interaction_function[F_DISRES].nratoms;
-    nra     = (idef.il[F_DISRES].size() / (nratoms + 1));
+    nratoms = interaction_function[InteractionFunction::DistanceRestraints].nratoms;
+    nra     = (idef.il[InteractionFunction::DistanceRestraints].size() / (nratoms + 1));
     snew(ptr, nra + 1);
     index  = 0;
     nlabel = 0;
     ptr[0] = 0;
     snew(w_dr, ndr);
-    for (i = 0; (i < idef.il[F_DISRES].size()); i += nratoms + 1)
+    for (i = 0; (i < idef.il[InteractionFunction::DistanceRestraints].size()); i += nratoms + 1)
     {
-        tp    = idef.il[F_DISRES].iatoms[i];
+        tp    = idef.il[InteractionFunction::DistanceRestraints].iatoms[i];
         label = idef.iparams[tp].disres.label;
 
         if (label != index)
@@ -649,9 +649,9 @@ static void dump_disre_matrix(const char*                   fn,
     {
         for (j = ptr[i]; (j < ptr[i + 1]); j += nratoms + 1)
         {
-            tp = idef.il[F_DISRES].iatoms[j];
-            ai = idef.il[F_DISRES].iatoms[j + 1];
-            aj = idef.il[F_DISRES].iatoms[j + 2];
+            tp = idef.il[InteractionFunction::DistanceRestraints].iatoms[j];
+            ai = idef.il[InteractionFunction::DistanceRestraints].iatoms[j + 1];
+            aj = idef.il[InteractionFunction::DistanceRestraints].iatoms[j + 2];
 
             ri = resnr[ai];
             rj = resnr[aj];
@@ -920,12 +920,33 @@ int gmx_disre(int argc, char* argv[])
             }
             my_clust = clust->inv_clust[j];
             range_check(my_clust, 0, gmx::ssize(clust->clusters));
-            check_viol(
-                    fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, dr_clust, my_clust, isize, index, vvindex, &disresdata);
+            check_viol(fplog,
+                       idef.il[InteractionFunction::DistanceRestraints],
+                       idef.iparams,
+                       x,
+                       f,
+                       pbc_null,
+                       dr_clust,
+                       my_clust,
+                       isize,
+                       index,
+                       vvindex,
+                       &disresdata);
         }
         else
         {
-            check_viol(fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, &dr, 0, isize, index, vvindex, &disresdata);
+            check_viol(fplog,
+                       idef.il[InteractionFunction::DistanceRestraints],
+                       idef.iparams,
+                       x,
+                       f,
+                       pbc_null,
+                       &dr,
+                       0,
+                       isize,
+                       index,
+                       vvindex,
+                       &disresdata);
         }
         if (bPDB)
         {
@@ -968,12 +989,26 @@ int gmx_disre(int argc, char* argv[])
 
     if (clust)
     {
-        dump_clust_stats(
-                fplog, disresdata, idef.il[F_DISRES], idef.iparams, clust->clusters, dr_clust, isize, index);
+        dump_clust_stats(fplog,
+                         disresdata,
+                         idef.il[InteractionFunction::DistanceRestraints],
+                         idef.iparams,
+                         clust->clusters,
+                         dr_clust,
+                         isize,
+                         index);
     }
     else
     {
-        dump_stats(fplog, j, disresdata, idef.il[F_DISRES], idef.iparams, &dr, isize, index, bPDB ? atoms.get() : nullptr);
+        dump_stats(fplog,
+                   j,
+                   disresdata,
+                   idef.il[InteractionFunction::DistanceRestraints],
+                   idef.iparams,
+                   &dr,
+                   isize,
+                   index,
+                   bPDB ? atoms.get() : nullptr);
         if (bPDB)
         {
             write_sto_conf(opt2fn("-q", NFILE, fnm),

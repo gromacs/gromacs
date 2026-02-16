@@ -44,6 +44,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 
 #include "pme_gpu_calculate_splines.cuh"
@@ -75,8 +76,8 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
     float* __restrict__ gm_grid = kernelParams.grid.d_realGrid[gridIndex];
 
     // Number of atoms processed by a single warp in spread and gather
-    const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomsPerWarp = warp_size / threadsPerAtomValue;
+    constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
+    constexpr int atomsPerWarp = warp_size / threadsPerAtomValue;
 
     const int nx  = kernelParams.grid.realGridSize[XX];
     const int ny  = kernelParams.grid.realGridSize[YY];
@@ -88,7 +89,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
 
     const int atomIndexLocal = threadIdx.z;
 
-    const int chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
+    const bool chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
     if (chargeCheck)
     {
         // Spline Z coordinates
@@ -124,7 +125,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
             const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
             float       thetaY = sm_theta[splineIndexY];
             const float Val    = thetaZ * thetaY * (*atomCharge);
-            assert(isfinite(Val));
+            GMX_DEVICE_ASSERT(isfinite(Val));
             const int offset = iy * pnz + iz;
 
 #pragma unroll
@@ -139,8 +140,8 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
                 const int splineIndexX =
                         getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
                 const float thetaX = sm_theta[splineIndexX];
-                assert(isfinite(thetaX));
-                assert(isfinite(gm_grid[gridIndexGlobal]));
+                GMX_DEVICE_ASSERT(isfinite(thetaX));
+                GMX_DEVICE_ASSERT(isfinite(gm_grid[gridIndexGlobal]));
                 atomicAdd(gm_grid + gridIndexGlobal, thetaX * Val);
             }
         }
@@ -169,10 +170,10 @@ template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wr
 __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
         void pme_spline_and_spread_kernel(const PmeGpuKernelParams kernelParams)
 {
-    const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomsPerBlock = c_spreadMaxThreadsPerBlock / threadsPerAtomValue;
+    constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
+    constexpr int atomsPerBlock = c_spreadMaxThreadsPerBlock / threadsPerAtomValue;
     // Number of atoms processed by a single warp in spread and gather
-    const int atomsPerWarp = warp_size / threadsPerAtomValue;
+    constexpr int atomsPerWarp = warp_size / threadsPerAtomValue;
     // Gridline indices, ivec
     __shared__ int sm_gridlineIndices[atomsPerBlock * DIM];
     // Charges
@@ -208,7 +209,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         return;
     }
     /* Charges, required for both spline and spread */
-    if (c_useAtomDataPrefetch)
+    if constexpr (c_useAtomDataPrefetch)
     {
         pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
                 sm_coefficients, &kernelParams.atoms.d_coefficients[0][kernelParams.pipelineAtomStart]);
@@ -220,10 +221,10 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         atomCharge = kernelParams.atoms.d_coefficients[0][atomIndexGlobal];
     }
 
-    if (computeSplines)
+    if constexpr (computeSplines)
     {
         const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
-        if (c_useAtomDataPrefetch)
+        if constexpr (c_useAtomDataPrefetch)
         {
             // Coordinates
             __shared__ float3 sm_coordinates[atomsPerBlock];
@@ -258,19 +259,19 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     }
 
     /* Spreading */
-    if (spreadCharges && atomIndexGlobal < kernelParams.atoms.nAtoms)
+    if constexpr (spreadCharges)
     {
-
-        if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
+        if (atomIndexGlobal < kernelParams.atoms.nAtoms
+            && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd)))
         {
             spread_charges<order, wrapX, wrapY, 0, threadsPerAtom>(
                     kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
         }
     }
-    if (numGrids == 2)
+    if constexpr (numGrids == 2)
     {
         __syncthreads();
-        if (c_useAtomDataPrefetch)
+        if constexpr (c_useAtomDataPrefetch)
         {
             pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
                     sm_coefficients, &kernelParams.atoms.d_coefficients[1][kernelParams.pipelineAtomStart]);
@@ -281,9 +282,10 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         {
             atomCharge = kernelParams.atoms.d_coefficients[1][atomIndexGlobal];
         }
-        if (spreadCharges && atomIndexGlobal < kernelParams.atoms.nAtoms)
+        if constexpr (spreadCharges)
         {
-            if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
+            if (atomIndexGlobal < kernelParams.atoms.nAtoms
+                && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd)))
             {
                 spread_charges<order, wrapX, wrapY, 1, threadsPerAtom>(
                         kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);

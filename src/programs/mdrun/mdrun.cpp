@@ -283,6 +283,7 @@ int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char
     builder.addDomainDecomposition(options.domdecOptions);
     // \todo pass by value
     builder.addNonBonded(options.nbpu_opt_choices[0]);
+    builder.addNonBondedFETaskAssignment(options.nbfe_opt_choices[0]);
     // \todo pass by value
     builder.addElectrostatics(options.pme_opt_choices[0], options.pme_fft_opt_choices[0]);
     builder.addBondedTaskAssignment(options.bonded_opt_choices[0]);

@@ -58,7 +58,7 @@ follow.
 ``gmx do_dssp`` supports DSSP version 4
 """""""""""""""""""""""""""""""""""""""
 
-The newer DSSP version 4 program can be used by ``do_dssp`` by specifying 
+The newer DSSP version 4 program can be used by ``do_dssp`` by specifying
 option ``-ver 4`` and setting the DSSP environement variable to the ``mkdssp``
 executable path (e.g. ``setenv DSSP /opt/dssp/mkdssp``)
 

@@ -81,6 +81,7 @@ variables = [
         "GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY",
         "@GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY@",
     ),
+    ("GMX_HDF5_MINIMUM_REQUIRED_VERSION", "@GMX_HDF5_MINIMUM_REQUIRED_VERSION@"),
     ("REQUIRED_OPENCL_MIN_VERSION", "@REQUIRED_OPENCL_MIN_VERSION@"),
     ("SOURCE_MD5SUM", "@SOURCE_MD5SUM@"),
     ("REGRESSIONTEST_MD5SUM", "@REGRESSIONTEST_MD5SUM_STRING@"),
@@ -258,6 +259,8 @@ rst_epilog += """
 .. _AdaptiveCpp: https://github.com/AdaptiveCpp/AdaptiveCpp
 .. _ROCm: https://rocm.docs.amd.com/en/latest/index.html
 .. _rocPrim: https://rocm.docs.amd.com/projects/rocPRIM/en/latest/index.html
+.. _HDF5: https://www.hdfgroup.org/solutions/hdf5
+.. _H5MD: https://h5md.nongnu.org
 .. _OpenMPI: http://www.open-mpi.org
 .. _MPICH: http://www.mpich.org
 .. _OpenMP: http://en.wikipedia.org/wiki/OpenMP

@@ -115,7 +115,7 @@ real TestSystem::maxCharge()
     return std::abs(chargeO);
 }
 
-TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
+TestSystem::TestSystem(const LJCombinationRule ljCombinationRule, const bool oneThirdNoChargeAndOneThirdAllLJ)
 {
     numAtomTypes = 3;
     nonbondedParameters.resize(numAtomTypes * numAtomTypes * 2, 0);
@@ -143,7 +143,7 @@ TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
     for (int a = 0; a < numAtoms; a++)
     {
         // The first third of the atoms has no charge to cover all code paths
-        const bool hasCharge = (a >= numAtoms / 3);
+        const bool hasCharge = (!oneThirdNoChargeAndOneThirdAllLJ || a >= numAtoms / 3);
 
         if (a % numAtomsInMolecule == 0)
         {
@@ -156,7 +156,7 @@ TestSystem::TestSystem(const LJCombinationRule ljCombinationRule)
         {
             // Hydrogen
             // Make the last third of molecules have LJ on all atoms
-            if (a >= numAtoms * 2 / 3)
+            if (oneThirdNoChargeAndOneThirdAllLJ && a >= numAtoms * 2 / 3)
             {
                 atomTypes[a] = typeHWithLJ;
                 atomInfo[a] |= gmx::sc_atomInfo_HasVdw;

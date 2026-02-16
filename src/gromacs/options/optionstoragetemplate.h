@@ -457,14 +457,14 @@ std::unique_ptr<IOptionValueStore<T>> OptionStorageTemplate<T>::createStore(Valu
 template<typename T>
 std::vector<Any> OptionStorageTemplate<T>::defaultValues() const
 {
-    std::vector<Any> result;
     if (hasFlag(efOption_NoDefaultValue))
     {
-        return result;
+        return {};
     }
     GMX_RELEASE_ASSERT(
             hasFlag(efOption_HasDefaultValue),
             "Current option implementation can only provide default values before assignment");
+    std::vector<Any> result;
     for (const auto& value : values())
     {
         result.push_back(Any::create<T>(value));

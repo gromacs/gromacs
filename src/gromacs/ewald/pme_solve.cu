@@ -45,6 +45,8 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/gputraits.cuh"
 
 #include "pme_gpu_constants.h"
 #include "pme_gpu_internal.h"
@@ -63,23 +65,9 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
         void pme_solve_kernel(const struct PmeGpuKernelParams kernelParams)
 {
     /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
-    int majorDim, middleDim, minorDim;
-    switch (gridOrdering)
-    {
-        case GridOrdering::YZX:
-            majorDim  = YY;
-            middleDim = ZZ;
-            minorDim  = XX;
-            break;
-
-        case GridOrdering::XYZ:
-            majorDim  = XX;
-            middleDim = YY;
-            minorDim  = ZZ;
-            break;
-
-        default: assert(false);
-    }
+    constexpr int majorDim  = gridOrdering == GridOrdering::YZX ? YY : XX;
+    constexpr int middleDim = gridOrdering == GridOrdering::YZX ? ZZ : YY;
+    constexpr int minorDim  = gridOrdering == GridOrdering::YZX ? XX : ZZ;
 
     /* Global memory pointers */
     const float* __restrict__ gm_splineValueMajor = kernelParams.grid.d_splineModuli[gridIndex]
@@ -131,7 +119,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     float viryz  = 0.0F;
     float virzz  = 0.0F;
 
-    assert(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
+    GMX_DEVICE_ASSERT(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
     if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
         & (gridLineIndex < gridLinesPerBlock))
     {
@@ -147,76 +135,50 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
         const int kMiddle = indexMiddle + localOffsetMiddle;
         float     mMiddle = kMiddle;
         /* Checking Y in XYZ case */
-        if (gridOrdering == GridOrdering::XYZ)
+        if constexpr (gridOrdering == GridOrdering::XYZ)
         {
             mMiddle = (kMiddle < maxkMiddle) ? kMiddle : (kMiddle - nMiddle);
         }
         const int kMinor = localOffsetMinor + indexMinor;
         float     mMinor = kMinor;
         /* Checking X in YZX case */
-        if (gridOrdering == GridOrdering::YZX)
+        if constexpr (gridOrdering == GridOrdering::YZX)
         {
             mMinor = (kMinor < maxkMinor) ? kMinor : (kMinor - nMinor);
         }
         /* We should skip the k-space point (0,0,0) */
         const bool notZeroPoint = (kMinor > 0) | (kMajor > 0) | (kMiddle > 0);
 
-        float mX, mY, mZ;
-        switch (gridOrdering)
-        {
-            case GridOrdering::YZX:
-                mX = mMinor;
-                mY = mMajor;
-                mZ = mMiddle;
-                break;
+        const float3 mm = (gridOrdering == GridOrdering::YZX) ? make_float3(mMinor, mMajor, mMiddle)
+                                                              : make_float3(mMajor, mMiddle, mMinor);
 
-            case GridOrdering::XYZ:
-                mX = mMajor;
-                mY = mMiddle;
-                mZ = mMinor;
-                break;
-
-            default: assert(false);
-        }
-
+        // We need to apply a correction factor to the first and last component in
+        // the Z direction, so depending on the grid ordering we need to change
+        // the value for the factor
+        const int  maxkZ = (gridOrdering == GridOrdering::YZX ? maxkMiddle : maxkMinor);
+        const int  kZ    = (gridOrdering == GridOrdering::YZX ? kMiddle : kMinor);
+        const bool isFirstOrLastZComponent = (kZ == 0 | kZ == maxkZ);
         /* 0.5 correction factor for the first and last components of a Z dimension */
-        float corner_fac = 1.0F;
-        switch (gridOrdering)
-        {
-            case GridOrdering::YZX:
-                if ((kMiddle == 0) | (kMiddle == maxkMiddle))
-                {
-                    corner_fac = 0.5F;
-                }
-                break;
-
-            case GridOrdering::XYZ:
-                if ((kMinor == 0) | (kMinor == maxkMinor))
-                {
-                    corner_fac = 0.5F;
-                }
-                break;
-
-            default: assert(false);
-        }
+        const float corner_fac = (isFirstOrLastZComponent ? 0.5F : 1.0F);
 
         if (notZeroPoint)
         {
-            const float mhxk = mX * kernelParams.current.recipBox[XX][XX];
-            const float mhyk = mX * kernelParams.current.recipBox[XX][YY]
-                               + mY * kernelParams.current.recipBox[YY][YY];
-            const float mhzk = mX * kernelParams.current.recipBox[XX][ZZ]
-                               + mY * kernelParams.current.recipBox[YY][ZZ]
-                               + mZ * kernelParams.current.recipBox[ZZ][ZZ];
+            const float mhxk = mm.x * kernelParams.current.recipBox[XX][XX];
+            const float mhyk = mm.x * kernelParams.current.recipBox[XX][YY]
+                               + mm.y * kernelParams.current.recipBox[YY][YY];
+            const float mhzk = mm.x * kernelParams.current.recipBox[XX][ZZ]
+                               + mm.y * kernelParams.current.recipBox[YY][ZZ]
+                               + mm.z * kernelParams.current.recipBox[ZZ][ZZ];
 
             const float m2k = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
-            assert(m2k != 0.0F);
-            // TODO: use LDG/textures for gm_splineValue
-            float denom = m2k * float(CUDART_PI_F) * kernelParams.current.boxVolume
-                          * gm_splineValueMajor[kMajor] * gm_splineValueMiddle[kMiddle]
-                          * gm_splineValueMinor[kMinor];
-            assert(isfinite(denom));
-            assert(denom != 0.0F);
+            GMX_DEVICE_ASSERT(m2k != 0.0F);
+            float vMajor  = LDG(gm_splineValueMajor + kMajor);
+            float vMiddle = LDG(gm_splineValueMiddle + kMiddle);
+            float vMinor  = LDG(gm_splineValueMinor + kMinor);
+            float denom   = m2k * float(CUDART_PI_F) * kernelParams.current.boxVolume * vMajor
+                          * vMiddle * vMinor;
+            GMX_DEVICE_ASSERT(isfinite(denom));
+            GMX_DEVICE_ASSERT(denom != 0.0F);
 
             const float tmp1   = expf(-kernelParams.grid.ewaldFactor * m2k);
             const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
@@ -227,7 +189,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
             gridValue.y *= etermk;
             *gm_gridCell = gridValue;
 
-            if (computeEnergyAndVirial)
+            if constexpr (computeEnergyAndVirial)
             {
                 const float tmp1k =
                         2.0F * (gridValue.x * oldGridValue.x + gridValue.y * oldGridValue.y);
@@ -249,7 +211,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     }
 
     /* Optional energy/virial reduction */
-    if (computeEnergyAndVirial)
+    if constexpr (computeEnergyAndVirial)
     {
         /* A tricky shuffle reduction inspired by reduce_force_j_warp_shfl.
          * The idea is to reduce 7 energy/virial components into a single variable (aligned by 8).
@@ -338,7 +300,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
          *       To use fewer warps, add to the conditional:
          *       && threadLocalId < activeWarps * stride
          */
-        assert(activeWarps * stride >= warp_size);
+        GMX_DEVICE_ASSERT(activeWarps * stride >= warp_size);
         if (threadLocalId < warp_size)
         {
             float output = sm_virialAndEnergy[threadLocalId];
@@ -350,7 +312,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
             /* Final output */
             if (validComponentIndex)
             {
-                assert(isfinite(output));
+                GMX_DEVICE_ASSERT(isfinite(output));
                 atomicAdd(gm_virialAndEnergy + componentIndex, output);
             }
         }

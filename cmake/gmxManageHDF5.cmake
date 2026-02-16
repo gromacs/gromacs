@@ -31,22 +31,32 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-set(GMX_HDF5_REQUIRED_VERSION "1.10.7")
+set(GMX_HDF5_MINIMUM_REQUIRED_VERSION "1.10.7")
 
 macro(gmx_manage_hdf5)
-    if(HDF5_ALREADY_SEARCHED)
-        set(HDF5_FIND_QUIETLY ON)
-    endif()
-
     # Find an external hdf5 library.
-    find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} COMPONENTS C)
-    set(HDF5_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for HDF5 has already been done")
-    mark_as_advanced(HDF5_ALREADY_SEARCHED)
+    if(GMX_USE_HDF5 OR NOT DEFINED GMX_USE_HDF5)
+        if(HDF5_ALREADY_SEARCHED)
+            set(HDF5_FIND_QUIETLY ON)
+        endif()
+        find_package(HDF5 ${GMX_HDF5_MINIMUM_REQUIRED_VERSION} COMPONENTS C)
+        set(HDF5_ALREADY_SEARCHED TRUE CACHE INTERNAL "True if a search for HDF5 has already been done")
+    else()
+        set(HDF5_FOUND FALSE FORCE)  # Don't search for HDF5 if user set GMX_USE_HDF5 to OFF
+    endif()
 
     set(GMX_USE_HDF5 ${HDF5_FOUND} CACHE BOOL "Build GROMACS with HDF5 support (needed for handling files in H5MD format)")
     if(GMX_USE_HDF5)
         if(NOT HDF5_FOUND)
-            message(FATAL_ERROR "Cannot find HDF5 (minimum version required ${GMX_HDF5_REQUIRED_VERSION}). Disable HDF5 by setting the option GMX_USE_HDF5 to OFF.")
+            message(FATAL_ERROR "Cannot build with HDF5 support since HDF5 was not found. Disable HDF5 by setting the option GMX_USE_HDF5=OFF.")
         endif()
     endif()
+
+    # Mark HDF5-related CMake options as "advanced"
+    get_cmake_property(vars VARIABLES)
+    foreach (varname ${vars})
+        if (varname MATCHES "^HDF5_C_LIBRARY_.*")
+            mark_as_advanced(${varname})
+        endif()
+    endforeach()
 endmacro()

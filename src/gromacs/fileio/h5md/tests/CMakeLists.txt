@@ -37,15 +37,17 @@ if (GMX_USE_HDF5)
             h5md.cpp
             h5mdtestbase.cpp
             h5md_attribute.cpp
-            h5md_dataset.cpp
             h5md_datasetbase.cpp
             h5md_datasetbuilder.cpp
+            h5md_fixeddataset.cpp
+            h5md_framedataset.cpp
             h5md_framedatasetbuilder.cpp
             h5md_group.cpp
             h5md_guard.cpp
-            h5md_read.cpp
+            h5md_particleblock.cpp
+            h5md_timedatablock.cpp
+            h5md_topologyutils.cpp
             h5md_type.cpp
-            h5md_write.cpp
             h5md_util.cpp
         )
 else()
@@ -55,4 +57,7 @@ else()
         )
 endif()
 
-target_link_libraries(h5md-test PRIVATE h5md)
+target_link_libraries(h5md-test PRIVATE 
+    h5md
+    topology
+)

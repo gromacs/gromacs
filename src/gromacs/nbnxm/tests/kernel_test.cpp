@@ -214,7 +214,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 
     PairlistParams pairlistParams(options.kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, pinPolicy);
 
     const bool localAtomOrderMatchesNbnxmOrder = false;
     auto       pairSearch                      = std::make_unique<PairSearch>(PbcType::Xyz,
@@ -258,7 +258,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
                         system.coordinates,
                         nullptr);
 
-    nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, 0, nullptr);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, false, 0, nullptr);
 
     nbv->setAtomProperties(system.atomTypes, system.charges, system.atomInfo);
 
@@ -302,6 +302,8 @@ CoulombInteractionType coulombInteractionType(CoulombKernelType coulombKernelTyp
         case CoulombKernelType::EwaldTwin:
         case CoulombKernelType::TableTwin: return CoulombInteractionType::Pme;
         case CoulombKernelType::ReactionField: return CoulombInteractionType::RF;
+        case CoulombKernelType::None:
+        case CoulombKernelType::Fmm: return CoulombInteractionType::Fmm;
         default:
             GMX_RELEASE_ASSERT(false, "Unsupported CoulombKernelType");
             return CoulombInteractionType::Count;
@@ -347,19 +349,23 @@ interaction_const_t setupInteractionConst(const KernelOptions& options)
     // Only reppow and functype[0] are used from mtop in init_interaction_const()
     mtop.ffparams.reppow = 12;
     mtop.ffparams.functype.resize(1);
-    mtop.ffparams.functype[0] = F_LJ;
+    mtop.ffparams.functype[0] = InteractionFunction::LennardJonesShortRange;
 
-    interaction_const_t ic = init_interaction_const(nullptr, ir, mtop, false);
+    interaction_const_t ic = init_interaction_const(nullptr, ir, mtop, false, std::nullopt);
+
+    if (ir.coulombtype == CoulombInteractionType::Fmm && options.coulombType == CoulombKernelType::None)
+    {
+        ic.nbnxmIsDirectCoulombProvider = false;
+    }
+
     init_interaction_const_tables(nullptr, &ic, options.pairlistCutoff, 0);
 
     return ic;
 }
 
-const EnumerationArray<CoulombKernelType, const char*> coulombKernelTypeName = { "ReactionField",
-                                                                                 "Table",
-                                                                                 "TableTwin",
-                                                                                 "Ewald",
-                                                                                 "EwaldTwin" };
+const EnumerationArray<CoulombKernelType, const char*> coulombKernelTypeName = {
+    "ReactionField", "Table", "TableTwin", "Ewald", "EwaldTwin", "None", "Fmm"
+};
 
 const std::array<const char*, vdwktNR> vdwKernelTypeName = { "CutCombGeom", "CutCombLB",
                                                              "CutCombNone", "ForceSwitch",
@@ -462,6 +468,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                                                       ? EwaldExclusionType::Table
                                                       : EwaldExclusionType::Analytical;
     options_.coulombType                    = parameters_.coulombKernelType;
+    options_.energyHandling                 = parameters_.energyHandling;
 
     // Van der Waals settings
     switch (parameters_.vdwKernelType)
@@ -532,14 +539,27 @@ TEST_P(NbnxmKernelTest, WorksWith)
         GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
     }
 
+    if (options_.coulombType == CoulombKernelType::Fmm)
+    {
+        GTEST_SKIP() << "Cannot test or generate data for FMM kernels because FMM is not yet "
+                        "supported in GROMACS for short-range coulomb interactions";
+    }
+
+    if (!GMX_USE_EXT_FMM && options_.coulombType == CoulombKernelType::None)
+    {
+
+        GTEST_SKIP() << "Reference kernels that do not compute Coulomb interactions are available "
+                        "only with an FMM build configuration";
+    }
+
     GMX_ASSERT(*std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end())
                        == TestSystem::sc_numEnergyGroups,
                "The test system should have a sufficient number of energy groups");
 
     // TODO rename this in a follow-up change to conform to style
-    TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
-                               ? LJCombinationRule::Geometric
-                               : LJCombinationRule::LorentzBerthelot);
+    TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM ? LJCombinationRule::Geometric
+                                                                        : LJCombinationRule::LorentzBerthelot,
+                       true);
 
     const interaction_const_t ic = setupInteractionConst(options_);
 
@@ -592,7 +612,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
 
     // Finish setting up data structures
     nbv_ = setupNbnxmForBenchInstance(options_, system_);
-    nbv_->constructPairlist(InteractionLocality::Local, system_.excls, 0, nullptr);
+    nbv_->constructPairlist(InteractionLocality::Local, system_.excls, false, 0, nullptr);
 
     std::vector<RVec> shiftVecs(c_numShiftVectors);
     calc_shifts(system_.box, shiftVecs);
@@ -682,7 +702,9 @@ INSTANTIATE_TEST_SUITE_P(Combinations,
                                                    CoulombKernelType::Ewald,
                                                    CoulombKernelType::EwaldTwin,
                                                    CoulombKernelType::Table,
-                                                   CoulombKernelType::TableTwin),
+                                                   CoulombKernelType::TableTwin,
+                                                   CoulombKernelType::None,
+                                                   CoulombKernelType::Fmm),
                                  ::testing::Values(int(vdwktLJCUT_COMBGEOM),
                                                    int(vdwktLJCUT_COMBLB),
                                                    int(vdwktLJCUT_COMBNONE),

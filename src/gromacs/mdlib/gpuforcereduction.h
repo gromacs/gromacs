@@ -59,8 +59,6 @@ class DeviceContext;
 namespace gmx
 {
 
-#define HAVE_GPU_FORCE_REDUCTION (GMX_GPU && !GMX_GPU_OPENCL)
-
 /*! \internal
  * \brief Manages the force reduction directly in GPU memory
  *

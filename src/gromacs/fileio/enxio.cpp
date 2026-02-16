@@ -968,7 +968,7 @@ static void convert_full_sums(ener_old_t* ener_old, t_enxframe* fr)
 gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
 {
     int      file_version = -1;
-    int      i, b;
+    int      b;
     gmx_bool bRead, bOK, bOK1, bSane;
     real     tmp1, tmp2, rdum;
     /*int       d_size;*/
@@ -1030,7 +1030,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
     if (bRead && fr->nre > fr->e_alloc)
     {
         srenew(fr->ener, fr->nre);
-        for (i = fr->e_alloc; (i < fr->nre); i++)
+        for (int i = fr->e_alloc; (i < fr->nre); i++)
         {
             fr->ener[i].e    = 0;
             fr->ener[i].eav  = 0;
@@ -1039,7 +1039,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
         fr->e_alloc = fr->nre;
     }
 
-    for (i = 0; i < fr->nre; i++)
+    for (int i = 0; i < fr->nre; i++)
     {
         bOK = bOK && gmx_fio_do_real(ef->fio, fr->ener[i].e);
 
@@ -1085,9 +1085,8 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
     {
         /* now read the subblocks. */
         int nsub = fr->block[b].nsub; /* shortcut */
-        int i;
 
-        for (i = 0; i < nsub; i++)
+        for (int i = 0; i < nsub; i++)
         {
             t_enxsubblock* sub = &(fr->block[b].sub[i]); /* shortcut */
 

@@ -95,6 +95,9 @@ enum ErrorCode
 
     //! Error specific for modular simulator.
     eeModularSimulator,
+
+    //! Error specific for MD module setup.
+    eeMDModuleSetup,
     //!\}
 
     //! Unknown error detected.

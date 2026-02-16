@@ -411,8 +411,15 @@ template<typename backend_tag>
 Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte<backend_tag>()
 {
 #if GMX_GPU_SYCL
-    freeDeviceBuffer(&localRealGrid_);
-    freeDeviceBuffer(&localComplexGrid_);
+    try
+    {
+        freeDeviceBuffer(&localRealGrid_);
+        freeDeviceBuffer(&localComplexGrid_);
+    }
+    catch (gmx::InternalError& e)
+    {
+        fprintf(stderr, "Internal error in destructor of Gpu3dFft: %s\n", e.what());
+    }
 #endif
 }
 

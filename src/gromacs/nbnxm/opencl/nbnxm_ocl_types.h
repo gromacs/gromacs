@@ -174,7 +174,11 @@ struct NbnxmGpu
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { nullptr };
+    EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { nullptr };
+    //! fep-list data structures (local and non-local)
+    EnumerationArray<InteractionLocality, std::unique_ptr<GpuFeplist>> feplist = { { nullptr } };
+    //! host buffers required for the FEP H2D copies */
+    GpuFepHostData* fephostdata = nullptr;
     //! staging area where fshift/energies get downloaded
     NBStagingData nbst;
 
@@ -186,17 +190,17 @@ struct NbnxmGpu
     /*! \brief size of atom indices allocated in device buffer */
     int atomIndicesSize_alloc = 0;
     /*! \brief x buf ops num of atoms */
-    DeviceBuffer<int> cxy_na;
-    /*! \brief number of elements in cxy_na */
-    int ncxy_na = 0;
-    /*! \brief number of elements allocated allocated in device buffer */
-    int ncxy_na_alloc = 0;
-    /*! \brief x buf ops cell index mapping */
-    DeviceBuffer<int> cxy_ind;
-    /*! \brief number of elements in cxy_ind */
-    int ncxy_ind = 0;
-    /*! \brief number of elements allocated allocated in device buffer */
-    int ncxy_ind_alloc = 0;
+    DeviceBuffer<int> numAtomsPerColumn;
+    /*! \brief number of elements in numAtomsPerColumn */
+    int numAtomsPerColumnSize = 0;
+    /*! \brief number of elements allocated in device buffer */
+    int numAtomsPerColumnAlloc = 0;
+    /*! \brief x buf ops bin index mapping */
+    DeviceBuffer<int> columnToBin;
+    /*! \brief number of elements in columnToBin */
+    int columnToBinSize = 0;
+    /*! \brief number of elements allocated in device buffer */
+    int columnToBinAlloc = 0;
 
     //! local and non-local GPU queues
     gmx::EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams;

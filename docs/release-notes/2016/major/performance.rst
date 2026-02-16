@@ -12,7 +12,7 @@ certain older versions (e.g. 7.0) see even larger improvements.
 
 Even larger improvements in OpenCL performance on AMD devices are
 expected, e.g. can be >50% with RF/plain cut-off and PME with potential shift
-with recent AMD OpenCL compilers. 
+with recent AMD OpenCL compilers.
 
 Note that due to limitations of the NVIDIA OpenCL compiler CUDA is still superior
 in performance on NVIDIA GPUs. Hence, it is recommended to use CUDA-based GPU acceleration

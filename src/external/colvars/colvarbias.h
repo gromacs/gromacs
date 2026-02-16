@@ -112,6 +112,9 @@ public:
   /// \brief Parse config string and (re)initialize
   virtual int init(std::string const &conf);
 
+  /// Initialize multiple-time-stepping options
+  virtual int init_mts(std::string const &conf);
+
   /// \brief Initialize dependency tree
   virtual int init_dependencies();
 
@@ -357,6 +360,9 @@ protected:
 
   /// \brief Forces exerted from the system to the associated variables
   std::vector<colvarvalue> ti_system_forces;
+
+  /// Grid configuration parameters (also used by grids in derived classes)
+  std::string grid_conf;
 
   /// Averaged system forces
   std::shared_ptr<colvar_grid_gradient> ti_avg_forces;

@@ -48,6 +48,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
 #include "testutils/testasserts.h"
@@ -77,6 +78,38 @@ void testReduction(const MpiComm& mpiComm)
     EXPECT_EQ(a[0], sum);
 }
 
+// Tests that a reduction works; rank 1 has nothing
+void testStringCollection(const MpiComm& mpiComm)
+{
+    int                      rank    = mpiComm.rank();
+    const std::string        rankStr = std::to_string(rank);
+    static const std::string longUnicodeStr =
+            "⚡🖥️🌐🔗🤖🔄⚙️📡🔌💻🔢📊🔍🔧🔁🔀🔂🔃🔄🔅🔆🔇🔈🔋🔌🐱🐈😺😸😹😻😼😽🙀😿😾🔙🔚"
+            "🔛🔜🔝";
+    const std::string_view strToSend =
+            (rank == 1) ? std::string_view{} : (rank == 2 ? longUnicodeStr : rankStr);
+
+    auto result = mpiComm.collectStrings(strToSend);
+
+    if (mpiComm.isMainRank())
+    {
+        // We expect these tests to run with up to 4 ranks
+        std::vector<std::string> expected{ "0", "", longUnicodeStr, "3" };
+        if (mpiComm.size() < gmx::ssize(expected)) // If less, shrink the vector
+        {
+            expected.resize(mpiComm.size());
+        }
+        else if (mpiComm.size() > gmx::ssize(expected)) // If, somehow, more, extend the vector
+        {
+            for (int i = gmx::ssize(expected); i < mpiComm.size(); i++)
+            {
+                expected.emplace_back(std::to_string(i));
+            }
+        }
+        EXPECT_EQ(result, expected);
+    }
+}
+
 TEST(MpiComm, SingleRankNoComm)
 {
     GMX_MPI_TEST(AllowAnyRankCount);
@@ -89,6 +122,7 @@ TEST(MpiComm, SingleRankNoComm)
 
     // This tests that reductions also work with a single rank and without an MPI_Comm
     testReduction(mpiComm);
+    testStringCollection(mpiComm);
 }
 
 TEST(MpiComm, CommWorld)
@@ -101,6 +135,7 @@ TEST(MpiComm, CommWorld)
     EXPECT_EQ(mpiComm.isParallel(), mpiComm.size() > 1);
 
     testReduction(mpiComm);
+    testStringCollection(mpiComm);
 }
 
 // Creates and MpiComm for comm.
@@ -116,6 +151,7 @@ void testMpiComm(MPI_Comm comm, const int physicalNodeId, const bool expectHiera
     EXPECT_EQ(mpiComm.getHierarchicalReductionsReport().has_value(), expectHierarchicalReducer);
 
     testReduction(mpiComm);
+    testStringCollection(mpiComm);
 }
 
 // Each rank is on the same node: no hierarchy
@@ -132,7 +168,9 @@ TEST(MpiComm, CreatesHierarchicalReducer4Ranks4Nodes)
     GMX_MPI_TEST(RequireRankCount<4>);
 
     int rank = 0;
+#if GMX_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
     testMpiComm(MPI_COMM_WORLD, rank, false);
 }
@@ -143,7 +181,9 @@ TEST(MpiComm, CreatesHierarchicalReducer4Ranks2EqualNodes)
     GMX_MPI_TEST(RequireRankCount<4>);
 
     int rank = 0;
+#if GMX_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
     testMpiComm(MPI_COMM_WORLD, rank / 2, true);
 }
@@ -154,7 +194,9 @@ TEST(MpiComm, CreatesHierarchicalReducer4Ranks2UnequalNodes)
     GMX_MPI_TEST(RequireRankCount<4>);
 
     int rank = 0;
+#if GMX_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
     testMpiComm(MPI_COMM_WORLD, rank == 0 ? 0 : 1, true);
 }
@@ -163,8 +205,10 @@ TEST(MpiComm, ConstructorThrowsOnNull)
 {
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    int isInitialized;
+    int isInitialized = 0;
+#if GMX_MPI
     MPI_Initialized(&isInitialized);
+#endif
     ASSERT_EQ(isInitialized == 0, false);
 
     EXPECT_THROW_GMX(MpiComm(MPI_COMM_NULL), InvalidInputError);

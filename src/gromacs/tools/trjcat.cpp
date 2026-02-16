@@ -494,7 +494,7 @@ int gmx_trjcat(int argc, char* argv[])
         { "-cat", FALSE, etBOOL, { &bCat }, "Do not discard double time frames" }
     };
 #define npargs asize(pa)
-    int               ftpin, i, frame, frame_out;
+    int               ftpin, frame, frame_out;
     t_trxstatus *     status, *trxout = nullptr;
     real              t_corr;
     t_trxframe        fr, frout;
@@ -505,7 +505,7 @@ int gmx_trjcat(int argc, char* argv[])
     real              first_time = 0, lasttime = 0, last_ok_t = -1, timestep;
     gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
-    int               isize = 0, j;
+    int               isize = 0;
     int *             index = nullptr, imax;
     char*             grpname;
     real **           val = nullptr, *t = nullptr, dt_remd;
@@ -541,7 +541,7 @@ int gmx_trjcat(int argc, char* argv[])
         rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
         /* scan index */
         imax = index[0];
-        for (i = 1; i < isize; i++)
+        for (int i = 1; i < isize; i++)
         {
             imax = std::max(imax, index[i]);
         }
@@ -565,10 +565,10 @@ int gmx_trjcat(int argc, char* argv[])
         if (debug)
         {
             fprintf(debug, "Dump of replica_index.xvg\n");
-            for (i = 0; (i < n); i++)
+            for (int i = 0; (i < n); i++)
             {
                 fprintf(debug, "%10g", t[i]);
-                for (j = 0; (j < nset); j++)
+                for (int j = 0; (j < nset); j++)
                 {
                     fprintf(debug, "  %3d", static_cast<int>(std::round(val[j][i])));
                 }
@@ -627,7 +627,7 @@ int gmx_trjcat(int argc, char* argv[])
         {
             std::string name = outFilesDemux[0];
             outFilesDemux.resize(nset);
-            for (i = 0; (i < nset); i++)
+            for (int i = 0; (i < nset); i++)
             {
                 outFilesDemux[i] = gmx::formatString("%d_%s", i, name.c_str());
             }

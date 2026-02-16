@@ -38,6 +38,7 @@ target_link_libraries(mdrunutility-test-shared PRIVATE common legacy_api)
 gmx_add_unit_test(MdrunUtilityUnitTests mdrunutility-test
     CPP_SOURCE_FILES
         mdmodulesnotifier.cpp
+	plainpairlistranges.cpp
         threadaffinity.cpp
         )
 target_link_libraries(mdrunutility-test PRIVATE mdrunutility-test-shared)

@@ -45,8 +45,28 @@
 
 #include <string>
 
+#include "h5md_util.h" // required for GMX_H5MD_THROW_UPON_INVALID_HID
+
 namespace gmx
 {
+
+/*! \def GMX_H5MD_THROW_UPON_ERROR
+ * \brief Macro for checking an error condition and throwing an HDF5 error with a message if true.
+ *
+ * This only constructs the given \p errorMessage in a branch where \p errorExists is true,
+ * and thus avoids (possibly expensive) string construction in the happy case.
+ */
+#define GMX_H5MD_THROW_UPON_ERROR(errorExists, errorMessage) \
+    ((void)((!(errorExists)) ? (void)0 : [&]() { throwH5mdError(errorMessage); }()))
+
+/*! \def GMX_H5MD_THROW_UPON_INVALID_HID
+ * \brief Macro for checking an HDF5 handle and throwing an HDF5 error with a message if it is invalid.
+ *
+ * This only constructs the given \p errorMessage in a branch where the \p handle is invalid,
+ * and thus avoids (possibly expensive) string construction in the happy case.
+ */
+#define GMX_H5MD_THROW_UPON_INVALID_HID(handle, errorMessage) \
+    GMX_H5MD_THROW_UPON_ERROR(!handleIsValid(handle), errorMessage)
 
 /*! \brief Helper function for printing debug statements.
  *
@@ -57,19 +77,11 @@ namespace gmx
  */
 void printHdf5ErrorsDebug();
 
-/* \brief Throw a gmx::FileIOError if there is an error.
+/*! \brief Throw a gmx::FileIOError with extra HDF5 debugging.
  *
- * \param[in] errorExists If true: throw the exception.
  * \param[in] message The message to throw.
  */
-void throwUponH5mdError(const bool errorExists, const std::string& message);
-
-/*! \brief Throw a gmx::FileIOError if the HDF5 ID is invalid (H5Iis_valid <= 0).
- *
- * \param[in] id The id to check.
- * \param[in] message The message to throw.
- */
-void throwUponInvalidHid(const hid_t id, const std::string& message);
+void throwH5mdError(const std::string& message);
 
 } // namespace gmx
 

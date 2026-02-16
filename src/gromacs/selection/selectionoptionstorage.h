@@ -72,10 +72,10 @@ public:
      */
     SelectionOptionStorage(const SelectionOption& settings, SelectionOptionManager* manager);
 
-    OptionInfo&      optionInfo() override { return info_; }
-    std::string      typeString() const override { return "selection"; }
-    std::string      formatSingleValue(const Selection& value) const override;
-    std::vector<Any> normalizeValues(const std::vector<Any>& values) const override;
+    OptionInfo&                   optionInfo() override { return info_; }
+    std::string                   typeString() const override { return "selection"; }
+    std::string                   formatSingleValue(const Selection& value) const override;
+    [[noreturn]] std::vector<Any> normalizeValues(const std::vector<Any>& values) const override;
 
     /*! \brief
      * Adds selections to the storage.

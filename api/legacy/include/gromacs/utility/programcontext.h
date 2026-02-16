@@ -164,8 +164,7 @@ public:
      */
     virtual const char* commandLine() const = 0;
 
-protected:
-    virtual ~IProgramContext() {}
+    virtual ~IProgramContext() = default;
 };
 
 /*! \brief

@@ -255,7 +255,7 @@ Supported hardware:
 Requirements:
 
 * oneAPI DPC++ compiler: 2024.0 or newer (Codeplay plugin required for NVIDIA/AMD Support), or
-* AdaptiveCpp: 23.10 or newer.
+* AdaptiveCpp: 24.02 or newer.
 
 Limitations:
 
@@ -834,16 +834,16 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-10. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA 
-    Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16. 
+10. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA
+    Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16.
 11. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
-    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different 
-    target architecture than the compilation machine, ``GMX_SIMD_ARM_SVE_LENGTH`` 
-    should be set to the hardware vector length implemented by the target 
-    machine. There is no expected performance benefit from setting a smaller 
-    value than the implemented vector length, and setting a larger length can 
+    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different
+    target architecture than the compilation machine, ``GMX_SIMD_ARM_SVE_LENGTH``
+    should be set to the hardware vector length implemented by the target
+    machine. There is no expected performance benefit from setting a smaller
+    value than the implemented vector length, and setting a larger length can
     lead to unexpected crashes.
     Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1.
     For maximum performance we strongly suggest the latest gcc compilers,
@@ -924,11 +924,11 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 ::
 
-    cmake .. -DGMX_GPU=CUDA -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+    cmake .. -DGMX_GPU=CUDA -DCUDAToolkit_ROOT=/usr/local/cuda
 
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
-e.g. with the advanced option ``CUDA_HOST_COMPILER``.
+e.g. with the advanced option ``CMAKE_CUDA_HOST_COMPILER``.
 
 By default, code will be generated for the most common CUDA architectures.
 However, to reduce build time and binary size we do not generate code for
@@ -936,16 +936,15 @@ every single possible architecture, which in rare cases (say, Tegra systems)
 can result in the default build not being able to use some GPUs.
 If this happens, or if you want to remove some architectures to reduce
 binary size and build time, you can alter the target CUDA architectures.
-This can be done either with the ``GMX_CUDA_TARGET_SM`` or
-``GMX_CUDA_TARGET_COMPUTE`` CMake variables, which take a semicolon delimited
-string with the two digit suffixes of CUDA (virtual) architectures names, for
-instance "60;75;86". For details, see the `"Options for steering GPU
-code generation" section of the nvcc documentation
-<https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#options-for-steering-cuda-compilation>`_.
+This can be done with the ``CMAKE_CUDA_ARCHITECTURES`` CMake variable,
+which takes a semicolon delimited string with the two or three digit suffixes of CUDA
+architectures names, for instance "60;75;86". For details, see the
+`"CUDA_ARCHITECTURES" section of the CMake documentation
+<https://cmake.org/cmake/help/v3.28/prop_tgt/CUDA_ARCHITECTURES.html>`_.
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
-Linux, Mac OS X and Windows operating systems, but Linux is the
-best-tested and supported of these. Linux running on POWER 8/9 and ARM v8
+Linux and Windows operating systems, but Linux is the
+best-tested and supported of these. Linux running on POWER 8/9 and ARM
 CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
@@ -957,9 +956,6 @@ The clang CUDA support simplifies compilation and provides benefits for developm
 Additionally, using clang for both CPU and GPU compilation can be beneficial
 to avoid compatibility issues between the GNU toolchain and the CUDA toolkit.
 clang for CUDA can be triggered using the ``GMX_CLANG_CUDA=ON`` CMake option.
-Target architectures can be selected with  ``GMX_CUDA_TARGET_SM``,
-virtual architecture code is always embedded for all requested architectures
-(hence ``GMX_CUDA_TARGET_COMPUTE`` is ignored).
 Note that this is mainly a developer-oriented feature but its performance is
 generally close to that of code compiled with nvcc.
 
@@ -1092,7 +1088,10 @@ flags for compatibility and improved performance:
 
    cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
-            -DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1 -DGMX_GPU_NB_CLUSTER_SIZE=8
+            -DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_X=1 -DGMX_GPU_NB_CLUSTER_SIZE=8
+
+Note that ``GMX_GPU_NB_NUM_CLUSTER_PER_CELL`` changed its name in |Gromacs| 2027.0
+to ``GMX_GPU_NB_NUM_CLUSTER_PER_BIN`` without changing its function.
 
 You might also consider using :ref:`double-batched FFT library <bbfft installation>`.
 
@@ -1102,7 +1101,7 @@ SYCL GPU acceleration for AMD GPUs
 """"""""""""""""""""""""""""""""""
 
 Using `AdaptiveCpp 24.02.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v24.02.0>`_
-and ROCm 5.7-6.2 is recommended. The earliest supported version is AdaptiveCpp 23.10.
+and ROCm 5.7-6.2 is recommended. The earliest supported version is AdaptiveCpp 24.02.
 
 We strongly recommend using the clang compiler bundled
 with ROCm for building both AdaptiveCpp and |Gromacs|. Mainline Clang releases can also work.
@@ -1157,10 +1156,10 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
       is better. When compiling with AdaptiveCpp_, the default value is 8,
       which is the only supported value for AMD and NVIDIA devices.
 
-``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z``
+``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_X``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y``, ``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z``
       Sets the number of clusters along X, Y, or Z in a pair-search
-      grid cell, default 2. When targeting Intel Ponte Vecchio GPUs,
-      set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_CELL_X=1`` and leave the
+      grid bin, default 2. When targeting Intel Ponte Vecchio GPUs,
+      set ``-DGMX_GPU_NB_NUM_CLUSTER_PER_BIN_X=1`` and leave the
       other values as the default.
 
 ``-DGMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT``
@@ -1177,8 +1176,7 @@ AMD HIP GPU acceleration
 
 HIP is the AMD interoperability layer for the `ROCm`_ toolkit used to target AMD devices.
 
-In |Gromacs| 2025 there is only limited support for using HIP as the device backend for AMD devices,
-with only NBNxM kernels offload being available.
+In |Gromacs| 2026 there is full support for using HIP as the GPU backend on AMD devices.
 
 Build instructions
 """"""""""""""""""""""""""""""
@@ -1211,6 +1209,35 @@ execution width will be restricted to be 32-wide, even on devices that support 6
 
 When |Gromacs| is built with explicit 64-wide execution (and conflicting support for 32-wide devices),
 any 32-wide devices detected will be not be used.
+
+It is possible to select the GPU FFT backend using the
+
+``-DGMX_GPU_FFT_LIBRARY=rocFFT/VkFFT``
+
+variable. Please be aware that ``rocFFT`` only works on devices that are officially supported by `ROCm`_.
+If an incompatible device is detected, |Gromacs| will not use the it when linked against ``rocFFT``, even
+though the rest of the code is compiled to support it. In this case, select ``VkFFT`` as the GPU FFT library.
+
+H5MD trajectory output file format
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`H5MD`_ is a specification for output data from molecular dynamics simulations built on
+the HDF5 format. In |Gromacs| 2026 this is added as an experimental feature. 
+
+Build instructions
+""""""""""""""""""""""""""""""
+
+To enable support for H5MD output |Gromacs| you need to have an installed copy of the
+`HDF5`_ library. The minimum supported version is |GMX_HDF5_MINIMUM_REQUIRED_VERSION|.
+If the library is installed you can build with H5MD support by 
+
+::
+
+    cmake .. -DGMX_USE_HDF5=ON
+
+Some distributed versions of the HDF5 library may be incorrectly configured, leading
+to CMake not detecting its path or version. In such cases, adding
+``-DHDF5_C_COMPILER_EXECUTABLE=''`` (ie. passing an empty string) may solve the issue.
 
 Static linking
 ~~~~~~~~~~~~~~
@@ -1379,7 +1406,7 @@ enabled by default when building |Gromacs|.  This behavior may also be
 enabled explicitly with ``-DGMX_USE_COLVARS=internal``.  Alternatively,
 Colvars support may be disabled with ``-DGMX_USE_COLVARS=none``.  How to use
 Colvars in a |Gromacs| simulation is described in the User Guide, as well as
-in the `Colvars documentation <https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html>`_.
+in the `Colvars documentation <https://colvars.github.io/gromacs-2026/colvars-refman-gromacs.html>`_.
 
 .. _installing with PLUMED:
 
@@ -1387,35 +1414,35 @@ Building with PLUMED support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 |Gromacs| bundles the interface from version 2.10 of the `PLUMED library <https://www.plumed.org/>`_
-in its source distribution. The interface is compatible with any PLUMED version. 
+in its source distribution. The interface is compatible with any PLUMED version.
 The interface is enabled by default with |Gromacs|
-unless |Gromacs| is built on Windows. You can explicitly enable the 
+unless |Gromacs| is built on Windows. You can explicitly enable the
 interface with ``-DGMX_USE_PLUMED=ON`` or deactivate it with ``-DGMX_USE_PLUMED=OFF``.
 By default the option is set to ``AUTO``, during the configuration CMake will try
 to activate PLUMED and in case it does not succeed it will output a "soft" warning.
 If the user forces the option ``ON``, when PLUMED cannot be activated the configuration
 will fail with an error message.
-The User Guide contains the instructions on how to use PLUMED in a |Gromacs| simulation. 
+The User Guide contains the instructions on how to use PLUMED in a |Gromacs| simulation.
 
 .. _installing with Neural Network potential support:
 
 Building with Neural Network potential support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To build |Gromacs| with support for Neural Network potentials, it has to be compiled 
+To build |Gromacs| with support for Neural Network potentials, it has to be compiled
 with a suitable machine learning library. At the moment, only models trained in
 `Pytorch <https://pytorch.org/>`_ are supported. To be able to load them in |Gromacs|,
 it has to be built with the Pytorch C++ API or Libtorch, which can be downloaded
-from the `Pytorch website <https://pytorch.org/get-started/locally/>`_. 
+from the `Pytorch website <https://pytorch.org/get-started/locally/>`_.
 The website offers versions including pre-CXX11 and CXX11 ABI versions on Linux.
 You must use the same ABI version as you use when building the rest of
-GROMACS, which does not support or test the pre-CXX11 ABI.
+|Gromacs|, which does not support or test the pre-CXX11 ABI.
 So get (or build) the CXX11 ABI version of Libtorch.
 For the same reason, it is also not possible to use the Libtorch version that ships
 with a conda installation of Pytorch, because it is built with the pre-CXX11 ABI by default.
 The NNP interface is enabled by default when a Libtorch installation is found in the
-``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or 
-``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch 
+``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or
+``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch
 installation directory. It may also be explicitly enabled with ``-DGMX_NNPOT=TORCH``
 or disabled with ``-DGMX_NNPOT=OFF``.
 
@@ -1734,7 +1761,7 @@ compiler is the ARM HPC Compiler (``armclang``).
 NVIDIA Grace
 ^^^^^^^^^^^^
 
-For best performance on Grace, use GCC >= 13.1 or LLVM >= 17, and set the 
+For best performance on Grace, use GCC >= 13.1 or LLVM >= 17, and set the
 ``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 -DCMAKE_C_FLAGS=-mcpu=neoverse-v2``
 flags when configuring |Gromacs|.
 
@@ -1743,17 +1770,17 @@ when building without GPU support), performance can be improved by also setting
 the ``-DGMX_SIMD=ARM_NEON_ASIMD`` CMake option.
 
 At minimum any compiler being used for Grace should implement
-neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant 
+neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant
 improvement in Arm performance between gcc-13 and gcc-12 so
-GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag 
+GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag
 ensures that the compiler is not defaulting to the older Armv8-A target.
 
 On both GNU and LLVM, the |Gromacs| CPU version of the short-range non
-bonded interactions implemented with ``NEON SIMD`` instructions 
-significantly outperforms the SVE version. This can be selected by setting 
+bonded interactions implemented with ``NEON SIMD`` instructions
+significantly outperforms the SVE version. This can be selected by setting
 ``GMX_SIMD=ARM_NEON_ASIMD`` at compilation. There can be a small performance
 benefit to using SVE for CPU work outside this kernel, therefore when the
-short-range non bonded interactions run on the GPU it is recommended to stay 
+short-range non bonded interactions run on the GPU it is recommended to stay
 with ``GMX_SIMD=ARM_SVE`` which is the default option when available.
 
 
@@ -1770,7 +1797,7 @@ clang versions including 14, 18, and 19,
 CUDA versions 12.1, 12.5.1, and 12.6,
 nvcxx version 24.7
 HIP version 5.7.1 and 6.2.2
-AdaptiveCPP 23.10 and 24.02 with ROCm 5.7.1 and 6.2 (respectively),
+AdaptiveCPP 24.02 and 24.10 with ROCm 5.7.1 and 6.2 (respectively),
 and
 oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends).
 

@@ -122,7 +122,7 @@ static void GenerateGibbsProbabilities(const real* ene, double* p_k, double* pks
     }
 }
 
-static void GenerateWeightedGibbsProbabilities(const real*         ene,
+static void GenerateWeightedGibbsProbabilities(const real*         energy,
                                                double*             p_k,
                                                double*             pks,
                                                gmx::ArrayRef<real> nvals,
@@ -134,7 +134,7 @@ static void GenerateWeightedGibbsProbabilities(const real*         ene,
     std::vector<real> nene(nvals.size());
     std::transform(nvals.begin(),
                    nvals.end(),
-                   ene,
+                   energy,
                    nene.begin(),
                    [delta](const real& val, const real& ene)
                    {
@@ -1039,13 +1039,14 @@ static int ChooseNewLambda(int               nlim,
                             errorstr,
                             "Something wrong in choosing new lambda state with a Gibbs move -- "
                             "probably underflow in weight determination.\nDenominator is: "
-                            "%3d%17.10e\n  i                dE        numerator          weights\n",
+                            "%3d %16.10e\n  i                dE        numerator          "
+                            "weights\n",
                             0,
                             pks);
                     for (ifep = minfep; ifep <= maxfep; ifep++)
                     {
                         loc += sprintf(&errorstr[loc],
-                                       "%3d %17.10e%17.10e%17.10e\n",
+                                       " %2d  %16.10e %16.10e %16.10e\n",
                                        ifep,
                                        weighted_lamee[ifep],
                                        p_k[ifep],
@@ -1206,16 +1207,16 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                 dv = std::sqrt(gmx::square(dfhist->sum_variance[ifep + 1])
                                - gmx::square(dfhist->sum_variance[ifep]));
             }
-            fprintf(outfile, "%3d", (ifep + 1));
+            fprintf(outfile, " %2d", (ifep + 1));
             for (auto i : keysOf(fep->separate_dvdl))
             {
                 if (fep->separate_dvdl[i])
                 {
-                    fprintf(outfile, "%7.3f", fep->all_lambda[i][ifep]);
+                    fprintf(outfile, " %6.3f", fep->all_lambda[i][ifep]);
                 }
                 else if (i == FreeEnergyPerturbationCouplingType::Temperature && bSimTemp)
                 {
-                    fprintf(outfile, "%9.3f", simtemp->temperatures[ifep]);
+                    fprintf(outfile, " %8.3f", simtemp->temperatures[ifep]);
                 }
             }
             if (EWL(expand->elamstats)
@@ -1287,7 +1288,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             fprintf(outfile, "                     Transition Matrix\n");
             for (ifep = 0; ifep < nlim; ifep++)
             {
-                fprintf(outfile, "%12d", (ifep + 1));
+                fprintf(outfile, " %11d", (ifep + 1));
             }
             fprintf(outfile, "\n");
             for (ifep = 0; ifep < nlim; ifep++)
@@ -1312,9 +1313,9 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                     {
                         Tprint = 0.0;
                     }
-                    fprintf(outfile, "%12.8f", Tprint);
+                    fprintf(outfile, " %11.8f", Tprint);
                 }
-                fprintf(outfile, "%3d\n", (ifep + 1));
+                fprintf(outfile, " %2d\n", (ifep + 1));
             }
 
             /* The empirical matrix between states,
@@ -1325,7 +1326,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             fprintf(outfile, "                  Empirical Transition Matrix\n");
             for (ifep = 0; ifep < nlim; ifep++)
             {
-                fprintf(outfile, "%12d", (ifep + 1));
+                fprintf(outfile, " %11d", (ifep + 1));
             }
             fprintf(outfile, "\n");
             for (ifep = 0; ifep < nlim; ifep++)
@@ -1350,9 +1351,9 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                     {
                         Tprint = 0.0;
                     }
-                    fprintf(outfile, "%12.8f", Tprint);
+                    fprintf(outfile, " %11.8f", Tprint);
                 }
-                fprintf(outfile, "%3d\n", (ifep + 1));
+                fprintf(outfile, " %2d\n", (ifep + 1));
             }
         }
     }
@@ -1410,7 +1411,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
                 /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
                 scaled_lamee[i] =
                         enerd->foreignLambdaTerms.deltaH(i) / (simtemp->temperatures[i] * gmx::c_boltz)
-                        + enerd->term[F_EPOT]
+                        + enerd->term[InteractionFunction::PotentialEnergy]
                                   * (1.0 / (simtemp->temperatures[i])
                                      - 1.0 / (simtemp->temperatures[fep_state]))
                                   / gmx::c_boltz;
@@ -1433,7 +1434,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
             for (i = 0; i < nlim; i++)
             {
                 scaled_lamee[i] =
-                        enerd->term[F_EPOT]
+                        enerd->term[InteractionFunction::PotentialEnergy]
                         * (1.0 / simtemp->temperatures[i] - 1.0 / simtemp->temperatures[fep_state])
                         / gmx::c_boltz;
             }

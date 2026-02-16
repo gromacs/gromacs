@@ -404,13 +404,6 @@ TEST_F(TreeValueSupportTest, SupportsDoubleOption)
     runTest();
 }
 
-//! Enum for testing EnumOption.
-enum class TestEnum : int
-{
-    Foo,
-    Bar
-};
-
 TEST_F(TreeValueSupportTest, SupportsEnumOption)
 {
     enum class TestEnum : int

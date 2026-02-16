@@ -170,7 +170,7 @@ static constexpr bool computeEnergyOrVirial(const BondedKernelFlavor flavor)
  * All pointers should be non-null, except for pbc and g which can be nullptr.
  * \returns the energy or 0 when \p bondedKernelFlavor did not request the energy.
  */
-real calculateSimpleBond(int                       ftype,
+real calculateSimpleBond(InteractionFunction       ftype,
                          int                       numForceatoms,
                          const t_iatom             forceatoms[],
                          const t_iparams           forceparams[],

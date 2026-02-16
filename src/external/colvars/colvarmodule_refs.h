@@ -244,6 +244,20 @@
     "  url = {https://doi.org/10.1016/0263-7855(96)00018-5}\n"
     "}\n";
 
+  paper_count_[std::string("Lagardere2023")] = 0;
+  paper_url_[std::string("Lagardere2023")] = "https://arxiv.org/abs/2307.08006";
+  paper_bibtex_[std::string("Lagardere2023")] =
+    "\n"
+    "@misc{Lagardere2023,\n"
+    "      title={Lambda-ABF: Simplified, Accurate and Cost-effective Alchemical Free Energy Computations},\n"
+    "      author={Louis Lagard\\`ere and Lise Maurin and Olivier Adjoua and Krystel El Hage and Pierre Monmarch\\'e and Jean-Philip Piquemal and J\\'er\\^ome H\\'enin},\n"
+    "      year={2023},\n"
+    "      eprint={2307.08006},\n"
+    "      archivePrefix={arXiv},\n"
+    "      primaryClass={physics.chem-ph},\n"
+    "      url = {https://arxiv.org/abs/2307.08006}\n"
+    "}\n";
+
   paper_count_[std::string("Lesage2017")] = 0;
   paper_url_[std::string("Lesage2017")] = "https://doi.org/10.1021/acs.jpcb.6b10055";
   paper_bibtex_[std::string("Lesage2017")] =
@@ -616,6 +630,15 @@
 
   feature_count_[std::string("VMD engine")] = 0;
   feature_paper_map_[std::string("VMD engine")] = "Humphrey1996";
+
+  feature_count_[std::string("alchLambda colvar component")] = 0;
+  feature_paper_map_[std::string("alchLambda colvar component")] = "Lagardere2023";
+
+  feature_count_[std::string("alchFLambda colvar component")] = 0;
+  feature_paper_map_[std::string("alchFLambda colvar component")] = "Lagardere2023";
+
+  feature_count_[std::string("Tinker-HP interface")] = 0;
+  feature_paper_map_[std::string("Tinker-HP interface")] = "Lagardere2023";
 
   feature_count_[std::string("eABF implementation")] = 0;
   feature_paper_map_[std::string("eABF implementation")] = "Lesage2017";

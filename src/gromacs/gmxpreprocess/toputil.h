@@ -37,6 +37,9 @@
 
 #include <cstdio>
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
+
 enum class Directive : int;
 class PreprocessingAtomTypes;
 struct t_atoms;
@@ -59,12 +62,12 @@ void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b);
 
 void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRTPresname);
 
-void print_bondeds(FILE*                                   out,
-                   int                                     natoms,
-                   Directive                               d,
-                   int                                     ftype,
-                   int                                     fsubtype,
-                   gmx::ArrayRef<const InteractionsOfType> plist);
+void print_bondeds(FILE*                                                                 out,
+                   int                                                                   natoms,
+                   Directive                                                             d,
+                   InteractionFunction                                                   ftype,
+                   int                                                                   fsubtype,
+                   const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist);
 
 void print_excl(FILE* out, int natoms, t_excls excls[]);
 

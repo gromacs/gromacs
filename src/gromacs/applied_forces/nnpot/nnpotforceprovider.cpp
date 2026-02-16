@@ -46,9 +46,12 @@
 
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
@@ -58,8 +61,63 @@
 #include "nnpotoptions.h"
 #include "torchmodel.h"
 
+/*! \internal Helper function to find the index of a value in a vector
+ *
+ * Returns the index of the first occurrence of \p val in \p vec, or -1 if not found.
+ * Can be used as an inversion for the index lookup tables.
+ * \param[in] vec vector to search in
+ * \param[in] val value to search for
+ */
+static std::optional<ptrdiff_t> indexOf(gmx::ArrayRef<const int> vec, const int val)
+{
+    auto it = std::find(vec.begin(), vec.end(), val);
+    if (it == vec.end())
+    {
+        return std::nullopt;
+    }
+    return std::distance(vec.begin(), it);
+}
+
 namespace gmx
 {
+
+/*! Center positions of NN and MM atoms in the box.
+ *
+ * For treatment of the NNP-MM interactions, we assume that the embedding model expects
+ * all atom positions to be centered around the NNP region.
+ */
+static void centerAtomPositions(ArrayRef<RVec> nnPos, ArrayRef<RVec> mmPos, const matrix& box, const PbcType& pbcType)
+{
+    t_pbc pbc;
+    set_pbc(&pbc, pbcType, box);
+
+    // center atom positions in the box around the NNP region
+    // compute center of the NNP region
+    RVec nnpCenter{ 0.0, 0.0, 0.0 };
+    RVec dx;
+    for (const auto& pos : nnPos)
+    {
+        pbc_dx(&pbc, pos, nnPos[0], dx);
+        nnpCenter += dx;
+    }
+    nnpCenter        = nnpCenter / nnPos.size() + nnPos[0];
+    RVec translation = RVec(box[0]) + RVec(box[1]) + RVec(box[2]);
+    translation /= 2.0;
+    translation -= nnpCenter;
+
+    // apply translation to NNP and MM positions
+    for (auto& pos : nnPos)
+    {
+        pos += translation;
+    }
+    for (auto& pos : mmPos)
+    {
+        pos += translation;
+    }
+    // put all atoms into the central box (they might be shifted out of it because of the translation)
+    put_atoms_in_box(pbcType, box, nnPos);
+    put_atoms_in_box(pbcType, box, mmPos);
+}
 
 NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
                                        const MDLogger&        logger,
@@ -67,11 +125,24 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),
-    idxLookup_(params_.numAtoms_, -1),
+    inputToLocalIndex_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
     mpiComm_(mpiComm)
 {
+    // for now, dom dec is disabled with pair list input
+    if (mpiComm_.isParallel()
+        && (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts")))
+    {
+        GMX_THROW(NotImplementedError(
+                "NNPot with pair list input does not support domain decomposition"));
+    }
+    if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel && mpiComm_.isParallel())
+    {
+        GMX_THROW(NotImplementedError(
+                "Electrostatic embedding scheme not yet implemented for domain decomposition."));
+    }
+
     // initialize the neural network model
     std::filesystem::path modelPath(params_.modelFileName_);
     if (!std::filesystem::exists(modelPath))
@@ -80,15 +151,13 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     }
     else if (modelPath.extension() == ".pt")
     {
-        model_ = std::make_shared<TorchModel>(params_.modelFileName_, logger_);
+        model_ = std::make_shared<TorchModel>(
+                params_.modelFileName_, params_.embeddingScheme_, logger_, mpiComm_);
     }
     else
     {
         GMX_THROW(FileIOError("Unrecognized extension for model file: " + params_.modelFileName_));
     }
-
-    // set communication record
-    model_->setComm(mpiComm_);
 }
 
 NNPotForceProvider::~NNPotForceProvider() {}
@@ -100,82 +169,109 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     {
         gatherAtomPositions(fInput.x_);
     }
-    if (params_.modelNeedsInput("box"))
+    if (params_.modelNeedsInput("atom-positions-mm") || params_.modelNeedsInput("atom-charges-mm"))
     {
-        copy_mat(fInput.box_, box_);
+        idxMM_.assign(params_.mmIndices_.begin(), params_.mmIndices_.end());
+        setMMPositionsAndCharges(fInput.x_, fInput.chargeA_);
     }
-    if (params_.modelNeedsInput("pbc"))
+    // copy box
+    copy_mat(fInput.box_, box_);
+    // check that pairlist is available if needed
+    if (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts"))
     {
-        copy_mat(fInput.box_, box_);
-        t_pbc pbc;
-        set_pbc(&pbc, *(params_.pbcType_), box_);
+        preparePairlistInput();
     }
-    // prepare inputs for NN model
 
-    auto idxLookupRef = makeConstArrayRef(idxLookup_);
-    auto inputs       = makeConstArrayRef(params_.modelInput_);
-    auto posRef       = makeArrayRef(positions_);
-    auto atomNumRef   = makeArrayRef(atomNumbers_);
+    // get link atom info
+    std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_));
+
+    if (params_.modelNeedsInput("atom-positions-mm"))
+    {
+        // center MM atom positions in the box
+        centerAtomPositions(positions_, mmPositions_, box_, *(params_.pbcType_));
+    }
+
     model_->evaluateModel(&(fOutput->enerd_),
                           fOutput->forceWithVirial_.force_,
-                          idxLookupRef,
-                          inputs,
-                          posRef,
-                          atomNumRef,
+                          inputToLocalIndex_,
+                          idxMM_,
+                          params_.modelInput_,
+                          positions_,
+                          atomNumbers_,
+                          pairlistForModel_,
+                          shiftVectors_,
+                          mmPositions_,
+                          mmCharges_,
+                          params_.nnpCharge_,
+                          linkFrontier,
                           &box_,
                           params_.pbcType_.get());
 }
 
-void NNPotForceProvider::gatherAtomNumbersIndices()
+void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistributedSignal& signal)
 {
-    // this might not be the most efficient solution, since we are throwing away most of the
-    // vectors here in case of NNP/MM
-
     // create lookup table for local atom indices needed for hybrid ML/MM
-    // -1 is used as a flag for atoms that are not local / not in the input
+    // -1 is used as a flag for atoms that are not local / part of the NN input
     // used to distribute forces to correct local indices as the NN input tensor does not contain all atoms
-    idxLookup_.assign(params_.numAtoms_, -1);
-    atomNumbers_.assign(params_.numAtoms_, 0);
+    const int numInput = params_.nnpAtoms_->numAtomsGlobal();
 
-    int lIdx, gIdx;
-    for (size_t i = 0; i < params_.nnpAtoms_->numAtomsLocal(); i++)
-    {
-        lIdx = params_.nnpAtoms_->localIndex()[i];
-        gIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
-        // TODO: make sure that atom number indexing is correct
-        atomNumbers_[gIdx] = params_.atoms_.atom[gIdx].atomnumber;
-        idxLookup_[gIdx]   = lIdx;
-    }
+    inputToLocalIndex_.assign(numInput, -1);
+    inputToGlobalIndex_.assign(numInput, -1);
+    atomNumbers_.assign(numInput, 0);
 
-    // distribute atom numbers to all ranks
     if (mpiComm_.isParallel())
     {
-        mpiComm_.sumReduce(atomNumbers_);
-    }
+        GMX_RELEASE_ASSERT(signal.globalAtomIndices_.has_value(),
+                           "Global atom indices must be provided when using domain decomposition.");
+        auto      globalAtomIndices = signal.globalAtomIndices_.value();
+        const int numLocalPlusHalo  = globalAtomIndices.size(); // includes halo atoms
+        const int numLocal          = signal.x_.size();         // only local atoms on this rank
+        localToInputIndex_.assign(numLocalPlusHalo, -1);
 
-    // remove unused elements in atomNumbers_, and idxLookup
-    auto atIt  = atomNumbers_.begin();
-    auto idxIt = idxLookup_.begin();
-    while (atIt != atomNumbers_.end() && idxIt != idxLookup_.end())
-    {
-        if (*atIt == 0)
+        for (int i = 0; i < numLocalPlusHalo; i++)
         {
-            atIt  = atomNumbers_.erase(atIt);
-            idxIt = idxLookup_.erase(idxIt);
+            int globalIdx = globalAtomIndices[i];
+            for (int j = 0; j < numInput; j++)
+            {
+                if (params_.nnpAtoms_->globalIndex()[j] == globalIdx)
+                {
+                    // only map input indices for home atoms
+                    if (i < numLocal)
+                    {
+                        inputToLocalIndex_[j]  = i;
+                        inputToGlobalIndex_[j] = globalIdx;
+                        atomNumbers_[j]        = params_.atoms_.atom[globalIdx].atomnumber;
+                    }
+                    localToInputIndex_[i] = j;
+                    break;
+                }
+            }
         }
-        else
+        mpiComm_.sumReduce(numInput, atomNumbers_.data());
+    }
+    else
+    {
+        localToInputIndex_.assign(params_.numAtoms_, -1);
+        for (int i = 0; i < numInput; i++)
         {
-            ++atIt;
-            ++idxIt;
+            int localIndex = params_.nnpAtoms_->localIndex()[i];
+            int globalIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
+            inputToLocalIndex_[i]          = localIndex;
+            inputToGlobalIndex_[i]         = globalIdx;
+            localToInputIndex_[localIndex] = i;
+            atomNumbers_[i]                = params_.atoms_.atom[globalIdx].atomnumber;
         }
     }
+    // sanity check: make sure all atom numbers have been set
+    GMX_RELEASE_ASSERT(std::count(atomNumbers_.begin(), atomNumbers_.end(), 0) == 0,
+                       "Some atom numbers have not been set correctly.");
 }
 
 void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
 {
     // collect atom positions
     // at this point, we already have the atom numbers and indices, so we can fill the positions
-    size_t numInput = idxLookup_.size();
+    size_t numInput = inputToLocalIndex_.size();
 
     // reset positions to zero, because we might not have all atoms in the input
     positions_.assign(numInput, RVec({ 0.0, 0.0, 0.0 }));
@@ -183,9 +279,9 @@ void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
     for (size_t i = 0; i < numInput; i++)
     {
         // if value in lookup table is -1, the atom is not local to this rank
-        if (idxLookup_[i] != -1)
+        if (inputToLocalIndex_[i] != -1)
         {
-            positions_[i] = pos[idxLookup_[i]];
+            positions_[i] = pos[inputToLocalIndex_[i]];
         }
     }
 
@@ -193,6 +289,115 @@ void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
     if (mpiComm_.isParallel())
     {
         mpiComm_.sumReduce(3 * numInput, positions_.data()->as_vec());
+    }
+}
+
+std::vector<LinkFrontierAtom>
+NNPotForceProvider::constructLinkFrontier(const std::vector<LinkFrontierAtom>& inputLinkFrontier)
+{
+    std::vector<LinkFrontierAtom> linkFrontier;
+    linkFrontier.reserve(inputLinkFrontier.size());
+    // the MM atom of the link is part of the input
+    // we replace it with the link atom
+    for (auto& ilink : inputLinkFrontier)
+    {
+        const int        globalIdxMM  = ilink.getMMIndex();
+        const int        globalIdxNNP = ilink.getEmbeddedIndex();
+        LinkFrontierAtom link(globalIdxNNP, globalIdxMM);
+
+        // save input indices for force redistribution later
+        const std::optional<ptrdiff_t> inputIdxMM  = indexOf(inputToGlobalIndex_, globalIdxMM);
+        const std::optional<ptrdiff_t> inputIdxNNP = indexOf(inputToGlobalIndex_, globalIdxNNP);
+        GMX_RELEASE_ASSERT(inputIdxNNP.has_value() && inputIdxMM.has_value(),
+                           "Link frontier atoms must be part of the NNPot atom set");
+        link.setInputIndices(inputIdxNNP.value(), inputIdxMM.value());
+
+        // calculate and set link atom position
+        const RVec posMM  = positions_[inputIdxMM.value()];
+        const RVec posNNP = positions_[inputIdxNNP.value()];
+        link.setPositions(posNNP, posMM);
+        // update position of MM atom to link atom position
+        positions_[inputIdxMM.value()] = link.getLinkPosition();
+
+        // overwrite atomic number of MM atom
+        atomNumbers_[inputIdxMM.value()] = ilink.linkAtomNumber();
+        linkFrontier.push_back(link);
+    }
+    return linkFrontier;
+}
+
+void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& signal)
+{
+    // We don't have the updated box vectors yet here, so we can't compute the shift vectors.
+    // So, we just store the pairlist and prepare the input later in calculateForces().
+    fullPairlist_.assign(signal.excludedPairlist_.begin(), signal.excludedPairlist_.end());
+    doPairlist_ = true;
+}
+
+void NNPotForceProvider::preparePairlistInput()
+{
+    // New pair list constructed: Indices in the pairlist correspond to local atom indices.
+    // For now, find all pairs of NNP atoms within the cutoff (which were excluded from the
+    // short-range calculation in GROMACS) so the NN potential does not have to re-compute them.
+    // Thus, we're interested in the excluded pairlist, because all NNP-atom pairs are excluded
+    // pairs, but not all excluded pairs are necessarily NNP-atom pairs.
+    // TODO: figure out dom.dec. case.
+    if (!doPairlist_)
+    {
+        return;
+    }
+    // this assert should only trigger if something breaks in the mdmodules notifications
+    GMX_ASSERT(!fullPairlist_.empty(), "Pairlist for NNP model is empty!");
+
+    const int numPairs = gmx::ssize(fullPairlist_);
+    pairlistForModel_.clear();
+    pairlistForModel_.reserve(2 * numPairs);
+    shiftVectors_.clear();
+    shiftVectors_.reserve(numPairs);
+
+    for (int i = 0; i < numPairs; i++)
+    {
+        const auto [atomPair, shiftIndex] = fullPairlist_[i];
+
+        // we only want to add pairs where both atoms are part of the NNP input
+        // if any of the two (or more commonly both) is not, we skip this pair
+        if (const std::optional<ptrdiff_t> inputIdxA = indexOf(inputToGlobalIndex_, atomPair.first);
+            inputIdxA.has_value())
+        {
+            if (const std::optional<ptrdiff_t> inputIdxB = indexOf(inputToGlobalIndex_, atomPair.second);
+                inputIdxB.has_value())
+            {
+                // no need to check cutoff: pairlist already comes filtered by cutoff
+                RVec       shift;
+                const IVec unitShift = shiftIndexToXYZ(shiftIndex);
+                mvmul_ur0(box_, unitShift.toRVec(), shift);
+
+                pairlistForModel_.push_back(inputIdxA.value());
+                pairlistForModel_.push_back(inputIdxB.value());
+                shiftVectors_.push_back(shift);
+            }
+        }
+    }
+    // sanity check
+    GMX_RELEASE_ASSERT(pairlistForModel_.size() == shiftVectors_.size() * 2,
+                       "Inconsistent pairlist and shift vector sizes");
+    doPairlist_ = false;
+}
+
+void NNPotForceProvider::setMMPositionsAndCharges(ArrayRef<const RVec> pos, ArrayRef<const real> charges)
+{
+    // collect MM atom positions and charges
+    // can't use lookup table here, because we need all MM atoms
+    size_t numMM = params_.mmAtoms_->numAtomsLocal();
+
+    // resize positions and charges vectors
+    mmPositions_.resize(numMM, RVec({ 0.0, 0.0, 0.0 }));
+    mmCharges_.resize(numMM, 0.0);
+
+    for (size_t i = 0; i < numMM; i++)
+    {
+        mmPositions_[i] = pos[params_.mmAtoms_->localIndex()[i]];
+        mmCharges_[i]   = charges[params_.mmAtoms_->localIndex()[i]];
     }
 }
 

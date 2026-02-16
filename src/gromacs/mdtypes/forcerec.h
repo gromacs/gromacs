@@ -36,6 +36,7 @@
 
 #include <array>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "gromacs/mdtypes/atominfo.h"
@@ -233,6 +234,9 @@ struct t_forcerec
      * should be calculated.
      */
     int n_tpi = 0;
+
+    /* When this has a value, generate a plain pairlist with this range */
+    std::optional<real> plainPairlistRange;
 
     /* Limit for printing large forces, negative is don't print */
     real print_force = 0;

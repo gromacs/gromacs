@@ -631,15 +631,15 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
                 root->unmatched_defines.erase(define.name);
 
                 std::string name;
-                const char* ptr = buf;
+                const char* ptr1 = buf;
                 const char* ptr2;
-                while ((ptr2 = strstrw(ptr, define.name.c_str())) != nullptr)
+                while ((ptr2 = strstrw(ptr1, define.name.c_str())) != nullptr)
                 {
-                    name.append(ptr, ptr2 - ptr);
+                    name.append(ptr1, ptr2 - ptr1);
                     name += define.def;
-                    ptr = ptr2 + define.name.size();
+                    ptr1 = ptr2 + define.name.size();
                 }
-                name += ptr;
+                name += ptr1;
                 GMX_RELEASE_ASSERT(name.size() < static_cast<size_t>(n),
                                    "The line should fit in buf");
                 std::strcpy(buf, name.c_str());

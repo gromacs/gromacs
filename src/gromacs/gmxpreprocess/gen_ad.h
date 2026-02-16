@@ -35,6 +35,9 @@
 #ifndef GMX_GMXPREPROCESS_GEN_AD_H
 #define GMX_GMXPREPROCESS_GEN_AD_H
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
+
 #include "specbond.h"
 
 struct t_atoms;
@@ -66,13 +69,13 @@ class ArrayRef;
  *                                 improper dihedrals from specbond. Empty if no such
  *                                 bonds exist.
  */
-void gen_pad(t_atoms*                               atoms,
-             gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             gmx::ArrayRef<InteractionsOfType>      plist,
-             t_excls                                excls[],
-             gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
-             bool                                   bAllowMissing,
-             gmx::ArrayRef<const int>               cyclicBondsIndex,
-             gmx::ArrayRef<const DisulfideBond>     ssbonds);
+void gen_pad(t_atoms*                                                        atoms,
+             gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
+             gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+             t_excls                                                         excls[],
+             gmx::ArrayRef<MoleculePatchDatabase>                            globalPatches,
+             bool                                                            bAllowMissing,
+             gmx::ArrayRef<const int>                                        cyclicBondsIndex,
+             gmx::ArrayRef<const DisulfideBond>                              ssbonds);
 
 #endif

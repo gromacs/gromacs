@@ -64,8 +64,6 @@ class FixedCapacityVector;
 struct gmx_domdec_t;
 struct gmx_wallcycle;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
-
 namespace gmx
 {
 
@@ -81,7 +79,6 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  MPI_Comm /* mpi_comm_mysim_world */,
                                  const DeviceContext& /* deviceContext */,
                                  int /*pulse */,
-                                 bool /*useNvshmem*/,
                                  gmx_wallcycle* /*wcycle*/) :
     impl_(nullptr)
 {
@@ -102,14 +99,6 @@ GpuHaloExchange& GpuHaloExchange::operator=(GpuHaloExchange&& other) noexcept
 /*!\brief init halo exhange stub. */
 void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
                                  DeviceBuffer<RVec> /* d_forcesBuffer */)
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
-}
-
-void GpuHaloExchange::reinitNvshmemSignal(DeviceBuffer<uint64_t> /* d_syncBuffer */,
-                                          const int /* totalPulsesAndDims */,
-                                          const int /* signalObjOffset */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
@@ -141,16 +130,13 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
     return nullptr;
 }
 
-void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
-}
-
 GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  dd,
                                                            const DeviceContext& context,
                                                            const DeviceStream&  stream,
-                                                           const std::optional<int>& /* peerRank */) :
+                                                           const std::optional<int>& /* peerRank */,
+                                                           gmx_wallcycle* /*wcycle*/,
+                                                           MPI_Comm /*mpi_comm_mygroup*/,
+                                                           MPI_Comm /*mpi_comm_mysim_world*/) :
     dd_(dd), stream_(stream), context_(context)
 {
     GMX_ASSERT(false,
@@ -189,6 +175,47 @@ void GpuHaloExchangeNvshmemHelper::reinit()
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
-} // namespace gmx
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(const t_commrec& /*cr*/,
+                                                          DeviceBuffer<RVec> /*d_coordinatesBuffer*/,
+                                                          DeviceBuffer<RVec> /*d_forcesBuffer*/)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
 
-#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+GpuEventSynchronizer* GpuHaloExchangeNvshmemHelper::launchAllCoordinateExchanges(const matrix /*box*/,
+                                                                                 GpuEventSynchronizer* /*dependencyEvent*/)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return nullptr;
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+GpuEventSynchronizer* GpuHaloExchangeNvshmemHelper::launchAllForceExchanges(
+        bool /*accumulateForces*/,
+        FixedCapacityVector<GpuEventSynchronizer*, 2>* /*dependencyEvents*/)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return nullptr;
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::destroyAllHaloExchangeBuffers()
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+GpuEventSynchronizer* GpuHaloExchangeNvshmemHelper::getForcesReadyOnDeviceEvent()
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return nullptr;
+}
+
+} // namespace gmx

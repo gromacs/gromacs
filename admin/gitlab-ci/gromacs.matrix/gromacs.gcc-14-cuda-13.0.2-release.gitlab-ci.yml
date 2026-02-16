@@ -1,0 +1,71 @@
+# Test goal: GCC with newest CUDA
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported on NGC with the chosen CUDA
+#   GPU: CUDA newest supported with its newest supported gcc
+#   HW: NVIDIA GPU
+#   CMake: oldest supported
+#   Scope: configure, build, unit tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 24.04
+#   Build type: RelWithDebInfo
+#   Compiler: GCC 14.2
+#   GPU: CUDA 13.0.2
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+
+gromacs:gcc-14-cuda-13.0.2:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-gcc:base
+    - .use-mpi
+    - .use-cuda
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 14
+    RELEASE_BUILD_DIR: release-builds-gcc
+    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_REGRESSIONTEST_OPTIONS: ""
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:gcc-14-cuda-13.0.2:release:build:
+  extends:
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+  stage: release-build
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    BUILD_DIR: release-builds-gcc
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  needs:
+    - job: gromacs:gcc-14-cuda-13.0.2:release:configure
+
+gromacs:gcc-14-cuda-13.0.2:release:test:
+  extends:
+    - .gromacs:base:test
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:nightly-only-for-release, rules]
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    BUILD_DIR: release-builds-gcc
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
+  needs:
+    - job: gromacs:gcc-14-cuda-13.0.2:release:configure
+    - job: gromacs:gcc-14-cuda-13.0.2:release:build

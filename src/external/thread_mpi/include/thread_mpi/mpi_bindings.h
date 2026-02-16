@@ -89,6 +89,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_WCHAR               TMPI_WCHAR
 #define MPI_BYTE                TMPI_BYTE
 #define MPI_INT64_T             TMPI_INT64_T
+#define MPI_UINT64_T            TMPI_UINT64_T
 
 
 #define MPI_SUCCESS                 TMPI_SUCCESS
@@ -114,6 +115,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_ERR_REQUESTS            TMPI_ERR_REQUESTS
 #define MPI_ERR_IN_STATUS           TMPI_ERR_IN_STATUS
 #define MPI_FAILURE                 TMPI_FAILURE
+#define MPI_ERR_TYPE                TMPI_ERR_TYPE
 #define MPI_ERR_UNKNOWN             TMPI_ERR_UNKNOWN
 #define N_MPI_ERR                   N_TMPI_ERR
 
@@ -222,6 +224,7 @@ typedef tMPI_Op MPI_Op;
 
 #define MPI_Type_contiguous         tMPI_Type_contiguous
 #define MPI_Type_commit             tMPI_Type_commit
+#define MPI_Type_free               tMPI_Type_free
 
 #define MPI_Send                    tMPI_Send
 #define MPI_Recv                    tMPI_Recv
@@ -233,6 +236,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_Test                    tMPI_Test
 #define MPI_Wait                    tMPI_Wait
 #define MPI_Waitall                 tMPI_Waitall
+#define MPI_Waitany                 tMPI_Waitany
 
 #define MPI_Barrier                 tMPI_Barrier
 

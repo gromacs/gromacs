@@ -64,7 +64,7 @@ endif()
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-project(Gromacs VERSION 2026.0)
+project(Gromacs VERSION 2027.0)
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
@@ -560,26 +560,6 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
 
 ########################################################################
-#Process MPI settings
-########################################################################
-include(gmxManageMPI)
-
-########################################################################
-#Process MiMiC settings
-########################################################################
-include(gmxManageMimic)
-
-########################################################################
-#Process CP2K settings
-########################################################################
-include(gmxManageCP2K)
-
-########################################################################
-#Process NNPot settings
-########################################################################
-include(gmxManageNNPot)
-
-########################################################################
 #Process shared/static library settings
 ########################################################################
 include(gmxManageSharedLibraries)
@@ -593,6 +573,21 @@ else()
     set(_GMXAPI_DEFAULT ${BUILD_SHARED_LIBS})
 endif()
 option(GMXAPI "Install GROMACS API." ${_GMXAPI_DEFAULT})
+
+########################################################################
+#Process MPI settings
+########################################################################
+include(gmxManageMPI)
+
+########################################################################
+#Process MiMiC settings
+########################################################################
+include(gmxManageMimic)
+
+########################################################################
+#Process CP2K settings
+########################################################################
+include(gmxManageCP2K)
 
 ########################################################################
 # Specify install locations
@@ -709,16 +704,18 @@ include(gmxManageSimd)
 gmx_manage_simd()
 
 if(GMX_GPU)
-
     string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
     if(${_gmx_gpu_uppercase} STREQUAL "CUDA")
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "HIP")
         include(gmxManageHip)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
-        message(STATUS "GPU support with OpenCL is deprecated. It is still fully supported (and " 
-            "recommended for Apple GPUs). Please use CUDA for running on NVIDIA GPUs and "
-            "SYCL for running on Intel and AMD GPUs.")
+        if(NOT OpenCL_DONT_WARN_AFTER_FIRST_RUN)
+            message(STATUS "GPU support with OpenCL is deprecated. It is still fully supported (and "
+                   "recommended for Apple GPUs). Please use CUDA for running on NVIDIA GPUs and "
+                   "SYCL for running on Intel GPUs, and HIP or SYCL on AMD GPUs.")
+        endif()
+        set(OpenCL_DONT_WARN_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to configure with OpenCL support")
         include(gmxManageOpenCL)
     elseif(${_gmx_gpu_uppercase} STREQUAL "SYCL")
         include(gmxManageSycl)
@@ -768,12 +765,17 @@ if(GMX_GPU)
         endif()
     endif()
 endif()
-set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X 2 CACHE STRING "Number of clusters along X in a pair-search grid cell for GPU lists")
-set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid cell for GPU lists")
-set(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid cell for GPU lists")
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X)
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y)
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
+set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X 2 CACHE STRING "Number of clusters along X in a pair-search grid bin for GPU lists")
+set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid bin for GPU lists")
+set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid bin for GPU lists")
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y)
+mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z)
+if (DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X OR
+    DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y OR
+    DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
+    message(FATAL_ERROR "Configuration parameters GMX_GPU_NB_NUM_CLUSTER_PER_CELL_* have changed name to GMX_GPU_NB_NUM_CLUSTER_PER_BIN_*, please update accordingly")
+endif()
 
 # For build with CUDA/SYCL and Lib-MPI, check if underlying MPI implementation is GPU-aware
 # GPU-aware MPI allows direct GPU communication without staging data through host
@@ -838,6 +840,12 @@ endif()
 
 # Set NVSHMEM host and device libs
 include(gmxManageNvshmem)
+
+
+########################################################################
+#Process NNPot settings (do it after our GPU detection)
+########################################################################
+include(gmxManageNNPot)
 
 if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)

@@ -198,7 +198,8 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
      * Cf. Issue #1255
      */
     const real c_dvdlConstraintCorrectionFactor = EI_VV(inputrec_->eI) ? 2.0 : 1.0;
-    energyData_->enerdata()->term[F_DVDL_CONSTR] += c_dvdlConstraintCorrectionFactor * dvdlambda;
+    energyData_->enerdata()->term[InteractionFunction::dHdLambdaConstraint] +=
+            c_dvdlConstraintCorrectionFactor * dvdlambda;
 }
 
 template<ConstraintVariable variable>

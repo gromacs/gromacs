@@ -92,6 +92,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/boxmatrix.h"
@@ -152,7 +153,7 @@ bool pme_gpu_supports_build(std::string* error)
 #    endif
 #endif
     errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
-    errorReasons.appendIf(GMX_GPU_HIP, "HIP API not supported yet");
+    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme, "Current GPU backend.");
     errorReasons.finishContext();
     if (error != nullptr)
     {
@@ -207,7 +208,8 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
     gmx::MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("PME GPU does not support:");
-    errorReasons.appendIf((!GMX_GPU_CUDA && pme->nnodes != 1 && pme->ndecompdim >= 2),
+    errorReasons.appendIf((!gmx::GpuConfigurationCapabilities::TwoDPmeDecomposition
+                           && pme->nnodes != 1 && pme->ndecompdim >= 2),
                           "2D PME decomposition (use GMX_PMEONEDD to force 1D).");
     errorReasons.appendIf((pme->pme_order != 4), "interpolation orders other than 4.");
     errorReasons.appendIf(pme->doLJ, "Lennard-Jones PME.");
@@ -634,7 +636,7 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
 
 gmx_pme_t::gmx_pme_t(const gmx::MpiComm* mpiComm) :
     mpiCommSingleRank(gmx::MpiComm::SingleRank{}),
-    mpiComm(mpiComm ? *mpiComm : gmx_pme_t::mpiCommSingleRank)
+    mpiComm_(mpiComm ? *mpiComm : gmx_pme_t::mpiCommSingleRank)
 {
 }
 
@@ -684,8 +686,8 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
 
     pme->bPPnode = true;
 
-    pme->nnodes = pme->mpiComm.size();
-    pme->nodeid = pme->mpiComm.rank();
+    pme->nnodes = pme->mpiComm_.size();
+    pme->nodeid = pme->mpiComm_.rank();
 
     pme->nnodes_major = numPmeDomains.x;
     pme->nnodes_minor = numPmeDomains.y;
@@ -705,7 +707,7 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
     {
         if (numPmeDomains.y == 1)
         {
-            pme->mpi_comm_d[0] = pme->mpiComm.comm();
+            pme->mpi_comm_d[0] = pme->mpiComm_.comm();
             pme->mpi_comm_d[1] = MPI_COMM_NULL;
             pme->ndecompdim    = 1;
             pme->nodeid_major  = pme->nodeid;
@@ -714,7 +716,7 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
         else if (numPmeDomains.x == 1)
         {
             pme->mpi_comm_d[0] = MPI_COMM_NULL;
-            pme->mpi_comm_d[1] = pme->mpiComm.comm();
+            pme->mpi_comm_d[1] = pme->mpiComm_.comm();
             pme->ndecompdim    = 1;
             pme->nodeid_major  = 0;
             pme->nodeid_minor  = pme->nodeid;
@@ -730,11 +732,11 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
             pme->ndecompdim = 2;
 
 #if GMX_MPI
-            MPI_Comm_split(pme->mpiComm.comm(),
+            MPI_Comm_split(pme->mpiComm_.comm(),
                            pme->nodeid % numPmeDomains.y,
                            pme->nodeid,
                            &pme->mpi_comm_d[0]); /* My communicator along major dimension */
-            MPI_Comm_split(pme->mpiComm.comm(),
+            MPI_Comm_split(pme->mpiComm_.comm(),
                            pme->nodeid / numPmeDomains.y,
                            pme->nodeid,
                            &pme->mpi_comm_d[1]); /* My communicator along minor dimension */
@@ -756,7 +758,7 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
     int use_threads = (pme->nthread > 1 ? 1 : 0);
     if (pme->nnodes > 1)
     {
-        pme->mpiComm.sumReduce(1, &use_threads);
+        pme->mpiComm_.sumReduce(1, &use_threads);
     }
     pme->bUseThreads = (use_threads > 0);
 
@@ -851,11 +853,6 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
     if (pme->nnodes > 1)
     {
         double imbal;
-
-#if GMX_MPI
-        MPI_Type_contiguous(DIM, GMX_MPI_REAL, &(pme->rvec_mpi));
-        MPI_Type_commit(&(pme->rvec_mpi));
-#endif
 
         /* Note that the coefficient spreading and force gathering, which usually
          * takes about the same amount of time as FFT+solve_pme,
@@ -1142,7 +1139,7 @@ real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
     /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, &grids, true, false, false);
 
-    return gather_energy_bsplines(*pme, grids.pmeGrids.grid.grid, *atc);
+    return gather_energy_bsplines(*pme, grids.pmeGrids.grid.grid(), *atc);
 }
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
@@ -1215,8 +1212,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         atc.pd.resize(coordinates.ssize());
         for (int d = pme->ndecompdim - 1; d >= 0; d--)
         {
-            PmeAtomComm& atc = pme->atc[d];
-            atc.maxshift     = (atc.dimind == 0 ? maxshift_x : maxshift_y);
+            PmeAtomComm& atcD = pme->atc[d];
+            atcD.maxshift     = (atcD.dimind == 0 ? maxshift_x : maxshift_y);
         }
     }
     else
@@ -1297,7 +1294,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         }
         inc_nrnb(nrnb, eNR_SPREADBSP, pme->pme_order * pme->pme_order * pme->pme_order * atc.numAtoms());
 
-        gmx::ArrayRef<real> grid = pmegrid.grid.grid;
+        gmx::ArrayRef<real> grid = pmegrid.grid.grid();
 
         if (!pme->bUseThreads)
         {
@@ -1431,7 +1428,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 try
                 {
                     gather_f_bsplines(*pme,
-                                      pmegrid.grid.grid,
+                                      pmegrid.grid.grid(),
                                       bClearF,
                                       &atc,
                                       atc.spline[thread],
@@ -1537,10 +1534,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             for (PmeAndFftGrids& grids : pme->gridsLJ)
             {
                 /* Unpack structure */
-                const pmegrids_t*    pmegrid    = &grids.pmeGrids;
+                pmegrids_t*          pmegrid    = &grids.pmeGrids;
                 gmx_parallel_3dfft_t pfft_setup = grids.pfft_setup.get();
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
-                gmx::ArrayRef<real> grid = pmegrid->grid.grid;
+                gmx::ArrayRef<real> grid = pmegrid->grid.grid();
 
                 wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
                 /* Spread the c6 on a grid */
@@ -1633,7 +1630,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 /* Unpack structure */
                 pmegrids_t&          pmegrid    = grids.pmeGrids;
                 gmx_parallel_3dfft_t pfft_setup = grids.pfft_setup.get();
-                gmx::ArrayRef<real>  grid       = pmegrid.grid.grid;
+                gmx::ArrayRef<real>  grid       = pmegrid.grid.grid();
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
 #pragma omp parallel num_threads(pme->nthread)
                 {
@@ -1687,7 +1684,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                         try
                         {
                             gather_f_bsplines(*pme,
-                                              pmegrid.grid.grid,
+                                              pmegrid.grid.grid(),
                                               bClearF,
                                               &pme->atc[0],
                                               pme->atc[0].spline[thread],

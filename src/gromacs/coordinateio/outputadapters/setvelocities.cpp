@@ -60,7 +60,7 @@ void SetVelocities::checkAbilityDependencies(unsigned long abilities) const
         std::string errorMessage =
                 "Output file type does not support writing velocities. "
                 "Only GRO, TRR and TNG support this output.";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
 }
 

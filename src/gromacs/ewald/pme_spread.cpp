@@ -349,7 +349,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t*                      
 
     ndatatot = pnx * pny * pnz;
 
-    real* gmx_restrict grid = pmegrid->grid.data();
+    real* gmx_restrict grid = pmegrid->grid().data();
 
     for (i = 0; i < ndatatot; i++)
     {
@@ -440,7 +440,7 @@ static void copy_local_grid(PmeAndFftGrids* grids, const int thread)
     /* Directly copy the non-overlapping parts of the local grids.
      * This also initializes the full grid.
      */
-    const real* gmx_restrict grid_th = pmegrid->grid.data();
+    const real* gmx_restrict grid_th = pmegrid->grid().data();
     for (x = 0; x < nf[XX]; x++)
     {
         for (y = 0; y < nf[YY]; y++)
@@ -602,7 +602,7 @@ static void reduce_threadgrid_overlap(const gmx_pme_t* pme,
 
                 pmegrid_f = &pmegrids->grid_th[thread_f];
 
-                grid_th = pmegrid_f->grid.data();
+                grid_th = pmegrid_f->grid().data();
 
                 nsy = pmegrid_f->s[YY];
                 nsz = pmegrid_f->s[ZZ];

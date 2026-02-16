@@ -548,7 +548,7 @@ int CommandLineModuleManager::run(int argc, char* argv[])
         filename.append(".debug");
 
         fprintf(stderr, "Will write debug log file: %s\n", filename.c_str());
-        gmx_init_debug(optionsHolder.debugLevel(), filename.c_str());
+        gmx_init_debug(optionsHolder.debugLevel(), filename);
     }
     // Set the nice level unless disabled in the configuration.
     if (optionsHolder.niceLevel() != 0)

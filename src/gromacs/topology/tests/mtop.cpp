@@ -107,8 +107,8 @@ void addIntermolecularInteractionBonds(gmx_mtop_t* mtop)
 {
     mtop->bIntermolecularInteractions = true;
     mtop->intermolecular_ilist        = std::make_unique<InteractionLists>();
-    std::vector<int>& iatoms          = (*mtop->intermolecular_ilist)[F_BONDS].iatoms;
-    const int         bondType        = 0;
+    std::vector<int>& iatoms   = (*mtop->intermolecular_ilist)[InteractionFunction::Bonds].iatoms;
+    const int         bondType = 0;
     iatoms.push_back(bondType);
     iatoms.push_back(0);
     iatoms.push_back(1);
@@ -208,19 +208,19 @@ void addEthane(gmx_mtop_t* mtop)
 
     // Describe the interactions
     // clang-format off
-    ethaneMoleculeType.ilist[F_CONSTR].iatoms = { constraintInteractionType, carbon0, 1,
+    ethaneMoleculeType.ilist[InteractionFunction::Constraints].iatoms = { constraintInteractionType, carbon0, 1,
                                                   constraintInteractionType, carbon0, 2,
                                                   constraintInteractionType, carbon0, 3,
                                                   constraintInteractionType, carbon1, 5,
                                                   constraintInteractionType, carbon1, 6,
                                                   constraintInteractionType, carbon1, 7 };
-    ethaneMoleculeType.ilist[F_ANGLES].iatoms = { angleInteractionType, 1, carbon0, 2,
+    ethaneMoleculeType.ilist[InteractionFunction::Angles].iatoms = { angleInteractionType, 1, carbon0, 2,
                                                   angleInteractionType, 1, carbon0, 3,
                                                   angleInteractionType, 2, carbon0, 3,
                                                   angleInteractionType, 5, carbon1, 6,
                                                   angleInteractionType, 5, carbon1, 7,
                                                   angleInteractionType, 6, carbon1, 7 };
-    ethaneMoleculeType.ilist[F_LJ14].iatoms = { oneFourInteractionType, 1, 5,
+    ethaneMoleculeType.ilist[InteractionFunction::LennardJones14].iatoms = { oneFourInteractionType, 1, 5,
                                                 oneFourInteractionType, 1, 6,
                                                 oneFourInteractionType, 1, 7,
                                                 oneFourInteractionType, 2, 5,
@@ -266,7 +266,7 @@ TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
         gmx_localtop_t localTopology(mtop.ffparams);
         const bool     perturbedInteractionsAtEnd = false;
         gmx_mtop_generate_local_top(mtop, &localTopology, perturbedInteractionsAtEnd);
-        ASSERT_EQ(27, localTopology.idef.il[F_LJ14].size());
+        ASSERT_EQ(27, localTopology.idef.il[InteractionFunction::LennardJones14].size());
         int iatomsIndex = 0;
         // All the interactions remain in the order in which they were
         // inserted.
@@ -275,8 +275,8 @@ TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
             for (const int j : { 5, 6, 7 })
             {
                 ++iatomsIndex;
-                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
-                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(i, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
             }
         }
     }
@@ -288,7 +288,7 @@ TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
         gmx_localtop_t localTopology(mtop.ffparams);
         const bool     perturbedInteractionsAtEnd = true;
         gmx_mtop_generate_local_top(mtop, &localTopology, perturbedInteractionsAtEnd);
-        ASSERT_EQ(27, localTopology.idef.il[F_LJ14].size());
+        ASSERT_EQ(27, localTopology.idef.il[InteractionFunction::LennardJones14].size());
         int iatomsIndex = 0;
         // All the interactions including neither atom 1 or 7 remain in
         // the order in which they were inserted.
@@ -297,8 +297,8 @@ TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
             for (const int j : { 5, 6 })
             {
                 ++iatomsIndex;
-                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
-                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(i, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
             }
         }
         // Then all interactions with atom 1
@@ -307,8 +307,8 @@ TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
             for (const int j : { 5, 6, 7 })
             {
                 ++iatomsIndex;
-                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
-                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(i, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
             }
         }
         // Then all interactions with atom 7
@@ -317,8 +317,8 @@ TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
             for (const int j : { 7 })
             {
                 ++iatomsIndex;
-                EXPECT_EQ(i, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
-                EXPECT_EQ(j, localTopology.idef.il[F_LJ14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(i, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
+                EXPECT_EQ(j, localTopology.idef.il[InteractionFunction::LennardJones14].iatoms[iatomsIndex++]);
             }
         }
     }
@@ -334,14 +334,15 @@ TEST(IListRangeTest, RangeBasedLoopWorks)
     for (const IListProxy ilistP : IListRange(mtop))
     {
         EXPECT_EQ(ilistP.nmol(), 2);
-        EXPECT_EQ(ilistP.list()[F_BONDS].size(), 0);
-        EXPECT_EQ(ilistP.list()[F_SETTLE].size(), 1 * (NRAL(F_SETTLE) + 1));
+        EXPECT_EQ(ilistP.list()[InteractionFunction::Bonds].size(), 0);
+        EXPECT_EQ(ilistP.list()[InteractionFunction::SETTLE].size(),
+                  1 * (NRAL(InteractionFunction::SETTLE) + 1));
         count++;
     }
     EXPECT_EQ(count, 1);
 
-    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_BONDS), 0);
-    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_SETTLE), 2);
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::Bonds), 0);
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE), 2);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 0);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
     done_atom(&mtop.moltype[0].atoms);
@@ -360,21 +361,23 @@ TEST(IListRangeTest, RangeBasedLoopWithIntermolecularInteraction)
         if (count == 0)
         {
             EXPECT_EQ(ilistP.nmol(), 2);
-            EXPECT_EQ(ilistP.list()[F_BONDS].size(), 0);
-            EXPECT_EQ(ilistP.list()[F_SETTLE].size(), 1 * (NRAL(F_SETTLE) + 1));
+            EXPECT_EQ(ilistP.list()[InteractionFunction::Bonds].size(), 0);
+            EXPECT_EQ(ilistP.list()[InteractionFunction::SETTLE].size(),
+                      1 * (NRAL(InteractionFunction::SETTLE) + 1));
         }
         else
         {
             EXPECT_EQ(ilistP.nmol(), 1);
-            EXPECT_EQ(ilistP.list()[F_BONDS].size(), 3 * (NRAL(F_BONDS) + 1));
-            EXPECT_EQ(ilistP.list()[F_SETTLE].size(), 0);
+            EXPECT_EQ(ilistP.list()[InteractionFunction::Bonds].size(),
+                      3 * (NRAL(InteractionFunction::Bonds) + 1));
+            EXPECT_EQ(ilistP.list()[InteractionFunction::SETTLE].size(), 0);
         }
         count++;
     }
     EXPECT_EQ(count, 2);
 
-    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_BONDS), 3);
-    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_SETTLE), 2);
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::Bonds), 3);
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE), 2);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 3);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND | IF_CONSTRAINT), 0);

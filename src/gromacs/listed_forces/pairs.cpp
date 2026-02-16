@@ -514,7 +514,7 @@ static real free_energy_evaluate_single(real                                    
 
 /*! \brief Calculate pair interactions, supports all types and conditions. */
 template<BondedKernelFlavor flavor>
-static real do_pairs_general(int                                 ftype,
+static real do_pairs_general(InteractionFunction                 ftype,
                              int                                 nbonds,
                              const t_iatom                       iatoms[],
                              const t_iparams                     iparams[],
@@ -550,19 +550,19 @@ static real do_pairs_general(int                                 ftype,
 
     switch (ftype)
     {
-        case F_LJ14:
-        case F_LJC14_Q:
+        case InteractionFunction::LennardJones14:
+        case InteractionFunction::LennardJonesCoulomb14Q:
             energygrp_elec = grppener->energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14].data();
             energygrp_vdw  = grppener->energyGroupPairTerms[NonBondedEnergyTerms::LJ14].data();
             break;
-        case F_LJC_PAIRS_NB:
+        case InteractionFunction::LennardJonesCoulombNonBondedPairs:
             energygrp_elec = grppener->energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data();
             energygrp_vdw  = grppener->energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data();
             break;
         default:
             energygrp_elec = nullptr; /* Keep compiler happy */
             energygrp_vdw  = nullptr; /* Keep compiler happy */
-            gmx_fatal(FARGS, "Unknown function type %d in do_nonbonded14", ftype);
+            gmx_fatal(FARGS, "Unknown function type %d in do_nonbonded14", static_cast<int>(ftype));
     }
 
     if (fr->efep != FreeEnergyPerturbationType::No)
@@ -624,7 +624,7 @@ static real do_pairs_general(int                                 ftype,
         /* Get parameters */
         switch (ftype)
         {
-            case F_LJ14:
+            case InteractionFunction::LennardJones14:
                 bFreeEnergy =
                         (fr->efep != FreeEnergyPerturbationType::No
                          && ((!atomIsPerturbed.empty() && (atomIsPerturbed[ai] || atomIsPerturbed[aj]))
@@ -634,13 +634,13 @@ static real do_pairs_general(int                                 ftype,
                 c6  = iparams[itype].lj14.c6A;
                 c12 = iparams[itype].lj14.c12A;
                 break;
-            case F_LJC14_Q:
+            case InteractionFunction::LennardJonesCoulomb14Q:
                 qq = iparams[itype].ljc14.qi * iparams[itype].ljc14.qj * epsfac
                      * iparams[itype].ljc14.fqq;
                 c6  = iparams[itype].ljc14.c6;
                 c12 = iparams[itype].ljc14.c12;
                 break;
-            case F_LJC_PAIRS_NB:
+            case InteractionFunction::LennardJonesCoulombNonBondedPairs:
                 qq  = iparams[itype].ljcnb.qi * iparams[itype].ljcnb.qj * epsfac;
                 c6  = iparams[itype].ljcnb.c6;
                 c12 = iparams[itype].ljcnb.c12;
@@ -685,7 +685,7 @@ static real do_pairs_general(int                                 ftype,
 
         if (bFreeEnergy)
         {
-            /* Currently free energy is only supported for F_LJ14, so no need to check for that if we got here */
+            /* Currently free energy is only supported for InteractionFunction::LennardJones14, so no need to check for that if we got here */
             qqB  = chargeB[ai] * chargeB[aj] * epsfac * fr->fudgeQQ;
             c6B  = iparams[itype].lj14.c6B * 6.0;
             c12B = iparams[itype].lj14.c12B * 12.0;
@@ -948,7 +948,7 @@ static void do_pairs_simple(int                       nbonds,
 }
 
 /*! \brief Calculate all listed pair interactions */
-void do_pairs(int                                 ftype,
+void do_pairs(InteractionFunction                 ftype,
               int                                 nbonds,
               const t_iatom                       iatoms[],
               const t_iparams                     iparams[],
@@ -969,7 +969,7 @@ void do_pairs(int                                 ftype,
               gmx_grppairener_t*                  grppener,
               int*                                global_atom_index)
 {
-    if (ftype == F_LJ14 && fr->ic->vdw.type != VanDerWaalsType::User
+    if (ftype == InteractionFunction::LennardJones14 && fr->ic->vdw.type != VanDerWaalsType::User
         && !usingUserTableElectrostatics(fr->ic->coulomb.type) && !havePerturbedInteractions
         && (!stepWork.computeVirial && !stepWork.computeEnergy))
     {

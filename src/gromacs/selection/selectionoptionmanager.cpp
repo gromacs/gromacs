@@ -66,7 +66,7 @@ class IOptionsContainer;
  */
 
 /*! \internal \brief
- * Private implemention class for SelectionOptionManager.
+ * Private implementation class for SelectionOptionManager.
  *
  * \ingroup module_selection
  */

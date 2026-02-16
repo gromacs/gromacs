@@ -77,24 +77,24 @@ public:
     void setupFepThreadedForceBuffer(int numAtomsForce, const PairlistSets& pairlistSets);
 
     //! Dispatches the non-bonded free-energy kernels, thread parallel and reduces the output
-    void dispatchFreeEnergyKernels(const PairlistSets&                    pairlistSets,
-                                   const ArrayRefWithPadding<const RVec>& coords,
-                                   ForceWithShiftForces*                  forceWithShiftForces,
-                                   bool                                   useSimd,
-                                   int                                    ntype,
-                                   const interaction_const_t&             ic,
-                                   ArrayRef<const RVec>                   shiftvec,
-                                   ArrayRef<const real>                   nbfp,
-                                   ArrayRef<const real>                   nbfp_grid,
-                                   ArrayRef<const real>                   chargeA,
-                                   ArrayRef<const real>                   chargeB,
-                                   ArrayRef<const int>                    typeA,
-                                   ArrayRef<const int>                    typeB,
-                                   ArrayRef<const real>                   lambda,
-                                   gmx_enerdata_t*                        enerd,
-                                   const StepWorkload&                    stepWork,
-                                   t_nrnb*                                nrnb,
-                                   gmx_wallcycle*                         wcycle);
+    void dispatchFreeEnergyCpuKernels(const PairlistSets&                    pairlistSets,
+                                      const ArrayRefWithPadding<const RVec>& coords,
+                                      ForceWithShiftForces*                  forceWithShiftForces,
+                                      bool                                   useSimd,
+                                      int                                    ntype,
+                                      const interaction_const_t&             ic,
+                                      ArrayRef<const RVec>                   shiftvec,
+                                      ArrayRef<const real>                   nbfp,
+                                      ArrayRef<const real>                   nbfp_grid,
+                                      ArrayRef<const real>                   chargeA,
+                                      ArrayRef<const real>                   chargeB,
+                                      ArrayRef<const int>                    typeA,
+                                      ArrayRef<const int>                    typeB,
+                                      ArrayRef<const real>                   lambda,
+                                      gmx_enerdata_t*                        enerd,
+                                      const StepWorkload&                    stepWork,
+                                      t_nrnb*                                nrnb,
+                                      gmx_wallcycle*                         wcycle);
 
 private:
     //! Temporary array for storing foreign lambda group pair energies

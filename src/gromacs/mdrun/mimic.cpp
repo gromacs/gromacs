@@ -285,19 +285,13 @@ void gmx::LegacySimulator::do_mimic()
 
     gstat = global_stat_init(ir);
 
-    const auto& simulationWork = runScheduleWork_->simulationWork;
-    const bool  useGpuForPme   = simulationWork.useGpuPme;
-    const bool  useGpuForBufferOps =
-            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
-
-
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fpLog_,
                                  topGlobal_,
                                  constr_ ? constr_->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy,
                                  haveDDAtomOrdering(*cr_),
-                                 useGpuForPme || useGpuForBufferOps);
+                                 runScheduleWork_->simulationWork);
 
     if (haveDDAtomOrdering(*cr_))
     {
@@ -702,14 +696,14 @@ void gmx::LegacySimulator::do_mimic()
 
             if (isMainRank)
             {
-                MimicCommunicator::sendEnergies(enerd_->term[F_EPOT]);
+                MimicCommunicator::sendEnergies(enerd_->term[InteractionFunction::PotentialEnergy]);
                 MimicCommunicator::sendForces(ftemp, stateGlobal_->numAtoms());
             }
         }
 
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of
-           the virial that should probably be addressed eventually. state->veta has better properies,
+           the virial that should probably be addressed eventually. state->veta has better properties,
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 

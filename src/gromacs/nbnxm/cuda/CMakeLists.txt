@@ -34,14 +34,18 @@
 if(GMX_GPU_CUDA)
     if(NOT GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
         set(NBNXM_CUDA_KERNEL_SOURCES
-                nbnxm_cuda_kernel_F_noprune.cu
-                nbnxm_cuda_kernel_F_prune.cu
-                nbnxm_cuda_kernel_VF_noprune.cu
-                nbnxm_cuda_kernel_VF_prune.cu
-                nbnxm_cuda_kernel_pruneonly.cu)
+            nbnxm_cuda_kernel_F_noprune.cu
+            nbnxm_cuda_kernel_F_prune.cu
+            nbnxm_cuda_kernel_VF_noprune.cu
+            nbnxm_cuda_kernel_VF_prune.cu
+            nbfe_cuda_kernel_F.cu
+            nbfe_cuda_kernel_VF.cu
+            nbfe_foreign_cuda_kernel_V.cu
+            nbnxm_cuda_kernel_pruneonly.cu)
     endif()
 
     file(GLOB NBNXM_CUDA_SOURCES
+         nbfe_cuda.cu
          nbnxm_cuda.cu
          nbnxm_cuda_data_mgmt.cu
          nbnxm_cuda_jit_support.cu

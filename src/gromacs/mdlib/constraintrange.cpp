@@ -80,8 +80,8 @@ static void constr_recur(const ListOfLists<int>&        at2con,
 
     (*count)++;
 
-    gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
-    gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
+    gmx::ArrayRef<const int> ia1 = ilist[InteractionFunction::Constraints].iatoms;
+    gmx::ArrayRef<const int> ia2 = ilist[InteractionFunction::ConstraintsNoCoupling].iatoms;
 
     /* Loop over all constraints connected to this atom */
     for (const int con : at2con[at])
@@ -172,7 +172,8 @@ static real constr_r_max_moltype(const gmx_moltype_t*           molt,
 
     real r0, r1, r2maxA, r2maxB, rmax, lam0, lam1;
 
-    if (molt->ilist[F_CONSTR].empty() && molt->ilist[F_CONSTRNC].empty())
+    if (molt->ilist[InteractionFunction::Constraints].empty()
+        && molt->ilist[InteractionFunction::ConstraintsNoCoupling].empty())
     {
         return 0;
     }

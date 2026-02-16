@@ -56,6 +56,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/naming.h"
@@ -69,14 +70,14 @@ namespace
 
 TEST(ConvertInteractionsTest, DoingNothingWorks)
 {
-    const int                             numAtomTypes = 0;
-    std::array<InteractionsOfType, F_NRE> nonBondedInteractions;
-    std::vector<MoleculeInformation>      moleculesInformation;
-    const MoleculeInformation*            intermolecularInteractions = nullptr;
-    CombinationRule                       combinationRule            = CombinationRule::Geometric;
-    const double                          repulsionPower             = 12.0;
-    const real                            fudgeQQ                    = 1.0;
-    gmx_mtop_t                            mtop;
+    const int                                                      numAtomTypes = 0;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> nonBondedInteractions;
+    std::vector<MoleculeInformation>                               moleculesInformation;
+    const MoleculeInformation* intermolecularInteractions = nullptr;
+    CombinationRule            combinationRule            = CombinationRule::Geometric;
+    const double               repulsionPower             = 12.0;
+    const real                 fudgeQQ                    = 1.0;
+    gmx_mtop_t                 mtop;
 
     convertInteractionsOfType(numAtomTypes,
                               nonBondedInteractions,
@@ -119,12 +120,12 @@ using ConvertInteractionsTest = ::testing::TestWithParam<std::tuple<int>>;
 
 TEST_P(ConvertInteractionsTest, Works)
 {
-    const int                             numAtomTypes = 0;
-    std::array<InteractionsOfType, F_NRE> nonBondedInteractions;
-    std::vector<MoleculeInformation>      moleculesInformation;
-    char**                                dummyName = nullptr;
+    const int                                                      numAtomTypes = 0;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> nonBondedInteractions;
+    std::vector<MoleculeInformation>                               moleculesInformation;
+    char**                                                         dummyName = nullptr;
 
-    const int ftype = std::get<0>(GetParam());
+    const InteractionFunction ftype = static_cast<InteractionFunction>(std::get<0>(GetParam()));
 
     // Ensure this function type is handled by convertInteractionsOfType.
     if (!shouldConvertInteractionType(ftype))
@@ -133,7 +134,11 @@ TEST_P(ConvertInteractionsTest, Works)
                         "parameters converted in grompp";
     }
     for (const auto unsupportedFunctionType :
-         { F_GB12_NOLONGERUSED, F_GB13_NOLONGERUSED, F_GB14_NOLONGERUSED, F_GBPOL_NOLONGERUSED, F_NPSOLVATION_NOLONGERUSED })
+         { InteractionFunction::GeneralizedBorn12PolarizationUnused,
+           InteractionFunction::GeneralizedBorn13PolarizationUnused,
+           InteractionFunction::GeneralizedBorn14PolarizationUnused,
+           InteractionFunction::GeneralizedBornPolarizationUnused,
+           InteractionFunction::NonpolarSolvationUnused })
     {
         if (ftype == unsupportedFunctionType)
         {
@@ -144,7 +149,7 @@ TEST_P(ConvertInteractionsTest, Works)
     // Define a molecule type with a single interaction of type ftype and add it
     // to the molecules information object
     {
-        std::array<InteractionsOfType, F_NRE> moleculeInteractions;
+        gmx::EnumerationArray<InteractionFunction, InteractionsOfType> moleculeInteractions;
         // For function types with no parameters, assign_param()
         // assumes the parameters are all zero, which leads to not
         // appending all-zero parameter sest to the parameter list
@@ -186,7 +191,8 @@ TEST_P(ConvertInteractionsTest, Works)
     {
         EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 1)
                 << "topology has one bonded interaction";
-        ASSERT_EQ(gmx_mtop_ftype_count(mtop, ftype), 1) << "topology has one kind of interaction";
+        ASSERT_EQ(gmx_mtop_ftype_count(mtop, static_cast<InteractionFunction>(ftype)), 1)
+                << "topology has one kind of interaction";
         EXPECT_EQ(mtop.moltype[0].ilist[ftype].iatoms[0], 0)
                 << "the first interaction of the first molecule type uses the first "
                    "interaction function parameters";
@@ -209,7 +215,8 @@ TEST_P(ConvertInteractionsTest, Works)
 
 std::string ftypeToName(const int ftype)
 {
-    GMX_RELEASE_ASSERT(ftype < F_NRE, "Must have valid kind of interaction function");
+    GMX_RELEASE_ASSERT(ftype < static_cast<int>(InteractionFunction::Count),
+                       "Must have valid kind of interaction function");
     return interaction_function[ftype].longname;
 }
 
@@ -219,7 +226,7 @@ using testing::Combine;
 using testing::Range;
 INSTANTIATE_TEST_SUITE_P(InteractionFunctionKind,
                          ConvertInteractionsTest,
-                         Combine(Range(0, static_cast<int>(F_NRE))),
+                         Combine(Range(0, static_cast<int>(InteractionFunction::Count))),
                          sc_testNamer);
 
 } // namespace

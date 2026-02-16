@@ -61,7 +61,7 @@
 
 struct gmx_output_env_t;
 
-static int calc_ntype(int nft, const int* ft, const t_idef* idef)
+static int calc_ntype(int nft, const InteractionFunction* ft, const t_idef* idef)
 {
     int i, f, nf = 0;
 
@@ -79,10 +79,10 @@ static int calc_ntype(int nft, const int* ft, const t_idef* idef)
     return nf;
 }
 
-static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[], char* grpnames[])
+static void fill_ft_ind(int nft, const InteractionFunction* ft, const t_idef* idef, int ft_ind[], char* grpnames[])
 {
     char buf[125];
-    int  i, f, ftype, ind = 0;
+    int  i, f, ind = 0;
 
     /* Loop over all the function types in the topology */
     for (i = 0; (i < idef->ntypes); i++)
@@ -91,68 +91,68 @@ static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[]
         /* Check all the selected function types */
         for (f = 0; f < nft; f++)
         {
-            ftype = ft[f];
+            const InteractionFunction ftype = ft[f];
             if (idef->functype[i] == ftype)
             {
                 ft_ind[i] = ind;
                 switch (ftype)
                 {
-                    case F_ANGLES:
+                    case InteractionFunction::Angles:
                         sprintf(buf,
                                 "Theta=%.1f_%.2f",
                                 idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case F_G96ANGLES:
+                    case InteractionFunction::GROMOS96Angles:
                         sprintf(buf,
                                 "Cos_th=%.1f_%.2f",
                                 idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case F_UREY_BRADLEY:
+                    case InteractionFunction::UreyBradleyPotential:
                         sprintf(buf,
                                 "UB_th=%.1f_%.2f2f",
                                 idef->iparams[i].u_b.thetaA,
                                 idef->iparams[i].u_b.kthetaA);
                         break;
-                    case F_QUARTIC_ANGLES:
+                    case InteractionFunction::QuarticAngles:
                         sprintf(buf,
                                 "Q_th=%.1f_%.2f_%.2f",
                                 idef->iparams[i].qangle.theta,
                                 idef->iparams[i].qangle.c[0],
                                 idef->iparams[i].qangle.c[1]);
                         break;
-                    case F_TABANGLES:
+                    case InteractionFunction::TabulatedAngles:
                         sprintf(buf,
                                 "Table=%d_%.2f",
                                 idef->iparams[i].tab.table,
                                 idef->iparams[i].tab.kA);
                         break;
-                    case F_PDIHS:
+                    case InteractionFunction::ProperDihedrals:
                         sprintf(buf,
                                 "Phi=%.1f_%d_%.2f",
                                 idef->iparams[i].pdihs.phiA,
                                 idef->iparams[i].pdihs.mult,
                                 idef->iparams[i].pdihs.cpA);
                         break;
-                    case F_IDIHS:
+                    case InteractionFunction::ImproperDihedrals:
                         sprintf(buf,
                                 "Xi=%.1f_%.2f",
                                 idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case F_RBDIHS:
+                    case InteractionFunction::RyckaertBellemansDihedrals:
                         sprintf(buf, "RB-A1=%.2f", idef->iparams[i].rbdihs.rbcA[1]);
                         break;
-                    case F_RESTRANGLES:
+                    case InteractionFunction::RestrictedBendingPotential:
                         // Fall through intended
-                    case F_RESTRDIHS:
+                    case InteractionFunction::RestrictedTorsionPotential:
                         sprintf(buf,
                                 "Theta=%.1f_%.2f",
                                 idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case F_CBTDIHS:
+                    case InteractionFunction::CombinedBendingTorsionPotential:
                         sprintf(buf, "CBT-A1=%.2f", idef->iparams[i].cbtdihs.cbtcA[1]);
                         break;
 
@@ -168,17 +168,17 @@ static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[]
     }
 }
 
-static void fill_ang(int               nft,
-                     const int*        ft,
-                     int               fac,
-                     int               nr[],
-                     int*              index[],
-                     const int         ft_ind[],
-                     const t_topology* top,
-                     gmx_bool          bNoH,
-                     real              hq)
+static void fill_ang(int                        nft,
+                     const InteractionFunction* ft,
+                     int                        fac,
+                     int                        nr[],
+                     int*                       index[],
+                     const int                  ft_ind[],
+                     const t_topology*          top,
+                     gmx_bool                   bNoH,
+                     real                       hq)
 {
-    int           f, ftype, i, j, indg, nr_fac;
+    int           f, i, j, indg, nr_fac;
     gmx_bool      bUse;
     const t_idef* idef;
     t_atom*       atom;
@@ -190,8 +190,8 @@ static void fill_ang(int               nft,
 
     for (f = 0; f < nft; f++)
     {
-        ftype = ft[f];
-        ia    = idef->il[ftype].iatoms;
+        InteractionFunction ftype = ft[f];
+        ia                        = idef->il[ftype].iatoms;
         for (i = 0; (i < idef->il[ftype].nr);)
         {
             indg = ft_ind[ia[0]];
@@ -239,16 +239,16 @@ static void fill_ang(int               nft,
     }
 }
 
-static int* select_ftype(const char* opt, int* nft, int* mult)
+static InteractionFunction* select_ftype(const char* opt, int* nft, int* mult)
 {
-    int *ft = nullptr, ftype;
+    InteractionFunction* ft = nullptr;
 
     if (opt[0] == 'a')
     {
         *mult = 3;
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if ((interaction_function[ftype].flags & IF_ATYPE) || ftype == F_TABANGLES)
+            if ((interaction_function[ftype].flags & IF_ATYPE) || ftype == InteractionFunction::TabulatedAngles)
             {
                 (*nft)++;
                 srenew(ft, *nft);
@@ -263,9 +263,9 @@ static int* select_ftype(const char* opt, int* nft, int* mult)
         snew(ft, *nft);
         switch (opt[0])
         {
-            case 'd': ft[0] = F_PDIHS; break;
-            case 'i': ft[0] = F_IDIHS; break;
-            case 'r': ft[0] = F_RBDIHS; break;
+            case 'd': ft[0] = InteractionFunction::ProperDihedrals; break;
+            case 'i': ft[0] = InteractionFunction::ImproperDihedrals; break;
+            case 'r': ft[0] = InteractionFunction::RyckaertBellemansDihedrals; break;
             default: break;
         }
     }
@@ -297,7 +297,7 @@ int gmx_mk_angndx(int argc, char* argv[])
     FILE*             out;
     t_topology*       top;
     int               i, j, ntype;
-    int               nft = 0, *ft, mult = 0;
+    int               nft = 0, mult = 0;
     int**             index;
     int*              ft_ind;
     int*              nr;
@@ -312,7 +312,7 @@ int gmx_mk_angndx(int argc, char* argv[])
 
     GMX_RELEASE_ASSERT(opt[0] != nullptr, "Options inconsistency; opt[0] is NULL");
 
-    ft = select_ftype(opt[0], &nft, &mult);
+    InteractionFunction* ft = select_ftype(opt[0], &nft, &mult);
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), nullptr);
 

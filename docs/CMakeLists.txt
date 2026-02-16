@@ -224,6 +224,7 @@ if (SPHINX_FOUND)
         reference-manual/special/colvars.rst
         reference-manual/special/plumed.rst
         reference-manual/special/nnpot.rst
+        reference-manual/special/fmm.rst
         # Analysis chapter
         reference-manual/analysis/analysis.rst
         reference-manual/analysis/using-groups.rst
@@ -366,6 +367,17 @@ if (SPHINX_FOUND)
         install-guide/exotic.rst
         reference-manual/plots/GMX_logos/gmx_logo_blue.svg
         release-notes/index.rst
+        release-notes/2027/major/highlights.rst
+        release-notes/2027/major/features.rst
+        release-notes/2027/major/performance.rst
+        release-notes/2027/major/tools.rst
+        release-notes/2027/major/bugs-fixed.rst
+        release-notes/2027/major/removed-functionality.rst
+        release-notes/2027/major/deprecated-functionality.rst
+        release-notes/2027/major/portability.rst
+        release-notes/2027/major/miscellaneous.rst
+        release-notes/2027/major/api.rst
+        release-notes/2026/2026.1.rst
         release-notes/2026/major/highlights.rst
         release-notes/2026/major/features.rst
         release-notes/2026/major/performance.rst
@@ -380,6 +392,7 @@ if (SPHINX_FOUND)
         release-notes/2025/2025.2.rst
         release-notes/2025/2025.3.rst
         release-notes/2025/2025.4.rst
+        release-notes/2025/2025.5.rst
         release-notes/2025/major/highlights.rst
         release-notes/2025/major/features.rst
         release-notes/2025/major/performance.rst
@@ -535,6 +548,7 @@ if (SPHINX_FOUND)
         user-guide/security.rst
         user-guide/system-preparation.rst
         user-guide/terminology.rst
+        user-guide/validation.rst
         )
 
     include(SphinxMacros.cmake)
@@ -590,6 +604,7 @@ if (SPHINX_FOUND)
             GMX_ADMIN_DIR
             GMX_CLANG_MINIMUM_REQUIRED_VERSION
             GMX_GCC_MINIMUM_REQUIRED_VERSION
+            GMX_HDF5_MINIMUM_REQUIRED_VERSION
             GMX_LMFIT_REQUIRED_VERSION
             GMX_MANUAL_DOI_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION

@@ -277,15 +277,15 @@ void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, g
 
     int nzone   = 1;
     int nat_tot = comm->atomRanges.numHomeAtoms();
-    for (int d = 0; d < dd->ndim; d++)
+    for (int dimInd = 0; dimInd < dd->ndim; dimInd++)
     {
-        const bool bPBC   = (dd->ci[dd->dim[d]] == 0);
-        const bool bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
+        const bool bPBC   = (dd->ci[dd->dim[dimInd]] == 0);
+        const bool bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dd->dim[dimInd] == XX);
         if (bPBC)
         {
-            copy_rvec(box[dd->dim[d]], shift);
+            copy_rvec(box[dd->dim[dimInd]], shift);
         }
-        gmx_domdec_comm_dim_t* cd = &comm->cd[d];
+        gmx_domdec_comm_dim_t* cd = &comm->cd[dimInd];
         for (const gmx_domdec_ind_t& ind : cd->ind)
         {
             DDBufferAccess<gmx::RVec> sendBufferAccess(comm->rvecBuffer, ind.nsend[nzone + 1]);
@@ -340,7 +340,7 @@ void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, g
                 receiveBuffer = receiveBufferAccess.buffer;
             }
             /* Send and receive the coordinates */
-            ddSendrecv(dd, d, dddirBackward, sendBuffer, receiveBuffer);
+            ddSendrecv(dd, dimInd, dddirBackward, sendBuffer, receiveBuffer);
 
             if (!cd->receiveInPlace)
             {
@@ -369,20 +369,20 @@ static void dd_move_f_aggregating(gmx_domdec_t* dd, gmx::ForceWithShiftForces* f
     gmx_domdec_comm_t& comm    = *dd->comm;
     int                nzone   = dd->zones.numZones() / 2;
     int                nat_tot = comm.atomRanges.end(DDAtomRanges::Type::Zones);
-    for (int d = dd->ndim - 1; d >= 0; d--)
+    for (int dimInd = dd->ndim - 1; dimInd >= 0; dimInd--)
     {
         /* Only forces in domains near the PBC boundaries need to
            consider PBC in the treatment of fshift */
         const bool shiftForcesNeedPbc =
-                (forceWithShiftForces->computeVirial() && dd->ci[dd->dim[d]] == 0);
-        const bool applyScrewPbc = (dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
+                (forceWithShiftForces->computeVirial() && dd->ci[dd->dim[dimInd]] == 0);
+        const bool applyScrewPbc = (dd->unitCellInfo.haveScrewPBC && dd->dim[dimInd] == XX);
         /* Determine which shift vector we need */
-        ivec vis        = { 0, 0, 0 };
-        vis[dd->dim[d]] = 1;
-        const int is    = gmx::ivecToShiftIndex(vis);
+        ivec vis             = { 0, 0, 0 };
+        vis[dd->dim[dimInd]] = 1;
+        const int is         = gmx::ivecToShiftIndex(vis);
 
         /* Loop over the pulses */
-        const gmx_domdec_comm_dim_t& cd = comm.cd[d];
+        const gmx_domdec_comm_dim_t& cd = comm.cd[dimInd];
         for (int p = cd.numPulses() - 1; p >= 0; p--)
         {
             const gmx_domdec_ind_t&   ind = cd.ind[p];
@@ -412,7 +412,7 @@ static void dd_move_f_aggregating(gmx_domdec_t* dd, gmx::ForceWithShiftForces* f
                 }
             }
             /* Communicate the forces */
-            ddSendrecv(dd, d, dddirForward, sendBuffer, receiveBuffer);
+            ddSendrecv(dd, dimInd, dddirForward, sendBuffer, receiveBuffer);
             /* Add the received forces */
             int n = 0;
             if (!applyScrewPbc && !shiftForcesNeedPbc)
@@ -1869,9 +1869,10 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&              mdlog,
     }
     else
     {
-        systemInfo.mayHaveSplitConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0
-                                              || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0);
-        systemInfo.mayHaveSplitSettles     = (gmx_mtop_ftype_count(mtop, F_SETTLE) > 0);
+        systemInfo.mayHaveSplitConstraints =
+                (gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints) > 0
+                 || gmx_mtop_ftype_count(mtop, InteractionFunction::ConstraintsNoCoupling) > 0);
+        systemInfo.mayHaveSplitSettles = (gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE) > 0);
     }
 
     if (ir.rlist == 0)
@@ -2722,8 +2723,6 @@ public:
 
     //! Build the resulting DD manager
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
-                                        const gmx_localtop_t&      localTopology,
-                                        const t_state*             localState,
                                         bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
 
@@ -2751,7 +2750,7 @@ public:
     gmx_ddbox_t ddbox_ = { 0 };
     //! Organization of the DD grids
     DDGridSetup ddGridSetup_;
-    //! Organzation of the DD ranks
+    //! Organization of the DD ranks
     DDRankSetup ddRankSetup_;
     //! The communication setup for the domain decomposition, both PP and PME
     CommSetup commSetup_;
@@ -2865,8 +2864,6 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
 
 std::unique_ptr<gmx_domdec_t>
 DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
-                                        const gmx_localtop_t&      localTopology,
-                                        const t_state*             localState,
                                         const bool                 haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder)
 {
@@ -2932,15 +2929,8 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                                                                       *dd,
                                                                       mtop_,
                                                                       options_.ddBondedChecking,
-                                                                      localTopology,
-                                                                      localState,
                                                                       dd->comm->systemInfo.useUpdateGroups,
                                                                       observablesReducerBuilder);
-
-#if GMX_MPI
-    MPI_Type_contiguous(DIM, GMX_MPI_REAL, &dd->comm->mpiRVec);
-    MPI_Type_commit(&dd->comm->mpiRVec);
-#endif
 
     return dd;
 }
@@ -2982,14 +2972,11 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
 {
 }
 
-std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetManager*  atomSets,
-                                                                const gmx_localtop_t& localTopology,
-                                                                const t_state*        localState,
+std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetManager* atomSets,
                                                                 const bool haveFillerParticlesInLocalState,
                                                                 ObservablesReducerBuilder* observablesReducerBuilder)
 {
-    return impl_->build(
-            atomSets, localTopology, localState, haveFillerParticlesInLocalState, observablesReducerBuilder);
+    return impl_->build(atomSets, haveFillerParticlesInLocalState, observablesReducerBuilder);
 }
 
 DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;
@@ -3127,19 +3114,42 @@ void constructGpuHaloExchange(const t_commrec&                cr,
 
     if (useNvshmem)
     {
-        cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
-                *cr.dd,
-                deviceStreamManager.context(),
-                deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
-                std::nullopt);
-    }
-
-    for (int d = 0; d < cr.dd->ndim; d++)
-    {
-        for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        /* The gpuHaloExchangeNvshmemHelper is created on first use, or after it was explicitly
+         * destroyed and reset to nullptr (e.g., during teardown or mode switches).
+         * When useNvshmem is true at this point, we must ensure the it exists. */
+        if (cr.dd->gpuHaloExchangeNvshmemHelper == nullptr)
         {
-            cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                    cr.dd, d, cr.commMyGroup.comm(), cr.commMySim.comm(), deviceStreamManager.context(), pulse, useNvshmem, wcycle));
+            cr.dd->useGpuHaloExchangeNvshmem = true;
+            cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
+                    *cr.dd,
+                    deviceStreamManager.context(),
+                    deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                    std::nullopt,
+                    wcycle,
+                    cr.commMyGroup.comm(),
+                    cr.commMySim.comm());
+        }
+        for (auto& cdDim : cr.dd->comm->cd)
+        {
+            for (auto& indices : cdDim.ind)
+            {
+                gmx::changePinningPolicy(&indices.index, gmx::PinningPolicy::PinnedIfSupported);
+            }
+        }
+        GMX_RELEASE_ASSERT(
+                cr.dd->gpuHaloExchangeNvshmemHelper != nullptr,
+                "GpuHaloExchangeNvshmemHelper must be constructed when useNvshmem is true");
+    }
+    else
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
+        {
+            for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses();
+                 pulse++)
+            {
+                cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
+                        cr.dd, d, cr.commMyGroup.comm(), cr.commMySim.comm(), deviceStreamManager.context(), pulse, wcycle));
+            }
         }
     }
 }
@@ -3148,11 +3158,18 @@ void reinitGpuHaloExchange(const t_commrec&              cr,
                            const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            const DeviceBuffer<gmx::RVec> d_forcesBuffer)
 {
-    for (int d = 0; d < cr.dd->ndim; d++)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        cr.dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(cr, d_coordinatesBuffer, d_forcesBuffer);
+    }
+    else
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
         {
-            cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            {
+                cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+            }
         }
     }
 }
@@ -3161,33 +3178,15 @@ void reinitGpuHaloExchangeNvshmem(const t_commrec& cr)
 {
     // Does global communication and symmetric reallocation
     cr.dd->gpuHaloExchangeNvshmemHelper->reinit();
-    DeviceBuffer<uint64_t> d_syncBuffer = cr.dd->gpuHaloExchangeNvshmemHelper->getSyncBuffer();
-    const int totalPulsesAndDims        = cr.dd->gpuHaloExchangeNvshmemHelper->totalPulsesAndDims();
-
-    int numDimsAndPulses = 0;
-    for (int d = 0; d < cr.dd->ndim; d++)
-    {
-        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
-        {
-            cr.dd->gpuHaloExchange[d][pulse]->reinitNvshmemSignal(
-                    d_syncBuffer, totalPulsesAndDims, numDimsAndPulses++);
-        }
-    }
 }
 
 void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)
 {
-    if (cr.dd->gpuHaloExchangeNvshmemHelper)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int d = 0; d < cr.dd->ndim; d++)
-        {
-            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
-            {
-                cr.dd->gpuHaloExchange[d][pulse]->destroyGpuHaloExchangeNvshmemBuf();
-            }
-        }
+        cr.dd->gpuHaloExchangeNvshmemHelper->destroyAllHaloExchangeBuffers();
+        cr.dd->gpuHaloExchangeNvshmemHelper.reset(nullptr);
     }
-    cr.dd->gpuHaloExchangeNvshmemHelper.reset(nullptr);
 }
 
 GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,
@@ -3196,13 +3195,21 @@ GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,
 {
     GpuEventSynchronizer* eventPtr = dependencyEvent;
 
-    for (int d = 0; d < cr.dd->ndim; d++)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        eventPtr = cr.dd->gpuHaloExchangeNvshmemHelper->launchAllCoordinateExchanges(box, eventPtr);
+    }
+    else
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
         {
-            eventPtr = cr.dd->gpuHaloExchange[d][pulse]->communicateHaloCoordinates(box, eventPtr);
+            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            {
+                eventPtr = cr.dd->gpuHaloExchange[d][pulse]->communicateHaloCoordinates(box, eventPtr);
+            }
         }
     }
+
     return eventPtr;
 }
 
@@ -3210,12 +3217,21 @@ void communicateGpuHaloForces(const t_commrec&                                  
                               bool                                                accumulateForces,
                               gmx::FixedCapacityVector<GpuEventSynchronizer*, 2>* dependencyEvents)
 {
-    for (int d = cr.dd->ndim - 1; d >= 0; d--)
+    if (cr.dd->useGpuHaloExchangeNvshmem)
     {
-        for (int pulse = cr.dd->comm->cd[d].numPulses() - 1; pulse >= 0; pulse--)
+        auto* eventPtr = cr.dd->gpuHaloExchangeNvshmemHelper->launchAllForceExchanges(
+                accumulateForces, dependencyEvents);
+        dependencyEvents->push_back(eventPtr);
+    }
+    else
+    {
+        for (int d = cr.dd->ndim - 1; d >= 0; d--)
         {
-            cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces, dependencyEvents);
-            dependencyEvents->push_back(cr.dd->gpuHaloExchange[d][pulse]->getForcesReadyOnDeviceEvent());
+            for (int pulse = cr.dd->comm->cd[d].numPulses() - 1; pulse >= 0; pulse--)
+            {
+                cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces, dependencyEvents);
+                dependencyEvents->push_back(cr.dd->gpuHaloExchange[d][pulse]->getForcesReadyOnDeviceEvent());
+            }
         }
     }
 }
@@ -3277,3 +3293,22 @@ void putUpdateGroupAtomsInSamePeriodicImage(const gmx_domdec_t&      dd,
         }
     }
 }
+
+/*! \cond INTERNAL */
+
+gmx_domdec_comm_t::gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim) : mpiCommMySim_(mpiCommMySim)
+{
+#if GMX_MPI
+    MPI_Type_contiguous(DIM, GMX_MPI_REAL, &mpiRVec);
+    MPI_Type_commit(&mpiRVec);
+#endif
+}
+
+gmx_domdec_comm_t::~gmx_domdec_comm_t()
+{
+#if GMX_MPI
+    MPI_Type_free(&mpiRVec);
+#endif
+}
+
+/*! \endcond */

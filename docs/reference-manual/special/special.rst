@@ -28,6 +28,5 @@ the use of |Gromacs| for specific scientific problems.
    colvars
    plumed
    nnpot
+   fmm
    ramd
-
-

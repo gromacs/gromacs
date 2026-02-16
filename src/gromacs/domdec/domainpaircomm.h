@@ -65,7 +65,10 @@ struct gmx_domdec_t;
 namespace gmx
 {
 
-/*! \brief MPI tags for non-blocking x and f communication.
+class DomainPairComm;
+
+/*! \internal
+ * \brief MPI tags for non-blocking x and f communication.
  *
  * With the current call order we don't need this.
  * But it's safer to have them, in case one would e.g. like to post
@@ -75,31 +78,46 @@ enum class HaloMpiTag
 {
     X,              //!< Coordinates
     F,              //!< Forces
+    ZoneCorners,    //!< The corners of the zone
     GridCounts,     //! The number of grid columns
     GridColumns,    //! The contents of the grid column
     GridDimensions, //! The dimensions of the grid
     AtomIndices     //! Global atom indices
 };
 
-/*! \brief Setup for selecting halo atoms to be sent and sending coordinates to another domain
+//! The upper corners of a zone, used for computing which halo clusters need to be sent
+struct ZoneCorners
+{
+    //! Corner for two-body interations, involves all pair-interacting zones
+    RVec twoBody = { 0.0_real, 0.0_real, 0.0_real };
+    //! Corner for multi-body interactions, involves all zones
+    RVec multiBody = { 0.0_real, 0.0_real, 0.0_real };
+    //! The corner of our own zone
+    RVec zone = { 0.0_real, 0.0_real, 0.0_real };
+    //! Whether \p twoBody and \p multiBody differ
+    bool cornersDiffer = false;
+};
+
+/*! \internal
+ * \brief Setup for selecting halo atoms to be sent and sending coordinates to another domain
  *
  * Also used for receiving forces.
  *
  * This object is used for communicating with a domain that resides in backward direction along
- * the domain decomposition grid. This object holds the NBNxM grid cell indices that needs to
+ * the domain decomposition grid. This object holds the NBNxM grid cluster indices that needs to
  * be sent and does the packing of coordinates into a buffer in this object. It also does
  * the reverse indexing for the halo force reduction of forces received.
  */
 class DomainCommBackward
 {
 public:
-    //! Struct for collecting information on grid columns
-    struct ColumnInfo
+    //! Struct for storing a cluster range for a grid column
+    struct GridClusterRange
     {
         //! The index of the grid column
         int index;
-        //! The cell range to communicate
-        gmx::Range<int> cellRange;
+        //! The cluster range to communicate
+        gmx::Range<int> clusterRange;
     };
 
     /*! \brief Constructor
@@ -123,7 +141,22 @@ public:
     //! Clears this communication, set no columns and atoms to send
     void clear();
 
-    /*! \brief Determine which NBNxM grid cells (and atoms) we need to send
+    /*! \brief Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
+     *
+     * Communicates the computed corners between domain pairs
+     *
+     * Note that the column bounding boxes are computed for the centers of update groups.
+     * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
+     *
+     * \param[in] dd              The domain decomposition struct
+     * \param[in] box             The system unit cell
+     * \param[in] domainPairComm  Communication setup for a domain pair
+     */
+    void getTargetZoneCorners(const gmx_domdec_t& dd, const matrix box, const DomainPairComm& domainPairComm);
+
+    /*! \brief Determine which NBNxM grid clusters (and atoms) we need to send
+     *
+     * Should be called after calling \c getTargetZoneCorners().
      *
      * \param[in] dd                      The domain decomposition struct
      * \param[in] grid                    The local NBNxM pair-search grid
@@ -131,24 +164,22 @@ public:
      *                                    includes 2 maxAtomGroupRadius
      * \param[in] cutoffMultiBody         The cutoff for multi-body interactions
      *                                    includes 2 maxAtomGroupRadius
-     * \param[in] box                     The box
      * \param[in] dimensionIsTriclinic    Tells whether the dimensions require
      *                                    triclinic distance checks
      * \param[in] normal                  The normal vectors to planes separating domains along
      *                                    the triclinic dimensions
-     * \param[in] isCellMissingLinks      Tells whether cells are missing bonded interactions,
+     * \param[in] isClusterMissingLinks   Tells whether clusters are missing bonded interactions,
      *                                    only used when filtering bonded communication
      */
     void selectHaloAtoms(const gmx_domdec_t&      dd,
                          const Grid&              grid,
-                         const real               cutoffTwoBody,
-                         const real               cutoffMultiBody,
-                         const matrix             box,
+                         real                     cutoffTwoBody,
+                         real                     cutoffMultiBody,
                          const ivec               dimensionIsTriclinic,
                          ArrayRef<const RVec>     normal,
-                         const std::vector<bool>& isCellMissingLinks);
+                         const std::vector<bool>& isClusterMissingLinks);
 
-    //! Creates and returns a buffer with column indices and cell counts to be sent
+    //! Creates and returns a buffer with column indices and cluster counts to be sent
     FastVector<std::pair<int, int>> makeColumnsSendBuffer() const;
 
     //! Copies the coordinates to commnicate to the send buffer
@@ -169,11 +200,11 @@ public:
     //! Returns whether the domain shift is more than one domain along at least one dimension
     bool shiftMultipleDomains() const { return shiftMultipleDomains_; }
 
-    //! Returns the number of atoms per cell
-    int numAtomsPerCell() const { return numAtomsPerCell_; }
+    //! Returns the number of atoms per cluster
+    int numAtomsPerCluster() const { return numAtomsPerCluster_; }
 
     //! Returns the list of all columns to send with column information
-    ArrayRef<const ColumnInfo> columnsToSend() const { return columnsToSend_; }
+    ArrayRef<const GridClusterRange> clusterRangesToSend() const { return clusterRangesToSend_; }
 
     //! Returns the number of atoms to send
     int numAtoms() const { return numAtomsToSend_; }
@@ -209,10 +240,12 @@ private:
     int pbcForceShiftIndex_;
     //! Whether the domain shift is more than one domain along at least one dimension
     bool shiftMultipleDomains_;
-    //! The number of atoms per cell, note that this is max over i/j, unlike Grid which uses i
-    int numAtomsPerCell_;
-    //! The cell ranges to commnicate
-    FastVector<ColumnInfo> columnsToSend_;
+    //! The number of atoms per cluster, note that this is max over i/j, unlike Grid which uses i
+    int numAtomsPerCluster_;
+    //! The corners of the zone we communicate coordinates to
+    ZoneCorners targetZoneCorners_;
+    //! The cluster ranges to communicate
+    FastVector<GridClusterRange> clusterRangesToSend_;
     //! The number of atoms to send (or receive in case of forces)
     int numAtomsToSend_;
     //! Buffer for communicating global atom indices
@@ -224,7 +257,8 @@ private:
     MPI_Comm mpiCommAll_;
 };
 
-/*! \brief Setup for receiving halo coordinates from another domain and sending halo forces
+/*! \internal
+ *  \brief Setup for receiving halo coordinates from another domain and sending halo forces
  *
  * This object is used for communicating with a domain that resides in forward direction along
  * the domain decomposition grid. The coordinates are received in place in the coordinate
@@ -254,8 +288,11 @@ public:
     //! Return the zone this domain pair resides in
     int zone() const { return zone_; }
 
-    //! Returns the list of pairs of column indices and cell counts that we receive
-    ArrayRef<const std::pair<int, int>> columnsReceived() const { return columnsReceived_; }
+    //! Returns the list of pairs of column indices and cluster counts that we receive
+    ArrayRef<const std::pair<int, int>> clusterRangesReceived() const
+    {
+        return clusterRangesReceived_;
+    }
 
     //! The number of atoms to receive
     int numAtoms() const { return numAtomsToReceive_; }
@@ -271,8 +308,8 @@ private:
     int rank_;
     //! The zone this part of the halo belongs to
     int zone_;
-    //! Pairs of column indices and cell counts (matching the Grid cell size definition)
-    FastVector<std::pair<int, int>> columnsReceived_;
+    //! Pairs of column indices and cluster counts
+    FastVector<std::pair<int, int>> clusterRangesReceived_;
     //! The number of atoms to receive
     int numAtomsToReceive_;
 
@@ -283,7 +320,8 @@ private:
     MPI_Comm mpiCommAll_;
 };
 
-/*! \brief Setup for communication between pairs of domains, both backward and forward along the DD grid
+/*! \internal
+ * \brief Setup for communication between pairs of domains, both backward and forward along the DD grid
  *
  * This object is a holder a DomainCommBackward and DomainCommForward object. Both objects communicate
  * along the same DD-grid displacement vector but with opposite direction.

@@ -162,13 +162,15 @@ private:
   // PMF grid from reweighting
   bool m_pmf_grid_on;
   std::vector<colvar*> m_pmf_cvs;
-  std::unique_ptr<colvar_grid_scalar> m_reweight_grid;
+  std::string grid_conf;
+  std::shared_ptr<colvar_grid_scalar> m_reweight_grid;
   std::unique_ptr<colvar_grid_scalar> m_pmf_grid;
   cvm::step_number m_pmf_hist_freq;
   bool m_pmf_shared; // shared PMF among replicas
   std::unique_ptr<colvar_grid_scalar> m_global_reweight_grid;
   std::unique_ptr<colvar_grid_scalar> m_global_pmf_grid;
   bool m_explore;
+  bool m_inf_biasfactor;
 };
 
 #endif // COLVARBIAS_OPES_H

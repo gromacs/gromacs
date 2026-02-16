@@ -80,15 +80,15 @@ void MimicCommunicator::sendInitData(gmx_mtop_t* mtop, ArrayRef<const RVec> coor
         gmx_moltype_t* type = &mtop->moltype[molblock.type];
         for (int mol = 0; mol < molblock.nmol; ++mol)
         {
-            int nconstr  = type->ilist[F_CONSTR].size() / 3;
-            int nconstrc = type->ilist[F_CONSTRNC].size() / 3;
-            int nsettle  = type->ilist[F_SETTLE].size() / 4;
+            int nconstr  = type->ilist[InteractionFunction::Constraints].size() / 3;
+            int nconstrc = type->ilist[InteractionFunction::ConstraintsNoCoupling].size() / 3;
+            int nsettle  = type->ilist[InteractionFunction::SETTLE].size() / 4;
 
             for (int ncon = 0; ncon < nconstr + nconstrc; ++ncon)
             {
-                int contype = type->ilist[F_CONSTR].iatoms[0];
-                int at1     = type->ilist[F_CONSTR].iatoms[1];
-                int at2     = type->ilist[F_CONSTR].iatoms[2];
+                int contype = type->ilist[InteractionFunction::Constraints].iatoms[0];
+                int at1     = type->ilist[InteractionFunction::Constraints].iatoms[1];
+                int at2     = type->ilist[InteractionFunction::Constraints].iatoms[2];
                 bonds.push_back(offset + at1 + 1);
                 bonds.push_back(offset + at2 + 1);
                 bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
@@ -101,11 +101,11 @@ void MimicCommunicator::sendInitData(gmx_mtop_t* mtop, ArrayRef<const RVec> coor
                 t_iatom h1;
                 t_iatom h2;
 
-                int contype = type->ilist[F_SETTLE].iatoms[0];
+                int contype = type->ilist[InteractionFunction::SETTLE].iatoms[0];
 
-                ox = type->ilist[F_SETTLE].iatoms[1];
-                h1 = type->ilist[F_SETTLE].iatoms[2];
-                h2 = type->ilist[F_SETTLE].iatoms[3];
+                ox = type->ilist[InteractionFunction::SETTLE].iatoms[1];
+                h1 = type->ilist[InteractionFunction::SETTLE].iatoms[2];
+                h2 = type->ilist[InteractionFunction::SETTLE].iatoms[3];
 
                 bonds.push_back(offset + ox + 1);
                 bonds.push_back(offset + h1 + 1);

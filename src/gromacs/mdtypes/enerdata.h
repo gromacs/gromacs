@@ -182,7 +182,7 @@ public:
      * \param[in] lambda       Lambda values for the efptNR contribution types
      * \param[in] fepvals      Free-energy parameters
      */
-    void finalizeKineticContributions(gmx::ArrayRef<const real> energyTerms,
+    void finalizeKineticContributions(const gmx::EnumerationArray<InteractionFunction, real>& energyTerms,
                                       double                    dhdlMass,
                                       gmx::ArrayRef<const real> lambda,
                                       const t_lambda&           fepvals);
@@ -233,7 +233,7 @@ struct gmx_enerdata_t
                    const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas);
 
     //! The energies for all different interaction types
-    std::array<real, F_NRE> term = { 0 };
+    gmx::EnumerationArray<InteractionFunction, real> term = { 0 };
     //! Energy group pair non-bonded energies
     struct gmx_grppairener_t grpp;
     //! Contributions to dV/dlambda with linear dependence on lambda

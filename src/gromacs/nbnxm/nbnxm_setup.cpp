@@ -336,9 +336,9 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
         GMX_LOG(mdlog.info)
                 .asParagraph()
                 .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d",
-                                     sc_gpuNumClusterPerCellX(gpuPairlistType),
-                                     sc_gpuNumClusterPerCellY(gpuPairlistType),
-                                     sc_gpuNumClusterPerCellZ(gpuPairlistType));
+                                     sc_gpuNumClusterPerBinX(gpuPairlistType),
+                                     sc_gpuNumClusterPerBinY(gpuPairlistType),
+                                     sc_gpuNumClusterPerBinZ(gpuPairlistType));
     }
 
     // Warn when using non-SIMD CPU kernels on architectures with (fast) SIMD support
@@ -365,14 +365,15 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
 
 PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
                            const bool            haveMultipleDomains,
-                           const int             minimumIlistCountForGpuBalancing) :
+                           const int             minimumIlistCountForGpuBalancing,
+                           PinningPolicy         pinPolicy) :
     params_(pairlistParams), minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    localSet_ = std::make_unique<PairlistSet>(params_);
+    localSet_ = std::make_unique<PairlistSet>(params_, pinPolicy);
 
     if (haveMultipleDomains)
     {
-        nonlocalSet_ = std::make_unique<PairlistSet>(params_);
+        nonlocalSet_ = std::make_unique<PairlistSet>(params_, pinPolicy);
     }
 }
 
@@ -457,6 +458,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    const gmx_domdec_t*  dd,
                                                    const gmx_hw_info_t& hardwareInfo,
                                                    const bool           useGpuForNonbonded,
+                                                   const bool           useGpuForNonbondedFE,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t& mtop,
                                                    const bool localAtomOrderMatchesNbnxmOrder,
@@ -495,8 +497,13 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     bool bFEP_NonBonded = (forcerec.efep != FreeEnergyPerturbationType::No)
                           && haveFepPerturbedNBInteractions(mtop);
+    // whether to calculate FEP on GPUs, expanded ensemble method is not supported yet.
+    bool bFepGpuNonBonded = bFEP_NonBonded && useGpuForNonbondedFE
+                            && (forcerec.efep != FreeEnergyPerturbationType::Expanded);
+
     PairlistParams pairlistParams(
             kernelSetup.kernelType, gpuPairlistLayout, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
+    pairlistParams.haveNonbondedFEGpu_ = bFepGpuNonBonded;
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
             coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), mpiComm.comm());
@@ -515,14 +522,14 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
                                          : gmx::PinningPolicy::CannotBePinned);
 
-    int mimimumNumEnergyGroupNonbonded = inputrec.opts.ngener;
+    int minimumNumEnergyGroupNonbonded = inputrec.opts.ngener;
     if (inputrec.opts.ngener - inputrec.nwall == 1)
     {
         /* We have only one non-wall energy group, we do not need energy group
          * support in the non-bondeds kernels, since all non-bonded energy
          * contributions go to the first element of the energy group matrix.
          */
-        mimimumNumEnergyGroupNonbonded = 1;
+        minimumNumEnergyGroupNonbonded = 1;
     }
 
     auto nbat = std::make_unique<nbnxn_atomdata_t>(
@@ -533,7 +540,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             chooseLJPmeCombinationRule(forcerec),
             forcerec.nbfp,
             false,
-            mimimumNumEnergyGroupNonbonded,
+            minimumNumEnergyGroupNonbonded,
             (useGpuForNonbonded || emulateGpu) ? 1 : gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded));
 
     if (forcerec.ic->vdw.type == VanDerWaalsType::Pme)
@@ -555,14 +562,50 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         GMX_RELEASE_ASSERT(
                 (deviceStreamManager != nullptr),
                 "Device stream manager should be initialized in order to use GPU for non-bonded.");
-        gpu_nbv = gpu_init(
-                *deviceStreamManager, forcerec.ic.get(), pairlistParams, nbat.get(), haveMultipleDomains);
 
+        gpu_nbv = gpu_init(*deviceStreamManager,
+                           forcerec.ic.get(),
+                           pairlistParams,
+                           nbat.get(),
+                           haveMultipleDomains,
+                           bFepGpuNonBonded ? std::optional<int>(inputrec.fepvals->n_lambda) : std::nullopt);
+
+        if (bFepGpuNonBonded)
+        {
+            EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> all_lambda =
+                    inputrec.fepvals->all_lambda;
+
+            const int state = inputrec.fepvals->init_fep_state;
+            float     lambdaCoul;
+            float     lambdaVdw;
+            if (state >= 0)
+            {
+                lambdaCoul = all_lambda[FreeEnergyPerturbationCouplingType::Coul][state];
+                lambdaVdw  = all_lambda[FreeEnergyPerturbationCouplingType::Vdw][state];
+            }
+            else
+            {
+                lambdaCoul = inputrec.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Coul);
+                lambdaVdw = inputrec.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Vdw);
+            }
+            // Cpoy FEP parameters to GPU
+            copy_gpu_fepparams(gpu_nbv,
+                               pairlistParams.haveNonbondedFEGpu_,
+                               forcerec.ic->softCoreParameters->alphaCoulomb,
+                               forcerec.ic->softCoreParameters->alphaVdw,
+                               forcerec.ic->softCoreParameters->lambdaPower,
+                               forcerec.ic->softCoreParameters->sigma6WithInvalidSigma,
+                               forcerec.ic->softCoreParameters->sigma6Minimum,
+                               lambdaCoul,
+                               lambdaVdw,
+                               inputrec.fepvals->n_lambda,
+                               all_lambda);
+        }
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 
     auto pairlistSets = std::make_unique<PairlistSets>(
-            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing);
+            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing, pinPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(inputrec.pbcType,
                                                    EI_TPI(inputrec.eI),
@@ -587,6 +630,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                 kernelSetup,
                                                 std::move(exclusionChecker),
                                                 gpu_nbv,
+                                                bFepGpuNonBonded,
                                                 wcycle);
 }
 
@@ -596,6 +640,7 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
                                        const NbnxmKernelSetup&           kernelSetup,
                                        std::unique_ptr<ExclusionChecker> exclusionChecker,
                                        NbnxmGpu*                         gpu_nbv_ptr,
+                                       bool                              useGpuNonbondedFE,
                                        gmx_wallcycle*                    wcycle) :
     pairlistSets_(std::move(pairlistSets)),
     pairSearch_(std::move(pairSearch)),
@@ -603,7 +648,8 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
     kernelSetup_(kernelSetup),
     exclusionChecker_(std::move(exclusionChecker)),
     wcycle_(wcycle),
-    gpuNbv_(gpu_nbv_ptr)
+    gpuNbv_(gpu_nbv_ptr),
+    useGpuNonbondedFE_(useGpuNonbondedFE)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
     GMX_RELEASE_ASSERT(pairSearch_, "Need valid search object");
@@ -626,7 +672,8 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
     kernelSetup_(kernelSetup),
     exclusionChecker_(),
     wcycle_(nullptr),
-    gpuNbv_(gpu_nbv_ptr)
+    gpuNbv_(gpu_nbv_ptr),
+    useGpuNonbondedFE_(false)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
     GMX_RELEASE_ASSERT(pairSearch_, "Need valid search object");

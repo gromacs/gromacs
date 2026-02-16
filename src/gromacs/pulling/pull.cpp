@@ -723,7 +723,10 @@ static double get_dihedral_angle_coord(PullCoordSpatialData* spatialData)
  */
 static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc& pbc, const double t)
 {
-    get_pull_coord_dr(pull, pcrd, pbc);
+    if (pcrd->params_.eGeom != PullGroupGeometry::Transformation)
+    {
+        get_pull_coord_dr(pull, pcrd, pbc);
+    }
 
     PullCoordSpatialData& spatialData = pcrd->spatialData;
 
@@ -849,7 +852,7 @@ static void do_constraint(struct pull_t* pull,
     double   inpr;
     double   lambda, rm, invdt = 0;
     gmx_bool bConverged_all, bConverged = FALSE;
-    int      niter = 0, ii, j, m, max_iter = 100;
+    int      niter = 0, ii, m, max_iter = 100;
     double   a;
     dvec     tmp, tmp3;
 
@@ -1207,7 +1210,7 @@ static void do_constraint(struct pull_t* pull,
             /* We have already checked above that r_ij[c] != 0 */
             f_invr = pcrd->scalarForce / dnorm(r_ij[c]);
 
-            for (j = 0; j < DIM; j++)
+            for (int j = 0; j < DIM; j++)
             {
                 for (m = 0; m < DIM; m++)
                 {
@@ -1877,12 +1880,13 @@ static void init_pull_group_index(FILE*               fplog,
 
     const SimulationGroups& groups = mtop.groups;
 
+    MTopLookUp mTopLookUp(mtop);
+
     /* Count frozen dimensions and (weighted) mass */
     int    nfrozen = 0;
     double tmass   = 0;
     double wmass   = 0;
     double wwmass  = 0;
-    int    molb    = 0;
     for (int i = 0; i < int(pg->params_.ind.size()); i++)
     {
         int ii = pg->params_.ind[i];
@@ -1897,7 +1901,7 @@ static void init_pull_group_index(FILE*               fplog,
                 }
             }
         }
-        const t_atom& atom = mtopGetAtomParameters(mtop, ii, &molb);
+        const t_atom& atom = mTopLookUp.getAtomParameters(ii);
         real          m;
         if (ir->efep == FreeEnergyPerturbationType::No)
         {

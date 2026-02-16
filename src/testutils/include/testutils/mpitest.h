@@ -141,7 +141,6 @@ bool threadMpiTestRunner(std::function<void()> testBody);
     if (!RankRequirement::conditionSatisfied(numRanks))                                       \
     {                                                                                         \
         GTEST_SKIP() << std::string("Test skipped because ") + RankRequirement::s_skipReason; \
-        return;                                                                               \
     }                                                                                         \
     GMX_MPI_TEST_INNER;
 
@@ -150,7 +149,7 @@ class AllowAnyRankCount
 {
 public:
     /*! \brief Function called by GMX_MPI_CONDITIONAL_TEST to see
-     * whether the test conditions are satisifed */
+     * whether the test conditions are satisfied */
     static bool conditionSatisfied(const int /* numRanks */) { return true; }
     //! Reason to echo when skipping the test
     inline static const char* s_skipReason = "UNUSED - any rank count satisfies";

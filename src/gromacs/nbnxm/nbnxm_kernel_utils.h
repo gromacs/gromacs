@@ -64,7 +64,7 @@ static inline GMX_ALWAYS_INLINE Float2 convertSigmaEpsilonToC6C12(const float si
 }
 
 //! \brief Calculate force and energy for a pair of atoms, VdW force-switch flavor.
-template<bool doCalcEnergies>
+template<bool doCalcEnergies, bool calcFr>
 static inline GMX_ALWAYS_INLINE void ljForceSwitch(const shift_consts_t dispersionShift,
                                                    const shift_consts_t repulsionShift,
                                                    const float          rVdwSwitch,
@@ -72,7 +72,7 @@ static inline GMX_ALWAYS_INLINE void ljForceSwitch(const shift_consts_t dispersi
                                                    const float          c12,
                                                    const float          rInv,
                                                    const float          r2,
-                                                   float*               fInvR,
+                                                   float*               f,
                                                    float*               eLJ)
 {
     /* force switch constants */
@@ -84,8 +84,18 @@ static inline GMX_ALWAYS_INLINE void ljForceSwitch(const shift_consts_t dispersi
     const float r       = r2 * rInv;
     const float rSwitch = gmxGpuFDim(r, rVdwSwitch); // max(r - rVdwSwitch, 0)
 
-    *fInvR += -c6 * (dispShiftV2 + dispShiftV3 * rSwitch) * rSwitch * rSwitch * rInv
+    if constexpr (calcFr)
+    {
+        // calculate F*r
+        *f += -c6 * (dispShiftV2 + dispShiftV3 * rSwitch) * rSwitch * rSwitch * r
+              + c12 * (repuShiftV2 + repuShiftV3 * rSwitch) * rSwitch * rSwitch * r;
+    }
+    else
+    {
+        // calculate F/r
+        *f += -c6 * (dispShiftV2 + dispShiftV3 * rSwitch) * rSwitch * rSwitch * rInv
               + c12 * (repuShiftV2 + repuShiftV3 * rSwitch) * rSwitch * rSwitch * rInv;
+    }
 
     if constexpr (doCalcEnergies)
     {
@@ -159,12 +169,12 @@ static inline GMX_ALWAYS_INLINE void ljEwaldComb(const Float2* a_nbfpComb,
 }
 
 /*! \brief Apply potential switch. */
-template<bool doCalcEnergies>
+template<bool doCalcEnergies, bool calcFr>
 static inline GMX_ALWAYS_INLINE void ljPotentialSwitch(const switch_consts_t vdwSwitch,
                                                        const float           rVdwSwitch,
                                                        const float           rInv,
                                                        const float           r2,
-                                                       float*                fInvR,
+                                                       float*                f,
                                                        float*                eLJ)
 {
     /* potential switch constants */
@@ -184,14 +194,22 @@ static inline GMX_ALWAYS_INLINE void ljPotentialSwitch(const switch_consts_t vdw
                 1.0F + (switchV3 + (switchV4 + switchV5 * rSwitch) * rSwitch) * rSwitch * rSwitch * rSwitch;
         const float dsw = (switchF2 + (switchF3 + switchF4 * rSwitch) * rSwitch) * rSwitch * rSwitch;
 
-        *fInvR = (*fInvR) * sw - rInv * (*eLJ) * dsw;
+        if constexpr (calcFr)
+        {
+            // calculate F*r
+            *f = (*f) * sw - r * (*eLJ) * dsw;
+        }
+        else
+        {
+            // calculate F/r
+            *f = (*f) * sw - rInv * (*eLJ) * dsw;
+        }
         if constexpr (doCalcEnergies)
         {
             *eLJ *= sw;
         }
     }
 }
-
 
 /*! \brief Calculate analytical Ewald correction term. */
 static inline GMX_ALWAYS_INLINE float pmeCorrF(const float z2)

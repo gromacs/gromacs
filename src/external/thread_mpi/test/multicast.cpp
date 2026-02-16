@@ -105,7 +105,7 @@ void barrier_data_tester(void)
                     fprintf(stderr, "ERROR in MPI_Barrier\n");
                     fprintf(stderr, "shared_buf[%d]=%d != %d (%d)\n",
                             k, tMPI_Atomic_get(&shared_buf[k]), testnr, myrank);
-                    exit(0);
+                    exit(1);
                 }
             }
         }
@@ -163,7 +163,7 @@ void bcast_data_tester(void)
                 if (MPI_Bcast(buf, MSG_SIZE, MPI_INT, root,
                               MPI_COMM_WORLD) != MPI_SUCCESS)
                 {
-                    fprintf(stderr, "ERROR in MPI_Bcast"); exit(0);
+                    fprintf(stderr, "ERROR in MPI_Bcast"); exit(1);
                 }
             }
             else
@@ -172,7 +172,7 @@ void bcast_data_tester(void)
                 if (MPI_Bcast(buf_recv, MSG_SIZE, MPI_INT, root,
                               MPI_COMM_WORLD) != MPI_SUCCESS)
                 {
-                    fprintf(stderr, "ERROR in MPI_Bcast"); exit(0);
+                    fprintf(stderr, "ERROR in MPI_Bcast"); exit(1);
                 }
 
                 if (!check_arrays(buf_recv, buf_expt, MSG_SIZE))
@@ -233,7 +233,7 @@ void gather_data_tester(void)
                            buf, MSG_SIZE, MPI_INT, root, MPI_COMM_WORLD)
                 != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_Gather"); exit(0);
+                fprintf(stderr, "ERROR in MPI_Gather"); exit(1);
             }
 
             if (myrank == root)
@@ -321,7 +321,7 @@ void gatherv_data_tester(void)
                             MPI_COMM_WORLD)
                 != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_Gatherv"); exit(0);
+                fprintf(stderr, "ERROR in MPI_Gatherv"); exit(1);
             }
 
             if (myrank == root)
@@ -400,7 +400,7 @@ void scatter_data_tester(void)
                                 root, MPI_COMM_WORLD)
                     != MPI_SUCCESS)
                 {
-                    fprintf(stderr, "ERROR in MPI_Scatter"); exit(0);
+                    fprintf(stderr, "ERROR in MPI_Scatter"); exit(1);
                 }
             }
             else
@@ -410,7 +410,7 @@ void scatter_data_tester(void)
                                 root, MPI_COMM_WORLD)
                     != MPI_SUCCESS)
                 {
-                    fprintf(stderr, "ERROR in MPI_Scatter"); exit(0);
+                    fprintf(stderr, "ERROR in MPI_Scatter"); exit(1);
                 }
             }
 
@@ -494,7 +494,7 @@ void scatterv_data_tester(void)
                                  root, MPI_COMM_WORLD)
                     != MPI_SUCCESS)
                 {
-                    fprintf(stderr, "ERROR in MPI_Scatterv"); exit(0);
+                    fprintf(stderr, "ERROR in MPI_Scatterv"); exit(1);
                 }
             }
             else
@@ -504,7 +504,7 @@ void scatterv_data_tester(void)
                                  root, MPI_COMM_WORLD)
                     != MPI_SUCCESS)
                 {
-                    fprintf(stderr, "ERROR in MPI_Scatterv"); exit(0);
+                    fprintf(stderr, "ERROR in MPI_Scatterv"); exit(1);
                 }
             }
 
@@ -588,7 +588,7 @@ void alltoallv_data_tester(void)
                               MPI_COMM_WORLD)
                 != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_Alltoallv"); exit(0);
+                fprintf(stderr, "ERROR in MPI_Alltoallv"); exit(1);
             }
 
             for (k = 0; k < N; k++)

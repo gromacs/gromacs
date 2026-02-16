@@ -15,7 +15,7 @@ that depend on it no longer work.
 
    * Simulations under vacuum conditions are not supported.
    * User supplied tables for short-range nonbonded interactions are not supported.
-   * Switched short-range nonbonded interactions with PME are not supported. 
+   * Switched short-range nonbonded interactions with PME are not supported.
    * Membrane embedding is deactivated.
    * QMMM is not supported.
 
@@ -27,7 +27,7 @@ Generalized reaction-field
 This only worked correctly with the group scheme. Note that generalized
 reaction-field simulations can still be performed using standard
 reaction field and computing the dielectric constant manually.
-       
+
 gmx anadock
 """""""""""
 The gmx anadock tool was removed since it does not belong in |Gromacs|

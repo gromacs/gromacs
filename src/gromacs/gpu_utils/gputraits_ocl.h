@@ -70,6 +70,9 @@ using Float3 = gmx::RVec;
 //! Convenience alias for 4-wide float.
 using Float4 = cl_float4;
 
+//! Convenience alias for 4-wide int.
+using Int4 = cl_int4;
+
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.
  * Provides reasonable defaults, one typically only needs to set the GPU stream

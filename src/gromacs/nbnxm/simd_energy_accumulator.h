@@ -131,30 +131,28 @@ class EnergyAccumulator<useEnergyGroups, false>
 public:
     //! Does nothing
     template<int iClusterSize>
-    inline void initICluster(const int gmx_unused iCluster)
+    void initICluster(const int gmx_unused iCluster)
     {
     }
 
 #if GMX_SIMD
     //! Does nothing
     template<int nRCoulomb, int nRVdw, KernelLayout kernelLayout, int iClusterSize, std::size_t cSize, std::size_t vdwSize>
-    inline void addEnergies(const int gmx_unused                            jCluster,
-                            const std::array<SimdReal, cSize> gmx_unused&   coulombEnergy,
-                            const std::array<SimdReal, vdwSize> gmx_unused& vdwEnergy)
+    void addEnergies(const int gmx_unused                            jCluster,
+                     const std::array<SimdReal, cSize> gmx_unused&   coulombEnergy,
+                     const std::array<SimdReal, vdwSize> gmx_unused& vdwEnergy)
     {
     }
 #endif // GMX_SIMD
 
     //! Does nothing
-    inline void addCoulombEnergy(const int gmx_unused iAtomInCluster, const real gmx_unused energy)
-    {
-    }
+    void addCoulombEnergy(const int gmx_unused iAtomInCluster, const real gmx_unused energy) {}
 
     //! Does nothing
-    inline void addVdwEnergy(const int gmx_unused iAtomInCluster, const real gmx_unused energy) {}
+    void addVdwEnergy(const int gmx_unused iAtomInCluster, const real gmx_unused energy) {}
 
     //! Does nothing
-    inline void reduceIEnergies(const bool gmx_unused calculateCoulomb) {}
+    void reduceIEnergies(const bool gmx_unused calculateCoulomb) {}
 };
 
 /*! \brief Specialized energy accumulator class for energy accumulation without energy groups
@@ -168,7 +166,7 @@ class EnergyAccumulator<false, true>
 {
 public:
     //! Clears all energy buffers and sets the energy group indices for the j-clusters
-    inline void clearEnergies()
+    void clearEnergies()
     {
         coulombEnergyReal_ = 0;
         vdwEnergyReal_     = 0;
@@ -177,20 +175,20 @@ public:
 #if GMX_SIMD
     //! Clears the accumulation buffer which is used per i-cluster
     template<int iClusterSize>
-    inline void initICluster(const int gmx_unused iCluster)
+    void initICluster(const int gmx_unused iCluster)
     {
         coulombEnergySum_ = setZero();
         vdwEnergySum_     = setZero();
     }
 
     //! Adds a single Coulomb energy contribution
-    inline void addCoulombEnergy(const int gmx_unused iAtomInCluster, const real energy)
+    void addCoulombEnergy(const int gmx_unused iAtomInCluster, const real energy)
     {
         coulombEnergyReal_ += energy;
     }
 
     //! Adds a single VdW energy contribution
-    inline void addVdwEnergy(const int gmx_unused iAtomInCluster, const real energy)
+    void addVdwEnergy(const int gmx_unused iAtomInCluster, const real energy)
     {
         vdwEnergyReal_ += energy;
     }
@@ -208,9 +206,9 @@ public:
      * \param vdwEnergy      List of Van der Waals energies per i-register
      */
     template<int nRCoulomb, int nRVdw, KernelLayout kernelLayout, int iClusterSize, std::size_t cSize, std::size_t vdwSize>
-    inline void addEnergies(const int gmx_unused                 jCluster,
-                            const std::array<SimdReal, cSize>&   coulombEnergy,
-                            const std::array<SimdReal, vdwSize>& vdwEnergy)
+    void addEnergies(const int gmx_unused                 jCluster,
+                     const std::array<SimdReal, cSize>&   coulombEnergy,
+                     const std::array<SimdReal, vdwSize>& vdwEnergy)
     {
         static_assert(cSize >= nRCoulomb);
         static_assert(vdwSize >= nRVdw);
@@ -226,7 +224,7 @@ public:
     }
 
     //! Reduces the accumulated energies to the final output buffer
-    inline void reduceIEnergies(const bool calculateCoulomb)
+    void reduceIEnergies(const bool calculateCoulomb)
     {
         if (calculateCoulomb)
         {
@@ -280,7 +278,7 @@ public:
 
     //! Sets (internal) parameters for the atom in i-cluster \p iCluster
     template<int iClusterSize>
-    inline void initICluster(const int iCluster)
+    void initICluster(const int iCluster)
     {
         energyGroupsICluster_ = energyGroups_[iCluster];
         for (int iAtom = 0; iAtom < iClusterSize; iAtom++)
@@ -292,7 +290,7 @@ public:
     }
 
     //! Adds a single Coulomb energy contribution for atom with index in cluster: \p iAtomInCluster
-    inline void addCoulombEnergy(const int iAtomInCluster, const real energy)
+    void addCoulombEnergy(const int iAtomInCluster, const real energy)
     {
         const int pairIndex = ((energyGroupsICluster_ >> (iAtomInCluster * iShift_)) & iMask_) * jStride_;
 
@@ -300,7 +298,7 @@ public:
     }
 
     //! Adds a single VdW energy contribution for atom with index in cluster: \p iAtomInCluster
-    inline void addVdwEnergy(const int iAtomInCluster, const real energy)
+    void addVdwEnergy(const int iAtomInCluster, const real energy)
     {
         const int pairIndex = ((energyGroupsICluster_ >> (iAtomInCluster * iShift_)) & iMask_) * jStride_;
 
@@ -321,9 +319,9 @@ public:
      * \param vdwEnergy      List of Van der Waals energies per i-register
      */
     template<int nRCoulomb, int nRVdw, KernelLayout kernelLayout, int iClusterSize, std::size_t cSize, std::size_t vdwSize>
-    inline void addEnergies(const int                            jCluster,
-                            const std::array<SimdReal, cSize>&   coulombEnergy,
-                            const std::array<SimdReal, vdwSize>& vdwEnergy)
+    void addEnergies(const int                            jCluster,
+                     const std::array<SimdReal, cSize>&   coulombEnergy,
+                     const std::array<SimdReal, vdwSize>& vdwEnergy)
     {
         static_assert(cSize >= nRCoulomb);
         static_assert(vdwSize >= nRVdw);

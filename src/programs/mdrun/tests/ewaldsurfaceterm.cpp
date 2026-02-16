@@ -157,8 +157,8 @@ TEST_P(EwaldSurfaceTermTest, WithinTolerances)
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         EnergyTermsToCompare energyTermsToCompare{
-            { { interaction_function[F_EPOT].longname, absoluteTolerance(1e-3) },
-              { interaction_function[F_ETOT].longname, absoluteTolerance(1e-3) } }
+            { { interaction_function[InteractionFunction::PotentialEnergy].longname, absoluteTolerance(1e-3) },
+              { interaction_function[InteractionFunction::TotalEnergy].longname, absoluteTolerance(1e-3) } }
         };
         TestReferenceData refData;
         auto checker = refData.rootChecker().checkCompound("Simulation", simulationName);

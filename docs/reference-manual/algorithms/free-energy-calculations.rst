@@ -29,7 +29,7 @@ the right-hand term.
 
             Free energy cycles. **A:** to calculate :math:`\Delta G_{12}`, the free
             energy difference between the binding of inhibitor **I** to enzymes
-            **E** respectively **E**\ :math:`^{\prime}`. 
+            **E** respectively **E**\ :math:`^{\prime}`.
 
 .. _fig-free2:
 
@@ -96,7 +96,7 @@ as an ensemble average:
 
 .. math:: \frac{dA}{d\lambda} =  \frac{\int\!\!\int (\partial H/ \partial
           \lambda) \exp[-\beta H(p,q;\lambda)]\,dp\,dq}{\int\!\!\int \exp[-\beta
-          H(p,q;\lambda)]\,dp\,dq} = 
+          H(p,q;\lambda)]\,dp\,dq} =
           \left\langle \frac{\partial H}{\partial \lambda} \right\rangle_{NVT;\lambda},
           :label: eqnddgensembleave
 
@@ -106,7 +106,7 @@ integrating the derivative over :math:`\lambda`:
 
 .. math::  \begin{aligned}
            A{^{\mathrm{B}}}(V,T)-A{^{\mathrm{A}}}(V,T) &=& \int_0^1 \left\langle \frac{\partial
-           H}{\partial \lambda} \right\rangle_{NVT;\lambda} \,d\lambda 
+           H}{\partial \lambda} \right\rangle_{NVT;\lambda} \,d\lambda
            \end{aligned}
            :label: eqdelA
 

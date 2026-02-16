@@ -400,6 +400,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         builder.addDomainDecomposition(options.domdecOptions);
         // \todo pass by value
         builder.addNonBonded(options.nbpu_opt_choices[0]);
+        // pass in nbfe option
+        builder.addNonBondedFETaskAssignment(options.nbfe_opt_choices[0]);
         // \todo pass by value
         builder.addElectrostatics(options.pme_opt_choices[0], options.pme_fft_opt_choices[0]);
         builder.addBondedTaskAssignment(options.bonded_opt_choices[0]);

@@ -24,7 +24,7 @@ Avoid configuring the own-FFTW with AVX512 enabled when |Gromacs| does not use A
 
 Previously if |Gromacs| was configured to use any AVX flavor, the internally built FFTW
 would be configured to also contain AVX512 kernels. This could cause performance loss
-if the (often noisy) FFTW auto-tuner picks an AVX512 kernel in a run that otherwise 
+if the (often noisy) FFTW auto-tuner picks an AVX512 kernel in a run that otherwise
 only uses AVX/AVX2 which could run at higher CPU clocks without AVX512 clock speed limitation.
 Now AVX512 is only used for the internal FFTW if |Gromacs| is also configured with
 the same SIMD flavor.

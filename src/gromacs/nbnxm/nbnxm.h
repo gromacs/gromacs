@@ -159,6 +159,7 @@ class MDLogger;
 class ObservablesReducerBuilder;
 template<typename>
 class Range;
+class SimulationWorkload;
 class StepWorkload;
 class UpdateGroupsCog;
 
@@ -178,6 +179,22 @@ enum
     enbvClearFYes
 };
 
+/*! \brief A plain pairlist that can contain both normal and excluded pairs
+ *
+ * The first element of each entry is the atom pair, the second is the shift vector index.
+ * The distance vector is then given by: x[first.first] - x[first.second] + shiftVector[second]
+ */
+struct PlainPairlist
+{
+    using ParticlePair  = std::pair<int, int>;
+    using PairlistEntry = std::pair<ParticlePair, int>;
+
+    //! List of normal pairs
+    std::vector<PairlistEntry> pairs;
+    //! List of excluded atom pairs
+    std::vector<PairlistEntry> excludedPairs;
+};
+
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 struct nonbonded_verlet_t
@@ -191,6 +208,7 @@ public:
      * \param[in] kernelSetup   The non-bonded kernel setup
      * \param[in] exclusionChecker  The FEP exclusion checker, is consumed, can be nullptr
      * \param[in] gpu_nbv       The GPU non-bonded setup, ownership is transferred, can be nullptr
+     * \param[in] useGpuNonbondedFE Whether to use GPU for nonbonded FE calculations
      * \param[in] wcycle        Pointer to wallcycle counters, can be nullptr
      */
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
@@ -199,6 +217,7 @@ public:
                        const NbnxmKernelSetup&           kernelSetup,
                        std::unique_ptr<ExclusionChecker> exclusionChecker,
                        NbnxmGpu*                         gpu_nbv,
+                       bool                              useGpuNonbondedFE,
                        gmx_wallcycle*                    wcycle);
 
     /*! \brief Constructs an object from its, minimal, components
@@ -219,6 +238,9 @@ public:
 
     //! Returns whether a GPU is use for the non-bonded calculations
     bool useGpu() const { return isGpuKernelType(kernelSetup_.kernelType); }
+
+    //! Returns whether a GPU is use for the non-bonded free energy calculations
+    bool useGpuNonbondedFE() const { return useGpuNonbondedFE_; }
 
     //! Returns whether a GPU is emulated for the non-bonded calculations
     bool emulateGpu() const { return kernelSetup_.kernelType == NbnxmKernelType::Cpu8x8x8_PlainC; }
@@ -297,20 +319,28 @@ public:
      * of atoms when not using DD, or the total number of atoms in the i-zones
      * when using DD.
      *
-     * \param[in] iLocality   The interaction locality: local or non-local
-     * \param[in] exclusions  Lists of exclusions for every atom.
-     * \param[in] step        Used to set the list creation step
-     * \param[in,out] nrnb    Flop accounting struct, can be nullptr
+     * For normal MD simulations, pairs involving atoms with zero LJ parameters
+     * and charge do not need to be included. When a complete pairlist is required,
+     * the \p includeAllPairs argument should be set to \p true.
+     *
+     * \param[in] iLocality        The interaction locality: local or non-local
+     * \param[in] exclusions       Lists of exclusions for every atom.
+     * \param[in] includeAllPairs  Whether also non-interacting pairs should be part of the list
+     * \param[in] step             Used to set the list creation step
+     * \param[in,out] nrnb         Flop accounting struct, can be nullptr
      */
     void constructPairlist(InteractionLocality     iLocality,
                            const ListOfLists<int>& exclusions,
+                           bool                    includeAllPairs,
                            int64_t                 step,
                            t_nrnb*                 nrnb) const;
 
     //! Updates all the atom properties in Nbnxm
-    void setAtomProperties(ArrayRef<const int>     atomTypes,
-                           ArrayRef<const real>    atomCharges,
-                           ArrayRef<const int32_t> atomInfo) const;
+    void setAtomProperties(ArrayRef<const int>     atomTypesA,
+                           ArrayRef<const real>    atomChargesA,
+                           ArrayRef<const int32_t> atomInfo,
+                           ArrayRef<const int>     atomTypesB   = {},
+                           ArrayRef<const real>    atomChargesB = {}) const;
 
     /*!\brief Convert the coordinates to NBNXM format for the given locality.
      *
@@ -360,23 +390,31 @@ public:
                                  ArrayRef<real>             CoulombSR,
                                  t_nrnb*                    nrnb) const;
 
-    //! Executes the non-bonded free-energy kernels, local + non-local, always runs on the CPU
-    void dispatchFreeEnergyKernels(const ArrayRefWithPadding<const RVec>& coords,
-                                   ForceWithShiftForces*                  forceWithShiftForces,
-                                   bool                                   useSimd,
-                                   int                                    ntype,
-                                   const interaction_const_t&             ic,
-                                   ArrayRef<const RVec>                   shiftvec,
-                                   ArrayRef<const real>                   nbfp,
-                                   ArrayRef<const real>                   nbfp_grid,
-                                   ArrayRef<const real>                   chargeA,
-                                   ArrayRef<const real>                   chargeB,
-                                   ArrayRef<const int>                    typeA,
-                                   ArrayRef<const int>                    typeB,
-                                   ArrayRef<const real>                   lambda,
-                                   gmx_enerdata_t*                        enerd,
-                                   const StepWorkload&                    stepWork,
-                                   t_nrnb*                                nrnb);
+    //! Executes the non-bonded free-energy kernels, local + non-local, runs on the CPU
+    void dispatchFreeEnergyCpuKernels(const ArrayRefWithPadding<const RVec>& coords,
+                                      ForceWithShiftForces*                  forceWithShiftForces,
+                                      bool                                   useSimd,
+                                      int                                    ntype,
+                                      const interaction_const_t&             ic,
+                                      ArrayRef<const RVec>                   shiftvec,
+                                      ArrayRef<const real>                   nbfp,
+                                      ArrayRef<const real>                   nbfp_grid,
+                                      ArrayRef<const real>                   chargeA,
+                                      ArrayRef<const real>                   chargeB,
+                                      ArrayRef<const int>                    typeA,
+                                      ArrayRef<const int>                    typeB,
+                                      ArrayRef<const real>                   lambda,
+                                      gmx_enerdata_t*                        enerd,
+                                      const StepWorkload&                    stepWork,
+                                      t_nrnb*                                nrnb);
+
+#if GMX_GPU && !GMX_GPU_CUDA
+    [[noreturn]]
+#endif
+    //! Executes the non-bonded free-energy kernels, local + non-local, runs on the GPU
+    void dispatchFreeEnergyGpuKernels(InteractionLocality       iLocality,
+                                      const SimulationWorkload& simulationWork,
+                                      const StepWorkload&       stepWork);
 
     /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
      * \param [in] locality         Local or non-local
@@ -417,14 +455,27 @@ public:
     //! Returns a pointer to the NbnxmGpu object, can return nullptr
     NbnxmGpu* gpuNbv() { return gpuNbv_; }
 
+
+    //! Returns the local grid
     const Grid& localGrid() const;
 
+    //! Sets the non-local grid usig dimensions and columns received from a halo-domain
     void setNonLocalGrid(int                                 gridIndex,
                          int                                 ddZone,
                          const GridDimensions&               gridDimensions,
                          ArrayRef<const std::pair<int, int>> columns,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x);
+    /*! \brief Returns a plain pairlist
+     *
+     * When running with domain decomposition, the union of the pairlist returned
+     * on the domains contains all pairs in the system
+     *
+     * \param[in] range  Range of the pairlist in nm, should not be larger than the range
+     *                   of the normal pairlist (is release-asserted)
+     * \param[in] shiftVectors  List of shift vectors
+     */
+    const PlainPairlist& plainPairlist(real range, ArrayRef<const RVec> shiftVectors);
 
 private:
     //! All data related to the pair lists
@@ -448,6 +499,9 @@ private:
 
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
     NbnxmGpu* gpuNbv_;
+
+    // whether to use GPU for nonbonded FE calculations, also affects the pairlist construction kernel
+    bool useGpuNonbondedFE_;
 };
 
 /*! \brief Creates an Nbnxm object */
@@ -458,6 +512,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    const gmx_domdec_t*        dd,
                                                    const gmx_hw_info_t&       hardwareInfo,
                                                    bool                       useGpuForNonbonded,
+                                                   bool                       useGpuForNonbondedFE,
                                                    const DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&          mtop,
                                                    bool localAtomOrderMatchesNbnxmOrder,

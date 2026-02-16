@@ -78,7 +78,7 @@ The tests are written using `Google Test`_, which provides a framework for
 writing unit tests and compiling them into a test binary.  Most of the command
 line options provided by the test binaries are implemented by Google Test.  See
 the `Google Test Primer`_ for an introduction.
-`Google Test`_ is included in the source tree under ``src/external/googletest/``, 
+`Google Test`_ is included in the source tree under ``src/external/googletest/``,
 and is compiled as part of the unit test build.
 
 ``src/testutils/`` contains |Gromacs|-specific shared test code.  This includes

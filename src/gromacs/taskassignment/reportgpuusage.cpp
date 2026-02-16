@@ -139,7 +139,8 @@ void reportGpuUsage(const MDLogger&                   mdlog,
                 gpuIdsString.c_str());
         // Because there is a GPU in use, there must be a PP task on a GPU.
         output += gmx::formatString(
-                "PP tasks will do (non-perturbed) short-ranged%s interactions on the GPU\n",
+                "PP tasks will do %s short-ranged%s interactions on the GPU\n",
+                simulationWork.useGpuNonbondedFE ? "all (non-perturbed and perturbed)" : "non-perturbed",
                 simulationWork.useGpuBonded ? " and most bonded" : "");
         output += gmx::formatString("PP task will update and constrain coordinates on the %s\n",
                                     simulationWork.useGpuUpdate ? "GPU" : "CPU");

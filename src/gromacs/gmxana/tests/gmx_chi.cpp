@@ -103,10 +103,10 @@ public:
             {
                 ASSERT_GE(std::strlen(residueName), 3);
                 const char residueType[4] = { residueName[0], residueName[1], residueName[2], '\0' };
-                const auto histogramOutputFileName =
+                const auto mainHistogramOutputFileName =
                         formatString("histo-%s%s.xvg", dihedralName, residueType);
                 setOutputFileWithGeneratedName(
-                        histogramOutputFileName, histogramOutputFileName, XvgMatch());
+                        mainHistogramOutputFileName, mainHistogramOutputFileName, XvgMatch());
                 for (const char* secondaryStructureName : { "sheet", "helix", "coil" })
                 {
                     const auto histogramOutputFileName = formatString(
@@ -116,10 +116,10 @@ public:
                 }
                 if (std::strstr(dihedralName, "chi") != nullptr)
                 {
-                    const auto histogramOutputFileName =
+                    const auto chiHistogramOutputFileName =
                             formatString("histo-%s%s.xvg", dihedralName, residueType);
                     setOutputFileWithGeneratedName(
-                            histogramOutputFileName, histogramOutputFileName, XvgMatch());
+                            chiHistogramOutputFileName, chiHistogramOutputFileName, XvgMatch());
                     for (const char* secondaryStructureName : { "sheet", "helix", "coil" })
                     {
                         const auto histogramOutputFileName = formatString(

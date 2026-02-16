@@ -52,6 +52,7 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -86,6 +87,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
                                             bool       havePpDomainDecomposition,
                                             bool       haveSeparatePmeRank,
                                             bool       useGpuForNonbonded,
+                                            bool       useGpuForNonbondedFE,
                                             PmeRunMode pmeRunMode,
                                             bool       useGpuForBonded,
                                             bool       useGpuForUpdate,
@@ -98,11 +100,17 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     simulationWorkload.computeNonbondedAtMtsLevel1 =
             simulationWorkload.computeNonbonded && inputrec.useMts
             && inputrec.mtsLevels.back().forceGroups[static_cast<int>(MtsForceGroups::Nonbonded)];
-    simulationWorkload.computeMuTot    = inputrecNeedMutot(&inputrec);
-    simulationWorkload.haveDynamicBox  = haveDynamicBox;
-    simulationWorkload.useCpuNonbonded = !useGpuForNonbonded;
-    simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
-    simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
+    simulationWorkload.computeMuTot      = inputrecNeedMutot(&inputrec);
+    simulationWorkload.haveDynamicBox    = haveDynamicBox;
+    simulationWorkload.useCpuNonbonded   = !useGpuForNonbonded;
+    simulationWorkload.useGpuNonbonded   = useGpuForNonbonded;
+    simulationWorkload.useCpuNonbondedFE = !useGpuForNonbondedFE;
+    simulationWorkload.useGpuNonbondedFE = useGpuForNonbondedFE;
+    simulationWorkload.useGpuForeignNonbondedFE =
+            useGpuForNonbondedFE && inputrec.fepvals->n_lambda > 0
+            && inputrec.fepvals->softcoreFunction == SoftcoreType::Beutler
+            && inputrec.fepvals->sc_alpha != 0;
+    simulationWorkload.useCpuPme = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft                    = (pmeRunMode == PmeRunMode::GPU);
     simulationWorkload.useGpuBonded                    = useGpuForBonded;
@@ -142,10 +150,10 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     }
     // x/f transform is done on GPU by default unless it is not unsupported (with MTS) or disabled (with the env. var.)
     simulationWorkload.useGpuXBufferOpsWhenAllowed =
-            GMX_GPU && !GMX_GPU_OPENCL && useGpuForNonbonded && !inputrec.useMts
+            GpuConfigurationCapabilities::BufferOps && useGpuForNonbonded && !inputrec.useMts
             && !(useReplicaExchange && !useGpuForUpdate) && !disableGpuBufferOps;
     simulationWorkload.useGpuFBufferOpsWhenAllowed =
-            GMX_GPU && !GMX_GPU_OPENCL && useGpuForNonbonded && !inputrec.useMts
+            GpuConfigurationCapabilities::BufferOps && useGpuForNonbonded && !inputrec.useMts
             && !(useReplicaExchange && !useGpuForUpdate) && !disableGpuBufferOps;
     if (featuresRequireGpuBufferOps)
     {
@@ -212,16 +220,26 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     }
     domainWork.haveGpuBondedWork =
             ((fr.listedForcesGpu != nullptr) && fr.listedForcesGpu->haveInteractions());
-    // Note that haveFreeEnergyWork is constant over the whole run
-    domainWork.haveFreeEnergyWork =
+    domainWork.haveNonbondedFreeEnergyWork =
             (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
+    domainWork.haveCpuNonbondedFreeEnergyWork =
+            domainWork.haveNonbondedFreeEnergyWork
+            && (simulationWork.useCpuNonbondedFE || fr.efep == FreeEnergyPerturbationType::Expanded
+                || inputrec.fepvals->softcoreFunction == SoftcoreType::Gapsys);
+    // Currently no GPU support for gapsys softcore type and expanded ensemble free energy calculations
+    domainWork.haveGpuNonbondedFreeEnergyWork =
+            domainWork.haveNonbondedFreeEnergyWork
+            && (simulationWork.useGpuNonbondedFE && fr.efep != FreeEnergyPerturbationType::Expanded
+                && inputrec.fepvals->softcoreFunction != SoftcoreType::Gapsys);
     // We assume we have local force work if there are CPU
     // force tasks including PME or nonbondeds.
-    domainWork.haveCpuLocalForceWork =
-            domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
-            || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
-            || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0;
-    domainWork.haveCpuNonLocalForceWork = domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
+    domainWork.haveCpuLocalForceWork = domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
+                                       || domainWork.haveCpuNonbondedFreeEnergyWork
+                                       || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
+                                       || simulationWork.haveEwaldSurfaceContribution
+                                       || inputrec.nwall > 0;
+    domainWork.haveCpuNonLocalForceWork =
+            domainWork.haveCpuBondedWork || domainWork.haveCpuNonbondedFreeEnergyWork;
     domainWork.haveLocalForceContribInCpuBuffer =
             domainWork.haveCpuLocalForceWork || simulationWork.havePpDomainDecomposition;
 

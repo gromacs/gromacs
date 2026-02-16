@@ -148,6 +148,17 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     }
 }
 
+/*! Launch the Nonbonded free energy GPU kernels. */
+[[noreturn]] void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused*                 nb,
+                                                const SimulationWorkload gmx_unused& simulationWork,
+                                                const gmx::StepWorkload gmx_unused&  stepWork,
+                                                const InteractionLocality gmx_unused iloc)
+{
+    // Currently not GPU support for nonbonded free energy calculations in SYCL build. If workload flags are set correctly, it should never enter here.
+    GMX_THROW(NotImplementedError(
+            "Free energy GPU supported for SYCL build is not implemented yet."));
+}
+
 /*! \brief SYCL exclusive prefix sum kernel for list sorting.
  *
  * As of oneAPI 2024.1, \c oneapi::dpl::experimental::exclusive_scan_async for inputs <= 16384
@@ -227,31 +238,26 @@ class BucketSciSort;
 template<int workGroupSize>
 static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
-    gmx::syclSubmitWithoutEvent(
+    auto kernelFunctionBuilder = nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>;
+    syclSubmitWithoutCghOrEvent<ExclusivePrefixSum<workGroupSize>>(
             q,
-            [&](sycl::handler& cgh)
-            {
-                cgh.parallel_for<ExclusivePrefixSum<workGroupSize>>(
-                        sycl::nd_range<1>{ workGroupSize, workGroupSize },
-                        nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
-                                sorting->sciHistogram.get_pointer(), sorting->sciOffset.get_pointer()));
-            });
+            kernelFunctionBuilder,
+            sycl::nd_range<1>{ workGroupSize, workGroupSize },
+            sorting->sciHistogram.get_pointer(),
+            sorting->sciOffset.get_pointer());
 }
 
 static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
 {
-    const size_t size = plist->numSci;
-    gmx::syclSubmitWithoutEvent(
-            q,
-            [&](sycl::handler& cgh)
-            {
-                cgh.parallel_for<BucketSciSort>(
-                        sycl::range<1>{ size },
-                        nbnxnKernelBucketSciSort(plist->sci.get_pointer(),
-                                                 plist->sorting.sciCount.get_pointer(),
-                                                 plist->sorting.sciOffset.get_pointer(),
-                                                 plist->sorting.sciSorted.get_pointer()));
-            });
+    const size_t size                  = plist->numSci;
+    auto         kernelFunctionBuilder = nbnxnKernelBucketSciSort;
+    syclSubmitWithoutCghOrEvent<BucketSciSort>(q,
+                                               kernelFunctionBuilder,
+                                               sycl::range<1>{ size },
+                                               plist->sci.get_pointer(),
+                                               plist->sorting.sciCount.get_pointer(),
+                                               plist->sorting.sciOffset.get_pointer(),
+                                               plist->sorting.sciSorted.get_pointer());
 }
 static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream)
 {

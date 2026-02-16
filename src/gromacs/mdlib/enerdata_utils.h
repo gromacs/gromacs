@@ -36,7 +36,9 @@
 #define GMX_MDLIB_ENERDATA_UTILS_H
 
 #include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -51,7 +53,7 @@ void reset_enerdata(gmx_enerdata_t* enerd);
 /* Resets the energy data */
 
 /*! \brief Sums energy group pair contributions into epot */
-void sum_epot(const gmx_grppairener_t& grpp, real* epot);
+void sum_epot(const gmx_grppairener_t& grpp, gmx::EnumerationArray<InteractionFunction, real>& epot);
 
 /*! \brief Accumulates potential energy contributions to obtain final potential energies
  *

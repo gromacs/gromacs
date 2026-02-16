@@ -42,6 +42,7 @@
 #define GMX_TOPOLOGY_IFUNC_H
 
 #include "gromacs/libgromacs_export.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/vectypes.h"
 
 struct t_fcdata;
@@ -115,113 +116,119 @@ struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Paddin
 
 /*! \brief Interaction function enums.
  *
- * This MUST correspond to the t_interaction_function[F_NRE] in src/gromacs/topology/ifunc.cpp.
+ * This MUST correspond to the t_interaction_function array in src/gromacs/topology/ifunc.cpp.
  */
-enum
+enum class InteractionFunction : int
 {
-    F_BONDS,
-    F_G96BONDS,
-    F_MORSE,
-    F_CUBICBONDS,
-    F_CONNBONDS,
-    F_HARMONIC,
-    F_FENEBONDS,
-    F_TABBONDS,
-    F_TABBONDSNC,
-    F_RESTRBONDS,
-    F_ANGLES,
-    F_G96ANGLES,
-    F_RESTRANGLES,
-    F_LINEAR_ANGLES,
-    F_CROSS_BOND_BONDS,
-    F_CROSS_BOND_ANGLES,
-    F_UREY_BRADLEY,
-    F_QUARTIC_ANGLES,
-    F_TABANGLES,
-    F_PDIHS,
-    F_RBDIHS,
-    F_RESTRDIHS,
-    F_CBTDIHS,
-    F_FOURDIHS,
-    F_IDIHS,
-    F_PIDIHS,
-    F_TABDIHS,
-    F_CMAP,
-    F_GB12_NOLONGERUSED,
-    F_GB13_NOLONGERUSED,
-    F_GB14_NOLONGERUSED,
-    F_GBPOL_NOLONGERUSED,
-    F_NPSOLVATION_NOLONGERUSED,
-    F_LJ14,
-    F_COUL14,
-    F_LJC14_Q,
-    F_LJC_PAIRS_NB,
-    F_LJ,
-    F_BHAM,
-    F_LJ_LR_NOLONGERUSED,
-    F_BHAM_LR_NOLONGERUSED,
-    F_DISPCORR,
-    F_COUL_SR,
-    F_COUL_LR_NOLONGERUSED,
-    F_RF_EXCL,
-    F_COUL_RECIP,
-    F_LJ_RECIP,
-    F_DPD,
-    F_POLARIZATION,
-    F_WATER_POL,
-    F_THOLE_POL,
-    F_ANHARM_POL,
-    F_POSRES,
-    F_FBPOSRES,
-    F_DISRES,
-    F_DISRESVIOL,
-    F_ORIRES,
-    F_ORIRESDEV,
-    F_ANGRES,
-    F_ANGRESZ,
-    F_DIHRES,
-    F_DIHRESVIOL,
-    F_CONSTR,
-    F_CONSTRNC,
-    F_SETTLE,
-    F_VSITE1,
-    F_VSITE2,
-    F_VSITE2FD,
-    F_VSITE3,
-    F_VSITE3FD,
-    F_VSITE3FAD,
-    F_VSITE3OUT,
-    F_VSITE4FD,
-    F_VSITE4FDN,
-    F_VSITEN,
-    F_COM_PULL,
-    F_DENSITYFITTING,
-    F_EQM,
-    F_ENNPOT,
-    F_EPOT,
-    F_EKIN,
-    F_ETOT,
-    F_ECONSERVED,
-    F_TEMP,
-    F_VTEMP_NOLONGERUSED,
-    F_PDISPCORR,
-    F_PRES,
-    F_DVDL_CONSTR,
-    F_DVDL,
-    F_DKDL,
-    F_DVDL_COUL,
-    F_DVDL_VDW,
-    F_DVDL_BONDED,
-    F_DVDL_RESTRAINT,
-    F_DVDL_TEMPERATURE, //!< Not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE).
-    F_NRE //!< This number is for the total number of energies.
+    Bonds,
+    GROMOS96Bonds,
+    MorsePotential,
+    CubicBonds,
+    ConnectBonds,
+    HarmonicPotential,
+    FENEBonds,
+    TabulatedBonds,
+    TabulatedBondsNoCoupling,
+    RestraintBonds,
+    Angles,
+    GROMOS96Angles,
+    RestrictedBendingPotential,
+    LinearAngles,
+    CrossBondBonds,
+    CrossBondAngles,
+    UreyBradleyPotential,
+    QuarticAngles,
+    TabulatedAngles,
+    ProperDihedrals,
+    RyckaertBellemansDihedrals,
+    RestrictedTorsionPotential,
+    CombinedBendingTorsionPotential,
+    FourierDihedrals,
+    ImproperDihedrals,
+    PeriodicImproperDihedrals,
+    TabulatedDihedrals,
+    DihedralEnergyCorrectionMap,
+    GeneralizedBorn12PolarizationUnused,
+    GeneralizedBorn13PolarizationUnused,
+    GeneralizedBorn14PolarizationUnused,
+    GeneralizedBornPolarizationUnused,
+    NonpolarSolvationUnused,
+    LennardJones14,
+    Coulomb14,
+    LennardJonesCoulomb14Q,
+    LennardJonesCoulombNonBondedPairs,
+    LennardJonesShortRange,
+    BuckinghamShortRange,
+    LennardJonesLongRangeUnused,
+    BuckinghamLongRangeUnused,
+    DispersionCorrection,
+    CoulombShortRange,
+    CoulombLongRangeUnused,
+    ReactionFieldExclusion,
+    CoulombReciprocalSpace,
+    LennardJonesReciprocalSpace,
+    DissipativeParticleDynamics,
+    Polarization,
+    WaterPolarization,
+    TholePolarization,
+    AnharmonicPolarization,
+    PositionRestraints,
+    FlatBottomedPositionRestraints,
+    DistanceRestraints,
+    DistanceRestraintViolations,
+    OrientationRestraints,
+    OrientationRestraintDeviations,
+    AngleRestraints,
+    AngleZAxisRestraints,
+    DihedralRestraints,
+    DihedralRestraintViolations,
+    Constraints,
+    ConstraintsNoCoupling,
+    SETTLE,
+    VirtualSite1,
+    VirtualSite2,
+    VirtualSite2FlexibleDistance,
+    VirtualSite3,
+    VirtualSite3FlexibleDistance,
+    VirtualSite3FlexibleAngleDistance,
+    VirtualSite3Outside,
+    VirtualSite4FlexibleDistance,
+    VirtualSite4FlexibleDistanceNormalization,
+    VirtualSiteN,
+    CenterOfMassPullingEnergy,
+    DensityFitting,
+    QuantumMechanicalRegionEnergy,
+    NeuralNetworkPotentialEnergy,
+    PotentialEnergy,
+    KineticEnergy,
+    TotalEnergy,
+    ConservedEnergy,
+    Temperature,
+    VirialTemperatureUnused,
+    PressureDispersionCorrection,
+    Pressure,
+    dHdLambdaConstraint,
+    dVremainingdLambda,
+    dEkineticdLambda,
+    dVCoulombdLambda,
+    dVvanderWaalsdLambda,
+    dVbondeddLambda,
+    dVrestraintdLambda,
+    dVtemperaturedLambda, //!< Not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE).
+    Count //!< This number is for the total number of energies.
 };
 
-static inline bool IS_RESTRAINT_TYPE(int ifunc)
+static inline bool IS_RESTRAINT_TYPE(InteractionFunction ifunc)
 {
-    return ifunc == F_POSRES || ifunc == F_FBPOSRES || ifunc == F_DISRES || ifunc == F_RESTRBONDS
-           || ifunc == F_DISRESVIOL || ifunc == F_ORIRES || ifunc == F_ORIRESDEV
-           || ifunc == F_ANGRES || ifunc == F_ANGRESZ || ifunc == F_DIHRES;
+    return ifunc == InteractionFunction::PositionRestraints
+           || ifunc == InteractionFunction::FlatBottomedPositionRestraints
+           || ifunc == InteractionFunction::DistanceRestraints || ifunc == InteractionFunction::RestraintBonds
+           || ifunc == InteractionFunction::DistanceRestraintViolations
+           || ifunc == InteractionFunction::OrientationRestraints
+           || ifunc == InteractionFunction::OrientationRestraintDeviations
+           || ifunc == InteractionFunction::AngleRestraints
+           || ifunc == InteractionFunction::AngleZAxisRestraints
+           || ifunc == InteractionFunction::DihedralRestraints;
 }
 
 //! Maximum allowed number of atoms
@@ -234,52 +241,53 @@ constexpr int NR_CBTDIHS  = 6;
 constexpr int NR_FOURDIHS = 4;
 
 //! Initialised interaction functions descriptor.
-LIBGROMACS_EXPORT extern const t_interaction_function interaction_function[F_NRE];
+LIBGROMACS_EXPORT extern const gmx::EnumerationArray<InteractionFunction, t_interaction_function> interaction_function;
 
-static inline int NRFPA(int ftype)
+static inline int NRFPA(InteractionFunction iftype)
 {
-    return interaction_function[ftype].nrfpA;
+    return interaction_function[iftype].nrfpA;
 }
 
-static inline int NRFPB(int ftype)
+static inline int NRFPB(InteractionFunction iftype)
 {
-    return interaction_function[ftype].nrfpB;
+    return interaction_function[iftype].nrfpB;
 }
 
-static inline int NRFP(int ftype)
+static inline int NRFP(InteractionFunction iftype)
 {
-    return NRFPA(ftype) + NRFPB(ftype);
+    return NRFPA(iftype) + NRFPB(iftype);
 }
 
-static inline int NRAL(int ftype)
+static inline int NRAL(InteractionFunction iftype)
 {
-    return interaction_function[ftype].nratoms;
+    return interaction_function[iftype].nratoms;
 }
 
 //! \brief Tells if function type ftype represents a chemical bond.
-static inline bool IS_CHEMBOND(int ftype)
+static inline bool IS_CHEMBOND(InteractionFunction iftype)
 {
-    return interaction_function[ftype].nratoms == 2
-           && (interaction_function[ftype].flags & IF_CHEMBOND) != 0;
+    return interaction_function[iftype].nratoms == 2
+           && (interaction_function[iftype].flags & IF_CHEMBOND) != 0;
 }
 
 /*! \brief Tells if a function type ftype represents an angle.
  *
  * Per Larsson, 2007-11-06.
  */
-static inline bool IS_ANGLE(int ftype)
+static inline bool IS_ANGLE(InteractionFunction iftype)
 {
-    return interaction_function[ftype].nratoms == 3 && (interaction_function[ftype].flags & IF_ATYPE) != 0;
+    return interaction_function[iftype].nratoms == 3
+           && (interaction_function[iftype].flags & IF_ATYPE) != 0;
 }
 
-static inline bool IS_VSITE(int ftype)
+static inline bool IS_VSITE(InteractionFunction iftype)
 {
-    return (interaction_function[ftype].flags & IF_VSITE) != 0;
+    return (interaction_function[iftype].flags & IF_VSITE) != 0;
 }
 
-static inline bool IS_TABULATED(int ftype)
+static inline bool IS_TABULATED(InteractionFunction iftype)
 {
-    return (interaction_function[ftype].flags & IF_TABULATED) != 0;
+    return (interaction_function[iftype].flags & IF_TABULATED) != 0;
 }
 
 #endif

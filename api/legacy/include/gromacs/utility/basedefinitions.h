@@ -185,6 +185,30 @@ Index ssize(const T& t)
 #    define CLANG_DIAGNOSTIC_RESET
 #endif
 
+/*! \brief Ensure we suppress no-return-value-optimization warnings
+ * only for clang versions that recognize them.
+ *
+ * The calls to these macro can be changed to the standard
+ * CLANG_DIAGNOSTIC forms when we require at least clang 21.
+ *
+ * If we start to get a few of these custom suppressions, perhaps
+ * instead using
+ * `_Pragma("clang diagnostic ignored \"-Wunknown-warning-option\")`
+ * will become more attractive than multiple custom suppressions. */
+#if defined(__has_warning)
+#    if __has_warning("-Wnrvo")
+#        define CLANG_DIAGNOSTIC_IGNORE_WNRVO CLANG_DIAGNOSTIC_IGNORE("-Wnrvo")
+#        define CLANG_DIAGNOSTIC_RESET_WNRVO CLANG_DIAGNOSTIC_RESET
+#    else
+#        define CLANG_DIAGNOSTIC_IGNORE_WNRVO
+#        define CLANG_DIAGNOSTIC_RESET_WNRVO
+#    endif
+#else
+#    define CLANG_DIAGNOSTIC_IGNORE_WNRVO
+#    define CLANG_DIAGNOSTIC_RESET_WNRVO
+#endif
+
+
 #ifdef _MSC_VER
 #    define MSVC_DIAGNOSTIC_IGNORE(id) __pragma(warning(push)) __pragma(warning(disable : id))
 #    define MSVC_DIAGNOSTIC_RESET __pragma(warning(pop))

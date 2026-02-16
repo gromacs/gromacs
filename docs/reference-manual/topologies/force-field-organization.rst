@@ -34,6 +34,12 @@ included with |Gromacs| are:
 -  AMBER99SB-ILDN protein, nucleic AMBER94 (Lindorff-Larsen et al.,
    Proteins 78, 1950-58, 2010)
 
+-  AMBER14SB protein (Maier, J. A. et al., J. Chem. Theory Comput. 11,
+   3696–3713, 2015))
+
+-  AMBER19SB protein (Tian, C. et al., J. Chem. Theory Comput. 16,
+   528–552, 2020)
+
 -  AMBERGS force field (Garcia & Sanbonmatsu, PNAS 99, 2782-2787, 2002)
 
 -  CHARMM27 all-atom force field (CHARM22 plus CMAP for proteins)

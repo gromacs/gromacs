@@ -61,6 +61,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/awh_params.h"
@@ -1838,7 +1839,7 @@ static void do_fep_params(t_inputrec*                ir,
                           WarningHandler*            wi)
 {
 
-    int         i, j, max_n_lambda;
+    int         j, max_n_lambda;
     t_lambda*   fep    = ir->fepvals.get();
     t_expanded* expand = ir->expandedvals.get();
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<real>> count_fep_lambdas;
@@ -1922,7 +1923,7 @@ static void do_fep_params(t_inputrec*                ir,
 
     if (nfep[FreeEnergyPerturbationCouplingType::Fep] == 0 && fep->init_lambda_without_states >= 0)
     {
-        for (i = 0; i < fep->n_lambda; i++)
+        for (int i = 0; i < fep->n_lambda; i++)
         {
             fep->all_lambda[FreeEnergyPerturbationCouplingType::Fep][i] = fep->init_lambda_without_states;
         }
@@ -2290,8 +2291,8 @@ void get_ir(const char*     mdparin,
     const char* no_names[] = { "no", nullptr };
 
     init_inputrec_strings();
-    gmx::TextInputFile     stream(mdparin);
-    std::vector<t_inpfile> inp = read_inpfile(&stream, mdparin, wi);
+    gmx::TextInputFile     inputStream(mdparin);
+    std::vector<t_inpfile> inp = read_inpfile(&inputStream, mdparin, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
@@ -2874,7 +2875,7 @@ void get_ir(const char*     mdparin,
 
     if (mdparout)
     {
-        gmx::TextOutputFile stream(mdparout);
+        gmx::TextOutputFile outputStream(mdparout);
 
         // Set gen-seed line to actual value instead of -1
         if (opts->bMadeSeed)
@@ -2883,17 +2884,17 @@ void get_ir(const char*     mdparin,
             inp[ii].value_ = std::to_string(opts->seed);
         }
 
-        write_inpfile(&stream, mdparout, &inp, FALSE, writeMdpHeader, wi);
+        write_inpfile(&outputStream, mdparout, &inp, FALSE, writeMdpHeader, wi);
 
         // Transform module data into a flat key-value tree for output.
         gmx::KeyValueTreeBuilder       builder;
         gmx::KeyValueTreeObjectBuilder builderObject = builder.rootObject();
         mdModules->buildMdpOutput(&builderObject);
         {
-            gmx::TextWriter writer(&stream);
+            gmx::TextWriter writer(&outputStream);
             writeKeyValueTreeAsMdp(&writer, builder.build());
         }
-        stream.close();
+        outputStream.close();
     }
 
     /* Process options if necessary */
@@ -3441,7 +3442,8 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
         const t_atom*        atom = molt.atoms.atom;
         for (int mol = 0; mol < molb.nmol; mol++)
         {
-            for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+            for (InteractionFunction ftype :
+                 { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
             {
                 gmx::ArrayRef<const int> ia = molt.ilist[ftype].iatoms;
                 for (int i = 0; i < molt.ilist[ftype].size();)
@@ -3492,8 +3494,8 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
                     i += interaction_function[ftype].nratoms + 1;
                 }
             }
-            gmx::ArrayRef<const int> ia = molt.ilist[F_SETTLE].iatoms;
-            for (int i = 0; i < molt.ilist[F_SETTLE].size();)
+            gmx::ArrayRef<const int> ia = molt.ilist[InteractionFunction::SETTLE].iatoms;
+            for (int i = 0; i < molt.ilist[InteractionFunction::SETTLE].size();)
             {
                 /* Subtract 1 dof from every atom in the SETTLE */
                 for (int j = 0; j < 3; j++)
@@ -3967,7 +3969,7 @@ void do_index(const char*                                 mdparin,
     t_atoms   atoms_all;
     int       nr;
     real      tau_min;
-    int       i, j, k, restnm;
+    int       restnm;
     bool      bExcl, bTable, bAnneal;
     char      warn_buf[STRLEN];
 
@@ -4049,7 +4051,7 @@ void do_index(const char*                                 mdparin,
 
         tau_min = 1e20;
         convertReals(wi, temperatureCouplingTauValues, "tau-t", ir->opts.tau_t);
-        for (i = 0; (i < nr); i++)
+        for (int i = 0; (i < nr); i++)
         {
             if ((ir->eI == IntegrationAlgorithm::BD) && ir->opts.tau_t[i] <= 0)
             {
@@ -4145,7 +4147,7 @@ void do_index(const char*                                 mdparin,
             }
         }
         convertReals(wi, temperatureCouplingReferenceValues, "ref-t", ir->opts.ref_t);
-        for (i = 0; (i < nr); i++)
+        for (int i = 0; (i < nr); i++)
         {
             if (ir->opts.ref_t[i] < 0)
             {
@@ -4180,7 +4182,7 @@ void do_index(const char*                                 mdparin,
         snew(ir->opts.anneal_npoints, nr);
         snew(ir->opts.anneal_time, nr);
         snew(ir->opts.anneal_temp, nr);
-        for (i = 0; i < nr; i++)
+        for (int i = 0; i < nr; i++)
         {
             ir->opts.annealing[i]      = SimulatedAnnealing::No;
             ir->opts.anneal_npoints[i] = 0;
@@ -4190,7 +4192,7 @@ void do_index(const char*                                 mdparin,
         if (!simulatedAnnealingGroupNames.empty())
         {
             bAnneal = FALSE;
-            for (i = 0; i < nr; i++)
+            for (int i = 0; i < nr; i++)
             {
                 if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "N", 1))
                 {
@@ -4220,7 +4222,7 @@ void do_index(const char*                                 mdparin,
                 }
                 convertInts(wi, simulatedAnnealingPoints, "annealing points", ir->opts.anneal_npoints);
                 size_t numSimulatedAnnealingFields = 0;
-                for (i = 0; i < nr; i++)
+                for (int i = 0; i < nr; i++)
                 {
                     if (ir->opts.anneal_npoints[i] == 1)
                     {
@@ -4258,9 +4260,9 @@ void do_index(const char*                                 mdparin,
                              simulatedAnnealingTemperatures,
                              "anneal-temp",
                              allSimulatedAnnealingTemperatures.data());
-                for (i = 0, k = 0; i < nr; i++)
+                for (int i = 0, k = 0; i < nr; i++)
                 {
-                    for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
+                    for (int j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
                         ir->opts.anneal_time[i][j] = allSimulatedAnnealingTimes[k];
                         ir->opts.anneal_temp[i][j] = allSimulatedAnnealingTemperatures[k];
@@ -4293,11 +4295,11 @@ void do_index(const char*                                 mdparin,
                     }
                 }
                 /* Print out some summary information, to make sure we got it right */
-                for (i = 0; i < nr; i++)
+                for (int i = 0; i < nr; i++)
                 {
                     if (ir->opts.annealing[i] != SimulatedAnnealing::No)
                     {
-                        j = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
+                        int j = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
                         fprintf(stderr,
                                 "Simulated annealing for group %s: %s, %d timepoints\n",
                                 *(groups->groupNames[j]),
@@ -4416,9 +4418,10 @@ void do_index(const char*                                 mdparin,
     nr             = groups->groups[SimulationAtomGroupType::Freeze].size();
     ir->opts.ngfrz = nr;
     snew(ir->opts.nFreeze, nr);
+    int i, k;
     for (i = k = 0; (size_t(i) < freezeGroupNames.size()); i++)
     {
-        for (j = 0; (j < DIM); j++, k++)
+        for (int j = 0; (j < DIM); j++, k++)
         {
             ir->opts.nFreeze[i][j] = static_cast<int>(gmx::equalCaseInsensitive(freezeDims[k], "Y", 1));
             if (!ir->opts.nFreeze[i][j])
@@ -4436,7 +4439,7 @@ void do_index(const char*                                 mdparin,
     }
     for (; (i < nr); i++)
     {
-        for (j = 0; (j < DIM); j++)
+        for (int j = 0; (j < DIM); j++)
         {
             ir->opts.nFreeze[i][j] = 0;
         }
@@ -4648,15 +4651,15 @@ void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys)
 
 static void check_disre(const gmx_mtop_t& mtop)
 {
-    if (gmx_mtop_ftype_count(mtop, F_DISRES) > 0)
+    if (gmx_mtop_ftype_count(mtop, InteractionFunction::DistanceRestraints) > 0)
     {
         const gmx_ffparams_t& ffparams  = mtop.ffparams;
         int                   ndouble   = 0;
         int                   old_label = -1;
         for (int i = 0; i < ffparams.numTypes(); i++)
         {
-            int ftype = ffparams.functype[i];
-            if (ftype == F_DISRES)
+            InteractionFunction ftype = ffparams.functype[i];
+            if (ftype == InteractionFunction::DistanceRestraints)
             {
                 int label = ffparams.iparams[i].disres.label;
                 if (label == old_label)
@@ -4710,8 +4713,8 @@ static BasicVector<bool> havePositionRestraints(const gmx_mtop_t& sys)
 
     for (const auto ilists : IListRange(sys))
     {
-        const auto& posResList   = ilists.list()[F_POSRES];
-        const auto& fbPosResList = ilists.list()[F_FBPOSRES];
+        const auto& posResList = ilists.list()[InteractionFunction::PositionRestraints];
+        const auto& fbPosResList = ilists.list()[InteractionFunction::FlatBottomedPositionRestraints];
         if (ilists.nmol() > 0 && (!havePosres[XX] || !havePosres[YY] || !havePosres[ZZ]))
         {
             for (int i = 0; i < posResList.size(); i += 2)
@@ -5314,6 +5317,11 @@ void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& s
         wi->addError(
                 "Only one of the following three non-equilibrium methods is supported at a time: "
                 "constant acceleration groups, cosine acceleration, box deformation");
+    }
+
+    if (const auto optionalVsiteMesg = gmx::checkVsiteHierarchy(sys))
+    {
+        wi->addError(optionalVsiteMesg.value());
     }
 
     check_disre(sys);

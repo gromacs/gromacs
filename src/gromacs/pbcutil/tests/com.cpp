@@ -85,11 +85,11 @@ namespace
  */
 void populateMoleculeType(gmx_moltype_t* moltype)
 {
-    constexpr int atomNumber        = 5;
-    constexpr int residueNumber     = 3;
-    moltype->atoms.nr               = atomNumber;
-    moltype->ilist[F_CONSTR].iatoms = { 0, 1, 2 };
-    moltype->ilist[F_ANGLES].iatoms = { 1, 2, 1, 3 };
+    constexpr int atomNumber                                = 5;
+    constexpr int residueNumber                             = 3;
+    moltype->atoms.nr                                       = atomNumber;
+    moltype->ilist[InteractionFunction::Constraints].iatoms = { 0, 1, 2 };
+    moltype->ilist[InteractionFunction::Angles].iatoms      = { 1, 2, 1, 3 };
 
     snew(moltype->atoms.atom, atomNumber);
     snew(moltype->atoms.resinfo, residueNumber);

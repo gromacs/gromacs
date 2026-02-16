@@ -162,7 +162,7 @@ try
     plumed_->cmd("setStepLong", &lstep);
     if (globalAtomIndices_.has_value())
     {
-        int nat_home = gmx::ssize(globalAtomIndices_.value());
+        int nat_home = forceProviderInput.homenr_;
         plumed_->cmd("setAtomsNlocal", &nat_home);
         plumed_->cmd("setAtomsGatindex", globalAtomIndices_.value().data());
     }

@@ -297,23 +297,23 @@ makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive,
                 e = std::min(b + MAXCOL, nspec - 1);
                 for (int i = b; (i < e); i++)
                 {
-                    std::string buf = gmx::formatString(
+                    std::string bufSpecial = gmx::formatString(
                             "%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i] + 1);
-                    fprintf(stderr, "%8s", buf.c_str());
+                    fprintf(stderr, "%8s", bufSpecial.c_str());
                 }
                 fprintf(stderr, "\n");
                 /* print matrix */
                 e = std::min(b + MAXCOL, nspec);
                 for (int i = b + 1; (i < nspec); i++)
                 {
-                    std::string buf = gmx::formatString(
+                    std::string bufSpecial = gmx::formatString(
                             "%s%d",
                             *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
                             pdba->resinfo[specialBondResIdxs[i]].nr);
-                    fprintf(stderr, "%8s", buf.c_str());
-                    buf = gmx::formatString(
+                    fprintf(stderr, "%8s", bufSpecial.c_str());
+                    bufSpecial = gmx::formatString(
                             "%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i] + 1);
-                    fprintf(stderr, "%8s", buf.c_str());
+                    fprintf(stderr, "%8s", bufSpecial.c_str());
                     int e2 = std::min(i, e);
                     for (int j = b; (j < e2); j++)
                     {

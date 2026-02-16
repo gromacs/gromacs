@@ -43,3 +43,10 @@ TYPED_TEST_SUITE_WITH_NAME was added in order to work around a
 limitation of clang-19, since GROMACS so far does not use the
 three-argument variant of TYPED_TEST_SUITE. Likewise
 INSTANTIATE_TYPED_TEST_SUITE_P. See comments inline for details.
+
+Some custom GoogleTest object-hierarchy casts were used in
+gtest-printers.h for casts of plain values. Replaced these with
+explicit casts to avoid warnings.
+
+The implicit-float-size-conversion warning changed name and
+implementation before oneAPI 2025.3, so that is now omitted.

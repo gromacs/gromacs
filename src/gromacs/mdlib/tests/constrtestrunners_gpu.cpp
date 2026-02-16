@@ -49,7 +49,7 @@
 
 #include "constrtestrunners.h"
 
-#if GPU_CONSTRAINTS_SUPPORTED
+#if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
 #include "gromacs/gpu_utils/gputraits.h"
@@ -62,7 +62,9 @@ namespace test
 {
 class ConstraintsTestData;
 
-#if GPU_CONSTRAINTS_SUPPORTED
+// We would like to do this just with the GpuConfigurationCapabilities,
+// but those methods are lacking the appropriate implementation stubs
+#if GMX_GPU && !GMX_GPU_OPENCL
 
 void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_pbc pbc)
 {
@@ -110,7 +112,7 @@ void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testDat
     freeDeviceBuffer(&d_v);
 }
 
-#else // GPU_CONSTRAINTS_SUPPORTED
+#else // GMX_GPU
 
 void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* /* testData */, t_pbc /* pbc */)
 {
@@ -118,7 +120,7 @@ void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* /* test
     FAIL() << "Dummy LINCS GPU function was called instead of the real one.";
 }
 
-#endif // GPU_CONSTRAINTS_SUPPORTED
+#endif // GMX_GPU
 
 } // namespace test
 } // namespace gmx

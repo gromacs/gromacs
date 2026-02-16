@@ -364,28 +364,28 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
                 || (!applyPbc && dd->ci[dim] + 1 + pulse == dd->numCells[dim] - 1))
             {
                 /* Store the extremes */
-                int pos = 0;
+                int posExtreme = 0;
 
                 for (int d1 = d; d1 < dd->ndim - 1; d1++)
                 {
-                    extr_s[d1][1] = std::min(extr_s[d1][1], buf_e[pos].min0);
-                    extr_s[d1][0] = std::max(extr_s[d1][0], buf_e[pos].max1);
-                    extr_s[d1][2] = std::min(extr_s[d1][2], buf_e[pos].min1);
-                    pos++;
+                    extr_s[d1][1] = std::min(extr_s[d1][1], buf_e[posExtreme].min0);
+                    extr_s[d1][0] = std::max(extr_s[d1][0], buf_e[posExtreme].max1);
+                    extr_s[d1][2] = std::min(extr_s[d1][2], buf_e[posExtreme].min1);
+                    posExtreme++;
                 }
 
                 if (d == 1 || (d == 0 && dd->ndim == 3))
                 {
                     for (int i = d; i < 2; i++)
                     {
-                        comm->zone_d2[1 - d][i] = buf_e[pos];
-                        pos++;
+                        comm->zone_d2[1 - d][i] = buf_e[posExtreme];
+                        posExtreme++;
                     }
                 }
                 if (d == 0)
                 {
-                    comm->zone_d1[1] = buf_e[pos];
-                    pos++;
+                    comm->zone_d1[1] = buf_e[posExtreme];
+                    posExtreme++;
                 }
             }
             else
@@ -895,12 +895,12 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
                 load->flags    = 0;
                 load->mdf      = 0;
                 load->pme      = 0;
-                int pos        = 0;
+                int rowPos     = 0;
                 for (int i = 0; i < dd->numCells[dim]; i++)
                 {
-                    load->sum += load->load[pos++];
-                    load->max = std::max(load->max, load->load[pos]);
-                    pos++;
+                    load->sum += load->load[rowPos++];
+                    load->max = std::max(load->max, load->load[rowPos]);
+                    rowPos++;
                     if (isDlbOn(dd->comm->dlbState))
                     {
                         if (rowCoordinator->dlbIsLimited)
@@ -908,31 +908,31 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
                             /* This direction could not be load balanced properly,
                              * therefore we need to use the maximum iso the average load.
                              */
-                            load->sum_m = std::max(load->sum_m, load->load[pos]);
+                            load->sum_m = std::max(load->sum_m, load->load[rowPos]);
                         }
                         else
                         {
-                            load->sum_m += load->load[pos];
+                            load->sum_m += load->load[rowPos];
                         }
-                        pos++;
-                        load->cvol_min = std::min(load->cvol_min, load->load[pos]);
-                        pos++;
+                        rowPos++;
+                        load->cvol_min = std::min(load->cvol_min, load->load[rowPos]);
+                        rowPos++;
                         if (d < dd->ndim - 1)
                         {
-                            load->flags = gmx::roundToInt(load->load[pos++]);
+                            load->flags = gmx::roundToInt(load->load[rowPos++]);
                         }
                         if (d > 0)
                         {
-                            rowCoordinator->bounds[i].cellFracLowerMax = load->load[pos++];
-                            rowCoordinator->bounds[i].cellFracUpperMin = load->load[pos++];
+                            rowCoordinator->bounds[i].cellFracLowerMax = load->load[rowPos++];
+                            rowCoordinator->bounds[i].cellFracUpperMin = load->load[rowPos++];
                         }
                     }
                     if (bSepPME)
                     {
-                        load->mdf = std::max(load->mdf, load->load[pos]);
-                        pos++;
-                        load->pme = std::max(load->pme, load->load[pos]);
-                        pos++;
+                        load->mdf = std::max(load->mdf, load->load[rowPos]);
+                        rowPos++;
+                        load->pme = std::max(load->pme, load->load[rowPos]);
+                        rowPos++;
                     }
                 }
                 if (isDlbOn(comm->dlbState) && rowCoordinator->dlbIsLimited)
@@ -1583,6 +1583,7 @@ static void set_dd_corners(const gmx_domdec_t* dd, int dim0, int dim1, int dim2,
 
 /*! \brief Add the atom groups and coordinates we need to send in this
  * pulse from this zone to \p localAtomGroups and \p work. */
+template<typename IntVector>
 static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
                                   int                            zonei,
                                   int                            zone,
@@ -1612,7 +1613,7 @@ static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
                                   gmx_bool                       bDistMB,
                                   gmx::ArrayRef<const gmx::RVec> coordinates,
                                   gmx::ArrayRef<const int32_t>   atomInfo,
-                                  gmx::FastVector<int>*          localAtomGroups,
+                                  IntVector*                     localAtomGroups,
                                   dd_comm_setup_work_t*          work)
 {
     gmx_domdec_comm_t* comm;
@@ -2053,37 +2054,74 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
                         const int taskAtomEnd = atomStart + ((atomEnd - atomStart) * (th + 1)) / numThreads;
 
                         /* Get the atom groups and coordinates for this pulse in this zone */
-                        get_zone_pulse_groups(dd,
-                                              zonei,
-                                              zone,
-                                              taskAtomStart,
-                                              taskAtomEnd,
-                                              dd->globalAtomIndices,
-                                              dim,
-                                              dim_ind,
-                                              dim0,
-                                              dim1,
-                                              dim2,
-                                              r_comm2,
-                                              r_bcomm2,
-                                              box,
-                                              distanceIsTriclinic,
-                                              normal,
-                                              skew_fac2_d,
-                                              skew_fac_01,
-                                              v_d,
-                                              v_0,
-                                              v_1,
-                                              &corners,
-                                              sf2_round,
-                                              bDistBonded,
-                                              bBondComm,
-                                              bDist2B,
-                                              bDistMB,
-                                              state->x,
-                                              fr->atomInfo,
-                                              th == 0 ? &ind->index : &work.localAtomGroupBuffer,
-                                              &work);
+                        if (th == 0)
+                        {
+                            get_zone_pulse_groups(dd,
+                                                  zonei,
+                                                  zone,
+                                                  taskAtomStart,
+                                                  taskAtomEnd,
+                                                  dd->globalAtomIndices,
+                                                  dim,
+                                                  dim_ind,
+                                                  dim0,
+                                                  dim1,
+                                                  dim2,
+                                                  r_comm2,
+                                                  r_bcomm2,
+                                                  box,
+                                                  distanceIsTriclinic,
+                                                  normal,
+                                                  skew_fac2_d,
+                                                  skew_fac_01,
+                                                  v_d,
+                                                  v_0,
+                                                  v_1,
+                                                  &corners,
+                                                  sf2_round,
+                                                  bDistBonded,
+                                                  bBondComm,
+                                                  bDist2B,
+                                                  bDistMB,
+                                                  state->x,
+                                                  fr->atomInfo,
+                                                  &ind->index,
+                                                  &work);
+                        }
+                        else
+                        {
+                            get_zone_pulse_groups(dd,
+                                                  zonei,
+                                                  zone,
+                                                  taskAtomStart,
+                                                  taskAtomEnd,
+                                                  dd->globalAtomIndices,
+                                                  dim,
+                                                  dim_ind,
+                                                  dim0,
+                                                  dim1,
+                                                  dim2,
+                                                  r_comm2,
+                                                  r_bcomm2,
+                                                  box,
+                                                  distanceIsTriclinic,
+                                                  normal,
+                                                  skew_fac2_d,
+                                                  skew_fac_01,
+                                                  v_d,
+                                                  v_0,
+                                                  v_1,
+                                                  &corners,
+                                                  sf2_round,
+                                                  bDistBonded,
+                                                  bBondComm,
+                                                  bDist2B,
+                                                  bDistMB,
+                                                  state->x,
+                                                  fr->atomInfo,
+                                                  &work.localAtomGroupBuffer,
+                                                  &work);
+                        }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 } // END
@@ -3061,7 +3099,8 @@ void dd_partition_system(FILE*                     fplog,
                                                           top_global,
                                                           fr->atomInfo,
                                                           top_local);
-    dd->localTopologyChecker->scheduleCheckOfLocalTopology(numBondedInteractionsToReduce);
+    dd->localTopologyChecker->scheduleCheckOfLocalTopology(
+            *top_local, numBondedInteractionsToReduce, state_local);
 
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDMakeTop);
 
@@ -3228,7 +3267,8 @@ void dd_partition_system(FILE*                     fplog,
     MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
             state_local->box,
             gmx::makeConstArrayRef(state_local->x).subArray(0, comm->atomRanges.numHomeAtoms()),
-            gmx::makeConstArrayRef(dd->globalAtomIndices).subArray(0, comm->atomRanges.numHomeAtoms()));
+            gmx::makeConstArrayRef(dd->globalAtomIndices)
+                    .subArray(0, comm->atomRanges.end(DDAtomRanges::Type::Zones)));
     mdModulesNotifiers.simulationRunNotifier_.notify(mdModulesAtomsRedistributedSignal);
 
     wallcycle_stop(wcycle, WallCycleCounter::Domdec);

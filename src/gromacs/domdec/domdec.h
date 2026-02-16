@@ -287,7 +287,7 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
 void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
                               gmx_wallcycle*                  wcycle,
-                              const bool                      useNvshmem);
+                              bool                            useNvshmem);
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange

@@ -34,7 +34,7 @@ cases of *triclinic* unit cells; the most general space-filling unit
 cells that comprise all possible space-filling shapes \ :ref:`21 <refBekker95>`.
 For this reason, |Gromacs| is based on the triclinic unit cell.
 
-|Gromacs| uses periodic boundary conditions, combined with the 
+|Gromacs| uses periodic boundary conditions, combined with the
 *minimum image convention*: only one – the nearest – image of each particle is
 considered for short-range non-bonded interaction terms. For long-range
 electrostatic interactions this is not always accurate enough, and
@@ -105,9 +105,9 @@ Some useful box types
 .. |math13s6| replace:: :math:`\frac{1}{3}\sqrt{6}~d`
 .. |math23s2| replace:: :math:`\frac{2}{3}\sqrt{2}~d`
 .. |math13s2| replace:: :math:`\frac{1}{3}\sqrt{2}~d`
-.. |angbc| replace:: :math:`\angle` **bc** 
-.. |angac| replace:: :math:`\angle` **ac** 
-.. |angab| replace:: :math:`\angle` **ab** 
+.. |angbc| replace:: :math:`\angle` **bc**
+.. |angac| replace:: :math:`\angle` **ac**
+.. |angab| replace:: :math:`\angle` **ab**
 .. |90deg| replace:: :math:`90^\circ`
 .. |60deg| replace:: :math:`60^\circ`
 .. |70deg| replace:: :math:`70.53^\circ`
@@ -120,7 +120,7 @@ Some useful box types
     :widths: auto
 
     +--------------+-----------+-----------+-----------------------------------+------------------------------+
-    | box type     | image     | box       | box vectors                       | box vector angles            | 
+    | box type     | image     | box       | box vectors                       | box vector angles            |
     |              |           |           +---------+------------+------------+---------+----------+---------+
     |              | distance  | volume    | **a**   | **b**      | **c**      | |angbc| | |angac|  | |angab| |
     +==============+===========+===========+=========+============+============+=========+==========+=========+
@@ -194,7 +194,7 @@ For grid search the extra restriction is weak:
 
 .. math:: R_c < \min(a_x,b_y,c_z)
          :label: eqngridrc
-   
+
 
 For simple search the extra restriction is stronger:
 

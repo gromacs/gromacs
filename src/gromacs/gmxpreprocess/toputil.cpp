@@ -52,7 +52,6 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -72,13 +71,13 @@ void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b)
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE*                                   out,
-                     Directive                               d,
-                     PreprocessingAtomTypes*                 at,
-                     int                                     ftype,
-                     int                                     fsubtype,
-                     gmx::ArrayRef<const InteractionsOfType> plist,
-                     bool                                    bFullDih)
+static void print_bt(FILE*                                                                 out,
+                     Directive                                                             d,
+                     PreprocessingAtomTypes*                                               at,
+                     InteractionFunction                                                   ftype,
+                     int                                                                   fsubtype,
+                     const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                     bool                                                                  bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
@@ -97,28 +96,28 @@ static void print_bt(FILE*                                   out,
     int f = 0;
     switch (ftype)
     {
-        case F_G96ANGLES: // Intended to fall through
-        case F_G96BONDS: f = 1; break;
-        case F_MORSE: f = 2; break;
-        case F_CUBICBONDS: f = 3; break;
-        case F_CONNBONDS: f = 4; break;
-        case F_HARMONIC: f = 5; break;
-        case F_CROSS_BOND_ANGLES: f = 2; break;
-        case F_CROSS_BOND_BONDS: f = 3; break;
-        case F_UREY_BRADLEY: f = 4; break;
-        case F_PDIHS:  // Intended to fall through
-        case F_RBDIHS: // Intended to fall through
-        case F_FOURDIHS: bDih = TRUE; break;
-        case F_IDIHS:
+        case InteractionFunction::GROMOS96Angles: // Intended to fall through
+        case InteractionFunction::GROMOS96Bonds: f = 1; break;
+        case InteractionFunction::MorsePotential: f = 2; break;
+        case InteractionFunction::CubicBonds: f = 3; break;
+        case InteractionFunction::ConnectBonds: f = 4; break;
+        case InteractionFunction::HarmonicPotential: f = 5; break;
+        case InteractionFunction::CrossBondAngles: f = 2; break;
+        case InteractionFunction::CrossBondBonds: f = 3; break;
+        case InteractionFunction::UreyBradleyPotential: f = 4; break;
+        case InteractionFunction::ProperDihedrals:            // Intended to fall through
+        case InteractionFunction::RyckaertBellemansDihedrals: // Intended to fall through
+        case InteractionFunction::FourierDihedrals: bDih = TRUE; break;
+        case InteractionFunction::ImproperDihedrals:
             f    = 1;
             bDih = TRUE;
             break;
-        case F_CONSTRNC: // Intended to fall through
-        case F_VSITE3FD: f = 1; break;
-        case F_VSITE3FAD: f = 2; break;
-        case F_VSITE3OUT: f = 3; break;
-        case F_VSITE4FDN: // Intended to fall through
-        case F_CMAP: f = 1; break;
+        case InteractionFunction::ConstraintsNoCoupling: // Intended to fall through
+        case InteractionFunction::VirtualSite3FlexibleDistance: f = 1; break;
+        case InteractionFunction::VirtualSite3FlexibleAngleDistance: f = 2; break;
+        case InteractionFunction::VirtualSite3Outside: f = 3; break;
+        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization: // Intended to fall through
+        case InteractionFunction::DihedralEnergyCorrectionMap: f = 1; break;
 
         default: bDih = FALSE;
     }
@@ -163,7 +162,7 @@ static void print_bt(FILE*                                   out,
     /* print bondtypes */
     for (const auto& parm : bt->interactionTypes)
     {
-        if (ftype == F_CMAP)
+        if (ftype == InteractionFunction::DihedralEnergyCorrectionMap)
         {
             bSwapParity = false;
         }
@@ -362,7 +361,12 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRT
     std::fflush(out);
 }
 
-void print_bondeds(FILE* out, int natoms, Directive d, int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist)
+void print_bondeds(FILE*                                                                 out,
+                   int                                                                   natoms,
+                   Directive                                                             d,
+                   InteractionFunction                                                   ftype,
+                   int                                                                   fsubtype,
+                   const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist)
 {
     auto                   atom = std::make_unique<t_atom>();
     PreprocessingAtomTypes atype;

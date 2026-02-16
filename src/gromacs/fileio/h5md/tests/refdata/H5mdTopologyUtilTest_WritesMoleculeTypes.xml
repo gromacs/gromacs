@@ -1,0 +1,192 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Alanine_dipeptide/charge">
+    <Int Name="Length">29</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0.1414</Real>
+    <Real>0.19969999999999999</Real>
+    <Real>0.19969999999999999</Real>
+    <Real>0.19969999999999999</Real>
+    <Real>0.096199999999999994</Real>
+    <Real>0.088900000000000007</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.059700000000000003</Real>
+    <Real>0.029999999999999999</Real>
+    <Real>0.029999999999999999</Real>
+    <Real>0.029999999999999999</Real>
+    <Real>0.61629999999999996</Real>
+    <Real>-0.57220000000000004</Real>
+    <Real>-0.3821</Real>
+    <Real>0.2681</Real>
+    <Real>-0.17469999999999999</Real>
+    <Real>0.1067</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.20930000000000001</Real>
+    <Real>0.076399999999999996</Real>
+    <Real>0.076399999999999996</Real>
+    <Real>0.076399999999999996</Real>
+    <Real>0.77310000000000001</Real>
+    <Real>-0.80549999999999999</Real>
+    <Real>-0.80549999999999999</Real>
+  </Sequence>
+  <Sequence Name="Alanine_dipeptide/mass">
+    <Int Name="Length">29</Int>
+    <Real>8.5169999999999995</Real>
+    <Real>8.5169999999999995</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>13.018000000000001</Real>
+    <Real>0</Real>
+    <Real>7.5170000000000003</Real>
+    <Real>7.5170000000000003</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>12.01</Real>
+    <Real>16</Real>
+    <Real>15.018000000000001</Real>
+    <Real>0</Real>
+    <Real>13.018000000000001</Real>
+    <Real>0</Real>
+    <Real>7.5170000000000003</Real>
+    <Real>7.5170000000000003</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>12.01</Real>
+    <Real>16</Real>
+    <Real>16</Real>
+  </Sequence>
+  <Sequence Name="Alanine_dipeptide/particle_name">
+    <Int Name="Length">29</Int>
+    <Int>0</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>3</Int>
+    <Int>4</Int>
+    <Int>5</Int>
+    <Int>6</Int>
+    <Int>7</Int>
+    <Int>8</Int>
+    <Int>9</Int>
+    <Int>10</Int>
+    <Int>11</Int>
+    <Int>12</Int>
+    <Int>13</Int>
+    <Int>14</Int>
+    <Int>15</Int>
+    <Int>2</Int>
+    <Int>16</Int>
+    <Int>6</Int>
+    <Int>7</Int>
+    <Int>8</Int>
+    <Int>9</Int>
+    <Int>10</Int>
+    <Int>11</Int>
+    <Int>12</Int>
+    <Int>13</Int>
+    <Int>14</Int>
+    <Int>17</Int>
+    <Int>18</Int>
+  </Sequence>
+  <Sequence Name="Alanine_dipeptide/particle_name_table">
+    <Int Name="Length">19</Int>
+    <String>MN1</String>
+    <String>MN2</String>
+    <String>N</String>
+    <String>H1</String>
+    <String>H2</String>
+    <String>H3</String>
+    <String>CA</String>
+    <String>HA</String>
+    <String>MCB1</String>
+    <String>MCB2</String>
+    <String>CB</String>
+    <String>HB1</String>
+    <String>HB2</String>
+    <String>HB3</String>
+    <String>C</String>
+    <String>O</String>
+    <String>H</String>
+    <String>OC1</String>
+    <String>OC2</String>
+  </Sequence>
+  <Sequence Name="Alanine_dipeptide/residue_name">
+    <Int Name="Length">29</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+  </Sequence>
+  <Sequence Name="Alanine_dipeptide/residue_name_table">
+    <Int Name="Length">1</Int>
+    <String>ALA</String>
+  </Sequence>
+  <Sequence Name="SOL/charge">
+    <Int Name="Length">3</Int>
+    <Real>-0.83399999999999996</Real>
+    <Real>0.41699999999999998</Real>
+    <Real>0.41699999999999998</Real>
+  </Sequence>
+  <Sequence Name="SOL/mass">
+    <Int Name="Length">3</Int>
+    <Real>16</Real>
+    <Real>1.008</Real>
+    <Real>1.008</Real>
+  </Sequence>
+  <Sequence Name="SOL/particle_name">
+    <Int Name="Length">3</Int>
+    <Int>0</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+  </Sequence>
+  <Sequence Name="SOL/particle_name_table">
+    <Int Name="Length">3</Int>
+    <String>OW</String>
+    <String>HW1</String>
+    <String>HW2</String>
+  </Sequence>
+  <Sequence Name="SOL/residue_name">
+    <Int Name="Length">3</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+    <Int>0</Int>
+  </Sequence>
+  <Sequence Name="SOL/residue_name_table">
+    <Int Name="Length">1</Int>
+    <String>SOL</String>
+  </Sequence>
+</ReferenceData>

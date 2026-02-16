@@ -62,38 +62,47 @@ namespace
 
 TEST(KernelSetupTest, getCoulombKernelTypeRF)
 {
-    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::RF, false),
+    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::RF, false, false),
               CoulombKernelType::ReactionField);
 }
 
 TEST(KernelSetupTest, getCoulombKernelTypeCut)
 {
-    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Cut, false),
+    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Cut, false, false),
               CoulombKernelType::ReactionField);
 }
 
 TEST(KernelSetupTest, getCoulombKernelTypeTable)
 {
-    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::Table, CoulombInteractionType::Count, true),
+    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::Table, CoulombInteractionType::Count, true, false),
               CoulombKernelType::Table);
 }
 
 TEST(KernelSetupTest, getCoulombKernelTypeTableTwin)
 {
-    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::Table, CoulombInteractionType::Count, false),
+    EXPECT_EQ(getCoulombKernelType(
+                      gmx::EwaldExclusionType::Table, CoulombInteractionType::Count, false, false),
               CoulombKernelType::TableTwin);
 }
 
 TEST(KernelSetupTest, getCoulombKernelTypeEwald)
 {
-    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Count, true),
+    EXPECT_EQ(getCoulombKernelType(
+                      gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Count, true, false),
               CoulombKernelType::Ewald);
 }
 
 TEST(KernelSetupTest, getCoulombKernelTypeEwaldTwin)
 {
-    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Count, false),
+    EXPECT_EQ(getCoulombKernelType(
+                      gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Count, false, false),
               CoulombKernelType::EwaldTwin);
+}
+
+TEST(KernelSetupTest, getCoulombKernelTypeNone)
+{
+    EXPECT_EQ(getCoulombKernelType(gmx::EwaldExclusionType::NotSet, CoulombInteractionType::Fmm, false, false),
+              CoulombKernelType::None);
 }
 
 TEST(KernelSetupTest, getVdwKernelTypeLjCutCombGeomNone)

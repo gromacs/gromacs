@@ -43,7 +43,7 @@
 // The compiler generates the wrong code when calling rocprim for RDNA targets, so we need to make sure that it doesn't try to
 // use unsupported dpp instructions. Tracked here, but not fixed even if the ticket says so: https://github.com/ROCm/rocPRIM/issues/452
 #if __GFX10__ || __GFX11__ || __GFX12__
-#    define ROCPRIM_DISABLE_DPP
+#    define ROCPRIM_DISABLE_DPP 1
 #    define ROCPRIM_DETAIL_USE_DPP false
 #endif
 #include <rocprim/rocprim.hpp>

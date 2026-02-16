@@ -97,39 +97,39 @@ void global_stat_destroy(gmx_global_stat_t gs)
 
 static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner)
 {
-    int i, to, from;
+    int to, from;
 
     from = 0;
     to   = 0;
-    for (i = 0; i < F_NRE; i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (bToBuffer)
         {
-            from = i;
+            from = static_cast<int>(i);
         }
         else
         {
-            to = i;
+            to = static_cast<int>(i);
         }
         switch (i)
         {
-            case F_EKIN:
-            case F_TEMP:
-            case F_DKDL:
+            case InteractionFunction::KineticEnergy:
+            case InteractionFunction::Temperature:
+            case InteractionFunction::dEkineticdLambda:
                 if (bTemp)
                 {
                     ato[to++] = afrom[from++];
                 }
                 break;
-            case F_PRES:
-            case F_PDISPCORR:
+            case InteractionFunction::Pressure:
+            case InteractionFunction::PressureDispersionCorrection:
                 if (bPres)
                 {
                     ato[to++] = afrom[from++];
                 }
                 break;
-            case F_ETOT:
-            case F_ECONSERVED:
+            case InteractionFunction::TotalEnergy:
+            case InteractionFunction::ConservedEnergy:
                 // Don't reduce total and conserved energy
                 // because they are computed later (see #4301)
                 break;
@@ -197,7 +197,7 @@ void global_stat(const gmx_global_stat&   gs,
        communicated and summed when they need to be, to avoid repeating
        the sums and overcounting. */
 
-    std::array<real, F_NRE> copyenerd;
+    gmx::EnumerationArray<InteractionFunction, real> copyenerd;
     int nener = filter_enerdterm(enerd->term.data(), TRUE, copyenerd.data(), bTemp, bPres, bEner);
 
     /* First, the data that needs to be communicated with velocity verlet every time

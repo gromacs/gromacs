@@ -220,7 +220,7 @@ void gmx_wallcycle::checkStop(WallCycleCounter ewc)
     }
 }
 
-void wallcycle_get(gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c)
+void wallcycle_get(const gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c)
 {
     *n = wc->wcc[ewc].n;
     *c = static_cast<double>(wc->wcc[ewc].c);

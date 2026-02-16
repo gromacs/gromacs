@@ -87,7 +87,7 @@ static void tester(const void *arg)
     fflush(stdout);
 
     start = tMPI_Cycles_read();
-    send_recv_data_tester();
+    send_recv_data_tester(true);
     bcast_data_tester();
     gather_data_tester();
     /*gatherv_data_tester(); */

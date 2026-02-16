@@ -290,15 +290,15 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
                                     gmx::ArrayRef<const real>      data,
                                     PmeAtomComm*                   atc)
 {
-    int nnodes_comm, i, local_pos, buf_pos;
+    int nnodes_comm, local_pos, buf_pos;
 
     nnodes_comm = std::min(2 * atc->maxshift, atc->nslab - 1);
 
     auto sendCount = atc->sendCount();
     int  nsend     = 0;
-    for (i = 0; i < nnodes_comm; i++)
+    for (int nodeIdx = 0; nodeIdx < nnodes_comm; nodeIdx++)
     {
-        const int commnode           = atc->slabCommSetup[i].node_dest;
+        const int commnode           = atc->slabCommSetup[nodeIdx].node_dest;
         atc->bufferIndices[commnode] = nsend;
         nsend += sendCount[commnode];
     }
@@ -323,9 +323,9 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
         }
 
         int numAtoms = sendCount[atc->slabIndex];
-        for (i = 0; i < nnodes_comm; i++)
+        for (int nodeIdx = 0; nodeIdx < nnodes_comm; nodeIdx++)
         {
-            const int commnode = atc->slabCommSetup[i].node_dest;
+            const int commnode = atc->slabCommSetup[nodeIdx].node_dest;
             int       scount   = sendCount[commnode];
             /* Communicate the count */
             if (debug)
@@ -338,8 +338,8 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
                         scount);
             }
             pme_dd_sendrecv(
-                    atc, FALSE, i, &scount, sizeof(int), &atc->slabCommSetup[i].rcount, sizeof(int));
-            numAtoms += atc->slabCommSetup[i].rcount;
+                    atc, FALSE, nodeIdx, &scount, sizeof(int), &atc->slabCommSetup[nodeIdx].rcount, sizeof(int));
+            numAtoms += atc->slabCommSetup[nodeIdx].rcount;
         }
 
         atc->setNumAtoms(numAtoms);
@@ -373,10 +373,10 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
     }
 
     buf_pos = 0;
-    for (i = 0; i < nnodes_comm; i++)
+    for (int nodeIdx = 0; nodeIdx < nnodes_comm; nodeIdx++)
     {
-        const int scount = atc->sendCount()[atc->slabCommSetup[i].node_dest];
-        const int rcount = atc->slabCommSetup[i].rcount;
+        const int scount = atc->sendCount()[atc->slabCommSetup[nodeIdx].node_dest];
+        const int rcount = atc->slabCommSetup[nodeIdx].rcount;
         if (scount > 0 || rcount > 0)
         {
             if (bX)
@@ -384,7 +384,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
                 /* Communicate the coordinates */
                 pme_dd_sendrecv(atc,
                                 FALSE,
-                                i,
+                                nodeIdx,
                                 pme->bufv.data() + buf_pos,
                                 scount * sizeof(rvec),
                                 atc->xBuffer.data() + local_pos,
@@ -393,13 +393,13 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
             /* Communicate the coefficients */
             pme_dd_sendrecv(atc,
                             FALSE,
-                            i,
+                            nodeIdx,
                             pme->bufr.data() + buf_pos,
                             scount * sizeof(real),
                             atc->coefficientBuffer.data() + local_pos,
                             rcount * sizeof(real));
             buf_pos += scount;
-            local_pos += atc->slabCommSetup[i].rcount;
+            local_pos += atc->slabCommSetup[nodeIdx].rcount;
         }
     }
     GMX_ASSERT(local_pos == atc->numAtoms(), "After receiving we should have numAtoms coordinates");
@@ -407,23 +407,23 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
 
 void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF)
 {
-    int nnodes_comm, local_pos, buf_pos, i;
+    int nnodes_comm, local_pos, buf_pos;
 
     nnodes_comm = std::min(2 * atc->maxshift, atc->nslab - 1);
 
     local_pos = atc->sendCount()[atc->slabIndex];
     buf_pos   = 0;
-    for (i = 0; i < nnodes_comm; i++)
+    for (int nodeIdx = 0; nodeIdx < nnodes_comm; nodeIdx++)
     {
-        const int commnode = atc->slabCommSetup[i].node_dest;
-        const int scount   = atc->slabCommSetup[i].rcount;
+        const int commnode = atc->slabCommSetup[nodeIdx].node_dest;
+        const int scount   = atc->slabCommSetup[nodeIdx].rcount;
         const int rcount   = atc->sendCount()[commnode];
         if (scount > 0 || rcount > 0)
         {
             /* Communicate the forces */
             pme_dd_sendrecv(atc,
                             TRUE,
-                            i,
+                            nodeIdx,
                             atc->f.data() + local_pos,
                             scount * sizeof(rvec),
                             pme->bufv.data() + buf_pos,

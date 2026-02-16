@@ -472,7 +472,7 @@ int gmx_eneconv(int argc, char* argv[])
     t_energy*         ee_sum;
     int64_t           lastfilestep, laststep, startstep_file = 0;
     int               noutfr;
-    int               nre, nremax, this_nre, i, kkk, nset, *set = nullptr;
+    int               nre, nremax, this_nre, kkk, nset, *set = nullptr;
     double            last_t;
     real *            readtime, *settime, timestep, tadjust;
     char              buf[22], buf2[22];
@@ -653,7 +653,7 @@ int gmx_eneconv(int argc, char* argv[])
                 }
 
                 /* Copy the energies */
-                for (i = 0; i < nre; i++)
+                for (int i = 0; i < nre; i++)
                 {
                     fro->ener[i].e = fr->ener[i].e;
                 }
@@ -669,7 +669,7 @@ int gmx_eneconv(int argc, char* argv[])
                 {
                     fro->nsum = int64_to_int(ee_sum_nsum, "energy average summation");
                     /* Copy the energy sums */
-                    for (i = 0; i < nre; i++)
+                    for (int i = 0; i < nre; i++)
                     {
                         fro->ener[i].esum = ee_sum[i].esum;
                         fro->ener[i].eav  = ee_sum[i].eav;
@@ -705,7 +705,6 @@ int gmx_eneconv(int argc, char* argv[])
                 {
                     if (remove_dh)
                     {
-                        int i;
                         if (!blocks || nblocks_alloc < fr->nblock)
                         {
                             /* we pre-allocate the blocks */
@@ -714,7 +713,7 @@ int gmx_eneconv(int argc, char* argv[])
                         }
                         nblocks = 0; /* number of blocks so far */
 
-                        for (i = 0; i < fr->nblock; i++)
+                        for (int i = 0; i < fr->nblock; i++)
                         {
                             if ((fr->block[i].id != enxDHCOLL) && (fr->block[i].id != enxDH)
                                 && (fr->block[i].id != enxDHHIST))
@@ -732,7 +731,7 @@ int gmx_eneconv(int argc, char* argv[])
                     {
                         if (!warned_about_dh)
                         {
-                            for (i = 0; i < fr->nblock; i++)
+                            for (int i = 0; i < fr->nblock; i++)
                             {
                                 if (fr->block[i].id == enxDH || fr->block[i].id == enxDHHIST)
                                 {

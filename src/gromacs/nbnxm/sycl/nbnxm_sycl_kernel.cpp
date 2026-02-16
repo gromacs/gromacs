@@ -64,6 +64,7 @@ static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistTyp
              * The optimal one depends on the hardware, but we cannot choose c_nbnxnGpuClusterSize
              * at runtime anyway yet. */
             case DeviceVendor::Intel: return sc_gpuParallelExecutionWidth(layoutType);
+            case DeviceVendor::PoclCpu: return sc_gpuParallelExecutionWidth(layoutType);
             default:
                 GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
                 return 0;

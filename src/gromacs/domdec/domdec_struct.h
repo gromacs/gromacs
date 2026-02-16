@@ -153,7 +153,6 @@ struct gmx_domdec_t
     UnitCellInfo unitCellInfo;
 
     /* The communication setup, identical for each cell, cartesian index */
-    //! Todo: refactor nbnxm to not rely on this sometimes being a nullptr so this can be IVec
     gmx::IVec numCells = { 0, 0, 0 };
     int       ndim     = 0;
     gmx::IVec dim      = { 0, 0, 0 }; /* indexed by 0 to ndim */
@@ -217,6 +216,9 @@ struct gmx_domdec_t
 
     /* GPU halo exchange objects: this structure supports a vector of pulses for each dimension */
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
+
+    //! Enables NVSHMEM-based GPU halo exchange
+    bool useGpuHaloExchangeNvshmem = false;
 };
 
 /*! \brief Returns whether this rank computes particle-particle interactions
@@ -254,7 +256,7 @@ static bool inline haveDDAtomOrdering(const gmx_domdec_t* dd)
  */
 static bool inline havePPDomainDecomposition(const gmx_domdec_t* dd)
 {
-    return dd && dd->nnodes > 1;
+    return (dd != nullptr) && (dd->nnodes > 1);
 }
 
 /*! Return whether \p globalAtomIndex is a valid global atom (and not a filler particle)

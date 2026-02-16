@@ -43,7 +43,9 @@
 #ifndef GMX_DOMDEC_DOMDEC_VSITE_H
 #define GMX_DOMDEC_DOMDEC_VSITE_H
 
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 struct gmx_domdec_t;
 struct InteractionList;
@@ -52,7 +54,9 @@ struct InteractionList;
 void dd_clear_local_vsite_indices(struct gmx_domdec_t* dd);
 
 /*! \brief Sets up communication and atom indices for all local vsites */
-int dd_make_local_vsites(struct gmx_domdec_t* dd, int at_start, gmx::ArrayRef<InteractionList> lil);
+int dd_make_local_vsites(struct gmx_domdec_t*                                         dd,
+                         int                                                          at_start,
+                         gmx::EnumerationArray<InteractionFunction, InteractionList>& lil);
 
 /*! \brief Initializes the data structures for virtual site communication */
 void init_domdec_vsites(struct gmx_domdec_t* dd, int n_intercg_vsite);

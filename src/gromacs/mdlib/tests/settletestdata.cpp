@@ -87,15 +87,15 @@ SettleTestData::SettleTestData(int numSettles) :
     // "update," and where there is definitely constraining
     // work to do.
     const real deltas[] = { 0.01, -0.01, +0.02, -0.02 };
-    int        i        = 0;
+    int        idx      = 0;
     for (auto& xPrime : xPrime_)
     {
-        xPrime[XX] += deltas[i % 4];
-        ++i;
-        xPrime[YY] += deltas[i % 4];
-        ++i;
-        xPrime[ZZ] += deltas[i % 4];
-        ++i;
+        xPrime[XX] += deltas[idx % 4];
+        ++idx;
+        xPrime[YY] += deltas[idx % 4];
+        ++idx;
+        xPrime[ZZ] += deltas[idx % 4];
+        ++idx;
     }
     std::fill(v_.begin(), v_.end(), RVec{ 0.0, 0.0, 0.0 });
 
@@ -104,7 +104,7 @@ SettleTestData::SettleTestData(int numSettles) :
     mtop_.moltype.resize(1);
     mtop_.molblock.resize(1);
     mtop_.molblock[0].type   = 0;
-    std::vector<int>& iatoms = mtop_.moltype[0].ilist[F_SETTLE].iatoms;
+    std::vector<int>& iatoms = mtop_.moltype[0].ilist[InteractionFunction::SETTLE].iatoms;
     for (int i = 0; i < numSettles; ++i)
     {
         iatoms.push_back(settleType);
@@ -140,8 +140,8 @@ SettleTestData::SettleTestData(int numSettles) :
         mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 2].m = hydrogenMass_;
     }
 
-    idef_               = std::make_unique<InteractionDefinitions>(mtop_.ffparams);
-    idef_->il[F_SETTLE] = mtop_.moltype[0].ilist[F_SETTLE];
+    idef_ = std::make_unique<InteractionDefinitions>(mtop_.ffparams);
+    idef_->il[InteractionFunction::SETTLE] = mtop_.moltype[0].ilist[InteractionFunction::SETTLE];
 }
 
 SettleTestData::~SettleTestData() {}

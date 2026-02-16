@@ -40,23 +40,28 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/applied_forces/qmmm/qmmmtopologypreprocessor.h"
-
 #include <filesystem>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/qmmm/qmmm.h"
+#include "gromacs/applied_forces/qmmm/qmmmoptions.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/path.h"
@@ -115,24 +120,51 @@ public:
         return mtop;
     }
 
+    //! \brief Generates a default mdp values for NNPotOptions
+    static KeyValueTreeObject nnpotBuildDefaultMdpValues()
+    {
+        // Prepare MDP inputs
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        return mdpValueBuilder.build();
+    }
+
+    //! \brief Creates an IndexGroupsAndNames object with the given atom indices
+    static IndexGroupsAndNames indexGroupsAndNames(const std::vector<int>& qmIndices)
+    {
+        // Create an IndexGroupsAndNames object
+        std::vector<IndexGroup> indexGroups;
+        // "System" is the default group name for QMMM
+        indexGroups.push_back({ "System", qmIndices });
+        return IndexGroupsAndNames(indexGroups);
+    }
+
+    //! \brief Helper function to create a QMMMOptions object
+    QMMMOptions buildDefaultOptions(const std::vector<int>& qmIndices, WarningHandler* wi)
+    {
+        QMMMOptions options;
+        test::fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues(), &options);
+        options.setLogger(logHelper_.logger());
+        options.setWarninp(wi);
+        options.setQMMMGroupIndices(indexGroupsAndNames(qmIndices));
+        return options;
+    }
+
 protected:
     LoggerTestHelper logHelper_;
 };
-
-TEST_F(QMMMTopologyPreprocessorTest, CanConstruct)
-{
-    std::vector<Index> qmIndices = { 0, 1, 2 };
-    EXPECT_NO_THROW(QMMMTopologyPreprocessor topPrep(qmIndices));
-}
 
 TEST_F(QMMMTopologyPreprocessorTest, FourWatersFirstQMNoLink)
 {
     // Reference input 4x SPCE waters from database 4waters.top (first one QM) and no Link atoms
     std::unique_ptr<gmx_mtop_t> mtop      = makeMtopFromFile("4water", "");
-    std::vector<Index>          qmIndices = { 0, 1, 2 };
+    std::vector<int>            qmIndices = { 0, 1, 2 };
 
-    QMMMTopologyPreprocessor topPrep(qmIndices);
-    WarningHandler           wi(true, 0);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    QMMMOptions    options = buildDefaultOptions(qmIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
@@ -144,20 +176,22 @@ TEST_F(QMMMTopologyPreprocessorTest, FourWatersFirstQMNoLink)
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Classical charge removed from embedded atoms: 0.00000\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 3\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 1 \\(replaced by 2 F_CONNBONDS\\) \n");
-    topPrep.preprocess(mtop.get(), 0.0, logHelper_.logger(), &wi);
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of settles removed: 1 \\(replaced by 2 "
+                                        "InteractionFunction::ConnectBonds\\) \n");
+    EXPECT_NO_THROW(options.modifyQMMMTopology(mtop.get()));
 }
 
 TEST_F(QMMMTopologyPreprocessorTest, FourWatersSeondAndForthQMNoLink)
 {
     // Reference input 4x SPCE waters from database 4waters.top (second and forth are QM) and no Link atoms
     std::unique_ptr<gmx_mtop_t> mtop      = makeMtopFromFile("4water", "");
-    std::vector<Index>          qmIndices = { 3, 4, 5, 9, 10, 11 };
+    std::vector<int>            qmIndices = { 3, 4, 5, 9, 10, 11 };
 
-    QMMMTopologyPreprocessor topPrep(qmIndices);
-    WarningHandler           wi(true, 0);
+    // Create QMMMOptions object and set required things
+    WarningHandler wi(true, 0);
+    QMMMOptions    options = buildDefaultOptions(qmIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
@@ -169,21 +203,21 @@ TEST_F(QMMMTopologyPreprocessorTest, FourWatersSeondAndForthQMNoLink)
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Classical charge removed from embedded atoms: 0.00000\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 2 \\(replaced by 4 F_CONNBONDS\\) \n");
-    topPrep.preprocess(mtop.get(), 0.0, logHelper_.logger(), &wi);
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of settles removed: 2 \\(replaced by 4 "
+                                        "InteractionFunction::ConnectBonds\\) \n");
+    EXPECT_NO_THROW(options.modifyQMMMTopology(mtop.get()));
 }
 
 TEST_F(QMMMTopologyPreprocessorTest, FourWatersFirstQMWithLink)
 {
     // Reference input 4x SPCE waters from database 4waters.top (first one QM) with Link atom
     std::unique_ptr<gmx_mtop_t> mtop      = makeMtopFromFile("4water", "");
-    std::vector<Index>          qmIndices = { 0, 1 };
+    std::vector<int>            qmIndices = { 0, 1 };
 
-    QMMMTopologyPreprocessor topPrep(qmIndices);
-    MDLogger                 logger;
-    WarningHandler           wi(true, 0);
+    WarningHandler wi(true, 0);
+    QMMMOptions    options = buildDefaultOptions(qmIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
@@ -195,22 +229,22 @@ TEST_F(QMMMTopologyPreprocessorTest, FourWatersFirstQMWithLink)
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Classical charge removed from embedded atoms: -0.41000\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 2\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 1 \\(replaced by 2 F_CONNBONDS\\) \n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of settles removed: 1 \\(replaced by 2 "
+                                        "InteractionFunction::ConnectBonds\\) \n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of link bonds added: 1\n");
-    topPrep.preprocess(mtop.get(), -0.41, logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyQMMMTopology(mtop.get()));
 }
 
 TEST_F(QMMMTopologyPreprocessorTest, AlanineDipeptideWithLinksNoConstraints)
 {
     // Reference input alanine_vacuo.top
     std::unique_ptr<gmx_mtop_t> mtop      = makeMtopFromFile("alanine_vacuo", "");
-    std::vector<Index>          qmIndices = { 8, 9, 10, 11, 12, 13 };
+    std::vector<int>            qmIndices = { 8, 9, 10, 11, 12, 13 };
 
-    QMMMTopologyPreprocessor topPrep(qmIndices);
-    MDLogger                 logger;
-    WarningHandler           wi(true, 0);
+    WarningHandler wi(true, 0);
+    QMMMOptions    options = buildDefaultOptions(qmIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
@@ -223,24 +257,25 @@ TEST_F(QMMMTopologyPreprocessorTest, AlanineDipeptideWithLinksNoConstraints)
                                         "Classical charge removed from embedded atoms: 0.11440\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 8\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
-                                        "Number of F_CONNBONDS \\(type 5 bonds\\) added: 5\n");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of InteractionFunction::ConnectBonds \\(type 5 bonds\\) added: 5\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of link bonds added: 2\n");
-    topPrep.preprocess(mtop.get(), 0.1144, logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyQMMMTopology(mtop.get()));
 }
 
 TEST_F(QMMMTopologyPreprocessorTest, AlanineDipeptideWithLinksWithConstraints)
 {
     // Reference input alanine_vacuo.top with constraints=all-bonds
     std::unique_ptr<gmx_mtop_t> mtop = makeMtopFromFile("alanine_vacuo", "constraints = all-bonds");
-    std::vector<Index>          qmIndices = { 8, 9, 10, 11, 12, 13 };
+    std::vector<int>            qmIndices = { 8, 9, 10, 11, 12, 13 };
 
-    QMMMTopologyPreprocessor topPrep(qmIndices);
-    MDLogger                 logger;
-    WarningHandler           wi(true, 0);
+    WarningHandler wi(true, 0);
+    QMMMOptions    options = buildDefaultOptions(qmIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
@@ -257,18 +292,21 @@ TEST_F(QMMMTopologyPreprocessorTest, AlanineDipeptideWithLinksWithConstraints)
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of link bonds added: 2\n");
-    topPrep.preprocess(mtop.get(), 0.1144, logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyQMMMTopology(mtop.get()));
+
+    // expect two warnings about constrained bonds and qm system charge
+    ASSERT_EQ(wi.warningCount(), 2);
 }
 
 TEST_F(QMMMTopologyPreprocessorTest, RemovingQMVsites)
 {
     // Reference input vistes_test.top
     std::unique_ptr<gmx_mtop_t> mtop = makeMtopFromFile("vsite_test", "");
-    std::vector<Index> qmIndices     = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+    std::vector<int> qmIndices       = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
-    QMMMTopologyPreprocessor topPrep(qmIndices);
-    MDLogger                 logger;
-    WarningHandler           wi(true, 0);
+    WarningHandler wi(true, 0);
+    QMMMOptions    options = buildDefaultOptions(qmIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
@@ -285,12 +323,13 @@ TEST_F(QMMMTopologyPreprocessorTest, RemovingQMVsites)
             "Classical charges on them have been removed as well.\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 16\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 28\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
-                                        "Number of F_CONNBONDS \\(type 5 bonds\\) added: 15\n");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of InteractionFunction::ConnectBonds \\(type 5 bonds\\) added: 15\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 14\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 13\n");
-    topPrep.preprocess(mtop.get(), 0.0, logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyQMMMTopology(mtop.get()));
 }
 
 } // namespace test

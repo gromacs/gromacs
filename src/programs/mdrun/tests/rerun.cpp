@@ -195,7 +195,7 @@ TEST_P(MdrunRerunTest, WithinTolerances)
     // bd is much less reproducible in a rerun than the other integrators
     const int            toleranceScaleFactor = (integrator == "bd") ? 2 : 1;
     EnergyTermsToCompare energyTermsToCompare{ {
-            { interaction_function[F_EPOT].longname,
+            { interaction_function[InteractionFunction::PotentialEnergy].longname,
               relativeToleranceAsPrecisionDependentUlp(
                       10.0, 24 * toleranceScaleFactor, 40 * toleranceScaleFactor) },
     } };
@@ -255,12 +255,15 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
     mdpFieldValues["init-lambda-state"] = toString(initLambdaState);
 
     EnergyTermsToCompare energyTermsToCompare{
-        { { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 24, 32) },
-          { interaction_function[F_DVDL_COUL].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
-          { interaction_function[F_DVDL_VDW].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
-          { interaction_function[F_DVDL_BONDED].longname,
+        { { interaction_function[InteractionFunction::PotentialEnergy].longname,
+            relativeToleranceAsPrecisionDependentUlp(10.0, 24, 32) },
+          { interaction_function[InteractionFunction::dVCoulombdLambda].longname,
             relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
-          { interaction_function[F_DVDL_RESTRAINT].longname,
+          { interaction_function[InteractionFunction::dVvanderWaalsdLambda].longname,
+            relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
+          { interaction_function[InteractionFunction::dVbondeddLambda].longname,
+            relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
+          { interaction_function[InteractionFunction::dVrestraintdLambda].longname,
             relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) } }
     };
 

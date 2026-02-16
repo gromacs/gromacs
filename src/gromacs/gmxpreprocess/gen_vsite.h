@@ -39,6 +39,7 @@
 #include <optional>
 #include <vector>
 
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -60,22 +61,22 @@ class ArrayRef;
 struct VsiteTypeAndSign
 {
     //! The interaction type
-    std::optional<int> ftype;
+    std::optional<InteractionFunction> ftype;
     //! Tells whether we should swap the sign of vsites that can have different orientations
     bool swapSign = false;
 };
 
 //! Turn all hydrogens that can be turned into virtual sites into virtual sites
-void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-               PreprocessingAtomTypes*                atype,
-               t_atoms*                               at,
-               t_symtab*                              symtab,
-               std::vector<gmx::RVec>*                x,
-               gmx::ArrayRef<InteractionsOfType>      plist,
-               std::vector<VsiteTypeAndSign>*         vsiteTypeAndSign,
-               real                                   mHmult,
-               bool                                   bVSiteAromatics,
-               const std::filesystem::path&           ffdir);
+void do_vsites(gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
+               PreprocessingAtomTypes*                                         atype,
+               t_atoms*                                                        at,
+               t_symtab*                                                       symtab,
+               std::vector<gmx::RVec>*                                         x,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               std::vector<VsiteTypeAndSign>*                                  vsiteTypeAndSign,
+               real                                                            mHmult,
+               bool                                                            bVSiteAromatics,
+               const std::filesystem::path&                                    ffdir);
 
 /*! \brief Optionally, change masses of hydrogens
  *

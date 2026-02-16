@@ -78,9 +78,10 @@ TEST(TopSortTest, WorksOnEmptyIdef)
 
     gmx_sort_ilist_fe(&idef, emptyAtomInfo);
 
-    EXPECT_EQ(0, idef.numNonperturbedInteractions[F_BONDS]) << "empty idef has no perturbed bonds";
-    EXPECT_THAT(idef.il[F_BONDS].iatoms, IsEmpty());
-    EXPECT_THAT(idef.il[F_LJ14].iatoms, IsEmpty());
+    EXPECT_EQ(0, idef.numNonperturbedInteractions[InteractionFunction::Bonds])
+            << "empty idef has no perturbed bonds";
+    EXPECT_THAT(idef.il[InteractionFunction::Bonds].iatoms, IsEmpty());
+    EXPECT_THAT(idef.il[InteractionFunction::LennardJones14].iatoms, IsEmpty());
 }
 
 //! Helper function
@@ -120,24 +121,26 @@ TEST(TopSortTest, WorksOnIdefWithNoPerturbedInteraction)
     gmx_ffparams_t         forcefieldParams;
     InteractionDefinitions idef(forcefieldParams);
 
-    // F_BONDS
+    // InteractionFunction::Bonds
     std::array<int, 2> bondAtoms = { 0, 1 };
     forcefieldParams.iparams.push_back(makeUnperturbedBondParams(0.9, 1000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
 
-    // F_LJ14
+    // InteractionFunction::LennardJones14
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     std::vector<int32_t> atomInfo{ 0, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
-    EXPECT_EQ(1, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
+    EXPECT_EQ(1, idef.numNonperturbedInteractions[InteractionFunction::Bonds] / (NRAL(InteractionFunction::Bonds) + 1))
             << "idef with no perturbed bonds has no perturbed bonds";
-    EXPECT_EQ(1, idef.numNonperturbedInteractions[F_LJ14] / (NRAL(F_LJ14) + 1))
+    EXPECT_EQ(1,
+              idef.numNonperturbedInteractions[InteractionFunction::LennardJones14]
+                      / (NRAL(InteractionFunction::LennardJones14) + 1))
             << "idef with no perturbed LJ 1-4 has no perturbed LJ 1-4";
-    EXPECT_THAT(idef.il[F_BONDS].iatoms, Pointwise(Eq(), { 0, 0, 1 }));
-    EXPECT_THAT(idef.il[F_LJ14].iatoms, Pointwise(Eq(), { 1, 0, 1 }));
+    EXPECT_THAT(idef.il[InteractionFunction::Bonds].iatoms, Pointwise(Eq(), { 0, 0, 1 }));
+    EXPECT_THAT(idef.il[InteractionFunction::LennardJones14].iatoms, Pointwise(Eq(), { 1, 0, 1 }));
 }
 
 TEST(TopSortTest, WorksOnIdefWithPerturbedInteractions)
@@ -147,31 +150,36 @@ TEST(TopSortTest, WorksOnIdefWithPerturbedInteractions)
     gmx_ffparams_t         forcefieldParams;
     InteractionDefinitions idef(forcefieldParams);
 
-    // F_BONDS
+    // InteractionFunction::Bonds
     std::array<int, 2> bondAtoms = { 0, 1 };
     forcefieldParams.iparams.push_back(makeUnperturbedBondParams(0.9, 1000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     std::array<int, 2> perturbedBondAtoms = { 2, 3 };
     forcefieldParams.iparams.push_back(makePerturbedBondParams(0.9, 1000, 1.1, 4000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
 
-    // F_LJ14
+    // InteractionFunction::LennardJones14
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           perturbedBondAtoms);
     forcefieldParams.iparams.push_back(makePerturbedLJ14Params(100, 10000, 200, 20000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           perturbedBondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
     std::vector<int32_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedCharge, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
-    EXPECT_EQ(1, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
+    EXPECT_EQ(1, idef.numNonperturbedInteractions[InteractionFunction::Bonds] / (NRAL(InteractionFunction::Bonds) + 1))
             << "idef with a perturbed bond has a perturbed bond";
-    EXPECT_EQ(1, idef.numNonperturbedInteractions[F_LJ14] / (NRAL(F_LJ14) + 1))
+    EXPECT_EQ(1,
+              idef.numNonperturbedInteractions[InteractionFunction::LennardJones14]
+                      / (NRAL(InteractionFunction::LennardJones14) + 1))
             << "idef with perturbed LJ 1-4 has perturbed LJ 1-4";
-    EXPECT_THAT(idef.il[F_BONDS].iatoms, Pointwise(Eq(), { 0, 0, 1, 1, 2, 3 }));
-    EXPECT_THAT(idef.il[F_LJ14].iatoms, Pointwise(Eq(), { 2, 0, 1, 2, 2, 3, 3, 2, 3 }));
+    EXPECT_THAT(idef.il[InteractionFunction::Bonds].iatoms, Pointwise(Eq(), { 0, 0, 1, 1, 2, 3 }));
+    EXPECT_THAT(idef.il[InteractionFunction::LennardJones14].iatoms,
+                Pointwise(Eq(), { 2, 0, 1, 2, 2, 3, 3, 2, 3 }));
 }
 
 TEST(TopSortTest, SortsIdefWithPerturbedInteractions)
@@ -181,32 +189,37 @@ TEST(TopSortTest, SortsIdefWithPerturbedInteractions)
     gmx_ffparams_t         forcefieldParams;
     InteractionDefinitions idef(forcefieldParams);
 
-    // F_BONDS
+    // InteractionFunction::Bonds
     std::array<int, 2> perturbedBondAtoms = { 2, 3 };
     forcefieldParams.iparams.push_back(makePerturbedBondParams(0.9, 1000, 1.1, 4000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
     std::array<int, 2> bondAtoms = { 0, 1 };
     forcefieldParams.iparams.push_back(makeUnperturbedBondParams(0.9, 1000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
 
-    // F_LJ14
+    // InteractionFunction::LennardJones14
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           perturbedBondAtoms);
     forcefieldParams.iparams.push_back(makePerturbedLJ14Params(100, 10000, 200, 20000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           perturbedBondAtoms);
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
     std::vector<int32_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedCharge, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
-    EXPECT_EQ(1, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
+    EXPECT_EQ(1, idef.numNonperturbedInteractions[InteractionFunction::Bonds] / (NRAL(InteractionFunction::Bonds) + 1))
             << "idef with a perturbed bond has a perturbed bond";
-    EXPECT_EQ(1, idef.numNonperturbedInteractions[F_LJ14] / (NRAL(F_LJ14) + 1))
+    EXPECT_EQ(1,
+              idef.numNonperturbedInteractions[InteractionFunction::LennardJones14]
+                      / (NRAL(InteractionFunction::LennardJones14) + 1))
             << "idef with all perturbed LJ 1-4 has no non-perturbed LJ 1-4";
-    EXPECT_THAT(idef.il[F_BONDS].iatoms, Pointwise(Eq(), { 1, 0, 1, 0, 2, 3 }));
-    EXPECT_THAT(idef.il[F_LJ14].iatoms, Pointwise(Eq(), { 4, 0, 1, 2, 2, 3, 3, 2, 3 }));
+    EXPECT_THAT(idef.il[InteractionFunction::Bonds].iatoms, Pointwise(Eq(), { 1, 0, 1, 0, 2, 3 }));
+    EXPECT_THAT(idef.il[InteractionFunction::LennardJones14].iatoms,
+                Pointwise(Eq(), { 4, 0, 1, 2, 2, 3, 3, 2, 3 }));
 }
 
 TEST(TopSortTest, SortsMoreComplexIdefWithPerturbedInteractions)
@@ -217,40 +230,48 @@ TEST(TopSortTest, SortsMoreComplexIdefWithPerturbedInteractions)
     gmx_ffparams_t         forcefieldParams;
     InteractionDefinitions idef(forcefieldParams);
 
-    // F_BONDS
+    // InteractionFunction::Bonds
     std::array<int, 2> bondAtoms = { 0, 1 };
     forcefieldParams.iparams.push_back(makeUnperturbedBondParams(0.9, 1000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     std::array<int, 2> perturbedBondAtoms = { 2, 3 };
     forcefieldParams.iparams.push_back(makePerturbedBondParams(0.9, 1000, 1.1, 4000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
     std::array<int, 2> moreBondAtoms = { 4, 5 };
     forcefieldParams.iparams.push_back(makeUnperturbedBondParams(0.9, 1000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, moreBondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1, moreBondAtoms);
     std::array<int, 2> morePerturbedBondAtoms = { 6, 7 };
     forcefieldParams.iparams.push_back(makePerturbedBondParams(0.8, 100, 1.2, 6000));
-    idef.il[F_BONDS].push_back(forcefieldParams.iparams.size() - 1, morePerturbedBondAtoms);
+    idef.il[InteractionFunction::Bonds].push_back(forcefieldParams.iparams.size() - 1,
+                                                  morePerturbedBondAtoms);
 
-    // F_LJ14
+    // InteractionFunction::LennardJones14
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           perturbedBondAtoms);
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     forcefieldParams.iparams.push_back(makePerturbedLJ14Params(100, 10000, 200, 20000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, morePerturbedBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           morePerturbedBondAtoms);
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
-    idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, moreBondAtoms);
+    idef.il[InteractionFunction::LennardJones14].push_back(forcefieldParams.iparams.size() - 1,
+                                                           moreBondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
     std::vector<int32_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedCharge, 0, 0, 0, 0, 0 };
 
     gmx_sort_ilist_fe(&idef, atomInfo);
 
-    EXPECT_EQ(2, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
+    EXPECT_EQ(2, idef.numNonperturbedInteractions[InteractionFunction::Bonds] / (NRAL(InteractionFunction::Bonds) + 1))
             << "idef with some perturbed bonds has some perturbed bonds";
-    EXPECT_EQ(2, idef.numNonperturbedInteractions[F_LJ14] / (NRAL(F_LJ14) + 1))
+    EXPECT_EQ(2,
+              idef.numNonperturbedInteractions[InteractionFunction::LennardJones14]
+                      / (NRAL(InteractionFunction::LennardJones14) + 1))
             << "idef with some perturbed LJ 1-4 has some non-perturbed LJ 1-4";
-    EXPECT_THAT(idef.il[F_BONDS].iatoms, Pointwise(Eq(), { 0, 0, 1, 2, 4, 5, 1, 2, 3, 3, 6, 7 }));
-    EXPECT_THAT(idef.il[F_LJ14].iatoms, Pointwise(Eq(), { 5, 0, 1, 7, 4, 5, 4, 2, 3, 6, 6, 7 }));
+    EXPECT_THAT(idef.il[InteractionFunction::Bonds].iatoms,
+                Pointwise(Eq(), { 0, 0, 1, 2, 4, 5, 1, 2, 3, 3, 6, 7 }));
+    EXPECT_THAT(idef.il[InteractionFunction::LennardJones14].iatoms,
+                Pointwise(Eq(), { 5, 0, 1, 7, 4, 5, 4, 2, 3, 6, 6, 7 }));
 }
 
 } // namespace

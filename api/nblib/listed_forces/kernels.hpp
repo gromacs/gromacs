@@ -475,7 +475,7 @@ inline auto threeCenterKernel(T dr, const HarmonicAngle& angle)
 
 //! Cosine based (GROMOS-96) Angle
 template<class T>
-inline auto threeCenterKernel(T dr, const G96Angle& angle)
+inline std::tuple<T, T> threeCenterKernel(T dr, const G96Angle& angle)
 {
     auto costheta = std::cos(dr);
     auto feTuple  = g96ScalarForce(angle.forceConstant(), angle.equilConstant(), costheta);

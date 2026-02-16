@@ -291,11 +291,11 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
         sfree(tgr);
         delete[] trng;
 #else
-        gmx::UniformIntDistribution<int> dist(0, isize - 1);
+        gmx::UniformIntDistribution<int> uniformDist(0, isize - 1);
         for (int64_t mc = 0; mc < mc_max; mc++)
         {
-            i = dist(rng); // [0,isize-1]
-            j = dist(rng); // [0,isize-1]
+            i = uniformDist(rng); // [0,isize-1]
+            j = uniformDist(rng); // [0,isize-1]
             if (i != j)
             {
                 pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]])) / binwidth))] +=

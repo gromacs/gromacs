@@ -33,7 +33,7 @@ Using AWH in conjuction with bias sharing between several simulations
 caused mdrun to segfault if more than one rank per simulation was used
 but no separate PME ranks were present. This could not produce incorrect
 results.
-Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.  
+Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.
 
 :issue:`5394`
 
@@ -141,7 +141,7 @@ the separate muParser package if installed.
 libgromacs now only links to MPI libraries when explicitly required
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Formerly ``gmxapi`` could have erroneously triggered GROMACS to compile and link with an
+Formerly ``gmxapi`` could have erroneously triggered |Gromacs| to compile and link with an
 MPI library. This is now fixed.
 
 :issue:`5395`

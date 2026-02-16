@@ -181,10 +181,10 @@ static void get_orires_parms(const char* topnm, t_inputrec* ir, int* nor, int* n
     top = gmx_mtop_t_to_t_topology(&mtop, FALSE);
 
     ip    = top.idef.iparams;
-    iatom = top.idef.il[F_ORIRES].iatoms;
+    iatom = top.idef.il[InteractionFunction::OrientationRestraints].iatoms;
 
     /* Count how many distance restraint there are... */
-    nb = top.idef.il[F_ORIRES].nr;
+    nb = top.idef.il[InteractionFunction::OrientationRestraints].nr;
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No orientation restraints in topology!\n");
@@ -209,16 +209,16 @@ static void get_orires_parms(const char* topnm, t_inputrec* ir, int* nor, int* n
 
 static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, const InteractionDefinitions& idef)
 {
-    int   i, j, k, type, ftype, natom;
-    real* b;
-    int * ind, *pair;
-    int   nb, label1;
+    InteractionFunction ftype;
+    real*               b;
+    int *               ind, *pair;
+    int                 nb, label1;
 
-    gmx::ArrayRef<const t_functype> functype = idef.functype;
-    gmx::ArrayRef<const t_iparams>  iparams  = idef.iparams;
+    gmx::ArrayRef<const InteractionFunction> functype = idef.functype;
+    gmx::ArrayRef<const t_iparams>           iparams  = idef.iparams;
 
     /* Count how many distance restraint there are... */
-    nb = idef.il[F_DISRES].size();
+    nb = idef.il[InteractionFunction::DistanceRestraints].size();
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No distance restraints in topology!\n");
@@ -234,7 +234,7 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, co
     for (gmx::Index i = 0; i < functype.ssize(); i++)
     {
         ftype = functype[i];
-        if (ftype == F_DISRES)
+        if (ftype == InteractionFunction::DistanceRestraints)
         {
 
             label1  = iparams[i].disres.label;
@@ -247,8 +247,9 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, co
 
     /* Fill the index array */
     label1                          = -1;
-    const InteractionList&   disres = idef.il[F_DISRES];
+    const InteractionList&   disres = idef.il[InteractionFunction::DistanceRestraints];
     gmx::ArrayRef<const int> iatom  = disres.iatoms;
+    int                      i, j, k, type, natom;
     for (i = j = k = 0; (i < disres.size());)
     {
         type  = iatom[i];
@@ -430,8 +431,6 @@ int gmx_nmr(int argc, char* argv[])
     double   sumaver, sumt;
     int *    set = nullptr, i, j, k, nset, sss;
     std::vector<std::string> pairleg, odtleg, otenleg, leg;
-    const char *             anm_j, *anm_k, *resnm_j, *resnm_k;
-    int                      resnr_j, resnr_k;
     const char*              orinst_sub = "@ subtitle \"instantaneous\"\n";
     gmx_output_env_t*        oenv;
     t_enxblock*              blk_disre = nullptr;
@@ -660,9 +659,9 @@ int gmx_nmr(int argc, char* argv[])
             blk_disre = find_block_id_enxframe(&fr, enxDISRE, nullptr);
             if (bDisRe && bDRAll && leg.empty() && blk_disre)
             {
-                const InteractionList&   ilist = top->idef.il[F_DISRES];
-                gmx::ArrayRef<const int> fa    = ilist.iatoms;
-                const t_iparams*         ip    = top->idef.iparams.data();
+                const InteractionList& ilist = top->idef.il[InteractionFunction::DistanceRestraints];
+                gmx::ArrayRef<const int> fa = ilist.iatoms;
+                const t_iparams*         ip = top->idef.iparams.data();
                 if (blk_disre->nsub != 2 || (blk_disre->sub[0].nr != blk_disre->sub[1].nr))
                 {
                     gmx_incons("Number of disre sub-blocks not equal to 2");
@@ -677,16 +676,20 @@ int gmx_nmr(int argc, char* argv[])
                               ndisre,
                               ilist.size() / 3);
                 }
-                int molb = 0;
+                MTopLookUp mTopLookUp(*topInfo.mtop());
                 for (i = 0; i < ndisre; i++)
                 {
                     j = fa[3 * i + 1];
                     k = fa[3 * i + 2];
                     GMX_ASSERT(topInfo.hasTopology(), "Need to have a valid topology");
-                    mtopGetAtomAndResidueName(*topInfo.mtop(), j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
-                    mtopGetAtomAndResidueName(*topInfo.mtop(), k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
-                    pairleg.emplace_back(gmx::formatString(
-                            "%d %s %d %s (%d)", resnr_j, anm_j, resnr_k, anm_k, ip[fa[3 * i]].disres.label));
+                    const auto resJ = mTopLookUp.getAtomAndResidueNameAndNumber(j);
+                    const auto resK = mTopLookUp.getAtomAndResidueNameAndNumber(k);
+                    pairleg.emplace_back(gmx::formatString("%d %s %d %s (%d)",
+                                                           resJ.residueNumber,
+                                                           resJ.atomName,
+                                                           resK.residueNumber,
+                                                           resK.atomName,
+                                                           ip[fa[3 * i]].disres.label));
                 }
                 set = select_it(ndisre, pairleg, &nset);
                 for (i = 0; (i < nset); i++)

@@ -214,6 +214,8 @@ public:
     std::vector<std::unique_ptr<SystemMomentum>> systemMomentumWork;
     //! Cosine acceleration data
     t_cos_acc cosacc;
+    //! Last step at which kinetic energy terms were accumulated over the ranks
+    int64_t lastComputeGlobalsStep = -2;
 
     ~gmx_ekindata_t();
 

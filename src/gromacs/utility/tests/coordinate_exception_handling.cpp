@@ -122,10 +122,16 @@ TEST(CoordinateExceptionHandlingTest, CallablesWithoutReturnValueThatThrowAlways
                  std::exception);
     EXPECT_THROW(coordinateExceptionHandling(MPI_COMM_WORLD, FunctionObjectReturningVoidThatThrows{}),
                  std::exception);
+    // oneAPI 2025.3 warns about the absence of a noreturn attribute
+    // when compiling for C++17, but actually using an attribute is
+    // not supported until C++23. Fortunately we just don't care about
+    // this for a test case.
+    CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn");
     const auto testLambda = []() { throw std::exception(); };
     EXPECT_THROW(coordinateExceptionHandling(MPI_COMM_WORLD, testLambda), std::exception);
     const std::function f{ []() { throw std::exception(); } };
     EXPECT_THROW(coordinateExceptionHandling(MPI_COMM_WORLD, f), std::exception);
+    CLANG_DIAGNOSTIC_RESET;
 }
 
 } // namespace

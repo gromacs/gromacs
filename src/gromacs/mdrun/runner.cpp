@@ -82,6 +82,7 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
@@ -126,6 +127,8 @@
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/mdrunutility/plainpairlistranges.h"
+#include "gromacs/mdrunutility/print_validation.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/atominfo.h"
@@ -238,7 +241,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 
     if (std::getenv("GMX_CUDA_GRAPH") != nullptr)
     {
-        if (GMX_HAVE_GPU_GRAPH_SUPPORT)
+        if (GpuConfigurationCapabilities::GpuGraph)
         {
             devFlags.enableCudaGraphs = true;
             GMX_LOG(mdlog.warning)
@@ -312,9 +315,9 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
     const bool pmeGpuDecompositionSupported =
-            (canUseGpuAwareMpi && (GMX_GPU_CUDA || GMX_GPU_SYCL)
-             && ((pmeRunMode == PmeRunMode::GPU && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
-                 || pmeRunMode == PmeRunMode::Mixed));
+            canUseGpuAwareMpi && GpuConfigurationCapabilities::PpPmeDirectComm
+            && ((GpuConfigurationCapabilities::PmeDecomposition && pmeRunMode == PmeRunMode::GPU)
+                || (GpuConfigurationCapabilities::Pme && pmeRunMode == PmeRunMode::Mixed));
 
     const bool forcePmeGpuDecomposition = std::getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr;
 
@@ -398,6 +401,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.mdrunOptions    = mdrunOptions;
     newRunner.domdecOptions   = domdecOptions;
     newRunner.nbpu_opt        = nbpu_opt;
+    newRunner.nbfe_opt        = nbfe_opt;
     newRunner.pme_opt         = pme_opt;
     newRunner.pme_fft_opt     = pme_fft_opt;
     newRunner.bonded_opt      = bonded_opt;
@@ -638,6 +642,7 @@ static void finish_run(FILE*                     fplog,
                        gmx_walltime_accounting_t walltime_accounting,
                        nonbonded_verlet_t*       nbv,
                        const gmx_pme_t*          pme,
+                       const int                 nratoms,
                        gmx_bool                  bWriteStat)
 {
     double delta_t = 0;
@@ -763,7 +768,8 @@ static void finish_run(FILE*                     fplog,
                        walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
                        delta_t,
                        nbfs,
-                       mflop);
+                       mflop,
+                       nratoms);
         }
         if (bWriteStat)
         {
@@ -773,7 +779,8 @@ static void finish_run(FILE*                     fplog,
                        walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
                        delta_t,
                        nbfs,
-                       mflop);
+                       mflop,
+                       nratoms);
         }
     }
 }
@@ -789,8 +796,9 @@ static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
     // WholeMoleculeTransform and GPU-direct does not support filler particles.
     const bool useEwaldSurfaceCorrection =
             (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
-    const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-    const bool needWholeMolecules        = useEwaldSurfaceCorrection || haveOrientationRestraints;
+    const bool haveOrientationRestraints =
+            (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0);
+    const bool needWholeMolecules = useEwaldSurfaceCorrection || haveOrientationRestraints;
     const bool canHaveFillerParticlesInLocalState =
             useDomainDecomposition
             && ((haveSinglePPRank && !needWholeMolecules) || (!haveSinglePPRank && !useGpuDirectHalo));
@@ -845,11 +853,12 @@ int Mdrunner::mdrunner()
         userGpuTaskAssignment = parseUserTaskAssignmentString(hw_opt.userGpuTaskAssignment);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    auto nonbondedTarget = findTaskTarget(nbpu_opt);
-    auto pmeTarget       = findTaskTarget(pme_opt);
-    auto pmeFftTarget    = findTaskTarget(pme_fft_opt);
-    auto bondedTarget    = findTaskTarget(bonded_opt);
-    auto updateTarget    = findTaskTarget(update_opt);
+    auto nonbondedTarget   = findTaskTarget(nbpu_opt);
+    auto nonbondedFeTarget = findTaskTarget(nbfe_opt);
+    auto pmeTarget         = findTaskTarget(pme_opt);
+    auto pmeFftTarget      = findTaskTarget(pme_fft_opt);
+    auto bondedTarget      = findTaskTarget(bonded_opt);
+    auto updateTarget      = findTaskTarget(update_opt);
 
     FILE* fplog = nullptr;
     // If we are appending, we don't write log output because we need
@@ -1003,11 +1012,12 @@ int Mdrunner::mdrunner()
     // Note that when bonded interactions run on a GPU they always run
     // alongside a nonbonded task, so do not influence task assignment
     // even though they affect the force calculation workload.
-    bool useGpuForNonbonded = false;
-    bool useGpuForPme       = false;
-    bool useGpuForBonded    = false;
-    bool useGpuForUpdate    = false;
-    bool gpusWereDetected   = hwinfo_->ngpu_compatible_tot > 0;
+    bool useGpuForNonbonded   = false;
+    bool useGpuForNonbondedFE = false;
+    bool useGpuForPme         = false;
+    bool useGpuForBonded      = false;
+    bool useGpuForUpdate      = false;
+    bool gpusWereDetected     = hwinfo_->ngpu_compatible_tot > 0;
     try
     {
         // It's possible that there are different numbers of GPUs on
@@ -1029,7 +1039,8 @@ int Mdrunner::mdrunner()
                                                                 canUseGpuForNonbonded,
                                                                 mdrunOptions.reproducible,
                                                                 gpusWereDetected);
-        useGpuForPme       = decideWhetherToUseGpusForPme(useGpuForNonbonded,
+        useGpuForNonbondedFE = decideWhetherToUseGpusForNonbondedFE(useGpuForNonbonded, nonbondedFeTarget);
+        useGpuForPme    = decideWhetherToUseGpusForPme(useGpuForNonbonded,
                                                     pmeTarget,
                                                     pmeFftTarget,
                                                     userGpuTaskAssignment,
@@ -1037,7 +1048,7 @@ int Mdrunner::mdrunner()
                                                     mpiCommSimulation.size(),
                                                     domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
-        useGpuForBonded    = decideWhetherToUseGpusForBonded(
+        useGpuForBonded = decideWhetherToUseGpusForBonded(
                 useGpuForNonbonded, useGpuForPme, bondedTarget, *inputrec, mtop, domdecOptions.numPmeRanks, gpusWereDetected);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -1220,7 +1231,7 @@ int Mdrunner::mdrunner()
                 globalState.get(),
                 replExParams.exchangeInterval > 0);
 
-    if (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0 && isSimulationMainRank)
+    if (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0 && isSimulationMainRank)
     {
         extendStateWithOriresHistory(mtop, *inputrec, globalState.get());
     }
@@ -1375,21 +1386,22 @@ int Mdrunner::mdrunner()
     {
         const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
 
-        useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
-                                                         updateGroups.useUpdateGroups(),
-                                                         pmeRunMode,
-                                                         domdecOptions.numPmeRanks > 0,
-                                                         useGpuForNonbonded,
-                                                         updateTarget,
-                                                         gpusWereDetected,
-                                                         *inputrec,
-                                                         mtop,
-                                                         doEssentialDynamics,
-                                                         gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                                                         haveFrozenAtoms,
-                                                         useModularSimulator,
-                                                         doRerun,
-                                                         mdlog);
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(
+                useDomainDecomposition,
+                updateGroups.useUpdateGroups(),
+                pmeRunMode,
+                domdecOptions.numPmeRanks > 0,
+                useGpuForNonbonded,
+                updateTarget,
+                gpusWereDetected,
+                *inputrec,
+                mtop,
+                doEssentialDynamics,
+                gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0,
+                haveFrozenAtoms,
+                useModularSimulator,
+                doRerun,
+                mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -1403,6 +1415,7 @@ int Mdrunner::mdrunner()
                                                          inputrec->useMts,
                                                          replExParams.exchangeInterval > 0,
                                                          (inputrec->eSwapCoords != SwapType::No),
+                                                         gpusWereDetected,
                                                          mdlog);
 
     // Initialize development feature flags that enabled by environment variable
@@ -1493,6 +1506,7 @@ int Mdrunner::mdrunner()
             simulationCommunicator,
             physicalNodeComm,
             nonbondedTarget,
+            nonbondedFeTarget,
             pmeTarget,
             bondedTarget,
             updateTarget,
@@ -1536,11 +1550,7 @@ int Mdrunner::mdrunner()
         localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        domdec = ddBuilder->build(&atomSets,
-                                  localTopology,
-                                  EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
-                                  haveFillerParticlesInLocalState,
-                                  &observablesReducerBuilder);
+        domdec = ddBuilder->build(&atomSets, haveFillerParticlesInLocalState, &observablesReducerBuilder);
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
 
@@ -1614,6 +1624,7 @@ int Mdrunner::mdrunner()
             havePPDomainDecomposition(cr->dd),
             haveSeparatePmeRank,
             useGpuForNonbonded,
+            useGpuForNonbondedFE,
             pmeRunMode,
             useGpuForBonded,
             useGpuForUpdate,
@@ -1637,7 +1648,8 @@ int Mdrunner::mdrunner()
                                          ? "uses"
                                          : "does not use");
 
-    if (runScheduleWork.simulationWork.useGpuDirectCommunication && GMX_GPU_CUDA)
+    if (runScheduleWork.simulationWork.useGpuDirectCommunication
+        && gmx::GpuConfigurationCapabilities::DisableEventCounting)
     {
         // Don't enable event counting with GPU Direct comm, see #3988.
         gmx::internal::disableGpuEventConsumptionCounting();
@@ -1792,14 +1804,39 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         setupNotifier.notify(startingBehavior);
         setupNotifier.notify(EnsembleTemperature{ *inputrec });
-
-        // Now that all simulation setup notifications have been emitted,
-        // set up the simulation run notification subscriptions
-        mdModules_->subscribeToSimulationRunNotifications();
+        PlainPairlistRanges plainPairlistRanges(mtop, *inputrec);
+        setupNotifier.notify(&plainPairlistRanges);
+        MDModulesDirectProvider mdModuleCoulombDirectProvider;
+        setupNotifier.notify(&mdModuleCoulombDirectProvider);
 
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
         fr->forceProviders = mdModules_->initForceProviders(wcycle.get());
+
+        std::optional<bool> anMDModuleProvidesDirectCoulomb = mdModuleCoulombDirectProvider.isDirectProvider;
+        if (setupNotifier.haveSubscribers<MDModulesDirectProvider*>()
+            && !anMDModuleProvidesDirectCoulomb.has_value())
+        {
+            GMX_THROW(gmx::APIError(
+                    "At least one MD module subscribed to the direct provider notification, "
+                    "but none reported whether it provides direct interactions."));
+        }
+        if (!setupNotifier.haveSubscribers<MDModulesDirectProvider*>()
+            && anMDModuleProvidesDirectCoulomb.has_value())
+        {
+            GMX_THROW(
+                    gmx::APIError("No MD module subscribed to the direct provider notification, "
+                                  "but direct interactions provider is reported."));
+        }
+
+        logValidationMessages(mdlog,
+                              runScheduleWork.simulationWork,
+                              haveFillerParticlesInLocalState,
+                              fn2ftp(ftp2fn(efTRN, filenames.size(), filenames.data())) == efH5MD,
+                              useModularSimulator,
+                              inputrec->eI,
+                              deviceInfo);
+
         init_forcerec(fplog,
                       mdlog,
                       runScheduleWork.simulationWork,
@@ -1812,13 +1849,42 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),
                       opt2fns("-tableb", filenames.size(), filenames.data()),
-                      pforce);
+                      pforce,
+                      anMDModuleProvidesDirectCoulomb);
+
         // Dirty hack, for fixing disres and orires should be made mdmodules
         fr->fcdata->disres = disresdata;
-        if (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0)
+        if (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0)
         {
             fr->fcdata->orires = std::make_unique<t_oriresdata>(
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);
+        }
+
+        // Now that all simulation setup notifications have been emitted,
+        // set up the simulation run notification subscriptions
+        mdModules_->subscribeToSimulationRunNotifications();
+
+        if (mdModules_->notifiers().simulationRunNotifier_.haveSubscribers<const MDModulesPairlistConstructedSignal&>())
+        {
+            if (plainPairlistRanges.ranges().empty())
+            {
+                GMX_THROW(gmx::APIError(
+                        "At least one MDModule has subscribed to the pairlist construction signal, "
+                        "but no MDModules requested a range for the plain pairlist"));
+            }
+
+            fr->plainPairlistRange = *std::max_element(plainPairlistRanges.ranges().begin(),
+                                                       plainPairlistRanges.ranges().end());
+            if (fr->plainPairlistRange.value() > inputrec->rlist)
+            {
+                // This is not nice. We could consider increasing rlist instead.
+                const std::string mesg = gmx::formatString(
+                        "MDModules request a plain pairlist with a range of %f nm, which is larger "
+                        "than the normal pairlist range of %f nm",
+                        fr->plainPairlistRange.value(),
+                        inputrec->rlist);
+                GMX_THROW(gmx::APIError(mesg));
+            }
         }
 
         deform = buildBoxDeformation(
@@ -1860,6 +1926,7 @@ int Mdrunner::mdrunner()
                 cr->dd,
                 *hwinfo_,
                 runScheduleWork.simulationWork.useGpuNonbonded,
+                runScheduleWork.simulationWork.useGpuNonbondedFE,
                 deviceStreamManager.get(),
                 mtop,
                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
@@ -2074,20 +2141,12 @@ int Mdrunner::mdrunner()
          */
         gmx_check_thread_affinity_set(
                 mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), TRUE, libraryWorldCommunicator);
-
-        int numThreadsOnThisNode, intraNodeThreadOffset;
-        analyzeThreadsOnThisNode(
-                physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode, &intraNodeThreadOffset);
-
-        /* Set the CPU affinity */
-        gmx_set_thread_affinity(mdlog,
-                                cr->commMySim,
-                                &hw_opt,
-                                *hwinfo_->hardwareTopology,
-                                numThreadsOnThisRank,
-                                numThreadsOnThisNode,
-                                intraNodeThreadOffset,
-                                nullptr);
+    }
+    {
+        /* We always call gmx_set_thread_affinity since it might want to write things to log
+         * even with ThreadAffinity::Off */
+        gmx_set_thread_affinity(
+                mdlog, cr->commMySim, physicalNodeComm, &hw_opt, *hwinfo_->hardwareTopology, numThreadsOnThisRank, nullptr);
     }
 
     if (EI_DYNAMICS(inputrec->eI))
@@ -2367,6 +2426,7 @@ int Mdrunner::mdrunner()
                    walltime_accounting,
                    fr ? fr->nbv.get() : nullptr,
                    pmedata,
+                   mtop.natoms,
                    EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -2423,21 +2483,24 @@ int Mdrunner::mdrunner()
             physicalNodeComm.barrier();
         }
 
-        const bool haveDetectedOrForcedCudaAwareMpi =
-                (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
-                 || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-        const bool haveDetectedOrForcedHipAwareMpi =
-                (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported
-                 || gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-
-        if (!haveDetectedOrForcedCudaAwareMpi && !haveDetectedOrForcedHipAwareMpi)
+        if (GMX_GPU)
         {
-            // Don't reset GPU in case of GPU-AWARE MPI
-            // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
-            // resetting the device before MPI_Finalize() results in crashes inside UCX
-            // This can also cause issues in tests that invoke mdrunner() multiple
-            // times in the same process; ref #3952.
-            releaseDevice();
+            const bool haveDetectedOrForcedCudaAwareMpi =
+                    (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+                     || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+            const bool haveDetectedOrForcedHipAwareMpi =
+                    (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+                     || gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+
+            if (!haveDetectedOrForcedCudaAwareMpi && !haveDetectedOrForcedHipAwareMpi)
+            {
+                // Don't reset GPU in case of GPU-AWARE MPI
+                // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
+                // resetting the device before MPI_Finalize() results in crashes inside UCX
+                // This can also cause issues in tests that invoke mdrunner() multiple
+                // times in the same process; ref #3952.
+                releaseDevice();
+            }
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -2528,6 +2591,8 @@ public:
 
     void addNonBonded(const char* nbpu_opt);
 
+    void addNonBondedFETaskAssignment(const char* nbfe_opt);
+
     void addPME(const char* pme_opt_, const char* pme_fft_opt_);
 
     void addBondedTaskAssignment(const char* bonded_opt);
@@ -2551,6 +2616,7 @@ private:
     // \todo Clarify source(s) of default parameters.
 
     const char* nbpu_opt_    = nullptr;
+    const char* nbfe_opt_    = nullptr;
     const char* pme_opt_     = nullptr;
     const char* pme_fft_opt_ = nullptr;
     const char* bonded_opt_  = nullptr;
@@ -2729,6 +2795,17 @@ Mdrunner Mdrunner::BuilderImplementation::build()
         GMX_THROW(gmx::APIError("MdrunnerBuilder::addNonBonded() is required before build()"));
     }
 
+    if (nbfe_opt_)
+    {
+        newRunner.nbfe_opt = nbfe_opt_;
+    }
+    else
+    {
+        GMX_THROW(
+                gmx::APIError("MdrunnerBuilder::    void addNonBondedFETaskAssignment(); is "
+                              "required before build()"));
+    }
+
     if (pme_opt_ && pme_fft_opt_)
     {
         newRunner.pme_opt     = pme_opt_;
@@ -2759,7 +2836,6 @@ Mdrunner Mdrunner::BuilderImplementation::build()
                 "MdrunnerBuilder::addUpdateTaskAssignment() is required before build()  "));
     }
 
-
     newRunner.restraintManager_ = std::make_unique<gmx::RestraintManager>();
 
     if (stopHandlerBuilder_)
@@ -2782,6 +2858,11 @@ void Mdrunner::BuilderImplementation::addHardwareDetectionResult(const gmx_hw_in
 void Mdrunner::BuilderImplementation::addNonBonded(const char* nbpu_opt)
 {
     nbpu_opt_ = nbpu_opt;
+}
+
+void Mdrunner::BuilderImplementation::addNonBondedFETaskAssignment(const char* nbfe_opt)
+{
+    nbfe_opt_ = nbfe_opt;
 }
 
 void Mdrunner::BuilderImplementation::addPME(const char* pme_opt, const char* pme_fft_opt)
@@ -2873,6 +2954,12 @@ MdrunnerBuilder& MdrunnerBuilder::addReplicaExchange(const ReplicaExchangeParame
 MdrunnerBuilder& MdrunnerBuilder::addNonBonded(const char* nbpu_opt)
 {
     impl_->addNonBonded(nbpu_opt);
+    return *this;
+}
+
+MdrunnerBuilder& MdrunnerBuilder::addNonBondedFETaskAssignment(const char* nbfe_opt)
+{
+    impl_->addNonBondedFETaskAssignment(nbfe_opt);
     return *this;
 }
 

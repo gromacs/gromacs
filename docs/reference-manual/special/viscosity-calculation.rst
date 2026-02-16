@@ -12,7 +12,7 @@ The viscosity can be calculated from an equilibrium simulation using an
 Einstein relation:
 
 .. math::  \eta = \frac{1}{2}\frac{V}{k_B T} \lim_{t \rightarrow \infty}
-           \frac{\mbox{d}}{\mbox{d} t} \left\langle 
+           \frac{\mbox{d}}{\mbox{d} t} \left\langle
            \left( \int_{t_0}^{{t_0}+t} P_{xz}(t') \mbox{d} t' \right)^2
            \right\rangle_{t_0}
            :label: eqneinsteinrelation

@@ -480,10 +480,10 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
 
         if (!xp.empty())
         {
-            real cw = std::cos(xp[ii][cosdim] * twopi_box);
-            real sw = std::sin(xp[ii][cosdim] * twopi_box);
-            sum_cmp += static_cast<double>(cw * m);
-            sum_smp += static_cast<double>(sw * m);
+            real cwUpdated = std::cos(xp[ii][cosdim] * twopi_box);
+            real swUpdated = std::sin(xp[ii][cosdim] * twopi_box);
+            sum_cmp += static_cast<double>(cwUpdated * m);
+            sum_smp += static_cast<double>(swUpdated * m);
         }
     }
 
@@ -542,7 +542,7 @@ void pull_calc_coms(const gmx::MpiComm&  mpiComm,
         {
             if (pbc.box[m][pull->cosdim] != 0)
             {
-                gmx_fatal(FARGS, "Can not do cosine weighting for trilinic dimensions");
+                gmx_fatal(FARGS, "Can not do cosine weighting for triclinic dimensions");
             }
         }
         twopi_box = 2.0 * M_PI / pbc.box[pull->cosdim][pull->cosdim];

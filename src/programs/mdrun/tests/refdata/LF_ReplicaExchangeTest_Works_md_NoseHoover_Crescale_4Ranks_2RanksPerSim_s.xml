@@ -7,7 +7,7 @@
 Repl  There are 2 replicas:
 Replica-exchange molecular dynamics method for protein folding
 Repl  Using Constant Pressure REMD.
-Replica-exchange {M}onte {C}arlo method for the isobaric-isothermal ensemble
+Replica-exchange Monte Carlo method for the isobaric-isothermal ensemble
 Replica exchange in temperature
 Repl  p  1.00  1.02
 Replica exchange interval: 4
@@ -853,7 +853,7 @@ Repl  0.6667  0.3333  1
 Repl  There are 2 replicas:
 Replica-exchange molecular dynamics method for protein folding
 Repl  Using Constant Pressure REMD.
-Replica-exchange {M}onte {C}arlo method for the isobaric-isothermal ensemble
+Replica-exchange Monte Carlo method for the isobaric-isothermal ensemble
 Replica exchange in temperature
 Repl  p  1.00  1.02
 Replica exchange interval: 4

@@ -306,4 +306,7 @@ std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& 
  * \throw InvalidInputError if the user's choices would lead to a crash */
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo);
 
+//! Get maximum grid size if backend supports it.
+int maximumGridSize(const DeviceInformation& deviceInfo);
+
 #endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

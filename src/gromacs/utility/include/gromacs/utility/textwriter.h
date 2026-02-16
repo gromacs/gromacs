@@ -177,7 +177,7 @@ public:
     /*! \brief Changes wrapping settings to increase indentation and
      * returns a helper object that will restore the indentation when
      * the helper object goes out of scope. */
-    ScopedIndenter addScopedIndentation(const int extraIndentation);
+    ScopedIndenter addScopedIndentation(int extraIndentation);
 
     /*! \brief
      * Writes a string to the stream.

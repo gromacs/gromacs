@@ -177,6 +177,16 @@
   artifacts:
     paths:
       - regressiontests/gmxtest.xml
+      - regressiontests/*/grompp.warn
+      - regressiontests/*/grompp.out
+      - regressiontests/*/grompp.err
+      - regressiontests/*/mdrun.out
+      - regressiontests/*/mdrun.err
+      - regressiontests/*/check*.out
+      - regressiontests/*/check*.err
+      - regressiontests/*/make_edi.out
+      - regressiontests/*/make_edi.err
+
     when: always
     expire_in: 1 week
 
@@ -187,7 +197,7 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-19-mpi.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-19-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-19-riscv.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-18-cuda-12.6.3.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-20-cuda-12.8.1.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-ASAN.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-static-analyzer.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-TSAN.gitlab-ci.yml'
@@ -197,19 +207,19 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-12-cxx-20.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-12-cuda-12.1.0.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-12-cuda-12.1.0-mpi.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-13-cuda-12.5.1.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-13-cuda-12.5.1-cudagraphs.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-13-cuda-12.5.1-release.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-13-cuda-12.5.1-nvshmem.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-14-cuda-13.0.2.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-14-cuda-13.0.2-cudagraphs.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-14-cuda-13.0.2-release.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-14-cuda-13.0.2-nvshmem.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-12-opencl-release.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.nvcxx-24.7-cuda-12.5.1.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.nvcxx-25.9-cuda-13.0.2.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-11-cp2k-9.1-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-14-cp2k-2024.2-nightly.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-24.10.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-23.10.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.1-sycl-impi-gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.1-opencl-release.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.1-sycl.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-25.10.0.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-24.02.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.3-sycl-impi.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.3-opencl-release.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.3-sycl.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.0-amd-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.0-nvidia-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.amdclang-rocm-5.7.1.gitlab-ci.yml'

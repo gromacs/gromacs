@@ -125,10 +125,15 @@ TEST_F(NNPotOptionsTest, DefaultParameters)
     checker.checkBoolean(defaultParams.active_, "active");
     checker.checkString(defaultParams.modelFileName_, "modelFileName");
     checker.checkString(defaultParams.inputGroup_, "inputGroup");
+    checker.checkString(defaultParams.linkType_, "linkType");
+    checker.checkReal(defaultParams.linkDistance_, "linkDistance");
+    checker.checkReal(defaultParams.pairCutoff_, "pairCutoff");
     checker.checkString(defaultParams.modelInput_[0], "modelInput1");
     checker.checkString(defaultParams.modelInput_[1], "modelInput2");
     checker.checkString(defaultParams.modelInput_[2], "modelInput3");
     checker.checkString(defaultParams.modelInput_[3], "modelInput4");
+    checker.checkString(defaultParams.modelInput_[4], "modelInput5");
+    checker.checkString(defaultParams.modelInput_[5], "modelInput6");
 }
 
 TEST_F(NNPotOptionsTest, OptionSetsActive)
@@ -185,6 +190,7 @@ TEST_F(NNPotOptionsTest, OutputDefaultValuesWhenActive)
     checker.checkString(stream.toString(), "Mdp output");
 }
 
+// Temporary skip while we iron out version incompatibilities in CI
 TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
 {
     // Set nnpot-active = true
@@ -201,18 +207,19 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
     WarningHandler warninp(true, 0);
     nnpotOptions.setWarninp(&warninp);
 
-    // Copy internal parameters
-    const NNPotParameters& params           = nnpotOptions.parameters();
-    auto                   nnpIndicesBefore = params.nnpIndices_;
-    auto                   mmIndicesBefore  = params.mmIndices_;
 
     KeyValueTreeBuilder builder;
     if (GMX_TORCH)
     {
-        EXPECT_NO_THROW(nnpotOptions.writeParamsToKvt(builder.rootObject()));
+        // Copy internal parameters
+        const NNPotParameters& params           = nnpotOptions.parameters();
+        auto                   nnpIndicesBefore = params.nnpIndices_;
+        auto                   mmIndicesBefore  = params.mmIndices_;
+
+        ASSERT_NO_THROW(nnpotOptions.writeParamsToKvt(builder.rootObject()));
         const auto inputTree = builder.build();
 
-        EXPECT_NO_THROW(nnpotOptions.readParamsFromKvt(inputTree));
+        ASSERT_NO_THROW(nnpotOptions.readParamsFromKvt(inputTree));
 
         // Check Internal parameters taken back from KVT
         const NNPotParameters& params2 = nnpotOptions.parameters();

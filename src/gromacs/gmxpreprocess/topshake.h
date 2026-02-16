@@ -35,6 +35,9 @@
 #ifndef GMX_GMXPREPROCESS_TOPSHAKE_H
 #define GMX_GMXPREPROCESS_TOPSHAKE_H
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
+
 struct t_atoms;
 struct InteractionsOfType;
 
@@ -45,6 +48,9 @@ class ArrayRef;
 class MDLogger;
 } // namespace gmx
 
-void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nshake, const gmx::MDLogger& logger);
+void make_shake(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                t_atoms*                                                        atoms,
+                int                                                             nshake,
+                const gmx::MDLogger&                                            logger);
 
 #endif

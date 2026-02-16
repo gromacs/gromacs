@@ -130,7 +130,7 @@ version 1.11.8 of hwloc is recommended.
 RISC-V with VEC unit
 ~~~~~~~~~~~~~~~~~~~~
 
-GROMACS runs on RISC-V. The non-bonded kernel can be ran on the VEC vector unit,
+|Gromacs| runs on RISC-V. The non-bonded kernel can be ran on the VEC vector unit,
 when available. To enable this, add ``-DGMX_ENABLE_NBNXM_CPU_VECTORIZATION=on`` to
 the CMake flags. A clang compiler is required with version >=19.
 

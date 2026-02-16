@@ -182,7 +182,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
 
     if (!inputrec_->bContinuation)
     {
-        real temp = enerd_->term[F_TEMP];
+        real temp = enerd_->term[InteractionFunction::Temperature];
         if (inputrec_->eI != IntegrationAlgorithm::VV)
         {
             /* Result of Ekin averaged over velocities of -half
@@ -228,7 +228,8 @@ std::optional<SignallerCallback> EnergyData::Element::registerEnergyCallback(Ene
 
 void EnergyData::doStep(Step step, Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
 {
-    enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
+    enerd_->term[InteractionFunction::TotalEnergy] = enerd_->term[InteractionFunction::PotentialEnergy]
+                                                     + enerd_->term[InteractionFunction::KineticEnergy];
     if (freeEnergyPerturbationData_)
     {
         accumulateKineticLambdaComponents(
@@ -236,10 +237,11 @@ void EnergyData::doStep(Step step, Time time, bool isEnergyCalculationStep, bool
     }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {
-        enerd_->term[F_ECONSERVED] = enerd_->term[F_ETOT];
+        enerd_->term[InteractionFunction::ConservedEnergy] =
+                enerd_->term[InteractionFunction::TotalEnergy];
         for (const auto& energyContibution : conservedEnergyContributions_)
         {
-            enerd_->term[F_ECONSERVED] += energyContibution(step, time);
+            enerd_->term[InteractionFunction::ConservedEnergy] += energyContibution(step, time);
         }
     }
     matrix nullMatrix = {};
@@ -526,9 +528,9 @@ void EnergyData::updateKineticEnergy()
      * these, so we set this to false.) */
     const bool ignoreScalingFactor = false;
 
-    enerd_->term[F_TEMP] = sum_ekin(
+    enerd_->term[InteractionFunction::Temperature] = sum_ekin(
             &(inputrec_->opts), ekind_, dEkinDLambda, useFullStepKineticEnergy, ignoreScalingFactor);
-    enerd_->term[F_EKIN] = ::trace(ekind_->ekin);
+    enerd_->term[InteractionFunction::KineticEnergy] = ::trace(ekind_->ekin);
 }
 
 EnergyData::Element* EnergyData::element()

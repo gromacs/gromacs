@@ -11,16 +11,16 @@ gmx [-s [&lt;.tpr&gt;]] [-cpi [&lt;.cpt&gt;]] [-table [&lt;.xvg&gt;]] [-tablep [
     [-g [&lt;.log&gt;]] [-dhdl [&lt;.xvg&gt;]] [-field [&lt;.xvg&gt;]] [-tpi [&lt;.xvg&gt;]]
     [-tpid [&lt;.xvg&gt;]] [-eo [&lt;.xvg&gt;]] [-px [&lt;.xvg&gt;]] [-pf [&lt;.xvg&gt;]]
     [-ro [&lt;.xvg&gt;]] [-ra [&lt;.log&gt;]] [-rs [&lt;.log&gt;]] [-rt [&lt;.log&gt;]]
-    [-mtx [&lt;.mtx&gt;]] [-ramd [&lt;.xvg&gt;]] [-if [&lt;.xvg&gt;]] [-swap [&lt;.xvg&gt;]]
-    [-deffnm &lt;string&gt;] [-xvg &lt;enum&gt;] [-dd &lt;vector&gt;] [-ddorder &lt;enum&gt;]
-    [-npme &lt;int&gt;] [-nt &lt;int&gt;] [-ntmpi &lt;int&gt;] [-ntomp &lt;int&gt;]
-    [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;] [-pinoffset &lt;int&gt;] [-pinstride &lt;int&gt;]
-    [-gpu_id &lt;string&gt;] [-gputasks &lt;string&gt;] [-[no]ddcheck] [-rdd &lt;real&gt;]
-    [-rcon &lt;real&gt;] [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;] [-nstlist &lt;int&gt;]
+    [-mtx [&lt;.mtx&gt;]] [-if [&lt;.xvg&gt;]] [-swap [&lt;.xvg&gt;]] [-deffnm &lt;string&gt;]
+    [-xvg &lt;enum&gt;] [-dd &lt;vector&gt;] [-ddorder &lt;enum&gt;] [-npme &lt;int&gt;] [-nt &lt;int&gt;]
+    [-ntmpi &lt;int&gt;] [-ntomp &lt;int&gt;] [-ntomp_pme &lt;int&gt;] [-pin &lt;enum&gt;]
+    [-pinoffset &lt;int&gt;] [-pinstride &lt;int&gt;] [-gpu_id &lt;string&gt;]
+    [-gputasks &lt;string&gt;] [-[no]ddcheck] [-rdd &lt;real&gt;] [-rcon &lt;real&gt;]
+    [-dlb &lt;enum&gt;] [-dds &lt;real&gt;] [-nb &lt;enum&gt;] [-nbfe &lt;enum&gt;] [-nstlist &lt;int&gt;]
     [-[no]tunepme] [-pme &lt;enum&gt;] [-pmefft &lt;enum&gt;] [-bonded &lt;enum&gt;]
     [-update &lt;enum&gt;] [-[no]v] [-pforce &lt;real&gt;] [-[no]reprod] [-cpt &lt;real&gt;]
     [-[no]cpnum] [-[no]append] [-nsteps &lt;int&gt;] [-maxh &lt;real&gt;] [-replex &lt;int&gt;]
-    [-nex &lt;int&gt;] [-reseed &lt;int&gt;]
+    [-nex &lt;int&gt;] [-reseed &lt;int&gt;] [-ramd [&lt;.xvg&gt;]]
 
 DESCRIPTION
 
@@ -151,7 +151,7 @@ Options to specify input files:
  -tableb [&lt;.xvg&gt; [...]]     (table.xvg)      (Opt.)
            xvgr/xmgr file
  -rerun  [&lt;.xtc/.trr/...&gt;]  (rerun.xtc)      (Opt.)
-           Trajectory: xtc trr cpt gro g96 pdb tng
+           Trajectory: xtc trr cpt gro g96 pdb tng h5md
  -ei     [&lt;.edi&gt;]           (sam.edi)        (Opt.)
            ED sampling input
  -multidir [&lt;dir&gt; [...]]    (rundir)         (Opt.)
@@ -170,7 +170,7 @@ Options to specify input files:
 Options to specify output files:
 
  -o      [&lt;.trr/.cpt/...&gt;]  (traj.trr)
-           Full precision trajectory: trr cpt tng
+           Full precision trajectory: trr cpt tng h5md
  -x      [&lt;.xtc/.tng&gt;]      (traj_comp.xtc)  (Opt.)
            Compressed trajectory (tng format or portable xdr format)
  -cpo    [&lt;.cpt&gt;]           (state.cpt)      (Opt.)
@@ -233,7 +233,8 @@ Other options:
  -ntomp_pme &lt;int&gt;           (0)
            Number of OpenMP threads per MPI rank to start (0 is -ntomp)
  -pin    &lt;enum&gt;             (auto)
-           Whether mdrun should try to set thread affinities: auto, on, off
+           Whether mdrun should try to set thread affinities: auto, on,
+           inherit, off
  -pinoffset &lt;int&gt;           (0)
            The lowest logical core number to which mdrun should pin the first
            thread
@@ -260,6 +261,8 @@ Other options:
            balancing can act while preserving the minimum cell size.
  -nb     &lt;enum&gt;             (auto)
            Calculate non-bonded interactions on: auto, cpu, gpu
+ -nbfe   &lt;enum&gt;             (auto)
+           Perform non-bonded FE calculations on: auto, cpu, gpu
  -nstlist &lt;int&gt;             (0)
            Set nstlist when using a Verlet buffer tolerance (0 is guess)
  -[no]tunepme               (yes)

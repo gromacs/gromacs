@@ -312,7 +312,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     FILE* in;
     char  line[STRLEN], header[STRLEN];
     int   nparam;
-    int   dum1, dum2, dum3;
+    int   dum1, dum2, dum3, dum4;
     bool  bNextResidue, bError;
 
     auto filebase = fflib_filename_base(rrdb);
@@ -351,6 +351,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
      * Column 7: Generate 1,4 interactions between two hydrogen atoms
      * Column 8: Remove proper dihedrals if centered on the same bond
      *           as an improper dihedral
+     * Column 9: Ensure that residue names are replaced with residue types
      */
     get_a_line(in, line, STRLEN);
     if (!get_header(line, header))
@@ -361,7 +362,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     {
         get_a_line(in, line, STRLEN);
         if ((nparam = sscanf(line,
-                             "%d %d %d %d %d %d %d %d",
+                             "%d %d %d %d %d %d %d %d %d",
                              &header_settings.rb[BondedTypes::Bonds].type,
                              &header_settings.rb[BondedTypes::Angles].type,
                              &header_settings.rb[BondedTypes::ProperDihedrals].type,
@@ -369,7 +370,8 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
                              &dum1,
                              &header_settings.nrexcl,
                              &dum2,
-                             &dum3))
+                             &dum3,
+                             &dum4))
             < 4)
         {
             gmx_fatal(FARGS,
@@ -377,9 +379,10 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
                       rrdb.string().c_str(),
                       line);
         }
-        header_settings.bKeepAllGeneratedDihedrals    = (dum1 != 0);
-        header_settings.bGenerateHH14Interactions     = (dum2 != 0);
-        header_settings.bRemoveDihedralIfWithImproper = (dum3 != 0);
+        header_settings.bKeepAllGeneratedDihedrals        = (dum1 != 0);
+        header_settings.bGenerateHH14Interactions         = (dum2 != 0);
+        header_settings.bRemoveDihedralIfWithImproper     = (dum3 != 0);
+        header_settings.replaceResidueNameWithResidueType = (dum4 != 0);
         get_a_line(in, line, STRLEN);
         if (nparam < 5)
         {
@@ -410,6 +413,13 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
                             "Using default: removing proper dihedrals found on the same bond as a "
                             "proper dihedral");
             header_settings.bRemoveDihedralIfWithImproper = TRUE;
+        }
+        if (nparam < 9)
+        {
+            GMX_LOG(logger.info)
+                    .asParagraph()
+                    .appendTextFormatted("Preserving residues names by default");
+            header_settings.replaceResidueNameWithResidueType = false;
         }
     }
     else

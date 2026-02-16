@@ -104,7 +104,7 @@ The cross correlation between two densities,
            \frac{\sum_{v}\left((\rho_v^{\mathrm{ref}} - \bar{\rho}^{\mathrm{ref}})(\rho_v^{\mathrm{sim}} - \bar{\rho}^{\mathrm{sim}})\right)}
            {\sqrt{\sum_v(\rho_v^{\mathrm{ref}} - \bar{\rho}^{\mathrm{ref}})^2 \sum_v(\rho_v^{\mathrm{sim}} - \bar{\rho}^{\mathrm{sim}})^2}}\mathrm{.}
         :label: eqndenscrosscorr
-     
+
 
 Declaring regions to fit
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -207,7 +207,7 @@ Mapping input structure to density data with affine transformations
 To align input structure and density data, a transformation matrix
 :math:`\mathbf{A}` and shift vector :math:`\mathbf{v_{\mathrm{shift}}}` may be
 defined that transform the input structure atom coordinates before evaluating
-density-guided-simulation energies and forces, so that 
+density-guided-simulation energies and forces, so that
 
 .. math:: U = U_{\mathrm{forcefield}}(\mathbf{r}) - k S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{A} \mathbf{r}+\mathbf{v}_{\mathrm{shift}})]\,\mathrm{.}
           :label: eqndensnine

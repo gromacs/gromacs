@@ -146,7 +146,8 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
                       nullptr,
                       nbat.get());
 
-    std::unique_ptr<PairlistSet> pairlistSet = std::make_unique<PairlistSet>(pairlistParams);
+    std::unique_ptr<PairlistSet> pairlistSet =
+            std::make_unique<PairlistSet>(pairlistParams, PinningPolicy::CannotBePinned);
 
     std::vector<PairsearchWork> searchWork(1);
 
@@ -158,7 +159,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
     }
 
     pairlistSet->constructPairlists(
-            gmx::InteractionLocality::Local, gridSet, searchWork, nbat.get(), exclusions, 0, nullptr, nullptr);
+            gmx::InteractionLocality::Local, gridSet, searchWork, nbat.get(), exclusions, false, 0, nullptr, nullptr);
 
     return std::make_pair(std::move(nbat), std::move(pairlistSet));
 }

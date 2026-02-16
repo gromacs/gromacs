@@ -599,7 +599,7 @@ real do_lmfit(int                     ndata,
 {
     FILE*   fp;
     int     i, j, nfitpnts;
-    double  integral, ttt;
+    double  integral;
     double *x, *y, *dy;
 
     if (0 != fix)
@@ -618,7 +618,7 @@ real do_lmfit(int                     ndata,
     j = 0;
     for (i = 0; i < ndata; i++)
     {
-        ttt = x0 ? x0[i] : dt * i;
+        double ttt = x0 ? x0[i] : dt * i;
         if (ttt >= begintimefit && ttt <= endtimefit)
         {
             x[j] = ttt;

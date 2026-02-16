@@ -68,7 +68,7 @@ namespace gmx
  *                           supplied by the user.
  *                           Must contain only unique decimal digits, or only decimal
  *                           digits separated by comma delimiters. A terminal
- *                           comma is accceptable (and required to specify a
+ *                           comma is acceptable (and required to specify a
  *                           single ID that is larger than 9).
  *
  * \returns  A vector of numeric IDs extracted from \c gpuIdString.

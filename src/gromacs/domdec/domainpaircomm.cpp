@@ -55,6 +55,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/nbnxm/boundingbox_simd.h"
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -74,37 +75,57 @@ namespace gmx
 namespace
 {
 
-//! The upper corners of a zone, used for computing which halo cell need to be sent
-struct ZoneCorners
+//! Collection of information for an NBNxM grid column
+class GridColumnInfo
 {
-    //! Corner for two-body interations, involves all pair-interacting zones
-    RVec twoBody = { 0.0_real, 0.0_real, 0.0_real };
-    //! Corner for multi-body interactions, involves all zones
-    RVec multiBody = { 0.0_real, 0.0_real, 0.0_real };
-    //! The corner of our own zone
-    RVec zone = { 0.0_real, 0.0_real, 0.0_real };
-    //! Whether \p twoBody and \p multiBody differ
-    bool cornersDiffer = false;
-};
+public:
+    /*! \brief Returns information on a column of the local grid
+     *
+     * Note that the column bounding boxes are computed for the centers of update groups.
+     * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
+     */
+    GridColumnInfo(const Grid& grid, int columnIndex);
 
-struct GridColumnInfo
-{
+    //! Returns the bounding box of the cluster with local index \p cluster in this column
+    BoundingBox clusterBB(const int cluster) const
+    {
+        if (usePackedBoundingBoxes_)
+        {
+            BoundingBox bb;
+
+            const int    clusterMod = cluster % c_packedBoundingBoxesDimSize;
+            const float* pbb_ptr    = packedClusterBBs_.data()
+                                   + (cluster - clusterMod) * DIM * c_numBoundingBoxBounds1D + clusterMod;
+            bb.lower.x = pbb_ptr[0 * c_packedBoundingBoxesDimSize];
+            bb.lower.y = pbb_ptr[1 * c_packedBoundingBoxesDimSize];
+            bb.lower.z = pbb_ptr[2 * c_packedBoundingBoxesDimSize];
+            bb.upper.x = pbb_ptr[3 * c_packedBoundingBoxesDimSize];
+            bb.upper.y = pbb_ptr[4 * c_packedBoundingBoxesDimSize];
+            bb.upper.z = pbb_ptr[5 * c_packedBoundingBoxesDimSize];
+
+            return bb;
+        }
+        else
+        {
+            return clusterBBs_[cluster];
+        }
+    }
+
     //! The bounding box of the column
-    BoundingBox columnBB;
-    //! Bounding boxes for the cells, used with CPU grids, otherwise empty
-    ArrayRef<const BoundingBox> cellBBs;
-    //! Bounding boxes along Z only, used with GPU grids, otherwise empty
-    ArrayRef<const BoundingBox1D> cellBBsZonly;
-    //! The number of i-cells per bounding box
-    int bbToCellFactor;
+    BoundingBox columnBB_;
+    //! The number of clusters in this column
+    int numClusters_;
+
+private:
+    //! Whether we use packed bounding boxes
+    bool usePackedBoundingBoxes_;
+    //! Bounding boxes for the clusters
+    ArrayRef<const BoundingBox> clusterBBs_;
+    //! Packed bounding boxes for the clusters, used with GPU grids
+    ArrayRef<const float> packedClusterBBs_;
 };
 
-/*! \brief Returns information on a column of the local grid
- *
- * Note that the column bounding boxes are computed for the centers of update groups.
- * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
- */
-GridColumnInfo nbnxmGetLocalGridColumn(const Grid& grid, const int columnIndex)
+GridColumnInfo::GridColumnInfo(const Grid& grid, const int columnIndex)
 {
     const GridDimensions& dims = grid.dimensions();
 
@@ -115,46 +136,41 @@ GridColumnInfo nbnxmGetLocalGridColumn(const Grid& grid, const int columnIndex)
     const int cx = columnIndex / dims.numCells[YY];
     const int cy = columnIndex - cx * dims.numCells[YY];
 
-    GridColumnInfo gci;
-
-    gci.columnBB.lower.x = dims.lowerCorner[XX] + cx * dims.cellSize[XX];
-    gci.columnBB.upper.x = dims.lowerCorner[XX] + (cx + 1) * dims.cellSize[XX];
-    gci.columnBB.lower.y = dims.lowerCorner[YY] + cy * dims.cellSize[YY];
-    gci.columnBB.upper.y = dims.lowerCorner[YY] + (cy + 1) * dims.cellSize[YY];
-    gci.columnBB.lower.z = dims.lowerCorner[ZZ];
-    gci.columnBB.upper.z = dims.upperCorner[ZZ];
+    columnBB_.lower.x = dims.lowerCorner[XX] + cx * dims.cellSize[XX];
+    columnBB_.upper.x = dims.lowerCorner[XX] + (cx + 1) * dims.cellSize[XX];
+    columnBB_.lower.y = dims.lowerCorner[YY] + cy * dims.cellSize[YY];
+    columnBB_.upper.y = dims.lowerCorner[YY] + (cy + 1) * dims.cellSize[YY];
+    columnBB_.lower.z = dims.lowerCorner[ZZ];
+    columnBB_.upper.z = dims.upperCorner[ZZ];
 
     const Grid::Geometry& geometry = grid.geometry();
 
-    gci.bbToCellFactor = 1;
+    usePackedBoundingBoxes_ =
+            !geometry.isSimple_ && sc_boundingBoxCornersAsQuadruplets(grid.geometry().pairlistType_);
 
-    if (geometry.isSimple_)
+    const int numIClustersPerBin = geometry.numAtomsPerBin_ / geometry.numAtomsICluster_;
+
+    numClusters_ = grid.numBinsInColumn(columnIndex) * numIClustersPerBin;
+
+    if (usePackedBoundingBoxes_)
     {
-        int numBBs = grid.cxy_ind()[columnIndex + 1] - grid.cxy_ind()[columnIndex];
-        // We return the largest of the x/y bounding boxes
-        if (geometry.numAtomsJCluster_ <= geometry.numAtomsICluster_)
-        {
-            gci.cellBBs = grid.iBoundingBoxes().subArray(grid.cxy_ind()[columnIndex], numBBs);
-        }
-        else
-        {
-            GMX_ASSERT(geometry.numAtomsJCluster_ == 2 * geometry.numAtomsICluster_,
-                       "Currently only equal i/j cells and j-cell size double i-cell size are "
-                       "supported");
-            // We have 2 i-cells per bounding box
-            gci.bbToCellFactor = 2;
-            // j-clusters are twice as large as i, need to divide counts by 2
-            numBBs /= 2;
-            gci.cellBBs = grid.jBoundingBoxes().subArray(grid.cxy_ind()[columnIndex] / 2, numBBs);
-        }
+        const int bbSize  = DIM * c_numBoundingBoxBounds1D;
+        packedClusterBBs_ = grid.packedBoundingBoxes().subArray(
+                grid.firstBinInColumn(columnIndex) * numIClustersPerBin * bbSize, numClusters_ * bbSize);
+    }
+    else if (geometry.numAtomsJCluster_ <= geometry.numAtomsICluster_)
+    {
+        clusterBBs_ = grid.iBoundingBoxes().subArray(grid.firstBinInColumn(columnIndex), numClusters_);
     }
     else
     {
-        const int numBBs = grid.cxy_ind()[columnIndex + 1] - grid.cxy_ind()[columnIndex];
-        gci.cellBBsZonly = grid.zBoundingBoxes().subArray(grid.cxy_ind()[columnIndex], numBBs);
+        GMX_ASSERT(geometry.numAtomsJCluster_ == 2 * geometry.numAtomsICluster_,
+                   "Currently only j-cluster size <= i-cluster eize and j-cluster size double "
+                   "i-cluster size are supported");
+        // j-clusters are twice as large as i, need to divide counts by 2
+        numClusters_ /= 2;
+        clusterBBs_ = grid.jBoundingBoxes().subArray(grid.firstBinInColumn(columnIndex) / 2, numClusters_);
     }
-
-    return gci;
 }
 
 /*! \brief Move data of type \p T forward or backward between zones
@@ -230,9 +246,9 @@ struct DistanceCalculationInfo
     ArrayRef<const RVec> normal;
     //! Whether we should take into account non-orthogonal normals of faces
     IVec sumSquares = { 0, 0, 0 };
-    //! Whether we need to check distances for multi-body interactions when selecting cells
+    //! Whether we need to check distances for multi-body interactions when selecting clusters
     bool checkMultiBodyDistance = false;
-    //! Whether we need to check distances for two-body bonded interactions when selecting cells
+    //! Whether we need to check distances for two-body bonded interactions when selecting clusters
     bool checkTwoBodyDistance = false;
     //! Cut-off squared for 2-body interaction distances, includes one maxAtomGroupRadius
     real cutoffSquaredTwoBody1;
@@ -378,12 +394,11 @@ DistancesSquared cornerToBoundingBoxDistance(const DistanceCalculationInfo& dci,
     }
 }
 
-/*! \brief Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
- *
- * Note that the column bounding boxes are computed for the centers of update groups.
- * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
- */
-ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int zone)
+} // namespace
+
+void DomainCommBackward::getTargetZoneCorners(const gmx_domdec_t&   dd,
+                                              const matrix          box,
+                                              const DomainPairComm& domainPairComm)
 {
     const DomdecZones& zones = dd.zones;
 
@@ -394,7 +409,7 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
         /* Make a list of i-zones that see our zone on the receiving end */
         for (int iZone = 0; iZone < zones.numIZones(); iZone++)
         {
-            if (zones.jZoneRange(iZone).isInRange(zone))
+            if (zones.jZoneRange(iZone).isInRange(zone_))
             {
                 interactingIZones.push_back(iZone);
             }
@@ -407,12 +422,12 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
 
     for (int dim = 0; dim < DIM; dim++)
     {
-        /* This is the zone corner (simple, no staggering) */
-        const real corner_z_d = dd.comm->cell_x0[dim];
+        // This is our right/upper zone corner
+        const real corner_z_d = dd.comm->cell_x1[dim];
 
-        /* No staggering, all bounds are equal to our local bounds */
-        const real corner_2b_d = dd.comm->cell_x0[dim];
-        const real corner_mb_d = dd.comm->cell_x0[dim];
+        // No staggering supported yet, all bounds are for now equal to our local bounds
+        const real corner_2b_d = dd.comm->cell_x1[dim];
+        const real corner_mb_d = dd.comm->cell_x1[dim];
 
         zc.cornersDiffer = (corner_mb_d != corner_2b_d);
 
@@ -438,10 +453,10 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
         fprintf(debug,
                 "halo corners home %5.2f %5.2f %5.2f zone %d 2b %5.2f %5.2f %5.2f mb %5.2f %5.2f "
                 "%5.2f\n",
-                dd.comm->cell_x0[XX],
-                dd.comm->cell_x0[YY],
-                dd.comm->cell_x0[ZZ],
-                zone,
+                dd.comm->cell_x1[XX],
+                dd.comm->cell_x1[YY],
+                dd.comm->cell_x1[ZZ],
+                zone_,
                 zc.twoBody[XX],
                 zc.twoBody[YY],
                 zc.twoBody[ZZ],
@@ -450,28 +465,58 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
                 zc.multiBody[ZZ]);
     }
 
-    return zc;
+    // Correct corners for PBC jumps before sending them to our paired rank
+    for (int dimIndex = 0; dimIndex < dd.ndim; dimIndex++)
+    {
+        const int dim = dd.dim[dimIndex];
+
+        if (dd.ci[dim] >= dd.numCells[dim] - domainShift_[dim])
+        {
+            zc.twoBody -= box[dim];
+            zc.multiBody -= box[dim];
+            zc.zone -= box[dim];
+        }
+    }
+
+    // Send our computed zone corners, receive from out target rank
+    ddSendReceive(domainPairComm.backward(),
+                  domainPairComm.forward(),
+                  dddirForward,
+                  &zc,
+                  1,
+                  &targetZoneCorners_,
+                  1,
+                  HaloMpiTag::ZoneCorners);
 }
 
-//! Computes and sets the cell range we will communicatie for grid column \p columnIndex
-template<bool doChecksForBondeds>
-Range<int> getCellRangeForGridColumn(const Grid&                    grid,
-                                     const int                      columnIndex,
-                                     const ZoneCorners&             zoneCorners,
-                                     const DistanceCalculationInfo& dci,
-                                     const std::vector<bool>&       isCellMissingLinks)
+namespace
 {
-    const GridColumnInfo gci = nbnxmGetLocalGridColumn(grid, columnIndex);
 
-    const int numCellsInColumn = std::max(gci.cellBBs.ssize(), gci.cellBBsZonly.ssize());
-    if (numCellsInColumn == 0)
+/*! \brief Computes and adds the cluster ranges we will communicatie for grid column \p columnIndex
+ *
+ * The cluster ranges are added to \p columnInfo.
+ *
+ * \returns the number of clusters added
+ */
+template<bool doChecksForBondeds>
+int addClusterRangesForGridColumn(const Grid&                    grid,
+                                  const int                      columnIndex,
+                                  const ZoneCorners&             zoneCorners,
+                                  const DistanceCalculationInfo& dci,
+                                  const std::vector<bool>&       isClusterMissingLinks,
+                                  FastVector<DomainCommBackward::GridClusterRange>* gridClusterRanges)
+{
+    const GridColumnInfo gci(grid, columnIndex);
+
+    const int numClustersInColumn = gci.numClusters_;
+    if (numClustersInColumn == 0)
     {
         /* Empty column */
-        return {};
+        return 0;
     }
 
     const auto distancesSquared =
-            cornerToBoundingBoxDistance(dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.columnBB);
+            cornerToBoundingBoxDistance(dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.columnBB_);
 
     const bool columnIsInRange =
             distancesSquared.pair < dci.cutoffSquaredTwoBody2
@@ -483,110 +528,108 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
         return {};
     }
 
-    const bool         useColumnBBForXY = gci.cellBBs.empty();
-    BoundingBox        bbFull;
-    const BoundingBox* bbPointer;
-    if (useColumnBBForXY)
+    // The bins we operate on here are the largest of the i- and j-clusters,
+    // so we need to convert the size used in grid, which is always of the i-clusters
+    const int clusterFactor = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_)
+                              / grid.geometry().numAtomsICluster_;
+    const int firstClusterInColumn = grid.atomToCluster(grid.firstAtomInColumn(columnIndex)) / clusterFactor;
+
+    int numClustersAdded    = 0;
+    int firstClusterInRange = -1;
+    for (int cluster = 0; cluster < numClustersInColumn; cluster++)
     {
-        /* Take the x & y components from the column */
-        bbFull    = gci.columnBB;
-        bbPointer = &bbFull;
-    }
-
-    // The cells we operate on here are the largest of the i- and j-cells,
-    // so we need to convert the size used in grid, which is always of the i-cells
-    const int firstCellInColumn = grid.firstCellInColumn(columnIndex) / gci.bbToCellFactor;
-
-    int  firstCell = 0;
-    int  lastCell  = numCellsInColumn - 1;
-    bool isInRange;
-    do
-    {
-        if (useColumnBBForXY)
-        {
-            bbFull.lower.z = gci.cellBBsZonly[lastCell].lower;
-            bbFull.upper.z = gci.cellBBsZonly[lastCell].upper;
-        }
-        else
-        {
-            bbPointer = &gci.cellBBs[lastCell];
-        }
-
-        const auto distancesSquared = cornerToBoundingBoxDistance(
-                dci, zoneCorners.twoBody, zoneCorners.multiBody, *bbPointer);
+        const auto distancesSquaredCluster = cornerToBoundingBoxDistance(
+                dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.clusterBB(cluster));
 
         /* Here we check:
          * the 2-atom distance against the non-bonded cut-off,
          * the multi-body distance against the bonded cut-off
          * The 2-atom distance against the bonded cut-off.
          * The bonded check only triggers communication without bBondComm
-         * or when the cell has missing bonded interactions.
+         * or when the cluster has missing bonded interactions.
          */
-        isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
+        bool isInRange = (distancesSquaredCluster.pair < dci.cutoffSquaredTwoBody1);
 
         if constexpr (doChecksForBondeds)
         {
             isInRange =
                     isInRange
-                    || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
-                         || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
-                        && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + lastCell]));
+                    || (((dci.checkMultiBodyDistance && distancesSquaredCluster.multiBody < dci.cutoffSquaredMultiBody1)
+                         || (dci.checkTwoBodyDistance && distancesSquaredCluster.pair < dci.cutoffSquaredMultiBody1))
+                        && (!dci.filterBondComm || isClusterMissingLinks[firstClusterInColumn + cluster]));
         }
 
-        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-        if (!isInRange)
+        if (firstClusterInRange < 0 && isInRange)
         {
-            lastCell--;
+            // This bin is in range and the previous, if present, is not: start a new range
+            firstClusterInRange = cluster;
         }
-    } while (lastCell >= firstCell && !isInRange);
 
-    /* For rectangular grids without bondcomm we do not try to eliminate
-     * cells from the bottom, since if lastCell is within range,
-     * there is a high chance that firstCell=0 is also in range.
-     */
-    if ((dci.isTriclinic || dci.filterBondComm) && lastCell > firstCell)
-    {
-        /* This loop is a copy of the one above with lastCell replaced
-         * by firstCell. Putting it in a function would be cleaner,
-         * but this would require 20 parameters.
-         */
-        bool isInRange;
-        do
+        // We should add a range when a range finished or we are at the end of the column
+        if (firstClusterInRange >= 0 && (!isInRange || cluster == numClustersInColumn - 1))
         {
-            if (!gci.cellBBs.empty())
-            {
-                bbPointer = &gci.cellBBs[firstCell];
-            }
-            else
-            {
-                bbFull.lower.z = gci.cellBBsZonly[firstCell].lower;
-                bbFull.upper.z = gci.cellBBsZonly[firstCell].upper;
-            }
+            const int lastClusterInRange = (isInRange ? cluster : cluster - 1);
 
-            const auto distancesSquared = cornerToBoundingBoxDistance(
-                    dci, zoneCorners.twoBody, zoneCorners.multiBody, *bbPointer);
+            gridClusterRanges->push_back({ columnIndex,
+                                           { firstClusterInColumn + firstClusterInRange,
+                                             firstClusterInColumn + lastClusterInRange + 1 } });
+            numClustersAdded += gridClusterRanges->back().clusterRange.size();
 
-            isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
-
-            if constexpr (doChecksForBondeds)
-            {
-                isInRange =
-                        isInRange
-                        || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
-                             || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
-                            && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + firstCell]));
-            }
-
-            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-            if (!isInRange)
-            {
-                firstCell++;
-            }
-        } while (firstCell < lastCell && !isInRange);
+            // Mark that we no longer have an open bin range that is in range
+            firstClusterInRange = -1;
+        }
     }
 
-    return { (firstCellInColumn + firstCell) * gci.bbToCellFactor,
-             (firstCellInColumn + lastCell + 1) * gci.bbToCellFactor };
+    // With GPU grids, the number of clusters in a column needs to be a multiple of the number
+    // of clusters per bin. Here this is not guaranteed, so we might need to add some clusters,
+    // which will then be clusters that do not actually need to be communicated.
+    if (!grid.geometry().isSimple_)
+    {
+        const int numClustersPerBin = grid.geometry().numAtomsPerBin_ / grid.geometry().numAtomsICluster_;
+
+        int numClustersModBin = (numClustersAdded % numClustersPerBin);
+        if (numClustersModBin != 0)
+        {
+            // We need to add this many clusters
+            int numClustersToAdd = numClustersPerBin - numClustersModBin;
+
+            // First add clusters up to the end of this column
+            const int numNonSelectedClustersAtEnd = firstClusterInColumn + numClustersInColumn
+                                                    - *gridClusterRanges->back().clusterRange.end();
+            const int numClustersToAddAtEnd = std::min(numClustersToAdd, numNonSelectedClustersAtEnd);
+            gridClusterRanges->back().clusterRange = { *gridClusterRanges->back().clusterRange.begin(),
+                                                       *gridClusterRanges->back().clusterRange.end()
+                                                               + numClustersToAddAtEnd };
+            numClustersToAdd -= numClustersToAddAtEnd;
+            numClustersAdded += numClustersToAddAtEnd;
+
+            // Now iterate down over the added ranges and extend them
+            auto rit = gridClusterRanges->rbegin();
+            while (numClustersToAdd > 0)
+            {
+                const int prevRangeEnd =
+                        (rit == gridClusterRanges->rend() ? 0 : *((rit + 1)->clusterRange.end()));
+                const int numNonSelectedClusters = *(rit->clusterRange.begin()) - prevRangeEnd;
+                const int numClustersToAddAtBegin = std::min(numClustersToAdd, numNonSelectedClusters);
+                rit->clusterRange = { rit->clusterRange.begin() - numClustersToAddAtBegin,
+                                      rit->clusterRange.end() };
+                numClustersToAdd -= numClustersToAddAtBegin;
+                numClustersAdded += numClustersToAddAtBegin;
+
+                GMX_ASSERT(numClustersToAdd >= 0, "We should not add too many clusters");
+                GMX_ASSERT(rit != gridClusterRanges->rend() || numClustersToAdd == 0,
+                           "We should be able to add all required clusters");
+
+                rit++;
+            }
+        }
+
+        GMX_ASSERT(numClustersAdded % numClustersPerBin == 0,
+                   "The number of clusters added should be a multiple of the number of clusters "
+                   "per bin");
+    }
+
+    return numClustersAdded;
 }
 
 } // namespace
@@ -613,7 +656,7 @@ DomainCommBackward::DomainCommBackward(int         rank,
 
 void DomainCommBackward::clear()
 {
-    columnsToSend_.clear();
+    clusterRangesToSend_.clear();
     numAtomsToSend_ = 0;
 }
 
@@ -621,11 +664,12 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                                          const Grid&              grid,
                                          const real               cutoffTwoBody,
                                          const real               cutoffMultiBody,
-                                         const matrix             box,
                                          const ivec               dimensionIsTriclinic,
                                          ArrayRef<const RVec>     normal,
-                                         const std::vector<bool>& isCellMissingLinks)
+                                         const std::vector<bool>& isClusterMissingLinks)
 {
+    numAtomsPerCluster_ = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_);
+
     if (pbcType_ == PbcType::XY && pbcCoordinateShift_[ZZ] != 0)
     {
         clear();
@@ -641,8 +685,6 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
     DistanceCalculationInfo dci;
 
-    GMX_RELEASE_ASSERT(grid.geometry().isSimple_ || grid.dimensions().maxAtomGroupRadius == 0,
-                       "We need need to implement the atom group radius handling for GPU grids");
     // We add maxAtomGroupRadius for the bouding boxes of the grid for the domain we are
     // communicating to. For the local grid we use bounding boxes that encompass all atoms
     // in update groups.
@@ -712,16 +754,13 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
         }
     }
 
-    /* Get the corners for non-bonded and bonded distance calculations */
-    const ZoneCorners zoneCorners = getZoneCorners(dd, box, zone_);
-
     /* Do we need to determine extra distances for multi-body bondeds?
      * Note that with filterBondComm we might need distances longer than
-     * the non-bonded cut-off, but with a grid without staggering (zoneCorners.cornersDiffer)
+     * the non-bonded cut-off, but with a grid without staggering (targetZoneCorners_.cornersDiffer)
      * this check is indentical to the one triggered by checkTwoBodyDistance below.
      */
     dci.checkMultiBodyDistance =
-            (comm.systemInfo.haveInterDomainMultiBodyBondeds && zoneCorners.cornersDiffer);
+            (comm.systemInfo.haveInterDomainMultiBodyBondeds && targetZoneCorners_.cornersDiffer);
 
     /* Do we need to determine extra distances for only two-body bondeds? */
     dci.checkTwoBodyDistance = (filterBondComm && !dci.checkMultiBodyDistance);
@@ -736,8 +775,6 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                 static_cast<int>(dci.checkTwoBodyDistance));
     }
 
-    numAtomsPerCell_ = grid.geometry().numAtomsPerCell_;
-
     // Clear the send counts
     clear();
 
@@ -746,24 +783,20 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
             (!shiftMultipleDomains_ && (dci.checkMultiBodyDistance || dci.checkTwoBodyDistance));
     for (int columnIndex = 0; columnIndex < grid.numColumns(); columnIndex++)
     {
-        Range<int> cellRange;
+        int numClustersAdded;
 
         if (checkBondedDistances)
         {
-            cellRange = getCellRangeForGridColumn<true>(
-                    grid, columnIndex, zoneCorners, dci, isCellMissingLinks);
+            numClustersAdded = addClusterRangesForGridColumn<true>(
+                    grid, columnIndex, targetZoneCorners_, dci, isClusterMissingLinks, &clusterRangesToSend_);
         }
         else
         {
-            cellRange = getCellRangeForGridColumn<false>(
-                    grid, columnIndex, zoneCorners, dci, isCellMissingLinks);
+            numClustersAdded = addClusterRangesForGridColumn<false>(
+                    grid, columnIndex, targetZoneCorners_, dci, isClusterMissingLinks, &clusterRangesToSend_);
         }
-        if (!cellRange.empty())
-        {
-            columnsToSend_.push_back({ columnIndex, cellRange });
 
-            numAtomsToSend_ += cellRange.size() * numAtomsPerCell_;
-        }
+        numAtomsToSend_ += numClustersAdded * numAtomsPerCluster_;
     }
 
     if (debug)
@@ -787,10 +820,10 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
     // Copy the global atom indices to the send buffer
     globalAtomIndices_.clear();
-    for (const auto& columnInfo : columnsToSend_)
+    for (const auto& columnInfo : clusterRangesToSend_)
     {
-        const int at_start = *columnInfo.cellRange.begin() * numAtomsPerCell_;
-        const int at_end   = *columnInfo.cellRange.end() * numAtomsPerCell_;
+        const int at_start = *columnInfo.clusterRange.begin() * numAtomsPerCluster_;
+        const int at_end   = *columnInfo.clusterRange.end() * numAtomsPerCluster_;
         globalAtomIndices_.insert(globalAtomIndices_.end(),
                                   dd.globalAtomIndices.begin() + at_start,
                                   dd.globalAtomIndices.begin() + at_end);
@@ -801,12 +834,12 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
 FastVector<std::pair<int, int>> DomainCommBackward::makeColumnsSendBuffer() const
 {
-    // Store the grid info with only index and cell count per column
+    // Store the grid info with only index and cluster range sizes per column
     FastVector<std::pair<int, int>> sendBuffer;
-    sendBuffer.reserve(columnsToSend_.size());
-    for (const auto& columnInfo : columnsToSend_)
+    sendBuffer.reserve(clusterRangesToSend_.size());
+    for (const auto& clusterRange : clusterRangesToSend_)
     {
-        sendBuffer.emplace_back(columnInfo.index, columnInfo.cellRange.size());
+        sendBuffer.emplace_back(clusterRange.index, clusterRange.clusterRange.size());
     }
 
     return sendBuffer;
@@ -819,7 +852,7 @@ DomainCommForward::DomainCommForward(int rank, int zone, MPI_Comm mpiCommAll) :
 
 void DomainCommForward::setup(const DomainCommBackward& send, const int offsetInCoordinateBuffer)
 {
-    std::array<int, 2> sendSizes = { int(send.columnsToSend().size()), send.numAtoms() };
+    std::array<int, 2> sendSizes = { int(send.clusterRangesToSend().size()), send.numAtoms() };
     std::array<int, 2> receiveSizes;
 
     ddSendReceive(send, *this, dddirBackward, sendSizes.data(), 2, receiveSizes.data(), 2, HaloMpiTag::GridCounts);
@@ -833,18 +866,18 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
         fprintf(debug, "For zone %d, receiving %d atoms\n", zone_, numAtoms());
     }
 
-    // Store the grid info with only index and cell count per column
+    // Store the grid info with only pairs of column indices and cluster range sizes
     const FastVector<std::pair<int, int>> sendBuffer = send.makeColumnsSendBuffer();
 
-    columnsReceived_.resize(receiveSizes[0]);
+    clusterRangesReceived_.resize(receiveSizes[0]);
 
     ddSendReceive(send,
                   *this,
                   dddirBackward,
                   sendBuffer.data(),
-                  send.columnsToSend().size(),
-                  columnsReceived_.data(),
-                  columnsReceived_.size(),
+                  send.clusterRangesToSend().size(),
+                  clusterRangesReceived_.data(),
+                  clusterRangesReceived_.size(),
                   HaloMpiTag::GridColumns);
 }
 

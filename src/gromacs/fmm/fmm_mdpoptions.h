@@ -113,6 +113,12 @@ public:
      */
     const IFmmOptions* activeFmmOptions() const;
 
+    /**
+     * \brief Returns who handles direct interactions for the active FMM backend.
+     *
+     * Indicates whether GROMACS or the FMM backend computes direct interactions.
+     */
+    FmmDirectProvider directProvider() const;
 
 private:
     ExaFmmOptions  exaFmmOptions_;  ///< Options specific to the ExaFMM backend

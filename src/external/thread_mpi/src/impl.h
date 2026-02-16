@@ -655,6 +655,7 @@ struct tmpi_datatype_
     int                             N_comp;       /* number of components */
     struct tmpi_datatype_component *comps;        /* the components */
     tmpi_bool                       committed;    /* whether the data type is committed */
+    int                             use_count;    /* reference count for datatype */
 };
 /* just as a shorthand:  */
 typedef struct tmpi_datatype_ tmpi_dt;

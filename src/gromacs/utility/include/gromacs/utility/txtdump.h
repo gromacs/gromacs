@@ -58,7 +58,7 @@ static const int sc_indentationIncrement = 3;
 bool checkIfAvailable(TextWriter* writer, const char* description, const void* p);
 
 /*! \brief Prints a title from the \c description and number of values \c n. */
-void printTitleAndSize(TextWriter* writer, const char* title, const int n);
+void printTitleAndSize(TextWriter* writer, const char* title, int n);
 
 } // namespace gmx
 

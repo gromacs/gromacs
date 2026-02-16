@@ -35,14 +35,27 @@
 add_library(domdec INTERFACE)
 file(GLOB DOMDEC_SOURCES *.cpp)
 list(FILTER DOMDEC_SOURCES EXCLUDE REGEX ".*/gpuhaloexchange_impl_gpu[a-z_]*\.cpp$")
+list(FILTER DOMDEC_SOURCES EXCLUDE REGEX ".*/gpuhaloexchange_impl.cpp$")
+list(FILTER DOMDEC_SOURCES EXCLUDE REGEX ".*/fused_gpuhaloexchange.cpp$")
 
 if(GMX_GPU_SYCL)
     file(GLOB DOMDEC_GPU_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu_sycl.cpp)
     _gmx_add_files_to_property(SYCL_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu_sycl.cpp)
-endif()
-if(GMX_GPU_CUDA)
-  file(GLOB DOMDEC_GPU_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu.cu)
-  _gmx_add_files_to_property(CUDA_SOURCES gpuhaloexchange_impl_gpu.cpp)
+elseif(GMX_GPU_CUDA)
+    if(GMX_NVSHMEM)
+        # For NVSHMEM builds, exclude the .cu file from normal compilation
+        set(DOMDEC_GPU_SOURCES gpuhaloexchange_impl_gpu.cpp fused_gpuhaloexchange.cpp)
+        _gmx_add_files_to_property(CUDA_SOURCES fused_gpuhaloexchange.cpp)
+    else()
+        set(DOMDEC_GPU_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu.cu)
+    endif()
+    file(GLOB DOMDEC_GPU_SOURCES ${DOMDEC_GPU_SOURCES})
+    _gmx_add_files_to_property(CUDA_SOURCES gpuhaloexchange_impl_gpu.cpp)
+elseif(GMX_GPU_HIP)
+  file(GLOB DOMDEC_GPU_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu_hip.cpp)
+  _gmx_add_files_to_property(HIP_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu_hip.cpp)
+else()
+  file(GLOB DOMDEC_GPU_SOURCES gpuhaloexchange_impl.cpp)
 endif()
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${DOMDEC_SOURCES} ${DOMDEC_GPU_SOURCES} PARENT_SCOPE)
@@ -74,6 +87,24 @@ target_link_libraries(domdec INTERFACE
 #target_link_libraries(domdec PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.
 #target_link_libraries(domdec PRIVATE legacy_modules)
+
+# NVSHMEM-specific static library for separable compilation
+if(GMX_NVSHMEM AND GMX_GPU_CUDA)
+    gmx_add_library_for_nvshmem(
+        TARGET_NAME domdec_halo_gpu
+        STATIC
+        SOURCES gpuhaloexchange_impl_gpu.cu
+        PRIVATE_TARGET_DEPENDENCIES
+            legacy_api
+            gpu_utils
+            mdlib
+            timing
+            topology
+            utility
+    )
+    # Link the separable library into domdec
+    target_link_libraries(domdec INTERFACE domdec_halo_gpu)
+endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

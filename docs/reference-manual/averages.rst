@@ -47,12 +47,12 @@ sum
 
 and the partial variance
 
-.. math::  \sigma_{n,m} ~=~ \sum_{i=n}^{m}  \left[x_i - \frac{X_{n,m}}{m-n+1}\right]^2  
+.. math::  \sigma_{n,m} ~=~ \sum_{i=n}^{m}  \left[x_i - \frac{X_{n,m}}{m-n+1}\right]^2
            :label: eqnsigma
 
 It can be shown that
 
-.. math::  X_{n,m+k} ~=~  X_{n,m} + X_{m+1,m+k}         
+.. math::  X_{n,m+k} ~=~  X_{n,m} + X_{m+1,m+k}
            :label: eqnXpartial
 
 and
@@ -73,16 +73,16 @@ and for :math:`n=1` and :math:`k=1`
 :eq:`eqn. %s <eqnvarpartial>` becomes
 
 .. math:: \begin{aligned}
-          \sigma_{1,m+1}  &=& \sigma_{1,m} + 
+          \sigma_{1,m+1}  &=& \sigma_{1,m} +
           \left[\frac{X_{1,m}}{m} - \frac{X_{1,m+1}}{m+1}\right]^2 m(m+1)\\
-          &=& \sigma_{1,m} + 
+          &=& \sigma_{1,m} +
           \frac {[~X_{1,m} - m x_{m+1}~]^2}{m(m+1)}
           \end{aligned}
           :label: eqnsimplevar0
 
 where we have used the relation
 
-.. math:: X_{1,m+1} ~=~  X_{1,m} + x_{m+1}                       
+.. math:: X_{1,m+1} ~=~  X_{1,m} + x_{m+1}
           :label: eqnsimplevar1
 
 Using formulae :eq:`eqn. %s <eqnsimplevar0>` and
@@ -192,8 +192,8 @@ all the :math:`x_i^2` terms drop out, and the terms independent of the
 summation counter :math:`i` can be simplified:
 
 .. math:: \begin{aligned}
-          \frac{\left(X^{AB}_{1,n+m}\right)^2}{n+m} \,-\, 
-          \frac{\left(X^A_{1,n}\right)^2}{n} \,-\, 
+          \frac{\left(X^{AB}_{1,n+m}\right)^2}{n+m} \,-\,
+          \frac{\left(X^A_{1,n}\right)^2}{n} \,-\,
           \frac{\left(X^B_{1,m}\right)^2}{m} &-& \nonumber \\
           2\,\frac{X^{AB}_{1,n+m}}{n+m}\sum_{i=1}^{n+m}x_i^{AB} \,+\,
           2\,\frac{X^{A}_{1,n}}{n}\sum_{i=1}^{n}x_i^{A} \,+\,

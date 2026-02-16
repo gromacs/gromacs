@@ -56,27 +56,16 @@
 namespace gmx
 {
 
-namespace
-{
-
-//! Helper function to make a std::string containing the module name
-std::string moduleName()
-{
-    return std::string(FmmModuleInfo::sc_name);
-}
-
-} // namespace
-
 FmmMdpOptions::FmmMdpOptions() :
-    exaFmmOptions_(),
-    fmSolvrOptions_(),
-    activeOptionLookup_{ { nullptr, &exaFmmOptions_, &fmSolvrOptions_ } }
+    exaFmmOptions_(), fmSolvrOptions_(), activeOptionLookup_{ nullptr, &exaFmmOptions_, &fmSolvrOptions_ }
+
 {
 }
 
 void FmmMdpOptions::initMdpOptions(IOptionsContainerWithSections* options)
 {
-    OptionSectionHandle fmmSectionMdp = options->addSection(OptionSection(moduleName().c_str()));
+    OptionSectionHandle fmmSectionMdp =
+            options->addSection(OptionSection(std::string(FmmModuleInfo::sc_name).c_str()));
     fmmSectionMdp.addOption(EnumOption<ActiveFmmBackend>(c_fmmActiveOptionName.c_str())
                                     .enumValue(c_activeFmmBackendNames)
                                     .store(&activeFmmBackend_));
@@ -139,6 +128,16 @@ const FMSolvrOptions& FmmMdpOptions::fmSolvrOptions() const
 const IFmmOptions* FmmMdpOptions::activeFmmOptions() const
 {
     return activeOptionLookup_[activeFmmBackend()];
+}
+
+FmmDirectProvider FmmMdpOptions::directProvider() const
+{
+    switch (activeFmmBackend_)
+    {
+        case ActiveFmmBackend::ExaFmm: return exaFmmOptions_.directProvider;
+        case ActiveFmmBackend::FMSolvr: return fmSolvrOptions_.directProvider;
+        default: return FmmDirectProvider::Gromacs; // case ActiveFmmBackend::Inactive
+    }
 }
 
 } // namespace gmx

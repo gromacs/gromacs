@@ -1,0 +1,18 @@
+AMBER19SB protein (Tian, C. et al. JCTC 16, 528–552, 2020 / Miletic, V. et al. ChemRxiv, 2026)
+
+********************************************************************
+* Amber ff19SB port, converted and validated by                    *
+* Vedran Miletic, Milosz Wieczor, Markus Rampp, Carsten Kutzner,   *
+* Bert L. de Groot, and Vytautas Gapsys.                           *
+*                                                                  *
+* The publication covering the original ff19SB is                  *
+* Tian, C. et al. ff19SB: Amino-Acid-Specific Protein Backbone     *
+* Parameters Trained against Quantum Mechanics Energy Surfaces in  *
+* Solution. J. Chem. Theory Comput. 16, 528–552 (2020).            *
+* doi:10.1021/acs.jctc.9b00591                                     *
+*                                                                  *
+* If you are using this force field in GROMACS, please cite        *
+* Miletic, V. et al. ChemRxiv (2026).                              *
+* doi:10.26434/chemrxiv-2026-xxxxx                                 *
+********************************************************************
+

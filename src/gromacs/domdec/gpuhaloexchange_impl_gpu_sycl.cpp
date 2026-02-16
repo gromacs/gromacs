@@ -122,12 +122,9 @@ static void launchPackSendBufKernel(const DeviceStream& deviceStream, int xSendS
 
     const sycl::range<1> range(xSendSize);
 
-    gmx::syclSubmitWithoutEvent(deviceStream.stream(),
-                                [&](sycl::handler& cgh)
-                                {
-                                    auto kernel = packSendBufKernel<usePbc>(std::forward<Args>(args)...);
-                                    cgh.parallel_for<kernelNameType>(range, kernel);
-                                });
+    auto kernelFunctionBuilder = packSendBufKernel<usePbc>;
+    syclSubmitWithoutCghOrEvent<kernelNameType>(
+            deviceStream.stream(), kernelFunctionBuilder, range, std::forward<Args>(args)...);
 }
 
 template<bool accumulateForces, class... Args>
@@ -137,13 +134,9 @@ static void launchUnpackRecvBufKernel(const DeviceStream& deviceStream, int fRec
 
     const sycl::range<1> range(fRecvSize);
 
-    gmx::syclSubmitWithoutEvent(
-            deviceStream.stream(),
-            [&](sycl::handler& cgh)
-            {
-                auto kernel = unpackRecvBufKernel<accumulateForces>(std::forward<Args>(args)...);
-                cgh.parallel_for<kernelNameType>(range, kernel);
-            });
+    auto kernelFunctionBuilder = unpackRecvBufKernel<accumulateForces>;
+    syclSubmitWithoutCghOrEvent<kernelNameType>(
+            deviceStream.stream(), kernelFunctionBuilder, range, std::forward<Args>(args)...);
 }
 
 void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)

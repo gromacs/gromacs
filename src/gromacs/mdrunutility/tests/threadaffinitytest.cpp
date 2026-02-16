@@ -59,9 +59,6 @@ MockThreadAffinityAccess::MockThreadAffinityAccess() : supported_(true)
     ON_CALL(*this, setCurrentThreadAffinityToCore(_)).WillByDefault(Return(true));
 }
 
-MockThreadAffinityAccess::~MockThreadAffinityAccess() {}
-
-
 ThreadAffinityTestHelper::ThreadAffinityTestHelper() : mpiComm_(MPI_COMM_WORLD)
 {
     hwOpt_.threadAffinity      = ThreadAffinity::Auto;
@@ -74,6 +71,22 @@ ThreadAffinityTestHelper::~ThreadAffinityTestHelper() = default;
 void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
 {
     hwTop_ = std::make_unique<HardwareTopology>(logicalProcessorCount);
+}
+
+void ThreadAffinityTestHelper::setExternalAffinitySet(const std::vector<int>& cores)
+{
+    GMX_RELEASE_ASSERT(
+            hwTop_ && hwTop_->maxThreads() > 0 && hwTop_->cpuLimit() > 0,
+            "Must have valid topology before calling setLogicalProcessorExternalAffinitySet");
+    int logicalProcessorCount = hwTop_->maxThreads();
+    hwTop_                    = std::make_unique<HardwareTopology>(logicalProcessorCount, cores);
+}
+
+void ThreadAffinityTestHelper::setTopologyFromSavedMock(const std::string&      filesystemRoot,
+                                                        const std::vector<int>& allowedProcessors,
+                                                        const std::vector<int>& externalAffinitySet)
+{
+    hwTop_ = std::make_unique<HardwareTopology>(filesystemRoot, allowedProcessors, externalAffinitySet);
 }
 
 } // namespace test

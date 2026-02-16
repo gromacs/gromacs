@@ -268,7 +268,7 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, t_state* s
     }
     reduce_atom(gnx, index, atoms.atom, atoms.atomname, &(atoms.nres), atoms.resinfo);
 
-    for (int i = 0; (i < F_NRE); i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         reduce_ilist(invindex,
                      bKeep,
@@ -283,7 +283,7 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, t_state* s
     mtop->moltype[0].name  = mtop->name;
     mtop->moltype[0].atoms = atoms;
     mtop->moltype[0].excls = reduce_listoflists(invindex, bKeep, top.excls, "excls");
-    for (int i = 0; i < F_NRE; i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         mtop->moltype[0].ilist[i] = std::move(top.idef.il[i]);
     }

@@ -560,9 +560,9 @@ void Rdf::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAna
                     }
                 }
                 // Accumulate the RDF from the distances to the surface.
-                for (size_t i = 0; i < surfaceDist2.size(); ++i)
+                for (size_t j = 0; j < surfaceDist2.size(); ++j)
                 {
-                    const real r2 = surfaceDist2[i];
+                    const real r2 = surfaceDist2[j];
                     // Here, we need to check for rmax, since the value might
                     // be above the cutoff if no points were close to some
                     // surface positions.

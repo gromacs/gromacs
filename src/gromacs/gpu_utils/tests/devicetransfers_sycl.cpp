@@ -63,11 +63,8 @@ void doDeviceTransfers(const DeviceContext& deviceContext, ArrayRef<const char> 
 
         sycl::global_ptr<char> d_buf = sycl::malloc_device<char>(input.size(), syclQueue);
 
-        syclSubmitWithoutEvent(
-                syclQueue, [=](sycl::handler& cgh) { cgh.memcpy(d_buf, input.data(), input.size()); });
-        syclSubmitWithoutEvent(syclQueue,
-                               [=](sycl::handler& cgh)
-                               { cgh.memcpy(output.data(), d_buf, input.size()); });
+        syclMemcpyWithoutEvent(syclQueue, d_buf, input.data(), input.size() * sizeof(input[0]));
+        syclMemcpyWithoutEvent(syclQueue, output.data(), d_buf, output.size() * sizeof(output[0]));
         syclQueue.wait_and_throw();
 
         sycl::free(d_buf, syclQueue);

@@ -53,6 +53,7 @@ file(GLOB NBNXM_SOURCES
     pairlist.cpp
     pairlistparams.cpp
     pairlistset.cpp
+    pairlistsets.cpp
     pairlistwork.cpp
     pairlist_simd_kernel.cpp
     pairlist_tuning.cpp

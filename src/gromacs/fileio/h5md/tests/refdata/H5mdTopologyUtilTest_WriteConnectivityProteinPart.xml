@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Bonds">
+    <Int Name="Length">44</Int>
+    <Int64>6</Int64>
+    <Int64>14</Int64>
+    <Int64>14</Int64>
+    <Int64>15</Int64>
+    <Int64>14</Int64>
+    <Int64>16</Int64>
+    <Int64>16</Int64>
+    <Int64>18</Int64>
+    <Int64>18</Int64>
+    <Int64>26</Int64>
+    <Int64>26</Int64>
+    <Int64>27</Int64>
+    <Int64>26</Int64>
+    <Int64>28</Int64>
+    <Int64>2</Int64>
+    <Int64>3</Int64>
+    <Int64>2</Int64>
+    <Int64>4</Int64>
+    <Int64>2</Int64>
+    <Int64>5</Int64>
+    <Int64>2</Int64>
+    <Int64>6</Int64>
+    <Int64>6</Int64>
+    <Int64>7</Int64>
+    <Int64>6</Int64>
+    <Int64>10</Int64>
+    <Int64>10</Int64>
+    <Int64>11</Int64>
+    <Int64>10</Int64>
+    <Int64>12</Int64>
+    <Int64>10</Int64>
+    <Int64>13</Int64>
+    <Int64>16</Int64>
+    <Int64>17</Int64>
+    <Int64>18</Int64>
+    <Int64>19</Int64>
+    <Int64>18</Int64>
+    <Int64>22</Int64>
+    <Int64>22</Int64>
+    <Int64>23</Int64>
+    <Int64>22</Int64>
+    <Int64>24</Int64>
+    <Int64>22</Int64>
+    <Int64>25</Int64>
+  </Sequence>
+</ReferenceData>

@@ -269,7 +269,7 @@ void write_xpm_split(FILE*                                          out,
  * \param[in] n_x, n_y   size of the matrix
  * \param[in] axis_x[]   the x-ticklabels (n_x or n_x+1)
  * \param[in] axis_y[]   the y-ticklables (n_y or n_y+1)
- * \param[in] *mat[]     element x,y is mat[x][y]
+ * \param[in] mat[][]    element x,y is mat[x][y]
  * \param[in] lo         output lower than lo is set to lo
  * \param[in] hi         output higher than hi is set to hi
  * \param[in] rlo        rgb value for level lo

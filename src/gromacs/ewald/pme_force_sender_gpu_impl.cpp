@@ -55,8 +55,6 @@
 class DeviceContext;
 class GpuEventSynchronizer;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
-
 namespace gmx
 {
 
@@ -116,5 +114,3 @@ void PmeForceSenderGpu::waitForEvents()
 
 
 } // namespace gmx
-
-#endif // !GMX_GPU_CUDA

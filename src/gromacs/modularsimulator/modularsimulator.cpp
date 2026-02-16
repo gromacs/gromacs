@@ -438,10 +438,10 @@ MessageStringCollector getReasonsForIncompatibility(const t_inputrec*           
     reasonsForIncompatibility.appendIf(inputrec->bDoAwh,
                                        "AWH is not supported by the modular simulator.");
     reasonsForIncompatibility.appendIf(
-            gmx_mtop_ftype_count(globalTopology, F_DISRES) > 0,
+            gmx_mtop_ftype_count(globalTopology, InteractionFunction::DistanceRestraints) > 0,
             "Distance restraints are not supported by the modular simulator.");
     reasonsForIncompatibility.appendIf(
-            gmx_mtop_ftype_count(globalTopology, F_ORIRES) > 0,
+            gmx_mtop_ftype_count(globalTopology, InteractionFunction::OrientationRestraints) > 0,
             "Orientation restraints are not supported by the modular simulator.");
     reasonsForIncompatibility.appendIf(ms != nullptr,
                                        "Multi-sim are not supported by the modular simulator.");

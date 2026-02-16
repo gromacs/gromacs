@@ -41,7 +41,7 @@ To avoid this behavior, the reference density is now normalized so that the
 sum of *positive* values is unity, ensuring that the normalization constant is
 always positive.
 
-Apart from avoiding the unexpected behavior, we expect that this also leads 
+Apart from avoiding the unexpected behavior, we expect that this also leads
 to smaller absolute differences between reference density and simulated density,
 with some small benefits for numerical stability.
 
@@ -50,7 +50,7 @@ This change affects all simulations where voxel values are negative
 ``density-guided-simulation-normalize-densities = yes``, but only has a larger
 effect for: first, similarity  measure ``inner-product`` as an effective
 force-constant scaling and, second, for all similarity measures where the sum
-of all voxel values was negative.   
+of all voxel values was negative.
 
 gmxapi Python package avoids unnecessary MPI initialization
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""

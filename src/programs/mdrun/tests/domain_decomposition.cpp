@@ -59,6 +59,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -171,9 +172,10 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #if GMX_GPU
     errorReasons.appendIf(haveAnyGpuWork && !haveCompatibleDevices,
                           "Cannot use GPU offload without a compatible GPU");
-    errorReasons.appendIf((GMX_GPU_OPENCL || GMX_GPU_HIP) && updateFlavor == UpdateFlavor::Gpu,
-                          "GPU Update not supported with OpenCL");
-    errorReasons.appendIf(GMX_GPU_HIP && pmeFlavor == PmeFlavor::Gpu, "HIP PME not implemented yet");
+    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Update && updateFlavor == UpdateFlavor::Gpu,
+                          "GPU Update not supported");
+    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme && pmeFlavor == PmeFlavor::Gpu,
+                          "GPU PME not supported");
     errorReasons.appendIf(updateFlavor == UpdateFlavor::Gpu && pmeFlavor == PmeFlavor::Cpu
                                   && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
                           "Can not use GPU update and CPU PME on a separate rank");

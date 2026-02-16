@@ -93,9 +93,9 @@ TEST(FixedCapacityVectorTest, PushWorks)
 
 TEST(FixedCapacityVectorTest, PopWorks)
 {
-    FixedCapacityVector<std::string, 3> v;
-
-    v.push_back("bla");
+    FixedCapacityVector<double*, 3> v;
+    double                          d;
+    v.push_back(&d);
     EXPECT_EQ(1U, v.size());
 
     v.pop_back();
@@ -137,11 +137,10 @@ TEST(FixedCapacityVectorTest, ClearWorks)
 
 TEST(FixedCapacityVectorTest, EmplaceBackWorks)
 {
-    FixedCapacityVector<std::vector<int>, 2> v;
+    FixedCapacityVector<char, 2> v;
 
-    const auto& elem = v.emplace_back(5);
+    v.emplace_back(5);
     EXPECT_EQ(1U, v.size());
-    EXPECT_EQ(5U, elem.size());
 }
 
 TEST(FixedCapacityVectorTest, AtThrows)

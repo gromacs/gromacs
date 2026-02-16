@@ -48,12 +48,9 @@ gmx_add_libgromacs_sources(
     pme_solve.cpp
     pme_spline_work.cpp
     pme_spread.cpp
-    # Files that implement stubs
     pme_gpu_program.cpp
-    pme_pp_comm_gpu_impl.cpp
-    pme_coordinate_receiver_gpu_impl.cpp
-    pme_force_sender_gpu_impl.cpp
     )
+
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
@@ -69,32 +66,80 @@ if (GMX_GPU_CUDA)
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
         )
-    # Clang-18 seems to emit bad ptx for these files, so we omit it from
-    # the CI build that does clang-tidy analysis of a CUDA build.
-    if (NOT GMX_CLANG_TIDY)
-        gmx_add_libgromacs_sources(
-            pme_gather.cu
-            pme_solve.cu
-            pme_spread.cu
-        )
-    endif()
     _gmx_add_files_to_property(CUDA_SOURCES
-        # Must add these files so they can include device_information.h
-        pme_gpu_internal.cpp
-        pme_gpu_timings.cpp
         pme_pp_comm_gpu_impl_gpu.cpp
         pme_force_sender_gpu_impl_gpu.cpp
         pme_coordinate_receiver_gpu_impl_gpu.cpp
+        pme_gpu_internal.cpp
         )
+    # Clang-18 seems to emit bad ptx for these files, so we omit it from
+    # the CI build that does clang-tidy analysis of a CUDA build.
+    if (NOT GMX_CLANG_TIDY)
+        if(GMX_NVSHMEM)
+            # For NVSHMEM builds, exclude pme_gather.cu from normal compilation
+            gmx_add_libgromacs_sources(
+                pme_solve.cu
+                pme_spread.cu
+            )
+        else()
+            gmx_add_libgromacs_sources(
+                pme_gather.cu
+                pme_solve.cu
+                pme_spread.cu
+            )
+        endif()
+    endif()
 elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
         pme_gpu_program_impl_ocl.cpp
         pme_gpu_ocl_stubs.cpp
+        pme_pp_comm_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_force_sender_gpu_impl.cpp
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
+        # General implementation stubs
+        pme_force_sender_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_pp_comm_gpu_impl.cpp
+)
+elseif (GMX_GPU_HIP)
+    gmx_add_libgromacs_sources(
+        # HIP-specific sources
+        pme_gather_hip.cpp
+        pme_gpu.cpp
+        pme_gpu_grid_hip.cpp
+        pme_gpu_internal.cpp
+        pme_gpu_program_impl_hip.cpp
+        pme_gpu_timings.cpp
+        pme_solve_hip.cpp
+        pme_spread_hip.cpp
+        pme_pp_comm_gpu_impl_gpu_hip.cpp
+        pme_force_sender_gpu_impl_gpu_hip.cpp
+        pme_pp_comm_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu_hip.cpp
+        pme_coordinate_receiver_gpu_impl_gpu.cpp
+        )
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include device_information.h
+        pme_gather_hip.cpp
+        pme_gpu_grid_hip.cpp
+        pme_gpu_internal.cpp
+        pme_gpu_program.cpp
+        pme_gpu_program_impl_hip.cpp
+        pme_gpu_3dfft_hip.cpp
+        pme_gpu_timings.cpp
+        pme_pp_comm_gpu_impl_gpu.cpp
+        pme_pp_comm_gpu_impl_gpu_hip.cpp
+        pme_force_sender_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu_hip.cpp
+        pme_coordinate_receiver_gpu_impl_gpu.cpp
+        pme_solve_hip.cpp
+        pme_spread_hip.cpp
         )
 elseif (GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
@@ -130,25 +175,13 @@ elseif (GMX_GPU_SYCL)
         pme_solve_sycl.cpp
         pme_spread_sycl.cpp
       )
-elseif (GMX_GPU_HIP)
-    gmx_add_libgromacs_sources(
-        pme_gpu.cpp
-        pme_gpu_hip_stubs.cpp
-        pme_gpu_program_impl_hip.cpp
-        )
-    _gmx_add_files_to_property(HIP_SOURCES
-        pme_gpu.cpp
-        pme_gpu_hip_stubs.cpp
-        pme_gpu_program.cpp
-        pme_gpu_program_impl_hip.cpp
-        pme_pp_comm_gpu_impl.cpp
-        pme_coordinate_receiver_gpu_impl.cpp
-        pme_force_sender_gpu_impl.cpp
-        )
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
         pme_gpu_program_impl.cpp
+        pme_pp_comm_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_force_sender_gpu_impl.cpp
         )
 endif()
 
@@ -176,6 +209,25 @@ target_link_libraries(ewald INTERFACE
 #target_link_libraries(ewald PRIVATE tng_io)
 # TODO: Explicitly link specific modules.
 #target_link_libraries(ewald PRIVATE legacy_modules)
+
+# NVSHMEM-specific separable compilation
+if(GMX_NVSHMEM AND GMX_GPU_CUDA)
+    # Create a separate library for pme_gather.cu with separable compilation
+    # Clang-18 seems to emit bad ptx for these files, so we omit it from
+    # the CI build that does clang-tidy analysis of a CUDA build.
+    if (NOT GMX_CLANG_TIDY)
+        gmx_add_library_for_nvshmem(
+            TARGET_NAME ewald_pme_gather_gpu
+            STATIC
+            SOURCES pme_gather.cu
+            PRIVATE_TARGET_DEPENDENCIES
+                utility
+                math
+        )
+        # Link the separable library to the main ewald library
+        target_link_libraries(ewald INTERFACE ewald_pme_gather_gpu)
+    endif()
+endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

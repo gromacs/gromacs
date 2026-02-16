@@ -3,7 +3,7 @@
 Guidelines for formatting of git commits
 ========================================
 
-While there is no true correct way on how to submit new commits for 
+While there is no true correct way on how to submit new commits for
 code review for |Gromacs|, following these guidelines will help the
 review process go smoothly.
 
@@ -30,13 +30,13 @@ related to that work without necessarily fixing the whole issue.
 Concerning inline code comments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-New code should be sufficiently commented so that other people will be able to 
+New code should be sufficiently commented so that other people will be able to
 understand the purpose of the code, and less about the current operation.
 Preferably the variable naming and code structure clarify the mechanics, and
 comments should only refer to higher-level things, such as choice of algorithm,
 or the desire to be consistent with some other part of the code.
 
-For example, the following comment would be insufficient to explain the 
+For example, the following comment would be insufficient to explain the
 (made up example) of iteration over a list of interactions::
 
     /* Code takes each item and iterates over them in a loop
@@ -45,9 +45,9 @@ For example, the following comment would be insufficient to explain the
 
 A much better example would be explaining why the iteration takes place::
 
-    /* We iterate over the items in the list to get 
+    /* We iterate over the items in the list to get
      * the specific interaction type for all of them
-     * and store them in the new data type for future 
+     * and store them in the new data type for future
      * use in function foo
      */
 

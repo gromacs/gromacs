@@ -462,6 +462,8 @@ void compute_globals(gmx_global_stat*               gstat,
     bPres      = ((flags & CGLO_PRESSURE) != 0);
     bConstrain = ((flags & CGLO_CONSTRAINT) != 0);
 
+    const bool computeEkin = bTemp || ((flags & CGLO_COMPUTEEKIN) != 0);
+
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
 
@@ -473,7 +475,10 @@ void compute_globals(gmx_global_stat*               gstat,
 
     /* ########## Kinetic energy  ############## */
 
-    if (bTemp)
+    const bool haveLeapFrog = (ir->eI == IntegrationAlgorithm::MD || EI_SD(ir->eI));
+    const bool haveEkinhOld = (haveLeapFrog && step == ekind->lastComputeGlobalsStep + 1);
+
+    if (computeEkin)
     {
         if (!bReadEkin)
         {
@@ -489,7 +494,8 @@ void compute_globals(gmx_global_stat*               gstat,
         calc_vcm_grp(*mdatoms, x, v, vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain || observablesReducer->isReductionRequired())
+    if (computeEkin || bTemp || bStopCM || bPres || bEner || bConstrain
+        || observablesReducer->isReductionRequired())
     {
         if (!bGStat)
         {
@@ -513,7 +519,7 @@ void compute_globals(gmx_global_stat*               gstat,
                             ekind,
                             bStopCM ? vcm : nullptr,
                             signalBuffer,
-                            *bSumEkinhOld,
+                            *bSumEkinhOld && haveEkinhOld,
                             flags,
                             step,
                             observablesReducer);
@@ -552,10 +558,30 @@ void compute_globals(gmx_global_stat*               gstat,
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
          */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin, bEkinAveVel, bScaleEkin);
+        if (haveLeapFrog && !haveEkinhOld && step >= ir->init_step)
+        {
+            /* We need to compute the average kinetic energy over the previous
+             * and the current step, but we do not have the previous value.
+             * This should only happen when a run is interrupted.
+             * As an emergency measure, copy the new values to the old.
+             * In this way we obtain the current half step kinetic energy
+             * instead of the average of the previous and the current.
+             */
+            GMX_ASSERT(step % ir->nstcalcenergy != 0,
+                       "We should only ignore ekinh_old when terminating mdrun at a "
+                       "non-nstcalcenergy step");
+            for (auto& tcstat : ekind->tcstat)
+            {
+                copy_mat(tcstat.ekinh, tcstat.ekinh_old);
+            }
+        }
+        enerd->term[InteractionFunction::Temperature] =
+                sum_ekin(&(ir->opts), ekind, &dvdl_ekin, bEkinAveVel, bScaleEkin);
         enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Mass] = static_cast<double>(dvdl_ekin);
 
-        enerd->term[F_EKIN] = trace(ekind->ekin);
+        enerd->term[InteractionFunction::KineticEnergy] = trace(ekind->ekin);
+
+        ekind->lastComputeGlobalsStep = step;
     }
 
     /* ########## Now pressure ############## */
@@ -568,7 +594,8 @@ void compute_globals(gmx_global_stat*               gstat,
          * Use the box from last timestep since we already called update().
          */
 
-        enerd->term[F_PRES] = calc_pres(fr->pbcType, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
+        enerd->term[InteractionFunction::Pressure] =
+                calc_pres(fr->pbcType, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
     }
 }
 

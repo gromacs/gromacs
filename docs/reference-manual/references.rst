@@ -2,7 +2,6 @@ Bibliography
 ============
 
 
-
 .. raw:: html
 
    <div id="refs" class="references">
@@ -2703,14 +2702,50 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+
+.. raw:: html
+
+   <div id="refGreengard1987">
+
+.. _refGreengard1987:
+
+:sup:`196` L. Greengard and V. Rokhlin, "A fast algorithm for particle simulations", *J. Comput. Phys.* **73**, 325–348 (1987).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="refMaier2015">
+
+.. _refMaier2015:
+
+:sup:`197` Maier, J. A., Martinez, C., Kasavajhala, K., Wickstrom, L., Hauser, K. E., and Simmerling, C. , and Simmerling, C., "ff14SB: Improving the Accuracy of Protein Side Chain and Backbone Parameters from ff99SB", *J. Chem. Theory Comput.* **11**, 3696–3713 (2015).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="refTian2020">
+
+.. _refTian2020:
+
+:sup:`198` Tian, C., Kasavajhala, K., Belfon, K. A. A., Raguette, L., Huang, H., Migues, A. N., Bickel, J., Wang, Y., Pincay, J., Wu, Q., and Simmerling, C., "ff19SB: Amino-Acid-Specific Protein Backbone Parameters Trained against Quantum Mechanics Energy Surfaces in Solution", *J. Chem. Theory Comput.* **16**, 528–552 (2020).
+
+.. raw:: html
+
+   </div>
    
 .. raw:: html
 
    <div id="refKokh20">
 
-.. _refKokh20:
+.. _refKokh2020:
 
-:sup:`196` D. B. Kokh, B. Doser, S. Richter, F. Ormersbach, X. Cheng, and R.C. Wade, "A Workflow for Exploring Ligand Dissociation from a Macromolecule: Efficient
+:sup:`199` D. B. Kokh, B. Doser, S. Richter, F. Ormersbach, X. Cheng, and R.C. Wade, "A Workflow for Exploring Ligand Dissociation from a Macromolecule: Efficient
     Random Acceleration Molecular Dynamics Simulation and Interaction Fingerprints Analysis of
     Ligand Trajectories" J. Chem Phys. **158** 125102 (2020).
 

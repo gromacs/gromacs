@@ -88,7 +88,7 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
  */
 static constexpr bool sc_boundingBoxCornersAsQuadruplets(const PairlistType pairlistType)
 {
-    return sc_gpuNumClusterPerCell(pairlistType) >= 4;
+    return sc_gpuNumClusterPerBin(pairlistType) >= 4;
 }
 
 //! The number of bounding boxes in a pack, also the size of a pack along one dimension

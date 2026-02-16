@@ -89,7 +89,7 @@ void init_disres(FILE*                 fplog,
     char*      ptr;
     int        type_min, type_max;
 
-    if (gmx_mtop_ftype_count(mtop, F_DISRES) == 0)
+    if (gmx_mtop_ftype_count(mtop, InteractionFunction::DistanceRestraints) == 0)
     {
         dd->nres = 0;
 
@@ -141,7 +141,7 @@ void init_disres(FILE*                 fplog,
     type_max  = 0;
     for (const auto il : IListRange(mtop))
     {
-        if (il.nmol() > 1 && !il.list()[F_DISRES].empty()
+        if (il.nmol() > 1 && !il.list()[InteractionFunction::DistanceRestraints].empty()
             && ir->eDisre != DistanceRestraintRefinement::Ensemble)
         {
             gmx_fatal(FARGS,
@@ -152,9 +152,9 @@ void init_disres(FILE*                 fplog,
         }
 
         int np = 0;
-        for (int fa = 0; fa < il.list()[F_DISRES].size(); fa += 3)
+        for (int fa = 0; fa < il.list()[InteractionFunction::DistanceRestraints].size(); fa += 3)
         {
-            int type = il.list()[F_DISRES].iatoms[fa];
+            int type = il.list()[InteractionFunction::DistanceRestraints].iatoms[fa];
 
             np++;
             int npair = mtop.ffparams.iparams[type].disres.npair;

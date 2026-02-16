@@ -585,6 +585,25 @@ public:
 };
 
 /*! \brief
+ * Exception class for MD module setup/initialization failures.
+ *
+ * Used when an MD module fails to complete its required setup,
+ * e.g. missing notifications, unreported decisions, or
+ * inconsistent initialization state.
+ *
+ * \inpublicapi
+ */
+class MDModuleSetupError : public GromacsException
+{
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit MDModuleSetupError(const ExceptionInitializer& details) : GromacsException(details) {}
+
+    int errorCode() const override;
+};
+
+
+/*! \brief
  * Macro for throwing an exception.
  *
  * \param[in] e    Exception object to throw.

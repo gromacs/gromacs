@@ -45,6 +45,7 @@
 #include "config.h"
 
 #include "gromacs/ewald/pme_pp_communication.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -90,22 +91,22 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
     {
         return;
     }
-    GMX_ASSERT(!GMX_GPU_SYCL,
-               "PmeForceSenderGpu does not support SYCL with threadMPI; use libMPI instead.");
+    GMX_ASSERT(GpuConfigurationCapabilities::PpPmeDirectComm,
+               "PmeForceSenderGpu does not support current GPU backend with threadMPI; use libMPI "
+               "instead.");
 
-#if GMX_MPI && GMX_GPU_CUDA
-
-    int ind_start = 0;
-    int ind_end   = 0;
-    int i         = 0;
-    for (const auto& receiver : ppRanks_)
+    if constexpr (GpuConfigurationCapabilities::PpPmeDirectComm)
     {
-        ind_start = ind_end;
-        ind_end   = ind_start + receiver.numAtoms;
-
-        if (receiver.numAtoms > 0)
+        int ind_start = 0;
+        int ind_end   = 0;
+        int i         = 0;
+        for (const auto& receiver : ppRanks_)
         {
-            ppCommManagers_[i].localForcePtr = &d_f[ind_start];
+            ind_start = ind_end;
+            ind_end   = ind_start + receiver.numAtoms;
+
+#if GMX_MPI
+            setMpiPointer(ppCommManagers_[i].localForcePtr, asMpiPointer(d_f) + ind_start);
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
             MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
                      sizeof(Float3*),
@@ -141,13 +142,13 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
                      receiver.rankId,
                      eCommType_FORCES_GPU_EVENT_RECORDED,
                      comm_);
-        }
-        i++;
-    }
-
 #else
-    GMX_UNUSED_VALUE(d_f);
+            GMX_UNUSED_VALUE(i);
+            GMX_UNUSED_VALUE(d_f);
 #endif
+            i++;
+        }
+    }
 }
 
 /*! \brief Send PME data directly using GPU-aware MPI */

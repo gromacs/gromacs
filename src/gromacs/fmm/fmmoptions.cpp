@@ -81,6 +81,11 @@ std::string fmmDirectProviderName(FmmDirectProvider directProvider)
     return std::string(c_fmmDirectProviderNames[directProvider]);
 }
 
+std::string exaFmmTreeTypeName(ExaFmmTreeType treeType)
+{
+    return std::string(c_exaFmmTreeTypeNames[treeType]);
+}
+
 void ExaFmmOptions::initMdpOptionsFmm(OptionSectionHandle& section)
 {
     section.addOption(IntegerOption(c_fmmExaFmmOrderOptionName.c_str()).store(&order));
@@ -88,6 +93,12 @@ void ExaFmmOptions::initMdpOptionsFmm(OptionSectionHandle& section)
     section.addOption(EnumOption<FmmDirectProvider>(c_fmmExaFmmDirectProviderOptionName.c_str())
                               .enumValue(c_fmmDirectProviderNames)
                               .store(&directProvider));
+    section.addOption(EnumOption<ExaFmmTreeType>(c_fmmExaFmmTreeTypeOptionName.c_str())
+                              .enumValue(c_exaFmmTreeTypeNames)
+                              .store(&treeType));
+    section.addOption(IntegerOption(c_fmmExaFmmTreeDepthOptionName.c_str()).store(&treeDepth));
+    section.addOption(
+            IntegerOption(c_fmmExaFmmMaxParticlesPerCellOptionName.c_str()).store(&maxParticlesPerCell));
 }
 
 void ExaFmmOptions::initMdpTransformFmm(IKeyValueTreeTransformRules* rules)
@@ -99,6 +110,12 @@ void ExaFmmOptions::initMdpTransformFmm(IKeyValueTreeTransformRules* rules)
             rules, &fromStdString<int>, FmmModuleInfo::sc_name, c_fmmExaFmmDirectRangeOptionName);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, FmmModuleInfo::sc_name, c_fmmExaFmmDirectProviderOptionName);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, FmmModuleInfo::sc_name, c_fmmExaFmmTreeTypeOptionName);
+    addMdpTransformFromString<int>(
+            rules, &fromStdString<int>, FmmModuleInfo::sc_name, c_fmmExaFmmTreeDepthOptionName);
+    addMdpTransformFromString<int>(
+            rules, &fromStdString<int>, FmmModuleInfo::sc_name, c_fmmExaFmmMaxParticlesPerCellOptionName);
 }
 
 void ExaFmmOptions::buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const
@@ -109,6 +126,11 @@ void ExaFmmOptions::buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const
                                    FmmModuleInfo::sc_name,
                                    c_fmmExaFmmDirectProviderOptionName,
                                    c_fmmDirectProviderNames[directProvider]);
+    addMdpOutputValue<std::string>(
+            builder, FmmModuleInfo::sc_name, c_fmmExaFmmTreeTypeOptionName, c_exaFmmTreeTypeNames[treeType]);
+    addMdpOutputValue<int>(builder, FmmModuleInfo::sc_name, c_fmmExaFmmTreeDepthOptionName, treeDepth);
+    addMdpOutputValue<int>(
+            builder, FmmModuleInfo::sc_name, c_fmmExaFmmMaxParticlesPerCellOptionName, maxParticlesPerCell);
 }
 
 void FMSolvrOptions::initMdpOptionsFmm(OptionSectionHandle& section)
@@ -176,6 +198,52 @@ void ExaFmmOptions::validateMdpOptions(WarningHandler* wi) const
     if (directRange == 1 && directProvider == FmmDirectProvider::Gromacs)
     {
         wi->addError("ExaFMM direct range must be 2 when using GROMACS as a direct provider.");
+    }
+
+    if (treeType == ExaFmmTreeType::Uniform)
+    {
+        if (directProvider == FmmDirectProvider::Fmm && treeDepth <= 0)
+        {
+            wi->addError(
+                    "Tree depth must be greater than 0 when using a uniform tree with the FMM "
+                    "direct provider.");
+        }
+
+        if (directProvider == FmmDirectProvider::Gromacs && treeDepth != 0)
+        {
+            wi->addError(
+                    "Tree depth for FMM is determined based on the domain decomposition grid when "
+                    "using GROMACS "
+                    "as the direct provider and should not be set by the user.");
+        }
+
+        if (maxParticlesPerCell != 0)
+        {
+            wi->addError(
+                    "Maximum particles per cell for FMM must not be set when using a uniform "
+                    "tree.");
+        }
+    }
+    else if (treeType == ExaFmmTreeType::Adaptive)
+    {
+        if (directProvider == FmmDirectProvider::Gromacs)
+        {
+            wi->addError(
+                    "Adaptive tree cannot be used for FMM when GROMACS is the direct provider. Use "
+                    "a uniform tree instead.");
+        }
+
+        if (maxParticlesPerCell <= 0)
+        {
+            wi->addError(
+                    "Maximum particles per cell for FMM must be set to a positive value when using "
+                    "an adaptive tree.");
+        }
+
+        if (treeDepth != 0)
+        {
+            wi->addError("Tree depth for FMM must not be set when using an adaptive tree.");
+        }
     }
 }
 

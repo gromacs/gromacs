@@ -59,6 +59,7 @@ if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     sycl-ls || true;
     export SYCL_CACHE_PERSISTENT=1  # Issue #4218
 fi
+
 LABEL_REGEX=
 if [[ -n "$GMX_TEST_LABELS" ]] ; then
     LABEL_REGEX="--label-regex $GMX_TEST_LABELS"
@@ -71,7 +72,7 @@ if [[ -n "$GMX_TESTS_TO_RUN_REGEX" ]] ; then
     TESTS_REGEX="--tests-regex $GMX_TESTS_TO_RUN_REGEX"
 fi
 
-ctest -D $CTEST_RUN_MODE $LABEL_REGEX $TESTS_REGEX $EXTRA_FLAGS --parallel $PARALLEL_TEST_EXECUTION --output-on-failure | tee ctestLog.log || true
+ctest -D $CTEST_RUN_MODE $LABEL_REGEX $TESTS_REGEX $EXTRA_FLAGS --parallel $PARALLEL_TEST_EXECUTION --schedule-random --output-on-failure | tee ctestLog.log || true
 
 EXITCODE=$?
 

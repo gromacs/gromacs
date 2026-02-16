@@ -50,9 +50,10 @@
  *
  * \todo This function could go away when idef is not a big bucket of
  * everything. */
-static inline bool ftypeIsListedPotential(int ftype)
+static inline bool ftypeIsListedPotential(InteractionFunction ftype)
 {
-    return ((interaction_function[ftype].flags & IF_BOND) != 0U) && ftype != F_CONNBONDS;
+    return ((interaction_function[ftype].flags & IF_BOND) != 0U)
+           && ftype != InteractionFunction::ConnectBonds;
 }
 
 /*! \brief Return whether this is an interaction that actually
@@ -61,10 +62,11 @@ static inline bool ftypeIsListedPotential(int ftype)
  *
  * \todo This function could go away when idef is not a big bucket of
  * everything. */
-static inline bool ftype_is_bonded_potential(int ftype)
+static inline bool ftype_is_bonded_potential(InteractionFunction ftype)
 {
     return ((interaction_function[ftype].flags & IF_BOND) != 0U)
-           && !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
+           && !(ftype == InteractionFunction::ConnectBonds || ftype == InteractionFunction::PositionRestraints
+                || ftype == InteractionFunction::FlatBottomedPositionRestraints);
 }
 
 #endif

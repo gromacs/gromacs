@@ -16,13 +16,13 @@ simulations and hardware. The new features are:
   calculations up to three times as fast when using GPUs
 * A new formulation of the soft-cored non-bonded interactions for free-energy calculations allows for a finer control of the alchemical transformation pathways
 * New transformation pull coordinate allows arbitrary mathematical transformations of one of more other pull coordinates
-* New interface for multi-scale Quantum Mechanics / Molecular Mechanics (QM/MM) simulations with the CP2K quantum 
+* New interface for multi-scale Quantum Mechanics / Molecular Mechanics (QM/MM) simulations with the CP2K quantum
   chemistry package, supporting periodic boundary conditions.
 * grompp performance improvements
 * `Cool quotes music playlist <https://open.spotify.com/playlist/4oj41X9tgIAJuLgfWPq6ZX>`_
 * Additional features were ported to modular simulator
 * Added AMD GPU support with SYCL via AdaptiveCpp_ (hipSYCL)
-* More GPU offload features supported with SYCL (PME, GPU update). 
+* More GPU offload features supported with SYCL (PME, GPU update).
 * Improved parallelization with GPU-accelerated runs using CUDA and extended GPU direct communication to support multi-node simulation using CUDA-aware MPI.
 
 .. Note to developers!

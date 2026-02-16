@@ -114,11 +114,11 @@ TEST(ListedShims, ParameterConversion)
                        pickType<HarmonicAngle>(interactions).parameters[0].equilConstant() / DEG2RAD,
                        gmx::test::defaultRealTolerance());
 
-    EXPECT_EQ(idef->il[F_BONDS].iatoms.size(), 9);
+    EXPECT_EQ(idef->il[InteractionFunction::Bonds].iatoms.size(), 9);
     std::vector<int> bondIatoms{ 0, 0, 1, 0, 1, 2, 1, 2, 3 };
-    EXPECT_EQ(idef->il[F_BONDS].iatoms, bondIatoms);
+    EXPECT_EQ(idef->il[InteractionFunction::Bonds].iatoms, bondIatoms);
     std::vector<int> angleIatoms{ 2, 0, 1, 2, 3, 1, 2, 3 };
-    EXPECT_EQ(idef->il[F_ANGLES].iatoms, angleIatoms);
+    EXPECT_EQ(idef->il[InteractionFunction::Angles].iatoms, angleIatoms);
     idef->clear();
 }
 

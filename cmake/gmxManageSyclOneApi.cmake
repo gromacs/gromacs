@@ -267,12 +267,38 @@ else()
 endif()
 
 # The API is experimental and unstable, so we don't build it by default
+option(GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION "Enable support for oneAPI SYCL standalone kernel-submission functions that don't use command-group handlers (experimental oneAPI feature")
+mark_as_advanced(GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION)
+
+if(GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION)
+    list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " CMAKE_REQUIRED_FLAGS)
+    check_cxx_symbol_exists(SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS "sycl/sycl.hpp" HAVE_SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS)
+    check_cxx_symbol_exists(SYCL_EXT_ONEAPI_WORK_GROUP_STATIC "sycl/sycl.hpp" HAVE_SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+    unset(CMAKE_REQUIRED_FLAGS)
+    if (NOT HAVE_SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS)
+        message(FATAL_ERROR "oneAPI extension for enqueue functions was requested for handler-free submission but not available in the compiler")
+    endif()
+    if (NOT HAVE_SYCL_EXT_ONEAPI_WORK_GROUP_STATIC)
+        message(FATAL_ERROR "oneAPI extension for work-group static memory (needed for handler-free submission) was requested but not available in the compiler")
+    endif()
+endif()
+
+# The API is experimental and unstable, so we don't build it by default
 option(GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API "Enable support for SYCL experimental submission API (experimental oneAPI feature)")
 mark_as_advanced(GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API)
 if(GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API)
+    list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " CMAKE_REQUIRED_FLAGS)
+    check_cxx_symbol_exists(SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS "sycl/sycl.hpp" HAVE_SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS)
+    if (NOT HAVE_SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS)
+        message(FATAL_ERROR "oneAPI extension for experimental submit API was requested but not available in the compiler")
+    endif()
     if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION LESS_EQUAL 20250001)
         message(FATAL_ERROR "SYCL submit support in oneAPI 2025.0 is broken, and earlier versions do not support the API; set GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API=OFF")
     endif()
+endif()
+
+if (GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API AND GMX_SYCL_ENABLE_HANDLER_FREE_SUBMISSION)
+    message(FATAL_ERROR "Cannot use more than one experimental API for SYCL kernel submission")
 endif()
 
 if(GMX_GPU_FFT_VKFFT)

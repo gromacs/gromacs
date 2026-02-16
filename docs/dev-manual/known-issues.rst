@@ -26,7 +26,7 @@ OpenCL on NVIDIA Volta and later broken
 ---------------------------------------
 
 The OpenCL code produces incorrect results on Volta and Turing GPU architectures
-from NVIDIA (CC 7.0 and 7.5). This is an issue that affects certain flavors of 
+from NVIDIA (CC 7.0 and 7.5). This is an issue that affects certain flavors of
 the nonboded kernels, most likely a result of miscompilation, and there is no
 known workaround.
 

@@ -823,7 +823,7 @@ int gmx_mindist(int argc, char* argv[])
     matrix            box;
     gmx_bool          bTop = FALSE;
 
-    int         i, nres = 0;
+    int         nres = 0;
     const char *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
     char**      grpname;
     int*        gnx;
@@ -905,7 +905,7 @@ int gmx_mindist(int argc, char* argv[])
         srenew(gnx, ng);
         srenew(index, ng);
         srenew(grpname, ng);
-        for (i = 1; (i < ng); i++)
+        for (int i = 1; (i < ng); i++)
         {
             gnx[i]     = 1;
             grpname[i] = grpname[0];

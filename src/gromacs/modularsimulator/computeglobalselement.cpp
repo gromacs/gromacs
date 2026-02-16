@@ -225,10 +225,10 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
         const bool doInterSimSignal = false;
 
         // Make signaller to signal stop / reset / checkpointing signals
-        auto signaller = std::make_shared<SimulationSignaller>(
+        auto simulationSignaller = std::make_shared<SimulationSignaller>(
                 signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-        registerRunFunction([this, step, flags, signaller = std::move(signaller)]()
+        registerRunFunction([this, step, flags, signaller = std::move(simulationSignaller)]()
                             { compute(step, flags, signaller.get(), true); });
     }
     else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
@@ -280,10 +280,10 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
             // Disable functionality
             const bool doInterSimSignal = false;
 
-            auto signaller = std::make_shared<SimulationSignaller>(
+            auto simulationSignaller = std::make_shared<SimulationSignaller>(
                     signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-            registerRunFunction([this, step, flags, signaller = std::move(signaller)]()
+            registerRunFunction([this, step, flags, signaller = std::move(simulationSignaller)]()
                                 { compute(step, flags, signaller.get(), true); });
         }
     }

@@ -6,7 +6,7 @@
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 24.04
-#   Build type: RelWithAssert
+#   Build type: Release (to avoid code gen issues)
 #   Compiler: gcc-11
 #   MPI: OpenMPI (AMD build)
 #   SIMD: AVX2_256
@@ -23,8 +23,9 @@ gromacs:gcc-11-hip-622-mpi:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
+    # Use VkFFT because ROCFFT does not work with this device arch
+    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034 -DGMX_GPU_FFT_LIBRARY=VkFFT"
     COMPILER_MAJOR_VERSION: 11
 
 gromacs:gcc-11-hip-622-mpi:build:
@@ -45,7 +46,7 @@ gromacs:gcc-11-hip-622-mpi:test:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
-    - !reference [.rules:merge-and-post-merge-acceptance, rules]                 
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
@@ -90,7 +91,7 @@ gromacs:gcc-11-hip-622-mpi-nightly:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
     CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx906 -DGMX_GPU_FFT_LIBRARY=ROCFFT -DGMX_USE_HEFFTE=ON"
     COMPILER_MAJOR_VERSION: 11
 

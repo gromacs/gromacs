@@ -35,6 +35,9 @@
 #ifndef GMX_GMXPREPROCESS_GPP_NEXTNB_H
 #define GMX_GMXPREPROCESS_GPP_NEXTNB_H
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
+
 struct InteractionsOfType;
 
 namespace gmx
@@ -70,14 +73,17 @@ void print_nnb(t_nextnb* nnb, char* s);
 #    define print_nnb(nnb, s)
 #endif
 
-void gen_nnb(t_nextnb* nnb, gmx::ArrayRef<InteractionsOfType> plist);
+void gen_nnb(t_nextnb* nnb, gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist);
 /* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
  * initiated using init_nnb.
  */
 
-void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, gmx::ListOfLists<int>* excls);
+void generate_excl(int                                                             nrexcl,
+                   int                                                             nratoms,
+                   gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                   gmx::ListOfLists<int>*                                          excls);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

@@ -19,7 +19,7 @@ definitions. The target now gets exported into the |Gromacs| namespace.
 Fixed unsolicited changing of atom names in pdb file
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 
-Remove functions to change atoms names when reading 
+Remove functions to change atoms names when reading
 and writing pdb files. This affected naming of
 H atoms in particular.
 

@@ -61,58 +61,180 @@ namespace test
 
 class FmmMdpValidatorTest : public ::testing::Test
 {
-public:
-    FmmMdpValidatorTest() : warningHandler_(false, 0) {}
-
-    void notifyFmmModulePreProcessingSetup()
-    {
-        fmmModule_->subscribeToPreProcessingNotifications(&notifiers_);
-        notifiers_.preProcessingNotifier_.notify(&warningHandler_);
-        notifiers_.preProcessingNotifier_.notify(mdCoulombType_);
-    }
-
-protected:
-    std::unique_ptr<IMDModule> fmmModule_;
-    MDModulesNotifiers         notifiers_;
-
-    // default settings
-    MdModulesCoulombTypeInfo mdCoulombType_;
-    WarningHandler           warningHandler_;
 };
 
-TEST_F(FmmMdpValidatorTest, ReportsErrorWhenExaFmmExpansionOrderIsZero)
-{
-    mdCoulombType_ = { CoulombInteractionType::Fmm };
 
-    KeyValueTreeBuilder mdpValueBuilder;
-    std::string         fmmActiveBackendKey;
+TEST_F(FmmMdpValidatorTest, ReportsErrorsForInvalidExaFmmSettings)
+{
+    MdModulesCoulombTypeInfo mdCoulombType = { CoulombInteractionType::Fmm };
+
+    std::string fmmActiveBackendKey;
     fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
     fmmActiveBackendKey.append("-");
     fmmActiveBackendKey.append(c_fmmActiveOptionName);
 
-    std::string orderKey;
-    orderKey.append(FmmModuleInfo::sc_name);
-    orderKey.append("-");
-    orderKey.append(c_fmmExaFmmOrderOptionName);
+    std::string directProviderKey;
+    directProviderKey.append(FmmModuleInfo::sc_name);
+    directProviderKey.append("-");
+    directProviderKey.append(c_fmmExaFmmDirectProviderOptionName);
 
-    mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
-    mdpValueBuilder.rootObject().addValue(orderKey, std::string("0"));
+    std::string directRangeKey;
+    directRangeKey.append(FmmModuleInfo::sc_name);
+    directRangeKey.append("-");
+    directRangeKey.append(c_fmmExaFmmDirectRangeOptionName);
 
-    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
+    // Expect error when expansion order is set to zero
+    {
+        std::string orderKey;
+        orderKey.append(FmmModuleInfo::sc_name);
+        orderKey.append("-");
+        orderKey.append(c_fmmExaFmmOrderOptionName);
 
-    fmmModule_ = FmmModuleInfo::create();
-    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-    notifyFmmModulePreProcessingSetup();
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+        mdpValueBuilder.rootObject().addValue(directProviderKey,
+                                              fmmDirectProviderName(FmmDirectProvider::Gromacs));
+        mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("2"));
+        mdpValueBuilder.rootObject().addValue(orderKey, std::string("0"));
 
-    EXPECT_EQ(warningHandler_.errorCount(), 1);
+        KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+        std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+        fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
+
+        MDModulesNotifiers notifiers;
+        fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+        WarningHandler warningHandler(false, 0);
+        notifiers.preProcessingNotifier_.notify(&warningHandler);
+        notifiers.preProcessingNotifier_.notify(mdCoulombType);
+
+        EXPECT_EQ(warningHandler.errorCount(), 1);
+    }
+
+    // Should report error when direct range is set to 1 while using GROMACS as the direct provider
+    {
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+        mdpValueBuilder.rootObject().addValue(directProviderKey,
+                                              fmmDirectProviderName(FmmDirectProvider::Gromacs));
+        mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("1"));
+
+        KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+        std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+        fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
+
+        MDModulesNotifiers notifiers;
+        fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+        WarningHandler warningHandler(false, 0);
+        notifiers.preProcessingNotifier_.notify(&warningHandler);
+        notifiers.preProcessingNotifier_.notify(mdCoulombType);
+
+        // If DirectProvider is GROMACS, DirectRange must be 2 for ExaFMM
+        EXPECT_EQ(warningHandler.errorCount(), 1);
+    }
+
+    // Expect error when using an adaptive tree is used with GROMACS as the direct provider
+    {
+        std::string treeTypeKey;
+        treeTypeKey.append(FmmModuleInfo::sc_name);
+        treeTypeKey.append("-");
+        treeTypeKey.append(c_fmmExaFmmTreeTypeOptionName);
+
+        std::string maxParticlesPerCellKey;
+        maxParticlesPerCellKey.append(FmmModuleInfo::sc_name);
+        maxParticlesPerCellKey.append("-");
+        maxParticlesPerCellKey.append(c_fmmExaFmmMaxParticlesPerCellOptionName);
+
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+        mdpValueBuilder.rootObject().addValue(directProviderKey,
+                                              fmmDirectProviderName(FmmDirectProvider::Gromacs));
+        mdpValueBuilder.rootObject().addValue(treeTypeKey, exaFmmTreeTypeName(ExaFmmTreeType::Adaptive));
+        mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("2"));
+        mdpValueBuilder.rootObject().addValue(maxParticlesPerCellKey, std::string("64"));
+
+        KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+        std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+        fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
+
+        MDModulesNotifiers notifiers;
+        fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+        WarningHandler warningHandler(false, 0);
+        notifiers.preProcessingNotifier_.notify(&warningHandler);
+        notifiers.preProcessingNotifier_.notify(mdCoulombType);
+
+        EXPECT_EQ(warningHandler.errorCount(), 1);
+    }
+
+    // Expect error when adaptive tree is used without specifying maximum particles per cell
+    {
+        std::string treeTypeKey;
+        treeTypeKey.append(FmmModuleInfo::sc_name);
+        treeTypeKey.append("-");
+        treeTypeKey.append(c_fmmExaFmmTreeTypeOptionName);
+
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+        mdpValueBuilder.rootObject().addValue(directProviderKey,
+                                              fmmDirectProviderName(FmmDirectProvider::Fmm));
+        mdpValueBuilder.rootObject().addValue(treeTypeKey, exaFmmTreeTypeName(ExaFmmTreeType::Adaptive));
+
+        mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("1"));
+
+        KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+        std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+        fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
+
+        MDModulesNotifiers notifiers;
+        fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+        WarningHandler warningHandler(false, 0);
+        notifiers.preProcessingNotifier_.notify(&warningHandler);
+        notifiers.preProcessingNotifier_.notify(mdCoulombType);
+
+        EXPECT_EQ(warningHandler.errorCount(), 1);
+    }
+
+    // Should report error if GROMACS is the direct provider and uniform tree depth is set manually
+    {
+        std::string treeTypeKey;
+        treeTypeKey.append(FmmModuleInfo::sc_name);
+        treeTypeKey.append("-");
+        treeTypeKey.append(c_fmmExaFmmTreeTypeOptionName);
+
+        std::string treeDepthKey;
+        treeDepthKey.append(FmmModuleInfo::sc_name);
+        treeDepthKey.append("-");
+        treeDepthKey.append(c_fmmExaFmmTreeDepthOptionName);
+
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey,
+                                              fmmBackendName(ActiveFmmBackend::ExaFmm));
+        mdpValueBuilder.rootObject().addValue(directProviderKey,
+                                              fmmDirectProviderName(FmmDirectProvider::Gromacs));
+        mdpValueBuilder.rootObject().addValue(treeTypeKey, exaFmmTreeTypeName(ExaFmmTreeType::Uniform));
+        mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("2"));
+        mdpValueBuilder.rootObject().addValue(treeDepthKey, std::string("5"));
+
+        KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+        std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+        fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
+
+        MDModulesNotifiers notifiers;
+        fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+        WarningHandler warningHandler(false, 0);
+        notifiers.preProcessingNotifier_.notify(&warningHandler);
+        notifiers.preProcessingNotifier_.notify(mdCoulombType);
+
+        EXPECT_EQ(warningHandler.errorCount(), 1);
+    }
 }
 
-TEST_F(FmmMdpValidatorTest, ReportsErrorWithFMSolvrNegativeTreeDepth)
+TEST_F(FmmMdpValidatorTest, ReportsErrorsForInvalidFMSolvrSettings)
 {
-    mdCoulombType_ = { CoulombInteractionType::Fmm };
-
-    KeyValueTreeBuilder mdpValueBuilder;
-    std::string         fmmActiveBackendKey;
+    std::string fmmActiveBackendKey;
     fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
     fmmActiveBackendKey.append("-");
     fmmActiveBackendKey.append(c_fmmActiveOptionName);
@@ -122,59 +244,27 @@ TEST_F(FmmMdpValidatorTest, ReportsErrorWithFMSolvrNegativeTreeDepth)
     treeDepthKey.append("-");
     treeDepthKey.append(c_fmmFMSolvrTreeDepthOptionName);
 
+    KeyValueTreeBuilder mdpValueBuilder;
     mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::FMSolvr));
     mdpValueBuilder.rootObject().addValue(treeDepthKey, std::string("-1"));
 
-    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
+    KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+    std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
 
-    fmmModule_ = FmmModuleInfo::create();
-    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-    notifyFmmModulePreProcessingSetup();
+    MDModulesNotifiers notifiers;
+    fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+    WarningHandler warningHandler(false, 0);
+    notifiers.preProcessingNotifier_.notify(&warningHandler);
+    MdModulesCoulombTypeInfo mdCoulombType = { CoulombInteractionType::Fmm };
+    notifiers.preProcessingNotifier_.notify(mdCoulombType);
 
-    EXPECT_EQ(warningHandler_.errorCount(), 1);
-}
-
-TEST_F(FmmMdpValidatorTest, ReportsErrorOnInvalidExaFmmDirectRangeForGmx)
-{
-    mdCoulombType_ = { CoulombInteractionType::Fmm };
-
-    KeyValueTreeBuilder mdpValueBuilder;
-    std::string         fmmActiveBackendKey;
-    fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
-    fmmActiveBackendKey.append("-");
-    fmmActiveBackendKey.append(c_fmmActiveOptionName);
-
-    std::string directProviderKey;
-    directProviderKey.append(FmmModuleInfo::sc_name);
-    directProviderKey.append("-");
-    directProviderKey.append(c_fmmExaFmmDirectProviderOptionName);
-
-    std::string directRangeKey;
-    directRangeKey.append(FmmModuleInfo::sc_name);
-    directRangeKey.append("-");
-    directRangeKey.append(c_fmmExaFmmDirectRangeOptionName);
-
-    mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
-    mdpValueBuilder.rootObject().addValue(directProviderKey,
-                                          fmmDirectProviderName(FmmDirectProvider::Gromacs));
-    mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("1"));
-
-    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
-
-    fmmModule_ = FmmModuleInfo::create();
-    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-    notifyFmmModulePreProcessingSetup();
-
-    // If DirectProvider is GROMACS, DirectRange must be 2 for ExaFMM
-    EXPECT_EQ(warningHandler_.errorCount(), 1);
+    EXPECT_EQ(warningHandler.errorCount(), 1);
 }
 
 TEST_F(FmmMdpValidatorTest, ReportsNoErrorsOnValidMdpSettings)
 {
-    mdCoulombType_ = { CoulombInteractionType::Fmm };
-
-    KeyValueTreeBuilder mdpValueBuilder;
-    std::string         fmmActiveBackendKey;
+    std::string fmmActiveBackendKey;
     fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
     fmmActiveBackendKey.append("-");
     fmmActiveBackendKey.append(c_fmmActiveOptionName);
@@ -189,39 +279,49 @@ TEST_F(FmmMdpValidatorTest, ReportsNoErrorsOnValidMdpSettings)
     directRangeKey.append("-");
     directRangeKey.append(c_fmmExaFmmDirectRangeOptionName);
 
+    KeyValueTreeBuilder mdpValueBuilder;
     mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
     mdpValueBuilder.rootObject().addValue(directProviderKey,
                                           fmmDirectProviderName(FmmDirectProvider::Gromacs));
     mdpValueBuilder.rootObject().addValue(directRangeKey, std::string("2"));
 
-    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
+    KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+    std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
 
-    fmmModule_ = FmmModuleInfo::create();
-    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-    notifyFmmModulePreProcessingSetup();
 
-    EXPECT_EQ(warningHandler_.errorCount(), 0);
+    MDModulesNotifiers notifiers;
+    fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+    WarningHandler warningHandler(false, 0);
+    notifiers.preProcessingNotifier_.notify(&warningHandler);
+    MdModulesCoulombTypeInfo mdCoulombType = { CoulombInteractionType::Fmm };
+    notifiers.preProcessingNotifier_.notify(mdCoulombType);
+
+    EXPECT_EQ(warningHandler.errorCount(), 0);
 }
 
 TEST_F(FmmMdpValidatorTest, ReportsErrorWhenColumbTypeIsNotFmm)
 {
-    mdCoulombType_ = { CoulombInteractionType::Pme };
-
-    KeyValueTreeBuilder mdpValueBuilder;
-    std::string         fmmActiveBackendKey;
+    std::string fmmActiveBackendKey;
     fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
     fmmActiveBackendKey.append("-");
     fmmActiveBackendKey.append(c_fmmActiveOptionName);
 
+    KeyValueTreeBuilder mdpValueBuilder;
     mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
 
-    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
+    KeyValueTreeObject         mdpOptionsTree = mdpValueBuilder.build();
+    std::unique_ptr<IMDModule> fmmModule      = FmmModuleInfo::create();
+    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule->mdpOptionProvider());
 
-    fmmModule_ = FmmModuleInfo::create();
-    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-    notifyFmmModulePreProcessingSetup();
+    MDModulesNotifiers notifiers;
+    fmmModule->subscribeToPreProcessingNotifications(&notifiers);
+    WarningHandler warningHandler(false, 0);
+    notifiers.preProcessingNotifier_.notify(&warningHandler);
+    MdModulesCoulombTypeInfo mdCoulombType = { CoulombInteractionType::Pme };
+    notifiers.preProcessingNotifier_.notify(mdCoulombType);
 
-    EXPECT_EQ(warningHandler_.errorCount(), 1);
+    EXPECT_EQ(warningHandler.errorCount(), 1);
 }
 
 } // namespace test

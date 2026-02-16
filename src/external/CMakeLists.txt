@@ -35,9 +35,7 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
     # GTest/GMock suggest linking with pthreads when available for thread safety
     set(CMAKE_THREAD_PREFER_PTHREAD 1)
     find_package(Threads)
-    set(PTHREADS_LIBRARIES)
     if (CMAKE_USE_PTHREADS_INIT)
-        set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
         # Input to googletest CMake scripts
         set(GTEST_HAS_PTHREAD 1)
         # Output for consumption in GROMACS build tree
@@ -59,10 +57,7 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         PRIVATE
             _GNU_SOURCE=1
             GTEST_CAN_STREAM_RESULTS=0
-        PUBLIC
-            GTEST_LANG_CXX11
             )
-    target_compile_definitions(gtest PUBLIC GTEST_LANG_CXX11)
     if(BUILD_SHARED_LIBS)
         foreach(_lib gmock gtest)
             target_compile_definitions(${_lib}

@@ -45,9 +45,12 @@
 #include <hdf5.h>
 
 #include <iostream>
+#include <optional>
+#include <string>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
@@ -170,12 +173,9 @@ std::string nameOfTest(const ::testing::TestParamInfo<DataSetDimensions>& info)
 
     if (testName.empty())
     {
-        return "Empty";
+        testName.assign("Empty");
     }
-    else
-    {
-        return testName;
-    }
+    return testName;
 }
 
 //! Test fixture for data set builders, inheriting parametrization capabilities.
@@ -205,8 +205,8 @@ TEST_P(Primitive, Works)
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
-        EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataType)) << "Incorrect data type in data set";
+        EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataSet.dataType()))
+                << "Incorrect data type in data set";
 
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
         EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), testParam.dims_.size())
@@ -274,8 +274,8 @@ TEST_P(BasicVector, Works)
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
-        EXPECT_TRUE(valueTypeIsDataType<float>(dataType)) << "Incorrect data type in data set";
+        EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
+                << "Incorrect data type in data set";
 
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
         // Add the extra vector dimension here!
@@ -442,6 +442,62 @@ INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderInvalidDimCombinations,
 //! \brief Test fixture for data set builder.
 using H5mdDataSetBuilderTest = H5mdTestBase;
 
+TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
+{
+    {
+        SCOPED_TRACE("Check the builder for fixed sized string data set");
+
+        EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "withMaxLength")
+                                .withMaxStringLength(256)
+                                .withDimension({ 0 })
+                                .build());
+
+        // Check data type
+        const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withMaxLength");
+        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
+        EXPECT_EQ(H5Tget_size(dataSet.dataType()), 256)
+                << "Data type should be fixed size string with length 256";
+    }
+
+    {
+        SCOPED_TRACE("Check the builder for variable sized string data set");
+
+        EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "withVariableLength")
+                                .withVariableStringLength()
+                                .withDimension({ 0 })
+                                .build());
+
+        // Check data type
+        const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withVariableLength");
+        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
+        EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType()))
+                << "Data type should be variable length string";
+    }
+}
+
+TEST_F(H5mdDataSetBuilderTest, NoThrowForDefaultStringType)
+{
+    EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NoMaxLength").withDimension({ 0 }).build());
+    const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "NoMaxLength");
+    EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType())) << "By default, use variable length string";
+}
+
+TEST_F(H5mdDataSetBuilderTest, ThrowsForNonPositiveMaxStringLength)
+{
+    // NOTE: H5Tset_size accepts only positive values for fixed-size strings.
+    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "ZeroMaxLength")
+                         .withMaxStringLength(0)
+                         .withDimension({ 0 })
+                         .build(),
+                 gmx::FileIOError);
+
+    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NegativeMaxLength")
+                         .withMaxStringLength(-1)
+                         .withDimension({ 0 })
+                         .build(),
+                 gmx::FileIOError);
+}
+
 TEST_F(H5mdDataSetBuilderTest, ThrowsForUnsetDimension)
 {
     EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").build(), gmx::FileIOError);
@@ -465,6 +521,106 @@ TEST_F(H5mdDataSetBuilderTest, ThrowsForInvalidContainer)
 {
     EXPECT_THROW(H5mdDataSetBuilder<int32_t>(H5I_INVALID_HID, "testDataSet").withDimension({ 0 }).build(),
                  gmx::FileIOError);
+}
+
+TEST_F(H5mdDataSetBuilderTest, UnitAttributeNotSetByDefault)
+{
+    const H5mdDataSetBase<int32_t> dataSet =
+            H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build();
+
+    EXPECT_FALSE(getAttribute<std::string>(dataSet.id(), "unit").has_value());
+}
+
+TEST_F(H5mdDataSetBuilderTest, WithUnitAttribute)
+{
+    constexpr char unit[] = "cm+2 s-1";
+
+    {
+        SCOPED_TRACE("Unit as std::string");
+        const H5mdDataSetBase<int32_t> dataSet =
+                H5mdDataSetBuilder<int32_t>(fileid(), "testDataSetString")
+                        .withDimension({ 0 })
+                        .withUnit("unused unit") // ensure that only the last .withUnit() value is used
+                        .withUnit(std::string{ unit })
+                        .build();
+
+        const std::optional<std::string> unitAttribute =
+                getAttribute<std::string>(dataSet.id(), "unit");
+        ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
+        EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
+    }
+    {
+        SCOPED_TRACE("Unit as const char*");
+        const H5mdDataSetBase<int32_t> dataSet =
+                H5mdDataSetBuilder<int32_t>(fileid(), "testDataSetChar*")
+                        .withDimension({ 0 })
+                        .withUnit("unused unit") // ensure that only the last .withUnit() value is used
+                        .withUnit(unit)
+                        .build();
+
+        const std::optional<std::string> unitAttribute =
+                getAttribute<std::string>(dataSet.id(), "unit");
+        ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
+        EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
+    }
+}
+
+TEST_F(H5mdDataSetBuilderTest, UncompressedByDefault)
+{
+    const H5mdDataSetBase<int32_t> dataSet =
+            H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build();
+
+    const auto [propertyList, propertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+    EXPECT_EQ(H5Pget_nfilters(propertyList), 0);
+    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+    EXPECT_LT(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+    EXPECT_LT(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+}
+
+TEST_F(H5mdDataSetBuilderTest, WithLosslessCompression)
+{
+    const H5mdDataSetBase<int32_t> dataSet = H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet")
+                                                     .withDimension({ 0 })
+                                                     .withCompression(H5mdCompression::LosslessNoShuffle)
+                                                     .build();
+
+    const auto [propertyList, propertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+    EXPECT_EQ(H5Pget_nfilters(propertyList), 1);
+    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+    EXPECT_GE(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+    EXPECT_LT(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+}
+
+TEST_F(H5mdDataSetBuilderTest, WithLosslessShuffleCompression)
+{
+    const H5mdDataSetBase<int32_t> dataSet = H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet")
+                                                     .withDimension({ 0 })
+                                                     .withCompression(H5mdCompression::LosslessShuffle)
+                                                     .build();
+
+    const auto [propertyList, propertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+    EXPECT_EQ(H5Pget_nfilters(propertyList), 2);
+    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+    EXPECT_GE(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+    EXPECT_GE(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
 }
 
 } // namespace

@@ -170,6 +170,15 @@
 #define TYPECATEGORY INTTYPE
 #include "tmpi_ops.h"
 
+#ifdef _MSC_VER
+#define TYPE unsigned __int64
+#else
+#define TYPE uint64_t
+#endif
+#define TYPENM UINT64_T
+#define TYPECATEGORY INTTYPE
+#include "tmpi_ops.h"
+
 
 /* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
@@ -195,6 +204,7 @@ tmpi_dt tmpi_l_double = {sizeof(long double),       oplist_L_DOUBLE, 0, NULL, TR
 tmpi_dt tmpi_byte    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
 tmpi_dt tmpi_pointer = {sizeof(void*),             NULL,            0, NULL, TRUE};
 tmpi_dt tmpi_int64_t = {8,                         oplist_INT64_T,  0, NULL, TRUE};
+tmpi_dt tmpi_uint64_t = {8,                        oplist_UINT64_T, 0, NULL, TRUE};
 
 
 /* the variable types as they are referred to from MPI */
@@ -226,6 +236,7 @@ const tMPI_Datatype TMPI_BYTE               = &tmpi_byte;
 const tMPI_Datatype TMPI_POINTER            = &tmpi_pointer;
 
 const tMPI_Datatype TMPI_INT64_T            = &tmpi_int64_t;
+const tMPI_Datatype TMPI_UINT64_T           = &tmpi_uint64_t;
 
 
 
@@ -251,6 +262,7 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
     ntp->comps[0].type  = oldtype;
     ntp->comps[0].count = 1;
     ntp->committed      = FALSE;
+    ntp->use_count      = 1;
 
     /* now add it to the list.  */
     tMPI_Spinlock_lock(&(tmpi_global->datatype_lock));
@@ -334,6 +346,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
                     usertypes[tmpi_global->N_usertypes-1];
             tmpi_global->N_usertypes--;
         }
+        dt->use_count += (*datatype)->use_count;
         free( (*datatype)->comps);
         free(  *datatype );
 
@@ -347,4 +360,52 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
     }
     tMPI_Spinlock_unlock(&(tmpi_global->datatype_lock));
     return TMPI_SUCCESS;
+}
+
+int tMPI_Type_free(tMPI_Datatype *datatype)
+{
+    int                    i;
+    struct tmpi_datatype_ *dt = *datatype;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Type_free(%p)", datatype);
+#endif
+
+    tMPI_Spinlock_lock(&(tmpi_global->datatype_lock));
+
+    /* We are sharing the datatypes between threads, so we only free it if it's in the list;
+     * otherwise, assume that the datatype has been found and freed by some other thread. */
+    tmpi_bool found = FALSE;
+    tmpi_bool should_free = FALSE;
+    for (i = 0; i < tmpi_global->N_usertypes; i++)
+    {
+        if (tmpi_global->usertypes[i] == dt)
+        {
+            found = TRUE;
+            dt->use_count--;
+            if (dt->use_count == 0)
+            {
+                /* Replace with the last element in the list */
+                tmpi_global->usertypes[i] = tmpi_global->usertypes[tmpi_global->N_usertypes - 1];
+                tmpi_global->N_usertypes--;
+                should_free = TRUE;
+            }
+            break;
+        }
+    }
+    tMPI_Spinlock_unlock(&(tmpi_global->datatype_lock));
+
+    if (should_free)
+    {
+        /* Free the components array and the datatype structure */
+        if (dt->comps)
+        {
+            tMPI_Free(dt->comps);
+        }
+        tMPI_Free(dt);
+    }
+
+    *datatype = nullptr;
+
+    return found ? TMPI_SUCCESS : tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_TYPE);
 }

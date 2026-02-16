@@ -268,7 +268,8 @@ TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffersOnSameDevice)
             {
                 deviceStream.synchronize();
             }
-            copyBetweenDeviceBuffers(&bufferOut, &bufferIn, numValues, deviceStream, transferKind, nullptr);
+            copyBetweenDeviceBuffers(
+                    asMpiPointer(bufferOut), asMpiPointer(bufferIn), 0, numValues, deviceStream, transferKind, nullptr);
             if (transferKind == GpuApiCallBehavior::Async)
             {
                 deviceStream.synchronize();

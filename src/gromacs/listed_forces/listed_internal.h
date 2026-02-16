@@ -63,12 +63,20 @@ class WorkDivision
 {
 public:
     //! Constructor
-    WorkDivision(int numThreads) : stride_(numThreads + 1), packedBounds_(F_NRE * stride_) {}
+    WorkDivision(int numThreads) :
+        stride_(numThreads + 1), packedBounds_(static_cast<int>(InteractionFunction::Count) * stride_)
+    {
+    }
 
     //! Sets the bound between threads \p boundIndex-1 and \p boundIndex to \p count
-    void setBound(int functionType, int boundIndex, int count)
+    void setBound(InteractionFunction functionType, int boundIndex, int count)
     {
-        packedBounds_[functionType * stride_ + boundIndex] = count;
+        packedBounds_[static_cast<int>(functionType) * stride_ + boundIndex] = count;
+    }
+
+    inline int bound(InteractionFunction functionType, int boundIndex) const
+    {
+        return bound(static_cast<int>(functionType), boundIndex);
     }
 
     //! Returns the bound between threads \p boundIndex-1 and \p boundIndex

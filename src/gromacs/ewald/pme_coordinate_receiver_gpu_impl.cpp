@@ -59,8 +59,6 @@ class DeviceStream;
 class GpuEventSynchronizer;
 struct PpRanks;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
-
 namespace gmx
 {
 
@@ -88,13 +86,6 @@ void PmeCoordinateReceiverGpu::reinitCoordinateReceiver(DeviceBuffer<RVec> /* d_
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
-}
-
-void PmeCoordinateReceiverGpu::prepareToReceiveCoordinates()
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub for PME-PP GPU communication was called instead of the correct "
-               "implementation.");
 }
 
 void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpPeerToPeer(int /* ppRank */)
@@ -131,15 +122,6 @@ int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()
     return 0;
 }
 
-ArrayRef<const int> PmeCoordinateReceiverGpu::sendersThatSentCoordinates() const
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub for PME-PP GPU communication was called instead of the correct "
-               "implementation.");
-    return {};
-}
-
-
 DeviceStream* PmeCoordinateReceiverGpu::ppCommStream(int /* senderIndex */)
 {
     GMX_ASSERT(!impl_,
@@ -156,7 +138,7 @@ std::tuple<int, int> PmeCoordinateReceiverGpu::ppCommAtomRange(int /* senderInde
     return std::make_tuple(0, 0);
 }
 
-int PmeCoordinateReceiverGpu::ppCommNumSenderRanks()
+int PmeCoordinateReceiverGpu::ppCommNumRanksSendingParticles()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
@@ -172,5 +154,3 @@ void PmeCoordinateReceiverGpu::insertAsDependencyIntoStream(int /*senderIndex*/,
 }
 
 } // namespace gmx
-
-#endif // !GMX_GPU_CUDA

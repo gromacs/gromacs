@@ -195,6 +195,11 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
 
     constexpr bool haveLJEwaldGeometric = (ljEwald == LJEwald::CombGeometric);
 
+    constexpr bool haveElectrostatics = (coulombType != KernelCoulombType::None);
+    static_assert(GMX_USE_EXT_FMM || haveElectrostatics,
+                  "Reference kernels that do not compute Coulomb interactions are supported only "
+                  "with an FMM build configuration");
+
     constexpr bool calculateEnergies = (energyOutput != EnergyOutput::None);
     constexpr bool useEnergyGroups   = (energyOutput == EnergyOutput::GroupPairs);
 
@@ -317,10 +322,14 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         const SimdReal iShiftY(shiftvec[ish3 + 1]);
         const SimdReal iShiftZ(shiftvec[ish3 + 2]);
 
+        // The coordinates, coefficients and forces are stored using contiguous blocks
+        // of size max(c_iClusterSize, c_jClusterSize). Set up the indexing.
+        static_assert(c_iClusterSize >= c_jClusterSize || 2 * c_iClusterSize == c_jClusterSize,
+                      "Only some i/j-cluster size ratios are currently implemented");
         int sci;
         int scix;
         int sci2;
-        if constexpr (c_jClusterSize <= 4)
+        if constexpr (c_iClusterSize >= c_jClusterSize)
         {
             sci  = ci * c_stride;
             scix = sci * DIM;
@@ -341,7 +350,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
         const bool do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
-        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
+        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0) && haveElectrostatics;
         const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
         energyAccumulator.template initICluster<c_iClusterSize>(ci);
@@ -438,24 +447,9 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         }
 
         /* Declare and clear i atom forces */
-        auto forceIXV = genArr<nR>(
-                [&](int gmx_unused i)
-                {
-                    SimdReal tmp = setZero();
-                    return tmp;
-                });
-        auto forceIYV = genArr<nR>(
-                [&](int gmx_unused i)
-                {
-                    SimdReal tmp = setZero();
-                    return tmp;
-                });
-        auto forceIZV = genArr<nR>(
-                [&](int gmx_unused i)
-                {
-                    SimdReal tmp = setZero();
-                    return tmp;
-                });
+        auto forceIXV = genArr<nR>([&](int gmx_unused i) { return setZero(); });
+        auto forceIYV = genArr<nR>([&](int gmx_unused i) { return setZero(); });
+        auto forceIZV = genArr<nR>([&](int gmx_unused i) { return setZero(); });
 
 
         int cjind = cjind0;
@@ -528,6 +522,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         real fShiftX;
         real fShiftY;
         real fShiftZ;
+        static_assert(c_iClusterSize == 4, "i-force reductions only support cluster size 4");
         if constexpr (c_numJClustersPerSimdRegister == 1)
         {
             fShiftX = reduceIncr4ReturnSum(f + scix, forceIXV[0], forceIXV[1], forceIXV[2], forceIXV[3]);

@@ -43,4 +43,35 @@
 #include "vectype_ops_cuda_hip_shared_declarations.h"
 #include "vectype_ops_cuda_hip_shared_trig_math.h"
 
+/* \brief Staggered atomic force component accumulation into global memory to reduce clashes
+ *
+ * Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
+ * accumulate different force components at the same time.
+ */
+__forceinline__ __device__ void staggeredAtomicAddForce(float3* __restrict__ targetPtr,
+                                                        float3    input,
+                                                        const int index,
+                                                        const int localId)
+{
+    int3 offset = { 0, 1, 2 };
+
+    // Shift force components x (0), y (1), and z (2) left by 2, 1, and 0, respectively
+    // to end up with zxy, yzx, xyz on consecutive threads.
+    input  = (localId % 3 == 0) ? make_float3(input.y, input.z, input.x) : input;
+    offset = (localId % 3 == 0) ? make_int3(offset.y, offset.z, offset.x) : offset;
+    input  = (localId % 3 <= 1) ? make_float3(input.y, input.z, input.x) : input;
+    offset = (localId % 3 <= 1) ? make_int3(offset.y, offset.z, offset.x) : offset;
+
+    atomicAdd(&targetPtr[index].x + offset.x, input.x);
+    atomicAdd(&targetPtr[index].x + offset.y, input.y);
+    atomicAdd(&targetPtr[index].x + offset.z, input.z);
+}
+
+#define atomicFetchAdd atomicAdd
+
+__forceinline__ __device__ void atomicFetchAddLocal(float3* __restrict__ targetPtr, const int index, float3 input)
+{
+    staggeredAtomicAddForce(targetPtr, input, index, threadIdx.x);
+}
+
 #endif /* GMX_GPU_UTILS_VECTYPE_OPS_CUDA_H */

@@ -22,7 +22,7 @@ Options to specify input files:
  -s      <.tpr>                              (Opt.)
            Run input file to dump
  -f      <.xtc/.trr/...>                     (Opt.)
-           Trajectory file to dump: xtc trr cpt gro g96 pdb tng
+           Trajectory file to dump: xtc trr cpt gro g96 pdb tng h5md
  -e      <.edr>                              (Opt.)
            Energy file to dump
  -cp     <.cpt>                              (Opt.)

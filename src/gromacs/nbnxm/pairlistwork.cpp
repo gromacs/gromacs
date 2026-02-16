@@ -54,17 +54,17 @@ namespace gmx
 {
 
 NbnxmPairlistGpuWork::ISuperClusterData::ISuperClusterData(const PairlistType layoutType) :
-    bb(sc_gpuNumClusterPerCell(layoutType)),
+    bb(sc_gpuNumClusterPerBin(layoutType)),
 #if NBNXN_SEARCH_BB_SIMD4
-    bbPacked(sc_gpuNumClusterPerCell(layoutType) / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
+    bbPacked(sc_gpuNumClusterPerBin(layoutType) / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
 #endif
-    x(sc_gpuNumClusterPerCell(layoutType) * sc_gpuClusterSize(layoutType) * DIM),
-    xSimd(sc_gpuNumClusterPerCell(layoutType) * sc_gpuClusterSize(layoutType) * DIM)
+    x(sc_gpuNumClusterPerBin(layoutType) * sc_gpuClusterSize(layoutType) * DIM),
+    xSimd(sc_gpuNumClusterPerBin(layoutType) * sc_gpuClusterSize(layoutType) * DIM)
 {
 }
 NbnxmPairlistGpuWork::NbnxmPairlistGpuWork(const PairlistType layoutType) :
     iSuperClusterData(layoutType),
-    distanceBuffer(sc_gpuNumClusterPerCell(layoutType)),
+    distanceBuffer(sc_gpuNumClusterPerBin(layoutType)),
     sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
 {
 }

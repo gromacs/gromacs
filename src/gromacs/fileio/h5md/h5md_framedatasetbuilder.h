@@ -42,6 +42,7 @@
 
 #include <hdf5.h>
 
+#include <string_view>
 #include <vector>
 
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
@@ -58,7 +59,8 @@ namespace gmx
  * and withMaxNumFrames().
  *
  * By default data sets are created with 0 initial frames and an unlimited maximum
- * number of frames.
+ * number of frames. The default frame dimensions are empty (identical to calling
+ * withFrameDimension({})), which means that each frame contains a scalar value.
  *
  * See also the documentation for H5mdDataSetBuilder.
  *
@@ -72,6 +74,13 @@ public:
 
     // Inherit constructor with no further changes
     using Base::Base;
+
+    //! \copydoc H5mdDataSetBuilder::withCompression()
+    H5mdFrameDataSetBuilder& withCompression(const H5mdCompression compression)
+    {
+        Base::withCompression(compression);
+        return *this;
+    }
 
     //! \brief Set dimension for a single frame in the data set.
     H5mdFrameDataSetBuilder& withFrameDimension(ArrayRef<const hsize_t> dims)
@@ -100,35 +109,49 @@ public:
         return *this;
     }
 
+    //! \brief Set the frame data set to use a fixed size string with maximum length \p maxLength.
+    //
+    // \note The max length must be positive and count the null-terminator character.
+    // If neither withMaxStringLength() nor withVariableStringLength() is called,
+    // the default is variable-length strings for string data sets.
+    H5mdFrameDataSetBuilder& withMaxStringLength(const int maxLength)
+    {
+        // Use int to prevent the integer overflow if passed a negative value
+        GMX_H5MD_THROW_UPON_ERROR(
+                maxLength <= 0,
+                "Cannot create fixed-size string data set with non-positive maximum length");
+        Base::withMaxStringLength(maxLength);
+        return *this;
+    }
+
+    //! \brief Set the frame data set to use variable length strings.
+    H5mdFrameDataSetBuilder& withVariableStringLength()
+    {
+        Base::withVariableStringLength();
+        return *this;
+    }
+
+    //! \copydoc H5mdDataSetBuilder::withUnit()
+    H5mdFrameDataSetBuilder& withUnit(std::string_view unit)
+    {
+        Base::withUnit(unit);
+        return *this;
+    }
+
     //! \brief Create the data set, then build and return it.
     H5mdDataSetBase<ValueType> build()
     {
-        const std::vector<hsize_t> dims = [&]()
-        {
-            std::vector<hsize_t> dims = { numFrames_ };
-            for (const hsize_t d : frameDims_)
-            {
-                dims.push_back(d);
-            }
-            return dims;
-        }();
-        Base::withDimension(dims);
+        std::vector<hsize_t> dimensions;
+        dimensions.reserve(1 + frameDims_.size());
+        dimensions.push_back(numFrames_);
+        dimensions.insert(dimensions.end(), frameDims_.begin(), frameDims_.end());
+        Base::withDimension(dimensions);
 
-        const std::vector<hsize_t> maxDims = [&]()
-        {
-            std::vector<hsize_t> maxDims = dims;
-            maxDims[0]                   = maxNumFrames_;
-            return maxDims;
-        }();
-        Base::withMaxDimension(maxDims);
+        dimensions[0] = maxNumFrames_;
+        Base::withMaxDimension(dimensions);
 
-        const std::vector<hsize_t> chunkDims = [&]()
-        {
-            std::vector<hsize_t> chunkDims = dims;
-            chunkDims[0]                   = frameChunkSize_;
-            return chunkDims;
-        }();
-        Base::withChunkDimension(chunkDims);
+        dimensions[0] = frameChunkSize_;
+        Base::withChunkDimension(dimensions);
 
         return Base::build();
     }

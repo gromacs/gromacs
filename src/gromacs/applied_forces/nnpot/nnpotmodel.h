@@ -50,6 +50,7 @@ enum class PbcType;
 namespace gmx
 {
 class MpiComm;
+class LinkFrontierAtom;
 
 /*! \brief NNPot Module
  *
@@ -60,26 +61,37 @@ class MpiComm;
 class INNPotModel
 {
 public:
+    virtual ~INNPotModel() = default;
+
     /*! \brief Evaluate NN model.
      *
      * Includes the preparation of inputs, calling inference of the model, and retrieval of outputs.
      * Currently supported inputs:
      *   - atom positions (ArrayRef<RVec>): atomic positions
      *   - atom numbers (ArrayRef<int>): atomic numbers
+     *   - atom pairs (ArrayRef<int>): list of pairs of NNP-region atom indices within the cutoff for which the model should compute
+     *   - pair shifts (ArrayRef<RVec>): list of shift vectors corresponding to atom pairs
+     *   - MM atom positions (ArrayRef<RVec>): atomic positions of MM atoms
+     *   - MM atom charges (ArrayRef<real>): atomic charges of MM atoms
+     *   - NNP charge (real): total charge of NNP region
      *   - box (matrix): simulation box vectors
      *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
      */
-    virtual void evaluateModel(gmx_enerdata_t*,
-                               const ArrayRef<RVec>&,
-                               ArrayRef<const int>&,
-                               ArrayRef<const std::string>&,
-                               ArrayRef<RVec>&,
-                               ArrayRef<int>&,
-                               matrix*,
-                               PbcType*) = 0;
-
-    //! set communication object for possible communication of input/output data between ranks
-    virtual void setComm(const MpiComm&) = 0;
+    virtual void evaluateModel(gmx_enerdata_t* /* enerData */,
+                               ArrayRef<RVec> /* forces */,
+                               ArrayRef<const int> /* idxLookup */,
+                               ArrayRef<const int> /* mmIndices */,
+                               ArrayRef<const std::string> /* inputs */,
+                               ArrayRef<RVec> /* positions */,
+                               ArrayRef<int> /* atomNumbers */,
+                               ArrayRef<int> /* atomPairs */,
+                               ArrayRef<RVec> /* pairShifts */,
+                               ArrayRef<RVec> /* positionsMM */,
+                               ArrayRef<real> /* chargesMM */,
+                               real /* nnpCharge */,
+                               ArrayRef<const LinkFrontierAtom> /* linkFrontier */,
+                               matrix* /* box */,
+                               PbcType* /* pbcType */) = 0;
 
     //! helper function to check if model outputs forces
     virtual bool outputsForces() const = 0;

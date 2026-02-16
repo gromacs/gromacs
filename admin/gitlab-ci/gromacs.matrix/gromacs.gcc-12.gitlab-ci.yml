@@ -84,4 +84,3 @@ gromacs:gcc-12:regressiontest:
   needs:
     - job: gromacs:gcc-12:build
     - job: regressiontests:prepare
-

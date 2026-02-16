@@ -35,4 +35,3 @@ or :ref:`here <mdp-general>`.
     \clearpage
 
 
-

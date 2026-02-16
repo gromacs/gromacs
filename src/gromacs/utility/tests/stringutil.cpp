@@ -469,6 +469,80 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
     checkText(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14WithTrailingWhitespace");
 }
 
+TEST(PrettyPrintListAsRangeTest, Works)
+{
+    // Empty list
+    EXPECT_EQ(prettyPrintListAsRange(gmx::ArrayRef<int>{}), "");
+
+    // Single element
+    std::vector<int> single = { 42 };
+    EXPECT_EQ(prettyPrintListAsRange(single), "42");
+
+    // Two consecutive elements
+    std::vector<int> two = { 10, 11 };
+    EXPECT_EQ(prettyPrintListAsRange(two), "10,11");
+
+    // Consecutive integers (step = 1)
+    std::vector<int> consecutive = { 0, 1, 2, 3 };
+    EXPECT_EQ(prettyPrintListAsRange(consecutive), "0-3");
+
+    std::vector<int> consecutive2 = { 5, 6, 7, 8, 9 };
+    EXPECT_EQ(prettyPrintListAsRange(consecutive2), "5-9");
+
+    // Arithmetic sequence with step != 1
+    std::vector<int> step2 = { 2, 4, 6, 8 };
+    EXPECT_EQ(prettyPrintListAsRange(step2), "2-8:2");
+
+    std::vector<int> step3 = { 0, 3, 6, 9, 12 };
+    EXPECT_EQ(prettyPrintListAsRange(step3), "0-12:3");
+
+    std::vector<int> step5 = { 10, 15, 20 };
+    EXPECT_EQ(prettyPrintListAsRange(step5), "10-20:5");
+
+    // Negative step
+    std::vector<int> negative = { 10, 8, 6, 4 };
+    EXPECT_EQ(prettyPrintListAsRange(negative), "10,8,6,4");
+
+    // Non-sequence
+    std::vector<int> nonSeq = { 2, 42, 43, 48 };
+    EXPECT_EQ(prettyPrintListAsRange(nonSeq), "2,42,43,48");
+
+    std::vector<int> nonSeq2 = { 1, 2, 4, 8, 16 };
+    EXPECT_EQ(prettyPrintListAsRange(nonSeq2), "1,2,4,8,16");
+
+    // Single break in sequence
+    std::vector<int> broken = { 1, 2, 3, 5 };
+    EXPECT_EQ(prettyPrintListAsRange(broken), "1-3,5");
+
+    // Multiple sequences
+    std::vector<int> multiSeq = { 0, 1, 2, 3, 4, 5, 6, 7, 64, 65, 66, 67, 68, 69, 70, 71 };
+    EXPECT_EQ(prettyPrintListAsRange(multiSeq), "0-7,64-71");
+
+    // Multiple sequences with steps
+    std::vector<int> multiStep = { 0, 2, 4, 6, 10, 20, 30, 40 };
+    EXPECT_EQ(prettyPrintListAsRange(multiStep), "0-6:2,10-40:10");
+
+    // Alternating sequences and singles
+    std::vector<int> mixed = { 1, 2, 3, 10, 20, 21, 22, 50 };
+    EXPECT_EQ(prettyPrintListAsRange(mixed), "1-3,10,20-22,50");
+
+    // Two singles followed by a sequence
+    std::vector<int> singlesSeq = { 5, 10, 20, 21, 22, 23 };
+    EXPECT_EQ(prettyPrintListAsRange(singlesSeq), "5,10,20-23");
+
+    // Sequence followed by two singles
+    std::vector<int> seqSingles = { 1, 2, 3, 4, 10, 20 };
+    EXPECT_EQ(prettyPrintListAsRange(seqSingles), "1-4,10,20");
+
+    // Multiple short sequences (2 elements each - should output as singles)
+    std::vector<int> shortSeqs = { 1, 2, 5, 6, 9, 10 };
+    EXPECT_EQ(prettyPrintListAsRange(shortSeqs), "1,2,5,6,9,10");
+
+    // Three sequences in a row
+    std::vector<int> threeSeq = { 0, 1, 2, 10, 11, 12, 20, 21, 22 };
+    EXPECT_EQ(prettyPrintListAsRange(threeSeq), "0-2,10-12,20-22");
+}
+
 // This doesn't work with MSVC, causes ICE. Fixed in MSVC 2022 (VS 17.5, cl.exe 19.35).
 #if !defined(_MSC_VER)
 

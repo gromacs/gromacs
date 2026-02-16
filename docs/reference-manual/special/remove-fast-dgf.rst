@@ -102,7 +102,7 @@ Taking into account these considerations, the hydrogen atoms in a
 protein naturally fall into several categories, each requiring a
 different approach (see also :numref:`Fig. %s <fig-vsitehydro>`).
 
--  *hydroxyl (-OH) or sulfhydryl (-SH) hydrogen:* 
+-  *hydroxyl (-OH) or sulfhydryl (-SH) hydrogen:*
    The only internal degree of freedom in a hydroxyl group
    that can be constrained is the bending of the C-O-H
    angle. This angle is fixed by defining an additional bond of
@@ -113,7 +113,7 @@ different approach (see also :numref:`Fig. %s <fig-vsitehydro>`).
    site.
 
 -  *single amine or amide (-NH-) and aromatic hydrogens
-   (-CH-):* 
+   (-CH-):*
    The position of these hydrogens cannot be
    constructed from a linear combination of bond vectors, because of the
    flexibility of the angle between the heavy atoms. Instead, the

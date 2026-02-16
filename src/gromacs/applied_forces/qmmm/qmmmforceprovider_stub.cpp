@@ -45,8 +45,11 @@
 
 #include <string>
 
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "qmmmforceprovider.h"
 
@@ -66,12 +69,15 @@ QMMMForceProvider::QMMMForceProvider(const QMMMParameters& parameters,
                                      const LocalAtomSet&   localQMAtomSet,
                                      const LocalAtomSet&   localMMAtomSet,
                                      PbcType               pbcType,
-                                     const MDLogger&       logger) :
+                                     const MDLogger&       logger,
+                                     const MpiComm& /*mpiComm*/,
+                                     const QMMMForceProviderState& state) :
     parameters_(parameters),
     qmAtoms_(localQMAtomSet),
     mmAtoms_(localMMAtomSet),
     pbcType_(pbcType),
     logger_(logger),
+    state_(state),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }
 {
     GMX_THROW(
@@ -106,6 +112,15 @@ void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& /*mpiComm*/)
 }
 
 void QMMMForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, ForceProviderOutput* /*fOutput*/)
+{
+    GMX_THROW(
+            InternalError("CP2K has not been linked into GROMACS, QMMM simulation is not "
+                          "possible.\nPlease, reconfigure GROMACS with -DGMX_CP2K=ON\n"));
+};
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void QMMMForceProvider::writeCheckpointData(MDModulesWriteCheckpointData /*checkpointWriting*/,
+                                            std::string_view /*moduleName*/)
 {
     GMX_THROW(
             InternalError("CP2K has not been linked into GROMACS, QMMM simulation is not "

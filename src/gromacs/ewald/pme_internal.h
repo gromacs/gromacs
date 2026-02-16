@@ -286,7 +286,33 @@ struct pmegrid_t
     int  order;  /* PME spreading order                       */
     ivec s;      /* The allocated size of *grid, s >= n       */
     // The local grid, used size n. Data owned by gmx_pme_t::pmeGridsStorage.
-    gmx::ArrayRef<real> grid;
+
+    //! Returns a view to the grid
+    gmx::ArrayRef<real> grid()
+    {
+        return gmx::arrayRefFromArray(gridStoragePtr_->data(), gridSize_);
+    }
+
+    //! Returns a const view to the grid
+    gmx::ArrayRef<const real> grid() const
+    {
+        return gmx::constArrayRefFromArray(gridStoragePtr_->data(), gridSize_);
+    }
+
+    //! Sets the grid storage to point to \p gridStoragePtr, using \p gridSize elements
+    void setGridStorage(AlignedVector<real>* gridStoragePtr, size_t gridSize)
+    {
+        GMX_RELEASE_ASSERT(gridStoragePtr->size() >= gridSize, "We should have sufficient storage");
+
+        gridStoragePtr_ = gridStoragePtr;
+        gridSize_       = gridSize;
+    }
+
+private:
+    //! Pointer to the vector used for storing the grid
+    AlignedVector<real>* gridStoragePtr_ = nullptr;
+    //! The actual number of grid entries used here
+    size_t gridSize_;
 };
 
 /*! \brief Data structures for PME grids */
@@ -344,12 +370,9 @@ struct gmx_pme_t
     const gmx::MpiComm mpiCommSingleRank;
 
     // Communicator for PME ranks (same as PP when no separate PME ranks are in use)
-    const gmx::MpiComm& mpiComm;
+    const gmx::MpiComm& mpiComm_;
 
     MPI_Comm mpi_comm_d[2]; /* Indexed on dimension, 0=x, 1=y */
-#if GMX_MPI
-    MPI_Datatype rvec_mpi; /* the pme vector's MPI type */
-#endif
 
     bool bUseThreads; /* Does any of the PME ranks have nthread>1 ?  */
     int  nthread;     /* The number of threads doing PME on our rank */

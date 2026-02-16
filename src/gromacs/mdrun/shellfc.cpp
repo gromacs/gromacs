@@ -241,20 +241,25 @@ static void predict_shells(FILE*                     fplog,
     }
 }
 
-gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
-                                  const gmx_mtop_t& mtop,
-                                  int               nflexcon,
-                                  int               nstcalcenergy,
-                                  bool              usingDomainDecomposition,
-                                  bool              haveGpuCoordinates)
+gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
+                                  const gmx_mtop_t&              mtop,
+                                  const int                      nflexcon,
+                                  const int                      nstcalcenergy,
+                                  const bool                     usingDomainDecomposition,
+                                  const gmx::SimulationWorkload& simulationWork)
 {
     gmx_shellfc_t* shfc;
 
-    int  ns, nshell, nsi;
-    int  i, j, type, a_offset, mol, ftype, nra;
-    real qS, alpha;
-    int  aS, aN = 0; /* Shell and nucleus */
-    int bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
+    int                 ns, nshell, nsi;
+    int                 i, j, type, a_offset, mol, nra;
+    real                qS, alpha;
+    int                 aS, aN = 0; /* Shell and nucleus */
+    InteractionFunction bondtypes[] = { InteractionFunction::Bonds,
+                                        InteractionFunction::HarmonicPotential,
+                                        InteractionFunction::CubicBonds,
+                                        InteractionFunction::Polarization,
+                                        InteractionFunction::AnharmonicPolarization,
+                                        InteractionFunction::WaterPolarization };
 #define NBT asize(bondtypes)
     const gmx_ffparams_t* ffparams;
 
@@ -313,11 +318,11 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     nshell = 0;
     for (const AtomProxy atomP : AtomRange(mtop))
     {
-        const t_atom& local = atomP.atom();
-        int           i     = atomP.globalAtomNumber();
+        const t_atom& local  = atomP.atom();
+        int           atomNr = atomP.globalAtomNumber();
         if (local.ptype == ParticleType::Shell)
         {
-            shell_index[i] = nshell++;
+            shell_index[atomNr] = nshell++;
         }
     }
 
@@ -343,20 +348,20 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                 const int* ia = molt.ilist[bondtypes[j]].iatoms.data();
                 for (i = 0; (i < molt.ilist[bondtypes[j]].size());)
                 {
-                    type  = ia[0];
-                    ftype = ffparams->functype[type];
-                    nra   = interaction_function[ftype].nratoms;
+                    type                            = ia[0];
+                    const InteractionFunction ftype = ffparams->functype[type];
+                    nra                             = interaction_function[ftype].nratoms;
 
                     /* Check whether we have a bond with a shell */
                     aS = -1;
 
                     switch (bondtypes[j])
                     {
-                        case F_BONDS:
-                        case F_HARMONIC:
-                        case F_CUBICBONDS:
-                        case F_POLARIZATION:
-                        case F_ANHARM_POL:
+                        case InteractionFunction::Bonds:
+                        case InteractionFunction::HarmonicPotential:
+                        case InteractionFunction::CubicBonds:
+                        case InteractionFunction::Polarization:
+                        case InteractionFunction::AnharmonicPolarization:
                             if (atom[ia[1]].ptype == ParticleType::Shell)
                             {
                                 aS = ia[1];
@@ -368,7 +373,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                 aN = ia[1];
                             }
                             break;
-                        case F_WATER_POL:
+                        case InteractionFunction::WaterPolarization:
                             aN = ia[4]; /* Dummy */
                             aS = ia[5]; /* Shell */
                             break;
@@ -423,15 +428,15 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
 
                         switch (bondtypes[j])
                         {
-                            case F_BONDS:
-                            case F_HARMONIC:
+                            case InteractionFunction::Bonds:
+                            case InteractionFunction::HarmonicPotential:
                                 shell[nsi].k += ffparams->iparams[type].harmonic.krA;
                                 break;
-                            case F_CUBICBONDS:
+                            case InteractionFunction::CubicBonds:
                                 shell[nsi].k += ffparams->iparams[type].cubic.kb;
                                 break;
-                            case F_POLARIZATION:
-                            case F_ANHARM_POL:
+                            case InteractionFunction::Polarization:
+                            case InteractionFunction::AnharmonicPolarization:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS * 10))
                                 {
                                     gmx_fatal(FARGS,
@@ -445,7 +450,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                 shell[nsi].k += gmx::square(qS) * gmx::c_one4PiEps0
                                                 / ffparams->iparams[type].polarize.alpha;
                                 break;
-                            case F_WATER_POL:
+                            case InteractionFunction::WaterPolarization:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS * 10))
                                 {
                                     gmx_fatal(FARGS,
@@ -533,9 +538,14 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
         }
     }
 
+    GMX_RELEASE_ASSERT(!simulationWork.useGpuUpdate,
+                       "GPU update is not supported with shells or flexible constraints");
+
     /* shfc->x is used as a coordinate buffer for the sim_util's `do_force` function, and
      * must be pinned if coordinates are on the GPU (e.g. for PME or GPU buffer ops). */
-    if (haveGpuCoordinates)
+    const bool useGpuForBufferOps =
+            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
+    if (simulationWork.useGpuPme || useGpuForBufferOps)
     {
         for (i = 0; i < 2; i++)
         {
@@ -1121,7 +1131,7 @@ void relax_shell_flexcon(FILE*                             fplog,
         }
     }
     accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());
-    Epot[Min] = enerd->term[F_EPOT];
+    Epot[Min] = enerd->term[InteractionFunction::PotentialEnergy];
 
     df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), shells, nflexcon, &sf_dir, &Epot[Min]);
     df[Try] = 0;
@@ -1156,9 +1166,18 @@ void relax_shell_flexcon(FILE*                             fplog,
 
     if (debug)
     {
-        fprintf(debug, "%17s: %14.10e\n", interaction_function[F_EKIN].longname, enerd->term[F_EKIN]);
-        fprintf(debug, "%17s: %14.10e\n", interaction_function[F_EPOT].longname, enerd->term[F_EPOT]);
-        fprintf(debug, "%17s: %14.10e\n", interaction_function[F_ETOT].longname, enerd->term[F_ETOT]);
+        fprintf(debug,
+                "%17s: %14.10e\n",
+                interaction_function[InteractionFunction::KineticEnergy].longname,
+                enerd->term[InteractionFunction::KineticEnergy]);
+        fprintf(debug,
+                "%17s: %14.10e\n",
+                interaction_function[InteractionFunction::PotentialEnergy].longname,
+                enerd->term[InteractionFunction::PotentialEnergy]);
+        fprintf(debug,
+                "%17s: %14.10e\n",
+                interaction_function[InteractionFunction::TotalEnergy].longname,
+                enerd->term[InteractionFunction::TotalEnergy]);
         fprintf(debug, "SHELLSTEP %s\n", gmx_step_str(mdstep, sbuf));
     }
 
@@ -1276,7 +1295,7 @@ void relax_shell_flexcon(FILE*                             fplog,
             }
         }
 
-        Epot[Try] = enerd->term[F_EPOT];
+        Epot[Try] = enerd->term[InteractionFunction::PotentialEnergy];
 
         df[Try] = rms_force(cr, force[Try], shells, nflexcon, &sf_dir, &Epot[Try]);
 

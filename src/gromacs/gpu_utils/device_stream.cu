@@ -55,21 +55,27 @@ DeviceStream::DeviceStream(const DeviceContext& /* deviceContext */,
                            const bool /* useTiming */)
 {
     cudaError_t stat;
+    // Note that the device we're running on does not have to
+    // support priorities, because we are querying the priority
+    // range, which in that case will be a single value.
+    int lowestPriority;
+    int highestPriority;
+    stat = cudaDeviceGetStreamPriorityRange(&lowestPriority, &highestPriority);
+    gmx::checkDeviceError(stat, "Could not query CUDA stream priority range.");
+    int middlePriority = (lowestPriority + highestPriority) / 2;
 
-    if (priority == DeviceStreamPriority::Normal)
+    if (priority == DeviceStreamPriority::Low)
     {
-        stat = cudaStreamCreate(&stream_);
-        gmx::checkDeviceError(stat, "Could not create CUDA stream.");
+        stat = cudaStreamCreateWithPriority(&stream_, cudaStreamDefault, lowestPriority);
+        gmx::checkDeviceError(stat, "Could not create CUDA stream with low priority.");
+    }
+    else if (priority == DeviceStreamPriority::Normal)
+    {
+        stat = cudaStreamCreateWithPriority(&stream_, cudaStreamDefault, middlePriority);
+        gmx::checkDeviceError(stat, "Could not create CUDA streami with middle pirority.");
     }
     else if (priority == DeviceStreamPriority::High)
     {
-        // Note that the device we're running on does not have to
-        // support priorities, because we are querying the priority
-        // range, which in that case will be a single value.
-        int highestPriority;
-        stat = cudaDeviceGetStreamPriorityRange(nullptr, &highestPriority);
-        gmx::checkDeviceError(stat, "Could not query CUDA stream priority range.");
-
         stat = cudaStreamCreateWithPriority(&stream_, cudaStreamDefault, highestPriority);
         gmx::checkDeviceError(stat, "Could not create CUDA stream with high priority.");
     }

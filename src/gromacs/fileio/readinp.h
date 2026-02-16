@@ -56,6 +56,19 @@ class ArrayRef;
 class KeyValueTreeObject;
 class TextInputStream;
 class TextOutputStream;
+
+//! Enum class for boolean that should be true by default
+enum class YesNoType
+{
+    Yes,
+    No,
+    Count,
+    Default = Yes
+};
+
+//! Strings for \c YesNoType
+const char* enumValueToString(YesNoType enumValue);
+
 } // namespace gmx
 
 /* !\brief Input file structure that is populated with entries read from a file.
@@ -241,8 +254,6 @@ void setStringEntry(std::vector<t_inpfile>* inp, const char* name, char* newName
  * Returns a string value and sets the value in \p inp
  *
  * The value is either from \p inp when \p name is found or \p def otherwise.
- *
- * \note this is a wrapper function for g_estr()
  */
 std::string setStringEntry(std::vector<t_inpfile>* inp, const std::string& name, const std::string& def);
 

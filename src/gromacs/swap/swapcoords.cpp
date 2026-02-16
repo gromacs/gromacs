@@ -1121,9 +1121,9 @@ static int get_group_apm_check(const t_swapgrp& group, gmx_bool bVerbose, const 
 
     /* Determine the number of solvent atoms per solvent molecule from the
      * first solvent atom: */
-    int molb = 0;
-    mtopGetMolblockIndex(mtop, ind[0], &molb, nullptr, nullptr);
-    const int apm = mtop.moleculeBlockIndices[molb].numAtomsPerMolecule;
+    MTopLookUp mTopLookUp(mtop);
+    const auto mbaiInd0 = mTopLookUp.getMolblockAtomIndex(ind[0]);
+    const int  apm      = mtop.moleculeBlockIndices[mbaiInd0.molBlock].numAtomsPerMolecule;
 
     if (bVerbose)
     {
@@ -1138,8 +1138,8 @@ static int get_group_apm_check(const t_swapgrp& group, gmx_bool bVerbose, const 
     /* Check whether this is also true for all other solvent atoms */
     for (int i = 1; i < nat; i++)
     {
-        mtopGetMolblockIndex(mtop, ind[i], &molb, nullptr, nullptr);
-        if (apm != mtop.moleculeBlockIndices[molb].numAtomsPerMolecule)
+        const auto mbaiIndI = mTopLookUp.getMolblockAtomIndex(ind[i]);
+        if (apm != mtop.moleculeBlockIndices[mbaiIndI.molBlock].numAtomsPerMolecule)
         {
             gmx_fatal(
                     FARGS,
@@ -1504,10 +1504,11 @@ static void convertOldToNewGroupFormat(t_swapcoords*       sc,
     indAnions.reserve(group.ind.size());
     indCations.reserve(group.ind.size());
 
-    int molb = 0;
+    MTopLookUp mTopLookUp(mtop);
+
     for (size_t i = 0; i < group.ind.size(); i++)
     {
-        const t_atom& atom = mtopGetAtomParameters(mtop, group.ind[i], &molb);
+        const t_atom& atom = mTopLookUp.getAtomParameters(group.ind[i]);
         if (atom.q < 0)
         {
             // This is an anion, add it to the list of anions
@@ -1666,6 +1667,8 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
         }
     }
 
+    MTopLookUp mTopLookUp(mtop);
+
     /* Make sure that all molecules in the solvent and ion groups contain the
      * same number of atoms each */
     for (t_swapgrp& group : s->solventAndIonGroups())
@@ -1676,10 +1679,9 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
          * to determine properties of a single molecule at at time */
         group.m.resize(group.apm); /* For the center of mass */
         real charge = 0;           /* To determine the total charge */
-        int  molb   = 0;
         for (int j = 0; j < group.apm; j++)
         {
-            const t_atom& atom = mtopGetAtomParameters(mtop, group.atomSet.globalIndex()[j], &molb);
+            const t_atom& atom = mTopLookUp.getAtomParameters(group.atomSet.globalIndex()[j]);
             group.m[j]         = atom.m;
             charge += atom.q;
         }
@@ -1694,10 +1696,9 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
         {
             // Save the split-group masses if mass-weighting is requested
             group.m.resize(group.atomSet.numAtomsGlobal());
-            int molb = 0;
             for (size_t i = 0; i < group.atomSet.numAtomsGlobal(); i++)
             {
-                group.m[i] = mtopGetAtomMass(mtop, group.atomSet.globalIndex()[i], &molb);
+                group.m[i] = mTopLookUp.getAtomParameters(group.atomSet.globalIndex()[i]).m;
             }
         }
     }

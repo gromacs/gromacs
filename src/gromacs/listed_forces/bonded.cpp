@@ -3016,17 +3016,17 @@ rbdihs(int             nbonds,
 //! \endcond
 
 /*! \brief Mysterious undocumented function */
-int cmap_setup_grid_index(int ip, int grid_spacing, int* ipm1, int* ipp1, int* ipp2)
+int cmap_setup_grid_index(int ip, int gridExtent, int* ipm1, int* ipp1, int* ipp2)
 {
     int im1, ip1, ip2;
 
     if (ip < 0)
     {
-        ip = ip + grid_spacing - 1;
+        ip = ip + gridExtent - 1;
     }
-    else if (ip > grid_spacing)
+    else if (ip > gridExtent)
     {
-        ip = ip - grid_spacing - 1;
+        ip = ip - gridExtent - 1;
     }
 
     im1 = ip - 1;
@@ -3035,13 +3035,13 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int* ipm1, int* ipp1, int* i
 
     if (ip == 0)
     {
-        im1 = grid_spacing - 1;
+        im1 = gridExtent - 1;
     }
-    else if (ip == grid_spacing - 2)
+    else if (ip == gridExtent - 2)
     {
         ip2 = 0;
     }
-    else if (ip == grid_spacing - 1)
+    else if (ip == gridExtent - 1)
     {
         ip1 = 0;
         ip2 = 1;
@@ -3320,19 +3320,19 @@ real cmap_dihs(int                 nbonds,
         }
 
         /* Number of grid points */
-        real dx = 2 * M_PI / cmap_grid->grid_spacing;
+        real dx = 2 * M_PI / cmap_grid->gridExtent;
 
         /* Where on the grid are we */
         int iphi1 = static_cast<int>(xphi1 / dx);
         int iphi2 = static_cast<int>(xphi2 / dx);
 
-        iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->grid_spacing, &ip1m1, &ip1p1, &ip1p2);
-        iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->grid_spacing, &ip2m1, &ip2p1, &ip2p2);
+        iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->gridExtent, &ip1m1, &ip1p1, &ip1p2);
+        iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->gridExtent, &ip2m1, &ip2p1, &ip2p2);
 
-        const int pos1 = iphi1 * cmap_grid->grid_spacing + iphi2;
-        const int pos2 = ip1p1 * cmap_grid->grid_spacing + iphi2;
-        const int pos3 = ip1p1 * cmap_grid->grid_spacing + ip2p1;
-        const int pos4 = iphi1 * cmap_grid->grid_spacing + ip2p1;
+        const int pos1 = iphi1 * cmap_grid->gridExtent + iphi2;
+        const int pos2 = ip1p1 * cmap_grid->gridExtent + iphi2;
+        const int pos3 = ip1p1 * cmap_grid->gridExtent + ip2p1;
+        const int pos4 = iphi1 * cmap_grid->gridExtent + ip2p1;
 
         ty[0] = cmapd[pos1 * 4];
         ty[1] = cmapd[pos2 * 4];
@@ -3355,7 +3355,7 @@ real cmap_dihs(int                 nbonds,
         ty12[3] = cmapd[pos4 * 4 + 3];
 
         /* Switch to degrees */
-        dx    = 360.0 / cmap_grid->grid_spacing;
+        dx    = 360.0 / cmap_grid->gridExtent;
         xphi1 = xphi1 * gmx::c_rad2Deg;
         xphi2 = xphi2 * gmx::c_rad2Deg;
 
@@ -3988,115 +3988,118 @@ struct BondedInteractions
  *
  * This must have as many entries as interaction_function in ifunc.cpp */
 template<BondedKernelFlavor flavor>
-constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
-    BondedInteractions{ bonds<flavor>, eNR_BONDS },                       // F_BONDS
-    BondedInteractions{ g96bonds<flavor>, eNR_BONDS },                    // F_G96BONDS
-    BondedInteractions{ morse_bonds<flavor>, eNR_MORSE },                 // F_MORSE
-    BondedInteractions{ cubic_bonds<flavor>, eNR_CUBICBONDS },            // F_CUBICBONDS
-    BondedInteractions{ unimplemented, -1 },                              // F_CONNBONDS
-    BondedInteractions{ bonds<flavor>, eNR_BONDS },                       // F_HARMONIC
-    BondedInteractions{ FENE_bonds<flavor>, eNR_FENEBONDS },              // F_FENEBONDS
-    BondedInteractions{ tab_bonds<flavor>, eNR_TABBONDS },                // F_TABBONDS
-    BondedInteractions{ tab_bonds<flavor>, eNR_TABBONDS },                // F_TABBONDSNC
-    BondedInteractions{ restraint_bonds<flavor>, eNR_RESTRBONDS },        // F_RESTRBONDS
-    BondedInteractions{ angles<flavor>, eNR_ANGLES },                     // F_ANGLES
-    BondedInteractions{ g96angles<flavor>, eNR_ANGLES },                  // F_G96ANGLES
-    BondedInteractions{ restrangles<flavor>, eNR_ANGLES },                // F_RESTRANGLES
-    BondedInteractions{ linear_angles<flavor>, eNR_ANGLES },              // F_LINEAR_ANGLES
-    BondedInteractions{ cross_bond_bond<flavor>, eNR_CROSS_BOND_BOND },   // F_CROSS_BOND_BONDS
-    BondedInteractions{ cross_bond_angle<flavor>, eNR_CROSS_BOND_ANGLE }, // F_CROSS_BOND_ANGLES
-    BondedInteractions{ urey_bradley<flavor>, eNR_UREY_BRADLEY },         // F_UREY_BRADLEY
-    BondedInteractions{ quartic_angles<flavor>, eNR_QANGLES },            // F_QUARTIC_ANGLES
-    BondedInteractions{ tab_angles<flavor>, eNR_TABANGLES },              // F_TABANGLES
-    BondedInteractions{ pdihs<flavor>, eNR_PROPER },                      // F_PDIHS
-    BondedInteractions{ rbdihs<flavor>, eNR_RB },                         // F_RBDIHS
-    BondedInteractions{ restrdihs<flavor>, eNR_PROPER },                  // F_RESTRDIHS
-    BondedInteractions{ cbtdihs<flavor>, eNR_RB },                        // F_CBTDIHS
-    BondedInteractions{ rbdihs<flavor>, eNR_FOURDIH },                    // F_FOURDIHS
-    BondedInteractions{ idihs<flavor>, eNR_IMPROPER },                    // F_IDIHS
-    BondedInteractions{ pdihs<flavor>, eNR_IMPROPER },                    // F_PIDIHS
-    BondedInteractions{ tab_dihs<flavor>, eNR_TABDIHS },                  // F_TABDIHS
-    BondedInteractions{ unimplemented, eNR_CMAP },                        // F_CMAP
-    BondedInteractions{ unimplemented, -1 },                              // F_GB12_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                              // F_GB13_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                              // F_GB14_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                              // F_GBPOL_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                       // F_NPSOLVATION_NOLONGERUSED
-    BondedInteractions{ unimplemented, eNR_NB14 },                 // F_LJ14
-    BondedInteractions{ unimplemented, -1 },                       // F_COUL14
-    BondedInteractions{ unimplemented, eNR_NB14 },                 // F_LJC14_Q
-    BondedInteractions{ unimplemented, eNR_NB14 },                 // F_LJC_PAIRS_NB
-    BondedInteractions{ unimplemented, -1 },                       // F_LJ
-    BondedInteractions{ unimplemented, -1 },                       // F_BHAM
-    BondedInteractions{ unimplemented, -1 },                       // F_LJ_LR_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                       // F_BHAM_LR_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                       // F_DISPCORR
-    BondedInteractions{ unimplemented, -1 },                       // F_COUL_SR
-    BondedInteractions{ unimplemented, -1 },                       // F_COUL_LR_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                       // F_RF_EXCL
-    BondedInteractions{ unimplemented, -1 },                       // F_COUL_RECIP
-    BondedInteractions{ unimplemented, -1 },                       // F_LJ_RECIP
-    BondedInteractions{ unimplemented, -1 },                       // F_DPD
-    BondedInteractions{ polarize<flavor>, eNR_POLARIZE },          // F_POLARIZATION
-    BondedInteractions{ water_pol<flavor>, eNR_WPOL },             // F_WATER_POL
-    BondedInteractions{ thole_pol<flavor>, eNR_THOLE },            // F_THOLE_POL
-    BondedInteractions{ anharm_polarize<flavor>, eNR_ANHARM_POL }, // F_ANHARM_POL
-    BondedInteractions{ unimplemented, -1 },                       // F_POSRES
-    BondedInteractions{ unimplemented, -1 },                       // F_FBPOSRES
-    BondedInteractions{ ta_disres, eNR_DISRES },                   // F_DISRES
-    BondedInteractions{ unimplemented, -1 },                       // F_DISRESVIOL
-    BondedInteractions{ orires, eNR_ORIRES },                      // F_ORIRES
-    BondedInteractions{ unimplemented, -1 },                       // F_ORIRESDEV
-    BondedInteractions{ angres<flavor>, eNR_ANGRES },              // F_ANGRES
-    BondedInteractions{ angresz<flavor>, eNR_ANGRESZ },            // F_ANGRESZ
-    BondedInteractions{ dihres<flavor>, eNR_DIHRES },              // F_DIHRES
-    BondedInteractions{ unimplemented, -1 },                       // F_DIHRESVIOL
-    BondedInteractions{ unimplemented, -1 },                       // F_CONSTR
-    BondedInteractions{ unimplemented, -1 },                       // F_CONSTRNC
-    BondedInteractions{ unimplemented, -1 },                       // F_SETTLE
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE2
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE3
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE3FD
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE3FAD
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE3OUT
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE4FD
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITE4FDN
-    BondedInteractions{ unimplemented, -1 },                       // F_VSITEN
-    BondedInteractions{ unimplemented, -1 },                       // F_COM_PULL
-    BondedInteractions{ unimplemented, -1 },                       // F_DENSITYFITTING
-    BondedInteractions{ unimplemented, -1 },                       // F_EQM
-    BondedInteractions{ unimplemented, -1 },                       // F_ENNPOT
-    BondedInteractions{ unimplemented, -1 },                       // F_EPOT
-    BondedInteractions{ unimplemented, -1 },                       // F_EKIN
-    BondedInteractions{ unimplemented, -1 },                       // F_ETOT
-    BondedInteractions{ unimplemented, -1 },                       // F_ECONSERVED
-    BondedInteractions{ unimplemented, -1 },                       // F_TEMP
-    BondedInteractions{ unimplemented, -1 },                       // F_VTEMP_NOLONGERUSED
-    BondedInteractions{ unimplemented, -1 },                       // F_PDISPCORR
-    BondedInteractions{ unimplemented, -1 },                       // F_PRES
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL_CONSTR
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL
-    BondedInteractions{ unimplemented, -1 },                       // F_DKDL
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL_COUL
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL_VDW
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL_BONDED
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL_RESTRAINT
-    BondedInteractions{ unimplemented, -1 },                       // F_DVDL_TEMPERATURE
+constexpr gmx::EnumerationArray<InteractionFunction, BondedInteractions> c_bondedInteractionFunctions = {
+    BondedInteractions{ bonds<flavor>, eNR_BONDS },       // InteractionFunction::Bonds
+    BondedInteractions{ g96bonds<flavor>, eNR_BONDS },    // InteractionFunction::GROMOS96Bonds
+    BondedInteractions{ morse_bonds<flavor>, eNR_MORSE }, // InteractionFunction::MorsePotential
+    BondedInteractions{ cubic_bonds<flavor>, eNR_CUBICBONDS }, // InteractionFunction::CubicBonds
+    BondedInteractions{ unimplemented, -1 },                   // InteractionFunction::ConnectBonds
+    BondedInteractions{ bonds<flavor>, eNR_BONDS }, // InteractionFunction::HarmonicPotential
+    BondedInteractions{ FENE_bonds<flavor>, eNR_FENEBONDS }, // InteractionFunction::FENEBonds
+    BondedInteractions{ tab_bonds<flavor>, eNR_TABBONDS },   // InteractionFunction::TabulatedBonds
+    BondedInteractions{ tab_bonds<flavor>, eNR_TABBONDS }, // InteractionFunction::TabulatedBondsNoCoupling
+    BondedInteractions{ restraint_bonds<flavor>, eNR_RESTRBONDS }, // InteractionFunction::RestraintBonds
+    BondedInteractions{ angles<flavor>, eNR_ANGLES },              // InteractionFunction::Angles
+    BondedInteractions{ g96angles<flavor>, eNR_ANGLES }, // InteractionFunction::GROMOS96Angles
+    BondedInteractions{ restrangles<flavor>, eNR_ANGLES }, // InteractionFunction::RestrictedBendingPotential
+    BondedInteractions{ linear_angles<flavor>, eNR_ANGLES }, // InteractionFunction::LinearAngles
+    BondedInteractions{ cross_bond_bond<flavor>, eNR_CROSS_BOND_BOND }, // InteractionFunction::CrossBondBonds
+    BondedInteractions{ cross_bond_angle<flavor>, eNR_CROSS_BOND_ANGLE }, // InteractionFunction::CrossBondAngles
+    BondedInteractions{ urey_bradley<flavor>, eNR_UREY_BRADLEY }, // InteractionFunction::UreyBradleyPotential
+    BondedInteractions{ quartic_angles<flavor>, eNR_QANGLES }, // InteractionFunction::QuarticAngles
+    BondedInteractions{ tab_angles<flavor>, eNR_TABANGLES }, // InteractionFunction::TabulatedAngles
+    BondedInteractions{ pdihs<flavor>, eNR_PROPER },         // InteractionFunction::ProperDihedrals
+    BondedInteractions{ rbdihs<flavor>, eNR_RB }, // InteractionFunction::RyckaertBellemansDihedrals
+    BondedInteractions{ restrdihs<flavor>, eNR_PROPER }, // InteractionFunction::RestrictedTorsionPotential
+    BondedInteractions{ cbtdihs<flavor>, eNR_RB }, // InteractionFunction::CombinedBendingTorsionPotential
+    BondedInteractions{ rbdihs<flavor>, eNR_FOURDIH }, // InteractionFunction::FourierDihedrals
+    BondedInteractions{ idihs<flavor>, eNR_IMPROPER }, // InteractionFunction::ImproperDihedrals
+    BondedInteractions{ pdihs<flavor>, eNR_IMPROPER }, // InteractionFunction::PeriodicImproperDihedrals
+    BondedInteractions{ tab_dihs<flavor>, eNR_TABDIHS }, // InteractionFunction::TabulatedDihedrals
+    BondedInteractions{ unimplemented, eNR_CMAP }, // InteractionFunction::DihedralEnergyCorrectionMap
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::GeneralizedBorn12PolarizationUnused
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::GeneralizedBorn13PolarizationUnused
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::GeneralizedBorn14PolarizationUnused
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::GeneralizedBornPolarizationUnused
+    BondedInteractions{ unimplemented, -1 },       // InteractionFunction::NonpolarSolvationUnused
+    BondedInteractions{ unimplemented, eNR_NB14 }, // InteractionFunction::LennardJones14
+    BondedInteractions{ unimplemented, -1 },       // InteractionFunction::Coulomb14
+    BondedInteractions{ unimplemented, eNR_NB14 }, // InteractionFunction::LennardJonesCoulomb14Q
+    BondedInteractions{ unimplemented, eNR_NB14 }, // InteractionFunction::LennardJonesCoulombNonBondedPairs
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::LennardJonesShortRange
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::BuckinghamShortRange
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::LennardJonesLongRangeUnused
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::BuckinghamShortRange_LR_NOLONGERUSED
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::DispersionCorrection
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::CoulombShortRange
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::CoulombLongRangeUnused
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::ReactionFieldExclusion
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::CoulombReciprocalSpace
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::LennardJonesReciprocalSpace
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::DissipativeParticleDynamics
+    BondedInteractions{ polarize<flavor>, eNR_POLARIZE }, // InteractionFunction::Polarization
+    BondedInteractions{ water_pol<flavor>, eNR_WPOL },    // InteractionFunction::WaterPolarization
+    BondedInteractions{ thole_pol<flavor>, eNR_THOLE },   // InteractionFunction::TholePolarization
+    BondedInteractions{ anharm_polarize<flavor>, eNR_ANHARM_POL }, // InteractionFunction::AnharmonicPolarization
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::PositionRestraints
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::FlatBottomedPositionRestraints
+    BondedInteractions{ ta_disres, eNR_DISRES }, // InteractionFunction::DistanceRestraints
+    BondedInteractions{ unimplemented, -1 },     // InteractionFunction::DistanceRestraintViolations
+    BondedInteractions{ orires, eNR_ORIRES },    // InteractionFunction::OrientationRestraints
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::OrientationRestraintDeviations
+    BondedInteractions{ angres<flavor>, eNR_ANGRES },   // InteractionFunction::AngleRestraints
+    BondedInteractions{ angresz<flavor>, eNR_ANGRESZ }, // InteractionFunction::AngleZAxisRestraints
+    BondedInteractions{ dihres<flavor>, eNR_DIHRES },   // InteractionFunction::DihedralRestraints
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::DihedralRestraintViolations
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::Constraints
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::ConstraintsNoCoupling
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::SETTLE
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite1
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite2
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite2FlexibleDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3FlexibleDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3FlexibleAngleDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3Outside
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite4FlexibleDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite4FlexibleDistanceNormalization
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSiteN
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::CenterOfMassPullingEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::DensityFitting
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::QuantumMechanicalRegionEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::NeuralNetworkPotentialEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::PotentialEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::KineticEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::TotalEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::ConservedEnergy
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::Temperature
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirialTemperatureUnused
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::PressureDispersionCorrection
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::Pressure
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dHdLambdaConstraint
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dVremainingdLambda
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dEkineticdLambda
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dVCoulombdLambda
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dVvanderWaalsdLambda
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dVbondeddLambda
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dVrestraintdLambda
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::dVtemperaturedLambda
 };
 
 /*! \brief List of instantiated BondedInteractions list */
-constexpr gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
-    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
-    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
-    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>,
-    c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndEnergy>
-};
+constexpr gmx::EnumerationArray<BondedKernelFlavor, gmx::EnumerationArray<InteractionFunction, BondedInteractions>>
+        c_bondedInteractionFunctionsPerFlavor = {
+            c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
+            c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
+            c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>,
+            c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndEnergy>
+        };
 
 //! \endcond
 
 } // namespace
 
-real calculateSimpleBond(const int                 ftype,
+real calculateSimpleBond(const InteractionFunction ftype,
                          const int                 numForceatoms,
                          const t_iatom             forceatoms[],
                          const t_iparams           forceparams[],
@@ -4113,7 +4116,8 @@ real calculateSimpleBond(const int                 ftype,
                          int gmx_unused*           global_atom_index,
                          const BondedKernelFlavor  bondedKernelFlavor)
 {
-    const BondedInteractions& bonded = c_bondedInteractionFunctionsPerFlavor[bondedKernelFlavor][ftype];
+    const BondedInteractions& bonded =
+            c_bondedInteractionFunctionsPerFlavor[bondedKernelFlavor][static_cast<int>(ftype)];
 
     real v = bonded.function(
             numForceatoms, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, charge, fcd, disresdata, oriresdata, global_atom_index);

@@ -49,6 +49,7 @@ enum GromacsFileType
     efCOMPRESSED,
     efXTC,
     efTNG,
+    efH5MD,
     efEDR,
     efSTX,
     efSTO,

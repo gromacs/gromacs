@@ -81,12 +81,23 @@
 /* The minimum number of integration steps per decay time tau required
  * to stay reasonable close to the target value.
  */
-const int c_minimumStepsPerTau = 5;
+const int c_minimumStepsPerTauFirstOrderTemperatureCoupling = 5;
+
+/* The minimum number of integration steps per period
+ * for reasonably accurate integration of the C-rescale barostat.
+ */
+const int c_minimumStepsPerTauFirstOrderPressureCoupling = 25;
 
 /* The minimum number of integration steps per period
  * for reasonably accurate integration of second order coupling algorithms.
  */
-const int c_minimumStepsPerPeriod = 20;
+const int c_minimumStepsPerPeriodNoseHoover = 20;
+
+/* The minimum number of integration steps per period
+ * for reasonably accurate integration of the Parrinello-Rahman barostat.
+ * The PR-barostat needs extremely many steps per period to avoid resonances.
+ */
+const int c_minimumStepsPerPeriodParrinelloRahman = 200;
 
 /* Default values for T- and P- coupling intervals, used when the are no other
  * restrictions.
@@ -117,9 +128,9 @@ int tcouple_min_integration_steps(TemperatureCoupling etc)
         case TemperatureCoupling::Yes:
         case TemperatureCoupling::VRescale:
             /* V-rescale supports instantaneous rescaling */
-            n = c_minimumStepsPerTau;
+            n = c_minimumStepsPerTauFirstOrderTemperatureCoupling;
             break;
-        case TemperatureCoupling::NoseHoover: n = c_minimumStepsPerPeriod; break;
+        case TemperatureCoupling::NoseHoover: n = c_minimumStepsPerPeriodNoseHoover; break;
         case TemperatureCoupling::Andersen:
         case TemperatureCoupling::AndersenMassive: n = 1; break;
         default: gmx_incons("Unknown etc value");
@@ -179,9 +190,9 @@ int pcouple_min_integration_steps(PressureCoupling epc)
         case PressureCoupling::No: n = 0; break;
         case PressureCoupling::Berendsen:
         case PressureCoupling::CRescale:
-        case PressureCoupling::Isotropic: n = c_minimumStepsPerTau; break;
+        case PressureCoupling::Isotropic: n = c_minimumStepsPerTauFirstOrderPressureCoupling; break;
         case PressureCoupling::ParrinelloRahman:
-        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriod; break;
+        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriodParrinelloRahman; break;
         default: gmx_incons("Unknown epc value");
     }
 
@@ -1092,13 +1103,12 @@ static void cmpPressureCouplingOptions(FILE*                          fp,
 
 static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, real ftol, real abstol)
 {
-    int  i, j;
     char buf1[256], buf2[256];
 
     cmp_int(fp, "inputrec->grpopts.ngtc", -1, opt1->ngtc, opt2->ngtc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
-    for (i = 0; (i < std::min(opt1->ngtc, opt2->ngtc)); i++)
+    for (int i = 0; (i < std::min(opt1->ngtc, opt2->ngtc)); i++)
     {
         cmp_real(fp, "inputrec->grpopts.nrdf", i, opt1->nrdf[i], opt2->nrdf[i], ftol, abstol);
         cmp_real(fp, "inputrec->grpopts.ref_t", i, opt1->ref_t[i], opt2->ref_t[i], ftol, abstol);
@@ -1109,7 +1119,7 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
         {
             sprintf(buf1, "inputrec->grpopts.anneal_time[%d]", i);
             sprintf(buf2, "inputrec->grpopts.anneal_temp[%d]", i);
-            for (j = 0; j < opt1->anneal_npoints[i]; j++)
+            for (int j = 0; j < opt1->anneal_npoints[i]; j++)
             {
                 cmp_real(fp, buf1, j, opt1->anneal_time[i][j], opt2->anneal_time[i][j], ftol, abstol);
                 cmp_real(fp, buf2, j, opt1->anneal_temp[i][j], opt2->anneal_temp[i][j], ftol, abstol);
@@ -1118,9 +1128,9 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
     }
     if (opt1->ngener == opt2->ngener)
     {
-        for (i = 0; i < opt1->ngener; i++)
+        for (int i = 0; i < opt1->ngener; i++)
         {
-            for (j = i; j < opt1->ngener; j++)
+            for (int j = i; j < opt1->ngener; j++)
             {
                 sprintf(buf1, "inputrec->grpopts.egp_flags[%d]", i);
                 cmp_int(fp, buf1, j, opt1->egp_flags[opt1->ngener * i + j], opt2->egp_flags[opt1->ngener * i + j]);
@@ -1138,7 +1148,7 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
                  ftol,
                  abstol);
     }
-    for (i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
+    for (int i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
     {
         cmp_ivec(fp, "inputrec->grpopts.nFreeze", i, opt1->nFreeze[i], opt2->nFreeze[i]);
     }

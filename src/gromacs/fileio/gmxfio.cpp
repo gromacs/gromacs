@@ -245,9 +245,9 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
     fio->xdr   = nullptr;
     if (!fn.empty())
     {
-        if (fn2ftp(fn) == efTNG)
+        if (fn2ftp(fn) == efTNG || fn2ftp(fn) == efH5MD)
         {
-            gmx_incons("gmx_fio_open may not be used to open TNG files");
+            gmx_incons("gmx_fio_open may not be used to open TNG or H5MD files");
         }
         fio->iFTP = fn2ftp(fn);
         fio->fn   = fn;

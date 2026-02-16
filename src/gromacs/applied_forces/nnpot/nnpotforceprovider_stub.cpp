@@ -59,7 +59,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),
-    idxLookup_(params_.numAtoms_, -1),
+    inputToLocalIndex_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
     mpiComm_(mpiComm)
@@ -80,11 +80,19 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, F
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void NNPotForceProvider::gatherAtomNumbersIndices()
+void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistributedSignal& /*signal*/)
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
             " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& /*pairlistData*/)
+{
+    GMX_THROW(InternalError(
+            "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
+            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
 }
 
 CLANG_DIAGNOSTIC_RESET

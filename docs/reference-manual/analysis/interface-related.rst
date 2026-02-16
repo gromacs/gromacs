@@ -1,7 +1,7 @@
 Interface-related items
 -----------------------
 
-| :ref:`gmx order <gmx order>`, :ref:`gmx density <gmx density>`, 
+| :ref:`gmx order <gmx order>`, :ref:`gmx density <gmx density>`,
   :ref:`gmx potential <gmx potential>`, :ref:`gmx traj <gmx traj>`
 | When simulating molecules with long carbon tails, it can be
   interesting to calculate their average orientation. There are several
@@ -32,7 +32,7 @@ The electrostatic potential (:math:`\psi`) across the interface can be
 computed from a trajectory by evaluating the double integral of the
 charge density (:math:`\rho(z)`):
 
-.. math:: \psi(z) - \psi(-\infty) = - \int_{-\infty}^z dz' \int_{-\infty}^{z'} \rho(z'')dz''/ \epsilon_0 
+.. math:: \psi(z) - \psi(-\infty) = - \int_{-\infty}^z dz' \int_{-\infty}^{z'} \rho(z'')dz''/ \epsilon_0
           :label: eqnelpotgr
 
 where the position :math:`z=-\infty` is far enough in the bulk phase

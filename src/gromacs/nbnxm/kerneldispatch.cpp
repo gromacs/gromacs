@@ -94,12 +94,27 @@ enum class InteractionLocality : int;
 
 CoulombKernelType getCoulombKernelType(const EwaldExclusionType     ewaldExclusionType,
                                        const CoulombInteractionType coulombInteractionType,
-                                       const bool                   haveEqualCoulombVwdRadii)
+                                       const bool                   haveEqualCoulombVwdRadii,
+                                       const bool                   nbnxmIsDirectCoulombProvider)
 {
-
     if (usingRF(coulombInteractionType) || coulombInteractionType == CoulombInteractionType::Cut)
     {
         return CoulombKernelType::ReactionField;
+    }
+    else if (coulombInteractionType == CoulombInteractionType::Fmm)
+    {
+        if (nbnxmIsDirectCoulombProvider)
+        {
+            GMX_RELEASE_ASSERT(
+                    false,
+                    "FMM is not yet supported in GROMACS for short-range coulomb interactions");
+
+            return CoulombKernelType::Fmm;
+        }
+        else
+        {
+            return CoulombKernelType::None;
+        }
     }
     else
     {
@@ -218,9 +233,12 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
                                && nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot)),
                "nbat combination rule parameters should match those for LJ-PME");
 
-    const int coulkt = static_cast<int>(getCoulombKernelType(
-            kernelSetup.ewaldExclusionType, ic.coulomb.type, (ic.coulomb.cutoff == ic.vdw.cutoff)));
-    const int vdwkt  = getVdwKernelType(kernelSetup.kernelType,
+    const int coulkt = static_cast<int>(getCoulombKernelType(kernelSetup.ewaldExclusionType,
+                                                             ic.coulomb.type,
+                                                             (ic.coulomb.cutoff == ic.vdw.cutoff),
+                                                             ic.nbnxmIsDirectCoulombProvider));
+
+    const int vdwkt = getVdwKernelType(kernelSetup.kernelType,
                                        nbatParams.ljCombinationRule,
                                        ic.vdw.type,
                                        ic.vdw.modifier,

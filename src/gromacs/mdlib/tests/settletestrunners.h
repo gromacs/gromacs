@@ -55,11 +55,6 @@
 
 #include "settletestdata.h"
 
-/*
- * GPU version of SETTLE is only available with CUDA.
- */
-#define GPU_SETTLE_SUPPORTED (GMX_GPU_CUDA || GMX_GPU_SYCL)
-
 struct t_pbc;
 
 namespace gmx

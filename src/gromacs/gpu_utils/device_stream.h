@@ -71,6 +71,8 @@ enum class DeviceStreamPriority : int
     High,
     //! Normal-priority stream
     Normal,
+    //! Low-priority stream
+    Low,
     //! Conventional termination of the enumeration
     Count
 };
