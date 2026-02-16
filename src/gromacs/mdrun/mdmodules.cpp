@@ -87,7 +87,7 @@ public:
         modules_[std::string(PlumedModuleInfo::sc_name)]  = PlumedModuleInfo::create();
         modules_[std::string(NNPotModuleInfo::sc_name)]   = NNPotModuleInfo::create();
         modules_[std::string(FmmModuleInfo::sc_name)]     = FmmModuleInfo::create();
-        modules_[std::string(RAMDModuleInfo::sc_name)]     = RAMDModuleInfo::create();
+        modules_[std::string(RAMDModuleInfo::sc_name)]    = RAMDModuleInfo::create();
     }
 
     void makeModuleOptions(Options* options) const

@@ -92,14 +92,14 @@ const std::string water4_mdp_base = R"(
 TEST_F(RAMDTest, RAMD_connected_ligands)
 {
     const std::string ramdValues = formatString(
-        "ramd-active                = yes\n"
-        "ramd-seed                  = 42\n"
-        "ramd-eval-freq             = 10\n"
-        "ramd-out-freq              = 100\n"
-        "ramd-groups-file           = %s\n"
-        "ramd-pbc-ref-prev-step-com = yes\n"
-        "ramd-connected-ligands     = yes\n",
-        TestFileManager::getInputFilePath("4water_ramd_groups.in").string().c_str());
+            "ramd-active                = yes\n"
+            "ramd-seed                  = 42\n"
+            "ramd-eval-freq             = 10\n"
+            "ramd-out-freq              = 100\n"
+            "ramd-groups-file           = %s\n"
+            "ramd-pbc-ref-prev-step-com = yes\n"
+            "ramd-connected-ligands     = yes\n",
+            TestFileManager::getInputFilePath("4water_ramd_groups.in").string().c_str());
     runner_.useTopGroAndNdxFromDatabase("4water");
     runner_.useStringAsMdpFile(water4_mdp_base + ramdValues);
 

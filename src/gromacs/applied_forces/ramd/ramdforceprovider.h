@@ -32,12 +32,12 @@ namespace gmx
 class RAMDForceProvider final : public IForceProvider
 {
 public:
-    RAMDForceProvider(const RAMDParameters& parameters,
+    RAMDForceProvider(const RAMDParameters&                             parameters,
                       const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms,
-                      const gmx_mtop_t& topology,
-                      PbcType pbcType,
-                      const MDLogger& logger,
-                      RAMDOutputProvider& ramdOutputProvider);
+                      const gmx_mtop_t&                                 topology,
+                      PbcType                                           pbcType,
+                      const MDLogger&                                   logger,
+                      RAMDOutputProvider&                               ramdOutputProvider);
 
     //! Destruct force provider for RAMD
     ~RAMDForceProvider();
@@ -49,10 +49,9 @@ public:
     void calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput) override;
 
 private:
-
     DVec calc_com(ArrayRef<const RVec> x, const std::vector<Index>& indices)
     {
-        DVec com = DVec(0.0, 0.0, 0.0);
+        DVec com        = DVec(0.0, 0.0, 0.0);
         real total_mass = 0.0;
         for (auto idx : indices)
         {
@@ -79,9 +78,9 @@ private:
     //! Reference to topology
     const gmx_mtop_t& topology_;
 
-    const PbcType         pbcType_;
-    const MDLogger&       logger_;
-    RAMDOutputProvider&   ramdOutputProvider_;
+    const PbcType       pbcType_;
+    const MDLogger&     logger_;
+    RAMDOutputProvider& ramdOutputProvider_;
 
     //! Random pull direction
     RandomSphericalDirectionGenerator random_spherical_direction_generator;
@@ -103,7 +102,6 @@ private:
 
     //! Lookup for molecule topology information
     MTopLookUp mTopLookUp_;
-
 };
 
 } // namespace gmx

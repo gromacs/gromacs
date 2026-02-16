@@ -9,11 +9,12 @@
 #define GMX_APPLIED_FORCES_RAMDPARAMETERS_H
 
 #include <cstdint>
+
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/real.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 namespace gmx
 {
@@ -25,15 +26,15 @@ struct RAMDGroup
 {
     //! Force to be applied in kcal/mol/Angstrom
     real force_ = 600.0;
-     
-    std::string receptor_ = "Protein";
+
+    std::string        receptor_         = "Protein";
     std::vector<Index> receptor_indices_ = {};
-    int receptor_pbcatom_ = 0;
-     
-    std::string ligand_ = "Ligand";
+    int                receptor_pbcatom_ = 0;
+
+    std::string        ligand_         = "Ligand";
     std::vector<Index> ligand_indices_ = {};
-    int ligand_pbcatom_ = 0;
-    
+    int                ligand_pbcatom_ = 0;
+
     //! Specifies the distance in Angstrom between the COMs of the ligand
     //! and the receptor when the simulation is stopped
     real max_dist_ = 4.0;
@@ -55,7 +56,7 @@ struct RAMDParameters
 
     //! Initialization number for pseudo random number generator
     int64_t seed_ = 1234;
-    
+
     //! Interval for evaluating the COM distance and possibly changing the force direction
     int eval_freq_ = 50;
 

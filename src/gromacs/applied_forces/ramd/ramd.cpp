@@ -6,19 +6,20 @@
  * \ingroup module_applied_forces
  */
 
+#include "ramd.h"
+
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/logger.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/logger.h"
 
-#include "ramd.h"
+#include "ramdforceprovider.h"
 #include "ramdoptions.h"
 #include "ramdoutputprovider.h"
-#include "ramdforceprovider.h"
 
 namespace gmx
 {
@@ -148,14 +149,13 @@ public:
         if (ramdOptions_.active())
         {
             const auto& parameters = ramdOptions_.parameters();
-            forceProvider_ = std::make_unique<RAMDForceProvider>(
-                parameters,
-                ramdSimulationParameters_.localAtomSets(),
-                ramdSimulationParameters_.topology(),
-                ramdSimulationParameters_.periodicBoundaryConditionType(),
-                ramdSimulationParameters_.logger(),
-                ramdOutputProvider_
-            );
+            forceProvider_         = std::make_unique<RAMDForceProvider>(
+                    parameters,
+                    ramdSimulationParameters_.localAtomSets(),
+                    ramdSimulationParameters_.topology(),
+                    ramdSimulationParameters_.periodicBoundaryConditionType(),
+                    ramdSimulationParameters_.logger(),
+                    ramdOutputProvider_);
             forceProviders->addForceProvider(forceProvider_.get(), "RAMD");
         }
     }
@@ -202,7 +202,8 @@ public:
         {
             for (int g = 0; g < ramdOptions_.parameters().ngroups_; ++g)
             {
-                LocalAtomSet atomSet = localAtomSetManager->add(ramdOptions_.parameters().groups_[g].ligand_indices_);
+                LocalAtomSet atomSet =
+                        localAtomSetManager->add(ramdOptions_.parameters().groups_[g].ligand_indices_);
                 this->ramdSimulationParameters_.setLocalAtomSets(atomSet);
             }
         };
@@ -225,8 +226,7 @@ public:
     }
 
     //! Subscribe to simulation run notifications
-    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override
-    {}
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
 private:
     //! The output provider
@@ -244,7 +244,7 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(RAMD);
 };
 
-} // namespace 
+} // namespace
 
 std::unique_ptr<IMDModule> RAMDModuleInfo::create()
 {

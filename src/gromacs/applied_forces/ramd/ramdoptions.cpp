@@ -32,22 +32,22 @@ std::string moduleName()
     return std::string(RAMDModuleInfo::sc_name);
 }
 
-const std::string c_activeTag = "active";
-const std::string c_seedTag = "seed";
-const std::string c_evalFreqTag = "eval-freq";
-const std::string c_outFreqTag = "out-freq";
-const std::string c_groupsFileTag = "groups-file";
-const std::string c_groupsStringTag = "groups-string";
-const std::string c_groupReceptorTag = "receptor";
+const std::string c_activeTag               = "active";
+const std::string c_seedTag                 = "seed";
+const std::string c_evalFreqTag             = "eval-freq";
+const std::string c_outFreqTag              = "out-freq";
+const std::string c_groupsFileTag           = "groups-file";
+const std::string c_groupsStringTag         = "groups-string";
+const std::string c_groupReceptorTag        = "receptor";
 const std::string c_groupReceptorIndicesTag = "receptor-indices";
-const std::string c_groupLigandTag = "ligand";
-const std::string c_groupLigandIndicesTag = "ligand-indices";
-const std::string c_groupForceTag = "force";
-const std::string c_groupMaxDistTag = "max-dist";
-const std::string c_groupRMinDistTag = "r-min-dist";
-const std::string c_pbcRefPrevStepComTag = "pbc-ref-prev-step-com";
-const std::string c_oldAngleDistTag = "old-angle-dist";
-const std::string c_connectedLigandsTag = "connected-ligands";
+const std::string c_groupLigandTag          = "ligand";
+const std::string c_groupLigandIndicesTag   = "ligand-indices";
+const std::string c_groupForceTag           = "force";
+const std::string c_groupMaxDistTag         = "max-dist";
+const std::string c_groupRMinDistTag        = "r-min-dist";
+const std::string c_pbcRefPrevStepComTag    = "pbc-ref-prev-step-com";
+const std::string c_oldAngleDistTag         = "old-angle-dist";
+const std::string c_connectedLigandsTag     = "connected-ligands";
 
 } // namespace
 
@@ -55,13 +55,17 @@ void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
     addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
-    addMdpTransformFromString<std::int64_t>(rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
+    addMdpTransformFromString<std::int64_t>(
+            rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
     addMdpTransformFromString<int>(rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
     addMdpTransformFromString<int>(rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_outFreqTag);
-    addMdpTransformFromString<std::string>(rules, stringIdentityTransform, RAMDModuleInfo::sc_name, c_groupsFileTag);
-    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_pbcRefPrevStepComTag);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, RAMDModuleInfo::sc_name, c_groupsFileTag);
+    addMdpTransformFromString<bool>(
+            rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_pbcRefPrevStepComTag);
     addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_oldAngleDistTag);
-    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_connectedLigandsTag);
+    addMdpTransformFromString<bool>(
+            rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_connectedLigandsTag);
 }
 
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -91,7 +95,8 @@ void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(IntegerOption(c_evalFreqTag.c_str()).store(&parameters_.eval_freq_));
     section.addOption(IntegerOption(c_outFreqTag.c_str()).store(&parameters_.out_freq_));
     section.addOption(StringOption(c_groupsFileTag.c_str()).store(&groupsFile_));
-    section.addOption(BooleanOption(c_pbcRefPrevStepComTag.c_str()).store(&parameters_.pbc_ref_prev_step_com_));
+    section.addOption(
+            BooleanOption(c_pbcRefPrevStepComTag.c_str()).store(&parameters_.pbc_ref_prev_step_com_));
     section.addOption(BooleanOption(c_oldAngleDistTag.c_str()).store(&parameters_.old_angle_dist_));
     section.addOption(BooleanOption(c_connectedLigandsTag.c_str()).store(&parameters_.connected_ligands_));
 }
@@ -141,21 +146,23 @@ void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAnd
     // Create input index
     for (int g = 0; g < parameters_.ngroups_; ++g)
     {
-        parameters_.groups_[g].ligand_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].ligand_);
-        parameters_.groups_[g].receptor_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].receptor_);
+        parameters_.groups_[g].ligand_indices_ =
+                indexGroupsAndNames.indices(parameters_.groups_[g].ligand_);
+        parameters_.groups_[g].receptor_indices_ =
+                indexGroupsAndNames.indices(parameters_.groups_[g].receptor_);
 
         // Check that group is not empty
         if (parameters_.groups_[g].ligand_indices_.empty())
         {
             GMX_THROW(InconsistentInputError(
-                formatString("Group %s defining RAMD ligand atoms should not be empty.",
-                             parameters_.groups_[g].ligand_.c_str())));
+                    formatString("Group %s defining RAMD ligand atoms should not be empty.",
+                                 parameters_.groups_[g].ligand_.c_str())));
         }
         if (parameters_.groups_[g].receptor_indices_.empty())
         {
             GMX_THROW(InconsistentInputError(
-                formatString("Group %s defining RAMD receptor atoms should not be empty.",
-                             parameters_.groups_[g].receptor_.c_str())));
+                    formatString("Group %s defining RAMD receptor atoms should not be empty.",
+                                 parameters_.groups_[g].receptor_.c_str())));
         }
     }
 }
@@ -167,7 +174,8 @@ void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBui
     for (size_t g = 0; g < parameters_.groups_.size(); ++g)
     {
         std::string groupName = moduleName() + "-group-" + std::to_string(g);
-        auto arrayBuilder = treeBuilder.addUniformArray<Index>(groupName + "-" + c_groupReceptorIndicesTag);
+        auto        arrayBuilder =
+                treeBuilder.addUniformArray<Index>(groupName + "-" + c_groupReceptorIndicesTag);
         for (const auto& val : parameters_.groups_[g].receptor_indices_)
         {
             arrayBuilder.addValue(val);
@@ -183,7 +191,8 @@ void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBui
 void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
 {
     // Check if active
-    if (!parameters_.active_) return;
+    if (!parameters_.active_)
+        return;
 
     if (!tree.keyExists(moduleName() + "-" + c_groupsStringTag))
     {
@@ -196,43 +205,50 @@ void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
 
     for (size_t g = 0; g < parameters_.groups_.size(); ++g)
     {
-        std::string groupName = moduleName() + "-group-" + std::to_string(g);        
+        std::string groupName = moduleName() + "-group-" + std::to_string(g);
         parameters_.groups_[g].receptor_indices_.resize(
-            tree[groupName + "-" + c_groupReceptorIndicesTag].asArray().values().size());
+                tree[groupName + "-" + c_groupReceptorIndicesTag].asArray().values().size());
         for (size_t i = 0; i < parameters_.groups_[g].receptor_indices_.size(); ++i)
         {
             parameters_.groups_[g].receptor_indices_[i] =
-                tree[groupName + "-" + c_groupReceptorIndicesTag].asArray().values()[i].cast<Index>();
+                    tree[groupName + "-" + c_groupReceptorIndicesTag].asArray().values()[i].cast<Index>();
         }
         parameters_.groups_[g].ligand_indices_.resize(
-            tree[groupName + "-" + c_groupLigandIndicesTag].asArray().values().size());
+                tree[groupName + "-" + c_groupLigandIndicesTag].asArray().values().size());
         for (size_t i = 0; i < parameters_.groups_[g].ligand_indices_.size(); ++i)
         {
             parameters_.groups_[g].ligand_indices_[i] =
-                tree[groupName + "-" + c_groupLigandIndicesTag].asArray().values()[i].cast<Index>();
+                    tree[groupName + "-" + c_groupLigandIndicesTag].asArray().values()[i].cast<Index>();
         }
     }
 }
 
 void RAMDOptions::readConfigString()
 {
-    std::string line, key, value;
+    std::string        line, key, value;
     std::istringstream ss(groupsString_);
 
-    while (std::getline(ss, line)) {
-        if (line.find_first_not_of(" \t") == std::string::npos) continue;
-        if (line.find_first_of("#;") != std::string::npos) continue;
+    while (std::getline(ss, line))
+    {
+        if (line.find_first_not_of(" \t") == std::string::npos)
+            continue;
+        if (line.find_first_of("#;") != std::string::npos)
+            continue;
         std::istringstream lineStream(line);
         lineStream >> key;
         if (key == "ramd-group")
         {
             gmx::RAMDGroup newGroup;
-            while (std::getline(ss, line)) {
-                if (line.find_first_not_of(" \t") == std::string::npos) continue;
-                if (line.find_first_of("#;") != std::string::npos) continue;
+            while (std::getline(ss, line))
+            {
+                if (line.find_first_not_of(" \t") == std::string::npos)
+                    continue;
+                if (line.find_first_of("#;") != std::string::npos)
+                    continue;
                 std::istringstream lineStream(line);
                 lineStream >> key;
-                if (key == "}") {
+                if (key == "}")
+                {
                     parameters_.groups_.push_back(newGroup);
                     break;
                 }

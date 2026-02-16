@@ -66,7 +66,6 @@ public:
     void readInternalParametersFromKvt(const KeyValueTreeObject& tree);
 
 private:
-
     void readConfigString();
 
     //! Parameter values for force & energy evaluation
@@ -84,7 +83,6 @@ private:
 
     //! Content of the RAMD groups file
     std::string groupsString_;
-
 };
 
 } // namespace gmx

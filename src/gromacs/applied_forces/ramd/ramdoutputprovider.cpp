@@ -9,6 +9,7 @@
 #include "gmxpre.h"
 
 #include "ramdoutputprovider.h"
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -19,9 +20,9 @@ namespace gmx
 {
 
 void RAMDOutputProvider::initOutput(FILE* /*fplog*/,
-                                    int nfile,
-                                    const t_filenm fnm[],
-                                    bool bAppendFiles,
+                                    int                     nfile,
+                                    const t_filenm          fnm[],
+                                    bool                    bAppendFiles,
                                     const gmx_output_env_t* oenv)
 {
     if (opt2bSet("-ramd", nfile, fnm))

@@ -7,13 +7,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/applied_forces/ramd/ramd.h"
 #include "gromacs/applied_forces/ramd/ramdoptions.h"
-#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
-#include "gromacs/utility/keyvaluetree.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreemdpwriter.h"
-#include "gromacs/utility/logger.h"
 
 #include <cstdint>
 
@@ -21,6 +15,13 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+
+#include "gromacs/applied_forces/ramd/ramd.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreemdpwriter.h"
+#include "gromacs/utility/logger.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
@@ -57,7 +58,7 @@ public:
 TEST_F(RAMDOptionsTest, DefaultParameters)
 {
     RAMDOptions ramdOptions;
-    const auto defaultParameters = ramdOptions.parameters();
+    const auto  defaultParameters = ramdOptions.parameters();
     EXPECT_FALSE(defaultParameters.active_);
     EXPECT_EQ(1234, defaultParameters.seed_);
     EXPECT_EQ(0, defaultParameters.ngroups_);
@@ -87,5 +88,5 @@ TEST_F(RAMDOptionsTest, OptionSetsActive)
     EXPECT_EQ(42, ramdOptions.parameters().seed_);
 }
 
-} // namespace anonymous
+} // namespace
 } // namespace gmx

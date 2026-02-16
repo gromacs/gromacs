@@ -30,11 +30,11 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/vec.h"
-#include "gromacs/utility/logger.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
