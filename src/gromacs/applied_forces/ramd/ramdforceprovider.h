@@ -54,10 +54,9 @@ private:
     {
         DVec com = DVec(0.0, 0.0, 0.0);
         real total_mass = 0.0;
-        int molb = 0;
         for (auto idx : indices)
         {
-            const real mass = mtopGetAtomMass(topology_, idx, &molb);
+            const real mass = mTopLookUp_.getAtomParameters(idx).m;
             for (int j = 0; j < DIM; ++j)
             {
                 com[j] += mass * x[idx][j];
@@ -101,6 +100,9 @@ private:
 
     //! Control trajectory output
     gmx_bool write_trajectory_;
+
+    //! Lookup for molecule topology information
+    MTopLookUp mTopLookUp_;
 
 };
 

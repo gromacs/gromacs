@@ -31,7 +31,8 @@ RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
     com_rec_prev_(parameters.groups_.size()),
     com_lig_prev_(parameters.groups_.size()),
     ligand_exited_(parameters.groups_.size(), 0),
-    write_trajectory_(false)
+    write_trajectory_(false),
+    mTopLookUp_(topology)
 {}
 
 RAMDForceProvider::~RAMDForceProvider()
