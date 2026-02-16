@@ -1,4 +1,8 @@
 {
+    "cmake.configureSettings": {
+        "GMX_BUILD_UNITTESTS": "ON",
+        "REGRESSIONTEST_DOWNLOAD": "ON"
+    },
     "files.associations": {
         "cmath": "cpp",
         "cstddef": "cpp",
