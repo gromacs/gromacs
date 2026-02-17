@@ -73,6 +73,14 @@ class TimingTest : public ::testing::Test
 public:
     TimingTest() : wcycle(wallcycle_init(nullptr, 0, nullptr)) {}
 
+    void SetUp() override
+    {
+        if (!wcycle)
+        {
+            GTEST_SKIP() << "Cycle counter not available on this platform";
+        }
+    }
+
 protected:
     const int                      delayInMilliseconds = 1;
     std::unique_ptr<gmx_wallcycle> wcycle;
