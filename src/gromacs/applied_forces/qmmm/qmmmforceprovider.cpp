@@ -265,9 +265,9 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     std::vector<double> box_d(9);
     for (size_t i = 0; i < DIM; i++)
     {
-        box_d[3 * i]     = static_cast<double>(box_[0][i] / c_bohr2Nm);
-        box_d[3 * i + 1] = static_cast<double>(box_[1][i] / c_bohr2Nm);
-        box_d[3 * i + 2] = static_cast<double>(box_[2][i] / c_bohr2Nm);
+        box_d[3 * i]     = static_cast<double>(box_[i][XX] / c_bohr2Nm);
+        box_d[3 * i + 1] = static_cast<double>(box_[i][YY] / c_bohr2Nm);
+        box_d[3 * i + 2] = static_cast<double>(box_[i][ZZ] / c_bohr2Nm);
     }
 
     // Update coordinates and box in CP2K

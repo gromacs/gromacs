@@ -62,16 +62,36 @@ namespace gmx
  */
 enum class QMMMQMMethod
 {
-    PBE,   //!< DFT with PBE functional
-    BLYP,  //!< DFT with BLYP functional
-    INPUT, //!< User provides suitable input file for QM package
+    PBE,          //!< DFT with PBE functional
+    PBE_D3,       //!< DFT with PBE functional and D3 dispersion correction
+    BLYP,         //!< DFT with BLYP functional
+    BLYP_D3,      //!< DFT with BLYP functional and D3 dispersion correction
+    PBE0,         //!< DFT with PBE0 functional
+    PBE0_D3,      //!< DFT with PBE0 functional and D3 dispersion correction
+    B3LYP,        //!< DFT with B3LYP functional
+    B3LYP_D3,     //!< DFT with B3LYP functional and D3 dispersion correction
+    CAM_B3LYP,    //!< DFT with CAM-B3LYP functional
+    CAM_B3LYP_D3, //!< DFT with CAM-B3LYP functional and D3 dispersion correction
+    WB97X,        //!< DFT with WB97X functional
+    WB97X_D3,     //!< DFT with WB97X functional and D3 dispersion correction
+    INPUT,        //!< User provides suitable input file for QM package
     Count
 };
 
 //! The names of the supported QM methods
-static const EnumerationArray<QMMMQMMethod, const char*> c_qmmmQMMethodNames = {
-    { "PBE", "BLYP", "INPUT" }
-};
+static const EnumerationArray<QMMMQMMethod, const char*> c_qmmmQMMethodNames = { { "PBE",
+                                                                                   "PBE-D3",
+                                                                                   "BLYP",
+                                                                                   "BLYP-D3",
+                                                                                   "PBE0",
+                                                                                   "PBE0-D3",
+                                                                                   "B3LYP",
+                                                                                   "B3LYP-D3",
+                                                                                   "CAM-B3LYP",
+                                                                                   "CAM-B3LYP-D3",
+                                                                                   "WB97X",
+                                                                                   "WB97X-D3",
+                                                                                   "INPUT" } };
 
 //! symbols of the elements in periodic table
 const std::vector<std::string> periodic_system = {

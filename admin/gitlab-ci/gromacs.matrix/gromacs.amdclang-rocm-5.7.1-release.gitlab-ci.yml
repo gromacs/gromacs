@@ -6,7 +6,7 @@
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
-#   Build type: Release (to avoid code gen issues)
+#   Build type: Release
 #   Compiler: amdclang
 #   MPI: threadMPI (AMD build)
 #   SIMD: AVX2_256

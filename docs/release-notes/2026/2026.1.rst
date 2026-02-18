@@ -16,11 +16,68 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed a performance issue with thread-MPI
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Way too many OpenMP threads (up to approximately (number_of_cpu_cores)^2) could be created,
+severely impacting performance.
+
+:issue:`5564`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+``pdb2gmx`` can now prints 7 decimals for charges and masses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``pdb2gmx`` would print charges and masses with a maximum of 6 total
+decimals. Now this is 7, which matches the floating point precision
+for charges and masses.
+
+:issue:`5543`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix device arch setup with newer version of amdclang
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+Newer versions of the compiler would fail to correctly configure the project due
+to not treating the test file as HIP input.
+
+:issue:`5558`
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Do not write user names to H5MD files
+"""""""""""""""""""""""""""""""""""""
+``mdrun`` now always writes the string "N/A" instead of the user name to
+the /h5md/author/name metadata field in H5MD files. 
+
+:issue:`5557`
+
+Correctly detect warp uniform variable in CUDA kernel
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+NVCC was failing to detect warp uniform variables leading to performance 
+degradation in the non-bonded force kernel. A workaround was implemented. 
+
+:issue:`5546`
+
+QM/MM CP2K MDModule will check orthogonality of the cell
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+QM/MM simulations in CP2K require orthogonal periodic cells. The MDModule 
+will now check for orthogonality of the cell and abort if the cell is 
+non-orthogonal. In case of user-provided CP2K input files, a warning 
+will be issued.
+
+:issue:`5529`
+
+New DFT functionals and D3 dispersion corrections for QM/MM with CP2K
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+QM/MM simulations with CP2K could now use hybrid DFT functionals B3LYP, PBE0 and
+range-separated hybrid functionals CAM-B3LYP, wB97X, wB97X-D3 in combination with
+all-electrons 6-31G* basis set. In addition, the option of using D3 dispersion 
+corrections has been added to all functionals.
+
+:issue:`5529`
