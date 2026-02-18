@@ -50,6 +50,13 @@ to not treating the test file as HIP input.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Do not write user names to H5MD files
+"""""""""""""""""""""""""""""""""""""
+``mdrun`` now always writes the string "N/A" instead of the user name to
+the /h5md/author/name metadata field in H5MD files. 
+
+:issue:`5557`
+
 Correctly detect warp uniform variable in CUDA kernel
 """""""""""""""""""""""""""""""""""""""""""""""""""""
 NVCC was failing to detect warp uniform variables leading to performance 

@@ -221,6 +221,20 @@ TEST_F(H5mdIoTest, SetupFileFromInputWritesMetadataGroup)
             << "Program version must match";
 }
 
+TEST_F(H5mdIoTest, AuthorNameIsNA)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [group, groupGuard]             = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(group, "author"));
+    EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"), ::testing::Optional(::testing::StrEq("N/A")))
+            << "Author name must be written";
+}
+
 TEST_F(H5mdIoTest, SetupFileFromInputWritesModuleInformation)
 {
     gmx_mtop_t mtop;
