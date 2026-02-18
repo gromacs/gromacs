@@ -201,9 +201,12 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
     switch (mode)
     {
         case H5mdFileMode::Write:
-            file_ = H5Fcreate(
-                    fileName.string().c_str(), H5F_ACC_TRUNC, H5Pcreate(H5P_FILE_CREATE), H5P_DEFAULT);
-            break;
+        {
+            const auto [createPropertyList, createPropertyListGuard] =
+                    makeH5mdPropertyListGuard(H5Pcreate(H5P_FILE_CREATE));
+            file_ = H5Fcreate(fileName.string().c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
+        }
+        break;
         case H5mdFileMode::Read:
             file_ = H5Fopen(fileName.string().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
             break;
