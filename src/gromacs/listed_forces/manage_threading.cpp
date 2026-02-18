@@ -455,7 +455,7 @@ bonded_threading_t::bonded_threading_t(const int numThreads,
     }
 
     centersOfMassScaledBuffers_.resize(numThreads);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(numThreads)
     for (int thread = 0; thread < numThreads; thread++)
     {
         auto& bufs = centersOfMassScaledBuffers_[thread];

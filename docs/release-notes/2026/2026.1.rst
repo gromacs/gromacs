@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed a performance issue with thread-MPI
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Way too many OpenMP threads (up to approximately (number_of_cpu_cores)^2) could be created,
+severely impacting performance.
+
+:issue:`5564`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
