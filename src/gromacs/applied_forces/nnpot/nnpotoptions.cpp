@@ -655,8 +655,8 @@ void NNPotOptions::checkNNPotModel()
                              mmCharges,
                              params_.nnpCharge_,
                              link,
-                             &box,
-                             &pbc);
+                             box,
+                             pbc);
 
         // check if model outputs forces after forward pass
         modelOutputsForces = model->outputsForces();

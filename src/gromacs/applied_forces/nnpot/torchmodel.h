@@ -116,8 +116,8 @@ public:
                        ArrayRef<real>                   chargesMM,
                        real                             nnpCharge,
                        ArrayRef<const LinkFrontierAtom> linkFrontier,
-                       matrix*                          box     = nullptr,
-                       PbcType*                         pbcType = nullptr) override;
+                       matrix&                          box,
+                       PbcType&                         pbcType) override;
 
     //! helper function to check if model outputs forces
     bool outputsForces() const override;
@@ -127,8 +127,8 @@ private:
     //! \{
     void prepareAtomPositions(ArrayRef<RVec> positions);
     void prepareAtomNumbers(ArrayRef<int> atomTypes);
-    void prepareBox(matrix* box);
-    void preparePbcType(PbcType* pbcType);
+    void prepareBox(matrix& box);
+    void preparePbcType(PbcType& pbcType);
     void prepareAtomPairs(ArrayRef<int> atomPairs);
     void preparePairShifts(ArrayRef<RVec> pairShifts);
     void prepareMMPositions(ArrayRef<RVec> pos);
