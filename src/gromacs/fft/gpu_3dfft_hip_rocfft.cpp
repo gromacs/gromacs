@@ -67,10 +67,8 @@ namespace
 {
 
 /*! \brief Prepare plans for the forward and reverse transformation.
- *
- * Because these require device-side allocations, some of them must be
- * done in a SYCL queue. */
-RocfftPlan makePlan(const std::string&     descriptiveString,
+ */
+RocfftPlan makePlan(const char*            descriptiveString,
                     rocfft_transform_type  transformType,
                     const PlanSetupData&   inputPlanSetupData,
                     const PlanSetupData&   outputPlanSetupData,
