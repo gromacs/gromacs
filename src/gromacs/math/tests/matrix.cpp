@@ -75,6 +75,32 @@ protected:
     real      testNumber_ = 42;
 };
 
+TEST_F(MatrixTest, legacyAccessRead)
+{
+    std::array<real, 3 * 3> arr = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+    Matrix3x3               newMatrix(arr);
+    EXPECT_EQ(newMatrix[0][0], 1);
+    EXPECT_EQ(newMatrix[0][1], 2);
+    EXPECT_EQ(newMatrix[0][2], 3);
+    EXPECT_EQ(newMatrix[1][0], 4);
+    EXPECT_EQ(newMatrix[1][1], 5);
+    EXPECT_EQ(newMatrix[1][2], 6);
+    EXPECT_EQ(newMatrix[2][0], 7);
+    EXPECT_EQ(newMatrix[2][1], 8);
+    EXPECT_EQ(newMatrix[2][2], 9);
+}
+
+TEST_F(MatrixTest, canGetRVecFromRow)
+{
+    std::array<real, 3 * 3> arr = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+    Matrix3x3               newMatrix(arr);
+    RVec                    v0 = newMatrix[1];
+    EXPECT_EQ(v0[0], 4);
+    EXPECT_EQ(v0[1], 5);
+    EXPECT_EQ(v0[2], 6);
+}
+
+
 TEST_F(MatrixTest, canSetFromArray)
 {
     std::array<real, 3 * 3> arr = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
@@ -129,6 +155,12 @@ TEST_F(MatrixTest, canConstructAndFill)
 TEST_F(MatrixTest, canSetValues)
 {
     matrix_(1, 1) = testNumber_;
+    EXPECT_EQ(testNumber_, matrix_(1, 1));
+}
+
+TEST_F(MatrixTest, legacySetValues)
+{
+    matrix_[1][1] = testNumber_;
     EXPECT_EQ(testNumber_, matrix_(1, 1));
 }
 

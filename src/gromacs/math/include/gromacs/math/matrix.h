@@ -71,6 +71,55 @@ public:
     {
     }
 
+    //! Proxy class for row-wise access via a[i][j] and a[i] syntax
+    class RowProxy
+    {
+        BasicMatrix3x3& mat_;
+        size_t          row_;
+
+    public:
+        //! Construct proxy for given row of matrix
+        RowProxy(BasicMatrix3x3& mat, size_t row) : mat_(mat), row_(row) {}
+
+        //! Non-const element access: returns reference to element at (row, col)
+        ElementType& operator[](size_t col) { return mat_(row_, col); }
+
+        //! Const element access: returns reference to element at (row, col)
+        const ElementType& operator[](size_t col) const { return mat_(row_, col); }
+
+        //! Implicit copy as const BasicVector for convenient row-wise read access
+        operator const BasicVector<ElementType>() const
+        {
+            return BasicVector<ElementType>{ (*this)[0], (*this)[1], (*this)[2] };
+        }
+    };
+
+    //! Proxy class for row-wise const access via a[i][j] and a[i] syntax
+    class ConstRowProxy
+    {
+        const BasicMatrix3x3& mat_;
+        size_t                row_;
+
+    public:
+        //! Construct proxy for given row of matrix
+        ConstRowProxy(const BasicMatrix3x3& mat, const size_t row) : mat_(mat), row_(row) {}
+
+        //! Const element access: returns reference to element at (row, col)
+        const ElementType& operator[](size_t col) const { return mat_(row_, col); }
+
+        //! Implicit copy as const BasicVector for convenient row-wise read access
+        operator const BasicVector<ElementType>() const
+        {
+            return BasicVector<ElementType>{ (*this)[0], (*this)[1], (*this)[2] };
+        }
+    };
+
+    //! Row access: returns proxy for the given row, enabling a[i][j] syntax
+    RowProxy operator[](size_t row) { return RowProxy(*this, row); }
+
+    //! Const row access: returns const proxy for the given row, enabling a[i][j] syntax (const matrix)
+    ConstRowProxy operator[](size_t row) const { return ConstRowProxy(*this, row); }
+
     //! Constructor for list initializer (either 1 or 9 elements in row major ordering)
     BasicMatrix3x3(std::initializer_list<ElementType> initList)
     {
