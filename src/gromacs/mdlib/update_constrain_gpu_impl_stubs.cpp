@@ -43,10 +43,10 @@
 
 #include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/matrix.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 

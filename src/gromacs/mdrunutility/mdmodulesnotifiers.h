@@ -50,12 +50,12 @@
 #include <vector>
 
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/matrix.h"
 #include "gromacs/mdrunutility/mdmodulesnotifier.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 

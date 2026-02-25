@@ -46,7 +46,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/matrix.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -55,6 +54,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"

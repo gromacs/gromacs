@@ -39,11 +39,11 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/matrix.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 

@@ -43,7 +43,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/matrix.h"
+#include "gromacs/utility/matrix.h"
 
 #include <array>
 

@@ -44,9 +44,8 @@
 
 #include <memory>
 
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/vectypes.h"
-
-#include "matrix.h"
 
 namespace gmx
 {

@@ -44,7 +44,6 @@ gmx_add_unit_test(MathUnitTests math-test
         gausstransform.cpp
         densityfittingforce.cpp
         invertmatrix.cpp
-        matrix.cpp
         multidimarray.cpp
         neldermead.cpp
         optimization.cpp

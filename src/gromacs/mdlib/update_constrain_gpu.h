@@ -46,10 +46,10 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/matrix.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/matrix.h"
 
 class DeviceContext;
 class DeviceStream;
