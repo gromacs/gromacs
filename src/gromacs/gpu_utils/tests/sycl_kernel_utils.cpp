@@ -66,19 +66,21 @@ template<bool useConditional>
 class KernelName;
 
 //! Kernel builder function
-template<bool useConditionalStaticLocalStorage, typename CommandGroupHandler>
+template<bool useConditionalStaticLocalStorage, typename CommandGroupHandler, int numThreadsPerWorkgroup>
 auto buildKernel(CommandGroupHandler cgh, const int* gm_input, int* gm_output)
 {
     // Organize static local storage when using sycl::local_accessor
-    using Buffer            = StaticLocalStorage<int, 1>;
-    using ConditionalBuffer = StaticLocalStorage<int, 1, useConditionalStaticLocalStorage>;
+    using Buffer = StaticLocalStorage<int, numThreadsPerWorkgroup>;
+    using ConditionalBuffer =
+            StaticLocalStorage<int, numThreadsPerWorkgroup, useConditionalStaticLocalStorage>;
     // These declarations must be made in the host code
     auto sm_bufferHostStorage            = Buffer::makeHostStorage(cgh);
     auto sm_conditionalBufferHostStorage = ConditionalBuffer::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<1> itemNdIdx)
     {
-        int itemIdx = itemNdIdx.get_global_linear_id();
+        const int itemIdx  = itemNdIdx.get_global_linear_id();
+        const int localIdx = itemNdIdx.get_local_id();
         // These declarations work in the device kernel.
         typename Buffer::DeviceStorage            sm_bufferDeviceStorage;
         typename ConditionalBuffer::DeviceStorage sm_conditionalBufferDeviceStorage;
@@ -86,15 +88,15 @@ auto buildKernel(CommandGroupHandler cgh, const int* gm_input, int* gm_output)
         sycl::local_ptr<int> sm_buffer = Buffer::get_pointer(sm_bufferHostStorage, sm_bufferDeviceStorage);
         sycl::local_ptr<int> sm_conditionalBuffer = ConditionalBuffer::get_pointer(
                 sm_conditionalBufferHostStorage, sm_conditionalBufferDeviceStorage);
-        sm_buffer[0] = gm_input[itemIdx];
+        sm_buffer[localIdx] = gm_input[itemIdx];
         if constexpr (useConditionalStaticLocalStorage)
         {
-            sm_conditionalBuffer[0] = sm_buffer[0];
-            gm_output[itemIdx]      = sm_conditionalBuffer[0];
+            sm_conditionalBuffer[localIdx] = sm_buffer[localIdx];
+            gm_output[itemIdx]             = sm_conditionalBuffer[localIdx];
         }
         else
         {
-            gm_output[itemIdx] = sm_buffer[0];
+            gm_output[itemIdx] = sm_buffer[localIdx];
         }
     };
 }
@@ -125,14 +127,18 @@ TEST_P(StaticLocalStorageTest, Works)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
+        constexpr int sc_numThreads = 32;
+        if (testDevice->deviceInfo().syclDevice.get_info<sycl::info::device::max_work_group_size>() < sc_numThreads)
+        {
+            GTEST_SKIP() << "Device does not support the required workgroup width";
+        }
         const DeviceContext& deviceContext = testDevice->deviceContext();
         const DeviceStream&  deviceStream  = testDevice->deviceStream();
         deviceContext.activate();
 
         // Prepare inputs
-        const int       numThreads  = 32;
         const int       lowestValue = 3;
-        HostVector<int> input(numThreads, { PinningPolicy::PinnedIfSupported });
+        HostVector<int> input(sc_numThreads, { PinningPolicy::PinnedIfSupported });
         // Give each thread a unique value to handle
         std::iota(input.begin(), input.end(), lowestValue);
         DeviceBuffer<int> d_input;
@@ -154,8 +160,8 @@ TEST_P(StaticLocalStorageTest, Works)
                     using TheKernelName = KernelName<useConditionalStaticLocalStorage>;
                     syclSubmitWithoutEvent<TheKernelName>(
                             deviceStream.stream(),
-                            buildKernel<useConditionalStaticLocalStorage, CommandGroupHandler>,
-                            sycl::nd_range<1>(numThreads, numThreads),
+                            buildKernel<useConditionalStaticLocalStorage, CommandGroupHandler, sc_numThreads>,
+                            sycl::nd_range<1>(sc_numThreads, sc_numThreads),
                             gm_input,
                             gm_output);
                 },
@@ -167,7 +173,7 @@ TEST_P(StaticLocalStorageTest, Works)
                 output.data(), &d_output, 0, output.size(), deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
         // Check result
-        std::vector<int> expectedValues(numThreads);
+        std::vector<int> expectedValues(sc_numThreads);
         std::iota(expectedValues.begin(), expectedValues.end(), int(lowestValue));
         EXPECT_THAT(output, testing::Pointwise(testing::Eq(), expectedValues));
 
