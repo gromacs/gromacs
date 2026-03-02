@@ -204,7 +204,7 @@ private:
     bool                       haveMolPBC_ = false;
 
     t_lambda   fepVals_;
-    t_forcerec fr_;
+    t_forcerec fr_{ false };
 };
 
 ForcerecHelper frHelper;

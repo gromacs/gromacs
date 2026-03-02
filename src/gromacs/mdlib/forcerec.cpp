@@ -1137,6 +1137,11 @@ void init_forcerec(FILE*                            fplog,
     }
 }
 
-t_forcerec::t_forcerec() = default;
+t_forcerec::t_forcerec(const bool useGpuPmePpCommunication) :
+    pmeForceReceiveBuffer{ gmx::HostAllocationPolicy{ useGpuPmePpCommunication
+                                                              ? gmx::PinningPolicy::PinnedIfSupported
+                                                              : gmx::PinningPolicy::CannotBePinned } }
+{
+}
 
 t_forcerec::~t_forcerec() = default;

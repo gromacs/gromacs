@@ -153,7 +153,7 @@ TEST(NbnxmSetupTest, ewaldCoeffWorks)
 
 TEST(NbnxmSetupTest, updateForcerecWorks)
 {
-    t_forcerec forcerec;
+    t_forcerec forcerec{ false };
     Box        box(3);
     EXPECT_NO_THROW(updateForcerec(&forcerec, box.legacyMatrix()));
 }

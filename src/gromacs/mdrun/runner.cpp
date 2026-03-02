@@ -1810,7 +1810,7 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(&mdModuleCoulombDirectProvider);
 
         /* Initiate forcerecord */
-        fr                 = std::make_unique<t_forcerec>();
+        fr = std::make_unique<t_forcerec>(runScheduleWork.simulationWork.useGpuPmePpCommunication);
         fr->forceProviders = mdModules_->initForceProviders(wcycle.get());
 
         std::optional<bool> anMDModuleProvidesDirectCoulomb = mdModuleCoulombDirectProvider.isDirectProvider;
@@ -1912,7 +1912,7 @@ int Mdrunner::mdrunner()
             fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(
                     cr->commMySim.comm(),
                     cr->dd->pme_nodeid,
-                    &cr->dd->pmeForceReceiveBuffer,
+                    &fr->pmeForceReceiveBuffer,
                     deviceStreamManager->context(),
                     deviceStreamManager->stream(DeviceStreamType::PmePpTransfer),
                     runScheduleWork.simulationWork.useNvshmem);

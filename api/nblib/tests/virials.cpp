@@ -66,7 +66,7 @@ TEST(VirialsTest, computeVirialTensorWorks)
     std::vector<Vec3> forces = { { 2, 1, 2 }, { 4, 3, 4 } };
     std::vector<Vec3> shiftForces(gmx::c_numShiftVectors, Vec3(0.0, 1.0, 0.0));
     Box               box(1, 2, 3);
-    t_forcerec        forcerec;
+    t_forcerec        forcerec{ false };
     updateForcerec(&forcerec, box.legacyMatrix());
     std::vector<Vec3> shiftVectors(gmx::c_numShiftVectors);
     // copy shift vectors from ForceRec

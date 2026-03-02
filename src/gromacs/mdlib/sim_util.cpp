@@ -256,6 +256,7 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     dvdl_lj = 0;
     gmx_pme_receive_f(fr->pmePpCommGpu.get(),
                       dd,
+                      &fr->pmeForceReceiveBuffer,
                       forceWithVirial,
                       &e_q,
                       &e_lj,
@@ -1576,7 +1577,7 @@ void do_force(FILE*                         fplog,
               CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
               const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {
-    auto force = forceView->forceWithPadding();
+    ArrayRefWithPadding<RVec> force = forceView->forceWithPadding();
     GMX_ASSERT(force.unpaddedArrayRef().ssize() >= fr->natoms_force_constr,
                "The size of the force buffer should be at least the number of atoms to compute "
                "forces for");

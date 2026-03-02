@@ -101,7 +101,7 @@ protected:
     t_pbc   pbc_;
     PbcType pbcType_;
 
-    t_forcerec                       fr_;
+    t_forcerec                       fr_{ false };
     InteractionDefinitions           idef_;
     gmx_enerdata_t                   enerd_;
     std::unique_ptr<ForceWithVirial> forceWithVirial_;

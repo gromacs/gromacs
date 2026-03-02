@@ -90,7 +90,7 @@ TprReader::TprReader(std::string filename)
             read_tpx_state(filename, &inputRecord, &globalState, &molecularTopology);
 
     // init forcerec
-    t_forcerec          forceRecord;
+    t_forcerec          forceRecord{ false };
     gmx::MpiComm        mpiComm = gmx::MpiComm(gmx::MpiComm::SingleRank{});
     t_commrec           commrec(mpiComm, mpiComm, nullptr);
     gmx::ForceProviders forceProviders;

@@ -878,7 +878,7 @@ protected:
         input_.frHelper.setSoftcoreType(softcoreType_);
 
         // get forcerec and interaction_const
-        t_forcerec fr;
+        t_forcerec fr{ false };
         input_.frHelper.getForcerec(&fr);
 
         // AtomPairlist

@@ -49,7 +49,6 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec_zones.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
@@ -207,9 +206,6 @@ struct gmx_domdec_t
 
     //! The handler for checking whether the local topology is missing interactions
     std::unique_ptr<gmx::LocalTopologyChecker> localTopologyChecker;
-
-    /* gmx_pme_recv_f buffer */
-    gmx::HostVector<gmx::RVec> pmeForceReceiveBuffer;
 
     //! GPU halo exchange aspects specific to NVSHMEM.
     std::unique_ptr<gmx::GpuHaloExchangeNvshmemHelper> gpuHaloExchangeNvshmemHelper;

@@ -57,7 +57,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -264,8 +263,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
         // domains.
         if (reinitGpuPmePpComms)
         {
-            changePinningPolicy(&dd->pmeForceReceiveBuffer, gmx::PinningPolicy::PinnedIfSupported);
-            dd->pmeForceReceiveBuffer.resize(n);
+            fr->pmeForceReceiveBuffer.resize(n);
             fr->pmePpCommGpu->reinit(n);
         }
 
@@ -589,16 +587,17 @@ static void recvFFromPme(gmx::PmePpCommGpu*  pmePpCommGpu,
 }
 
 
-void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
-                       gmx_domdec_t*         dd,
-                       gmx::ForceWithVirial* forceWithVirial,
-                       real*                 energy_q,
-                       real*                 energy_lj,
-                       real*                 dvdlambda_q,
-                       real*                 dvdlambda_lj,
-                       bool                  useGpuPmePpComms,
-                       bool                  receivePmeForceToGpu,
-                       float*                pme_cycles)
+void gmx_pme_receive_f(gmx::PmePpCommGpu*          pmePpCommGpu,
+                       gmx_domdec_t*               dd,
+                       gmx::HostVector<gmx::RVec>* cpuPmeForceReceiveBuffer,
+                       gmx::ForceWithVirial*       forceWithVirial,
+                       real*                       energy_q,
+                       real*                       energy_lj,
+                       real*                       dvdlambda_q,
+                       real*                       dvdlambda_lj,
+                       bool                        useGpuPmePpComms,
+                       bool                        receivePmeForceToGpu,
+                       float*                      pme_cycles)
 {
     if (c_useDelayedWait)
     {
@@ -607,7 +606,7 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
     }
 
     const int                   natoms = dd_numHomeAtoms(*dd);
-    gmx::HostVector<gmx::RVec>& buffer = dd->pmeForceReceiveBuffer;
+    gmx::HostVector<gmx::RVec>& buffer = *cpuPmeForceReceiveBuffer;
     buffer.resize(natoms);
 
     void* recvptr = reinterpret_cast<void*>(buffer.data());
