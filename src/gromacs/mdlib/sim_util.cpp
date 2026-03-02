@@ -256,7 +256,7 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     dvdl_lj = 0;
     gmx_pme_receive_f(fr->pmePpCommGpu.get(),
                       dd,
-                      &fr->pmeForceReceiveBuffer,
+                      fr->pmeForceReceiveBuffer,
                       forceWithVirial,
                       &e_q,
                       &e_lj,

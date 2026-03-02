@@ -104,17 +104,17 @@ void gmx_pme_send_finish(gmx_domdec_t* dd);
 void gmx_pme_send_resetcounters(const gmx::MpiComm& mpiCommMySim, gmx_domdec_t* dd, int64_t step);
 
 /*! \brief PP nodes receive the long range forces from the PME nodes */
-void gmx_pme_receive_f(gmx::PmePpCommGpu*          pmePpCommGpu,
-                       gmx_domdec_t*               dd,
-                       gmx::HostVector<gmx::RVec>* cpuPmeForceReceiveBuffer,
-                       gmx::ForceWithVirial*       forceWithVirial,
-                       real*                       energy_q,
-                       real*                       energy_lj,
-                       real*                       dvdlambda_q,
-                       real*                       dvdlambda_lj,
-                       bool                        useGpuPmePpComms,
-                       bool                        receivePmeForceToGpu,
-                       float*                      pme_cycles);
+void gmx_pme_receive_f(gmx::PmePpCommGpu*       pmePpCommGpu,
+                       gmx_domdec_t*            dd,
+                       gmx::ArrayRef<gmx::RVec> cpuPmeForceReceiveBuffer,
+                       gmx::ForceWithVirial*    forceWithVirial,
+                       real*                    energy_q,
+                       real*                    energy_lj,
+                       real*                    dvdlambda_q,
+                       real*                    dvdlambda_lj,
+                       bool                     useGpuPmePpComms,
+                       bool                     receivePmeForceToGpu,
+                       float*                   pme_cycles);
 
 /*! \brief Tell our PME-only node to switch to a new grid size */
 void gmx_pme_send_switchgrid(const gmx_domdec_t& dd, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);

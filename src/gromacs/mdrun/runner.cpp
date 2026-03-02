@@ -1912,7 +1912,6 @@ int Mdrunner::mdrunner()
             fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(
                     cr->commMySim.comm(),
                     cr->dd->pme_nodeid,
-                    &fr->pmeForceReceiveBuffer,
                     deviceStreamManager->context(),
                     deviceStreamManager->stream(DeviceStreamType::PmePpTransfer),
                     runScheduleWork.simulationWork.useNvshmem);

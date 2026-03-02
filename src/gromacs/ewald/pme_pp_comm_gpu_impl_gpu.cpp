@@ -67,17 +67,15 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
-                         int                         pmeRank,
-                         gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
-                         const DeviceContext&        deviceContext,
-                         const DeviceStream&         deviceStream,
-                         bool                        useNvshmem) :
+PmePpCommGpu::Impl::Impl(MPI_Comm             comm,
+                         int                  pmeRank,
+                         const DeviceContext& deviceContext,
+                         const DeviceStream&  deviceStream,
+                         bool                 useNvshmem) :
     deviceContext_(deviceContext),
     pmePpCommStream_(deviceStream),
     comm_(comm),
     pmeRank_(pmeRank),
-    pmeCpuForceBuffer_(pmeCpuForceBuffer),
     d_pmeForces_(nullptr),
     forcesReadyNvshmemFlags(nullptr),
     useNvshmem_(useNvshmem)
@@ -97,12 +95,14 @@ PmePpCommGpu::Impl::~Impl()
     }
 }
 
-void PmePpCommGpu::Impl::reinit(int size)
+void PmePpCommGpu::Impl::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
 {
-    int newSize = size;
+    pmeCpuForceReceiveBuffer_ = pmeCpuForceReceiveBuffer;
+    int newSize               = pmeCpuForceReceiveBuffer_.size();
     if (useNvshmem_)
     {
 #if GMX_MPI
+        const int size = newSize;
         MPI_Allreduce(&size, &newSize, 1, MPI_INT, MPI_MAX, comm_);
 #endif
 
@@ -140,8 +140,13 @@ void PmePpCommGpu::Impl::reinit(int size)
                  MPI_STATUS_IGNORE);
         // send host and device force buffer addresses to PME rank
         MPI_Send(&d_pmeForces_, sizeof(Float3*), MPI_BYTE, pmeRank_, eCommType_FORCES_GPU_REMOTE_GPU_PTR, comm_);
-        RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_->data();
-        MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, eCommType_FORCES_GPU_REMOTE_CPU_PTR, comm_);
+        RVec* pmeCpuForceReceiveBufferData = pmeCpuForceReceiveBuffer_.data();
+        MPI_Send(&pmeCpuForceReceiveBufferData,
+                 sizeof(RVec*),
+                 MPI_BYTE,
+                 pmeRank_,
+                 eCommType_FORCES_GPU_REMOTE_CPU_PTR,
+                 comm_);
         // Receive address of event and associated flag from PME rank, to allow sync to local stream after force transfer
         // NOLINTNEXTLINE(bugprone-sizeof-expression)
         MPI_Recv(&remotePmeForceSendEvent_,
@@ -192,7 +197,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 }
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static
-void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu)
+void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(const bool receivePmeForceToGpu)
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(coordinateSendRequestIsActive_,
@@ -205,7 +210,14 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int rec
 
     // The PME rank always sends forces, even when the domain is
     // empty, so each PP rank must always post a receive.
-    Float3* pmeForcePtr = receivePmeForceToGpu ? asMpiPointer(d_pmeForces_) : recvPtr;
+    Float3* pmeForcePtr =
+            receivePmeForceToGpu ? asMpiPointer(d_pmeForces_) : pmeCpuForceReceiveBuffer_.data();
+    const int recvSize = receivePmeForceToGpu ? d_pmeForcesSize_ : pmeCpuForceReceiveBuffer_.size();
+    // Ensure that the two PME force receive buffers were resized
+    // consistently, when relevant.
+    GMX_ASSERT(receivePmeForceToGpu || (d_pmeForcesSize_ == gmx::ssize(pmeCpuForceReceiveBuffer_))
+                       || (useNvshmem_ && d_pmeForcesSize_ >= gmx::ssize(pmeCpuForceReceiveBuffer_)),
+               "Mismatch between sizes of GPU and CPU PME force receive buffers");
     if (forceRecvRequestIsActive_)
     {
         MPI_Wait(&forceRecvRequest_, MPI_STATUS_IGNORE);
@@ -229,13 +241,11 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int rec
     }
 
 #else
-    GMX_UNUSED_VALUE(recvPtr);
-    GMX_UNUSED_VALUE(recvSize);
     GMX_UNUSED_VALUE(receivePmeForceToGpu);
 #endif
 }
 
-void PmePpCommGpu::Impl::receiveForceFromPme(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu)
+void PmePpCommGpu::Impl::receiveForceFromPme(const bool receivePmeForceToGpu)
 {
     if (GMX_THREAD_MPI)
     {
@@ -243,7 +253,7 @@ void PmePpCommGpu::Impl::receiveForceFromPme(Float3* recvPtr, int recvSize, bool
     }
     else
     {
-        receiveForceFromPmeGpuAwareMpi(recvPtr, recvSize, receivePmeForceToGpu);
+        receiveForceFromPmeGpuAwareMpi(receivePmeForceToGpu);
     }
 }
 
@@ -335,26 +345,25 @@ DeviceBuffer<uint64_t> PmePpCommGpu::Impl::getGpuForcesSyncObj()
     return forcesReadyNvshmemFlags;
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm                    comm,
-                           int                         pmeRank,
-                           gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
-                           const DeviceContext&        deviceContext,
-                           const DeviceStream&         deviceStream,
-                           bool                        useNvshmem) :
-    impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream, useNvshmem))
+PmePpCommGpu::PmePpCommGpu(MPI_Comm             comm,
+                           int                  pmeRank,
+                           const DeviceContext& deviceContext,
+                           const DeviceStream&  deviceStream,
+                           bool                 useNvshmem) :
+    impl_(new Impl(comm, pmeRank, deviceContext, deviceStream, useNvshmem))
 {
 }
 
 PmePpCommGpu::~PmePpCommGpu() = default;
 
-void PmePpCommGpu::reinit(int size)
+void PmePpCommGpu::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
 {
-    impl_->reinit(size);
+    impl_->reinit(pmeCpuForceReceiveBuffer);
 }
 
-void PmePpCommGpu::receiveForceFromPme(RVec* recvPtr, int recvSize, bool receivePmeForceToGpu)
+void PmePpCommGpu::receiveForceFromPme(const bool receivePmeForceToGpu)
 {
-    impl_->receiveForceFromPme(recvPtr, recvSize, receivePmeForceToGpu);
+    impl_->receiveForceFromPme(receivePmeForceToGpu);
 }
 
 void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,

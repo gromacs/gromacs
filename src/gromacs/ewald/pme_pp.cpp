@@ -261,10 +261,15 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
         // With direct-GPU PME-PP communication, coordinates and
         // forces are always transferred each step, even for empty
         // domains.
+
+        // Resize the PME force-receive buffer on the CPU
+        fr->pmeForceReceiveBuffer.resize(n);
         if (reinitGpuPmePpComms)
         {
-            fr->pmeForceReceiveBuffer.resize(n);
-            fr->pmePpCommGpu->reinit(n);
+            // When using GPU-direct PP-PME communication, notify the
+            // receiver where it should store forces when they arrive
+            // on the CPU.
+            fr->pmePpCommGpu->reinit(fr->pmeForceReceiveBuffer);
         }
 
         // Ensure that with GPU PME-PP comms, even empty domains still
@@ -552,28 +557,28 @@ static void receive_virial_energy(const gmx_domdec_t*   dd,
     }
 }
 
-/*! \brief Recieve force data from PME ranks */
-static void recvFFromPme(gmx::PmePpCommGpu*  pmePpCommGpu,
-                         void*               recvptr,
-                         int                 n,
-                         const gmx_domdec_t& dd,
-                         bool                useGpuPmePpComms,
-                         bool                receivePmeForceToGpu)
+/*! \brief Receive force data from PME ranks */
+static void recvFFromPme(gmx::PmePpCommGpu*       pmePpCommGpu,
+                         gmx::ArrayRef<gmx::RVec> cpuPmeForceReceiveBuffer,
+                         const gmx_domdec_t&      dd,
+                         bool                     useGpuPmePpComms,
+                         bool                     receivePmeForceToGpu)
 {
     // With all kinds of PME-PP communication, forces are always
     // returned each step, even to empty domains.
     if (useGpuPmePpComms)
     {
         GMX_ASSERT(pmePpCommGpu != nullptr, "Need valid pmePpCommGpu");
-        // Receive forces from PME rank
-        pmePpCommGpu->receiveForceFromPme(static_cast<gmx::RVec*>(recvptr), n, receivePmeForceToGpu);
+        // Receive forces from PME rank, to cpuPmeForceReceiveBuffer
+        // (which was set up at repartition time).
+        pmePpCommGpu->receiveForceFromPme(receivePmeForceToGpu);
     }
     else
     {
         // Receive data using MPI
 #if GMX_MPI
-        MPI_Recv(recvptr,
-                 n * sizeof(rvec),
+        MPI_Recv(cpuPmeForceReceiveBuffer.data(),
+                 cpuPmeForceReceiveBuffer.size() * sizeof(cpuPmeForceReceiveBuffer[0]),
                  MPI_BYTE,
                  dd.pme_nodeid,
                  eCommType_FORCES,
@@ -581,23 +586,23 @@ static void recvFFromPme(gmx::PmePpCommGpu*  pmePpCommGpu,
                  MPI_STATUS_IGNORE);
 #else
         GMX_UNUSED_VALUE(dd);
-        GMX_UNUSED_VALUE(n);
+        GMX_UNUSED_VALUE(cpuPmeForceReceiveBuffer);
 #endif
     }
 }
 
 
-void gmx_pme_receive_f(gmx::PmePpCommGpu*          pmePpCommGpu,
-                       gmx_domdec_t*               dd,
-                       gmx::HostVector<gmx::RVec>* cpuPmeForceReceiveBuffer,
-                       gmx::ForceWithVirial*       forceWithVirial,
-                       real*                       energy_q,
-                       real*                       energy_lj,
-                       real*                       dvdlambda_q,
-                       real*                       dvdlambda_lj,
-                       bool                        useGpuPmePpComms,
-                       bool                        receivePmeForceToGpu,
-                       float*                      pme_cycles)
+void gmx_pme_receive_f(gmx::PmePpCommGpu*       pmePpCommGpu,
+                       gmx_domdec_t*            dd,
+                       gmx::ArrayRef<gmx::RVec> cpuPmeForceReceiveBuffer,
+                       gmx::ForceWithVirial*    forceWithVirial,
+                       real*                    energy_q,
+                       real*                    energy_lj,
+                       real*                    dvdlambda_q,
+                       real*                    dvdlambda_lj,
+                       bool                     useGpuPmePpComms,
+                       bool                     receivePmeForceToGpu,
+                       float*                   pme_cycles)
 {
     if (c_useDelayedWait)
     {
@@ -605,12 +610,9 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*          pmePpCommGpu,
         gmx_pme_send_coeffs_coords_wait(dd);
     }
 
-    const int                   natoms = dd_numHomeAtoms(*dd);
-    gmx::HostVector<gmx::RVec>& buffer = *cpuPmeForceReceiveBuffer;
-    buffer.resize(natoms);
+    const int natoms = dd_numHomeAtoms(*dd);
 
-    void* recvptr = reinterpret_cast<void*>(buffer.data());
-    recvFFromPme(pmePpCommGpu, recvptr, natoms, *dd, useGpuPmePpComms, receivePmeForceToGpu);
+    recvFFromPme(pmePpCommGpu, cpuPmeForceReceiveBuffer, *dd, useGpuPmePpComms, receivePmeForceToGpu);
 
     int nt = gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread::Default, natoms);
 
@@ -626,7 +628,7 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*          pmePpCommGpu,
         {
             for (int i = 0; i < natoms; i++)
             {
-                f[i] += buffer[i];
+                f[i] += cpuPmeForceReceiveBuffer[i];
             }
         }
         else
@@ -634,7 +636,7 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*          pmePpCommGpu,
 #pragma omp parallel for num_threads(nt) schedule(static)
             for (int i = 0; i < natoms; i++)
             {
-                f[i] += buffer[i];
+                f[i] += cpuPmeForceReceiveBuffer[i];
             }
         }
     }

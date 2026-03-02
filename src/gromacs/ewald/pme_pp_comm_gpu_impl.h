@@ -48,6 +48,7 @@
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -64,41 +65,37 @@ public:
      *
      * \param[in] comm              Communicator used for simulation
      * \param[in] pmeRank           Rank of PME task
-     * \param[in] pmeCpuForceBuffer Buffer for PME force in CPU memory
      * \param[in] deviceContext     GPU context.
      * \param[in] deviceStream      Device stream.
      * \param[in] useNvshmem        NVSHMEM enable/disable for GPU comm.
      */
-    Impl(MPI_Comm                    comm,
-         int                         pmeRank,
-         gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
-         const DeviceContext&        deviceContext,
-         const DeviceStream&         deviceStream,
-         bool                        useNvshmem);
+    Impl(MPI_Comm             comm,
+         int                  pmeRank,
+         const DeviceContext& deviceContext,
+         const DeviceStream&  deviceStream,
+         bool                 useNvshmem);
     ~Impl();
 
     /*! \brief Perform steps required when buffer size changes
-     * \param[in]  size   Number of elements in buffer
+     *
+     * \param[in] pmeCpuForceReceiveBuffer  CPU buffer to potentially receive PME force data
      */
-    void reinit(int size);
+    void reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer);
 
     /*! \brief Pull force buffer directly from GPU memory on PME
      * rank to either GPU or CPU memory on PP task using GPU
      * Memory copy or GPU-aware MPI.
      *
-     * recvPtr should be in GPU or CPU memory if recvPmeForceToGpu
-     * is true or false, respectively. If receiving to GPU, this
+     * If receiving to GPU, this
      * method should be called before the local GPU buffer
      * operations. If receiving to CPU it should be called
      * before forces are reduced with the other force
      * contributions on the CPU. It will automatically wait for
      * remote PME force data to be ready.
      *
-     * \param[out] recvPtr CPU or GPU buffer to receive PME force data
-     * \param[in] recvSize Number of elements to receive
-     * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
+     * \param[in]  recvPmeForceToGpu         Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPme(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
+    void receiveForceFromPme(bool recvPmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using GPU
@@ -144,11 +141,10 @@ private:
     /*! \brief Receive buffer from GPU memory on PME rank to either
      * GPU or CPU memory on PP rank using GPU-aware MPI. This method
      * is used with process-MPI.
-     * \param[out] recvPtr CPU or GPU buffer to receive PME force data into
-     * \param[in] recvSize Number of elements to receive
-     * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
+     *
+     * \param[in] recvPmeForceToGpu  Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
+    void receiveForceFromPmeGpuAwareMpi(bool recvPmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using GPU Memory copy.
@@ -187,10 +183,10 @@ private:
     MPI_Comm comm_;
     //! Rank of PME task
     int pmeRank_ = -1;
-    //! Buffer for PME force on CPU
-    gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer_;
+    //! Buffer for receiving PME force on CPU
+    ArrayRef<RVec> pmeCpuForceReceiveBuffer_;
     //! Buffer for staging PME force on GPU
-    DeviceBuffer<gmx::RVec> d_pmeForces_;
+    DeviceBuffer<RVec> d_pmeForces_;
     //! number of atoms in PME force staging array
     int d_pmeForcesSize_ = -1;
     //! number of atoms allocated in recvbuf array

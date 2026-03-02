@@ -46,7 +46,6 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -56,6 +55,8 @@ class GpuEventSynchronizer;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 
 class DeviceStreamManager;
 
@@ -75,31 +76,28 @@ public:
     /*! \brief Creates PME-PP GPU communication object
      * \param[in] comm              Communicator used for simulation
      * \param[in] pmeRank           Rank of PME task
-     * \param[in] pmeCpuForceBuffer Buffer for PME force in CPU memory
      * \param[in] deviceContext     GPU context.
      * \param[in] deviceStream      GPU stream.
      * \param[in] useNvshmem        NVSHMEM enable/disable for GPU comm.
      */
-    PmePpCommGpu(MPI_Comm                    comm,
-                 int                         pmeRank,
-                 gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
-                 const DeviceContext&        deviceContext,
-                 const DeviceStream&         deviceStream,
-                 bool                        useNvshmem);
+    PmePpCommGpu(MPI_Comm             comm,
+                 int                  pmeRank,
+                 const DeviceContext& deviceContext,
+                 const DeviceStream&  deviceStream,
+                 bool                 useNvshmem);
     ~PmePpCommGpu();
 
     /*! \brief Perform steps required when buffer size changes
-     * \param[in]  size   Number of elements in buffer
+     *
+     * \param[in] pmeCpuForceReceiveBuffer  CPU buffer to potentially receive PME force data
      */
-    void reinit(int size);
+    void reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer);
 
-    /*! \brief
-     * Pull data from PME GPU directly using GPU Memory copy.
-     * \param[out] recvPtr  Buffer to receive PME force data
-     * \param[in] recvSize Number of elements to receive
-     * \param[in] recvPmeForceToGpu Whether receive is to GPU, otherwise CPU
+    /*! \brief Receive forces from PME GPU
+     *
+     * \param[in] recvPmeForceToGpu  Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPme(RVec* recvPtr, int recvSize, bool recvPmeForceToGpu);
+    void receiveForceFromPme(bool recvPmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME task
      * Note that, when using GPU-aware MPI with staged communication and not using NVSHMEM
