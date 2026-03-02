@@ -47,7 +47,7 @@ static __inline__ tMPI_Cycles_t tMPI_Cycles_read(void)
     __asm__ __volatile__ ("mov %0=ar.itc" : "=r" (ret));
     return ret;
 }
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
 #define TMPI_CYCLE_COUNT
 typedef __int64 tMPI_Cycles_t;
 static __inline tMPI_Cycles_t tMPI_Cycles_read(void)
@@ -58,5 +58,12 @@ static __inline tMPI_Cycles_t tMPI_Cycles_read(void)
 #else
     return __rdtsc();
 #endif
+}
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+#define TMPI_CYCLE_COUNT
+typedef __int64 tMPI_Cycles_t;
+static __inline tMPI_Cycles_t tMPI_Cycles_read(void)
+{
+    return _ReadStatusReg(ARM64_CNTVCT);
 }
 #endif

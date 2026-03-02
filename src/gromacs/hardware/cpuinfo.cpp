@@ -189,7 +189,7 @@ int executeX86CpuID(unsigned int gmx_unused level,
 #    endif
         return 0;
 
-#elif defined _MSC_VER
+#elif defined _MSC_VER && (defined _M_IX86 || defined _M_X64)
 
         // MSVC (and icc on windows) on ia32 or x86-64
         int cpuInfo[4];
@@ -1049,11 +1049,11 @@ CpuInfo CpuInfo::detect()
             result.vendor_ = CpuInfo::Vendor::Loongson;
         }
 
-#if defined __aarch64__ || (defined _M_ARM && _M_ARM >= 8)
+#if defined __aarch64__ || defined _M_ARM64 || (defined _M_ARM && _M_ARM >= 8)
         result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
         result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
 #endif
-#if defined __arch64__ && defined __ARM_FEATURE_SVE
+#if (defined __arch64__ || defined _M_ARM64) && defined __ARM_FEATURE_SVE
         result.features_.insert(Feature::Arm_Sve);
 #endif
 
