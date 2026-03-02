@@ -79,8 +79,8 @@ enum class HaloMpiTag
     X,              //!< Coordinates
     F,              //!< Forces
     ZoneCorners,    //!< The corners of the zone
-    GridCounts,     //! The number of grid columns
-    GridColumns,    //! The contents of the grid column
+    GridCounts,     //! The number of grid cells
+    GridCells,      //! The contents of the grid cell
     GridDimensions, //! The dimensions of the grid
     AtomIndices     //! Global atom indices
 };
@@ -111,10 +111,10 @@ struct ZoneCorners
 class DomainCommBackward
 {
 public:
-    //! Struct for storing a cluster range for a grid column
+    //! Struct for storing a cluster range for a grid cell
     struct GridClusterRange
     {
-        //! The index of the grid column
+        //! The index of the grid cell
         int index;
         //! The cluster range to communicate
         gmx::Range<int> clusterRange;
@@ -138,14 +138,14 @@ public:
                        const IVec& pbcCoordinateShift,
                        MPI_Comm    mpiCommAll);
 
-    //! Clears this communication, set no columns and atoms to send
+    //! Clears this communication, set no cells and atoms to send
     void clear();
 
     /*! \brief Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
      *
      * Communicates the computed corners between domain pairs
      *
-     * Note that the column bounding boxes are computed for the centers of update groups.
+     * Note that the cell bounding boxes are computed for the centers of update groups.
      * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
      *
      * \param[in] dd              The domain decomposition struct
@@ -179,8 +179,8 @@ public:
                          ArrayRef<const RVec>     normal,
                          const std::vector<bool>& isClusterMissingLinks);
 
-    //! Creates and returns a buffer with column indices and cluster counts to be sent
-    FastVector<std::pair<int, int>> makeColumnsSendBuffer() const;
+    //! Creates and returns a buffer with cell indices and cluster counts to be sent
+    FastVector<std::pair<int, int>> makeCellsSendBuffer() const;
 
     //! Copies the coordinates to commnicate to the send buffer
     void packCoordinateSendBuffer(const matrix box, ArrayRef<const RVec> x, ArrayRef<RVec> sendBuffer) const;
@@ -203,7 +203,7 @@ public:
     //! Returns the number of atoms per cluster
     int numAtomsPerCluster() const { return numAtomsPerCluster_; }
 
-    //! Returns the list of all columns to send with column information
+    //! Returns the list of all cells to send with cell information
     ArrayRef<const GridClusterRange> clusterRangesToSend() const { return clusterRangesToSend_; }
 
     //! Returns the number of atoms to send
@@ -288,7 +288,7 @@ public:
     //! Return the zone this domain pair resides in
     int zone() const { return zone_; }
 
-    //! Returns the list of pairs of column indices and cluster counts that we receive
+    //! Returns the list of pairs of cell indices and cluster counts that we receive
     ArrayRef<const std::pair<int, int>> clusterRangesReceived() const
     {
         return clusterRangesReceived_;
@@ -308,7 +308,7 @@ private:
     int rank_;
     //! The zone this part of the halo belongs to
     int zone_;
-    //! Pairs of column indices and cluster counts
+    //! Pairs of cell indices and cluster counts
     FastVector<std::pair<int, int>> clusterRangesReceived_;
     //! The number of atoms to receive
     int numAtomsToReceive_;

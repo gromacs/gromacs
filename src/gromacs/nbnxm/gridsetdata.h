@@ -72,8 +72,8 @@ struct GridSetData
  */
 struct GridWork
 {
-    //! Number of atoms for each grid column
-    std::vector<int> numAtomsPerColumn;
+    //! Number of atoms for each grid cell
+    std::vector<int> numAtomsPerCell;
     //! Buffer for sorting integers
     std::vector<int> sortBuffer;
 };

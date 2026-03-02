@@ -272,7 +272,7 @@ struct nbnxn_atomdata_t
      * \param[in] nbfp               Non-bonded force parameter matrix
      * \param[in] addFillerAtomType  When true, add a filler atom type, when false, \p nbfp should
      *                               have atom-type with index numTypes-1 with all parameters zero
-     *                               so that that row and column have only zero values.
+     *                               so that that row and cell have only zero values.
      * \param[in] numEnergyGroups    Number of energy groups
      * \param[in] numOutputBuffers   Number of output data structures
      */

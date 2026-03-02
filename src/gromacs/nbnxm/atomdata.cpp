@@ -163,7 +163,7 @@ static void copy_int_to_nbat_int(const int* a, int na, int na_round, const int* 
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0)
 {
     /* We complete partially filled cells, can only be the last one in each
-     * column, with coordinates farAway. The actual coordinate value does
+     * cell, with coordinates farAway. The actual coordinate value does
      * not influence the results, since these filler particles do not interact.
      * Clusters with normal atoms + fillers have a bounding box based only
      * on the coordinates of the atoms. Clusters with only fillers have as
@@ -793,16 +793,16 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
 
     for (const Grid& grid : gridSet.grids())
     {
-        /* Loop over all columns and copy and fill */
+        /* Loop over all cells and copy and fill */
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int i = 0; i < grid.numColumns(); i++)
+        for (int i = 0; i < grid.numCells(); i++)
         {
-            const int numAtoms   = grid.paddedNumAtomsInColumn(i);
-            const int atomOffset = grid.firstAtomInColumn(i);
+            const int numAtoms   = grid.paddedNumAtomsInCell(i);
+            const int atomOffset = grid.firstAtomInCell(i);
 
             copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
-                                 grid.numAtomsInColumn(i),
+                                 grid.numAtomsInCell(i),
                                  numAtoms,
                                  atomTypesA.data(),
                                  params->numTypes - 1,
@@ -816,14 +816,14 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
 
         for (const Grid& grid : gridSet.grids())
         {
-            /* Loop over all columns and copy and fill */
-            for (int i = 0; i < grid.numColumns(); i++)
+            /* Loop over all cells and copy and fill */
+            for (int i = 0; i < grid.numCells(); i++)
             {
-                const int numAtoms   = grid.paddedNumAtomsInColumn(i);
-                const int atomOffset = grid.firstAtomInColumn(i);
+                const int numAtoms   = grid.paddedNumAtomsInCell(i);
+                const int atomOffset = grid.firstAtomInCell(i);
 
                 copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
-                                     grid.numAtomsInColumn(i),
+                                     grid.numAtomsInCell(i),
                                      numAtoms,
                                      atomTypesA.data(),
                                      params->numTypes - 1,
@@ -832,7 +832,7 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
                 GMX_ASSERT(atomTypesB.ssize() >= params->numTypes,
                            "atomTypesB does not have sufficient size");
                 copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
-                                     grid.numAtomsInColumn(i),
+                                     grid.numAtomsInCell(i),
                                      numAtoms,
                                      atomTypesB.data(),
                                      params->numTypes - 1,
@@ -854,13 +854,13 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
     {
         for (const Grid& grid : gridSet.grids())
         {
-            /* Loop over all columns and copy and fill */
+            /* Loop over all cells and copy and fill */
             const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-            for (int i = 0; i < grid.numColumns(); i++)
+            for (int i = 0; i < grid.numCells(); i++)
             {
-                const int numAtoms   = grid.paddedNumAtomsInColumn(i);
-                const int atomOffset = grid.firstAtomInColumn(i);
+                const int numAtoms   = grid.paddedNumAtomsInCell(i);
+                const int atomOffset = grid.firstAtomInCell(i);
 
                 if (XFormat == nbatX4)
                 {
@@ -896,11 +896,11 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
         {
             for (const Grid& grid : gridSet.grids())
             {
-                /* Loop over all columns and copy and fill */
-                for (int i = 0; i < grid.numColumns(); i++)
+                /* Loop over all cells and copy and fill */
+                for (int i = 0; i < grid.numCells(); i++)
                 {
-                    const int numAtoms   = grid.paddedNumAtomsInColumn(i);
-                    const int atomOffset = grid.firstAtomInColumn(i);
+                    const int numAtoms   = grid.paddedNumAtomsInCell(i);
+                    const int atomOffset = grid.firstAtomInCell(i);
 
                     if (XFormat == nbatX4)
                     {
@@ -955,14 +955,14 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*    nbat,
 
     for (const Grid& grid : gridSet.grids())
     {
-        /* Loop over all columns and copy and fill */
+        /* Loop over all cells and copy and fill */
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+        for (int cxy = 0; cxy < grid.numCells(); cxy++)
         {
-            const int atomOffset     = grid.firstAtomInColumn(cxy);
-            const int numAtoms       = grid.numAtomsInColumn(cxy);
-            const int paddedNumAtoms = grid.paddedNumAtomsInColumn(cxy);
+            const int atomOffset     = grid.firstAtomInCell(cxy);
+            const int numAtoms       = grid.numAtomsInCell(cxy);
+            const int paddedNumAtoms = grid.paddedNumAtomsInCell(cxy);
 
             if (nbat->XFormat == nbatXYZQ)
             {
@@ -1007,12 +1007,12 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*    nbat,
 
         for (const Grid& grid : gridSet.grids())
         {
-            /* Loop over all columns and copy and fill */
-            for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+            /* Loop over all cells and copy and fill */
+            for (int cxy = 0; cxy < grid.numCells(); cxy++)
             {
-                const int atomOffset     = grid.firstAtomInColumn(cxy);
-                const int numAtoms       = grid.numAtomsInColumn(cxy);
-                const int paddedNumAtoms = grid.paddedNumAtomsInColumn(cxy);
+                const int atomOffset     = grid.firstAtomInCell(cxy);
+                const int numAtoms       = grid.numAtomsInCell(cxy);
+                const int paddedNumAtoms = grid.paddedNumAtomsInCell(cxy);
 
                 qIndex = atomOffset;
                 GMX_ASSERT(chargesB.ssize() >= numAtoms, "chargesB does not have sufficient size");
@@ -1055,9 +1055,9 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const GridSet& gridS
         const auto layoutType = grid.geometry().pairlistType_;
         const int  nsubc = (grid.geometry().isSimple_) ? 1 : sc_gpuNumClusterPerBin(layoutType);
 
-        const int c_offset = grid.firstAtomInColumn(0);
+        const int c_offset = grid.firstAtomInCell(0);
 
-        /* Loop over all columns and copy and fill */
+        /* Loop over all cells and copy and fill */
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int cluster = 0; cluster < grid.numBins() * nsubc; cluster++)
@@ -1093,12 +1093,12 @@ static void nbnxn_atomdata_set_energygroups(const GridSet&          gridSet,
         // Find maximum allocation size for energy groups
         energyGroupsPerCluster->resizeEnergyGroups(grid.atomIndexEnd());
 
-        /* Loop over all columns and copy and fill */
+        /* Loop over all cells and copy and fill */
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int i = 0; i < grid.numColumns(); i++)
+        for (int i = 0; i < grid.numCells(); i++)
         {
-            const int numAtoms   = grid.paddedNumAtomsInColumn(i);
-            const int atomOffset = grid.firstAtomInColumn(i);
+            const int numAtoms   = grid.paddedNumAtomsInCell(i);
+            const int atomOffset = grid.firstAtomInCell(i);
 
             energyGroupsPerCluster->setEnergyGroups(gridSet.atomIndices().subArray(atomOffset, numAtoms),
                                                     atomInfo,
@@ -1184,14 +1184,14 @@ static Range<int> getGridRange(const GridSet& gridSet, const AtomLocality locali
  * including filler particles.
  */
 static void copyXToNbatXForGridPart(const Grid&       grid,
-                                    const Range<int>& columnRange,
+                                    const Range<int>& cellRange,
                                     const rvec*       coordinates,
                                     nbnxn_atomdata_t* nbat)
 {
-    for (int column : columnRange)
+    for (int cell : cellRange)
     {
-        const int na  = grid.paddedNumAtomsInColumn(column);
-        const int ash = grid.firstAtomInColumn(column);
+        const int na  = grid.paddedNumAtomsInCell(cell);
+        const int ash = grid.firstAtomInCell(cell);
 
         switch (nbat->XFormat)
         {
@@ -1217,15 +1217,15 @@ static void copyXToNbatXForGridPart(const Grid&       grid,
  * This version is for when the atom order in the local state does not match the grid order.
  */
 static void copyXToNbatXForGridPartIndexed(const Grid&         grid,
-                                           const Range<int>&   columnRange,
+                                           const Range<int>&   cellRange,
                                            ArrayRef<const int> atomIndices,
                                            const rvec*         coordinates,
                                            nbnxn_atomdata_t*   nbat)
 {
-    for (int column : columnRange)
+    for (int cell : cellRange)
     {
-        const int na  = grid.numAtomsInColumn(column);
-        const int ash = grid.firstAtomInColumn(column);
+        const int na  = grid.numAtomsInCell(cell);
+        const int ash = grid.firstAtomInCell(cell);
 
         copy_rvec_to_nbat_real(
                 atomIndices.data() + ash, na, na, coordinates, nbat->XFormat, nbat->x().data(), ash);
@@ -1251,7 +1251,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&     gridSet,
             for (int g : gridRange)
             {
                 const Grid& grid       = gridSet.grid(g);
-                const int   numCellsXY = grid.numColumns();
+                const int   numCellsXY = grid.numCells();
 
                 const int cxy0 = (numCellsXY * th + nth - 1) / nth;
                 const int cxy1 = (numCellsXY * (th + 1) + nth - 1) / nth;
@@ -1289,7 +1289,7 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const GridSet&        gridSet,
                                                         : nullptr, // Sync on first iteration only
                               locality,
                               g,
-                              gridSet.numColumnsMax(),
+                              gridSet.numCellsMax(),
                               (g == *gridRange.end() - 1));
     }
 }

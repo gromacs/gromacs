@@ -61,7 +61,7 @@ namespace gmx
  * \param[in]     gm_binIndex          Array of bin indices.
  * \param[in]     binOffset            First bin.
  * \param[in]     numAtomsPerBin       Number of atoms per bin.
- * \param[in]     columnsOffset        Index if the first column in the bin.
+ * \param[in]     cellsOffset          Index if the first cell in the bin.
  */
 static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
                                       const Float3* __restrict__ gm_x,
@@ -70,12 +70,12 @@ static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
                                       const int* __restrict__ gm_binIndex,
                                       int binOffset,
                                       int numAtomsPerBin,
-                                      int columnsOffset)
+                                      int cellsOffset)
 {
     return [=](sycl::id<2> itemIdx)
     {
         // Map bin-level parallelism to y component of block index.
-        const int cxy = itemIdx.get(1) + columnsOffset;
+        const int cxy = itemIdx.get(1) + cellsOffset;
 
         const int numAtoms = gm_numAtoms[cxy];
         const int offset   = (binOffset + gm_binIndex[cxy]) * numAtomsPerBin;
@@ -99,14 +99,14 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
                                      NbnxmGpu*            nb,
                                      DeviceBuffer<Float3> d_x,
                                      const DeviceStream&  deviceStream,
-                                     unsigned int         numColumnsMax,
+                                     unsigned int         numCellsMax,
                                      int                  gridId)
 {
-    const unsigned int numColumns  = grid.numColumns();
-    const unsigned int numAtomsMax = grid.numBinsColumnMax() * grid.numAtomsPerBin();
-    GMX_ASSERT(numColumns <= numColumnsMax, "Grid has more columns than allowed");
+    const unsigned int numCells    = grid.numCells();
+    const unsigned int numAtomsMax = grid.maxNumBinsPerCell() * grid.numAtomsPerBin();
+    GMX_ASSERT(numCells <= numCellsMax, "Grid has more cells than allowed");
 
-    const sycl::range<2> globalSize{ numAtomsMax, numColumns };
+    const sycl::range<2> globalSize{ numAtomsMax, numCells };
     sycl::queue          q = deviceStream.stream();
 
     auto kernelFunctionBuilder = nbnxmKernelTransformXToXq;
@@ -116,11 +116,11 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
                                                                nb->atdat->xq.get_pointer(),
                                                                d_x.get_pointer(),
                                                                nb->atomIndices.get_pointer(),
-                                                               nb->numAtomsPerColumn.get_pointer(),
-                                                               nb->columnToBin.get_pointer(),
+                                                               nb->numAtomsPerCell.get_pointer(),
+                                                               nb->cellToBin.get_pointer(),
                                                                grid.binOffset(),
                                                                grid.numAtomsPerBin(),
-                                                               numColumnsMax * gridId);
+                                                               numCellsMax * gridId);
 }
 
 } // namespace gmx

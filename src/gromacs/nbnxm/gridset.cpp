@@ -153,10 +153,10 @@ void GridSet::setLocalAtomOrder()
     else
     {
         int atomIndex = 0;
-        for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+        for (int cxy = 0; cxy < grid.numCells(); cxy++)
         {
-            const int numAtoms = grid.numAtomsInColumn(cxy);
-            int       binIndex = grid.firstBinInColumn(cxy) * grid.geometry().numAtomsPerBin_;
+            const int numAtoms = grid.numAtomsInCell(cxy);
+            int       binIndex = grid.firstBinInCell(cxy) * grid.geometry().numAtomsPerBin_;
             for (int i = 0; i < numAtoms; i++)
             {
                 gridSetData_.atomIndices[binIndex] = atomIndex;
@@ -296,32 +296,32 @@ void GridSet::putOnGrid(const matrix            box,
         nbat->resizeForceBuffers();
     }
 
-    int maxNumColumns = 0;
+    int maxNumCells = 0;
     for (int i = 0; i <= gridIndex; i++)
     {
-        maxNumColumns = std::max(maxNumColumns, grids_[i].numColumns());
+        maxNumCells = std::max(maxNumCells, grids_[i].numCells());
     }
-    setNumColumnsMax(maxNumColumns);
+    setNumCellsMax(maxNumCells);
 }
 
-ArrayRef<const int> GridSet::getLocalGridNumAtomsPerColumn() const
+ArrayRef<const int> GridSet::getLocalGridNumAtomsPerCell() const
 {
     const Grid& grid = grids_[0];
 
     if (localAtomOrderMatchesNbnxmOrder_)
     {
-        localGridNumAtomsPerColumn_.resize(grid.numColumns());
+        localGridNumAtomsPerCell_.resize(grid.numCells());
 
-        for (int column = 0; column < grid.numColumns(); column++)
+        for (int cell = 0; cell < grid.numCells(); cell++)
         {
-            localGridNumAtomsPerColumn_[column] = grid.numBinsInColumn(column) * grid.numAtomsPerBin();
+            localGridNumAtomsPerCell_[cell] = grid.numBinsInCell(cell) * grid.numAtomsPerBin();
         }
 
-        return localGridNumAtomsPerColumn_;
+        return localGridNumAtomsPerCell_;
     }
     else
     {
-        return grid.numAtomsPerColumn();
+        return grid.numAtomsPerCell();
     }
 }
 

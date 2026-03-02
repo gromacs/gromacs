@@ -305,12 +305,12 @@ public:
     //! Returns the index position of the atoms on the search grid
     ArrayRef<const int> getGridIndices() const;
 
-    /*! \brief Returns the number of atoms for each column of the local grid
+    /*! \brief Returns the number of atoms for each cell of the local grid
      *
      * When fillers are not part of the local state, returns the number of real atoms.
      * When fillers are part of the local state, returns number of atoms plus fillers.
      */
-    ArrayRef<const int> getLocalGridNumAtomsPerColumn() const;
+    ArrayRef<const int> getLocalGridNumAtomsPerCell() const;
 
     /*! \brief Constructs the pairlist for the given locality
      *
@@ -459,11 +459,11 @@ public:
     //! Returns the local grid
     const Grid& localGrid() const;
 
-    //! Sets the non-local grid usig dimensions and columns received from a halo-domain
+    //! Sets the non-local grid usig dimensions and cells received from a halo-domain
     void setNonLocalGrid(int                                 gridIndex,
                          int                                 ddZone,
                          const GridDimensions&               gridDimensions,
-                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const std::pair<int, int>> cells,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x);
     /*! \brief Returns a plain pairlist

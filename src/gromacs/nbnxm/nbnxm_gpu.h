@@ -255,7 +255,7 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet gmx_unused& gridSet, NbnxmGpu gmx_
  * the device memory.
  * \param[in]     locality         Copy coordinates for local or non-local atoms.
  * \param[in]     gridId           Index of the grid being converted.
- * \param[in]     numColumnsMax    Maximum number of columns in the grid.
+ * \param[in]     numCellsMax      Maximum number of cells in the grid.
  * \param[in]     mustInsertNonLocalDependency Whether synchronization between local and non-local
  * streams should be added. Typically, true if and only if that is the last grid in gridset.
  */
@@ -266,7 +266,7 @@ void nbnxn_gpu_x_to_nbat_x(const Grid gmx_unused&           grid,
                            GpuEventSynchronizer gmx_unused* xReadyOnDevice,
                            AtomLocality gmx_unused          locality,
                            int gmx_unused                   gridId,
-                           int gmx_unused                   numColumnsMax,
+                           int gmx_unused                   numCellsMax,
                            bool gmx_unused mustInsertNonLocalDependency) GPU_FUNC_TERM;
 
 /*! \brief Sync the nonlocal stream with dependent tasks in the local queue.

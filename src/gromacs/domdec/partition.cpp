@@ -2919,14 +2919,14 @@ void dd_partition_system(FILE*                     fplog,
         // This can only be done when are both redistributing this step and we have the correct
         // atom count per column from the old state. This is available when atoms were put on
         // the NBNxM grid at the last re-partitioning.
-        gmx::ArrayRef<const int> localGridNumAtomsPerColumn;
+        gmx::ArrayRef<const int> localGridNumAtomsPerCell;
         if (bRedist && comm->putAtomsOnGridAtLastPartitioning)
         {
-            localGridNumAtomsPerColumn = fr->nbv->getLocalGridNumAtomsPerColumn();
+            localGridNumAtomsPerCell = fr->nbv->getLocalGridNumAtomsPerCell();
         }
         comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
                                        state_local->x,
-                                       localGridNumAtomsPerColumn);
+                                       localGridNumAtomsPerCell);
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDAddCogs);
     }

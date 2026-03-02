@@ -1547,30 +1547,30 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 /* Initialization for X buffer operations on GPU. */
 void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
 {
-    const DeviceStream& localStream   = *gpu_nbv->deviceStreams[InteractionLocality::Local];
-    const bool          bDoTime       = gpu_nbv->bDoTime;
-    const int           maxNumColumns = gridSet.numColumnsMax();
+    const DeviceStream& localStream = *gpu_nbv->deviceStreams[InteractionLocality::Local];
+    const bool          bDoTime     = gpu_nbv->bDoTime;
+    const int           maxNumCells = gridSet.numCellsMax();
 
-    reallocateDeviceBuffer(&gpu_nbv->numAtomsPerColumn,
-                           maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->numAtomsPerColumnSize,
-                           &gpu_nbv->numAtomsPerColumnAlloc,
+    reallocateDeviceBuffer(&gpu_nbv->numAtomsPerCell,
+                           maxNumCells * gridSet.grids().size(),
+                           &gpu_nbv->numAtomsPerCellSize,
+                           &gpu_nbv->numAtomsPerCellAlloc,
                            *gpu_nbv->deviceContext_);
-    reallocateDeviceBuffer(&gpu_nbv->columnToBin,
-                           maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->columnToBinSize,
-                           &gpu_nbv->columnToBinAlloc,
+    reallocateDeviceBuffer(&gpu_nbv->cellToBin,
+                           maxNumCells * gridSet.grids().size(),
+                           &gpu_nbv->cellToBinSize,
+                           &gpu_nbv->cellToBinAlloc,
                            *gpu_nbv->deviceContext_);
 
     for (unsigned int g = 0; g < gridSet.grids().size(); g++)
     {
         const Grid& grid = gridSet.grid(g);
 
-        const int  numColumns        = grid.numColumns();
-        const int* atomIndices       = gridSet.atomIndices().data();
-        const int  atomIndicesSize   = gridSet.atomIndices().size();
-        const int* numAtomsPerColumn = grid.numAtomsPerColumn().data();
-        const int* columnToBin       = grid.columnToBin().data();
+        const int  numCells        = grid.numCells();
+        const int* atomIndices     = gridSet.atomIndices().data();
+        const int  atomIndicesSize = gridSet.atomIndices().size();
+        const int* numAtomsPerCell = grid.numAtomsPerCell().data();
+        const int* cellToBin       = grid.cellToBin().data();
 
         auto* timerH2D = bDoTime ? &gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d : nullptr;
 
@@ -1601,17 +1601,17 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
             }
         }
 
-        if (numColumns > 0)
+        if (numCells > 0)
         {
             if (bDoTime)
             {
                 timerH2D->openTimingRegion(localStream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->numAtomsPerColumn,
-                               numAtomsPerColumn,
-                               maxNumColumns * g,
-                               numColumns,
+            copyToDeviceBuffer(&gpu_nbv->numAtomsPerCell,
+                               numAtomsPerCell,
+                               maxNumCells * g,
+                               numCells,
                                localStream,
                                GpuApiCallBehavior::Async,
                                bDoTime ? timerH2D->fetchNextEvent() : nullptr);
@@ -1626,10 +1626,10 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
                 timerH2D->openTimingRegion(localStream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->columnToBin,
-                               columnToBin,
-                               maxNumColumns * g,
-                               numColumns,
+            copyToDeviceBuffer(&gpu_nbv->cellToBin,
+                               cellToBin,
+                               maxNumCells * g,
+                               numCells,
                                localStream,
                                GpuApiCallBehavior::Async,
                                bDoTime ? timerH2D->fetchNextEvent() : nullptr);
@@ -1737,8 +1737,8 @@ void gpu_free(NbnxmGpu* nb)
         destroyParamLookupTable(&nbparam->nbfp_comb, &nbparam->nbfp_comb_texobj);
     }
 
-    freeDeviceBuffer(&nb->numAtomsPerColumn);
-    freeDeviceBuffer(&nb->columnToBin);
+    freeDeviceBuffer(&nb->numAtomsPerCell);
+    freeDeviceBuffer(&nb->cellToBin);
     freeDeviceBuffer(&nb->atomIndices);
 
     delete atdat;
