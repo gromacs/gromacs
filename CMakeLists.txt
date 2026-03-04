@@ -765,17 +765,20 @@ if(GMX_GPU)
         endif()
     endif()
 endif()
-set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X 2 CACHE STRING "Number of clusters along X in a pair-search grid bin for GPU lists")
-set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y 2 CACHE STRING "Number of clusters along Y in a pair-search grid bin for GPU lists")
-set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z 2 CACHE STRING "Number of clusters along Z in a pair-search grid bin for GPU lists")
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X)
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Y)
-mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_Z)
-if (DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X OR
-    DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y OR
-    DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z)
-    message(FATAL_ERROR "Configuration parameters GMX_GPU_NB_NUM_CLUSTER_PER_CELL_* have changed name to GMX_GPU_NB_NUM_CLUSTER_PER_BIN_*, please update accordingly")
-endif()
+
+foreach(_axis X Y Z)
+    if (DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis})
+        if (NOT DEFINED GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis})
+            message(WARNING "GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis} has been renamed to GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis}. Using its value (${GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis}}) for the new variable.")
+            set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis} ${GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis}} CACHE STRING "Number of clusters along ${_axis} in a pair-search grid bin for GPU lists")
+        elseif (NOT GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis} EQUAL GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis})
+            message(FATAL_ERROR "Conflicting values of GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis}=${GMX_GPU_NB_NUM_CLUSTER_PER_CELL_${_axis}} and GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis}=${GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis}}. Clear your CMake cache and reconfigure.")
+        endif()
+    else()
+        set(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis} 2 CACHE STRING "Number of clusters along ${_axis} in a pair-search grid bin for GPU lists")
+    endif()
+    mark_as_advanced(GMX_GPU_NB_NUM_CLUSTER_PER_BIN_${_axis})
+endforeach()
 
 # For build with CUDA/SYCL and Lib-MPI, check if underlying MPI implementation is GPU-aware
 # GPU-aware MPI allows direct GPU communication without staging data through host
