@@ -386,7 +386,7 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
                             if ((c6AB[k] > 0.0F) && (c12AB[k] > 0.0F))
                             {
                                 float sigma2 = sigmaAB[k] * sigmaAB[k];
-                                sigma6[k]    = min(sigma2 * sigma2 * sigma2 * 0.5F, sigma6Minimum);
+                                sigma6[k]    = max(sigma2 * sigma2 * sigma2 * 0.5F, sigma6Minimum);
                             }
                             else
                             {
@@ -486,7 +486,7 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
                                                             r2V,
                                                             &(scalarForcePerDistanceVdw[k]),
                                                             &(Vvdw[k]));
-#    endif /* LJ_POT_SWITCH */
+#    endif /* LJ_FORCE_SWITCH */
 
 #    ifdef LJ_POT_SWITCH
                                 calculate_potential_switch_Fr_E(

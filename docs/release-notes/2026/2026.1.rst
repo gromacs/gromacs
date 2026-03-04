@@ -38,6 +38,17 @@ The new AWH histogram tolerance parameter was not printed to the log file
 Also added it to ``gmx dump``.
 
 :issue:`5574`
+Running perturbed non-bonded interactions on a PU could cause crashes
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Running perturbed non-bonded interactions on a GPU could cause crashes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With atoms with small Lennard-Jones sigma parameter or no Lennard-Jones
+interactions, running perturbed non-bonded interactions on the GPU with
+soft-core would lead to extremely large forces. This would make simulations
+crash within a few steps.
+
+:issue:`5548`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
