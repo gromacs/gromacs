@@ -58,10 +58,10 @@ enum class FftDirection : int
 };
 
 //! Helper for consistent error handling
-void handleRocFftError(rocfft_status result, const std::string& msg);
+void handleRocFftError(rocfft_status result, const char* msg);
 
 //! Helper for consistent error handling
-void handleRocFftError(rocfft_status result, const std::string& direction, const std::string& msg);
+void handleRocFftError(rocfft_status result, const char* direction, const char* msg);
 
 //! Provides RAII-style initialization of rocFFT library
 class RocfftInitializer

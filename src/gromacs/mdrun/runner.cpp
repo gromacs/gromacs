@@ -2482,7 +2482,9 @@ int Mdrunner::mdrunner()
             physicalNodeComm.barrier();
         }
 
-        if (GMX_GPU)
+        // Only release GPU when not using torch, as torch keeps some device handles that
+        // only get cleaned up on process exit
+        if (GMX_GPU && !GMX_TORCH)
         {
             const bool haveDetectedOrForcedCudaAwareMpi =
                     (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported

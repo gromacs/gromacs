@@ -380,7 +380,7 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
                             if ((c6AB[k] > 0.0F) && (c12AB[k] > 0.0F))
                             {
                                 float sigma2 = sigmaAB[k] * sigmaAB[k];
-                                sigma6[k]    = min(sigma2 * sigma2 * sigma2 * 0.5F, sigma6Minimum);
+                                sigma6[k]    = max(sigma2 * sigma2 * sigma2 * 0.5F, sigma6Minimum);
                             }
                             else
                             {

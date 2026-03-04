@@ -17,12 +17,38 @@ Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixed a performance issue with thread-MPI
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""
 
 Way too many OpenMP threads (up to approximately (number_of_cpu_cores)^2) could be created,
 severely impacting performance.
 
 :issue:`5564`
+
+Fix segfault on exit when running NNP inference with CUDA
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running a simulation with the NNPot interface and performing inference on a CUDA device,
+a segfault would occur on program exit. This did not affect results, but should not happen.
+
+:issue:`5568`
+
+The new AWH histogram tolerance parameter was not printed to the log file
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Also added it to ``gmx dump``.
+
+:issue:`5574`
+Running perturbed non-bonded interactions on a PU could cause crashes
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Running perturbed non-bonded interactions on a GPU could cause crashes
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With atoms with small Lennard-Jones sigma parameter or no Lennard-Jones
+interactions, running perturbed non-bonded interactions on the GPU with
+soft-core would lead to extremely large forces. This would make simulations
+crash within a few steps.
+
+:issue:`5548`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -35,6 +61,15 @@ decimals. Now this is 7, which matches the floating point precision
 for charges and masses.
 
 :issue:`5543`
+
+Fixed ``gmx wham -ac`` autocorrelation time calculation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed ``gmx wham -ac`` incorrectly reporting very large integrated autocorrelation times (IACT)
+for long umbrella sampling trajectories when the pull coordinate was far from zero,
+due to precision loss in the calculation.
+
+:issue:`5547`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,3 +116,12 @@ all-electrons 6-31G* basis set. In addition, the option of using D3 dispersion
 corrections has been added to all functionals.
 
 :issue:`5529`
+
+Use correct stream priorities with AdaptiveCpp
+""""""""""""""""""""""""""""""""""""""""""""""
+
+In |Gromacs| 2026.0 built with AdaptiveCpp 25.02 or earlier, the GPU stream
+priorities were inverted. This could have led to decreased performance.
+
+:issue:`5575`
+

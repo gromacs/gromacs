@@ -105,7 +105,7 @@ static sycl::property_list makeQueuePropertyList(const bool                 enab
     if (deviceContext.deviceInfo().deviceVendor == DeviceVendor::Nvidia)
     {
 #        if GMX_ACPP_HAVE_CUDA_TARGET
-        const auto status = cudaDeviceGetStreamPriorityRange(&highPrioValue, &lowPrioValue);
+        const auto status = cudaDeviceGetStreamPriorityRange(&lowPrioValue, &highPrioValue);
         if (status != cudaSuccess)
         {
             GMX_THROW(gmx::InternalError("cudaDeviceGetStreamPriorityRange failed"));
@@ -115,7 +115,7 @@ static sycl::property_list makeQueuePropertyList(const bool                 enab
     else if (deviceContext.deviceInfo().deviceVendor == DeviceVendor::Amd)
     {
 #        if GMX_ACPP_HAVE_HIP_TARGET
-        const auto status = hipDeviceGetStreamPriorityRange(&highPrioValue, &lowPrioValue);
+        const auto status = hipDeviceGetStreamPriorityRange(&lowPrioValue, &highPrioValue);
         if (status != hipSuccess)
         {
             GMX_THROW(gmx::InternalError("hipDeviceGetStreamPriorityRange failed"));
