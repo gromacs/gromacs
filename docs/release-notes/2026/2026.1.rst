@@ -51,6 +51,15 @@ for charges and masses.
 
 :issue:`5543`
 
+Fixed ``gmx wham -ac`` autocorrelation time calculation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed ``gmx wham -ac`` incorrectly reporting very large integrated autocorrelation times (IACT)
+for long umbrella sampling trajectories when the pull coordinate was far from zero,
+due to precision loss in the calculation.
+
+:issue:`5547`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
