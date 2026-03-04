@@ -32,14 +32,6 @@ a segfault would occur on program exit. This did not affect results, but should 
 
 :issue:`5568`
 
-The new AWH histogram tolerance parameter was not printed to the log file
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-Also added it to ``gmx dump``.
-
-:issue:`5574`
-Running perturbed non-bonded interactions on a PU could cause crashes
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Running perturbed non-bonded interactions on a GPU could cause crashes
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -49,6 +41,13 @@ soft-core would lead to extremely large forces. This would make simulations
 crash within a few steps.
 
 :issue:`5548`
+
+The new AWH histogram tolerance parameter was not printed to the log file
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Also added it to ``gmx dump``.
+
+:issue:`5574`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
