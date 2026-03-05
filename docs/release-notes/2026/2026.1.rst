@@ -63,6 +63,11 @@ Ensemble averaging of orientation restraints gave a fatal error
 
 :issue:`5552`
 
+PME tuning never activated with a GPU and a single MPI rank
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5578`
+       
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
