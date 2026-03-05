@@ -64,10 +64,6 @@
 // Currently FEP-on-GPU calculations are only implemented on CUDA platform
 #if GMX_GPU_CUDA
 #    include "gromacs/ewald/ewald_utils.h"
-#    include "gromacs/gmxlib/nrnb.h"
-#    include "gromacs/gpu_utils/cuda_arch_utils.cuh"
-#    include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
-#    include "gromacs/gpu_utils/cudautils.cuh"
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gpu_utils.h"
@@ -83,15 +79,14 @@
 #    include "gromacs/mdtypes/enerdata.h"
 #    include "gromacs/mdtypes/forceoutput.h"
 #    include "gromacs/mdtypes/forcerec.h"
-#    include "gromacs/mdtypes/inputrec.h"
 #    include "gromacs/mdtypes/interaction_const.h"
 #    include "gromacs/mdtypes/md_enums.h"
 #    include "gromacs/mdtypes/mdatom.h"
 #    include "gromacs/mdtypes/simulation_workload.h"
 #    include "gromacs/nbnxm/atompairlist.h"
-#    include "gromacs/nbnxm/cuda/nbnxm_cuda.h"
-#    include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_utils.cuh"
-#    include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
+#    if GMX_GPU_CUDA
+#        include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
+#    endif
 #    include "gromacs/nbnxm/gpu_types_common.h"
 #    include "gromacs/nbnxm/nbnxm.h"
 #    include "gromacs/nbnxm/nbnxm_gpu.h"
@@ -105,17 +100,9 @@
 #    include "gromacs/utility/enumerationhelpers.h"
 #    include "gromacs/utility/gmxassert.h"
 #    include "gromacs/utility/real.h"
-#    include "gromacs/utility/smalloc.h"
-#    include "gromacs/utility/strconvert.h"
-#    include "gromacs/utility/stringstream.h"
-#    include "gromacs/utility/textwriter.h"
+#    include "gromacs/utility/template_mp.h"
 #    include "gromacs/utility/vec.h"
 #    include "gromacs/utility/vectypes.h"
-
-/** Force & energy **/
-#    define CALC_ENERGIES
-#    include "gromacs/nbnxm/cuda/nbfe_cuda_kernels.cuh"
-#    undef CALC_ENERGIES
 
 #    include "testutils/refdata.h"
 #    include "testutils/test_hardware_environment.h"
@@ -127,54 +114,6 @@ namespace test
 {
 namespace
 {
-/*! Nonbonded FEP kernel function pointer type */
-typedef void (*nbfe_cu_kfunc_ptr_t)(const NBAtomDataGpu, const NBParamGpu, const GpuFeplist, bool);
-
-/*! Force + energy fep kernel function pointers. */
-static const nbfe_cu_kfunc_ptr_t nbfe_kfunc_ener_ptr[c_numElecTypes][c_numVdwTypes] = {
-    { nbfe_kernel_ElecCut_VdwLJ_VF_cuda,
-      nbfe_kernel_ElecCut_VdwLJCombGeom_VF_cuda,
-      nbfe_kernel_ElecCut_VdwLJCombLB_VF_cuda,
-      nbfe_kernel_ElecCut_VdwLJFsw_VF_cuda,
-      nbfe_kernel_ElecCut_VdwLJPsw_VF_cuda,
-      nbfe_kernel_ElecCut_VdwLJEwCombGeom_VF_cuda,
-      nbfe_kernel_ElecCut_VdwLJEwCombLB_VF_cuda },
-    { nbfe_kernel_ElecRF_VdwLJ_VF_cuda,
-      nbfe_kernel_ElecRF_VdwLJCombGeom_VF_cuda,
-      nbfe_kernel_ElecRF_VdwLJCombLB_VF_cuda,
-      nbfe_kernel_ElecRF_VdwLJFsw_VF_cuda,
-      nbfe_kernel_ElecRF_VdwLJPsw_VF_cuda,
-      nbfe_kernel_ElecRF_VdwLJEwCombGeom_VF_cuda,
-      nbfe_kernel_ElecRF_VdwLJEwCombLB_VF_cuda },
-    { nbfe_kernel_ElecEwQSTab_VdwLJ_VF_cuda,
-      nbfe_kernel_ElecEwQSTab_VdwLJCombGeom_VF_cuda,
-      nbfe_kernel_ElecEwQSTab_VdwLJCombLB_VF_cuda,
-      nbfe_kernel_ElecEwQSTab_VdwLJFsw_VF_cuda,
-      nbfe_kernel_ElecEwQSTab_VdwLJPsw_VF_cuda,
-      nbfe_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_cuda,
-      nbfe_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_cuda },
-    { nbfe_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_cuda,
-      nbfe_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_cuda,
-      nbfe_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_cuda,
-      nbfe_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_cuda,
-      nbfe_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_cuda,
-      nbfe_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_cuda,
-      nbfe_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_cuda },
-    { nbfe_kernel_ElecEw_VdwLJ_VF_cuda,
-      nbfe_kernel_ElecEw_VdwLJCombGeom_VF_cuda,
-      nbfe_kernel_ElecEw_VdwLJCombLB_VF_cuda,
-      nbfe_kernel_ElecEw_VdwLJFsw_VF_cuda,
-      nbfe_kernel_ElecEw_VdwLJPsw_VF_cuda,
-      nbfe_kernel_ElecEw_VdwLJEwCombGeom_VF_cuda,
-      nbfe_kernel_ElecEw_VdwLJEwCombLB_VF_cuda },
-    { nbfe_kernel_ElecEwTwinCut_VdwLJ_VF_cuda,
-      nbfe_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_cuda,
-      nbfe_kernel_ElecEwTwinCut_VdwLJCombLB_VF_cuda,
-      nbfe_kernel_ElecEwTwinCut_VdwLJFsw_VF_cuda,
-      nbfe_kernel_ElecEwTwinCut_VdwLJPsw_VF_cuda,
-      nbfe_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_cuda,
-      nbfe_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_cuda }
-};
 
 //! Number of atoms used in these tests.
 constexpr int c_numAtoms     = 4;
@@ -545,6 +484,7 @@ void setGpuNbParams(NBParamGpu*                nbp,
                        GpuApiCallBehavior::Sync,
                        nullptr);
 
+#    if GMX_GPU_CUDA
     if (!c_disableCudaTextures)
     {
         cudaResourceDesc rd;
@@ -561,6 +501,7 @@ void setGpuNbParams(NBParamGpu*                nbp,
         cudaError_t stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, nullptr);
         gmx::checkDeviceError(stat, "Binding of the texture object failed.");
     }
+#    endif
 
     // FEP params
     nbp->bFepGpuNonBonded       = true;
@@ -646,6 +587,8 @@ void constructFeppairlist(GpuFeplist*          d_feplist,
             &d_feplist->exclFep, exclFep.data(), 0, numjAtoms, localStream, GpuApiCallBehavior::Async, nullptr);
 }
 
+using GpuPairlistByLocality = EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>>;
+
 // A simpler version of gpu_init where only fep relevant things are initialized
 NbnxmGpu* gpu_fep_init(const DeviceStreamManager& deviceStreamManager,
                        const AtomData             atoms,
@@ -661,7 +604,10 @@ NbnxmGpu* gpu_fep_init(const DeviceStreamManager& deviceStreamManager,
 
     nb->feplist[0] = std::make_unique<GpuFeplist>();
 
-    nb->bUseTwoStreams = false;
+    GpuPairlistByLocality list;
+    list[InteractionLocality::Local] = std::make_unique<GpuPairlist>();
+    nb->plist                        = std::move(list);
+    nb->bUseTwoStreams               = false;
 
     const DeviceStream& localStream = deviceStreamManager.stream(DeviceStreamType::NonBondedLocal);
     nb->deviceStreams[InteractionLocality::Local] = &localStream;
@@ -755,39 +701,6 @@ NbnxmGpu* gpu_fep_init(const DeviceStreamManager& deviceStreamManager,
     constructFeppairlist(nb->feplist[0].get(), &nblist, *nb->deviceContext_, localStream);
 
     return nb;
-}
-
-// Brief function to launch FEP kernel on GPU
-void gpuLaunchFepKernel(NbnxmGpu* nb, StepWorkload& stepWork)
-{
-    NBAtomDataGpu*      atdat        = nb->atdat;
-    NBParamGpu*         nbp          = nb->nbparam;
-    const DeviceStream& deviceStream = *nb->deviceStreams[0];
-
-    auto* feplist = nb->feplist[0].get();
-
-    KernelLaunchConfig fepConfig;
-    fepConfig.blockSize[0] = 64;
-    fepConfig.blockSize[1] = 1;
-    fepConfig.blockSize[2] = 1;
-
-    const int bsize = fepConfig.blockSize[0] * fepConfig.blockSize[1] * fepConfig.blockSize[2];
-    // one warp per nri
-    const int nriPerBlock      = bsize / warp_size;
-    int       nblock           = (feplist->numiAtoms + nriPerBlock - 1) / nriPerBlock;
-    fepConfig.gridSize[0]      = nblock;
-    fepConfig.gridSize[1]      = 1;
-    fepConfig.gridSize[2]      = 1;
-    fepConfig.sharedMemorySize = 0;
-
-    const int elecTypeIdx = static_cast<int>(nbp->elecType);
-    const int vdwTypeIdx  = static_cast<int>(nbp->vdwType);
-
-    const auto fepKernel     = nbfe_kfunc_ener_ptr[elecTypeIdx][vdwTypeIdx];
-    const auto fepKernelArgs = prepareGpuKernelArguments(
-            fepKernel, fepConfig, atdat, nbp, feplist, &stepWork.computeVirial);
-
-    launchGpuKernel(fepKernel, fepConfig, deviceStream, nullptr, "k_calc_nb_fep", fepKernelArgs);
 }
 
 // Copy results back to CPU
@@ -901,42 +814,38 @@ protected:
         // t_nrnb nrnb;
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
-            // Currently only supports Nvidia device
-            if (testDevice->deviceInfo().deviceVendor == DeviceVendor::Nvidia)
-            {
-                testDevice->deviceContext().activate();
-                SimulationWorkload simulationWorkload;
-                auto               deviceStreamManager = std::make_shared<DeviceStreamManager>(
-                        testDevice->deviceInfo(), simulationWorkload, false);
-                // Construct NbnxmGpu object nb
-                NbnxmGpu* nb = gpu_fep_init(*deviceStreamManager, input_.atoms, nbl, x_, fr, lambdas);
+            testDevice->deviceContext().activate();
+            SimulationWorkload simulationWorkload;
+            auto               deviceStreamManager = std::make_shared<DeviceStreamManager>(
+                    testDevice->deviceInfo(), simulationWorkload, false);
+            // Construct NbnxmGpu object nb
+            NbnxmGpu* nb = gpu_fep_init(*deviceStreamManager, input_.atoms, nbl, x_, fr, lambdas);
 
-                // Run fep gpu kernel
-                gpuLaunchFepKernel(nb, stepWork);
+            // Run fep gpu kernel
+            gpu_launch_free_energy_kernel(nb, simulationWorkload, stepWork, InteractionLocality::Local);
 
-                // Transfer results to host buffer
-                gpuLaunchCpyback(nb, &output);
+            // Transfer results to host buffer
+            gpuLaunchCpyback(nb, &output);
 
-                /* Free atdat */
-                freeDeviceBuffer(&nb->atdat->xq);
-                freeDeviceBuffer(&nb->atdat->f);
-                freeDeviceBuffer(&nb->atdat->eLJ);
-                freeDeviceBuffer(&nb->atdat->eElec);
-                freeDeviceBuffer(&nb->atdat->dvdlLJ);
-                freeDeviceBuffer(&nb->atdat->dvdlElec);
-                freeDeviceBuffer(&nb->atdat->fShift);
-                freeDeviceBuffer(&nb->atdat->shiftVec);
+            /* Free atdat */
+            freeDeviceBuffer(&nb->atdat->xq);
+            freeDeviceBuffer(&nb->atdat->f);
+            freeDeviceBuffer(&nb->atdat->eLJ);
+            freeDeviceBuffer(&nb->atdat->eElec);
+            freeDeviceBuffer(&nb->atdat->dvdlLJ);
+            freeDeviceBuffer(&nb->atdat->dvdlElec);
+            freeDeviceBuffer(&nb->atdat->fShift);
+            freeDeviceBuffer(&nb->atdat->shiftVec);
 
-                freeDeviceBuffer(&nb->atdat->q4);
-                freeDeviceBuffer(&nb->atdat->atomTypes4);
-                freeDeviceBuffer(&nb->nbparam->nbfp);
+            freeDeviceBuffer(&nb->atdat->q4);
+            freeDeviceBuffer(&nb->atdat->atomTypes4);
+            freeDeviceBuffer(&nb->nbparam->nbfp);
 
-                delete nb->atdat;
-                delete nb->nbparam;
-                delete nb;
+            delete nb->atdat;
+            delete nb->nbparam;
+            delete nb;
 
-                checkOutput(&checker_, output);
-            }
+            checkOutput(&checker_, output);
         }
     }
 };
