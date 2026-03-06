@@ -166,6 +166,8 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
     // thread Id within a warp
     int tid_in_warp = tid % warp_size;
 
+    int block_size = blockDim.x * blockDim.y * blockDim.z;
+
 #    ifndef LJ_COMB
 #    else
     float2 ljcp_iAB[2], ljcp_jAB[2];
@@ -213,15 +215,18 @@ __global__ void NB_FOREIGN_FEP_KERNEL_FUNC_NAME(nbfe_foreign_kernel, _V_cuda)(co
     float*                  sm_lambdaCoul = sm_dynamicShmem;
     float*                  sm_lambdaVdw  = sm_lambdaCoul + nLambda + 1;
 
-    if (tid == 0)
+    for (int idx = tid; idx <= nLambda; idx += block_size)
     {
-        sm_lambdaCoul[0] = nbparam.lambdaCoul;
-        sm_lambdaVdw[0]  = nbparam.lambdaVdw;
-    }
-    else if (tid <= nLambda)
-    {
-        sm_lambdaCoul[tid] = gm_allLambdaCoul[tid - 1];
-        sm_lambdaVdw[tid]  = gm_allLambdaVdw[tid - 1];
+        if (idx == 0)
+        {
+            sm_lambdaCoul[0] = nbparam.lambdaCoul;
+            sm_lambdaVdw[0]  = nbparam.lambdaVdw;
+        }
+        else
+        {
+            sm_lambdaCoul[idx] = gm_allLambdaCoul[idx - 1];
+            sm_lambdaVdw[idx]  = gm_allLambdaVdw[idx - 1];
+        }
     }
 
     __syncthreads();

@@ -1,7 +1,7 @@
 GROMACS 2026.1 release notes
 ----------------------------
 
-This version was released on TODO. These release notes
+This version was released on March 6th, 2026. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2026.0 version, to fix known issues. It also incorporates all
 fixes made in version 2025.4 and earlier, which you can find described
@@ -32,14 +32,6 @@ a segfault would occur on program exit. This did not affect results, but should 
 
 :issue:`5568`
 
-The new AWH histogram tolerance parameter was not printed to the log file
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-Also added it to ``gmx dump``.
-
-:issue:`5574`
-Running perturbed non-bonded interactions on a PU could cause crashes
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Running perturbed non-bonded interactions on a GPU could cause crashes
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -50,6 +42,32 @@ crash within a few steps.
 
 :issue:`5548`
 
+Incorrect results with perturbed non-bonded interactions on a GPU and many lambda states
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running perturbed non-bonded interactions on the GPU, the delta-H values,
+and thus free-energy differences, would be incorrect when more than 64 lambda
+states were used.
+
+:issue:`5551`
+
+The new AWH histogram tolerance parameter was not printed to the log file
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Also added it to ``gmx dump``.
+
+:issue:`5574`
+
+Ensemble averaging of orientation restraints gave a fatal error
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5552`
+
+PME tuning never activated with a GPU and a single MPI rank
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5578`
+       
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

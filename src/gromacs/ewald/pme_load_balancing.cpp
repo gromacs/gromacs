@@ -308,7 +308,7 @@ private:
     double cyclesCounter_; /**< step cycle counter cumulative cycles */
     double startTime_; /**< time stamp when the balancing was started on the main rank (relative to the UNIX epoch start).*/
 
-    gmx_domdec_t& dd_; /**< Reference to the domain decomposition object */
+    gmx_domdec_t* dd_; /**< Pointer to the domain decomposition object, can be nullptr */
 
     const MDLogger& mdlog_; /**< Reference to the mdlogger */
 };
@@ -320,7 +320,7 @@ bool pmeTuningIsSupported(const CoulombInteractionType coulombInteractionType,
     // Note that we would like to quit with an error message when the user actively requested PME tuning
     // but we do not support. But currently -tunepme is a boolean option with default true; we would need auto.
     return usingPme(coulombInteractionType) && !reproducibilityRequested
-           && (simulationWork.useCpuNonbonded || simulationWork.haveSeparatePmeRank)
+           && (simulationWork.useGpuNonbonded || simulationWork.haveSeparatePmeRank)
            && !simulationWork.useGpuPmeDecomposition;
 }
 
@@ -370,7 +370,7 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
     isActive_(true),
     cutoffs_(getCutoffs(ir, box, ic, nbv)),
     ir_(ir),
-    dd_(*dd),
+    dd_(dd),
     mdlog_(mdlog)
 {
     // Check that the coloumbtype and task assignment conditions are fulfilled
@@ -433,11 +433,10 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
                         "PME-PP balancing.");
     }
 
-    /* With GPUs and no separate PME ranks we can't measure the PP/PME
-     * imbalance, so we start balancing right away.
-     * Otherwise we only start balancing after we observe imbalance.
+    /* We always wait at least some nstlist cycles before starting balancing
+     * to avoid the effect of new memory allocations/access on timings.
      */
-    isInBalancingPhase_ = (isActive_ && (useGpuForNonbondeds_ && !haveSepPMERanks_));
+    isInBalancingPhase_ = false;
 
     stepRelStop_ = PMETunePeriod * ir_.nstlist;
 
@@ -485,7 +484,7 @@ bool PmeLoadBalancing::Impl::increaseCutoff()
 
     set.pmedata = nullptr;
 
-    const NumPmeDomains numPmeDomains = getNumPmeDomains(&dd_);
+    const NumPmeDomains numPmeDomains = (dd_ ? getNumPmeDomains(dd_) : NumPmeDomains{ 1, 1 });
 
     const pme_setup_t& currentSetup = setups_[currentSetup_];
 
@@ -701,7 +700,7 @@ static void applySetup(pme_setup_t*         setup,
 
     gpu_pme_loadbal_update_param(nbv, *ic);
 
-    if (dd->hasPmeDuty)
+    if (dd == nullptr || dd->hasPmeDuty)
     {
         /* FIXME:
          * CPU PME keeps a list of allocated pmedata's, that's why setups_[currentSetup_].pmedata is not always nullptr.
@@ -803,11 +802,11 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
                                      gmx_pme_t**          pmedata,
                                      int64_t              step)
 {
-    if (dd_.nnodes > 1)
+    if (dd_ && dd_->nnodes > 1)
     {
         // Average the cycles over all PP ranks
-        dd_.mpiComm().sumReduce(1, &cycles);
-        cycles /= dd_.mpiComm().size();
+        dd_->mpiComm().sumReduce(1, &cycles);
+        cycles /= dd_->mpiComm().size();
     }
 
     setups_[currentSetup_].count++;
@@ -832,7 +831,7 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
     {
         fastestSetup_ = currentSetup_;
 
-        if (haveDDAtomOrdering(&dd_))
+        if (haveDDAtomOrdering(dd_))
         {
             /* We found a new fastest setting, ensure that with subsequent
              * shorter cut-off's the dynamic load balancing does not make
@@ -846,7 +845,7 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
              * better overal performance can be obtained with a slightly
              * shorter cut-off and better DD load balancing.
              */
-            set_dd_dlb_max_cutoff(&dd_, setups_[fastestSetup_].rlistOuter);
+            set_dd_dlb_max_cutoff(dd_, setups_[fastestSetup_].rlistOuter);
         }
     }
     const double cyclesFastest = setups_[fastestSetup_].cycles;
@@ -907,11 +906,11 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
             {
                 currentSetup_++;
 
-                if (haveDDAtomOrdering(&dd_))
+                if (haveDDAtomOrdering(dd_))
                 {
                     const bool checkGpuDdLimitation = true;
                     haveNextSetup                   = change_dd_cutoff(
-                            &dd_, box, x, setups_[currentSetup_].rlistOuter, checkGpuDdLimitation);
+                            dd_, box, x, setups_[currentSetup_].rlistOuter, checkGpuDdLimitation);
                     if (!haveNextSetup)
                     {
                         /* Failed: do not use this setup */
@@ -983,12 +982,12 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
         }
     }
 
-    if (haveDDAtomOrdering(&dd_) && stage_ > 0)
+    if (haveDDAtomOrdering(dd_) && stage_ > 0)
     {
         const bool checkGpuDdLimitation = true;
 
         const bool cutoffIsAllowed =
-                change_dd_cutoff(&dd_, box, x, setups_[currentSetup_].rlistOuter, checkGpuDdLimitation);
+                change_dd_cutoff(dd_, box, x, setups_[currentSetup_].rlistOuter, checkGpuDdLimitation);
         if (!cutoffIsAllowed)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
@@ -1026,7 +1025,7 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
     pme_setup_t& setup = setups_[currentSetup_];
 
     /* Change the Coulomb cut-off and the PME grid */
-    applySetup(&setup, setups_[0].pmedata, ir_, ic, nbv, &dd_);
+    applySetup(&setup, setups_[0].pmedata, ir_, ic, nbv, dd_);
 
     if (!haveSepPMERanks_)
     {
@@ -1076,13 +1075,13 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
      * We also want to skip a number of steps and seconds while
      * the CPU and GPU, when used, performance stabilizes.
      */
-    if (haveDDAtomOrdering(&dd_) && DDMAIN(&dd_))
+    if (dd_ == nullptr || dd_->nnodes == 1 || (haveDDAtomOrdering(dd_) && DDMAIN(dd_)))
     {
         startupTimeDelayElapsed_ = (gmx_gettime() - startTime_ < c_startupTimeDelay);
     }
-    if (haveDDAtomOrdering(&dd_))
+    if (haveDDAtomOrdering(dd_))
     {
-        dd_bcast(&dd_, sizeof(bool), &startupTimeDelayElapsed_);
+        dd_bcast(dd_, sizeof(bool), &startupTimeDelayElapsed_);
     }
 
     if (cyclesNumber_ == 0 || step_rel < c_numFirstTuningIntervalSkip * ir_.nstlist || startupTimeDelayElapsed_)
@@ -1096,12 +1095,21 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
         gmx_incons("pme_loadbal_do called at an interval != nstlist");
     }
 
+    if (!isInBalancingPhase_)
+    {
+        /* With GPUs and no separate PME ranks we can't measure the PP/PME
+         * imbalance, so we start balancing right away.
+         * Otherwise we only start balancing after we observe imbalance.
+         */
+        isInBalancingPhase_ = (useGpuForNonbondeds_ && !haveSepPMERanks_);
+    }
+
     /* PME grid + cut-off optimization with GPUs or PME ranks */
     if (!isInBalancingPhase_ && haveSepPMERanks_)
     {
         if (triggerOnDLB_)
         {
-            isInBalancingPhase_ = dd_dlb_is_on(&dd_);
+            isInBalancingPhase_ = dd_dlb_is_on(dd_);
         }
         /* We should ignore the first timing to avoid timing allocation
          * overhead. And since the PME load balancing is called just
@@ -1111,8 +1119,8 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
          */
         else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir_.nstlist)
         {
-            GMX_ASSERT(haveDDAtomOrdering(&dd_), "Domain decomposition should be active here");
-            if (DDMAIN(&dd_))
+            GMX_ASSERT(haveDDAtomOrdering(dd_), "Domain decomposition should be active here");
+            if (DDMAIN(dd_))
             {
                 /* If PME rank load is too high, start tuning. If
                    PME-PP direct GPU communication is active,
@@ -1120,9 +1128,9 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
                    unreliable due to CPU-GPU asynchronicity in codepath */
                 isInBalancingPhase_ = useGpuPmePpCommunication_
                                               ? true
-                                              : (dd_pme_f_ratio(&dd_) >= loadBalanceTriggerFactor);
+                                              : (dd_pme_f_ratio(dd_) >= loadBalanceTriggerFactor);
             }
-            dd_bcast(&dd_, sizeof(bool), &isInBalancingPhase_);
+            dd_bcast(dd_, sizeof(bool), &isInBalancingPhase_);
         }
 
         isActive_ = (isInBalancingPhase_ || step_rel <= stepRelStop_);
@@ -1141,10 +1149,10 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
     {
         isInBalancingPhase_ = false;
 
-        if (haveDDAtomOrdering(&dd_) && dd_dlb_is_locked(&dd_))
+        if (haveDDAtomOrdering(dd_) && dd_dlb_is_locked(dd_))
         {
             /* Unlock the DLB=auto, DLB is allowed to activate */
-            dd_dlb_unlock(&dd_);
+            dd_dlb_unlock(dd_);
             GMX_LOG(mdlog_.warning)
                     .asParagraph()
                     .appendText("NOTE: DLB can now turn on, when beneficial");
@@ -1162,14 +1170,14 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
             isActive_ = false;
         }
 
-        if (haveDDAtomOrdering(&dd_))
+        if (haveDDAtomOrdering(dd_))
         {
             /* Set the cut-off limit to the final selected cut-off,
              * so we don't have artificial DLB limits.
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(&dd_, fr->nbv->pairlistOuterRadius());
+            set_dd_dlb_max_cutoff(dd_, fr->nbv->pairlistOuterRadius());
         }
     }
 
@@ -1198,10 +1206,10 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
         isActive_ = false;
     }
 
-    if (!isActive_ && haveDDAtomOrdering(&dd_) && dd_dlb_is_locked(&dd_))
+    if (!isActive_ && haveDDAtomOrdering(dd_) && dd_dlb_is_locked(dd_))
     {
         /* Make sure DLB is allowed when we deactivate PME tuning */
-        dd_dlb_unlock(&dd_);
+        dd_dlb_unlock(dd_);
         GMX_LOG(mdlog_.warning)
                 .asParagraph()
                 .appendText("NOTE: DLB can now turn on, when beneficial");
