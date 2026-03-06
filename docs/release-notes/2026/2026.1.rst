@@ -58,6 +58,11 @@ Also added it to ``gmx dump``.
 
 :issue:`5574`
 
+Ensemble averaging of orientation restraints gave a fatal error
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5552`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

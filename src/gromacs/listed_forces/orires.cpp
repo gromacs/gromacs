@@ -286,6 +286,10 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
             refCoord -= com;
         }
     }
+    else
+    {
+        referenceCoordinates_.resize(fitMasses_.size(), { 0.0_real, 0.0_real, 0.0_real });
+    }
 
     const size_t numFitAtoms = referenceCoordinates_.size();
     xTmp_.resize(numFitAtoms);
