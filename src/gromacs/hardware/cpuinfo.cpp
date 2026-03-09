@@ -1053,7 +1053,7 @@ CpuInfo CpuInfo::detect()
         result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
         result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
 #endif
-#if (defined __arch64__ || defined _M_ARM64) && defined __ARM_FEATURE_SVE
+#if (defined __aarch64__ || defined _M_ARM64) && defined __ARM_FEATURE_SVE
         result.features_.insert(Feature::Arm_Sve);
 #endif
 
