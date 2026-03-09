@@ -380,7 +380,7 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
     do
     {
         // local variable for lambda capturing
-        const int step = step_;
+        const Step step = step_;
 
         // register pre-step (task queue is local, so no problem with `this`)
         registerRunFunction([this, step, time]() { preStep(step, time); });
