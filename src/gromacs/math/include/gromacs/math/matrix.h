@@ -69,13 +69,6 @@ public:
     //! Default constructor
     constexpr BasicMatrix3x3() noexcept : storage_{ 0, 0, 0, 0, 0, 0, 0, 0, 0 } {}
 
-    //! Constructor for a matrix with all entries equal
-    constexpr BasicMatrix3x3(const ElementType& initValue) noexcept :
-        storage_{ initValue, initValue, initValue, initValue, initValue,
-                  initValue, initValue, initValue, initValue }
-    {
-    }
-
     //! Constructor from a 9 element std::array
     constexpr BasicMatrix3x3(const std::array<ElementType, matrixSize_>& array) noexcept :
         storage_{ array }

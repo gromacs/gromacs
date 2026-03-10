@@ -67,11 +67,22 @@ namespace
 class MatrixTest : public ::testing::Test
 {
 public:
-    MatrixTest() { matrix_ = { testNumber_ - 1 }; }
+    MatrixTest() :
+        matrix_{ { testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1,
+                   testNumber_ - 1 } }
+    {
+    }
 
 protected:
     Matrix3x3                                      matrix_;
-    const real                                     testNumber_     = 42;
+    static constexpr real                          testNumber_     = 42;
     static const size_t                            matrixSize_     = DIM * DIM;
     static constexpr std::array<real, matrixSize_> array123456789_ = { 1., 2., 3., 4., 5.,
                                                                        6., 7., 8., 9. };
@@ -180,20 +191,6 @@ TEST_F(MatrixTest, canSetStaticallyFromList)
     EXPECT_EQ(newMatrix(ZZ, XX), 7.);
     EXPECT_EQ(newMatrix(ZZ, YY), 8.);
     EXPECT_EQ(newMatrix(ZZ, ZZ), 9.);
-}
-
-TEST_F(MatrixTest, canSetStaticallySingleValue1)
-{
-    Matrix3x3 newMatrix = { 1. };
-    EXPECT_EQ(newMatrix(XX, XX), 1.);
-    EXPECT_EQ(newMatrix(XX, YY), 1.);
-    EXPECT_EQ(newMatrix(XX, ZZ), 1.);
-    EXPECT_EQ(newMatrix(YY, XX), 1.);
-    EXPECT_EQ(newMatrix(YY, YY), 1.);
-    EXPECT_EQ(newMatrix(YY, ZZ), 1.);
-    EXPECT_EQ(newMatrix(ZZ, XX), 1.);
-    EXPECT_EQ(newMatrix(ZZ, YY), 1.);
-    EXPECT_EQ(newMatrix(ZZ, ZZ), 1.);
 }
 
 TEST_F(MatrixTest, canConstructAndFill)

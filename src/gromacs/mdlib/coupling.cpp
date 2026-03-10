@@ -732,7 +732,7 @@ static Matrix3x3 productOfInvBoxAndBoxMatrix(const PressureCouplingOptions& pres
     else
     {
         // Compute only the diagonal elements to avoid non-zero off-diagonal due to rounding
-        M = { 0._real };
+        M.clear();
         for (int d = 0; d < DIM; d++)
         {
             M(d, d) = invbox(d, d) * box(d, d);
@@ -989,7 +989,7 @@ static void calculateScalingMatrixImpl(const PressureCouplingOptions& pressureCo
             xy_pressure += pres[d][d] / (DIM - 1);
         }
     }
-    *mu = gmx::Matrix3x3{ 0._real };
+    mu->clear();
     calculateScalingMatrixImplDetail<pressureCouplingType>(pressureCouplingOptions,
                                                            ld_seed,
                                                            ensembleTemperature,
