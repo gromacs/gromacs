@@ -145,7 +145,7 @@ static void print_ddzone(FILE* fp, int d, int i, int j, gmx_ddzone_t* zone)
             zone->min0,
             zone->max1,
             zone->mch0,
-            zone->mch0,
+            zone->mch1,
             zone->p1_0,
             zone->p1_1);
 }
