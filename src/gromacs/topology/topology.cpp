@@ -288,19 +288,19 @@ static void pr_groups(FILE* fp, int indent, const SimulationGroups& groups, gmx_
     fprintf(fp, "groups          ");
     for (const auto group : gmx::EnumerationWrapper<SimulationAtomGroupType>{})
     {
-        printf(" %5.5s", shortName(group));
+        fprintf(fp, " %5.5s", shortName(group));
     }
-    printf("\n");
+    fprintf(fp, "\n");
 
     pr_indent(fp, indent);
     fprintf(fp, "allocated       ");
     int nat_max = 0;
     for (auto group : keysOf(groups.groups))
     {
-        printf(" %5d", groups.numberOfGroupNumbers(group));
+        fprintf(fp, " %5d", groups.numberOfGroupNumbers(group));
         nat_max = std::max(nat_max, groups.numberOfGroupNumbers(group));
     }
-    printf("\n");
+    fprintf(fp, "\n");
 
     if (nat_max == 0)
     {
