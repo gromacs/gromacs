@@ -116,7 +116,7 @@ SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
     nsteps_(-2),
     maxwarn_(0),
     mdpSource_(SimulationRunnerMdpSource::Undefined),
-    fileManager_(*fileManager)
+    fileManager_(fileManager)
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -213,7 +213,7 @@ int SimulationRunner::callGromppOnThisRank(const CommandLine& callerRef)
     }
     else
     {
-        mdpInputFileName = fileManager_.getTemporaryFilePath("input.mdp").string();
+        mdpInputFileName = fileManager_->getTemporaryFilePath("input.mdp").string();
         gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpInputContents_);
     }
 
@@ -328,7 +328,7 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     caller.addOption("-c", groOutputFileName_);
     caller.addOption("-cpo", cptOutputFileName_);
 
-    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state").string());
+    caller.addOption("-deffnm", fileManager_->getTemporaryFilePath("state").string());
 
     if (nsteps_ > -2)
     {

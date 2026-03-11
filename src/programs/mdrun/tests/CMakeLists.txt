@@ -108,6 +108,7 @@ gmx_add_gtest_executable(${exename} MPI
         freezegroups.cpp
         constantacceleration.cpp
         boxdeformation.cpp
+        orires.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
     )
@@ -121,7 +122,6 @@ if (TEST MdrunTestsTwoRanks AND TEST MdrunTestsOneRank)
     set_tests_properties(MdrunTestsTwoRanks PROPERTIES DEPENDS MdrunTestsOneRank)
 endif()
 
-# The orires test is separate, as it supports only a single MPI rank
 set(testname "MdrunSingleRankAlgorithmsTests")
 set(exename "mdrun-single-rank-algorithms-test")
 
@@ -129,7 +129,6 @@ gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
         dispersion_correction.cpp
         ewaldsurfaceterm.cpp
-        orires.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
     )

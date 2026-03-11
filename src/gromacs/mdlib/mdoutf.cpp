@@ -511,8 +511,8 @@ static void write_checkpoint(const char*                     fn,
         catch (gmx::FileIOError const&)
         {
             // In this case we can be more helpful than the generic message from gmx_file_rename
-            GMX_THROW(gmx::FileIOError(
-                    "Cannot rename checkpoint file; maybe you are out of disk space?"));
+            GMX_THROW(gmx::FileIOError(gmx::formatString(
+                    "Cannot rename checkpoint file from %s to %s; maybe you are out of disk space?", fntemp, fn)));
         }
     }
 #endif /* GMX_NO_RENAME */
