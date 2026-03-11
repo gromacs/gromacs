@@ -110,7 +110,7 @@ static uint64_t makeRandomSeedInternal(GeneratorType& gen)
     uint64_t result = static_cast<uint64_t>(gen());
     // This is needed so that compiler understands that what follows is a dead branch
     // and not complains about shift count larger than number of bits in the result.
-    constexpr std::size_t shiftCount = (resultBits < numBitsInRandomNumber) ? numBitsInRandomNumber : 0;
+    constexpr std::size_t shiftCount = (resultBits > numBitsInRandomNumber) ? numBitsInRandomNumber : 0;
     for (std::size_t bits = numBitsInRandomNumber; bits < resultBits; bits += numBitsInRandomNumber)
     {
         result = (result << shiftCount) | static_cast<uint64_t>(gen());
