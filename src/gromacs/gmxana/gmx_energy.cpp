@@ -141,16 +141,15 @@ static void chomp(char* buf)
     }
 }
 
-static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
+static int* select_by_name(gmx::ArrayRef<const gmx_enxnm_t> nm, int* nset)
 {
     gmx_bool*   bE;
     int         k, kk, j, i, nmatch, nind, nss;
     int*        set;
     gmx_bool    bEOF, bVerbose = TRUE, bLong = FALSE;
-    char *      ptr, buf[STRLEN];
-    const char* fm4   = "%3d  %-14s";
-    const char* fm2   = "%3d  %-34s";
-    char**      newnm = nullptr;
+    char        buf[STRLEN];
+    const char* fm4 = "%3d  %-14s";
+    const char* fm2 = "%3d  %-34s";
 
     if ((std::getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
@@ -163,15 +162,18 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
     fprintf(stderr, "End your selection with an empty line or a zero.\n");
     fprintf(stderr, "-------------------------------------------------------------------\n");
 
-    snew(newnm, nre);
+    const int nre = gmx::ssize(nm);
+
+    std::vector<std::string> newnm(nre);
     j = 0;
     for (k = 0; k < nre; k++)
     {
-        newnm[k] = gmx_strdup(nm[k].name);
+        newnm[k] = nm[k].name;
         /* Insert dashes in all the names */
-        while ((ptr = std::strchr(newnm[k], ' ')) != nullptr)
+        size_t pos;
+        while ((pos = newnm[k].find(' ')) != std::string::npos)
         {
-            *ptr = '-';
+            newnm[k][pos] = '-';
         }
         if (bVerbose)
         {
@@ -184,7 +186,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
                 bLong = FALSE;
                 for (kk = k; kk < k + 4; kk++)
                 {
-                    if (kk < nre && std::strlen(nm[kk].name) > 14)
+                    if (kk < nre && nm[kk].name.size() > 14)
                     {
                         bLong = TRUE;
                     }
@@ -196,7 +198,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
             }
             if (!bLong)
             {
-                fprintf(stderr, fm4, k + 1, newnm[k]);
+                fprintf(stderr, fm4, k + 1, newnm[k].c_str());
                 j++;
                 if (j == 4)
                 {
@@ -205,7 +207,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
             }
             else
             {
-                fprintf(stderr, fm2, k + 1, newnm[k]);
+                fprintf(stderr, fm2, k + 1, newnm[k].c_str());
                 j++;
                 if (j == 2)
                 {
@@ -234,7 +236,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
         bEOF = (std::strlen(buf) == 0);
         if (!bEOF)
         {
-            ptr = buf;
+            char* ptr = buf;
             do
             {
                 if (!bEOF)
@@ -243,7 +245,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
                     nmatch = 0;
                     for (nind = 0; nind < nre; nind++)
                     {
-                        if (gmx_strcasecmp(newnm[nind], ptr) == 0)
+                        if (gmx_strcasecmp(newnm[nind].c_str(), ptr) == 0)
                         {
                             bE[nind] = TRUE;
                             nmatch++;
@@ -276,7 +278,7 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
                             nmatch = 0;
                             for (nind = 0; nind < nre; nind++)
                             {
-                                if (gmx_strncasecmp(newnm[nind], ptr, i) == 0)
+                                if (gmx_strncasecmp(newnm[nind].c_str(), ptr, i) == 0)
                                 {
                                     bE[nind] = TRUE;
                                     nmatch++;
@@ -313,12 +315,6 @@ static int* select_by_name(int nre, gmx_enxnm_t* nm, int* nset)
     {
         gmx_fatal(FARGS, "No energy terms selected");
     }
-
-    for (i = 0; (i < nre); i++)
-    {
-        sfree(newnm[i]);
-    }
-    sfree(newnm);
 
     return set;
 }
@@ -945,7 +941,7 @@ static void analyse_ener(gmx_bool                         bCorr,
                          const int                        set[],
                          const gmx_bool*                  bIsEner,
                          gmx::ArrayRef<const std::string> leg,
-                         gmx_enxnm_t*                     enm,
+                         gmx::ArrayRef<const gmx_enxnm_t> enm,
                          real                             Vaver,
                          real                             ezero,
                          int                              nbmin,
@@ -1121,7 +1117,7 @@ static void analyse_ener(gmx_bool                         bCorr,
                 fprintf(stdout, "  %10g", fee[i]);
             }
 
-            fprintf(stdout, "  (%s)\n", enm[set[i]].unit);
+            fprintf(stdout, "  (%s)\n", enm[set[i]].unit.c_str());
 
             if (bFluct)
             {
@@ -1142,7 +1138,7 @@ static void analyse_ener(gmx_bool                         bCorr,
                     eebuf,
                     "--",
                     totaldrift / nmol,
-                    enm[set[0]].unit);
+                    enm[set[0]].unit.c_str());
             /* pr_aver,pr_stddev,a,totaldrift */
             if (bFee)
             {
@@ -1325,15 +1321,13 @@ static void fec(const char*                      ene2fn,
     real                       aver, beta;
     real**                     eneset2;
     double                     dE, sum;
-    gmx_enxnm_t*               enm = nullptr;
     t_enxframe*                fr;
     char                       buf[22];
 
     /* read second energy file */
     snew(fr, 1);
-    enm = nullptr;
-    enx = open_enx(ene2fn, "r");
-    do_enxnms(enx, &(fr->nre), &enm);
+    enx                                = open_enx(ene2fn, "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(enx);
 
     snew(eneset2, nset + 1);
     nenergy2  = 0;
@@ -1410,12 +1404,12 @@ static void fec(const char*                      ene2fn,
     beta = 1.0 / (gmx::c_boltz * reftemp);
     for (i = 0; i < nset; i++)
     {
-        if (gmx_strcasecmp(leg[i].c_str(), enm[set[i]].name) != 0)
+        if (gmx_strcasecmp(leg[i].c_str(), enm[set[i]].name.c_str()) != 0)
         {
             fprintf(stderr,
                     "\nWARNING energy set name mismatch %s!=%s\n",
                     leg[i].c_str(),
-                    enm[set[i]].name);
+                    enm[set[i]].name.c_str());
         }
         for (j = 0; j < nenergy; j++)
         {
@@ -1846,16 +1840,15 @@ int gmx_energy(int argc, char* argv[])
                                    "Pres-YY", "Pres-YZ",     "Pres-ZX", "Pres-ZY",
                                    "Pres-ZZ", "Temperature", "Volume",  "Pressure" };
 
-    FILE*        out     = nullptr;
-    FILE*        fp_dhdl = nullptr;
-    ener_file_t  fp;
-    int          timecheck = 0;
-    enerdata_t   edat;
-    gmx_enxnm_t* enm = nullptr;
-    t_enxframe * frame, *fr = nullptr;
-    int          cur = 0;
+    FILE*       out     = nullptr;
+    FILE*       fp_dhdl = nullptr;
+    ener_file_t fp;
+    int         timecheck = 0;
+    enerdata_t  edat;
+    t_enxframe *frame, *fr = nullptr;
+    int         cur = 0;
 #define NEXT (1 - cur)
-    int                      nre, nfr;
+    int                      nfr;
     int64_t                  start_step;
     real                     start_t;
     gmx_bool                 bDHDL;
@@ -1896,8 +1889,9 @@ int gmx_energy(int argc, char* argv[])
     nset = 0;
 
     snew(frame, 2);
-    fp = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
-    do_enxnms(fp, &nre, &enm);
+    fp                                 = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(fp);
+    const int                      nre = gmx::ssize(enm);
 
     Vaver = -1;
 
@@ -1920,7 +1914,7 @@ int gmx_energy(int argc, char* argv[])
             {
                 for (i = 0; i < nre; i++)
                 {
-                    if (std::strstr(enm[i].name, setnm[j]))
+                    if (std::strstr(enm[i].name.c_str(), setnm[j]))
                     {
                         set[j] = i;
                         break;
@@ -1951,15 +1945,15 @@ int gmx_energy(int argc, char* argv[])
         }
         else
         {
-            set = select_by_name(nre, enm, &nset);
+            set = select_by_name(enm, &nset);
         }
         /* Print all the different units once */
-        sprintf(buf, "(%s)", enm[set[0]].unit);
+        sprintf(buf, "(%s)", enm[set[0]].unit.c_str());
         for (i = 1; i < nset; i++)
         {
             for (j = 0; j < i; j++)
             {
-                if (std::strcmp(enm[set[i]].unit, enm[set[j]].unit) == 0)
+                if (enm[set[i]].unit == enm[set[j]].unit)
                 {
                     break;
                 }
@@ -1967,7 +1961,7 @@ int gmx_energy(int argc, char* argv[])
             if (j == i)
             {
                 std::strcat(buf, ", (");
-                std::strcat(buf, enm[set[i]].unit);
+                std::strcat(buf, enm[set[i]].unit.c_str());
                 std::strcat(buf, ")");
             }
         }
@@ -1996,7 +1990,7 @@ int gmx_energy(int argc, char* argv[])
             }
             bIsEner[i] = bIsEner[i] || gmx::equalCaseInsensitive(pvEnergyFieldName, leg[i]);
             bIsEner[i] = bIsEner[i] || gmx::equalCaseInsensitive(enthalpyEnergyFieldName, leg[i]);
-            for (const char* name : virialEnergyFieldNames)
+            for (const std::string& name : virialEnergyFieldNames)
             {
                 bIsEner[i] = bIsEner[i] || gmx::equalCaseInsensitive(name, leg[i]);
             }
@@ -2280,7 +2274,6 @@ int gmx_energy(int argc, char* argv[])
     free_enxframe(&frame[0]);
     free_enxframe(&frame[1]);
     sfree(frame);
-    free_enxnms(nre, enm);
     sfree(ppa);
     sfree(set);
     sfree(bIsEner);

@@ -3041,8 +3041,6 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
 {
     ener_file_t    fp;
     t_enxframe*    fr;
-    int            nre;
-    gmx_enxnm_t*   enm           = nullptr;
     double         first_t       = -1;
     double         last_t        = -1;
     samples_t**    samples_rawdh = nullptr; /* contains samples for raw delta_h  */
@@ -3053,8 +3051,8 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
     int            nsamples = 0;
     lambda_vec_t   start_lambda;
 
-    fp = open_enx(fn, "r");
-    do_enxnms(fp, &nre, &enm);
+    fp                                 = open_enx(fn, "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(fp);
     snew(fr, 1);
 
     snew(native_lambda, 1);

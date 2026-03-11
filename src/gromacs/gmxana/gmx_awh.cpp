@@ -548,9 +548,7 @@ int gmx_awh(int argc, char* argv[])
 
     ener_file_t       fp;
     t_inputrec        ir;
-    gmx_enxnm_t*      enm = nullptr;
     t_enxframe*       frame;
-    int               nre;
     gmx_output_env_t* oenv;
 
     t_filenm  fnm[] = { { efEDR, "-f", nullptr, ffREAD },
@@ -575,8 +573,8 @@ int gmx_awh(int argc, char* argv[])
     }
 
     snew(frame, 1);
-    fp = open_enx(ftp2fn(efEDR, nfile, fnm), "r");
-    do_enxnms(fp, &nre, &enm);
+    fp                           = open_enx(ftp2fn(efEDR, nfile, fnm), "r");
+    std::vector<gmx_enxnm_t> enm = readEnxNames(fp);
 
     /* We just need the AWH parameters from inputrec. These are used to initialize
        the AWH reader when we have a frame to read later on. */

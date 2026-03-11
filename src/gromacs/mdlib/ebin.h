@@ -46,18 +46,18 @@
 #include <cstdint>
 #include <cstdio>
 
+#include <vector>
+
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-namespace gmx
-{
-template<typename>
-class ArrayRef;
-}
+class energyhistory_t;
 
 /* \brief Running averaging structure ('energy bin') to store thermodynamic values.
  *
@@ -66,24 +66,128 @@ class ArrayRef;
  *
  * \todo Clean this structure from unused values.
  */
-struct t_ebin
+class t_ebin
 {
+public:
+    //! Holds instantaneous and accumulated energies
+    class EnergyAccumulation
+    {
+        friend t_ebin;
+
+    public:
+        //! Returns the period in MD steps over which we accumulated data
+        int64_t numSteps() const { return numSteps_; }
+
+        //! Returns the number of values in the sums
+        int64_t sumCount() const { return sumCount_; }
+
+        //! Returns the list of current energy values and sums
+        gmx::ArrayRef<const t_energy> energies() const { return energies_; }
+
+        /*! \brief Returns the average taken over \p sumCount() values
+         *
+         * /note Should only be called when \p sumCount() > 0.
+         */
+        double average(const int index) const
+        {
+            GMX_ASSERT(sumCount_ > 0, "Sum cannot be empty");
+
+            return energies_[index].esum / sumCount_;
+        }
+
+    private:
+        //! Number of steps used for sum (for energy history)
+        int64_t numSteps_ = 0;
+        //! Number of values added to the sum so far
+        int64_t sumCount_ = 0;
+        //! Term values: each structure stores current, running average and sum.
+        std::vector<t_energy> energies_;
+    };
+
+    /*! \brief Create space for the extra thermodynamic term(s) and register its(their) name(s).
+     *
+     * \param[in] enm    Names of the terms.
+     * \param[in] unit   Units.
+     *
+     * \returns          A serial number (index) for the newly allocated terms.
+     */
+    int getSpace(gmx::ArrayRef<const std::string> enm, const char* unit);
+
+    /*! \brief Add current value of the thermodynamic term to the bin(s).
+     *
+     * Add a real (eg. energies, box-lengths, pressures) to the at position specified by \c
+     * entryIndex. If bSum is TRUE then the reals are also added to the sum and sum of squares.
+     *
+     * \param[in] entryIndex  Internal index of the term(s) to add.
+     * \param[in] ener        Value of thermodynamic term
+     * \param[in] accumulate  If the average value should be accumulated for this term.
+     */
+    void addValue(int entryIndex, real ener, bool accumulate);
+
+    /*! \brief Add current value of the thermodynamic term(s) to the bin(s).
+     *
+     * Add nener reals (eg. energies, box-lengths, pressures) to the at position specified by \c
+     * entryIndex. If bSum is TRUE then the reals are also added to the sum and sum of squares.
+     *
+     * \param[in] entryIndex  Internal index of the term(s) to add.
+     * \param[in] nener       Number of the terms to add.
+     * \param[in] ener        Value(s) of thermodynamic term(s) (nener ptc.)
+     * \param[in] accumulate  If the average value should be accumulated for this term(s).
+     */
+    void addValues(int entryIndex, int nener, const real ener[], bool accumulate);
+
+
+    /*! \brief Add values from array to the bins if the matching entry in \c shouldUse is true.
+     *
+     * Caller must ensure that \c shouldUse and \c ener to have the same
+     * size, and that \c eb has enough room for the number of true
+     * entries in \c shouldUse.
+     *
+     * \param[in] entryIndex  Internal index of the term(s).
+     * \param[in] shouldUse   Array of booleans that indicate which terms should be used.
+     * \param[in] ener        Values of thermodinamic terms to add.
+     * \param[in] accumulate  If the average value should be accumulated for these terms.
+     */
+    void addValuesIndexed(int                       entryIndex,
+                          gmx::ArrayRef<const bool> shouldUse,
+                          gmx::ArrayRef<const real> ener,
+                          bool                      accumulate);
+
+    /*! \brief Increase the counter for the sums by 1.
+     *
+     * This routine should be called after all add_ebin calls for this step.
+     *
+     * \param[in] increaseSums  If the sums counters should be increased as well.
+     */
+    void incrementCount(bool increaseSums);
+
+    //! Reset the average and fluctuation sums.
+    void resetSums();
+
+    //! Returns the number of different energy terms
+    int numTerms() const { return nener_; }
+
+    //! Returns a list of the names and units of the terms
+    gmx::ArrayRef<const gmx_enxnm_t> names() const { return enm_; }
+
+    //! Returns a reference to the local accumulation between energy output steps
+    const EnergyAccumulation& accumulation() const { return accumulation_; }
+
+    //! Returns a reference to the accumulation over the whole simulation
+    const EnergyAccumulation& simulationAccumulation() const { return simulationAccumulation_; }
+
+    //! Restores the state from history
+    void restoreFromEnergyHistory(const energyhistory_t& enerhist);
+
+private:
     //! Number of thermodynamic terms
-    int nener;
+    int nener_ = 0;
     //! Name and units for each term
-    gmx_enxnm_t* enm;
-    //! Number of steps used for sum (for energy history)
-    int64_t nsteps;
-    //! Number of values added to the sum so far
-    int64_t nsum;
-    //! Term values: each structure stores current, running average and sum.
-    t_energy* e;
-    //! Total number of steps saved (for energy history)
-    int64_t nsteps_sim;
-    //! Total number of values added to sum (used when printing average values at the end of the run)
-    int64_t nsum_sim;
-    //! Energy values throughout the entire simulation: structure stores current, average and sum, but only sum value is used to compute averages
-    t_energy* e_sim;
+    std::vector<gmx_enxnm_t> enm_;
+    //! Data for accumulation between energy output steps
+    EnergyAccumulation accumulation_;
+    //! Data for accumulation over the whole simulation
+    EnergyAccumulation simulationAccumulation_;
 };
 
 /* \brief Type of expected output: normal or average.
@@ -94,78 +198,6 @@ enum
     eprAVER,
     eprNR
 };
-
-/*! \brief Create the structure to store thermodynamic properties*/
-t_ebin* mk_ebin();
-
-/*! \brief Destroy the \c eb structure.
- *
- * \param[in,out] eb  Pointer to the structure to destroy.
- */
-void done_ebin(t_ebin* eb);
-
-/*! \brief Create space for the extra thermodynamic term(s) and register its(their) name(s).
- *
- * The enm array must be static, because the contents are not copied, only the pointers.
- *
- * \param[in] eb     Srtucture in which the space for the termodynamic terms shall be created..
- * \param[in] nener  Number of thermodyamic terms to allocate memory for.
- * \param[in] enm    Names of the terms.
- * \param[in] unit   Units.
- *
- * \returns          A serial number (index) for the newly allocated terms.
- */
-int get_ebin_space(t_ebin* eb, int nener, const char* const enm[], const char* unit);
-
-/*! \brief Add current value of the thermodynamic term(s) to the bin(s).
- *
- * Add nener reals (eg. energies, box-lengths, pressures) to the at position specified by \c
- * entryIndex. If bSum is TRUE then the reals are also added to the sum and sum of squares.
- *
- * \param[in] eb          Structure that stores the thermodynamic values.
- * \param[in] entryIndex  Internal index of the term(s) to add.
- * \param[in] nener       Number of the terms to add.
- * \param[in] ener        Value(s) of thermodynamic term(s) (nener ptc.)
- * \param[in] bSum        If the average value should be accumulated for this term(s).
- */
-void add_ebin(t_ebin* eb, int entryIndex, int nener, const real ener[], gmx_bool bSum);
-
-
-/*! \brief Add values from array to the bins if the matching entry in \c shouldUse is true.
- *
- * Caller must ensure that \c shouldUse and \c ener to have the same
- * size, and that \c eb has enough room for the number of true
- * entries in \c shouldUse.
- *
- * \param[in] eb          Structure that stores the thermodynamic values.
- * \param[in] entryIndex  Internal index of the term(s).
- * \param[in] shouldUse   Array of booleans that indicate which terms should be used.
- * \param[in] ener        Values of thermodinamic terms to add.
- * \param[in] bSum        If the average value should be accumulated for these terms.
- */
-void add_ebin_indexed(t_ebin*                   eb,
-                      int                       entryIndex,
-                      gmx::ArrayRef<bool>       shouldUse,
-                      gmx::ArrayRef<const real> ener,
-                      gmx_bool                  bSum);
-
-/*! \brief Increase the counters for the sums.
- *
- * This routine should be called after all add_ebin calls for this step.
- *
- * \param[in] increment   How much counts should be increased
- * \param[in] eb          Structure that stores the thermodynamic values.
- * \param[in] bSum        If the sums counters should be increased as well.
- */
-void ebin_increase_count(int increment, t_ebin* eb, gmx_bool bSum);
-
-
-/*! \brief Reset the average and fluctuation sums.
- *
- * \param[in] eb          Structure that stores the thermodynamic values.
- */
-void reset_ebin_sums(t_ebin* eb);
-
 
 /*! \brief Print the contents of some energy bins.
  *
@@ -188,6 +220,6 @@ void reset_ebin_sums(t_ebin* eb);
  * \param[in] prmode      Print current (eprNORMAL) or average (eprAVER) values.
  * \param[in] bPrHead     If the header should be printed.
  */
-void pr_ebin(FILE* fp, t_ebin* eb, int entryIndex, int nener, int nperline, int prmode, gmx_bool bPrHead);
+void pr_ebin(FILE* fp, const t_ebin& eb, int entryIndex, int nener, int nperline, int prmode, bool bPrHead);
 
 #endif

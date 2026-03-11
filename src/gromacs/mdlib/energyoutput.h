@@ -67,7 +67,7 @@ struct SimulationGroups;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_t;
-struct t_ebin;
+class t_ebin;
 struct t_fcdata;
 struct t_grpopts;
 struct t_inputrec;
@@ -84,11 +84,11 @@ struct MDModulesNotifiers;
 enum class StartingBehavior;
 } // namespace gmx
 
-extern const char* const pvEnergyFieldName;
+extern const std::string pvEnergyFieldName;
 
-extern const char* const enthalpyEnergyFieldName;
+extern const std::string enthalpyEnergyFieldName;
 
-extern const std::array<const char*, 9> virialEnergyFieldNames;
+extern const std::array<std::string, 9> virialEnergyFieldNames;
 
 //! \brief Printed names for intergroup energies
 const char* enumValueToString(NonBondedEnergyTerms enumValue);
@@ -306,7 +306,7 @@ private:
     double delta_t_ = 0;
 
     //! Structure to store energy components and their running averages
-    t_ebin* ebin_ = nullptr;
+    std::unique_ptr<t_ebin> ebin_;
 
     //! Is the periodic box triclinic
     bool bTricl_ = false;

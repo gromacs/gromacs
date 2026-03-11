@@ -349,50 +349,45 @@ static void enx_warning(const char* msg)
     }
 }
 
-static void edr_strings(XDR* xdr, gmx_bool bRead, int file_version, int n, gmx_enxnm_t** nms)
+static void edr_string(XDR* xdr, gmx_bool bRead, std::string* string)
 {
-    int          i;
-    gmx_enxnm_t* nm;
+    if (bRead)
+    {
+        std::array<char, STRLEN + 1> buf;
 
-    if (*nms == nullptr)
-    {
-        snew(*nms, n);
+        char* bufData = buf.data();
+        xdr_string(xdr, &bufData, STRLEN);
+
+        *string = buf.data();
     }
-    for (i = 0; i < n; i++)
+    else
     {
-        nm = &(*nms)[i];
-        if (bRead)
-        {
-            if (nm->name)
-            {
-                sfree(nm->name);
-                nm->name = nullptr;
-            }
-            if (nm->unit)
-            {
-                sfree(nm->unit);
-                nm->unit = nullptr;
-            }
-        }
-        if (!xdr_string(xdr, &(nm->name), STRLEN))
+        const char* cStr = string->c_str();
+        if (!xdr_string(xdr, const_cast<char**>(&cStr), STRLEN))
         {
             gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
-        }
-        if (file_version >= 2)
-        {
-            if (!xdr_string(xdr, &(nm->unit), STRLEN))
-            {
-                gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
-            }
-        }
-        else
-        {
-            nm->unit = gmx_strdup("kJ/mol");
         }
     }
 }
 
-void do_enxnms(ener_file_t ef, int* nre, gmx_enxnm_t** nms)
+static void edr_strings(XDR* xdr, gmx_bool bRead, int file_version, gmx::ArrayRef<gmx_enxnm_t> nms)
+{
+    for (gmx_enxnm_t& nm : nms)
+    {
+        edr_string(xdr, bRead, &nm.name);
+
+        if (file_version >= 2)
+        {
+            edr_string(xdr, bRead, &nm.unit);
+        }
+        else
+        {
+            nm.unit = "kJ/mol";
+        }
+    }
+}
+
+static int do_enxnms_count(ener_file_t ef, int* nre)
 {
     int      magic = -55555;
     XDR*     xdr;
@@ -407,8 +402,7 @@ void do_enxnms(ener_file_t ef, int* nre, gmx_enxnm_t** nms)
         {
             gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
-        *nre = 0;
-        return;
+        return 0;
     }
     if (magic > 0)
     {
@@ -444,7 +438,40 @@ void do_enxnms(ener_file_t ef, int* nre, gmx_enxnm_t** nms)
         fprintf(stderr, "Note: enx file_version %d, software version %d\n", file_version, enx_version);
     }
 
-    edr_strings(xdr, bRead, file_version, *nre, nms);
+    return file_version;
+}
+
+std::vector<gmx_enxnm_t> readEnxNames(ener_file_t ef)
+{
+    constexpr bool bRead = true;
+
+    GMX_RELEASE_ASSERT(gmx_fio_getread(ef->fio) == bRead, "File should be open in read");
+
+    // Keep the compiler happy by initializing
+    int nre = 0;
+
+    const int file_version = do_enxnms_count(ef, &nre);
+
+    std::vector<gmx_enxnm_t> names(nre);
+    edr_strings(gmx_fio_getxdr(ef->fio), bRead, file_version, names);
+
+    return names;
+}
+
+void writeEnxNames(ener_file_t ef, gmx::ArrayRef<const gmx_enxnm_t> nms)
+{
+    constexpr bool bRead = false;
+
+    GMX_RELEASE_ASSERT(gmx_fio_getread(ef->fio) == bRead, "File should be open in write mode");
+
+    int nre = gmx::ssize(nms);
+
+    const int file_version = do_enxnms_count(ef, &nre);
+
+    edr_strings(gmx_fio_getxdr(ef->fio),
+                bRead,
+                file_version,
+                gmx::arrayRefFromArray(const_cast<gmx_enxnm_t*>(nms.data()), nms.size()));
 }
 
 static gmx_bool do_eheader(ener_file_t ef,
@@ -750,19 +777,6 @@ static gmx_bool do_eheader(ener_file_t ef,
     return *bOK;
 }
 
-void free_enxnms(int n, gmx_enxnm_t* nms)
-{
-    int i;
-
-    for (i = 0; i < n; i++)
-    {
-        sfree(nms[i].name);
-        sfree(nms[i].unit);
-    }
-
-    sfree(nms);
-}
-
 void close_enx(ener_file_t ef)
 {
     if (ef == nullptr)
@@ -814,8 +828,6 @@ static gmx_bool empty_file(const std::filesystem::path& fn)
 
 ener_file_t open_enx(const std::filesystem::path& fn, const char* mode)
 {
-    int               nre;
-    gmx_enxnm_t*      nms          = nullptr;
     int               file_version = -1;
     t_enxframe*       fr;
     gmx_bool          bWrongPrecision, bOK = TRUE;
@@ -827,7 +839,8 @@ ener_file_t open_enx(const std::filesystem::path& fn, const char* mode)
     {
         ef->fio = gmx_fio_open(fn, mode);
         gmx_fio_setprecision(ef->fio, FALSE);
-        do_enxnms(ef, &nre, &nms);
+        std::vector<gmx_enxnm_t> nms = readEnxNames(ef);
+        int                      nre = gmx::ssize(nms);
         snew(fr, 1);
         do_eheader(ef, &file_version, fr, nre, &bWrongPrecision, &bOK);
         if (!bOK)
@@ -841,13 +854,13 @@ ener_file_t open_enx(const std::filesystem::path& fn, const char* mode)
                  && (nre * 4 * static_cast<long int>(sizeof(float)) == fr->e_size))))
         {
             fprintf(stderr, "Opened %s as single precision energy file\n", fn.string().c_str());
-            free_enxnms(nre, nms);
         }
         else
         {
             gmx_fio_rewind(ef->fio);
             gmx_fio_setprecision(ef->fio, TRUE);
-            do_enxnms(ef, &nre, &nms);
+            nms = readEnxNames(ef);
+            nre = gmx::ssize(nms);
             do_eheader(ef, &file_version, fr, nre, &bWrongPrecision, &bOK);
             if (!bOK)
             {
@@ -872,7 +885,6 @@ ener_file_t open_enx(const std::filesystem::path& fn, const char* mode)
                               fn.string().c_str());
                 }
             }
-            free_enxnms(nre, nms);
         }
         free_enxframe(fr);
         sfree(fr);
@@ -1148,13 +1160,11 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
     return TRUE;
 }
 
-static real find_energy(const char* name, int nre, gmx_enxnm_t* enm, t_enxframe* fr)
+static real find_energy(const char* name, gmx::ArrayRef<const gmx_enxnm_t> enm, t_enxframe* fr)
 {
-    int i;
-
-    for (i = 0; i < nre; i++)
+    for (int i = 0; i < gmx::ssize(enm); i++)
     {
-        if (std::strcmp(enm[i].name, name) == 0)
+        if (enm[i].name == name)
         {
             return fr->ener[i].e;
         }
@@ -1182,17 +1192,14 @@ void get_enx_state(const std::filesystem::path& fn,
     static const char* baro_nm[] = { "Barostat" };
 
 
-    int          ind0[] = { XX, YY, ZZ, YY, ZZ, ZZ };
-    int          ind1[] = { XX, YY, ZZ, XX, XX, YY };
-    int          nre, nfr, i, j, ni, npcoupl;
-    char         buf[STRLEN];
-    const char*  bufi;
-    gmx_enxnm_t* enm = nullptr;
-    t_enxframe*  fr;
-    ener_file_t  in;
-
-    in = open_enx(fn, "r");
-    do_enxnms(in, &nre, &enm);
+    int                            ind0[] = { XX, YY, ZZ, YY, ZZ, ZZ };
+    int                            ind1[] = { XX, YY, ZZ, XX, XX, YY };
+    int                            nfr, i, j, ni, npcoupl;
+    char                           buf[STRLEN];
+    const char*                    bufi;
+    t_enxframe*                    fr;
+    ener_file_t                    in  = open_enx(fn, "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(in);
     snew(fr, 1);
     nfr = 0;
     while ((nfr == 0 || fr->t != t) && do_enx(in, fr))
@@ -1213,7 +1220,7 @@ void get_enx_state(const std::filesystem::path& fn,
         clear_mat(state->boxv);
         for (i = 0; i < npcoupl; i++)
         {
-            state->boxv[ind0[i]][ind1[i]] = find_energy(boxvel_nm[i], nre, enm, fr);
+            state->boxv[ind0[i]][ind1[i]] = find_energy(boxvel_nm[i], enm, fr);
         }
         fprintf(stderr, "\nREAD %d BOX VELOCITIES FROM %s\n\n", npcoupl, fn.string().c_str());
     }
@@ -1235,9 +1242,9 @@ void get_enx_state(const std::filesystem::path& fn,
                     sprintf(cns, "-%d", j);
                 }
                 sprintf(buf, "Xi%s-%s", cns, bufi);
-                state->nosehoover_xi[i] = find_energy(buf, nre, enm, fr);
+                state->nosehoover_xi[i] = find_energy(buf, enm, fr);
                 sprintf(buf, "vXi%s-%s", cns, bufi);
-                state->nosehoover_vxi[i] = find_energy(buf, nre, enm, fr);
+                state->nosehoover_vxi[i] = find_energy(buf, enm, fr);
             }
         }
         fprintf(stderr, "\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n", state->ngtc, fn.string().c_str());
@@ -1250,9 +1257,9 @@ void get_enx_state(const std::filesystem::path& fn,
                 for (j = 0; (j < state->nhchainlength); j++)
                 {
                     sprintf(buf, "Xi-%d-%s", j, bufi);
-                    state->nhpres_xi[i] = find_energy(buf, nre, enm, fr);
+                    state->nhpres_xi[i] = find_energy(buf, enm, fr);
                     sprintf(buf, "vXi-%d-%s", j, bufi);
-                    state->nhpres_vxi[i] = find_energy(buf, nre, enm, fr);
+                    state->nhpres_vxi[i] = find_energy(buf, enm, fr);
                 }
             }
             fprintf(stderr,
@@ -1262,19 +1269,18 @@ void get_enx_state(const std::filesystem::path& fn,
         }
     }
 
-    free_enxnms(nre, enm);
     free_enxframe(fr);
     sfree(fr);
 }
 
-static real ener_tensor_diag(int          n,
-                             const int*   ind1,
-                             const int*   ind2,
-                             gmx_enxnm_t* enm1,
-                             const int*   tensi,
-                             int          i,
-                             t_energy     e1[],
-                             t_energy     e2[])
+static real ener_tensor_diag(int                              n,
+                             gmx::ArrayRef<const int>         ind1,
+                             gmx::ArrayRef<const int>         ind2,
+                             gmx::ArrayRef<const gmx_enxnm_t> enm1,
+                             const int*                       tensi,
+                             int                              i,
+                             t_energy                         e1[],
+                             t_energy                         e2[])
 {
     int    d1, d2;
     int    j;
@@ -1286,14 +1292,14 @@ static real ener_tensor_diag(int          n,
     d2 = tensi[i] - d1 * DIM;
 
     /* Find the diagonal elements d1 and d2 */
-    len    = std::strlen(enm1[ind1[i]].name);
+    len    = enm1[ind1[i]].name.size();
     prod1  = 1;
     prod2  = 1;
     nfound = 0;
     for (j = 0; j < n; j++)
     {
-        if (tensi[j] >= 0 && std::strlen(enm1[ind1[j]].name) == len
-            && std::strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len - 2) == 0
+        if (tensi[j] >= 0 && enm1[ind1[j]].name.size() == len
+            && std::strncmp(enm1[ind1[i]].name.c_str(), enm1[ind1[j]].name.c_str(), len - 2) == 0
             && (tensi[j] == d1 * DIM + d1 || tensi[j] == d2 * DIM + d2))
         {
             prod1 *= std::fabs(e1[ind1[j]].e);
@@ -1332,18 +1338,18 @@ static gmx_bool enernm_equal(const char* nm1, const char* nm2)
     return (len1 == len2 && gmx_strncasecmp(nm1, nm2, len1) == 0);
 }
 
-static void cmp_energies(FILE*        fp,
-                         int          step1,
-                         int          step2,
-                         t_energy     e1[],
-                         t_energy     e2[],
-                         gmx_enxnm_t* enm1,
-                         real         ftol,
-                         real         abstol,
-                         int          nre,
-                         int*         ind1,
-                         int*         ind2,
-                         int          maxener)
+static void cmp_energies(FILE*                            fp,
+                         int                              step1,
+                         int                              step2,
+                         t_energy                         e1[],
+                         t_energy                         e2[],
+                         gmx::ArrayRef<const gmx_enxnm_t> enm1,
+                         real                             ftol,
+                         real                             abstol,
+                         int                              nre,
+                         gmx::ArrayRef<const int>         ind1,
+                         gmx::ArrayRef<const int>         ind2,
+                         int                              maxener)
 {
     int  i, ii;
     int *tensi, len, d1, d2;
@@ -1355,7 +1361,7 @@ static void cmp_energies(FILE*        fp,
     {
         ii       = ind1[i];
         tensi[i] = -1;
-        len      = std::strlen(enm1[ii].name);
+        len      = enm1[ii].name.size();
         if (len > 3 && enm1[ii].name[len - 3] == '-')
         {
             d1 = enm1[ii].name[len - 2] - 'X';
@@ -1380,7 +1386,7 @@ static void cmp_energies(FILE*        fp,
             abstol_i = ftol * ener_tensor_diag(nre, ind1, ind2, enm1, tensi, i, e1, e2);
             if (debug)
             {
-                fprintf(debug, "tensor '%s' val %f diag %f\n", enm1[i].name, e1[i].e, abstol_i / ftol);
+                fprintf(debug, "tensor '%s' val %f diag %f\n", enm1[ind1[i]].name.c_str(), e1[i].e, abstol_i / ftol);
             }
             if (abstol_i > 0)
             {
@@ -1402,7 +1408,7 @@ static void cmp_energies(FILE*        fp,
         {
             fprintf(fp,
                     "%-15s  step %3d:  %12g,  step %3d: %12g\n",
-                    enm1[ind1[i]].name,
+                    enm1[ind1[i]].name.c_str(),
                     step1,
                     e1[ind1[i]].e,
                     step2,
@@ -1519,19 +1525,19 @@ void comp_enx(const std::filesystem::path& fn1,
               real                         abstol,
               const char*                  lastener)
 {
-    int          nre, nre1, nre2;
-    ener_file_t  in1, in2;
-    int          i, j, maxener, *ind1, *ind2, *have;
-    gmx_enxnm_t *enm1 = nullptr, *enm2 = nullptr;
-    t_enxframe * fr1, *fr2;
-    gmx_bool     b1, b2;
+    ener_file_t in1, in2;
+    int         maxener;
+    t_enxframe *fr1, *fr2;
+    gmx_bool    b1, b2;
 
     fprintf(stdout, "comparing energy file %s and %s\n\n", fn1.string().c_str(), fn2.string().c_str());
 
-    in1 = open_enx(fn1, "r");
-    in2 = open_enx(fn2, "r");
-    do_enxnms(in1, &nre1, &enm1);
-    do_enxnms(in2, &nre2, &enm2);
+    in1                                 = open_enx(fn1, "r");
+    in2                                 = open_enx(fn2, "r");
+    const std::vector<gmx_enxnm_t> enm1 = readEnxNames(in1);
+    const int                      nre1 = gmx::ssize(enm1);
+    const std::vector<gmx_enxnm_t> enm2 = readEnxNames(in2);
+    const int                      nre2 = gmx::ssize(enm2);
     if (nre1 != nre2)
     {
         fprintf(stdout, "There are %d and %d terms in the energy files\n\n", nre1, nre2);
@@ -1541,15 +1547,15 @@ void comp_enx(const std::filesystem::path& fn1,
         fprintf(stdout, "There are %d terms in the energy files\n\n", nre1);
     }
 
-    snew(ind1, nre1);
-    snew(ind2, nre2);
-    snew(have, nre2);
-    nre = 0;
-    for (i = 0; i < nre1; i++)
+    std::vector<int> ind1(nre1);
+    std::vector<int> ind2(nre2);
+    std::vector<int> have(nre2);
+    int              nre = 0;
+    for (int i = 0; i < nre1; i++)
     {
-        for (j = 0; j < nre2; j++)
+        for (int j = 0; j < nre2; j++)
         {
-            if (enernm_equal(enm1[i].name, enm2[j].name))
+            if (enernm_equal(enm1[i].name.c_str(), enm2[j].name.c_str()))
             {
                 ind1[nre] = i;
                 ind2[nre] = j;
@@ -1560,21 +1566,21 @@ void comp_enx(const std::filesystem::path& fn1,
         }
         if (nre == 0 || ind1[nre - 1] != i)
         {
-            cmp_str(stdout, "enm", i, enm1[i].name, "-");
+            cmp_str(stdout, "enm", i, enm1[i].name.c_str(), "-");
         }
     }
-    for (i = 0; i < nre2; i++)
+    for (int i = 0; i < nre2; i++)
     {
         if (have[i] == 0)
         {
-            cmp_str(stdout, "enm", i, "-", enm2[i].name);
+            cmp_str(stdout, "enm", i, "-", enm2[i].name.c_str());
         }
     }
 
     maxener = nre;
-    for (i = 0; i < nre; i++)
+    for (int i = 0; i < nre; i++)
     {
-        if ((lastener != nullptr) && (std::strstr(enm1[i].name, lastener) != nullptr))
+        if (lastener != nullptr && enm1[i].name.find(lastener) != std::string::npos)
         {
             maxener = i + 1;
             break;
@@ -1583,9 +1589,9 @@ void comp_enx(const std::filesystem::path& fn1,
 
     fprintf(stdout, "There are %d terms to compare in the energy files\n\n", maxener);
 
-    for (i = 0; i < maxener; i++)
+    for (int i = 0; i < maxener; i++)
     {
-        cmp_str(stdout, "unit", i, enm1[ind1[i]].unit, enm2[ind2[i]].unit);
+        cmp_str(stdout, "unit", i, enm1[ind1[i]].unit.c_str(), enm2[ind2[i]].unit.c_str());
     }
 
     snew(fr1, 1);

@@ -89,7 +89,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 
@@ -97,27 +96,27 @@
 
 //! Labels for energy file quantities
 //! \{
-static const char* const conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
+static const std::array<std::string, 1> conrmsd_nm = { "Constr. rmsd" };
 
-static constexpr std::array<const char*, 3> boxs_nm = { "Box-X", "Box-Y", "Box-Z" };
+static const std::array<std::string, 3> boxs_nm = { "Box-X", "Box-Y", "Box-Z" };
 
-static constexpr std::array<const char*, 6> tricl_boxs_nm = { "Box-XX", "Box-YY", "Box-ZZ",
-                                                              "Box-YX", "Box-ZX", "Box-ZY" };
+static const std::array<std::string, 6> tricl_boxs_nm = { "Box-XX", "Box-YY", "Box-ZZ",
+                                                          "Box-YX", "Box-ZX", "Box-ZY" };
 
-static const char* const vol_nm[] = { "Volume" };
+static const std::array<std::string, 1> vol_nm = { "Volume" };
 
-static const char* const dens_nm[] = { "Density" };
+static const std::array<std::string, 1> dens_nm = { "Density" };
 
-const char* const pvEnergyFieldName = "pV";
+const std::string pvEnergyFieldName = "pV";
 
-const char* const enthalpyEnergyFieldName = "Enthalpy";
+const std::string enthalpyEnergyFieldName = "Enthalpy";
 
-const std::array<const char*, 9> virialEnergyFieldNames = { "Vir-XX", "Vir-XY", "Vir-XZ",
+const std::array<std::string, 9> virialEnergyFieldNames = { "Vir-XX", "Vir-XY", "Vir-XZ",
                                                             "Vir-YX", "Vir-YY", "Vir-YZ",
                                                             "Vir-ZX", "Vir-ZY", "Vir-ZZ" };
 
-static constexpr std::array<const char*, 6> boxvel_nm = { "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
-                                                          "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY" };
+static const std::array<std::string, 6> boxvel_nm = { "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
+                                                      "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY" };
 
 const char* enumValueToString(NonBondedEnergyTerms enumValue)
 {
@@ -158,21 +157,14 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
                            const MDModulesNotifiers& mdModulesNotifiers) :
     haveFepLambdaMoves_(haveFepLambdaMoves(inputrec))
 {
-    gmx::EnumerationArray<InteractionFunction, const char*> ener_nm;
-    static const char* pres_nm[]  = { "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
-                                      "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
-    static const char* surft_nm[] = { "#Surf*SurfTen" };
-    static const char* mu_nm[]    = { "Mu-X", "Mu-Y", "Mu-Z" };
-    static const char* vcos_nm[]  = { "2CosZ*Vel-X" };
-    static const char* visc_nm[]  = { "1/Viscosity" };
-    static const char* baro_nm[]  = { "Barostat" };
-
-    const SimulationGroups* groups;
-    char**                  gnm;
-    char                    buf[256];
-    const char*             bufi;
-    int                     j, ni, nj, n, ncon, nset;
-    bool                    bBHAM, b14;
+    const std::array<std::string, 9> pres_nm  = { "Pres-XX", "Pres-XY", "Pres-XZ",
+                                                  "Pres-YX", "Pres-YY", "Pres-YZ",
+                                                  "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
+    const std::array<std::string, 1> surft_nm = { "#Surf*SurfTen" };
+    const std::array<std::string, 3> mu_nm    = { "Mu-X", "Mu-Y", "Mu-Z" };
+    const std::array<std::string, 1> vcos_nm  = { "2CosZ*Vel-X" };
+    const std::array<std::string, 1> visc_nm  = { "1/Viscosity" };
+    const std::array<std::string, 1> baro_nm  = { "Barostat" };
 
     if (EI_DYNAMICS(inputrec.eI))
     {
@@ -183,17 +175,17 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         delta_t_ = 0;
     }
 
-    groups = &mtop.groups;
+    const SimulationGroups& groups = mtop.groups;
 
-    bBHAM = (mtop.ffparams.numTypes() > 0)
-            && (mtop.ffparams.functype[0] == InteractionFunction::BuckinghamShortRange);
-    b14 = (gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJones14) > 0
-           || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulomb14Q) > 0);
+    const bool bBHAM = (mtop.ffparams.numTypes() > 0)
+                       && (mtop.ffparams.functype[0] == InteractionFunction::BuckinghamShortRange);
+    const bool b14 = (gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJones14) > 0
+                      || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulomb14Q) > 0);
 
-    ncon         = gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints);
-    nset         = gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE);
-    bool bConstr = (ncon > 0 || nset > 0) && !isRerun;
-    nCrmsd_      = 0;
+    const int  ncon    = gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints);
+    const int  nset    = gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE);
+    const bool bConstr = (ncon > 0 || nset > 0) && !isRerun;
+    nCrmsd_            = 0;
     if (bConstr)
     {
         if (ncon > 0 && inputrec.eConstrAlg == ConstraintAlgorithm::Lincs)
@@ -299,15 +291,15 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
             mdModulesAddOutputToNNPotFieldRequest.energyOutputToNNPot_;
 
     // Counting the energy terms that will be printed and saving their names
-    f_nre_ = 0;
+    std::vector<std::string> ener_nm;
     for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (bEner_[i])
         {
-            ener_nm[f_nre_] = interaction_function[i].longname;
-            f_nre_++;
+            ener_nm.push_back(interaction_function[i].longname);
         }
     }
+    f_nre_ = gmx::ssize(ener_nm);
 
     epc_       = isRerun ? PressureCoupling::No : inputrec.pressureCouplingOptions.epc;
     bDiagPres_ = !TRICLINIC(inputrec.pressureCouplingOptions.ref_p) && !isRerun;
@@ -324,51 +316,58 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     bMu_            = inputrecNeedMutot(&inputrec);
     bPres_          = !isRerun;
 
-    ebin_ = mk_ebin();
+    // This is a only a unique_ptr to hide the contents of t_ebin from energyoutput.h
+    ebin_ = std::make_unique<t_ebin>();
+
     /* Pass NULL for unit to let get_ebin_space determine the units
      * for interaction_function[i].longname
      */
-    ie_ = get_ebin_space(ebin_, f_nre_, ener_nm.data(), nullptr);
+    ie_ = ebin_->getSpace(ener_nm, nullptr);
     if (nCrmsd_)
     {
         /* This should be called directly after the call for ie_,
          * such that iconrmsd_ follows directly in the list.
          */
-        iconrmsd_ = get_ebin_space(ebin_, nCrmsd_, conrmsd_nm, "");
+        GMX_RELEASE_ASSERT(gmx::ssize(conrmsd_nm) == nCrmsd_, "Expect as many names as the count");
+        iconrmsd_ = ebin_->getSpace(conrmsd_nm, "");
     }
     if (bDynBox_)
     {
-        ib_    = get_ebin_space(ebin_,
-                             bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size(),
-                             bTricl_ ? tricl_boxs_nm.data() : boxs_nm.data(),
-                             unit_length);
-        ivol_  = get_ebin_space(ebin_, 1, vol_nm, unit_volume);
-        idens_ = get_ebin_space(ebin_, 1, dens_nm, unit_density_SI);
+        ib_ = ebin_->getSpace(bTricl_ ? gmx::ArrayRef<const std::string>(tricl_boxs_nm)
+                                      : gmx::ArrayRef<const std::string>(boxs_nm),
+                              unit_length);
+        ivol_  = ebin_->getSpace(vol_nm, unit_volume);
+        idens_ = ebin_->getSpace(dens_nm, unit_density_SI);
         if (bDiagPres_)
         {
-            ipv_       = get_ebin_space(ebin_, 1, &pvEnergyFieldName, unit_energy);
-            ienthalpy_ = get_ebin_space(ebin_, 1, &enthalpyEnergyFieldName, unit_energy);
+            ipv_ = ebin_->getSpace(gmx::constArrayRefFromArray(&pvEnergyFieldName, 1), unit_energy);
+            ienthalpy_ = ebin_->getSpace(gmx::constArrayRefFromArray(&enthalpyEnergyFieldName, 1),
+                                         unit_energy);
         }
     }
     if (bPres_)
     {
-        ivir_ = get_ebin_space(
-                ebin_, virialEnergyFieldNames.size(), virialEnergyFieldNames.data(), unit_energy);
-        ipres_  = get_ebin_space(ebin_, asize(pres_nm), pres_nm, unit_pres_bar);
-        isurft_ = get_ebin_space(ebin_, asize(surft_nm), surft_nm, unit_surft_bar);
+        ivir_   = ebin_->getSpace(virialEnergyFieldNames, unit_energy);
+        ipres_  = ebin_->getSpace(pres_nm, unit_pres_bar);
+        isurft_ = ebin_->getSpace(surft_nm, unit_surft_bar);
     }
     if (epc_ == PressureCoupling::ParrinelloRahman || epc_ == PressureCoupling::Mttk)
     {
-        ipc_ = get_ebin_space(ebin_, bTricl_ ? boxvel_nm.size() : DIM, boxvel_nm.data(), unit_vel);
+        auto boxVelNames = gmx::ArrayRef<const std::string>(boxvel_nm);
+        if (!bTricl_)
+        {
+            boxVelNames = boxVelNames.subArray(0, DIM);
+        }
+        ipc_ = ebin_->getSpace(boxVelNames, unit_vel);
     }
     if (bMu_)
     {
-        imu_ = get_ebin_space(ebin_, asize(mu_nm), mu_nm, unit_dipole_D);
+        imu_ = ebin_->getSpace(mu_nm, unit_dipole_D);
     }
     if (inputrec.cos_accel != 0)
     {
-        ivcos_ = get_ebin_space(ebin_, asize(vcos_nm), vcos_nm, unit_vel);
-        ivisc_ = get_ebin_space(ebin_, asize(visc_nm), visc_nm, unit_invvisc_SI);
+        ivcos_ = ebin_->getSpace(vcos_nm, unit_vel);
+        ivisc_ = ebin_->getSpace(visc_nm, unit_invvisc_SI);
     }
 
     /* Energy monitoring */
@@ -397,55 +396,47 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
             nEc_++;
         }
     }
-    n    = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    nEg_ = n;
-    nE_  = (n * (n + 1)) / 2;
+    const int numEnergyGroups = groups.groups[SimulationAtomGroupType::EnergyOutput].size();
+    nEg_                      = numEnergyGroups;
+    nE_                       = (numEnergyGroups * (numEnergyGroups + 1)) / 2;
 
     igrp_.resize(nE_);
     if (nE_ > 1)
     {
-        n = 0;
-        snew(gnm, nEc_);
-        for (int k = 0; (k < nEc_); k++)
+        std::vector<std::string> gnm;
+        gnm.reserve(nEc_);
+
+        int n = 0;
+        for (int i = 0; (i < gmx::ssize(groups.groups[SimulationAtomGroupType::EnergyOutput])); i++)
         {
-            snew(gnm[k], STRLEN);
-        }
-        for (int i = 0; (i < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); i++)
-        {
-            ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
-            for (j = i; (j < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); j++)
+            const int ni = groups.groups[SimulationAtomGroupType::EnergyOutput][i];
+            for (int j = i; (j < gmx::ssize(groups.groups[SimulationAtomGroupType::EnergyOutput])); j++)
             {
-                nj    = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                int k = 0;
+                const int nj = groups.groups[SimulationAtomGroupType::EnergyOutput][j];
                 for (auto key : keysOf(bEInd_))
                 {
                     if (bEInd_[key])
                     {
-                        sprintf(gnm[k],
-                                "%s:%s-%s",
-                                enumValueToString(key),
-                                *(groups->groupNames[ni]),
-                                *(groups->groupNames[nj]));
-                        k++;
+                        gnm.push_back(gmx::formatString("%s:%s-%s",
+                                                        enumValueToString(key),
+                                                        *(groups.groupNames[ni]),
+                                                        *(groups.groupNames[nj])));
                     }
                 }
-                igrp_[n] = get_ebin_space(ebin_, nEc_, gnm, unit_energy);
+                GMX_RELEASE_ASSERT(gmx::ssize(gnm) == nEc_, "Expect nEc_ names");
+
+                igrp_[n] = ebin_->getSpace(gnm, unit_energy);
+
+                gnm.clear();
+
                 n++;
             }
         }
-        for (int k = 0; (k < nEc_); k++)
-        {
-            sfree(gnm[k]);
-        }
-        sfree(gnm);
 
-        if (n != nE_)
-        {
-            gmx_incons("Number of energy terms wrong");
-        }
+        GMX_RELEASE_ASSERT(n == nE_, "Number of energy terms should be n");
     }
 
-    nTC_  = isRerun ? 0 : groups->groups[SimulationAtomGroupType::TemperatureCoupling].size();
+    nTC_  = isRerun ? 0 : groups.groups[SimulationAtomGroupType::TemperatureCoupling].size();
     nNHC_ = inputrec.opts.nhchainlength; /* shorthand for number of NH chains */
     if (bMTTK_)
     {
@@ -478,99 +469,82 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     }
 
     tmp_r_.resize(mde_n_);
-    // TODO redo the group name memory management to make it more clear
-    char** grpnms;
-    snew(grpnms, std::max(mde_n_, mdeb_n_)); // Just in case mdeb_n_ > mde_n_
 
-    for (int i = 0; (i < nTC_); i++)
     {
-        ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
-        sprintf(buf, "T-%s", *(groups->groupNames[ni]));
-        grpnms[i] = gmx_strdup(buf);
-    }
-    itemp_ = get_ebin_space(ebin_, nTC_, grpnms, unit_temp_K);
-    for (int i = 0; i < nTC_; i++)
-    {
-        sfree(grpnms[i]);
+        std::vector<std::string> grpnms;
+
+        for (int i = 0; i < nTC_; i++)
+        {
+            const int ni = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
+            grpnms.push_back(gmx::formatString("T-%s", *(groups.groupNames[ni])));
+        }
+        itemp_ = ebin_->getSpace(grpnms, unit_temp_K);
     }
 
-    int allocated = 0;
     if (etc_ == TemperatureCoupling::NoseHoover)
     {
         if (bPrintNHChains_)
         {
             if (bNHC_trotter_)
             {
-                for (int i = 0; (i < nTC_); i++)
+                std::vector<std::string> nhcnms;
+                for (int i = 0; i < nTC_; i++)
                 {
-                    ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
-                    bufi = *(groups->groupNames[ni]);
-                    for (j = 0; (j < nNHC_); j++)
+                    const int   ni = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
+                    const char* bufi = *(groups.groupNames[ni]);
+                    for (int j = 0; j < nNHC_; j++)
                     {
-                        sprintf(buf, "Xi-%d-%s", j, bufi);
-                        grpnms[2 * (i * nNHC_ + j)] = gmx_strdup(buf);
-                        sprintf(buf, "vXi-%d-%s", j, bufi);
-                        grpnms[2 * (i * nNHC_ + j) + 1] = gmx_strdup(buf);
+                        nhcnms.push_back(gmx::formatString("Xi-%d-%s", j, bufi));
+                        nhcnms.push_back(gmx::formatString("vXi-%d-%s", j, bufi));
                     }
                 }
-                itc_      = get_ebin_space(ebin_, mde_n_, grpnms, unit_invtime);
-                allocated = mde_n_;
+                itc_ = ebin_->getSpace(nhcnms, unit_invtime);
+
                 if (bMTTK_)
                 {
-                    for (int i = 0; (i < nTCP_); i++)
+                    std::vector<std::string> mttknms;
+                    for (int i = 0; i < nTCP_; i++)
                     {
-                        bufi = baro_nm[0]; /* All barostat DOF's together for now. */
-                        for (j = 0; (j < nNHC_); j++)
+                        const std::string& bufi = baro_nm[0]; // All barostat DOF's together for now
+                        for (int j = 0; j < nNHC_; j++)
                         {
-                            sprintf(buf, "Xi-%d-%s", j, bufi);
-                            grpnms[2 * (i * nNHC_ + j)] = gmx_strdup(buf);
-                            sprintf(buf, "vXi-%d-%s", j, bufi);
-                            grpnms[2 * (i * nNHC_ + j) + 1] = gmx_strdup(buf);
+                            mttknms.push_back(gmx::formatString("Xi-%d-%s", j, bufi.c_str()));
+                            mttknms.push_back(gmx::formatString("vXi-%d-%s", j, bufi.c_str()));
                         }
                     }
-                    itcb_     = get_ebin_space(ebin_, mdeb_n_, grpnms, unit_invtime);
-                    allocated = mdeb_n_;
+                    itcb_ = ebin_->getSpace(mttknms, unit_invtime);
                 }
             }
             else
             {
-                for (int i = 0; (i < nTC_); i++)
+                std::vector<std::string> nhcnms;
+                for (int i = 0; i < nTC_; i++)
                 {
-                    ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
-                    bufi = *(groups->groupNames[ni]);
-                    sprintf(buf, "Xi-%s", bufi);
-                    grpnms[2 * i] = gmx_strdup(buf);
-                    sprintf(buf, "vXi-%s", bufi);
-                    grpnms[2 * i + 1] = gmx_strdup(buf);
+                    const int   ni = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
+                    const char* bufi = *(groups.groupNames[ni]);
+                    nhcnms.push_back(gmx::formatString("Xi-%s", bufi));
+                    nhcnms.push_back(gmx::formatString("vXi-%s", bufi));
                 }
-                itc_      = get_ebin_space(ebin_, mde_n_, grpnms, unit_invtime);
-                allocated = mde_n_;
+                itc_ = ebin_->getSpace(nhcnms, unit_invtime);
             }
         }
     }
     else if (etc_ == TemperatureCoupling::Berendsen || etc_ == TemperatureCoupling::Yes
              || etc_ == TemperatureCoupling::VRescale)
     {
-        for (int i = 0; (i < nTC_); i++)
+        std::vector<std::string> tcnms;
+        for (int i = 0; i < nTC_; i++)
         {
-            ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
-            sprintf(buf, "Lamb-%s", *(groups->groupNames[ni]));
-            grpnms[i] = gmx_strdup(buf);
+            const int ni = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
+            tcnms.push_back(gmx::formatString("Lamb-%s", *(groups.groupNames[ni])));
         }
-        itc_      = get_ebin_space(ebin_, mde_n_, grpnms, "");
-        allocated = mde_n_;
+        itc_ = ebin_->getSpace(tcnms, "");
     }
-
-    for (int i = 0; i < allocated; i++)
-    {
-        sfree(grpnms[i]);
-    }
-    sfree(grpnms);
 
     /* Note that fp_ene should be valid on the main rank and null otherwise */
     if (fp_ene != nullptr && startingBehavior != StartingBehavior::RestartWithAppending)
     {
-        do_enxnms(fp_ene, &ebin_->nener, &ebin_->enm);
+        writeEnxNames(fp_ene, ebin_->names());
     }
 
     /* check whether we're going to write dh histograms */
@@ -601,10 +575,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     }
 }
 
-EnergyOutput::~EnergyOutput()
-{
-    done_ebin(ebin_);
-}
+EnergyOutput::~EnergyOutput() = default;
 
 } // namespace gmx
 
@@ -868,15 +839,15 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
 namespace gmx
 {
 
-void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
-                                       bool                    bSum,
-                                       double                  time,
-                                       real                    tmass,
+void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
+                                       const bool              bSum,
+                                       const double            time,
+                                       const real              tmass,
                                        const gmx_enerdata_t*   enerd,
                                        const t_lambda*         fep,
                                        const matrix            box,
-                                       PTCouplingArrays        ptCouplingArrays,
-                                       int                     fep_state,
+                                       const PTCouplingArrays  ptCouplingArrays,
+                                       const int               fep_state,
                                        const tensor            vir,
                                        const tensor            pres,
                                        const gmx_ekindata_t*   ekind,
@@ -884,7 +855,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                        const gmx::Constraints* constr)
 {
     int  j, k, kk, n, gid;
-    real crmsd[2], tmp6[6];
+    real tmp6[6];
     real bs[tricl_boxs_nm.size()], vol, dens, enthalpy;
     real eee[static_cast<int>(NonBondedEnergyTerms::Count)];
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double> store_dhdl;
@@ -896,11 +867,11 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
      * as an argument. This is because we sometimes need to write the box from
      * the last timestep to match the trajectory frames.
      */
-    add_ebin_indexed(ebin_, ie_, gmx::ArrayRef<bool>(bEner_), enerd->term, bSum);
+    ebin_->addValuesIndexed(ie_, gmx::ArrayRef<bool>(bEner_), enerd->term, bSum);
     if (nCrmsd_)
     {
-        crmsd[0] = constr->rmsd();
-        add_ebin(ebin_, iconrmsd_, nCrmsd_, crmsd, false);
+        GMX_ASSERT(nCrmsd_ == 1, "We expect a single RMSD value here");
+        ebin_->addValue(iconrmsd_, constr->rmsd(), false);
     }
     if (bDynBox_)
     {
@@ -924,9 +895,9 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         }
         vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
         dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
-        add_ebin(ebin_, ib_, nboxs, bs, bSum);
-        add_ebin(ebin_, ivol_, 1, &vol, bSum);
-        add_ebin(ebin_, idens_, 1, &dens, bSum);
+        ebin_->addValues(ib_, nboxs, bs, bSum);
+        ebin_->addValue(ivol_, vol, bSum);
+        ebin_->addValue(idens_, dens, bSum);
 
         if (bDiagPres_)
         {
@@ -934,17 +905,17 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                not the instantaneous pressure */
             pv = vol * ref_p_ / gmx::c_presfac;
 
-            add_ebin(ebin_, ipv_, 1, &pv, bSum);
+            ebin_->addValue(ipv_, pv, bSum);
             enthalpy = pv + enerd->term[InteractionFunction::TotalEnergy];
-            add_ebin(ebin_, ienthalpy_, 1, &enthalpy, bSum);
+            ebin_->addValue(ienthalpy_, enthalpy, bSum);
         }
     }
     if (bPres_)
     {
-        add_ebin(ebin_, ivir_, 9, vir[0], bSum);
-        add_ebin(ebin_, ipres_, 9, pres[0], bSum);
+        ebin_->addValues(ivir_, 9, vir[0], bSum);
+        ebin_->addValues(ipres_, 9, pres[0], bSum);
         tmp = (pres[ZZ][ZZ] - (pres[XX][XX] + pres[YY][YY]) * 0.5) * box[ZZ][ZZ];
-        add_ebin(ebin_, isurft_, 1, &tmp, bSum);
+        ebin_->addValue(isurft_, tmp, bSum);
     }
     if (epc_ == PressureCoupling::ParrinelloRahman || epc_ == PressureCoupling::Mttk)
     {
@@ -954,22 +925,22 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         tmp6[3] = ptCouplingArrays.boxv[YY][XX];
         tmp6[4] = ptCouplingArrays.boxv[ZZ][XX];
         tmp6[5] = ptCouplingArrays.boxv[ZZ][YY];
-        add_ebin(ebin_, ipc_, bTricl_ ? 6 : 3, tmp6, bSum);
+        ebin_->addValues(ipc_, bTricl_ ? 6 : 3, tmp6, bSum);
     }
     if (bMu_)
     {
-        add_ebin(ebin_, imu_, 3, mu_tot, bSum);
+        ebin_->addValues(imu_, 3, mu_tot, bSum);
     }
     if (ekind && ekind->cosacc.cos_accel != 0)
     {
         vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
         dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
-        add_ebin(ebin_, ivcos_, 1, &(ekind->cosacc.vcos), bSum);
+        ebin_->addValue(ivcos_, ekind->cosacc.vcos, bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1
               / (ekind->cosacc.cos_accel / (ekind->cosacc.vcos * gmx::c_pico) * dens
                  * gmx::square(box[ZZ][ZZ] * gmx::c_nano / (2 * M_PI)));
-        add_ebin(ebin_, ivisc_, 1, &tmp, bSum);
+        ebin_->addValue(ivisc_, tmp, bSum);
     }
     if (nE_ > 1)
     {
@@ -986,7 +957,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                         eee[kk++] = enerd->grpp.energyGroupPairTerms[k][gid];
                     }
                 }
-                add_ebin(ebin_, igrp_[n], nEc_, eee, bSum);
+                ebin_->addValues(igrp_[n], nEc_, eee, bSum);
                 n++;
             }
         }
@@ -998,7 +969,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         {
             tmp_r_[i] = ekind->tcstat[i].T;
         }
-        add_ebin(ebin_, itemp_, nTC_, tmp_r_.data(), bSum);
+        ebin_->addValues(itemp_, nTC_, tmp_r_.data(), bSum);
 
         if (etc_ == TemperatureCoupling::NoseHoover)
         {
@@ -1016,7 +987,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                             tmp_r_[2 * k + 1] = ptCouplingArrays.nosehoover_vxi[k];
                         }
                     }
-                    add_ebin(ebin_, itc_, mde_n_, tmp_r_.data(), bSum);
+                    ebin_->addValues(itc_, mde_n_, tmp_r_.data(), bSum);
 
                     if (bMTTK_)
                     {
@@ -1029,7 +1000,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                 tmp_r_[2 * k + 1] = ptCouplingArrays.nhpres_vxi[k];
                             }
                         }
-                        add_ebin(ebin_, itcb_, mdeb_n_, tmp_r_.data(), bSum);
+                        ebin_->addValues(itcb_, mdeb_n_, tmp_r_.data(), bSum);
                     }
                 }
                 else
@@ -1039,7 +1010,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                         tmp_r_[2 * i]     = ptCouplingArrays.nosehoover_xi[i];
                         tmp_r_[2 * i + 1] = ptCouplingArrays.nosehoover_vxi[i];
                     }
-                    add_ebin(ebin_, itc_, mde_n_, tmp_r_.data(), bSum);
+                    ebin_->addValues(itc_, mde_n_, tmp_r_.data(), bSum);
                 }
             }
         }
@@ -1050,11 +1021,11 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             {
                 tmp_r_[i] = ekind->tcstat[i].lambda;
             }
-            add_ebin(ebin_, itc_, nTC_, tmp_r_.data(), bSum);
+            ebin_->addValues(itc_, nTC_, tmp_r_.data(), bSum);
         }
     }
 
-    ebin_increase_count(1, ebin_, bSum);
+    ebin_->incrementCount(bSum);
 
     // BAR + thermodynamic integration values
     if ((fp_dhdl_ || dhc_) && bDoDHDL)
@@ -1169,7 +1140,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
 
 void EnergyOutput::recordNonEnergyStep()
 {
-    ebin_increase_count(1, ebin_, false);
+    ebin_->incrementCount(false);
 }
 
 void EnergyOutput::printHeader(FILE* log, int64_t steps, double time)
@@ -1199,11 +1170,11 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
     init_enxframe(&fr);
     fr.t       = time;
     fr.step    = step;
-    fr.nsteps  = ebin_->nsteps;
+    fr.nsteps  = ebin_->accumulation().numSteps();
     fr.dt      = delta_t_;
-    fr.nsum    = ebin_->nsum;
-    fr.nre     = (bEne) ? ebin_->nener : 0;
-    fr.ener    = ebin_->e;
+    fr.nsum    = ebin_->accumulation().sumCount();
+    fr.nre     = (bEne) ? ebin_->numTerms() : 0;
+    fr.ener    = const_cast<t_energy*>(ebin_->accumulation().energies().data());
     int ndisre = bDR ? fcd->disres->npair : 0;
     /* these are for the old-style blocks (1 subblock, only reals), because
        there can be only one per ID for these */
@@ -1309,7 +1280,7 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
         if (fr.nre)
         {
             /* We have stored the sums, so reset the sum history */
-            reset_ebin_sums(ebin_);
+            ebin_->resetSums();
         }
     }
     free_enxframe(&fr);
@@ -1321,7 +1292,7 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
         }
 
         fprintf(log, "   Energies (%s)\n", unit_energy);
-        pr_ebin(log, ebin_, ie_, f_nre_ + nCrmsd_, 5, eprNORMAL, true);
+        pr_ebin(log, *ebin_, ie_, f_nre_ + nCrmsd_, 5, eprNORMAL, true);
         fprintf(log, "\n");
     }
 }
@@ -1349,7 +1320,7 @@ void EnergyOutput::printAnnealingTemperatures(FILE*                   log,
 
 void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
 {
-    if (ebin_->nsum_sim <= 0)
+    if (ebin_->simulationAccumulation().sumCount() <= 0)
     {
         if (log)
         {
@@ -1368,39 +1339,39 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
 
         fprintf(log,
                 "\tStatistics over %s steps using %s frames\n",
-                gmx_step_str(ebin_->nsteps_sim, buf1),
-                gmx_step_str(ebin_->nsum_sim, buf2));
+                gmx_step_str(ebin_->simulationAccumulation().numSteps(), buf1),
+                gmx_step_str(ebin_->simulationAccumulation().sumCount(), buf2));
         fprintf(log, "\n");
 
         fprintf(log, "   Energies (%s)\n", unit_energy);
-        pr_ebin(log, ebin_, ie_, f_nre_ + nCrmsd_, 5, eprAVER, true);
+        pr_ebin(log, *ebin_, ie_, f_nre_ + nCrmsd_, 5, eprAVER, true);
         fprintf(log, "\n");
 
         if (bDynBox_)
         {
-            pr_ebin(log, ebin_, ib_, bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size(), 5, eprAVER, true);
+            pr_ebin(log, *ebin_, ib_, bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size(), 5, eprAVER, true);
             fprintf(log, "\n");
         }
         if (bPres_)
         {
             fprintf(log, "   Total Virial (%s)\n", unit_energy);
-            pr_ebin(log, ebin_, ivir_, 9, 3, eprAVER, false);
+            pr_ebin(log, *ebin_, ivir_, 9, 3, eprAVER, false);
             fprintf(log, "\n");
             fprintf(log, "   Pressure (%s)\n", unit_pres_bar);
-            pr_ebin(log, ebin_, ipres_, 9, 3, eprAVER, false);
+            pr_ebin(log, *ebin_, ipres_, 9, 3, eprAVER, false);
             fprintf(log, "\n");
         }
         if (bMu_)
         {
             fprintf(log, "   Total Dipole (%s)\n", unit_dipole_D);
-            pr_ebin(log, ebin_, imu_, 3, 3, eprAVER, false);
+            pr_ebin(log, *ebin_, imu_, 3, 3, eprAVER, false);
             fprintf(log, "\n");
         }
 
         if (nE_ > 1)
         {
-            int padding = 8 - std::strlen(unit_energy);
-            fprintf(log, "%*sEpot (%s)   ", padding, "", unit_energy);
+            const int padding8 = 8 - std::strlen(unit_energy);
+            fprintf(log, "%*sEpot (%s)   ", padding8, "", unit_energy);
             for (auto key : keysOf(bEInd_))
             {
                 if (bEInd_[key])
@@ -1416,12 +1387,11 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
                 int ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
                 for (int j = i; (j < nEg_); j++)
                 {
-                    int nj           = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                    int groupPadding = 14
-                                       - (std::strlen(*(groups->groupNames[ni]))
-                                          + std::strlen(*(groups->groupNames[nj])));
-                    fprintf(log, "%*s%s-%s", groupPadding, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
-                    pr_ebin(log, ebin_, igrp_[n], nEc_, nEc_, eprAVER, false);
+                    int       nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
+                    const int padding14 =
+                            14 - (strlen(*(groups->groupNames[ni])) + strlen(*(groups->groupNames[nj])));
+                    fprintf(log, "%*s%s-%s", padding14, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
+                    pr_ebin(log, *ebin_, igrp_[n], nEc_, nEc_, eprAVER, false);
                     n++;
                 }
             }
@@ -1429,7 +1399,7 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
         }
         if (nTC_ > 1)
         {
-            pr_ebin(log, ebin_, itemp_, nTC_, 4, eprAVER, true);
+            pr_ebin(log, *ebin_, itemp_, nTC_, 4, eprAVER, true);
             fprintf(log, "\n");
         }
     }
@@ -1437,34 +1407,32 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
 
 void EnergyOutput::fillEnergyHistory(energyhistory_t* enerhist) const
 {
-    const t_ebin* const ebin = ebin_;
+    enerhist->nsteps     = ebin_->accumulation().numSteps();
+    enerhist->nsum       = ebin_->accumulation().sumCount();
+    enerhist->nsteps_sim = ebin_->simulationAccumulation().numSteps();
+    enerhist->nsum_sim   = ebin_->simulationAccumulation().sumCount();
 
-    enerhist->nsteps     = ebin->nsteps;
-    enerhist->nsum       = ebin->nsum;
-    enerhist->nsteps_sim = ebin->nsteps_sim;
-    enerhist->nsum_sim   = ebin->nsum_sim;
-
-    if (ebin->nsum > 0)
+    if (ebin_->accumulation().sumCount() > 0)
     {
         /* This will only actually resize the first time */
-        enerhist->ener_ave.resize(ebin->nener);
-        enerhist->ener_sum.resize(ebin->nener);
+        enerhist->ener_ave.resize(ebin_->numTerms());
+        enerhist->ener_sum.resize(ebin_->numTerms());
 
-        for (int i = 0; i < ebin->nener; i++)
+        for (int i = 0; i < ebin_->numTerms(); i++)
         {
-            enerhist->ener_ave[i] = ebin->e[i].eav;
-            enerhist->ener_sum[i] = ebin->e[i].esum;
+            enerhist->ener_ave[i] = ebin_->accumulation().energies()[i].eav;
+            enerhist->ener_sum[i] = ebin_->accumulation().energies()[i].esum;
         }
     }
 
-    if (ebin->nsum_sim > 0)
+    if (ebin_->simulationAccumulation().sumCount() > 0)
     {
         /* This will only actually resize the first time */
-        enerhist->ener_sum_sim.resize(ebin->nener);
+        enerhist->ener_sum_sim.resize(ebin_->numTerms());
 
-        for (int i = 0; i < ebin->nener; i++)
+        for (int i = 0; i < ebin_->numTerms(); i++)
         {
-            enerhist->ener_sum_sim[i] = ebin->e_sim[i].esum;
+            enerhist->ener_sum_sim[i] = ebin_->simulationAccumulation().energies()[i].esum;
         }
     }
     if (dhc_)
@@ -1475,7 +1443,7 @@ void EnergyOutput::fillEnergyHistory(energyhistory_t* enerhist) const
 
 void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t& enerhist)
 {
-    unsigned int nener = static_cast<unsigned int>(ebin_->nener);
+    unsigned int nener = static_cast<unsigned int>(ebin_->numTerms());
 
     if ((enerhist.nsum > 0 && nener != enerhist.ener_sum.size())
         || (enerhist.nsum_sim > 0 && nener != enerhist.ener_sum_sim.size()))
@@ -1488,17 +1456,8 @@ void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t& enerhist)
                   enerhist.ener_sum_sim.size());
     }
 
-    ebin_->nsteps     = enerhist.nsteps;
-    ebin_->nsum       = enerhist.nsum;
-    ebin_->nsteps_sim = enerhist.nsteps_sim;
-    ebin_->nsum_sim   = enerhist.nsum_sim;
+    ebin_->restoreFromEnergyHistory(enerhist);
 
-    for (int i = 0; i < ebin_->nener; i++)
-    {
-        ebin_->e[i].eav      = (enerhist.nsum > 0 ? enerhist.ener_ave[i] : 0);
-        ebin_->e[i].esum     = (enerhist.nsum > 0 ? enerhist.ener_sum[i] : 0);
-        ebin_->e_sim[i].esum = (enerhist.nsum_sim > 0 ? enerhist.ener_sum_sim[i] : 0);
-    }
     if (dhc_)
     {
         mde_delta_h_coll_restore_energyhistory(dhc_.get(), enerhist.deltaHForeignLambdas.get());
@@ -1507,7 +1466,7 @@ void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t& enerhist)
 
 int EnergyOutput::numEnergyTerms() const
 {
-    return ebin_->nener;
+    return ebin_->numTerms();
 }
 
 void EnergyOutput::printEnergyConservation(FILE* fplog, int simulationPart, bool usingMdIntegrator) const

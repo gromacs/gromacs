@@ -703,20 +703,19 @@ static void chk_ndx(const char* fn)
 
 static void chk_enx(const char* fn)
 {
-    int          nre, fnr;
-    ener_file_t  in;
-    gmx_enxnm_t* enm = nullptr;
-    t_enxframe*  fr;
-    gmx_bool     bShowTStep;
-    gmx_bool     timeSet;
-    real         t0, old_t1, old_t2;
-    char         buf[22];
+    int         fnr;
+    ener_file_t in;
+    t_enxframe* fr;
+    gmx_bool    bShowTStep;
+    gmx_bool    timeSet;
+    real        t0, old_t1, old_t2;
+    char        buf[22];
 
     fprintf(stderr, "Checking energy file %s\n\n", fn);
 
-    in = open_enx(fn, "r");
-    do_enxnms(in, &nre, &enm);
-    fprintf(stderr, "%d groups in energy file", nre);
+    in                                 = open_enx(fn, "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(in);
+    fprintf(stderr, "%d groups in energy file", static_cast<int>(gmx::ssize(enm)));
     snew(fr, 1);
     old_t2     = -2.0;
     old_t1     = -1.0;
@@ -757,7 +756,6 @@ static void chk_enx(const char* fn)
     fprintf(stderr, ".\n");
 
     free_enxframe(fr);
-    free_enxnms(nre, enm);
     sfree(fr);
 }
 

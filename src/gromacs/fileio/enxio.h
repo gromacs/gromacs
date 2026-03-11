@@ -37,6 +37,8 @@
 #include <cstdint>
 
 #include <filesystem>
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -48,6 +50,12 @@ struct t_enxframe;
 struct t_fileio;
 struct t_inputrec;
 class t_state;
+
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+}
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -62,11 +70,11 @@ class t_state;
  *
  **************************************************************/
 
-typedef struct
+struct gmx_enxnm_t
 {
-    char* name;
-    char* unit;
-} gmx_enxnm_t;
+    std::string name;
+    std::string unit;
+};
 
 /*
  * Index for the IDs of additional blocks in the energy file.
@@ -136,23 +144,8 @@ struct t_enxblock
 /* file handle */
 typedef struct ener_file* ener_file_t;
 
-/*
- * An energy file is read like this:
- *
- * ener_file_t fp;
- * t_enxframe *fr;
- *
- * fp = open_enx(...);
- * do_enxnms(fp,...);
- * snew(fr,1);
- * while (do_enx(fp,fr)) {
- * ...
- * }
- * free_enxframe(fr);
- * sfree(fr);
- */
-/* New energy reading and writing interface */
 
+/* Energy reading and writing interface */
 
 /* initialize a pre-allocated frame */
 void init_enxframe(t_enxframe* ef);
@@ -170,10 +163,11 @@ void close_enx(ener_file_t ef);
 /* Free the contents of ef, and ef itself */
 void done_ener_file(ener_file_t ef);
 
-void do_enxnms(ener_file_t ef, int* nre, gmx_enxnm_t** enms);
+/* Read energy term from file */
+std::vector<gmx_enxnm_t> readEnxNames(ener_file_t ef);
 
-void free_enxnms(int n, gmx_enxnm_t* nms);
-/* Frees nms and all strings in it */
+/* Write energy names to file */
+void writeEnxNames(ener_file_t ef, gmx::ArrayRef<const gmx_enxnm_t> enms);
 
 gmx_bool do_enx(ener_file_t ef, t_enxframe* fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */

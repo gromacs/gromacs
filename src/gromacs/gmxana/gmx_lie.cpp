@@ -65,7 +65,7 @@ typedef struct
     int* qq;
 } t_liedata;
 
-static t_liedata* analyze_names(int nre, gmx_enxnm_t* names, const char* ligand)
+static t_liedata* analyze_names(gmx::ArrayRef<const gmx_enxnm_t> names, const char* ligand)
 {
     t_liedata* ld;
     char       self[256];
@@ -73,17 +73,18 @@ static t_liedata* analyze_names(int nre, gmx_enxnm_t* names, const char* ligand)
     /* Now real analysis: find components of energies */
     sprintf(self, "%s-%s", ligand, ligand);
     snew(ld, 1);
-    for (int i = 0; (i < nre); i++)
+    for (int i = 0; i < gmx::ssize(names); i++)
     {
-        if ((std::strstr(names[i].name, ligand) != nullptr) && (std::strstr(names[i].name, self) == nullptr))
+        if (std::strstr(names[i].name.c_str(), ligand) != nullptr
+            && std::strstr(names[i].name.c_str(), self) == nullptr)
         {
-            if (std::strstr(names[i].name, "LJ") != nullptr)
+            if (names[i].name.find("LJ") != std::string::npos)
             {
                 ld->nlj++;
                 srenew(ld->lj, ld->nlj);
                 ld->lj[ld->nlj - 1] = i;
             }
-            else if (std::strstr(names[i].name, "Coul") != nullptr)
+            else if (names[i].name.find("Coul") != std::string::npos)
             {
                 ld->nqq++;
                 srenew(ld->qq, ld->nqq);
@@ -95,12 +96,12 @@ static t_liedata* analyze_names(int nre, gmx_enxnm_t* names, const char* ligand)
     printf("LJ:  ");
     for (int i = 0; (i < ld->nlj); i++)
     {
-        printf("  %12s", names[ld->lj[i]].name);
+        printf("  %12s", names[ld->lj[i]].name.c_str());
     }
     printf("\nCoul:");
     for (int i = 0; (i < ld->nqq); i++)
     {
-        printf("  %12s", names[ld->qq[i]].name);
+        printf("  %12s", names[ld->qq[i]].name.c_str());
     }
     printf("\n");
 
@@ -163,10 +164,9 @@ int gmx_lie(int argc, char* argv[])
 #define NPA asize(pa)
 
     FILE*             out;
-    int               nre, nframes = 0, ct = 0;
+    int               nframes = 0, ct = 0;
     ener_file_t       fp;
     t_liedata*        ld;
-    gmx_enxnm_t*      enm = nullptr;
     t_enxframe*       fr;
     real              lie;
     double            lieaver = 0, lieav2 = 0;
@@ -181,10 +181,10 @@ int gmx_lie(int argc, char* argv[])
         return 0;
     }
 
-    fp = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
-    do_enxnms(fp, &nre, &enm);
+    fp                                 = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(fp);
 
-    ld = analyze_names(nre, enm, ligand);
+    ld = analyze_names(enm, ligand);
     snew(fr, 1);
 
     out = xvgropen(
