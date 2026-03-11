@@ -100,6 +100,7 @@
 #    include "gromacs/utility/enumerationhelpers.h"
 #    include "gromacs/utility/gmxassert.h"
 #    include "gromacs/utility/real.h"
+#    include "gromacs/utility/stringutil.h"
 #    include "gromacs/utility/template_mp.h"
 #    include "gromacs/utility/vec.h"
 #    include "gromacs/utility/vectypes.h"
@@ -393,6 +394,9 @@ public:
     AtomData atoms;
     //! forcerec helper
     ForcerecHelper frHelper;
+    //! Description for test naming
+    std::string description;
+
 
     //! Constructor
     ListInput() {}
@@ -417,6 +421,10 @@ public:
     ListInput setInteraction(CoulombInteractionType coulType, VanDerWaalsType vdwType, InteractionModifiers vdwMod)
     {
         frHelper.initForcerec(atoms.idef, coulType, vdwType, vdwMod);
+        description = formatString("coul_%s_vdw_%s_vdwmod_%s",
+                                   enumValueToString(coulType),
+                                   enumValueToString(vdwType),
+                                   enumValueToString(vdwMod));
         return *this;
     }
 };
@@ -751,8 +759,38 @@ void gpuLaunchCpyback(NbnxmGpu* nb, struct OutputQuantities* output)
                          nullptr);
 }
 
-class NonbondedFepGpuTest :
-    public ::testing::TestWithParam<std::tuple<SoftcoreType, ListInput, PaddedVector<RVec>, real, real, bool>>
+struct CoordinateSet
+{
+    std::string        name;
+    PaddedVector<RVec> x;
+};
+
+using NonbondedFepGpuTestParameters = std::tuple<SoftcoreType, ListInput, CoordinateSet, real, real, bool>;
+
+/*! \brief Help GoogleTest name our test cases */
+std::string nameOfTest(const testing::TestParamInfo<NonbondedFepGpuTestParameters>& info)
+{
+    std::string testName = formatString("softcore_%s_list_%s_coords_%s_%g_%g_scCoulomb_%s",
+                                        enumValueToString(std::get<0>(info.param)),
+                                        std::get<1>(info.param).description.c_str(),
+                                        std::get<2>(info.param).name.c_str(),
+                                        std::get<3>(info.param),
+                                        std::get<4>(info.param),
+                                        std::get<5>(info.param) ? "Yes" : "No");
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+class NonbondedFepGpuTest : public ::testing::TestWithParam<NonbondedFepGpuTestParameters>
 {
 protected:
     PaddedVector<RVec>   x_;
@@ -768,7 +806,7 @@ protected:
     {
         softcoreType_    = std::get<0>(GetParam());
         input_           = std::get<1>(GetParam());
-        x_               = std::get<2>(GetParam());
+        x_               = std::get<2>(GetParam()).x;
         lambda_          = std::get<3>(GetParam());
         softcoreAlpha_   = std::get<4>(GetParam());
         softcoreCoulomb_ = std::get<5>(GetParam());
@@ -868,19 +906,20 @@ std::vector<bool> c_softcoreCoulomb                             = { true, false 
 //  No Gapsys Softcore function support on GPU yet
 std::vector<SoftcoreType> c_softcoreType = { SoftcoreType::Beutler };
 
-//! Coordinates for testing
-std::vector<PaddedVector<RVec>> c_coordinates = {
-    { { 1.0, 1.0, 1.0 }, { 1.1, 1.15, 1.2 }, { 0.9, 0.85, 0.8 }, { 1.1, 1.15, 0.8 } }
+//! Named sets of coordinates for testing
+std::vector<CoordinateSet> c_coordinateSets = {
+    { "A", { { 1.0, 1.0, 1.0 }, { 1.1, 1.15, 1.2 }, { 0.9, 0.85, 0.8 }, { 1.1, 1.15, 0.8 } } },
 };
 
 INSTANTIATE_TEST_SUITE_P(NBInteraction,
                          NonbondedFepGpuTest,
                          ::testing::Combine(::testing::ValuesIn(c_softcoreType),
                                             ::testing::ValuesIn(c_interaction),
-                                            ::testing::ValuesIn(c_coordinates),
+                                            ::testing::ValuesIn(c_coordinateSets),
                                             ::testing::ValuesIn(c_fepLambdas),
                                             ::testing::ValuesIn(c_softcoreBeutlerAlphaOrGapsysLinpointScaling),
-                                            ::testing::ValuesIn(c_softcoreCoulomb)));
+                                            ::testing::ValuesIn(c_softcoreCoulomb)),
+                         nameOfTest);
 
 
 } // namespace
