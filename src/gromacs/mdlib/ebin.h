@@ -130,12 +130,10 @@ public:
      * entryIndex. If bSum is TRUE then the reals are also added to the sum and sum of squares.
      *
      * \param[in] entryIndex  Internal index of the term(s) to add.
-     * \param[in] nener       Number of the terms to add.
-     * \param[in] ener        Value(s) of thermodynamic term(s) (nener ptc.)
+     * \param[in] ener        Value(s) of thermodynamic term(s)
      * \param[in] accumulate  If the average value should be accumulated for this term(s).
      */
-    void addValues(int entryIndex, int nener, const real ener[], bool accumulate);
-
+    void addValues(int entryIndex, gmx::ArrayRef<const real> ener, bool accumulate);
 
     /*! \brief Add values from array to the bins if the matching entry in \c shouldUse is true.
      *

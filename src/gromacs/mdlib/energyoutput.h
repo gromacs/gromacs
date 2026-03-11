@@ -302,6 +302,14 @@ public:
     void printEnergyConservation(FILE* fplog, int simulationPart, bool usingMdIntegrator) const;
 
 private:
+    //! Returns a buffer of size n for T-coupling related output with uninitialized data
+    gmx::ArrayRef<real> getTmpBuffer(size_t n)
+    {
+        GMX_ASSERT(n <= tmpBuffer_.size(), "Storage should be sufficiently large");
+
+        return gmx::arrayRefFromArray(tmpBuffer_.data(), n);
+    }
+
     //! Timestep
     double delta_t_ = 0;
 
@@ -407,8 +415,8 @@ private:
     //! Index for scalling factor of MTTK
     int itcb_ = 0;
 
-    //! Array to accumulate values during update
-    std::vector<real> tmp_r_;
+    //! Array to accumulate values for T-coupling related quantities during update
+    std::vector<real> tmpBuffer_;
 
     //! The dhdl.xvg output file
     FILE* fp_dhdl_ = nullptr;

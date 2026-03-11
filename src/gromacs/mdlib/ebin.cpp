@@ -104,20 +104,20 @@ int t_ebin::getSpace(gmx::ArrayRef<const std::string> enm, const char* unit)
     return index;
 }
 
-void t_ebin::addValues(const int entryIndex, const int nener, const real* ener, const bool accumulate)
+void t_ebin::addValues(const int entryIndex, const gmx::ArrayRef<const real> ener, const bool accumulate)
 {
-    if ((entryIndex + nener > nener_) || (entryIndex < 0))
+    if ((entryIndex + gmx::ssize(ener) > nener_) || (entryIndex < 0))
     {
         gmx_fatal(FARGS,
                   "%s-%d: Energies out of range: entryIndex=%d nener=%d maxener=%d",
                   __FILE__,
                   __LINE__,
                   entryIndex,
-                  nener,
+                  static_cast<int>(gmx::ssize(ener)),
                   nener_);
     }
 
-    for (int i = 0; i < nener; i++)
+    for (int i = 0; i < gmx::ssize(ener); i++)
     {
         accumulation_.energies_[entryIndex + i].e = ener[i];
     }
@@ -128,7 +128,7 @@ void t_ebin::addValues(const int entryIndex, const int nener, const real* ener, 
 
         if (m == 0)
         {
-            for (int i = 0; i < nener; i++)
+            for (int i = 0; i < gmx::ssize(ener); i++)
             {
                 accumulation_.energies_[entryIndex + i].eav  = 0;
                 accumulation_.energies_[entryIndex + i].esum = ener[i];
@@ -139,7 +139,7 @@ void t_ebin::addValues(const int entryIndex, const int nener, const real* ener, 
         {
             const double invmm = (1.0 / m) / (m + 1.0);
 
-            for (int i = 0; i < nener; i++)
+            for (int i = 0; i < gmx::ssize(ener); i++)
             {
                 /* Value for this component */
                 const double e = ener[i];
@@ -157,7 +157,7 @@ void t_ebin::addValues(const int entryIndex, const int nener, const real* ener, 
 
 void t_ebin::addValue(int entryIndex, const real ener, bool accumulate)
 {
-    addValues(entryIndex, 1, &ener, accumulate);
+    addValues(entryIndex, gmx::constArrayRefFromArray(&ener, 1), accumulate);
 }
 
 // TODO It would be faster if this function was templated on both bSum

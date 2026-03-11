@@ -88,6 +88,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
@@ -468,18 +469,16 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         mdeb_n_ = 0;
     }
 
-    tmp_r_.resize(mde_n_);
+    tmpBuffer_.resize(std::max(mde_n_, mdeb_n_));
 
+    std::vector<std::string> grpnms;
+
+    for (int i = 0; i < nTC_; i++)
     {
-        std::vector<std::string> grpnms;
-
-        for (int i = 0; i < nTC_; i++)
-        {
-            const int ni = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
-            grpnms.push_back(gmx::formatString("T-%s", *(groups.groupNames[ni])));
-        }
-        itemp_ = ebin_->getSpace(grpnms, unit_temp_K);
+        const int ni = groups.groups[SimulationAtomGroupType::TemperatureCoupling][i];
+        grpnms.push_back(gmx::formatString("T-%s", *(groups.groupNames[ni])));
     }
+    itemp_ = ebin_->getSpace(grpnms, unit_temp_K);
 
     if (etc_ == TemperatureCoupling::NoseHoover)
     {
@@ -854,13 +853,8 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
                                        const rvec              mu_tot,
                                        const gmx::Constraints* constr)
 {
-    int  j, k, kk, n, gid;
-    real tmp6[6];
-    real bs[tricl_boxs_nm.size()], vol, dens, enthalpy;
-    real eee[static_cast<int>(NonBondedEnergyTerms::Count)];
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double> store_dhdl;
-    real                                                              store_energy = 0;
-    real                                                              tmp;
+
     real pv = 0.0; // static analyzer warns about uninitialized variable warnings here.
 
     /* Do NOT use the box in the state variable, but the separate box provided
@@ -875,27 +869,20 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
     }
     if (bDynBox_)
     {
-        int nboxs;
+        static_assert(tricl_boxs_nm.size() == 6 && boxs_nm.size() == 3);
+        FixedCapacityVector<real, 6> bs(bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size());
+        bs[0] = box[XX][XX];
+        bs[1] = box[YY][YY];
+        bs[2] = box[ZZ][ZZ];
         if (bTricl_)
         {
-            bs[0] = box[XX][XX];
-            bs[1] = box[YY][YY];
-            bs[2] = box[ZZ][ZZ];
             bs[3] = box[YY][XX];
             bs[4] = box[ZZ][XX];
             bs[5] = box[ZZ][YY];
-            nboxs = tricl_boxs_nm.size();
         }
-        else
-        {
-            bs[0] = box[XX][XX];
-            bs[1] = box[YY][YY];
-            bs[2] = box[ZZ][ZZ];
-            nboxs = boxs_nm.size();
-        }
-        vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
-        dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
-        ebin_->addValues(ib_, nboxs, bs, bSum);
+        real vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+        real dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
+        ebin_->addValues(ib_, bs, bSum);
         ebin_->addValue(ivol_, vol, bSum);
         ebin_->addValue(idens_, dens, bSum);
 
@@ -906,58 +893,64 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
             pv = vol * ref_p_ / gmx::c_presfac;
 
             ebin_->addValue(ipv_, pv, bSum);
-            enthalpy = pv + enerd->term[InteractionFunction::TotalEnergy];
+            real enthalpy = pv + enerd->term[InteractionFunction::TotalEnergy];
             ebin_->addValue(ienthalpy_, enthalpy, bSum);
         }
     }
     if (bPres_)
     {
-        ebin_->addValues(ivir_, 9, vir[0], bSum);
-        ebin_->addValues(ipres_, 9, pres[0], bSum);
-        tmp = (pres[ZZ][ZZ] - (pres[XX][XX] + pres[YY][YY]) * 0.5) * box[ZZ][ZZ];
+        ebin_->addValues(ivir_, constArrayRefFromArray(vir[0], 9), bSum);
+        ebin_->addValues(ipres_, constArrayRefFromArray(pres[0], 9), bSum);
+        real tmp = (pres[ZZ][ZZ] - (pres[XX][XX] + pres[YY][YY]) * 0.5) * box[ZZ][ZZ];
         ebin_->addValue(isurft_, tmp, bSum);
     }
     if (epc_ == PressureCoupling::ParrinelloRahman || epc_ == PressureCoupling::Mttk)
     {
+        FixedCapacityVector<real, 6> tmp6(bTricl_ ? 6 : 3);
         tmp6[0] = ptCouplingArrays.boxv[XX][XX];
         tmp6[1] = ptCouplingArrays.boxv[YY][YY];
         tmp6[2] = ptCouplingArrays.boxv[ZZ][ZZ];
-        tmp6[3] = ptCouplingArrays.boxv[YY][XX];
-        tmp6[4] = ptCouplingArrays.boxv[ZZ][XX];
-        tmp6[5] = ptCouplingArrays.boxv[ZZ][YY];
-        ebin_->addValues(ipc_, bTricl_ ? 6 : 3, tmp6, bSum);
+        if (bTricl_)
+        {
+            tmp6[3] = ptCouplingArrays.boxv[YY][XX];
+            tmp6[4] = ptCouplingArrays.boxv[ZZ][XX];
+            tmp6[5] = ptCouplingArrays.boxv[ZZ][YY];
+        }
+        ebin_->addValues(ipc_, tmp6, bSum);
     }
     if (bMu_)
     {
-        ebin_->addValues(imu_, 3, mu_tot, bSum);
+        ebin_->addValues(imu_, constArrayRefFromArray(mu_tot, 3), bSum);
     }
     if (ekind && ekind->cosacc.cos_accel != 0)
     {
-        vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
-        dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
+        real vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+        real dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
         ebin_->addValue(ivcos_, ekind->cosacc.vcos, bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
-        tmp = 1
-              / (ekind->cosacc.cos_accel / (ekind->cosacc.vcos * gmx::c_pico) * dens
-                 * gmx::square(box[ZZ][ZZ] * gmx::c_nano / (2 * M_PI)));
+        real tmp = 1
+                   / (ekind->cosacc.cos_accel / (ekind->cosacc.vcos * gmx::c_pico) * dens
+                      * gmx::square(box[ZZ][ZZ] * gmx::c_nano / (2 * M_PI)));
         ebin_->addValue(ivisc_, tmp, bSum);
     }
     if (nE_ > 1)
     {
-        n = 0;
-        for (int i = 0; (i < nEg_); i++)
+        FixedCapacityVector<real, static_cast<int>(NonBondedEnergyTerms::Count)> eee(nEc_);
+        int                                                                      n = 0;
+        for (int i = 0; i < nEg_; i++)
         {
-            for (j = i; (j < nEg_); j++)
+            for (int j = i; j < nEg_; j++)
             {
-                gid = GID(i, j, nEg_);
-                for (k = kk = 0; (k < static_cast<int>(NonBondedEnergyTerms::Count)); k++)
+                int gid = GID(i, j, nEg_);
+                int kk  = 0;
+                for (int k = 0; k < static_cast<int>(NonBondedEnergyTerms::Count); k++)
                 {
                     if (bEInd_[k])
                     {
                         eee[kk++] = enerd->grpp.energyGroupPairTerms[k][gid];
                     }
                 }
-                ebin_->addValues(igrp_[n], nEc_, eee, bSum);
+                ebin_->addValues(igrp_[n], eee, bSum);
                 n++;
             }
         }
@@ -965,11 +958,12 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
 
     if (ekind)
     {
-        for (int i = 0; (i < nTC_); i++)
+        auto tempBuf = getTmpBuffer(nTC_);
+        for (int i = 0; i < nTC_; i++)
         {
-            tmp_r_[i] = ekind->tcstat[i].T;
+            tempBuf[i] = ekind->tcstat[i].T;
         }
-        ebin_->addValues(itemp_, nTC_, tmp_r_.data(), bSum);
+        ebin_->addValues(itemp_, tempBuf, bSum);
 
         if (etc_ == TemperatureCoupling::NoseHoover)
         {
@@ -978,50 +972,54 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
             {
                 if (bNHC_trotter_)
                 {
+                    auto nhcBuf = getTmpBuffer(2 * nNHC_ * nTC_);
                     for (int i = 0; (i < nTC_); i++)
                     {
-                        for (j = 0; j < nNHC_; j++)
+                        for (int j = 0; j < nNHC_; j++)
                         {
-                            k                 = i * nNHC_ + j;
-                            tmp_r_[2 * k]     = ptCouplingArrays.nosehoover_xi[k];
-                            tmp_r_[2 * k + 1] = ptCouplingArrays.nosehoover_vxi[k];
+                            int k             = i * nNHC_ + j;
+                            nhcBuf[2 * k]     = ptCouplingArrays.nosehoover_xi[k];
+                            nhcBuf[2 * k + 1] = ptCouplingArrays.nosehoover_vxi[k];
                         }
                     }
-                    ebin_->addValues(itc_, mde_n_, tmp_r_.data(), bSum);
+                    ebin_->addValues(itc_, nhcBuf, bSum);
 
                     if (bMTTK_)
                     {
+                        auto mttkBuf = getTmpBuffer(2 * nNHC_ * nTCP_);
                         for (int i = 0; (i < nTCP_); i++)
                         {
-                            for (j = 0; j < nNHC_; j++)
+                            for (int j = 0; j < nNHC_; j++)
                             {
-                                k                 = i * nNHC_ + j;
-                                tmp_r_[2 * k]     = ptCouplingArrays.nhpres_xi[k];
-                                tmp_r_[2 * k + 1] = ptCouplingArrays.nhpres_vxi[k];
+                                int k              = i * nNHC_ + j;
+                                mttkBuf[2 * k]     = ptCouplingArrays.nhpres_xi[k];
+                                mttkBuf[2 * k + 1] = ptCouplingArrays.nhpres_vxi[k];
                             }
                         }
-                        ebin_->addValues(itcb_, mdeb_n_, tmp_r_.data(), bSum);
+                        ebin_->addValues(itcb_, mttkBuf, bSum);
                     }
                 }
                 else
                 {
-                    for (int i = 0; (i < nTC_); i++)
+                    auto nhBuf = getTmpBuffer(2 * nTC_);
+                    for (int i = 0; i < nTC_; i++)
                     {
-                        tmp_r_[2 * i]     = ptCouplingArrays.nosehoover_xi[i];
-                        tmp_r_[2 * i + 1] = ptCouplingArrays.nosehoover_vxi[i];
+                        nhBuf[2 * i]     = ptCouplingArrays.nosehoover_xi[i];
+                        nhBuf[2 * i + 1] = ptCouplingArrays.nosehoover_vxi[i];
                     }
-                    ebin_->addValues(itc_, mde_n_, tmp_r_.data(), bSum);
+                    ebin_->addValues(itc_, nhBuf, bSum);
                 }
             }
         }
         else if (etc_ == TemperatureCoupling::Berendsen || etc_ == TemperatureCoupling::Yes
                  || etc_ == TemperatureCoupling::VRescale)
         {
+            auto tcBuf = getTmpBuffer(nTC_);
             for (int i = 0; (i < nTC_); i++)
             {
-                tmp_r_[i] = ekind->tcstat[i].lambda;
+                tcBuf[i] = ekind->tcstat[i].lambda;
             }
-            ebin_->addValues(itc_, nTC_, tmp_r_.data(), bSum);
+            ebin_->addValues(itc_, tcBuf, bSum);
         }
     }
 
@@ -1063,16 +1061,17 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
 
             if (fep->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
             {
+                real energy;
                 switch (fep->edHdLPrintEnergy)
                 {
                     case FreeEnergyPrintEnergy::Potential:
-                        store_energy = enerd->term[InteractionFunction::PotentialEnergy];
+                        energy = enerd->term[InteractionFunction::PotentialEnergy];
                         break;
                     case FreeEnergyPrintEnergy::Total:
                     case FreeEnergyPrintEnergy::Yes:
-                    default: store_energy = enerd->term[InteractionFunction::TotalEnergy];
+                    default: energy = enerd->term[InteractionFunction::TotalEnergy];
                 }
-                fprintf(fp_dhdl_, " %#.8g", store_energy);
+                fprintf(fp_dhdl_, " %#.8g", energy);
             }
 
             if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
@@ -1117,11 +1116,11 @@ void EnergyOutput::addDataAtEnergyStep(const bool              bDoDHDL,
                     idhdl += 1;
                 }
             }
-            store_energy = enerd->term[InteractionFunction::TotalEnergy];
+            real energy = enerd->term[InteractionFunction::TotalEnergy];
             /* store_dh is dE */
             mde_delta_h_coll_add_dh(dhc_.get(),
                                     static_cast<double>(fep_state),
-                                    store_energy,
+                                    energy,
                                     pv,
                                     store_dhdl,
                                     dE_.data() + fep->lambda_start_n,
