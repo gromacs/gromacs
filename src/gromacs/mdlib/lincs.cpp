@@ -510,7 +510,11 @@ static void lincs_update_atoms(Lincs*                         li,
              * in multiple thread atom blocks on the main thread.
              */
 #pragma omp barrier
-#pragma omp master
+#if defined(_OPENMP) && _OPENMP >= 202011
+#    pragma omp masked filter(0)
+#else
+#    pragma omp master
+#endif
             {
                 lincs_update_atoms_ind(
                         li->task[li->ntask].updateConstraintIndices1, li->atoms, preFactor, fac, r, invmass, x);
@@ -1186,7 +1190,11 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
         if ((lincsd->bCommIter && dd != nullptr && dd->constraints))
         {
 #pragma omp barrier
-#pragma omp master
+#if defined(_OPENMP) && _OPENMP >= 202011
+#    pragma omp masked filter(0)
+#else
+#    pragma omp master
+#endif
             {
                 /* Communicate the corrected non-local coordinates */
                 if (dd != nullptr)
