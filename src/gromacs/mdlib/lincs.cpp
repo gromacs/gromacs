@@ -510,8 +510,8 @@ static void lincs_update_atoms(Lincs*                         li,
              * in multiple thread atom blocks on the main thread.
              */
 #pragma omp barrier
-#if defined(_OPENMP) && _OPENMP >= 202011
-#    pragma omp masked filter(0)
+#if (defined(_OPENMP) && _OPENMP >= 202011) && !defined(__NVCOMPILER)
+#    pragma omp masked
 #else
 #    pragma omp master
 #endif
@@ -1190,8 +1190,8 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
         if ((lincsd->bCommIter && dd != nullptr && dd->constraints))
         {
 #pragma omp barrier
-#if defined(_OPENMP) && _OPENMP >= 202011
-#    pragma omp masked filter(0)
+#if (defined(_OPENMP) && _OPENMP >= 202011) && !defined(__NVCOMPILER)
+#    pragma omp masked
 #else
 #    pragma omp master
 #endif
