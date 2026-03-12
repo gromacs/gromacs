@@ -221,6 +221,9 @@ TorchModel::TorchModel(const std::string& fileName,
         loadModelExtensions(ext_libs, logger_);
     }
 
+    // disable graph optimizations in torchscript, can cause issues with some models
+    torch::jit::setGraphExecutorOptimize(false);
+
     // try loading the model
     if (mpiComm_.isMainRank())
     {

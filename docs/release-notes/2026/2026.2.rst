@@ -15,6 +15,14 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed a RuntimeError within the NNPot interface
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed a "RuntimeError: Global alloc not supported yet" when running GPU inference on certain
+NNP models (e.g. Nutmeg) within the NNPot interface.
+
+:issue:`5586`
        
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
