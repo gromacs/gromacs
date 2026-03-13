@@ -189,6 +189,10 @@ struct PmeNvshmemHost
  */
 struct PmeGpu
 {
+#if GMX_GPU_CUDA || GMX_GPU_OPENCL || GMX_GPU_SYCL || GMX_GPU_HIP || defined DOXYGEN
+    ~PmeGpu();
+#endif
+
     /*! \brief The information copied once per reinit from the CPU structure. */
     std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
 

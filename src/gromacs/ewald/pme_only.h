@@ -44,6 +44,8 @@
 #ifndef GMX_EWALD_PME_ONLY_H
 #define GMX_EWALD_PME_ONLY_H
 
+#include <memory>
+#include <optional>
 #include <string>
 
 #include "gromacs/timing/walltime_accounting.h"
@@ -51,6 +53,7 @@
 struct t_inputrec;
 struct t_nrnb;
 struct gmx_domdec_t;
+struct gmx_wallclock_gpu_pme_t;
 struct gmx_pme_t;
 struct gmx_wallcycle;
 
@@ -60,17 +63,24 @@ namespace gmx
 class DeviceStreamManager;
 }
 
-/*! \brief Called on the nodes that do PME exclusively */
-int gmx_pmeonly(gmx_pme_t**                     pme,
-                const gmx_domdec_t&             dd,
-                t_nrnb*                         mynrnb,
-                gmx_wallcycle*                  wcycle,
-                gmx_walltime_accounting_t       walltime_accounting,
-                t_inputrec*                     ir,
-                PmeRunMode                      runMode,
-                bool                            useGpuPmePpCommunication,
-                bool                            useNvshmem,
-                bool                            useGpuHaloExchange,
-                const gmx::DeviceStreamManager* deviceStreamManager);
+/*! \brief Called on the ranks that do PME exclusively
+ *
+ * The \c pme object was made in mdrunner() and is moved in here so
+ * that PME tuning can replace it with another such.
+ *
+ * \return If PME ran on a GPU and timings were available, timing
+ * measurements
+ */
+std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pme,
+                                                   const gmx_domdec_t&        dd,
+                                                   t_nrnb*                    mynrnb,
+                                                   gmx_wallcycle*             wcycle,
+                                                   gmx_walltime_accounting_t  walltime_accounting,
+                                                   t_inputrec*                ir,
+                                                   PmeRunMode                 runMode,
+                                                   bool useGpuPmePpCommunication,
+                                                   bool useNvshmem,
+                                                   bool useGpuHaloExchange,
+                                                   const gmx::DeviceStreamManager* deviceStreamManager);
 
 #endif

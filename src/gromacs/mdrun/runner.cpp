@@ -72,6 +72,7 @@
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_program.h"
+#include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_only.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -633,17 +634,17 @@ static TaskTarget findTaskTarget(const char* optionString)
 }
 
 //! Finish run, aggregate data to print performance info.
-static void finish_run(FILE*                     fplog,
-                       const gmx::MDLogger&      mdlog,
-                       const t_commrec*          cr,
-                       const t_inputrec&         inputrec,
-                       t_nrnb                    nrnb[],
-                       gmx_wallcycle*            wcycle,
-                       gmx_walltime_accounting_t walltime_accounting,
-                       nonbonded_verlet_t*       nbv,
-                       const gmx_pme_t*          pme,
-                       const int                 nratoms,
-                       gmx_bool                  bWriteStat)
+static void finish_run(FILE*                                         fplog,
+                       const gmx::MDLogger&                          mdlog,
+                       const t_commrec*                              cr,
+                       const t_inputrec&                             inputrec,
+                       t_nrnb                                        nrnb[],
+                       gmx_wallcycle*                                wcycle,
+                       gmx_walltime_accounting_t                     walltime_accounting,
+                       nonbonded_verlet_t*                           nbv,
+                       const std::optional<gmx_wallclock_gpu_pme_t>& pmeGpuTimings,
+                       const int                                     nratoms,
+                       gmx_bool                                      bWriteStat)
 {
     double delta_t = 0;
     double nbfs = 0, mflop = 0;
@@ -737,12 +738,6 @@ static void finish_run(FILE*                     fplog,
     {
         auto* nbnxn_gpu_timings =
                 (nbv != nullptr && nbv->useGpu()) ? gpu_get_timings(nbv->gpuNbv()) : nullptr;
-        gmx_wallclock_gpu_pme_t pme_gpu_timings = {};
-
-        if (pme_gpu_task_enabled(pme))
-        {
-            pme_gpu_get_timings(pme, &pme_gpu_timings);
-        }
         wallcycle_print(fplog,
                         mdlog,
                         cr->commMySim.size(),
@@ -753,7 +748,7 @@ static void finish_run(FILE*                     fplog,
                         wcycle,
                         cycle_sum,
                         nbnxn_gpu_timings,
-                        &pme_gpu_timings);
+                        pmeGpuTimings);
 
         if (EI_DYNAMICS(inputrec.eI))
         {
@@ -2029,12 +2024,6 @@ int Mdrunner::mdrunner()
         ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);
     }
 
-    gmx_pme_t* sepPmeData = nullptr;
-    // This reference hides the fact that PME data is owned by runner on PME-only ranks and by forcerec on other ranks
-    GMX_ASSERT(thisRankHasPPDuty(cr->dd) == (fr != nullptr),
-               "Double-checking that only PME-only ranks have no forcerec");
-    gmx_pme_t*& pmedata = fr ? fr->pmedata : sepPmeData;
-
     // TODO should live in ewald module once its testing is improved
     //
     // Later, this program could contain kernels that might be later
@@ -2053,6 +2042,7 @@ int Mdrunner::mdrunner()
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
+    std::unique_ptr<gmx_pme_t> pmedata;
     if (usingPme(inputrec->coulombtype) || usingLJPme(inputrec->vdwtype))
     {
         if (mdAtoms && mdAtoms->mdatoms())
@@ -2106,6 +2096,7 @@ int Mdrunner::mdrunner()
                                                          updateGroups.updateGroupingPerMoleculeType(),
                                                          ir->ewald_rtol,
                                                          ChanceTarget::Atom);
+
                 pmedata = gmx_pme_init(cr->dd,
                                        getNumPmeDomains(cr->dd),
                                        ir,
@@ -2118,12 +2109,10 @@ int Mdrunner::mdrunner()
                                        ewaldcoeff_lj,
                                        gmx_omp_nthreads_get(ModuleMultiThread::Pme),
                                        pmeRunMode,
-                                       nullptr,
                                        deviceContext,
                                        pmeStream,
                                        pmeGpuProgram.get(),
-                                       mdlog,
-                                       nullptr);
+                                       mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -2158,11 +2147,14 @@ int Mdrunner::mdrunner()
         signal_handler_install();
     }
 
+    std::optional<gmx_wallclock_gpu_pme_t> pmeGpuTimings;
     try
     {
         pull_t* pull_work = nullptr;
         if (thisRankHasPPDuty(cr->dd))
         {
+            // Give ownership to the forcerec for the actual workload
+            fr->pmedata = std::move(pmedata);
             /* Assumes uniform use of the number of OpenMP threads */
             walltime_accounting =
                     walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Default));
@@ -2335,7 +2327,7 @@ int Mdrunner::mdrunner()
                 stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
                         *deviceStreamManager,
                         transferKind,
-                        pme_gpu_get_block_size(fr->pmedata),
+                        pme_gpu_get_block_size(fr->pmedata.get()),
                         runScheduleWork.simulationWork.useNvshmem,
                         runScheduleWork.simulationWork.useGpuFBufferOpsWhenAllowed,
                         wcycle.get());
@@ -2385,23 +2377,23 @@ int Mdrunner::mdrunner()
             {
                 finish_pull(pull_work);
             }
+            pmeGpuTimings = pme_gpu_get_timings(fr->pmedata.get());
         }
         else
         {
-            GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
             /* do PME only */
             walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Pme));
-            gmx_pmeonly(&pmedata,
-                        *cr->dd,
-                        &nrnb,
-                        wcycle.get(),
-                        walltime_accounting,
-                        inputrec.get(),
-                        pmeRunMode,
-                        runScheduleWork.simulationWork.useGpuPmePpCommunication,
-                        runScheduleWork.simulationWork.useNvshmem,
-                        runScheduleWork.simulationWork.useGpuHaloExchange,
-                        deviceStreamManager.get());
+            pmeGpuTimings = gmx_pmeonly(std::move(pmedata),
+                                        *cr->dd,
+                                        &nrnb,
+                                        wcycle.get(),
+                                        walltime_accounting,
+                                        inputrec.get(),
+                                        pmeRunMode,
+                                        runScheduleWork.simulationWork.useGpuPmePpCommunication,
+                                        runScheduleWork.simulationWork.useNvshmem,
+                                        runScheduleWork.simulationWork.useGpuHaloExchange,
+                                        deviceStreamManager.get());
         }
 
         if (!hwinfo_->deviceInfoList.empty())
@@ -2424,7 +2416,7 @@ int Mdrunner::mdrunner()
                    wcycle.get(),
                    walltime_accounting,
                    fr ? fr->nbv.get() : nullptr,
-                   pmedata,
+                   pmeGpuTimings,
                    mtop.natoms,
                    EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
     }
@@ -2435,13 +2427,6 @@ int Mdrunner::mdrunner()
 
     try
     {
-        // Free PME data
-        if (pmedata)
-        {
-            gmx_pme_destroy(pmedata);
-            pmedata = nullptr;
-        }
-
         // FIXME: this is only here to manually unpin mdAtoms->chargeA_ and state->x,
         // before we destroy the GPU context(s)
         // Pinned buffers are associated with contexts in CUDA.

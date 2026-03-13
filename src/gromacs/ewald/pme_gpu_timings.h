@@ -44,6 +44,8 @@
 
 #include <cstddef>
 
+#include <optional>
+
 struct gmx_wallclock_gpu_pme_t;
 struct PmeGpu;
 
@@ -94,12 +96,13 @@ void pme_gpu_reinit_timings(const PmeGpu* pmeGpu);
  */
 void pme_gpu_reset_timings(const PmeGpu* pmeGpu);
 
-/*! \libinternal \brief
- * Copies the PME GPU timings to the gmx_wallclock_gpu_t structure (for log output). To be called at the run end.
+/*! \libinternal \brief When available, copies the PME GPU timings to
+ * the gmx_wallclock_gpu_t structure (for log output). To be called at
+ * the run end.
  *
  * \param[in] pmeGpu         The PME GPU structure.
- * \param[in] timings        The gmx_wallclock_gpu_pme_t structure.
+ * \returns                  The gmx_wallclock_gpu_pme_t structure.
  */
-void pme_gpu_get_timings(const PmeGpu* pmeGpu, gmx_wallclock_gpu_pme_t* timings);
+std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const PmeGpu* pmeGpu);
 
 #endif

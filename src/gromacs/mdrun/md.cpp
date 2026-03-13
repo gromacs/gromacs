@@ -557,7 +557,7 @@ void gmx::LegacySimulator::do_md()
         && pmeTuningIsSupported(fr_->ic->coulomb.type, mdrunOptions_.reproducible, simulationWork))
     {
         pmeLoadBal = std::make_unique<PmeLoadBalancing>(
-                cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, simulationWork);
+                cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata.get(), simulationWork);
     }
 
     if (!ir->bContinuation)
@@ -2098,8 +2098,10 @@ void gmx::LegacySimulator::do_md()
             fr_->longRangeNonbondeds->updateAfterPartition(*md);
             if (runScheduleWork_->stepWork.haveGpuPmeOnThisRank)
             {
-                pme_gpu_prepare_computation(
-                        fr_->pmedata, state_->box, simulationWork.haveDynamicBox, runScheduleWork_->stepWork);
+                pme_gpu_prepare_computation(fr_->pmedata.get(),
+                                            state_->box,
+                                            simulationWork.haveDynamicBox,
+                                            runScheduleWork_->stepWork);
             }
         }
 
@@ -2153,7 +2155,7 @@ void gmx::LegacySimulator::do_md()
                                     cr_,
                                     fr_->nbv.get(),
                                     nrnb_,
-                                    fr_->pmedata,
+                                    fr_->pmedata.get(),
                                     pmeLoadBal.get(),
                                     wallCycleCounters_,
                                     wallTimeAccounting_);

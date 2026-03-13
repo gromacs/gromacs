@@ -88,17 +88,17 @@ namespace gmx
 /*! \brief Parameters and settings for one PP-PME setup */
 struct pme_setup_t
 {
-    real rcut_coulomb;         /**< Coulomb cut-off                              */
-    real rlistOuter;           /**< cut-off for the outer pair-list              */
-    real rlistInner;           /**< cut-off for the inner pair-list              */
-    real spacing;              /**< (largest) PME grid spacing                   */
-    ivec grid;                 /**< the PME grid dimensions                      */
-    real grid_efficiency;      /**< ineffiency factor for non-uniform grids <= 1 */
-    real ewaldcoeff_q;         /**< Electrostatic Ewald coefficient            */
-    real ewaldcoeff_lj;        /**< LJ Ewald coefficient, only for the call to send_switchgrid */
-    struct gmx_pme_t* pmedata; /**< the data structure used in the PME code      */
-    int               count;   /**< number of times this setup has been timed    */
-    double            cycles;  /**< the fastest time for this setup in cycles    */
+    real rcut_coulomb;    /**< Coulomb cut-off                              */
+    real rlistOuter;      /**< cut-off for the outer pair-list              */
+    real rlistInner;      /**< cut-off for the inner pair-list              */
+    real spacing;         /**< (largest) PME grid spacing                   */
+    ivec grid;            /**< the PME grid dimensions                      */
+    real grid_efficiency; /**< ineffiency factor for non-uniform grids <= 1 */
+    real ewaldcoeff_q;    /**< Electrostatic Ewald coefficient            */
+    real ewaldcoeff_lj;   /**< LJ Ewald coefficient, only for the call to send_switchgrid */
+    std::unique_ptr<gmx_pme_t> pmedata; /**< the data structure used in the PME code      */
+    int                        count;   /**< number of times this setup has been timed    */
+    double                     cycles;  /**< the fastest time for this setup in cycles    */
 };
 
 /*! \brief After 50 nstlist periods of not observing imbalance: never tune PME */
@@ -205,10 +205,8 @@ public:
          const matrix               box,
          const interaction_const_t& ic,
          const nonbonded_verlet_t&  nbv,
-         gmx_pme_t*                 pmedata,
+         const gmx_pme_t*           pmedataPtr,
          const SimulationWorkload&  simulationWork);
-
-    ~Impl();
 
     bool isActive() const { return isActive_; }
 
@@ -248,15 +246,19 @@ public:
      * times and acquiring enough statistics, the best performing setup is chosen.
      * Here we try to take into account fluctuations and changes due to external
      * factors as well as DD load balancing.
+     *
+     * Consumes \p oldPmedata.
+     *
+     * \returns a new gmx_pme_t object
      */
-    void balance(FILE*                fp_err,
-                 const matrix         box,
-                 ArrayRef<const RVec> x,
-                 double               cycles,
-                 interaction_const_t* ic,
-                 nonbonded_verlet_t*  nbv,
-                 gmx_pme_t**          pmedata,
-                 int64_t              step);
+    std::unique_ptr<gmx_pme_t> balance(FILE*                        fp_err,
+                                       const matrix                 box,
+                                       ArrayRef<const RVec>         x,
+                                       double                       cycles,
+                                       interaction_const_t*         ic,
+                                       nonbonded_verlet_t*          nbv,
+                                       std::unique_ptr<gmx_pme_t>&& oldPmedata,
+                                       int64_t                      step);
 
     /*! \brief Prepare for another round of PME load balancing
      *
@@ -362,7 +364,7 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
                              const matrix               box,
                              const interaction_const_t& ic,
                              const nonbonded_verlet_t&  nbv,
-                             gmx_pme_t*                 pmedata,
+                             const gmx_pme_t*           pmedata,
                              const SimulationWorkload&  simulationWork) :
     haveSepPMERanks_(simulationWork.haveSeparatePmeRank),
     useGpuForNonbondeds_(simulationWork.useGpuNonbonded),
@@ -402,7 +404,6 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
     if (!haveSepPMERanks_)
     {
         GMX_RELEASE_ASSERT(pmedata, "On ranks doing both PP and PME we need a valid pmedata object");
-        setups_[0].pmedata = pmedata;
     }
 
     setups_[0].spacing = getGridSpacingFromBox(cutoffs_.startBox, setups_[0].grid);
@@ -418,8 +419,7 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
     cyclesNumber_  = 0;
     cyclesCounter_ = 0;
     // only main ranks do timing
-    if (pmedata == nullptr || !pmedata->simulationIsParallel
-        || (pmedata->haveDDAtomOrdering && DDMAIN(dd)))
+    if (!pmedata || !pmedata->simulationIsParallel || (pmedata->haveDDAtomOrdering && DDMAIN(dd)))
     {
         startTime_ = gmx_gettime();
     }
@@ -455,18 +455,6 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendText("NOTE: DLB will not turn on during the first phase of PME tuning");
-        }
-    }
-}
-
-PmeLoadBalancing::Impl::~Impl()
-{
-    for (int i = 0; i < gmx::ssize(setups_); i++)
-    {
-        // current element is stored in forcerec and free'd in Mdrunner::mdrunner, together with shared data
-        if (i != currentSetup_)
-        {
-            gmx_pme_destroy(setups_[i].pmedata, false);
         }
     }
 }
@@ -572,7 +560,7 @@ bool PmeLoadBalancing::Impl::increaseCutoff()
                 set.rcut_coulomb);
     }
 
-    setups_.push_back(set);
+    setups_.push_back(std::move(set));
 
     return true;
 }
@@ -662,9 +650,13 @@ void PmeLoadBalancing::Impl::switchToStage1()
     currentSetup_ = endSetup_;
 }
 
-//! Updates all the mdrun machinery for \p setup, setup->pmedata might be updated
+/*! \brief Updates all the mdrun machinery for \p setup
+ *
+ * \p setup->pmedata is set when empty or when running PME on GPU
+ * \p oldPmedata is not modified, except that the GPU object is moved out, when present
+ */
 static void applySetup(pme_setup_t*         setup,
-                       gmx_pme_t*           pmedataOfSetup0,
+                       gmx_pme_t*           oldPmedata,
                        const t_inputrec&    ir,
                        interaction_const_t* ic,
                        nonbonded_verlet_t*  nbv,
@@ -709,18 +701,11 @@ static void applySetup(pme_setup_t*         setup,
          * This can lead to a lot of reallocations for PME GPU.
          * Would be nicer if the allocated grid list was hidden within a single pmedata structure.
          */
-        if (setup->pmedata == nullptr || pme_gpu_task_enabled(setup->pmedata))
+        if (!setup->pmedata || pme_gpu_task_enabled(setup->pmedata.get()))
         {
-            gmx_pme_t* newPmeData;
             // Generate a new PME data structure, copying part of the old pointers.
-            gmx_pme_reinit(
-                    &newPmeData, dd, pmedataOfSetup0, &ir, setup->grid, setup->ewaldcoeff_q, setup->ewaldcoeff_lj);
-            // Destroy the old structure. Must be done after gmx_pme_reinit in case currenSetup_==0.
-            if (setup->pmedata != nullptr)
-            {
-                gmx_pme_destroy(setup->pmedata, false);
-            }
-            setup->pmedata = newPmeData;
+            setup->pmedata = gmx_pme_reinit(
+                    dd, *oldPmedata, std::move(oldPmedata->gpu), &ir, setup->grid, setup->ewaldcoeff_q, setup->ewaldcoeff_lj);
         }
     }
     else
@@ -793,14 +778,14 @@ static bool processCycles(FILE*           fp_err,
  * Here we try to take into account fluctuations and changes due to external
  * factors as well as DD load balancing.
  */
-void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
-                                     const matrix         box,
-                                     ArrayRef<const RVec> x,
-                                     double               cycles,
-                                     interaction_const_t* ic,
-                                     nonbonded_verlet_t*  nbv,
-                                     gmx_pme_t**          pmedata,
-                                     int64_t              step)
+std::unique_ptr<gmx_pme_t> PmeLoadBalancing::Impl::balance(FILE*                        fp_err,
+                                                           const matrix                 box,
+                                                           ArrayRef<const RVec>         x,
+                                                           double                       cycles,
+                                                           interaction_const_t*         ic,
+                                                           nonbonded_verlet_t*          nbv,
+                                                           std::unique_ptr<gmx_pme_t>&& oldPmedata,
+                                                           int64_t                      step)
 {
     if (dd_ && dd_->nnodes > 1)
     {
@@ -816,7 +801,7 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
      */
     if (setups_[currentSetup_].count % (c_numPostSwitchTuningIntervalSkip + 1) != 0)
     {
-        return;
+        return std::move(oldPmedata);
     }
 
     const bool increaseNumStages = processCycles(
@@ -859,6 +844,8 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
         /* Done with scanning, go to stage 1 */
         switchToStage1();
     }
+
+    const int oldCurrentSetup = currentSetup_;
 
     if (stage_ == 0)
     {
@@ -933,7 +920,7 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
             continueToNextSetup = haveNextSetup;
             if (continueToNextSetup)
             {
-                const auto cs = setups_[currentSetup_];
+                const auto& cs = setups_[currentSetup_];
 
                 // Skip this setup when it is not sufficiently coarser or more efficient
                 continueToNextSetup =
@@ -1022,20 +1009,33 @@ void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
         }
     }
 
-    pme_setup_t& setup = setups_[currentSetup_];
-
     /* Change the Coulomb cut-off and the PME grid */
-    applySetup(&setup, setups_[0].pmedata, ir_, ic, nbv, dd_);
+    applySetup(&setups_[currentSetup_], oldPmedata.get(), ir_, ic, nbv, dd_);
+
+    // PME data to use for the next stage of simulation
+    std::unique_ptr<gmx_pme_t> pmedata;
 
     if (!haveSepPMERanks_)
     {
-        *pmedata = setup.pmedata;
+        // Move old PME data back to the setup in the load balancing list
+        GMX_RELEASE_ASSERT(!setups_[oldCurrentSetup].pmedata,
+                           "We expect pmedata in the old current setup list entry to be empty, as "
+                           "pmedata should currently own this");
+        setups_[oldCurrentSetup].pmedata = std::exchange(oldPmedata, nullptr);
+        // Move the newly current PME data to pmedata to return it
+        pmedata = std::exchange(setups_[currentSetup_].pmedata, nullptr);
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(!oldPmedata, "We should not have PME data on PP-only ranks");
     }
 
     if (stage_ == numStages_)
     {
-        printGrid(fp_err, mdlog_, "", "optimal", setup, -1);
+        printGrid(fp_err, mdlog_, "", "optimal", setups_[currentSetup_], -1);
     }
+
+    return pmedata;
 }
 
 void PmeLoadBalancing::Impl::addTwoStages(const bool dlbWasUnlocked)
@@ -1187,7 +1187,14 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
          * since init_step might not be a multiple of nstlist,
          * but the first data collected is skipped anyhow.
          */
-        balance(fp_err, box, x, cyclesCounter_ - cyclesCounterPrev, fr->ic.get(), fr->nbv.get(), &fr->pmedata, step);
+        fr->pmedata = balance(fp_err,
+                              box,
+                              x,
+                              cyclesCounter_ - cyclesCounterPrev,
+                              fr->ic.get(),
+                              fr->nbv.get(),
+                              std::move(fr->pmedata),
+                              step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
         fr->rlist = fr->nbv->pairlistOuterRadius();
@@ -1314,7 +1321,7 @@ PmeLoadBalancing::PmeLoadBalancing(gmx_domdec_t*              dd,
                                    const matrix               box,
                                    const interaction_const_t& ic,
                                    const nonbonded_verlet_t&  nbv,
-                                   gmx_pme_t*                 pmedata,
+                                   const gmx_pme_t*           pmedata,
                                    const SimulationWorkload&  simulationWork) :
     impl_(std::make_unique<Impl>(dd, mdlog, ir, box, ic, nbv, pmedata, simulationWork))
 {

@@ -659,17 +659,17 @@ static void print_header(FILE* fplog, int nrank_pp, int nth_pp, int nrank_pme, i
 }
 
 
-void wallcycle_print(FILE*                            fplog,
-                     const gmx::MDLogger&             mdlog,
-                     int                              nnodes,
-                     int                              npme,
-                     int                              nth_pp,
-                     int                              nth_pme,
-                     double                           realtime,
-                     gmx_wallcycle*                   wc,
-                     const WallcycleCounts&           cyc_sum,
-                     const gmx_wallclock_gpu_nbnxn_t* gpu_nbnxn_t,
-                     const gmx_wallclock_gpu_pme_t*   gpu_pme_t)
+void wallcycle_print(FILE*                                         fplog,
+                     const gmx::MDLogger&                          mdlog,
+                     int                                           nnodes,
+                     int                                           npme,
+                     int                                           nth_pp,
+                     int                                           nth_pme,
+                     double                                        realtime,
+                     gmx_wallcycle*                                wc,
+                     const WallcycleCounts&                        cyc_sum,
+                     const gmx_wallclock_gpu_nbnxn_t*              gpu_nbnxn_t,
+                     const std::optional<gmx_wallclock_gpu_pme_t>& pmeGpuTimings)
 {
     double      tot, tot_for_pp, tot_for_rest, tot_cpu_overlap, gpu_cpu_ratio;
     double      c2t, c2t_pp, c2t_pme = 0;
@@ -893,11 +893,11 @@ void wallcycle_print(FILE*                            fplog,
 
     /* print GPU timing summary */
     double tot_gpu = 0.0;
-    if (gpu_pme_t)
+    if (pmeGpuTimings.has_value())
     {
-        for (auto key : keysOf(gpu_pme_t->timing))
+        for (auto key : keysOf(pmeGpuTimings->timing))
         {
-            tot_gpu += gpu_pme_t->timing[key].t;
+            tot_gpu += pmeGpuTimings->timing[key].t;
         }
     }
     if (gpu_nbnxn_t)
@@ -945,16 +945,16 @@ void wallcycle_print(FILE*                            fplog,
                 }
             }
         }
-        if (gpu_pme_t)
+        if (pmeGpuTimings.has_value())
         {
-            for (auto key : keysOf(gpu_pme_t->timing))
+            for (auto key : keysOf(pmeGpuTimings->timing))
             {
-                if (gpu_pme_t->timing[key].c)
+                if (pmeGpuTimings->timing[key].c)
                 {
                     print_gputimes(fplog,
                                    enumValuetoString(key),
-                                   gpu_pme_t->timing[key].c,
-                                   gpu_pme_t->timing[key].t,
+                                   pmeGpuTimings->timing[key].c,
+                                   pmeGpuTimings->timing[key].t,
                                    tot_gpu);
                 }
             }

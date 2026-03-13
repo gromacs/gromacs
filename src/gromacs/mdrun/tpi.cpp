@@ -980,7 +980,7 @@ void LegacySimulator::do_tpi()
 
     if (usingPme(fr_->ic->coulomb.type))
     {
-        gmx_pme_reinit_atoms(fr_->pmedata, *testAtomsRange.begin(), {}, {});
+        gmx_pme_reinit_atoms(fr_->pmedata.get(), *testAtomsRange.begin(), {}, {});
     }
 
     /* With reacion-field we have distance dependent potentials

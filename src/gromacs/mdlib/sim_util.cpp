@@ -1373,7 +1373,7 @@ static void doPairSearch(const t_commrec*             cr,
     {
         GMX_ASSERT(needStateGpu(simulationWork), "StatePropagatorDataGpu is needed");
         // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
-        pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
+        pme_gpu_set_device_x(fr->pmedata.get(), stateGpu->getCoordinates());
     }
 
     if (fr->pbcType != PbcType::No)
@@ -1492,7 +1492,7 @@ static void doPairSearch(const t_commrec*             cr,
                                         stateGpu,
                                         fr->gpuForceReduction[AtomLocality::Local].get(),
                                         fr->pmePpCommGpu.get(),
-                                        fr->pmedata,
+                                        fr->pmedata.get(),
                                         cr->dd);
         }
 
@@ -1750,14 +1750,14 @@ void do_force(FILE*                         fplog,
                                         stateGpu,
                                         fr->gpuForceReduction[AtomLocality::Local].get(),
                                         fr->pmePpCommGpu.get(),
-                                        fr->pmedata,
+                                        fr->pmedata.get(),
                                         cr->dd);
         }
     }
 
     if (stepWork.haveGpuPmeOnThisRank)
     {
-        launchPmeGpuSpread(fr->pmedata,
+        launchPmeGpuSpread(fr->pmedata.get(),
                            box,
                            simulationWork,
                            stepWork,
@@ -1829,7 +1829,7 @@ void do_force(FILE*                         fplog,
         // X copy/transform to allow overlap as well as after the GPU NB
         // launch to avoid FFT launch overhead hijacking the CPU and delaying
         // the nonbonded kernel.
-        launchPmeGpuFftAndGather(fr->pmedata,
+        launchPmeGpuFftAndGather(fr->pmedata.get(),
                                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                                  wcycle,
                                  stepWork);
@@ -2221,7 +2221,7 @@ void do_force(FILE*                         fplog,
 
     if (stepWork.computeSlowForces)
     {
-        longRangeNonbondeds->calculate(fr->pmedata,
+        longRangeNonbondeds->calculate(fr->pmedata.get(),
                                        cr,
                                        x.unpaddedConstArrayRef(),
                                        &forceOutMtsLevel1->forceWithVirial(),
@@ -2269,7 +2269,7 @@ void do_force(FILE*                         fplog,
     {
         if (stepWork.haveGpuPmeOnThisRank)
         {
-            pmeGpuWaitAndReduce(fr->pmedata,
+            pmeGpuWaitAndReduce(fr->pmedata.get(),
                                 stepWork,
                                 wcycle,
                                 &forceOutMtsLevel1->forceWithVirial(),
@@ -2476,7 +2476,7 @@ void do_force(FILE*                         fplog,
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(),
-                                    fr->pmedata,
+                                    fr->pmedata.get(),
                                     forceOutNonbonded,
                                     forceOutMtsLevel1,
                                     enerd,
@@ -2488,7 +2488,7 @@ void do_force(FILE*                         fplog,
 
     if (!alternateGpuWait && stepWork.haveGpuPmeOnThisRank && !needEarlyPmeResults)
     {
-        pmeGpuWaitAndReduce(fr->pmedata,
+        pmeGpuWaitAndReduce(fr->pmedata.get(),
                             stepWork,
                             wcycle,
                             &forceOutMtsLevel1->forceWithVirial(),
@@ -2631,7 +2631,7 @@ void do_force(FILE*                         fplog,
     }
 
     launchGpuEndOfStepTasks(
-            nbv, fr->listedForcesGpu.get(), fr->pmedata, enerd, runScheduleWork, step, wcycle);
+            nbv, fr->listedForcesGpu.get(), fr->pmedata.get(), enerd, runScheduleWork, step, wcycle);
 
     if (haveDDAtomOrdering(*cr))
     {

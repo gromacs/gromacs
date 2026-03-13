@@ -214,8 +214,8 @@ struct t_forcerec
     std::vector<ForceHelperBuffers> forceHelperBuffers;
 
     /* Data for PPPM/PME/Ewald */
-    gmx_pme_t*   pmedata                = nullptr;
-    LongRangeVdW ljpme_combination_rule = LongRangeVdW::Geom;
+    std::unique_ptr<gmx_pme_t> pmedata;
+    LongRangeVdW               ljpme_combination_rule = LongRangeVdW::Geom;
 
     /* Non bonded Parameter lists */
     int               ntype          = 0; /* Number of atom types */

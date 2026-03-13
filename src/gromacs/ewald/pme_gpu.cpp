@@ -88,16 +88,17 @@ void pme_gpu_reset_timings(const gmx_pme_t* pme)
 {
     if (pme_gpu_active(pme))
     {
-        pme_gpu_reset_timings(pme->gpu);
+        pme_gpu_reset_timings(pme->gpu.get());
     }
 }
 
-void pme_gpu_get_timings(const gmx_pme_t* pme, gmx_wallclock_gpu_pme_t* timings)
+std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const gmx_pme_t* pme)
 {
     if (pme_gpu_active(pme))
     {
-        pme_gpu_get_timings(pme->gpu, timings);
+        return pme_gpu_get_timings(pme->gpu.get());
     }
+    return std::nullopt;
 }
 
 int pme_gpu_get_block_size(const gmx_pme_t* pme)
@@ -126,14 +127,14 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
                                                enum gmx_fft_direction dir,
                                                gmx_wallcycle*         wcycle)
 {
-    if (pme_gpu_settings(pme->gpu).performGPUFFT)
+    if (pme_gpu_settings(pme->gpu.get()).performGPUFFT)
     {
         // use a separate sub-counter for GPU FFT launch
         // this is specially important for PME decomposition where distributed FFT
         // implementations are used
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuPmeFft);
-        pme_gpu_3dfft(pme->gpu, dir, gridIndex);
+        pme_gpu_3dfft(pme->gpu.get(), dir, gridIndex);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPmeFft);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
     }
@@ -178,7 +179,7 @@ void pme_gpu_launch_spread(gmx_pme_t*                     pme,
     GMX_ASSERT(xReadyOnDevice || !pme->bPPnode, "Need a valid xReadyOnDevice on PP+PME ranks.");
     GMX_ASSERT(pme->doCoulomb, "Only Coulomb PME can be run on GPU.");
 
-    PmeGpu* pmeGpu = pme->gpu;
+    PmeGpu* pmeGpu = pme->gpu.get();
 
     GMX_ASSERT(pmeGpu->common->ngrids == 1 || (pmeGpu->common->ngrids == 2 && pme->bFEP_q),
                "If not decoupling Coulomb interactions there should only be one FEP grid. If "
@@ -205,7 +206,7 @@ void pme_gpu_launch_spread(gmx_pme_t*                     pme,
 
 void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, const gmx::StepWorkload& stepWork)
 {
-    PmeGpu*     pmeGpu   = pme->gpu;
+    PmeGpu*     pmeGpu   = pme->gpu.get();
     const auto& settings = pmeGpu->settings;
     // There's no support for computing energy without virial, or vice versa
     const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
@@ -213,7 +214,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
     if (!settings.performGPUFFT)
     {
         wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmeGridD2hCopy);
-        pme_gpu_sync_spread_grid(pme->gpu);
+        pme_gpu_sync_spread_grid(pmeGpu);
         wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmeGridD2hCopy);
     }
 
@@ -257,12 +258,12 @@ void pme_gpu_launch_gather(gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, con
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    if (!pme_gpu_settings(pme->gpu).performGPUGather)
+    if (!pme_gpu_settings(pme->gpu.get()).performGPUGather)
     {
         return;
     }
 
-    pme_gpu_gather(pme->gpu, pme->gridsCoulomb, lambdaQ, wcycle, computeVirial);
+    pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, wcycle, computeVirial);
 }
 
 //! Accumulate the \c forcesToAdd to \c f, using the available threads.
@@ -326,7 +327,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
         wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuPmeGather);
         // Query the PME stream for completion of all tasks enqueued and
         // if we're not done, stop the timer before early return.
-        const bool pmeGpuDone = pme_gpu_stream_query(pme->gpu);
+        const bool pmeGpuDone = pme_gpu_stream_query(pme->gpu.get());
         wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmeGather);
 
         if (!pmeGpuDone)
@@ -342,9 +343,9 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
     if (needToSynchronize)
     {
         // Synchronize the whole PME stream at once, including D2H result transfers.
-        pme_gpu_synchronize(pme->gpu);
+        pme_gpu_synchronize(pme->gpu.get());
     }
-    pme_gpu_update_timings(pme->gpu);
+    pme_gpu_update_timings(pme->gpu.get());
     // There's no support for computing energy without virial, or vice versa
     const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
     PmeOutput  output                 = pme_gpu_getOutput(
@@ -373,7 +374,7 @@ PmeOutput pme_gpu_wait_finish_task(gmx_pme_t*     pme,
     // for uniformity and because it sets the PmeOutput.haveForceOutput_.
     if (!pme->gpu->settings.useGpuForceReduction || computeEnergyAndVirial)
     {
-        pme_gpu_synchronize(pme->gpu);
+        pme_gpu_synchronize(pme->gpu.get());
     }
 
     PmeOutput output = pme_gpu_getOutput(
@@ -405,10 +406,10 @@ void pme_gpu_finish_step(const gmx_pme_t* pme, const bool gpuGraphWithSeparatePm
 
     wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-    pme_gpu_update_timings(pme->gpu);
+    pme_gpu_update_timings(pme->gpu.get());
 
-    pme_gpu_clear_grids(pme->gpu);
-    pme_gpu_clear_energy_virial(pme->gpu, gpuGraphWithSeparatePmeRank);
+    pme_gpu_clear_grids(pme->gpu.get());
+    pme_gpu_clear_energy_virial(pme->gpu.get(), gpuGraphWithSeparatePmeRank);
 
     wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 }
@@ -419,7 +420,7 @@ DeviceBuffer<gmx::RVec> pme_gpu_get_device_f(const gmx_pme_t* pme)
     {
         return DeviceBuffer<gmx::RVec>{};
     }
-    return pme_gpu_get_kernelparam_forces(pme->gpu);
+    return pme_gpu_get_kernelparam_forces(pme->gpu.get());
 }
 
 void pme_gpu_set_device_x(const gmx_pme_t* pme, DeviceBuffer<gmx::RVec> d_x)
@@ -427,7 +428,7 @@ void pme_gpu_set_device_x(const gmx_pme_t* pme, DeviceBuffer<gmx::RVec> d_x)
     GMX_ASSERT(pme != nullptr, "Null pointer is passed as a PME to the set coordinates function.");
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    pme_gpu_set_kernelparam_coordinates(pme->gpu, d_x);
+    pme_gpu_set_kernelparam_coordinates(pme->gpu.get(), d_x);
 }
 
 GpuEventSynchronizer* pme_gpu_get_f_ready_synchronizer(const gmx_pme_t* pme)
@@ -437,7 +438,7 @@ GpuEventSynchronizer* pme_gpu_get_f_ready_synchronizer(const gmx_pme_t* pme)
         return nullptr;
     }
 
-    return pme_gpu_get_forces_ready_synchronizer(pme->gpu);
+    return pme_gpu_get_forces_ready_synchronizer(pme->gpu.get());
 }
 
 void pme_gpu_use_nvshmem(PmeGpu* pmeGpu, bool useNvshmem)
