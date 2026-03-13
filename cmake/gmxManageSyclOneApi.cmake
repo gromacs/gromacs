@@ -316,8 +316,14 @@ if(GMX_GPU_FFT_MKL)
 
     list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES};${FFT_LIBRARIES}")
+    # oneAPI 2025.0 deprecated dfti.hpp in favour of dft.hpp
+    # oneAPI 2026.0 removed dfti.hpp
     check_cxx_source_compiles("
+#if __has_include(\"oneapi/mkl/dft.hpp\")
+#include <oneapi/mkl/dft.hpp>
+#else
 #include <oneapi/mkl/dfti.hpp>
+#endif
 int main() {
     oneapi::mkl::dft::descriptor<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL> d({3,5,7});
     sycl::queue q;

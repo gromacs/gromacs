@@ -30,5 +30,12 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Facilitated configuring a oneAPI SYCL build with MKL from oneAPI 2026.0 and newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A configure-time check that MKL can link in a SYCL build referred to a header
+deprecated in oneAPI 2025.0 that is removed in oneAPI 2026.0. The check now
+flexibly refers to the new header whenever it exists.
+
 Miscellaneous
 ^^^^^^^^^^^^^
