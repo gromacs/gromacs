@@ -206,8 +206,8 @@ void PmeTest::SetUpTestSuite()
 
         std::string mdpInputFileContents(
                 "coulombtype     = PME\n"
-                "nstcalcenergy   = 1\n"
-                "nstenergy       = 1\n"
+                "nstcalcenergy   = 2\n"
+                "nstenergy       = 4\n"
                 "pme-order       = 4\n");
         mdpInputFileContents += sc_pmeTestFlavorExtraMdpLines.at(pmeTestFlavor);
         runner.useStringAsMdpFile(mdpInputFileContents);
