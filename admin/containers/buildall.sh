@@ -38,7 +38,7 @@ args[${#args[@]}]="--ubuntu 22.04 --oneapi 2025.0 --rocm 6.1.3 --cuda 12.0.1 --o
 args[${#args[@]}]="--ubuntu 24.04 --llvm 19 --doxygen --mpi openmpi --venvs 3.9.13 3.12.5"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 20 --cuda 12.8.1 --adaptivecpp 25.10.0 --rocm 7.0.2 --mpi mpich"
 args[${#args[@]}]="--ubuntu 22.04 --adaptivecpp 24.02.0 --rocm 5.7.1"
-args[${#args[@]}]="--ubuntu 24.04 --rocm 6.2.2 --mpi openmpi --plumed --heffte v2.4.0"
+args[${#args[@]}]="--ubuntu 24.04 --rocm 7.1 --mpi openmpi --rocfftmp --heffte v2.4.0 --plumed"
 
 echo
 echo "Consider pulling the following images for build layer cache."

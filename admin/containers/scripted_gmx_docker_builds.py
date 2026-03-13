@@ -656,7 +656,7 @@ def get_heffte(args):
 
 
 def get_plumed(args):
-    if args.plumed is not None:
+    if args.plumed is not None and args.plumed is True:
         return hpccm.building_blocks.generic_autotools(
             url="https://github.com/plumed/plumed2/releases/download/v2.9.2/plumed-src-2.9.2.tgz",
             prefix="/usr/local",
@@ -692,6 +692,43 @@ def get_nvhpcsdk(args):
             environment=False,
             mpi=False,
             version=args.nvhpcsdk,
+        )
+    else:
+        return None
+
+
+def get_rocfftmp(args):
+    if args.rocfftmp is not None and args.rocfftmp is True:
+        if args.mpi is None:
+            raise RuntimeError("rocfftMp needs MPI installed")
+        if args.rocm is None:
+            raise RuntimeError("Need ROCm to install rocfftMp")
+        if args.mpi != "openmpi":
+            raise RuntimeError("rocfftMp with other MPI not implemented yet")
+        rocm_version = args.rocm
+        rocm_version_parsed = [int(i) for i in rocm_version.split(".")]
+        if rocm_version_parsed[0] < 7:
+            raise RuntimeError("Need at least ROCm 7 to build rocfftMp")
+
+        if len(rocm_version_parsed) < 3:
+            rocm_version = rocm_version + ".0"
+        rocm_branch = "rocm-" + str(rocm_version)
+
+        cmake_opts = [
+            "-DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang",
+            "-DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++",
+            "-DROCFFT_MPI_ENABLE=ON",
+            "-DROCFFT_KERNEL_CACHE_ENABLE=OFF",
+            "-DGPU_TARGETS=gfx906,gfx1034",
+        ]
+
+        return hpccm.building_blocks.generic_cmake(
+            repository="https://github.com/ROCm/rocm-libraries.git",
+            branch=rocm_branch,
+            directory="/var/tmp/rocm-libraries/projects/rocfft",
+            prefix="/opt/rocm/rocfftmp",
+            recursive=True,
+            cmake_opts=["-DCMAKE_BUILD_TYPE=Release ", *cmake_opts],
         )
     else:
         return None
@@ -1493,6 +1530,13 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
         )
 
     building_blocks["AdaptiveCpp"] = get_adaptivecpp(args)
+
+    building_blocks["rocfftmp"] = get_rocfftmp(args)
+    if building_blocks["rocfftmp"] is not None:
+        rocfftmp_lib_path = "/opt/rocm/rocfftmp/lib/:$LD_LIBRARY_PATH"
+        building_blocks["rocfftmp_path"] = hpccm.primitives.environment(
+            variables={"LD_LIBRARY_PATH": rocfftmp_lib_path}
+        )
 
     # Add Python environments to MPI images, only, so we don't have to worry
     # about whether to install mpi4py.

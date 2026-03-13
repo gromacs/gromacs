@@ -242,6 +242,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--rocfftmp",
+    action="store_true",
+    default=False,
+    help="Install rocfftMp for current ROCm version",
+)
+
+parser.add_argument(
     "--doxygen",
     type=str,
     nargs="?",
@@ -330,14 +337,12 @@ def image_name(configuration: argparse.Namespace) -> str:
             )
             elements.append(compiler + "-" + version)
             break
-    for gpusdk in ("cuda", "adaptivecpp"):
+    for gpusdk in ("cuda", "adaptivecpp", "rocm"):
         version = getattr(configuration, gpusdk, None)
         if version is not None:
             elements.append(gpusdk + "-" + version)
     if configuration.intel_compute_runtime:
         elements.append("intel-compute-runtime")
-    if configuration.rocm is not None:
-        elements.append("rocm-" + configuration.rocm)
     if configuration.cp2k is not None:
         elements.append("cp2k-" + configuration.cp2k)
 

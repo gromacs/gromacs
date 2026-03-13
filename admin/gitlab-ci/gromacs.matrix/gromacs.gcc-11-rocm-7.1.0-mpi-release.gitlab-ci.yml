@@ -11,7 +11,7 @@
 #   MPI: OpenMPI (AMD build)
 #   SIMD: AVX2_256
 
-gromacs:gcc-11-hip-622-mpi:release:configure:
+gromacs:gcc-11-hip-710-mpi:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc:base
@@ -19,7 +19,7 @@ gromacs:gcc-11-hip-622-mpi:release:configure:
     - .use-mpi
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-7.1
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -32,7 +32,7 @@ gromacs:gcc-11-hip-622-mpi:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:gcc-11-hip-622-mpi:release:build:
+gromacs:gcc-11-hip-710-mpi:release:build:
   extends:
     - .gromacs:base:build
     - .use-gcc:base
@@ -40,20 +40,20 @@ gromacs:gcc-11-hip-622-mpi:release:build:
   stage: release-build
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-7.1
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     BUILD_DIR: release-builds-gcc-rocm
   needs:
-    - job: gromacs:gcc-11-hip-622-mpi:release:configure
+    - job: gromacs:gcc-11-hip-710-mpi:release:configure
 
-gromacs:gcc-11-hip-622-mpi:release:test:
+gromacs:gcc-11-hip-710-mpi:release:test:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:nightly-only-for-release, rules]                 
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-7.1
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     BUILD_DIR: release-builds-gcc-rocm
@@ -64,16 +64,16 @@ gromacs:gcc-11-hip-622-mpi:release:test:
     - amd-gpu-gfx906
   allow_failure: true   # allow job failure w/o failing pipeline, since no redundant hardware
   needs:
-    - job: gromacs:gcc-11-hip-622-mpi:release:configure
-    - job: gromacs:gcc-11-hip-622-mpi:release:build
+    - job: gromacs:gcc-11-hip-710-mpi:release:configure
+    - job: gromacs:gcc-11-hip-710-mpi:release:build
 
-gromacs:gcc-11-hip-622-mpi:release:regressiontest:
+gromacs:gcc-11-hip-710-mpi:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:nightly-only-for-release, rules]                     
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-7.1
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
@@ -86,5 +86,5 @@ gromacs:gcc-11-hip-622-mpi:release:regressiontest:
     - amd-gpu-gfx906
   allow_failure: true   # allow job failure w/o failing pipeline, since no redundant hardware
   needs:
-    - job: gromacs:gcc-11-hip-622-mpi:release:build
+    - job: gromacs:gcc-11-hip-710-mpi:release:build
     - job: regressiontests:package
