@@ -1395,7 +1395,11 @@ static void doPairSearch(const t_commrec*             cr,
         {
             // Atoms might have changed periodic image, signal MDModules
             MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
-                    box, x.unpaddedArrayRef().subArray(0, mdatoms.homenr), std::nullopt);
+                    box,
+                    x.unpaddedArrayRef().subArray(0, mdatoms.homenr),
+                    makeConstArrayRef(mdatoms.chargeA).subArray(0, mdatoms.homenr),
+                    makeConstArrayRef(mdatoms.massT).subArray(0, mdatoms.homenr),
+                    std::nullopt);
             mdModulesNotifiers.simulationRunNotifier_.notify(mdModulesAtomsRedistributedSignal);
         }
     }
