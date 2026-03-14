@@ -962,10 +962,11 @@ void gmx::LegacySimulator::do_md()
         // are updated using these velocities during integration. Those coordinates are used for, e.g., domain
         // decomposition. Before computing any forces the positions of the virtual sites are recalculated.
         // This fixes a bug, #4879, which was introduced in MR !979.
+        // Note that vsite velocities might not be up-to-date in checkpoint or confout files.
         const int  c_virtualSiteVelocityUpdateInterval = 1000;
         const bool needVirtualVelocitiesThisStep =
                 (virtualSites_ != nullptr)
-                && (do_per_step(step, ir->nstvout) || checkpointHandler->isCheckpointingStep()
+                && (do_per_step(step, ir->nstvout)
                     || do_per_step(step, c_virtualSiteVelocityUpdateInterval));
 
         if (virtualSites_ != nullptr)
@@ -1079,7 +1080,9 @@ void gmx::LegacySimulator::do_md()
         }
         clear_mat(force_vir);
 
-        checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
+        // After signals have been processed in compute_globals() above, we can decide on checkpointing
+        const bool isCheckpointingStep =
+                checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
 
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
@@ -1178,9 +1181,8 @@ void gmx::LegacySimulator::do_md()
                 bool canUseMdGpuGraphThisStep =
                         !bNS && !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
                         && !needHalfStepKineticEnergy && !do_per_step(step, ir->nstxout)
-                        && !do_per_step(step, ir->nstxout_compressed)
-                        && !do_per_step(step, ir->nstvout) && !do_per_step(step, ir->nstfout)
-                        && !checkpointHandler->isCheckpointingStep();
+                        && !do_per_step(step, ir->nstxout_compressed) && !do_per_step(step, ir->nstvout)
+                        && !do_per_step(step, ir->nstfout) && !isCheckpointingStep;
                 if (mdGraph->captureThisStep(canUseMdGpuGraphThisStep))
                 {
                     mdGraph->startRecord(stateGpu->getCoordinatesReadyOnDeviceEvent(
@@ -1238,7 +1240,7 @@ void gmx::LegacySimulator::do_md()
                    bias function could then be called after do_md_trajectory_writing (then containing
                    update_awh_history). The checkpointing will in the future probably moved to the start
                    of the md loop which will rid of this issue. */
-                if (awh && checkpointHandler->isCheckpointingStep() && isMainRank)
+                if (awh && isCheckpointingStep && isMainRank)
                 {
                     awh->updateHistory(stateGlobal_->awhHistory.get());
                 }
@@ -1366,15 +1368,14 @@ void gmx::LegacySimulator::do_md()
             // and coordinates have not already been copied for i) search or ii) CPU force tasks.
             if (useGpuForUpdate && !bNS && !runScheduleWork_->domainWork.haveCpuLocalForceWork
                 && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)
-                    || checkpointHandler->isCheckpointingStep()))
+                    || isCheckpointingStep))
             {
                 stateGpu->copyCoordinatesFromGpu(state_->x, AtomLocality::Local);
                 stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
             }
             // Copy velocities if needed for the output/checkpointing.
             // NOTE: Copy on the search steps is done at the beginning of the step.
-            if (useGpuForUpdate && !bNS
-                && (do_per_step(step, ir->nstvout) || checkpointHandler->isCheckpointingStep()))
+            if (useGpuForUpdate && !bNS && (do_per_step(step, ir->nstvout) || isCheckpointingStep))
             {
                 stateGpu->copyVelocitiesFromGpu(state_->v, AtomLocality::Local);
                 stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
@@ -1420,7 +1421,7 @@ void gmx::LegacySimulator::do_md()
                                      energyOutput,
                                      ekind_,
                                      f.view().force(),
-                                     checkpointHandler->isCheckpointingStep(),
+                                     isCheckpointingStep,
                                      bRerunMD,
                                      bLastStep,
                                      mdrunOptions_.writeConfout,

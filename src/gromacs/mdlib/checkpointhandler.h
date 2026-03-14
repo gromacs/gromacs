@@ -39,7 +39,7 @@
  * and handles the signal if it is received. When handling the signal (via
  * decideIfCheckpointingThisStep()), it is deciding whether a checkpoint should be saved
  * at the current step. This can be due to a received signal, or if the current simulation
- * step is the last. This information can be queried via the isCheckpointingStep() function.
+ * step is the last.
  *
  * The setting and handling is implemented in private functions. They are only called
  * if a respective boolean is true. For the trivial case of no checkpointing (or no checkpoint
@@ -119,26 +119,30 @@ public:
      *   * the current step is the last step and a the simulation is writing
      *     configurations.
      *
+     * \warning Should be called at most once per step.
+     *
      * \todo Change these bools to enums to make calls more self-explanatory
+     *
+     * \returns whether a checkpoint shall be written at this step
      */
-    void decideIfCheckpointingThisStep(bool bNS, bool bFirstStep, bool bLastStep)
+    bool decideIfCheckpointingThisStep(bool bNS, bool bFirstStep, bool bLastStep)
     {
         if (checkpointingIsActive_)
         {
-            decideIfCheckpointingThisStepImpl(bNS, bFirstStep, bLastStep);
+            return decideIfCheckpointingThisStepImpl(bNS, bFirstStep, bLastStep);
+        }
+        else
+        {
+            return false;
         }
     }
-
-    //! Query decision in decideIfCheckpointingThisStep()
-    bool isCheckpointingStep() const { return checkpointThisStep_; }
 
 private:
     void setSignalImpl(gmx_walltime_accounting* walltime_accounting) const;
 
-    void decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep);
+    bool decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep);
 
     SimulationSignal& signal_;
-    bool              checkpointThisStep_;
     int               numberOfNextCheckpoint_;
 
     const bool rankCanSetSignal_;
