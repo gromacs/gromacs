@@ -218,7 +218,11 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
     unsigned int tidxz = threadIdx.z;
 #    endif
     unsigned int bidx = blockIdx.x;
-    unsigned int widx = tidx / warp_size; /* warp index */
+    /* In cuda 13.1 and earlier, nvcc fails to identify that widx is identical within a warp,
+     * and issues unnecessary warp synchronization assembly instructions on dependent `if (imask)`
+     * branches, which happen in the inner loop. Broadcasting the value to the warp via shuffle
+     * fixes this pessimization. Note: this has not been tested on compilers newer than 13.1 */
+    const unsigned int widx = __shfl_sync(c_fullWarpMask, tidx / warp_size, 0, 32); /* warp index */
 #    ifdef PRUNE_NBL
     unsigned int tidxInWarp = tidx & (warp_size - 1);
 #    endif

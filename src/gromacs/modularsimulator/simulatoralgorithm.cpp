@@ -335,7 +335,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
             &cr_,
             fr_->nbv.get(),
             nrnb_,
-            fr_->pmedata,
+            fr_->pmedata.get(),
             pmeLoadBalanceHelper_ ? &pmeLoadBalanceHelper_->loadBalancingObject() : nullptr,
             wallCycle_,
             wallTimeAccounting_);

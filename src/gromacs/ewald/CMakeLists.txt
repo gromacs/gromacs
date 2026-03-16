@@ -223,6 +223,7 @@ if(GMX_NVSHMEM AND GMX_GPU_CUDA)
             PRIVATE_TARGET_DEPENDENCIES
                 utility
                 math
+                timing
         )
         # Link the separable library to the main ewald library
         target_link_libraries(ewald INTERFACE ewald_pme_gather_gpu)

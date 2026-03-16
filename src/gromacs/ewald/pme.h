@@ -46,11 +46,13 @@
 #define GMX_EWALD_PME_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
@@ -190,47 +192,35 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Issue #2522.
  */
-gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
-                        const NumPmeDomains&             numPmeDomains,
-                        const t_inputrec*                ir,
-                        const matrix                     box,
-                        real                             haloExtentForAtomDisplacement,
-                        gmx_bool                         bFreeEnergy_q,
-                        gmx_bool                         bFreeEnergy_lj,
-                        gmx_bool                         bReproducible,
-                        real                             ewaldcoeff_q,
-                        real                             ewaldcoeff_lj,
-                        int                              nthread,
-                        PmeRunMode                       runMode,
-                        PmeGpu*                          pmeGpu,
-                        const DeviceContext*             deviceContext,
-                        const DeviceStream*              deviceStream,
-                        const PmeGpuProgram*             pmeGpuProgram,
-                        const gmx::MDLogger&             mdlog,
-                        std::shared_ptr<PmeGridsStorage> pmeGridsStoragePtr);
+std::unique_ptr<gmx_pme_t> gmx_pme_init(const gmx_domdec_t*  dd,
+                                        const NumPmeDomains& numPmeDomains,
+                                        const t_inputrec*    ir,
+                                        const matrix         box,
+                                        real                 haloExtentForAtomDisplacement,
+                                        gmx_bool             bFreeEnergy_q,
+                                        gmx_bool             bFreeEnergy_lj,
+                                        gmx_bool             bReproducible,
+                                        real                 ewaldcoeff_q,
+                                        real                 ewaldcoeff_lj,
+                                        int                  nthread,
+                                        PmeRunMode           runMode,
+                                        const DeviceContext* deviceContext,
+                                        const DeviceStream*  deviceStream,
+                                        const PmeGpuProgram* pmeGpuProgram,
+                                        const gmx::MDLogger& mdlog);
 
 /*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients,
- * and the shared grid storage from pme_src.
- */
-void gmx_pme_reinit(gmx_pme_t**         pmedata,
-                    const gmx_domdec_t* dd,
-                    gmx_pme_t*          pme_src,
-                    const t_inputrec*   ir,
-                    const ivec          grid_size,
-                    real                ewaldcoeff_q,
-                    real                ewaldcoeff_lj);
-
-/*! \brief Destroys the PME data structure (including GPU data). */
-void gmx_pme_destroy(gmx_pme_t* pme);
-
-/*! \brief Destroys the PME data structure.
+ * and the shared grid storage from pmeSrc.
  *
- * \param pme             The data structure to destroy.
- * \param destroyGpuData  Set to \c false if \p pme is a copy created by \ref gmx_pme_reinit,
- * and only it should be destroyed, while shared GPU data should be preserved. If \c true,
- * the shared data will be destroyed, like in \c gmx_pme_destroy(gmx_pme_t* pme).
+ * When PME is ran on GPUs, the GPU data is moved from \p pmeGpu to the returned object
  */
-void gmx_pme_destroy(gmx_pme_t* pme, bool destroyGpuData);
+std::unique_ptr<gmx_pme_t> gmx_pme_reinit(const gmx_domdec_t*       dd,
+                                          const gmx_pme_t&          pmeSrc,
+                                          std::unique_ptr<PmeGpu>&& pmeGpu,
+                                          const t_inputrec*         ir,
+                                          const ivec                grid_size,
+                                          real                      ewaldcoeff_q,
+                                          real                      ewaldcoeff_lj);
 
 /*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *
@@ -387,14 +377,15 @@ GPU_FUNC_QUALIFIER int pme_gpu_get_block_size(const gmx_pme_t* GPU_FUNC_ARGUMENT
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reset_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM;
 
-/*! \brief
- * Copies the PME GPU timings to the gmx_wallclock_gpu_pme_t structure (for log output). To be called at the run end.
+/*! \brief When available, copies the PME GPU timings to the
+ * gmx_wallclock_gpu_pme_t structure (for log output). To be called at
+ * the run end.
  *
  * \param[in] pme               The PME structure.
- * \param[in] timings           The gmx_wallclock_gpu_pme_t structure.
+ * \returns                     The gmx_wallclock_gpu_pme_t structure.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_get_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
-                                            gmx_wallclock_gpu_pme_t* GPU_FUNC_ARGUMENT(timings)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER std::optional<gmx_wallclock_gpu_pme_t>
+pme_gpu_get_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(std::nullopt);
 
 /* The main PME GPU functions */
 

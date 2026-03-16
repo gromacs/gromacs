@@ -45,7 +45,11 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/stringutil.h"
+
 #include "testutils/cmdlinetest.h"
+#include "testutils/mpitest.h"
 
 #include "moduletest.h"
 
@@ -54,6 +58,18 @@ namespace gmx
 namespace test
 {
 
+const std::string g_mdpContents = R"(
+dt            = 0.002
+nsteps        = 10
+tcoupl        = V-rescale
+tc-grps       = System
+tau-t         = 0.5
+ref-t         = 300
+constraints   = h-bonds
+cutoff-scheme = Verlet
+orire         = Yes
+orire-fitgrp  = backbone)";
+
 class OriresTest : public MdrunTestFixture
 {
 };
@@ -61,27 +77,105 @@ class OriresTest : public MdrunTestFixture
 /* Check whether the orires function works. */
 TEST_F(OriresTest, OriresCanRun)
 {
+    GMX_MPI_TEST(RequireRankCount<1>);
+
     runner_.useTopGroAndNdxFromDatabase("orires_1lvz");
-    const std::string mdpContents = R"(
-        dt            = 0.002
-        nsteps        = 10
-        tcoupl        = V-rescale
-        tc-grps       = System
-        tau-t         = 0.5
-        ref-t         = 300
-        constraints   = h-bonds
-        cutoff-scheme = Verlet
-        orire         = Yes
-        orire-fitgrp  = backbone
-    )";
-    runner_.useStringAsMdpFile(mdpContents);
+    runner_.useStringAsMdpFile(g_mdpContents);
 
     EXPECT_EQ(0, runner_.callGrompp());
 
-    ::gmx::test::CommandLine oriresCaller;
+    // Do an mdrun with orientation restraints enabled
+    ASSERT_EQ(0, runner_.callMdrun());
+}
 
-    // Do an mdrun with ORIRES enabled
-    ASSERT_EQ(0, runner_.callMdrun(oriresCaller));
+//! A simple test fixture for a multi-simulation with one rank per simulation
+class SimpleMultiSimTest : public MdrunTestFixture
+{
+public:
+    SimpleMultiSimTest()
+    {
+        // Only single-rank simulations are supported
+        const int numRanksPerSimulation = 1;
+
+        {
+            // How many MPI ranks exist?
+            const int commSize = getNumberOfTestMpiRanks();
+            const int commRank = gmx_node_rank();
+            // Set up the multi-sim
+            ensembleSize_ = commSize / numRanksPerSimulation;
+            simulationId_ = commRank / numRanksPerSimulation;
+            isMainRank_   = commRank % numRanksPerSimulation == 0;
+        }
+
+        // Multi-sim requires organizing creating subdirectories
+        // and tpr files inside them.
+        const std::filesystem::path& originalTempDirectory = fileManager_.getOutputTempDirectory();
+
+        // Prepare the mdrun caller and make the subdirectories
+        mdrunCaller_.append("mdrun");
+        mdrunCaller_.addOption("-multidir");
+        for (int i = 0; i < ensembleSize_; ++i)
+        {
+            std::filesystem::path newTempDirectory = originalTempDirectory;
+            newTempDirectory.append(formatString("sim_%d", i));
+            mdrunCaller_.append(newTempDirectory.string());
+            if (i == simulationId_)
+            {
+                if (isMainRank_)
+                {
+                    // Only one rank per simulation should actually create the directory!
+                    std::filesystem::create_directory(newTempDirectory);
+                }
+#if GMX_LIB_MPI
+                // Make sure the directory has been made before other ranks try to use it as the temp directory.
+                MPI_Barrier(MdrunTestFixtureBase::s_communicator);
+#endif
+                // Use the new directory for output.
+                fileManager_.setOutputTempDirectory(newTempDirectory);
+                // Replace the SimulationRunner with one using the new
+                // output directory. This makes sure grompp and mdrun
+                // write their output where it is expected for a
+                // multi-sim.
+                runner_ = SimulationRunner(&fileManager_);
+            }
+        }
+    }
+
+    //! Number of simulations in the ensemble
+    int ensembleSize_;
+    //! ID of this simulation within the set
+    int simulationId_;
+    //!  Whether this rank will be the main rank of a simulation
+    bool isMainRank_ = false;
+    //! The helper object that will call mdrun -multidir
+    CommandLine mdrunCaller_;
+};
+
+using OriresEnsembleTest = SimpleMultiSimTest;
+
+TEST_F(OriresEnsembleTest, OriresCanAverageEnsembles)
+{
+    GMX_MPI_TEST(RequireRankCount<2>);
+
+    if (!GMX_LIB_MPI)
+    {
+        GTEST_SKIP() << "Library MPI build configuration required for ensemble restraints";
+    }
+    if (ensembleSize_ <= 1)
+    {
+        GTEST_SKIP() << "Must have at least two simulations for ensemble restraints";
+    }
+
+    // Only one rank per simulation creates mdp and tpr files
+    if (isMainRank_)
+    {
+        runner_.useTopGroAndNdxFromDatabase("orires_1lvz");
+        runner_.useStringAsMdpFile(g_mdpContents);
+        EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    }
+
+    // Do a multi-sim mdrun with orientation restraints enabled
+    ASSERT_EQ(0, runner_.callMdrun(mdrunCaller_));
 }
 
 } // namespace test

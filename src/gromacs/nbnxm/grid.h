@@ -40,8 +40,8 @@
  * This class provides functionality for setting up and accessing atoms
  * on a grid for one domain decomposition zone. This grid is used for
  * generating cluster pair lists for computing non-bonded pair interactions.
- * The grid consists of a regular array of columns along dimensions x and y.
- * Along z the number of bins and their boundaries vary between the columns.
+ * The grid consists of a regular array of cells along dimensions x and y.
+ * Along z the number of bins and their boundaries vary between the cells.
  * Each bin can hold one or more clusters of atoms, depending on the grid
  * geometry, which is set by the pair-list type.
  *
@@ -96,10 +96,10 @@ struct GridDimensions
         return lowerCorner[dim] + cellIndex * cellSize[dim];
     }
 
-    //! Return the index of the column on the grid given the x+y-indices
-    int columnIndex(int columnIndexX, int columnIndexY) const
+    //! Return the index of the cell on the grid given the x+y-indices
+    int cellIndex(int cellIndexX, int cellIndexY) const
     {
-        return columnIndexX * numCells[YY] + columnIndexY;
+        return cellIndexX * numCells[YY] + cellIndexY;
     }
 
     //! The lower corner of the (local) grid
@@ -180,8 +180,8 @@ public:
     //! Returns the dimensions of the grid
     const GridDimensions& dimensions() const { return dimensions_; }
 
-    //! Returns the total number of grid columns
-    int numColumns() const { return dimensions_.numCells[XX] * dimensions_.numCells[YY]; }
+    //! Returns the total number of grid cells
+    int numCells() const { return dimensions_.numCells[XX] * dimensions_.numCells[YY]; }
 
     //! Returns the total number of grid bins
     int numBins() const { return numBinsTotal_; }
@@ -189,40 +189,40 @@ public:
     //! Returns the bin offset of (the first bin of) this grid in the list of bins combined over all grids
     int binOffset() const { return binOffset_; }
 
-    //! Returns the maximum number of grid bins in a column
-    int numBinsColumnMax() const { return numBinsColumnMax_; }
+    //! Returns the maximum number of grid bins in a cell
+    int maxNumBinsPerCell() const { return maxNumBinsPerCell_; }
 
     //! Returns the first bin index in the grid, starting at 0 in this grid
-    int firstBinInColumn(int columnIndex) const { return columnToBin_[columnIndex]; }
+    int firstBinInCell(int cellIndex) const { return cellToBin_[cellIndex]; }
 
-    //! Returns the number of bins in the column
-    int numBinsInColumn(int columnIndex) const
+    //! Returns the number of bins in the cell
+    int numBinsInCell(int cellIndex) const
     {
-        return columnToBin_[columnIndex + 1LL] - columnToBin_[columnIndex];
+        return cellToBin_[cellIndex + 1LL] - cellToBin_[cellIndex];
     }
 
-    //! Returns the index of the first atom in the column
-    int firstAtomInColumn(int columnIndex) const
+    //! Returns the index of the first atom in the cell
+    int firstAtomInCell(int cellIndex) const
     {
-        return (binOffset_ + columnToBin_[columnIndex]) * geometry_.numAtomsPerBin_;
+        return (binOffset_ + cellToBin_[cellIndex]) * geometry_.numAtomsPerBin_;
     }
 
-    //! Returns the number of real atoms in the column
-    int numAtomsInColumn(int columnIndex) const { return numAtomsPerColumn_[columnIndex]; }
+    //! Returns the number of real atoms in the cell
+    int numAtomsInCell(int cellIndex) const { return numAtomsPerCell_[cellIndex]; }
 
-    //! Returns a view of the number of non-filler, atoms for each grid column
-    ArrayRef<const int> numAtomsPerColumn() const { return numAtomsPerColumn_; }
+    //! Returns a view of the number of non-filler, atoms for each grid cell
+    ArrayRef<const int> numAtomsPerCell() const { return numAtomsPerCell_; }
 
-    //! Returns a view of the grid-local bin index for each grid column
-    ArrayRef<const int> columnToBin() const { return columnToBin_; }
+    //! Returns a view of the grid-local bin index for each grid cell
+    ArrayRef<const int> cellToBin() const { return cellToBin_; }
 
     //! Returns the number of atoms in a bin
     int numAtomsPerBin() const { return geometry_.numAtomsPerBin_; }
 
-    //! Returns the number of atoms in the column including padding
-    int paddedNumAtomsInColumn(int columnIndex) const
+    //! Returns the number of atoms in the cell including padding
+    int paddedNumAtomsInCell(int cellIndex) const
     {
-        return numBinsInColumn(columnIndex) * geometry_.numAtomsPerBin_;
+        return numBinsInCell(cellIndex) * geometry_.numAtomsPerBin_;
     }
 
     //! Returns the end of the atom index range on the grid, including padding
@@ -318,8 +318,8 @@ public:
      *
      * \param[in] ddZone      The domain decomposition zone this grid belongs to
      * \param[in] dimensions  The dimensions of the grid
-     * \param[in] clusterRanges  A list of column indices and number of clusters for a column,
-     *                           the list should be ordered on column index, the same column
+     * \param[in] clusterRanges  A list of cell indices and number of clusters for a cell,
+     *                           the list should be ordered on cell index, the same cell
      *                           index can appear multiple times; note that the clusters
      *                           here have size of the maximum of the i- and j-sizes
      * \param[in] binOffset   The offset of this grid in the list of bins over all grids
@@ -337,17 +337,17 @@ public:
                          GridSetData*                        gridSetData,
                          nbnxn_atomdata_t*                   nbat);
 
-    //! Determine in which grid columns atoms should go, store bins and atom counts in \p bins and \p numAtomsPerColumn
-    static void calcColumnIndices(const GridDimensions&  gridDims,
-                                  const UpdateGroupsCog* updateGroupsCog,
-                                  Range<int>             atomRange,
-                                  ArrayRef<const RVec>   x,
-                                  int                    dd_zone,
-                                  const int*             move,
-                                  int                    thread,
-                                  int                    nthread,
-                                  ArrayRef<int>          bins,
-                                  ArrayRef<int>          numAtomsPerColumn);
+    //! Determine in which grid cells atoms should go, store bins and atom counts in \p bins and \p numAtomsPerCell
+    static void calcCellIndices(const GridDimensions&  gridDims,
+                                const UpdateGroupsCog* updateGroupsCog,
+                                Range<int>             atomRange,
+                                ArrayRef<const RVec>   x,
+                                int                    dd_zone,
+                                const int*             move,
+                                int                    thread,
+                                int                    nthread,
+                                ArrayRef<int>          bins,
+                                ArrayRef<int>          numAtomsPerCell);
 
 private:
     /*! \brief Fill a pair search bin with atoms
@@ -361,23 +361,23 @@ private:
                  ArrayRef<const int32_t> atomInfo,
                  ArrayRef<const RVec>    x);
 
-    //! Spatially sort the atoms within the given column range, for CPU geometry
-    void sortColumnsCpuGeometry(GridSetData*            gridSetData,
-                                int                     dd_zone,
-                                ArrayRef<const int32_t> atomInfo,
-                                ArrayRef<const RVec>    x,
-                                nbnxn_atomdata_t*       nbat,
-                                Range<int>              columnRange,
-                                ArrayRef<int>           sort_work);
+    //! Spatially sort the atoms within the given cell range, for CPU geometry
+    void sortCellsCpuGeometry(GridSetData*            gridSetData,
+                              int                     dd_zone,
+                              ArrayRef<const int32_t> atomInfo,
+                              ArrayRef<const RVec>    x,
+                              nbnxn_atomdata_t*       nbat,
+                              Range<int>              cellRange,
+                              ArrayRef<int>           sort_work);
 
-    //! Spatially sort the atoms within the given column range, for GPU geometry
-    void sortColumnsGpuGeometry(GridSetData*            gridSetData,
-                                int                     dd_zone,
-                                ArrayRef<const int32_t> atomInfo,
-                                ArrayRef<const RVec>    x,
-                                nbnxn_atomdata_t*       nbat,
-                                Range<int>              columnRange,
-                                ArrayRef<int>           sort_work);
+    //! Spatially sort the atoms within the given cell range, for GPU geometry
+    void sortCellsGpuGeometry(GridSetData*            gridSetData,
+                              int                     dd_zone,
+                              ArrayRef<const int32_t> atomInfo,
+                              ArrayRef<const RVec>    x,
+                              nbnxn_atomdata_t*       nbat,
+                              Range<int>              cellRange,
+                              ArrayRef<int>           sort_work);
 
     // Data members
 
@@ -394,16 +394,16 @@ private:
     int numBinsTotal_;
     //! Index in GridSetData corresponding to bin 0 of this grid
     int binOffset_;
-    //! The maximum number of bins in a column
-    int numBinsColumnMax_;
+    //! The maximum number of bins in a cell
+    int maxNumBinsPerCell_;
 
     /* Grid data */
-    //! The number of, non-filler, atoms for each grid column.
-    HostVector<int> numAtomsPerColumn_;
-    //! The grid-local bin index for each grid column
-    HostVector<int> columnToBin_;
+    //! The number of, non-filler, atoms for each grid cell.
+    HostVector<int> numAtomsPerCell_;
+    //! The grid-local bin index for each grid cell
+    HostVector<int> cellToBin_;
 
-    //! The number of clusters for each column
+    //! The number of clusters for each cell
     std::vector<int> numClusters_;
 
     /* Bounding boxes */

@@ -149,9 +149,54 @@ static std::string getThreadAffinityLayoutString(const ThreadAffinityLayout& lay
     return "CPUs: " + gmx::prettyPrintListAsRange(affinityList);
 }
 
-
-static std::string getExternalAffinityString(const gmx::HardwareTopology::Machine& m)
+/*! \brief Returns a heuristic width for aligned CPU-range output.
+ *
+ * Uses the known maximum CPU id and, when topology is available, SMT
+ * information to estimate a width that fits common range forms such as
+ * "a-b" and "a-b,c-d".
+ *
+ * Irregular/disjoint masks may be longer; those are still printed fully and
+ * only column alignment is affected.
+ *
+ * \param hwTop Hardware topology.
+ * \returns Estimated minimum field width for formatting CPU ranges.
+ */
+static int getCpuRangeFieldWidth(const gmx::HardwareTopology& hwTop)
 {
+    const auto supportLevel = hwTop.supportLevel();
+    if (supportLevel < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
+    {
+        return 0;
+    }
+
+    int  maxCpuId = std::max(hwTop.maxThreads() - 1, 0);
+    bool hasSmt   = false;
+
+    if (supportLevel >= gmx::HardwareTopology::SupportLevel::Basic)
+    {
+        const auto& machine = hwTop.machine();
+        for (const auto& lp : machine.logicalProcessors)
+        {
+            maxCpuId = std::max(maxCpuId, lp.osId);
+        }
+        hasSmt = std::any_of(machine.packages.begin(),
+                             machine.packages.end(),
+                             [](const auto& package)
+                             {
+                                 return std::any_of(package.cores.begin(),
+                                                    package.cores.end(),
+                                                    [](const auto& core)
+                                                    { return core.processingUnits.size() > 1; });
+                             });
+    }
+
+    const int maxCpuIdDigits = static_cast<int>(std::to_string(maxCpuId).length());
+    return hasSmt ? (4 * maxCpuIdDigits + 3) : (2 * maxCpuIdDigits + 1);
+}
+
+static std::string getExternalAffinityString(const gmx::HardwareTopology& hwTop)
+{
+    const auto&             m = hwTop.machine();
     std::vector<int>        affinityList;
     std::unordered_set<int> numaList;
     std::unordered_set<int> packageList;
@@ -175,7 +220,9 @@ static std::string getExternalAffinityString(const gmx::HardwareTopology::Machin
         return "[ cannot detect ]";
     }
     std::sort(affinityList.begin(), affinityList.end());
-    std::string ret = "CPUs: " + gmx::prettyPrintListAsRange(affinityList);
+    std::string cpuRange           = gmx::prettyPrintListAsRange(affinityList);
+    const int   cpuRangeFieldWidth = getCpuRangeFieldWidth(hwTop);
+    std::string ret = gmx::formatString("CPUs: %-*s", cpuRangeFieldWidth, cpuRange.c_str());
     if (!numaList.empty())
     {
         std::vector<int> numaListSorted(numaList.begin(), numaList.end());
@@ -196,18 +243,18 @@ static std::string getExternalAffinityString(const gmx::HardwareTopology::Machin
     return ret;
 }
 
-static bool logAffinitySettingResults(const gmx::MDLogger&                  mdlog,
-                                      const ThreadAffinityLayout*           layout,
-                                      const gmx::HardwareTopology::Machine& machine,
-                                      const int                             numThreadsLocal,
-                                      const int                             intraNodeThreadOffset,
-                                      const gmx::MpiComm&                   comm)
+static bool logAffinitySettingResults(const gmx::MDLogger&         mdlog,
+                                      const ThreadAffinityLayout*  layout,
+                                      const gmx::HardwareTopology& hwTop,
+                                      const int                    numThreadsLocal,
+                                      const int                    intraNodeThreadOffset,
+                                      const gmx::MpiComm&          comm)
 {
     const bool envVarSet = std::getenv("GMX_REPORT_CPU_AFFINITY") != nullptr; // can differ between ranks
     std::string myAffinityString;
     if (envVarSet)
     {
-        myAffinityString = "External affinity: " + getExternalAffinityString(machine);
+        myAffinityString = "External affinity: " + getExternalAffinityString(hwTop);
         if (layout != nullptr)
         {
             myAffinityString =
@@ -247,11 +294,11 @@ static bool logAffinitySettingResults(const gmx::MDLogger&                  mdlo
 }
 
 //! Log affinity setting results, without having set any affinity
-static bool logAffinitySettingResults(const gmx::MDLogger&                  mdlog,
-                                      const gmx::HardwareTopology::Machine& machine,
-                                      const gmx::MpiComm&                   comm)
+static bool logAffinitySettingResults(const gmx::MDLogger&         mdlog,
+                                      const gmx::HardwareTopology& hwTop,
+                                      const gmx::MpiComm&          comm)
 {
-    return logAffinitySettingResults(mdlog, nullptr, machine, 0, 0, comm);
+    return logAffinitySettingResults(mdlog, nullptr, hwTop, 0, 0, comm);
 }
 
 static ThreadAffinityLayout get_thread_affinity_layout(const gmx::MDLogger&         mdlog,
@@ -627,7 +674,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&                 mdlog,
     if (hw_opt->threadAffinity == ThreadAffinity::Off)
     {
         /* Nothing to do */
-        logAffinitySettingResults(mdlog, hwTop.machine(), mpiCommMySim);
+        logAffinitySettingResults(mdlog, hwTop, mpiCommMySim);
         return;
     }
 
@@ -649,7 +696,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&                 mdlog,
                 .asParagraph()
                 .appendText("NOTE: Cannot set thread affinities on the current platform.");
 #endif /* __APPLE__ */
-        logAffinitySettingResults(mdlog, hwTop.machine(), mpiCommMySim);
+        logAffinitySettingResults(mdlog, hwTop, mpiCommMySim);
         return;
     }
 
@@ -688,8 +735,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&                 mdlog,
         }
         else
         {
-            const bool havePrintedAffinity =
-                    logAffinitySettingResults(mdlog, hwTop.machine(), mpiCommMySim);
+            const bool  havePrintedAffinity = logAffinitySettingResults(mdlog, hwTop, mpiCommMySim);
             const char* affinityMessage =
                     havePrintedAffinity ? "You can find the affinity report in the log file" : "You can run with GMX_REPORT_CPU_AFFINITY=1 to get detailed affinity report";
             GMX_LOG(mdlog.warning)
@@ -720,7 +766,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&                 mdlog,
                                                                    offset,
                                                                    core_pinning_stride);
     logAffinitySettingResults(
-            mdlog, &layout, hwTop.machine(), numThreadsOnThisRank, sharedCpuSetRankPinningOffset, mpiCommMySim);
+            mdlog, &layout, hwTop, numThreadsOnThisRank, sharedCpuSetRankPinningOffset, mpiCommMySim);
     bool allAffinitiesSet;
     if (layout.isValid)
     {

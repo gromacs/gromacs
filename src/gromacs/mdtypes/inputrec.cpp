@@ -677,6 +677,8 @@ static void pr_awh_bias(FILE* fp, int indent, const gmx::AwhBiasParams& awhBiasP
     PI(opt, awhBiasParams.shareGroup());
     sprintf(opt, "%s-equilibrate-histogram", prefix);
     PS(opt, EBOOL(awhBiasParams.equilibrateHistogram()));
+    sprintf(opt, "%s-histogram-tolerance", prefix);
+    PR(opt, awhBiasParams.histogramTolerance());
     sprintf(opt, "%s-ndim", prefix);
     PI(opt, awhBiasParams.ndim());
 

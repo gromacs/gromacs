@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
+#include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
@@ -1137,6 +1138,11 @@ void init_forcerec(FILE*                            fplog,
     }
 }
 
-t_forcerec::t_forcerec() = default;
+t_forcerec::t_forcerec(const bool useGpuPmePpCommunication) :
+    pmeForceReceiveBuffer{ gmx::HostAllocationPolicy{ useGpuPmePpCommunication
+                                                              ? gmx::PinningPolicy::PinnedIfSupported
+                                                              : gmx::PinningPolicy::CannotBePinned } }
+{
+}
 
 t_forcerec::~t_forcerec() = default;

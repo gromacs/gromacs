@@ -72,17 +72,19 @@ void pme_gpu_stop_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId)
     }
 }
 
-void pme_gpu_get_timings(const PmeGpu* pmeGpu, gmx_wallclock_gpu_pme_t* timings)
+std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const PmeGpu* pmeGpu)
 {
     if (pme_gpu_timings_enabled(pmeGpu))
     {
-        GMX_RELEASE_ASSERT(timings, "Null GPU timing pointer");
-        for (auto key : keysOf(timings->timing))
+        gmx_wallclock_gpu_pme_t timings;
+        for (auto key : keysOf(timings.timing))
         {
-            timings->timing[key].t = pmeGpu->archSpecific->timingEvents[key].getTotalTime();
-            timings->timing[key].c = pmeGpu->archSpecific->timingEvents[key].getCallCount();
+            timings.timing[key].t = pmeGpu->archSpecific->timingEvents[key].getTotalTime();
+            timings.timing[key].c = pmeGpu->archSpecific->timingEvents[key].getCallCount();
         }
+        return timings;
     }
+    return std::nullopt;
 }
 
 void pme_gpu_update_timings(const PmeGpu* pmeGpu)

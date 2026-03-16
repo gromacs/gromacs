@@ -54,20 +54,19 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/ewald/pme_gpu_program.h"
+#include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_output.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/vectypes.h"
 
 #include "testutils/test_device.h"
 
 class DeviceContext;
 class DeviceStream;
-struct gmx_pme_t;
 struct t_inputrec;
 
 namespace gmx
@@ -91,8 +90,8 @@ enum class CodePath : int
 };
 
 // Convenience typedefs
-//! A safe pointer type for PME.
-typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
+//! PME data structure
+typedef std::unique_ptr<gmx_pme_t> PmePointer;
 //! Charges
 typedef std::vector<real> ChargesVector;
 //! Coordinates
@@ -152,17 +151,17 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 // PME stages
 
 //! PME initialization
-PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
-                              CodePath             mode,
-                              const DeviceContext* deviceContext,
-                              const DeviceStream*  deviceStream,
-                              const PmeGpuProgram* pmeGpuProgram,
-                              const Matrix3x3&     box,
-                              real                 ewaldCoeff_q  = 1.0F,
-                              real                 ewaldCoeff_lj = 1.0F);
+PmePointer pmeInitWrapper(const t_inputrec*    inputRec,
+                          CodePath             mode,
+                          const DeviceContext* deviceContext,
+                          const DeviceStream*  deviceStream,
+                          const PmeGpuProgram* pmeGpuProgram,
+                          const Matrix3x3&     box,
+                          real                 ewaldCoeff_q  = 1.0F,
+                          real                 ewaldCoeff_lj = 1.0F);
 
 //! Simple PME initialization based on inputrec only
-PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec);
+PmePointer pmeInitEmpty(const t_inputrec* inputRec);
 
 //! Make a GPU state-propagator manager
 std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t& pme,

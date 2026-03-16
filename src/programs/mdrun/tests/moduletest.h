@@ -184,9 +184,7 @@ public:
 
 private:
     //! The file manager used to manage I/O
-    TestFileManager& fileManager_;
-
-    GMX_DISALLOW_COPY_AND_ASSIGN(SimulationRunner);
+    TestFileManager* fileManager_;
 };
 
 /*! \internal

@@ -31,7 +31,7 @@
   &amp;DFT
     CHARGE 0
     MULTIPLICITY 1
-    BASIS_SET_FILE_NAME  BASIS_MOLOPT
+    BASIS_SET_FILE_NAME  EMSL_BASIS_SETS
     POTENTIAL_FILE_NAME  POTENTIAL
     &amp;MGRID
       NGRIDS 5
@@ -57,11 +57,25 @@
       DENSITY_CUTOFF     1.0E-12
       GRADIENT_CUTOFF    1.0E-12
       TAU_CUTOFF         1.0E-12
-      &amp;XC_FUNCTIONAL PBE
+      &amp;XC_FUNCTIONAL
+        &amp;HYB_GGA_XC_CAM_B3LYP
+        &amp;END HYB_GGA_XC_CAM_B3LYP
       &amp;END XC_FUNCTIONAL
+      &amp;HF
+        &amp;SCREENING
+          EPS_SCHWARZ 1.0E-10
+        &amp;END SCREENING
+        &amp;INTERACTION_POTENTIAL
+          POTENTIAL_TYPE MIX_CL_TRUNC
+          CUTOFF_RADIUS 4.9
+          OMEGA 0.33
+          SCALE_COULOMB 0.19
+          SCALE_LONGRANGE 0.46
+        &amp;END INTERACTION_POTENTIAL
+      &amp;END HF
     &amp;END XC
     &amp;QS
-     METHOD GPW
+     METHOD GAPW
      EPS_DEFAULT 1.0E-10
      EXTRAPOLATION ASPC
      EXTRAPOLATION_ORDER  4
@@ -117,21 +131,16 @@
       COORD_FILE_FORMAT PDB
       CHARGE_EXTENDED TRUE
       CONNECTIVITY OFF
-      &amp;GENERATE
-         &amp;ISOLATED_ATOMS
-            LIST 1..6
-         &amp;END
-      &amp;END GENERATE
     &amp;END TOPOLOGY
     &amp;KIND H  
       ELEMENT H  
-      BASIS_SET DZVP-MOLOPT-GTH
-      POTENTIAL GTH-PBE
+      BASIS_SET 6-31G*
+      POTENTIAL ALL
     &amp;END KIND
     &amp;KIND O  
       ELEMENT O  
-      BASIS_SET DZVP-MOLOPT-GTH
-      POTENTIAL GTH-PBE
+      BASIS_SET 6-31G*
+      POTENTIAL ALL
     &amp;END KIND
     &amp;KIND X
       ELEMENT H

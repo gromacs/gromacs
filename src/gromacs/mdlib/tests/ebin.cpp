@@ -42,6 +42,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/textreader.h"
@@ -93,23 +94,22 @@ TEST_F(PrEbinTest, HandlesAverages)
 {
     ASSERT_NE(log_, nullptr);
 
-    t_ebin*                        ebin = mk_ebin();
-    unique_cptr<t_ebin, done_ebin> ebinGuard(ebin);
+    t_ebin ebin;
 
     // Set up the energy entries
-    const char* firstName[]  = { "first" };
-    const char* secondName[] = { "second" };
-    int         first        = get_ebin_space(ebin, 1, firstName, nullptr);
-    int         second       = get_ebin_space(ebin, 1, secondName, nullptr);
+    const std::array<std::string, 1> firstName  = { "first" };
+    const std::array<std::string, 1> secondName = { "second" };
+    const int                        first      = ebin.getSpace(firstName, nullptr);
+    const int                        second     = ebin.getSpace(secondName, nullptr);
 
     // Put some data into the energy entries
     const real timevalues[2][2] = { { 1.0, 20.0 }, { 2.0, 40.0 } };
     gmx_bool   bSum             = true;
     for (const auto& values : timevalues)
     {
-        add_ebin(ebin, first, 1, &values[0], bSum);
-        add_ebin(ebin, second, 1, &values[1], bSum);
-        ebin_increase_count(1, ebin, bSum);
+        ebin.addValue(first, values[0], bSum);
+        ebin.addValue(second, values[1], bSum);
+        ebin.incrementCount(bSum);
     }
 
     // Test pr_ebin
@@ -118,7 +118,7 @@ TEST_F(PrEbinTest, HandlesAverages)
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
-    checker_.checkInteger(ebin->nener, "Number of Energy Terms");
+    checker_.checkInteger(ebin.numTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
@@ -126,14 +126,13 @@ TEST_F(PrEbinTest, HandlesEmptyAverages)
 {
     ASSERT_NE(log_, nullptr);
 
-    t_ebin*                        ebin = mk_ebin();
-    unique_cptr<t_ebin, done_ebin> ebinGuard(ebin);
+    t_ebin ebin;
 
     // Set up the energy entries
-    const char* firstName[]  = { "first" };
-    const char* secondName[] = { "second" };
-    get_ebin_space(ebin, 1, firstName, nullptr);
-    get_ebin_space(ebin, 1, secondName, nullptr);
+    const std::array<std::string, 1> firstName  = { "first" };
+    const std::array<std::string, 1> secondName = { "second" };
+    ebin.getSpace(firstName, nullptr);
+    ebin.getSpace(secondName, nullptr);
 
     // Test pr_ebin
     pr_ebin(log_, ebin, 0, 2, 5, eprAVER, true);
@@ -141,7 +140,7 @@ TEST_F(PrEbinTest, HandlesEmptyAverages)
     // We need to close the file before the contents are available.
     logFileGuard_.reset(nullptr);
 
-    checker_.checkInteger(ebin->nener, "Number of Energy Terms");
+    checker_.checkInteger(ebin.numTerms(), "Number of Energy Terms");
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 

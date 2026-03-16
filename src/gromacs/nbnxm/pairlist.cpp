@@ -2608,7 +2608,7 @@ static int get_ci_block_size(const Grid& iGrid, const bool haveMultipleDomains, 
      * zone boundaries with 3D domain decomposition. At the same time
      * the blocks will not become too small.
      */
-    GMX_ASSERT(iGrid.numColumns() > 0, "Grid can't be empty");
+    GMX_ASSERT(iGrid.numCells() > 0, "Grid can't be empty");
     GMX_ASSERT(numLists > 0, "We need at least one list");
     int ci_block = (iGrid.numBins() * ci_block_enum)
                    / (ci_block_denom * iGrid.dimensions().numCells[XX] * numLists);
@@ -2674,7 +2674,7 @@ bool ThreadedBinIndexer::next()
     }
 
     while (binIndex_
-           >= grid_.firstBinInColumn(cellIndexX_ * grid_.dimensions().numCells[YY] + cellIndexY_ + 1))
+           >= grid_.firstBinInCell(cellIndexX_ * grid_.dimensions().numCells[YY] + cellIndexY_ + 1))
     {
         cellIndexY_ += 1;
         if (cellIndexY_ == grid_.dimensions().numCells[YY])
@@ -2957,7 +2957,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
         fprintf(debug,
                 "nbl nc_i %d col.av. %.1f ci_block %d\n",
                 iGrid.numBins(),
-                iGrid.numBins() / static_cast<double>(iGrid.numColumns()),
+                iGrid.numBins() / static_cast<double>(iGrid.numCells()),
                 threadedBinIndexer.blockSize());
     }
 
@@ -2993,7 +2993,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
             }
         }
 
-        const int ci_xy = iGridDims.columnIndex(ci_x, ci_y);
+        const int ci_xy = iGridDims.cellIndex(ci_x, ci_y);
 
         /* Loop over shift vectors in three dimensions */
         for (int tz = -shiftRange[ZZ]; tz <= shiftRange[ZZ]; tz++)
@@ -3020,7 +3020,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                 continue;
             }
 
-            real bz1_frac = bz1 / real(iGrid.numBinsInColumn(ci_xy));
+            real bz1_frac = bz1 / real(iGrid.numBinsInCell(ci_xy));
             if (bz1_frac < 0)
             {
                 bz1_frac = 0;
@@ -3124,9 +3124,8 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
 
                         for (int cy = cyf_x; cy <= cyl; cy++)
                         {
-                            const int columnStart = jGrid.firstBinInColumn(jGridDims.columnIndex(cx, cy));
-                            const int columnEnd =
-                                    jGrid.firstBinInColumn(jGridDims.columnIndex(cx, cy + 1));
+                            const int cellStart = jGrid.firstBinInCell(jGridDims.cellIndex(cx, cy));
+                            const int cellEnd = jGrid.firstBinInCell(jGridDims.cellIndex(cx, cy + 1));
 
                             const real cellLowerCornerY = jGridDims.cellLowerCorner(YY, cy);
                             const real cellUpperCornerY = jGridDims.cellLowerCorner(YY, cy + 1);
@@ -3139,7 +3138,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                             {
                                 d2zxy += square(cellUpperCornerY - by0);
                             }
-                            if (columnStart < columnEnd && d2zxy < listRangeBBToJBin2)
+                            if (cellStart < cellEnd && d2zxy < listRangeBBToJBin2)
                             {
                                 /* To improve efficiency in the common case
                                  * of a homogeneous particle distribution,
@@ -3154,13 +3153,12 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                  * but we do not do this because it would
                                  * complicate this code even more.
                                  */
-                                int midCell =
-                                        columnStart
-                                        + static_cast<int>(
-                                                bz1_frac * static_cast<real>(columnEnd - columnStart));
-                                if (midCell >= columnEnd)
+                                int midCell = cellStart
+                                              + static_cast<int>(
+                                                      bz1_frac * static_cast<real>(cellEnd - cellStart));
+                                if (midCell >= cellEnd)
                                 {
-                                    midCell = columnEnd - 1;
+                                    midCell = cellEnd - 1;
                                 }
 
                                 const real d2xy = d2zxy - d2z;
@@ -3172,7 +3170,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                  * if it is within range.
                                  */
                                 int downTestCell = midCell;
-                                while (downTestCell >= columnStart
+                                while (downTestCell >= cellStart
                                        && (bbcz_j[downTestCell].upper >= bz0
                                            || d2xy + square(bbcz_j[downTestCell].upper - bz0) < rlist2))
                                 {
@@ -3187,7 +3185,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                  * if it is within range.
                                  */
                                 int upTestCell = midCell + 1;
-                                while (upTestCell < columnEnd
+                                while (upTestCell < cellEnd
                                        && (bbcz_j[upTestCell].lower <= bz1
                                            || d2xy + square(bbcz_j[upTestCell].lower - bz1) < rlist2))
                                 {
@@ -3201,9 +3199,9 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                     /* Simple reference code, for debugging,
                                      * overrides the more complex code above.
                                      */
-                                    firstCell = columnEnd;
+                                    firstCell = cellEnd;
                                     lastCell  = -1;
-                                    for (int k = columnStart; k < columnEnd; k++)
+                                    for (int k = cellStart; k < cellEnd; k++)
                                     {
                                         if (d2xy + square(bbcz_j[k * NNBSBB_D + 1] - bz0) < rlist2
                                             && k < firstCell)
@@ -3231,9 +3229,9 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
 
                                 if (firstCell <= lastCell)
                                 {
-                                    GMX_ASSERT(firstCell >= columnStart && lastCell < columnEnd,
+                                    GMX_ASSERT(firstCell >= cellStart && lastCell < cellEnd,
                                                "The range should reside within the current grid "
-                                               "column");
+                                               "cell");
 
                                     /* For f buffer flags with simple lists */
                                     const int ncj_old_j = getNumSimpleJClustersInList(*nbl);
@@ -3724,7 +3722,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
 
     for (const Grid& iGrid : iGridList)
     {
-        if (iGrid.numColumns() == 0)
+        if (iGrid.numCells() == 0)
         {
             // We can and have to skip empty i-lists
             continue;

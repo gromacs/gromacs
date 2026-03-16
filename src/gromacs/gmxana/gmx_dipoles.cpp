@@ -843,7 +843,6 @@ static void do_dip(const t_topology*       top,
     FILE *         dip3d = nullptr, *adip = nullptr;
     rvec *         x, *dipole = nullptr, mu_t, quad, *dipsp = nullptr;
     t_gkrbin*      gkrbin = nullptr;
-    gmx_enxnm_t*   enm    = nullptr;
     t_enxframe*    fr;
     int            nframes = 1000, nre, timecheck = 0, ncolour = 0;
     ener_file_t    fmu = nullptr;
@@ -881,25 +880,26 @@ static void do_dip(const t_topology*       top,
     iMu[XX] = iMu[YY] = iMu[ZZ] = -1;
     if (bMU)
     {
-        fmu = open_enx(mufn, "r");
-        do_enxnms(fmu, &nre, &enm);
+        fmu                                = open_enx(mufn, "r");
+        const std::vector<gmx_enxnm_t> enm = readEnxNames(fmu);
+        nre                                = gmx::ssize(enm);
 
         /* Determine the indexes of the energy grps we need */
         for (i = 0; (i < nre); i++)
         {
-            if (std::strstr(enm[i].name, "Volume"))
+            if (std::strstr(enm[i].name.c_str(), "Volume"))
             {
                 iVol = i;
             }
-            else if (std::strstr(enm[i].name, "Mu-X"))
+            else if (std::strstr(enm[i].name.c_str(), "Mu-X"))
             {
                 iMu[XX] = i;
             }
-            else if (std::strstr(enm[i].name, "Mu-Y"))
+            else if (std::strstr(enm[i].name.c_str(), "Mu-Y"))
             {
                 iMu[YY] = i;
             }
-            else if (std::strstr(enm[i].name, "Mu-Z"))
+            else if (std::strstr(enm[i].name.c_str(), "Mu-Z"))
             {
                 iMu[ZZ] = i;
             }

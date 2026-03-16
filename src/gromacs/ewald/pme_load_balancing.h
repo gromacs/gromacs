@@ -93,7 +93,7 @@ public:
                      const matrix               box,
                      const interaction_const_t& ic,
                      const nonbonded_verlet_t&  nbv,
-                     gmx_pme_t*                 pmedata,
+                     const gmx_pme_t*           pmedata,
                      const SimulationWorkload&  simulationWork);
 
     ~PmeLoadBalancing();

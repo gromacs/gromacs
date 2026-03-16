@@ -42,12 +42,14 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+
 #include "gmxpre.h"
 
 #include "gromacs/utility/vectypes.h"
 
 #include <array>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -529,6 +531,40 @@ TEST(RVecTest, UsableInConstexpr)
     static_assert(elementWiseMax(a[0], a[1]) == a[0]);
     static_assert(elementWiseMin(a[0], a[1]) == a[1]);
 }
+
+TEST(RVecTest, SameValueSameHash)
+{
+    constexpr std::hash<RVec> hasher;
+    constexpr RVec            v1(1, 2, 3);
+    constexpr RVec            v2(1, 2, 3);
+    EXPECT_EQ(hasher(v1), hasher(v2));
+}
+
+TEST(RVecTest, DifferentValueDifferentHash)
+{
+    constexpr std::hash<RVec> hasher;
+    constexpr RVec            v1(1, 2, 3);
+    constexpr RVec            v2(3, 2, 1);
+    EXPECT_NE(hasher(v1), hasher(v2));
+}
+
+TEST(RVecTest, UsableInUnorderedMap)
+{
+    std::unordered_map<RVec, int> rmap;
+    rmap[RVec{ 1, 2, 3 }] = 1;
+    rmap[RVec{ 4, 5, 6 }] = 2;
+    rmap[RVec{ 1, 2, 3 }] = -1;
+    EXPECT_EQ(rmap.at(RVec{ 1, 2, 3 }), -1);
+}
+
+TEST(RVecTest, UsableInUnorderedSet)
+{
+    std::unordered_set<RVec> rset;
+    rset.insert(RVec{ 1, 2, 3 });
+    rset.insert(RVec{ 4, 5, 6 });
+    EXPECT_EQ(rset.size(), 2);
+}
+
 
 } // namespace
 } // namespace test

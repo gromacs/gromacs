@@ -68,14 +68,14 @@ namespace
 {
 
 //! Helper for consistent error handling
-void handleFftError(VkFFTResult result, const std::string& msg)
+void handleFftError(VkFFTResult result, const char* msg)
 {
     if (result == VKFFT_SUCCESS)
     {
         return;
     }
     GMX_THROW(gmx::InternalError(gmx::formatString(
-            "%s: (error code %d - %s)\n", msg.c_str(), result, getVkFFTErrorString(result))));
+            "%s: (error code %d - %s)\n", msg, result, getVkFFTErrorString(result))));
 }
 
 } // namespace

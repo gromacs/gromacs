@@ -2319,7 +2319,7 @@ static void smoothIact(t_UmbrellaWindow* window, int nwins, t_UmbrellaOptions* o
 //! Stop integrating autoccorelation function when ACF drops under this value
 #define WHAM_AC_ZERO_LIMIT 0.05
 
-/*! \brief Try to compute the autocorrelation time for each umbrealla window
+/*! \brief Try to compute the autocorrelation time for each umbrella window
  */
 static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
                                                int                nwins,
@@ -2327,10 +2327,11 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
                                                const char*        fn,
                                                const char*        xlabel)
 {
-    int   i, ig, ncorr, ntot, j, k, *count, restart;
-    real *corr, c0, dt, tmp;
-    real *ztime, av, tausteps;
-    FILE *fp, *fpcorr = nullptr;
+    int i, ig, ncorr, ntot, j, k, restart;
+    /* Accumulators promoted to double to prevent catastrophic cancellation */
+    double c0, tmp, av, tausteps;
+    real*  ztime;
+    FILE * fp, *fpcorr = nullptr;
 
     if (opt->verbose)
     {
@@ -2359,10 +2360,7 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
                       " points. Provide more pull data!",
                       ntot);
         }
-        snew(corr, ncorr);
-        /* snew(corrSq,ncorr); */
-        snew(count, ncorr);
-        dt = window[i].dt;
+        const double dt = window[i].dt;
         snew(window[i].tau, window[i].nPull);
         restart = gmx::roundToInt(opt->acTrestart / dt);
         if (restart == 0)
@@ -2382,17 +2380,15 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
             }
             ztime = window[i].ztime[ig];
 
+            std::vector<double> corr(ncorr, 0);
+            std::vector<int>    count(ncorr, 0);
+
             /* calc autocorrelation function C(t) = < [z(tau)-<z>]*[z(tau+t)-<z>]> */
             for (j = 0, av = 0; (j < ntot); j++)
             {
                 av += ztime[j];
             }
             av /= ntot;
-            for (k = 0; (k < ncorr); k++)
-            {
-                corr[k]  = 0.;
-                count[k] = 0;
-            }
             for (j = 0; (j < ntot); j += restart)
             {
                 for (k = 0; (k < ncorr) && (j + k < ntot); k++)
@@ -2429,7 +2425,7 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
                 fprintf(fpcorr, "%s\n", output_env_get_print_xvgr_codes(opt->oenv) ? "&" : "");
             }
 
-            /* esimate integrated correlation time, fitting is too unstable */
+            /* estimate integrated correlation time, fitting is too unstable */
             tausteps = 0.5 * corr[0];
             /* consider corr below WHAM_AC_ZERO_LIMIT as noise */
             for (j = 1; (j < ncorr) && (corr[j] > WHAM_AC_ZERO_LIMIT); j++)
@@ -2443,8 +2439,6 @@ static void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow*  window,
             window[i].g[ig]   = 1 + 2 * tausteps;
             /* printf("win %d, group %d, estimated correlation time = %g ps\n",i,ig,window[i].tau[ig]); */
         } /* ig loop */
-        sfree(corr);
-        sfree(count);
     }
     printf(" done\n");
     if (fpcorr)

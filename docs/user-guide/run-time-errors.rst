@@ -535,3 +535,21 @@ If you did not think you were running a parallel calculation, be aware that from
 uses thread-based parallelism by default. To prevent this, give :ref:`mdrun <gmx mdrun>`
 the ``-ntmpi 1`` command line option. Otherwise, you might be using an MPI-enabled |Gromacs| and
 not be aware of the fact.
+
+The X-size of the box times the triclinic skew factor is smaller than the number of DD cells times the smallest allowed cell size
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This error occurs when running a parallel simulation where the simulation box
+is too small to be divided among the requested number of domain decomposition
+(DD) cells. GROMACS splits the simulation box into one cell per parallel rank,
+and each cell must be at least as large as the cutoff radius (plus a safety
+margin). When the box size along a given axis, multiplied by the triclinic skew
+factor, is smaller than the number of DD cells along that axis multiplied by
+the minimum allowed cell size, the simulation cannot proceed.
+The possible solutions are:
+
+* Letting :ref:`mdrun <gmx mdrun>` choose the DD decomposition automatically by removing explicit ``-dd`` flags.
+* Increasing the simulation box size.
+* Reducing the number of MPI ranks or thread-MPI threads (``-ntmpi``).
+
+

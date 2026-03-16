@@ -285,23 +285,23 @@ void TorchModel::prepareMMCharges(ArrayRef<real> charges)
     inputs_.push_back(chargesTensor);
 }
 
-void TorchModel::prepareBox(matrix* box)
+void TorchModel::prepareBox(matrix& box)
 {
     torch::Tensor boxTensor =
-            torch::from_blob(*box, { DIM, DIM }, torch::TensorOptions().dtype(torchRealType));
+            torch::from_blob(box, { DIM, DIM }, torch::TensorOptions().dtype(torchRealType));
     boxTensor = boxTensor.to(torch::kFloat32).to(device_);
     inputs_.push_back(boxTensor);
 }
 
-void TorchModel::preparePbcType(PbcType* pbcType)
+void TorchModel::preparePbcType(PbcType& pbcType)
 {
     torch::Tensor pbcTensor =
             torch::tensor({ true, true, true }, torch::TensorOptions().dtype(torch::kBool));
-    if (*pbcType == PbcType::XY)
+    if (pbcType == PbcType::XY)
     {
         pbcTensor[2] = false;
     }
-    else if (*pbcType != PbcType::Xyz)
+    else if (pbcType != PbcType::Xyz)
     {
         GMX_THROW(InconsistentInputError(
                 "Option use_pbc was set to true, but PBC type is not supported."));
@@ -349,8 +349,8 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
                                ArrayRef<real>                   chargesMM,
                                real                             nnpCharge,
                                ArrayRef<const LinkFrontierAtom> linkFrontier,
-                               matrix*                          box /* = nullptr*/,
-                               PbcType*                         pbcType /* = nullptr*/)
+                               matrix&                          box,
+                               PbcType&                         pbcType)
 {
     // prepare inputs for NN model
     // order in input vector is the same as in mdp file
@@ -495,10 +495,8 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
     t_pbc pbc;
     if (!linkFrontier.empty())
     {
-        GMX_RELEASE_ASSERT(box && pbcType,
-                           "PBC information required when using link atoms with NNP");
         // set pbc struct
-        set_pbc(&pbc, *pbcType, *box);
+        set_pbc(&pbc, pbcType, box);
     }
     for (const auto& link : linkFrontier)
     {

@@ -138,7 +138,7 @@ public:
         std::unique_ptr<NNPotForceProvider> nnpotForceProvider;
         ASSERT_NO_THROW(nnpotForceProvider =
                                 std::make_unique<NNPotForceProvider>(params_, logger_, mpiComm_));
-        MDModulesAtomsRedistributedSignal signal{ box_, x_, std::nullopt };
+        MDModulesAtomsRedistributedSignal signal{ box_, x_, {}, {}, std::nullopt };
         ASSERT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices(signal));
 
         // Prepare input for force provider

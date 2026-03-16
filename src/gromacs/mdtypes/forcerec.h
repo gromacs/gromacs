@@ -39,6 +39,7 @@
 #include <optional>
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -133,7 +134,7 @@ struct t_forcerec
     // implemented in a single source file, so that not every source
     // file that includes this one needs to understand how to find the
     // destructors of the objects pointed to by unique_ptr members.
-    t_forcerec();
+    t_forcerec(bool useGpuPmePpCommunication);
     ~t_forcerec();
 
     std::unique_ptr<interaction_const_t> ic;
@@ -213,8 +214,8 @@ struct t_forcerec
     std::vector<ForceHelperBuffers> forceHelperBuffers;
 
     /* Data for PPPM/PME/Ewald */
-    gmx_pme_t*   pmedata                = nullptr;
-    LongRangeVdW ljpme_combination_rule = LongRangeVdW::Geom;
+    std::unique_ptr<gmx_pme_t> pmedata;
+    LongRangeVdW               ljpme_combination_rule = LongRangeVdW::Geom;
 
     /* Non bonded Parameter lists */
     int               ntype          = 0; /* Number of atom types */
@@ -279,6 +280,9 @@ struct t_forcerec
     gmx::EnumerationArray<gmx::AtomLocality, std::unique_ptr<gmx::GpuForceReduction>> gpuForceReduction;
 
     gmx::EnumerationArray<MdGraphEvenOrOddStep, std::unique_ptr<gmx::MdGpuGraph>> mdGraph;
+
+    //! Buffer into which this PP rank receives PME forces, possibly from a GPU
+    gmx::HostVector<gmx::RVec> pmeForceReceiveBuffer;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

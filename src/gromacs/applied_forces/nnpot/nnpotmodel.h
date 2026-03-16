@@ -90,8 +90,8 @@ public:
                                ArrayRef<real> /* chargesMM */,
                                real /* nnpCharge */,
                                ArrayRef<const LinkFrontierAtom> /* linkFrontier */,
-                               matrix* /* box */,
-                               PbcType* /* pbcType */) = 0;
+                               matrix& /* box */,
+                               PbcType& /* pbcType */) = 0;
 
     //! helper function to check if model outputs forces
     virtual bool outputsForces() const = 0;

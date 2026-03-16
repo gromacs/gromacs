@@ -113,7 +113,7 @@ public:
         inputRec.pme_order   = pmeOrder;
 
         /* PME initialization call which checks the inputs and computes the B-spline moduli according to the grid sizes. */
-        PmeSafePointer pme = pmeInitEmpty(&inputRec);
+        PmePointer pme = pmeInitEmpty(&inputRec);
 
         /* Setting up the checker */
         TestReferenceData    refData;

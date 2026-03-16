@@ -358,6 +358,9 @@ struct gmx_pme_t
     //! Constructor, can be called with nullptr, in that case a single rank comm is used
     gmx_pme_t(const gmx::MpiComm* mpiComm);
 
+    //! Destructor
+    ~gmx_pme_t();
+
     int ndecompdim; /* The number of decomposition dimensions */
     int nodeid;     /* Our nodeid in mpi->mpi_comm */
     int nodeid_major;
@@ -401,17 +404,7 @@ struct gmx_pme_t
                               * scheduler, and ideally not be duplicated here.
                               */
 
-    PmeGpu* gpu; /* A pointer to the GPU data.
-                  * TODO: this should be unique or a shared pointer.
-                  * Currently in practice there is a single gmx_pme_t instance while a code
-                  * is partially set up for many of them. The PME tuning calls gmx_pme_reinit()
-                  * which fully reinitializes the one and only PME structure anew while maybe
-                  * keeping the old grid buffers if they were already large enough.
-                  * This small choice should be made clear in the later refactoring -
-                  * do we store many PME objects for different grid sizes,
-                  * or a single PME object that handles different grid sizes gracefully.
-                  */
-
+    std::unique_ptr<PmeGpu> gpu; /* A pointer to the GPU data. */
 
     std::unique_ptr<EwaldBoxZScaler> boxScaler; /**< The scaling data Ewald uses with walls (set at pme_init constant for the entire run) */
 

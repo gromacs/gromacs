@@ -544,23 +544,18 @@ public:
      */
     void checkEdrFile(const char* fileName, int frameCount)
     {
-        ener_file_t  edrFile;
-        gmx_enxnm_t* energyTermsEdr = nullptr;
-        int          numEnergyTermsEdr;
-
-        edrFile = open_enx(fileName, "r");
-        do_enxnms(edrFile, &numEnergyTermsEdr, &energyTermsEdr);
-        assert(energyTermsEdr);
+        ener_file_t                    edrFile        = open_enx(fileName, "r");
+        const std::vector<gmx_enxnm_t> energyTermsEdr = readEnxNames(edrFile);
 
         // Check header
         TestReferenceChecker edrFileRef(checker_.checkCompound("File", "EnergyFile"));
         TestReferenceChecker energyTermsRef(
-                edrFileRef.checkSequenceCompound("EnergyTerms", numEnergyTermsEdr));
-        for (int i = 0; i < numEnergyTermsEdr; i++)
+                edrFileRef.checkSequenceCompound("EnergyTerms", gmx::ssize(energyTermsEdr)));
+        for (const auto& term : energyTermsEdr)
         {
             TestReferenceChecker energyTermRef(energyTermsRef.checkCompound("EnergyTerm", nullptr));
-            energyTermRef.checkString(energyTermsEdr[i].name, "Name");
-            energyTermRef.checkString(energyTermsEdr[i].unit, "Units");
+            energyTermRef.checkString(term.name, "Name");
+            energyTermRef.checkString(term.unit, "Units");
         }
 
         // Check frames
@@ -579,11 +574,11 @@ public:
             frameRef.checkString(gmx_step_str(frameEdr->step, buffer), "Step");
             frameRef.checkString(gmx_step_str(frameEdr->nsum, buffer), "NumSteps");
 
-            EXPECT_EQ(frameEdr->nre, numEnergyTermsEdr)
+            EXPECT_EQ(frameEdr->nre, gmx::ssize(energyTermsEdr))
                     << gmx::formatString("Wrong number of energy terms in frame %d.", frameId);
             TestReferenceChecker energyValuesRef(
-                    frameRef.checkSequenceCompound("EnergyTerms", numEnergyTermsEdr));
-            for (int i = 0; i < numEnergyTermsEdr; i++)
+                    frameRef.checkSequenceCompound("EnergyTerms", gmx::ssize(energyTermsEdr)));
+            for (int i = 0; i < gmx::ssize(energyTermsEdr); i++)
             {
                 TestReferenceChecker energyValueRef(energyValuesRef.checkCompound("EnergyTerm", nullptr));
                 energyValueRef.checkString(energyTermsEdr[i].name, "Name");
@@ -591,7 +586,6 @@ public:
             }
         }
 
-        free_enxnms(numEnergyTermsEdr, energyTermsEdr);
         done_ener_file(edrFile);
 
         free_enxframe(frameEdr);

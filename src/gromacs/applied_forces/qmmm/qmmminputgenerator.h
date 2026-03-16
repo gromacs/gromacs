@@ -143,7 +143,7 @@ private:
     ArrayRef<const RVec> x_;
 
     //! Scale of the generated QM box with respect to the QM-subsystem size
-    static constexpr real sc_qmBoxScale = 1.5;
+    static constexpr real sc_qmBoxScale = 1.2;
     //! Minimum length of the generated QM box vectors in nm
     static constexpr real sc_qmBoxMinLength = 1.0;
 };

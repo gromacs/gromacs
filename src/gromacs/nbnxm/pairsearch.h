@@ -158,7 +158,7 @@ struct PairsearchWork
     //! Buffer to avoid cache pollution
     gmx_cache_protect_t cp0;
 
-    //! Temporary buffer for sorting atoms within a grid column
+    //! Temporary buffer for sorting atoms within a grid cell
     std::vector<int> sortBuffer;
 
     //! Flags for force buffer access
@@ -217,7 +217,7 @@ public:
     void setNonLocalGrid(int                                 gridIndex,
                          int                                 zone,
                          const GridDimensions&               gridDimensions,
-                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const std::pair<int, int>> cells,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,
                          nbnxn_atomdata_t*                   nbat);

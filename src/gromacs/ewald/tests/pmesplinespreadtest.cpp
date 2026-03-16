@@ -300,20 +300,20 @@ public:
 
         /* Running the test */
 
-        PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
-                                                codePath,
-                                                pmeTestHardwareContext.deviceContext(),
-                                                pmeTestHardwareContext.deviceStream(),
-                                                pmeTestHardwareContext.pmeGpuProgram(),
-                                                box);
+        PmePointer                              pme = pmeInitWrapper(&inputRec,
+                                        codePath,
+                                        pmeTestHardwareContext.deviceContext(),
+                                        pmeTestHardwareContext.deviceStream(),
+                                        pmeTestHardwareContext.pmeGpuProgram(),
+                                        box);
         std::unique_ptr<StatePropagatorDataGpu> stateGpu =
                 (codePath == CodePath::GPU)
-                        ? makeStatePropagatorDataGpu(*pmeSafe.get(),
+                        ? makeStatePropagatorDataGpu(*pme.get(),
                                                      pmeTestHardwareContext.deviceContext(),
                                                      pmeTestHardwareContext.deviceStream())
                         : nullptr;
 
-        pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, coordinates, charges);
+        pmeInitAtoms(pme.get(), stateGpu.get(), codePath, coordinates, charges);
 
         const bool computeSplines = (option == SplineAndSpreadOptions::SplineOnly)
                                     || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
@@ -324,13 +324,13 @@ public:
         {
             // Here we should set up the results of the spline computation so that the spread can run.
             // What is lazy and works is running the separate spline so that it will set it up for us:
-            pmePerformSplineAndSpread(pmeSafe.get(), codePath, true, false);
+            pmePerformSplineAndSpread(pme.get(), codePath, true, false);
             // We know that it is tested in another iteration.
             // TODO: Clean alternative: read and set the reference gridline indices, spline params
         }
 
-        pmePerformSplineAndSpread(pmeSafe.get(), codePath, computeSplines, spreadCharges);
-        pmeFinalizeTest(pmeSafe.get(), codePath);
+        pmePerformSplineAndSpread(pme.get(), codePath, computeSplines, spreadCharges);
+        pmeFinalizeTest(pme.get(), codePath);
 
         /* Outputs correctness check */
         /* All tolerances were picked empirically for single precision on CPU */
@@ -357,7 +357,7 @@ public:
             for (int i = 0; i < DIM; i++)
             {
                 auto splineValuesDim =
-                        pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Values, i);
+                        pmeGetSplineData(pme.get(), codePath, PmeSplineDataType::Values, i);
                 splineValuesChecker.checkSequence(
                         splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
             }
@@ -372,13 +372,13 @@ public:
             for (int i = 0; i < DIM; i++)
             {
                 auto splineDerivativesDim =
-                        pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Derivatives, i);
+                        pmeGetSplineData(pme.get(), codePath, PmeSplineDataType::Derivatives, i);
                 splineDerivativesChecker.checkSequence(
                         splineDerivativesDim.begin(), splineDerivativesDim.end(), dimString[i]);
             }
 
             /* Particle gridline indices */
-            auto gridLineIndices = pmeGetGridlineIndices(pmeSafe.get(), codePath);
+            auto gridLineIndices = pmeGetGridlineIndices(pme.get(), codePath);
             rootChecker.checkSequence(
                     gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
         }
@@ -395,7 +395,7 @@ public:
         if (spreadCharges)
         {
             /* The wrapped grid */
-            SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), codePath);
+            SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pme.get(), codePath);
             const auto                 ulpToleranceGrid =
                     2 * ulpToleranceSplineValues
                     * static_cast<int>(std::ceil(std::sqrt(static_cast<real>(atomCount))));

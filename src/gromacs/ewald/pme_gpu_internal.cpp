@@ -1082,7 +1082,7 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu)
 
 void pme_gpu_getEnergyAndVirial(const gmx_pme_t& pme, const float lambda, PmeOutput* output)
 {
-    const PmeGpu* pmeGpu = pme.gpu;
+    const PmeGpu* pmeGpu = pme.gpu.get();
 
     GMX_ASSERT(lambda == 1.0 || pmeGpu->common->ngrids == 2,
                "Invalid combination of lambda and number of grids");
@@ -1156,7 +1156,7 @@ static void pme_gpu_getForceOutput(PmeGpu* pmeGpu, PmeOutput* output)
 
 PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, const real lambdaQ)
 {
-    PmeGpu* pmeGpu = pme->gpu;
+    PmeGpu* pmeGpu = pme->gpu.get();
 
     PmeOutput output;
 
@@ -1182,7 +1182,7 @@ void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
 #else
     matrix  scaledBox;
-    PmeGpu* pmeGpu = pme->gpu;
+    PmeGpu* pmeGpu = pme->gpu.get();
     pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     // Set (scaled) box volume to use in GPU kernels
     auto* kernelParamsPtr              = pme_gpu_get_kernel_params_ptr(pmeGpu);
@@ -1283,7 +1283,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
 {
     /* TODO: Consider refactoring the CPU PME code to use the same structure,
      * so that this function becomes 2 lines */
-    PmeGpu* pmeGpu               = pme->gpu;
+    PmeGpu* pmeGpu               = pme->gpu.get();
     pmeGpu->common->ngrids       = pme->bFEP_q ? 2 : 1;
     pmeGpu->common->epsilon_r    = pme->epsilon_r;
     pmeGpu->common->ewaldcoeff_q = pme->ewaldcoeff_q;
@@ -1381,8 +1381,8 @@ static void pme_gpu_init(gmx_pme_t*           pme,
                          const PmeGpuProgram* pmeGpuProgram,
                          const matrix         box)
 {
-    pme->gpu       = new PmeGpu();
-    PmeGpu* pmeGpu = pme->gpu;
+    pme->gpu       = std::make_unique<PmeGpu>();
+    PmeGpu* pmeGpu = pme->gpu.get();
     changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());
     pmeGpu->common = std::make_shared<PmeShared>();
 
@@ -1454,35 +1454,33 @@ void pme_gpu_reinit(gmx_pme_t*           pme,
     pme->gpu->settings.performGPUSolve = (pme->gpu->common->runMode == PmeRunMode::GPU);
 
     /* Reinit active timers */
-    pme_gpu_reinit_timings(pme->gpu);
+    pme_gpu_reinit_timings(pme->gpu.get());
 
-    pme_gpu_reinit_grids(pme->gpu);
+    pme_gpu_reinit_grids(pme->gpu.get());
     // Note: if timing the reinit launch overhead becomes more relevant
     // (e.g. with regular PP-PME re-balancing), we should pass wcycle here.
     pme_gpu_finish_step(pme, useMdGpuGraph, nullptr);
 }
 
-void pme_gpu_destroy(PmeGpu* pmeGpu)
+PmeGpu::~PmeGpu()
 {
     // Wait for all the tasks to complete before freeing the memory. See #4519.
-    pmeGpu->archSpecific->pmeStream_.synchronize();
+    archSpecific->pmeStream_.synchronize();
 
     /* Free lots of data */
-    pme_gpu_free_energy_virial(pmeGpu);
-    pme_gpu_free_bspline_values(pmeGpu);
-    pme_gpu_free_forces(pmeGpu);
-    pme_gpu_free_coefficients(pmeGpu);
-    pme_gpu_free_spline_data(pmeGpu);
-    pme_gpu_free_grid_indices(pmeGpu);
-    pme_gpu_free_fract_shifts(pmeGpu);
-    pme_gpu_free_grids(pmeGpu);
-    if (pmeGpu->settings.useDecomposition)
+    pme_gpu_free_energy_virial(this);
+    pme_gpu_free_bspline_values(this);
+    pme_gpu_free_forces(this);
+    pme_gpu_free_coefficients(this);
+    pme_gpu_free_spline_data(this);
+    pme_gpu_free_grid_indices(this);
+    pme_gpu_free_fract_shifts(this);
+    pme_gpu_free_grids(this);
+    if (settings.useDecomposition)
     {
-        pme_gpu_free_haloexchange(pmeGpu);
+        pme_gpu_free_haloexchange(this);
     }
-    pme_gpu_destroy_3dfft(pmeGpu);
-
-    delete pmeGpu;
+    pme_gpu_destroy_3dfft(this);
 }
 
 void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA, const real* chargesB)

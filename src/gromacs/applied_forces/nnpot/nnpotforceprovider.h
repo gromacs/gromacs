@@ -72,7 +72,7 @@ using PairlistEntry = std::pair<std::pair<int, int>, int>;
 class NNPotForceProvider final : public IForceProvider
 {
 public:
-    NNPotForceProvider(const NNPotParameters&, const MDLogger& logger, const MpiComm& mpiComm);
+    NNPotForceProvider(const NNPotParameters& nnpotParameters, const MDLogger& logger, const MpiComm& mpiComm);
 
     //! Destroy force provider for NNPot
     ~NNPotForceProvider();
@@ -89,35 +89,24 @@ public:
     void gatherAtomNumbersIndices(const MDModulesAtomsRedistributedSignal& signal);
 
     //! Gather atom positions for NN input.
-    void gatherAtomPositions(ArrayRef<const RVec> pos);
-
-    //! Gather MM atom positions and charges for MM input.
-    void setMMPositionsAndCharges(ArrayRef<const RVec> pos, ArrayRef<const real> charges);
+    std::vector<RVec> gatherAtomPositions(ArrayRef<const RVec> positions) const;
 
     //! Gather link frontier information.
-    std::vector<LinkFrontierAtom> constructLinkFrontier(const std::vector<LinkFrontierAtom>& linkFrontier);
+    std::vector<LinkFrontierAtom> constructLinkFrontier(const std::vector<LinkFrontierAtom>& linkFrontier,
+                                                        ArrayRef<RVec> positions);
 
     //! Set pairlist from PlainPairlistRanges notification and filter non-input atom pairs.
     void setPairlist(const MDModulesPairlistConstructedSignal& signal);
 
 private:
     //! Prepare pairlist input for NNPot model
-    void preparePairlistInput();
+    void preparePairlistInput(const matrix& box);
 
     //! reference to NNPot parameters
     const NNPotParameters& params_;
 
     //! neural network model
     std::shared_ptr<INNPotModel> model_;
-
-    //! vector storing all nnp atom positions
-    std::vector<RVec> positions_;
-
-    //! vector storing all mm atom positions
-    std::vector<RVec> mmPositions_;
-
-    //! vector storing all mm atom charges
-    std::vector<real> mmCharges_;
 
     //! vector storing all atomic numbers
     std::vector<int> atomNumbers_;
@@ -135,12 +124,6 @@ private:
     std::vector<int> pairlistForModel_;
     //! Shift vectors indicating periodic shifts for each atom pair in pairlistForModel_
     std::vector<RVec> shiftVectors_;
-
-    //! index vector for MM atoms
-    std::vector<int> idxMM_;
-
-    //! local copy of simulation box
-    matrix box_;
 
     /*! \brief MDLogger during mdrun
      *

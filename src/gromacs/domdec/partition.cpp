@@ -145,7 +145,7 @@ static void print_ddzone(FILE* fp, int d, int i, int j, gmx_ddzone_t* zone)
             zone->min0,
             zone->max1,
             zone->mch0,
-            zone->mch0,
+            zone->mch1,
             zone->p1_0,
             zone->p1_1);
 }
@@ -2919,14 +2919,14 @@ void dd_partition_system(FILE*                     fplog,
         // This can only be done when are both redistributing this step and we have the correct
         // atom count per column from the old state. This is available when atoms were put on
         // the NBNxM grid at the last re-partitioning.
-        gmx::ArrayRef<const int> localGridNumAtomsPerColumn;
+        gmx::ArrayRef<const int> localGridNumAtomsPerCell;
         if (bRedist && comm->putAtomsOnGridAtLastPartitioning)
         {
-            localGridNumAtomsPerColumn = fr->nbv->getLocalGridNumAtomsPerColumn();
+            localGridNumAtomsPerCell = fr->nbv->getLocalGridNumAtomsPerCell();
         }
         comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
                                        state_local->x,
-                                       localGridNumAtomsPerColumn);
+                                       localGridNumAtomsPerCell);
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDAddCogs);
     }
@@ -3266,9 +3266,10 @@ void dd_partition_system(FILE*                     fplog,
     // Now we have made the local atom sets and x is up to date, MDModules can be signaled
     MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
             state_local->box,
-            gmx::makeConstArrayRef(state_local->x).subArray(0, comm->atomRanges.numHomeAtoms()),
-            gmx::makeConstArrayRef(dd->globalAtomIndices)
-                    .subArray(0, comm->atomRanges.end(DDAtomRanges::Type::Zones)));
+            makeConstArrayRef(state_local->x).subArray(0, comm->atomRanges.numHomeAtoms()),
+            makeConstArrayRef(mdAtoms->mdatoms()->chargeA).subArray(0, comm->atomRanges.numHomeAtoms()),
+            makeConstArrayRef(mdAtoms->mdatoms()->massT).subArray(0, comm->atomRanges.numHomeAtoms()),
+            makeConstArrayRef(dd->globalAtomIndices).subArray(0, comm->atomRanges.end(DDAtomRanges::Type::Zones)));
     mdModulesNotifiers.simulationRunNotifier_.notify(mdModulesAtomsRedistributedSignal);
 
     wallcycle_stop(wcycle, WallCycleCounter::Domdec);

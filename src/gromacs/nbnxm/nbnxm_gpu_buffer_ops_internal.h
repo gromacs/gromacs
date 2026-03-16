@@ -54,14 +54,14 @@ class Grid;
  * \param[in,out] nb            Nbnxm main structure.
  * \param[in]     d_x           Source atom coordinates.
  * \param[in]     deviceStream  Device stream for kernel submission.
- * \param[in]     numColumnsMax Max. number of columns per grid for offset calculation in \p nb.
+ * \param[in]     numCellsMax   Max. number of cells per grid for offset calculation in \p nb.
  * \param[in]     gridId        Grid index for offset calculation in \p nb.
  */
 void launchNbnxmKernelTransformXToXq(const Grid&          grid,
                                      NbnxmGpu*            nb,
                                      DeviceBuffer<Float3> d_x,
                                      const DeviceStream&  deviceStream,
-                                     unsigned int         numColumnsMax,
+                                     unsigned int         numCellsMax,
                                      int                  gridId);
 
 } // namespace gmx

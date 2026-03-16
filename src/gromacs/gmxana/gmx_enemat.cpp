@@ -182,16 +182,15 @@ int gmx_enemat(int argc, char* argv[])
     ener_file_t       in;
     FILE*             out;
     int               timecheck = 0;
-    gmx_enxnm_t*      enm       = nullptr;
     t_enxframe*       fr;
     int               teller = 0;
     real              sum;
     gmx_bool          bCont, bRef;
     gmx_bool          bCutmax, bCutmin;
     real **           eneset, *time = nullptr;
-    int *             set, i, j, prevk, k, m = 0, n, nre, nset, nenergy;
+    int *             set, i, j, prevk, k, m = 0, n, nset, nenergy;
     char**            groups = nullptr;
-    char              groupname[255], fn[255];
+    char              fn[255];
     int               ngroups;
     t_rgb             rlo, rhi, rmid;
     real              emax, emid, emin;
@@ -227,9 +226,10 @@ int gmx_enemat(int argc, char* argv[])
     egrp_use[egLJ14]   = bLJ14;
     egrp_use[egTotal]  = TRUE;
 
-    bRef = opt2bSet("-eref", NFILE, fnm);
-    in   = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
-    do_enxnms(in, &nre, &enm);
+    bRef                               = opt2bSet("-eref", NFILE, fnm);
+    in                                 = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
+    const std::vector<gmx_enxnm_t> enm = readEnxNames(in);
+    const int                      nre = gmx::ssize(enm);
 
     if (nre == 0)
     {
@@ -258,11 +258,12 @@ int gmx_enemat(int argc, char* argv[])
             {
                 if (egrp_use[m])
                 {
-                    sprintf(groupname, "%s:%s-%s", egrp_nm[m], groups[i], groups[j]);
+                    std::string groupname =
+                            gmx::formatString("%s:%s-%s", egrp_nm[m], groups[i], groups[j]);
                     bool foundMatch = false;
                     for (k = prevk; (k < prevk + nre); k++)
                     {
-                        if (std::strcmp(enm[k % nre].name, groupname) == 0)
+                        if (enm[k % nre].name == groupname)
                         {
                             set[n++]   = k;
                             foundMatch = true;
@@ -274,7 +275,7 @@ int gmx_enemat(int argc, char* argv[])
                         fprintf(stderr,
                                 "WARNING! could not find group %s (%d,%d) "
                                 "in energy file\n",
-                                groupname,
+                                groupname.c_str(),
                                 i,
                                 j);
                     }

@@ -96,8 +96,7 @@ CheckpointHelper::CheckpointHelper(std::vector<std::tuple<std::string, ICheckpoi
 void CheckpointHelper::run(Step step, Time time)
 {
     // reads out signal, decides if we should signal checkpoint
-    checkpointHandler_->decideIfCheckpointingThisStep(true, step == initStep_, false);
-    if (checkpointHandler_->isCheckpointingStep())
+    if (checkpointHandler_->decideIfCheckpointingThisStep(true, step == initStep_, false))
     {
         writeCheckpoint(step, time);
     }

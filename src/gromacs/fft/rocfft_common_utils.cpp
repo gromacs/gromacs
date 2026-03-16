@@ -96,28 +96,28 @@ constexpr std::array<const char*, rocfft_status_invalid_work_buffer + 1> c_rocff
 } // namespace
 
 //! Helper for consistent error handling
-void handleRocFftError(rocfft_status result, const std::string& msg)
+void handleRocFftError(rocfft_status result, const char* msg)
 {
     if (result != rocfft_status_success)
     {
         if (result <= rocfft_status_invalid_work_buffer)
         {
             GMX_THROW(gmx::InternalError(gmx::formatString(
-                    "%s: (error code %d - %s)\n", msg.c_str(), result, c_rocfftErrorStrings[result])));
+                    "%s: (error code %d - %s)\n", msg, result, c_rocfftErrorStrings[result])));
         }
         else
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("%s: (error code %d)\n", msg.c_str(), result)));
+            GMX_THROW(gmx::InternalError(gmx::formatString("%s: (error code %d)\n", msg, result)));
         }
     }
 }
 
 //! Helper for consistent error handling
-void handleRocFftError(rocfft_status result, const std::string& direction, const std::string& msg)
+void handleRocFftError(rocfft_status result, const char* direction, const char* msg)
 {
     if (result != rocfft_status_success)
     {
-        handleRocFftError(result, msg + " doing " + direction);
+        handleRocFftError(result, gmx::formatString("%s doing %s", msg, direction).c_str());
     }
 }
 

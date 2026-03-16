@@ -210,8 +210,11 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 #elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
-#    ifdef _M_ARM
-    /* Windows on 64-bit ARM */
+#    if defined(_M_ARM64)
+    /* Windows on 64-bit ARM (AArch64) */
+    return _ReadStatusReg(ARM64_CNTVCT);
+#    elif defined(_M_ARM)
+    /* Windows on 32-bit ARM */
     return __rdpmccntr64();
 #    else
     /* x86 */

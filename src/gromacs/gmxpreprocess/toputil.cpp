@@ -314,8 +314,10 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRT
             /* This is true by construction, but static analysers don't know */
             GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp,
                        "-rtpres did not have residue name available");
+            // With %g .7 results in 7 decimals total, which is what we need
+            // to capture full single precision charges and masses
             fprintf(out,
-                    "%6d %10s %6d%c %5s %6s %6d %10g %10g",
+                    "%6d %10s %6d%c %5s %6s %6d %10.7g %10.7g",
                     i + 1,
                     tpnmA->c_str(),
                     at->resinfo[ri].nr,
@@ -334,7 +336,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRT
                 {
                     gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
                 }
-                fprintf(out, " %6s %10g %10g", tpnmB->c_str(), at->atom[i].qB, at->atom[i].mB);
+                fprintf(out, " %6s %10.7g %10.7g", tpnmB->c_str(), at->atom[i].qB, at->atom[i].mB);
             }
             // Accumulate the total charge to help troubleshoot issues.
             qtot += static_cast<double>(at->atom[i].q);

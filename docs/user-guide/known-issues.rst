@@ -71,3 +71,13 @@ The issue is expected to be fixed in LLVM 21.
 
 :issue:`5390`
 
+CMake ``OpenMP_CUDA`` detection issue on Windows
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CMake prior to 4.3 fails to detect ``OpenMP_CUDA`` flags when building CUDA version
+on Windows with Visual Studio, causing build failures.
+
+Workarounds:
+- use ``-G Ninja`` generator, or
+- set ``-DOpenMP_CUDA_FLAGS=-Xcompiler=-openmp -DOpenMP_CUDA_LIB_NAMES=""`` flags manually.
+

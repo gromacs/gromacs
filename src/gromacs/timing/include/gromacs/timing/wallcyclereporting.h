@@ -40,6 +40,7 @@
 #include <cstdio>
 
 #include <array>
+#include <optional>
 
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -61,17 +62,17 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc);
 /* Return a vector of the sum of cycle counts over the nodes in
    cr->mpi_comm_mysim. */
 
-void wallcycle_print(FILE*                            fplog,
-                     const gmx::MDLogger&             mdlog,
-                     int                              nnodes,
-                     int                              npme,
-                     int                              nth_pp,
-                     int                              nth_pme,
-                     double                           realtime,
-                     gmx_wallcycle*                   wc,
-                     const WallcycleCounts&           cyc_sum,
-                     const gmx_wallclock_gpu_nbnxn_t* gpu_nbnxn_t,
-                     const gmx_wallclock_gpu_pme_t*   gpu_pme_t);
+void wallcycle_print(FILE*                                         fplog,
+                     const gmx::MDLogger&                          mdlog,
+                     int                                           nnodes,
+                     int                                           npme,
+                     int                                           nth_pp,
+                     int                                           nth_pme,
+                     double                                        realtime,
+                     gmx_wallcycle*                                wc,
+                     const WallcycleCounts&                        cyc_sum,
+                     const gmx_wallclock_gpu_nbnxn_t*              gpu_nbnxn_t,
+                     const std::optional<gmx_wallclock_gpu_pme_t>& pmeGpuTimings);
 /* Print the cycle and time accounting */
 
 #endif

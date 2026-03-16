@@ -57,7 +57,7 @@ namespace gmx
  *  - rename kernel so naming matches with the other NBNXM kernels;
  *  - enable separate compilation unit
 
- * \param[in]     numColumns          Extent of bin-level parallelism.
+ * \param[in]     numCells            Extent of bin-level parallelism.
  * \param[out]    gm_xq               Coordinates buffer in nbnxm layout.
  * \param[in]     gm_x                Coordinates buffer.
  * \param[in]     gm_atomIndex        Atom index mapping.
@@ -66,7 +66,7 @@ namespace gmx
  * \param[in]     binOffset           First bin.
  * \param[in]     numAtomsPerBin      Number of atoms per bin.
  */
-static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
+static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numCells,
                                                     float4* __restrict__ gm_xq,
                                                     const float3* __restrict__ gm_x,
                                                     const int* __restrict__ gm_atomIndex,
@@ -81,7 +81,7 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
     // Map bin-level parallelism to y component of CUDA block index.
     int cxy = blockIdx.y;
 
-    if (cxy < numColumns)
+    if (cxy < numCells)
     {
 
         const int numAtoms = gm_numAtoms[cxy];
@@ -117,10 +117,10 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
                                      NbnxmGpu*            nb,
                                      DeviceBuffer<Float3> d_x,
                                      const DeviceStream&  deviceStream,
-                                     const unsigned int   numColumnsMax,
+                                     const unsigned int   numCellsMax,
                                      const int            gridId)
 {
-    const int numColumns     = grid.numColumns();
+    const int numCells       = grid.numCells();
     const int binOffset      = grid.binOffset();
     const int numAtomsPerBin = grid.numAtomsPerBin();
 
@@ -129,26 +129,26 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     config.blockSize[1] = 1;
     config.blockSize[2] = 1;
     config.gridSize[0] =
-            gmx::divideRoundUp(grid.numBinsColumnMax() * numAtomsPerBin, c_bufOpsThreadsPerBlock);
-    config.gridSize[1] = numColumns;
+            gmx::divideRoundUp(grid.maxNumBinsPerCell() * numAtomsPerBin, c_bufOpsThreadsPerBlock);
+    config.gridSize[1] = numCells;
     config.gridSize[2] = 1;
     GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, early return above avoids this");
     config.sharedMemorySize = 0;
 
-    auto       kernelFn            = nbnxn_gpu_x_to_nbat_x_kernel;
-    float3*    d_xFloat3           = asFloat3(d_x);
-    float4*    d_xq                = nb->atdat->xq;
-    const int* d_atomIndices       = nb->atomIndices;
-    const int* d_numAtomsPerColumn = &nb->numAtomsPerColumn[numColumnsMax * gridId];
-    const int* d_columnToBin       = &nb->columnToBin[numColumnsMax * gridId];
-    const auto kernelArgs          = prepareGpuKernelArguments(kernelFn,
+    auto       kernelFn          = nbnxn_gpu_x_to_nbat_x_kernel;
+    float3*    d_xFloat3         = asFloat3(d_x);
+    float4*    d_xq              = nb->atdat->xq;
+    const int* d_atomIndices     = nb->atomIndices;
+    const int* d_numAtomsPerCell = &nb->numAtomsPerCell[numCellsMax * gridId];
+    const int* d_cellToBin       = &nb->cellToBin[numCellsMax * gridId];
+    const auto kernelArgs        = prepareGpuKernelArguments(kernelFn,
                                                       config,
-                                                      &numColumns,
+                                                      &numCells,
                                                       &d_xq,
                                                       &d_xFloat3,
                                                       &d_atomIndices,
-                                                      &d_numAtomsPerColumn,
-                                                      &d_columnToBin,
+                                                      &d_numAtomsPerCell,
+                                                      &d_cellToBin,
                                                       &binOffset,
                                                       &numAtomsPerBin);
     launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);

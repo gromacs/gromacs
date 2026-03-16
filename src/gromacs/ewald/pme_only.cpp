@@ -90,6 +90,7 @@
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/external_tracing.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -192,15 +193,36 @@ static void reset_pmeonly_counters(gmx_wallcycle*            wcycle,
     }
 }
 
-static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
-                                     const ivec               grid_size,
-                                     real                     ewaldcoeff_q,
-                                     real                     ewaldcoeff_lj,
-                                     const gmx_domdec_t&      dd,
-                                     const t_inputrec*        ir)
+static std::unique_ptr<gmx_pme_t> gmx_pmeonly_switch(std::unique_ptr<gmx_pme_t>&& oldPmedata,
+                                                     std::vector<std::unique_ptr<gmx_pme_t>>* pmedataList,
+                                                     const ivec          grid_size,
+                                                     real                ewaldcoeff_q,
+                                                     real                ewaldcoeff_lj,
+                                                     const gmx_domdec_t& dd,
+                                                     const t_inputrec*   ir)
 {
-    GMX_ASSERT(pmedata, "Bad PME tuning list pointer");
-    for (auto& pme : *pmedata)
+    GMX_ASSERT(pmedataList, "Bad PME tuning list pointer");
+
+    // Extract GPU data structure out of the current PME data, leaving
+    // an empty unique pointer
+    std::unique_ptr<PmeGpu> pmeGpu;
+    pmeGpu.swap(oldPmedata->gpu);
+
+    for (auto& pme : *pmedataList)
+    {
+        // Check for an empty entry, that's where our current data should go
+        if (!pme)
+        {
+            // Move the current PME data back to its spot in the list
+            pme.swap(oldPmedata);
+        }
+    }
+    GMX_RELEASE_ASSERT(!oldPmedata,
+                       "Our current PME data should have been moved (back) to the list");
+
+    std::unique_ptr<gmx_pme_t> newPmedata;
+
+    for (auto& pme : *pmedataList)
     {
         GMX_ASSERT(pme, "Bad PME tuning list element pointer");
         if (gmx_pme_grid_matches(*pme, grid_size))
@@ -211,20 +233,29 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
              * So, just some grid size updates in the GPU kernel parameters.
              * TODO: this should be something like gmx_pme_update_split_params()
              */
-            gmx_pme_t* pmeNew;
-            gmx_pme_reinit(&pmeNew, &dd, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
-            gmx_pme_destroy(pme, false);
-            pme = pmeNew;
-            return pmeNew;
+            if (pmeGpu)
+            {
+                newPmedata = gmx_pme_reinit(
+                        &dd, *pme, std::move(pmeGpu), ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+                pme.reset();
+            }
+            else
+            {
+                newPmedata.swap(pme);
+            }
+
+            return newPmedata;
         }
     }
 
-    const auto& pme          = pmedata->back();
-    gmx_pme_t*  newStructure = nullptr;
+    const auto& pme = pmedataList->back();
     // Copy last structure with new grid params
-    gmx_pme_reinit(&newStructure, &dd, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
-    pmedata->push_back(newStructure);
-    return newStructure;
+    newPmedata = gmx_pme_reinit(&dd, *pme, std::move(pmeGpu), ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+
+    // Append an empty entry for where the current data should be stored
+    pmedataList->emplace_back();
+
+    return newPmedata;
 }
 
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
@@ -685,17 +716,17 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
 #endif
 }
 
-int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
-                const gmx_domdec_t&             dd,
-                t_nrnb*                         mynrnb,
-                gmx_wallcycle*                  wcycle,
-                gmx_walltime_accounting_t       walltime_accounting,
-                t_inputrec*                     ir,
-                PmeRunMode                      runMode,
-                bool                            useGpuPmePpCommunication,
-                bool                            useNvshmem,
-                bool                            useGpuHaloExchange,
-                const gmx::DeviceStreamManager* deviceStreamManager)
+std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pme,
+                                                   const gmx_domdec_t&        dd,
+                                                   t_nrnb*                    mynrnb,
+                                                   gmx_wallcycle*             wcycle,
+                                                   gmx_walltime_accounting_t  walltime_accounting,
+                                                   t_inputrec*                ir,
+                                                   PmeRunMode                 runMode,
+                                                   bool useGpuPmePpCommunication,
+                                                   bool useNvshmem,
+                                                   bool useGpuHaloExchange,
+                                                   const gmx::DeviceStreamManager* deviceStreamManager)
 {
     int     ret;
     int     natoms = 0;
@@ -706,13 +737,12 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     float   cycles;
     int64_t step;
 
-    gmx_pme_t* pmeFromRunner = *pmeFromRunnerPtr;
-
     // This data will only use with PME tuning, i.e. switching PME grids
     // The first element comes from outside, the rest is generated here,
     // but all elements are freed at the end of this function or when switching configs.
-    std::vector<gmx_pme_t*> pmedata;
-    pmedata.push_back(pmeFromRunner);
+    std::vector<std::unique_ptr<gmx_pme_t>> pmedataList;
+    // Add an empty spot for the current PME data
+    pmedataList.emplace_back();
 
     auto pme_pp = std::make_unique<gmx_pme_pp>(dd.mpiCommMySim().comm(), makePpRanks(dd));
     pme_pp->useGpuPmePpCommunication = useGpuPmePpCommunication;
@@ -738,7 +768,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(
                     pme_pp->mpi_comm_mysim, deviceStreamManager->context(), pme_pp->ppRanks);
             pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
-                    pme_gpu_get_f_ready_synchronizer(pmeFromRunner),
+                    pme_gpu_get_f_ready_synchronizer(pme.get()),
                     pme_pp->mpi_comm_mysim,
                     deviceStreamManager->context(),
                     pme_pp->ppRanks);
@@ -755,8 +785,8 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                             pme_pp->mpi_comm_mysim,
                             pme_pp->mpi_comm_mysim);
                 }
-                pme_gpu_use_nvshmem(pmeFromRunner->gpu, useNvshmem);
-                pmeFromRunner->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
+                pme_gpu_use_nvshmem(pme->gpu.get(), useNvshmem);
+                pme->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
             }
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
@@ -765,7 +795,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                 &deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
                 deviceStreamManager->context(),
                 GpuApiCallBehavior::Async,
-                pme_gpu_get_block_size(pmeFromRunner),
+                pme_gpu_get_block_size(pme.get()),
                 useNvshmem,
                 wcycle);
     }
@@ -773,7 +803,6 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     clear_nrnb(mynrnb);
 
     // the current PME data structure, may change due to PME tuning
-    gmx_pme_t*        pme               = pmeFromRunner;
     bool              haveStartedTiming = false;
     gmx::StepWorkload stepWork;
     stepWork.computeForces = true;
@@ -785,7 +814,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
             /* Domain decomposition */
             ivec newGridSize;
             real ewaldcoeff_q = 0, ewaldcoeff_lj = 0;
-            ret = gmx_pme_recv_coeffs_coords(pme,
+            ret = gmx_pme_recv_coeffs_coords(pme.get(),
                                              pme_pp.get(),
                                              &natoms,
                                              box,
@@ -807,7 +836,8 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
             if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to newGridSize */
-                pme = gmx_pmeonly_switch(&pmedata, newGridSize, ewaldcoeff_q, ewaldcoeff_lj, dd, ir);
+                pme = gmx_pmeonly_switch(
+                        std::move(pme), &pmedataList, newGridSize, ewaldcoeff_q, ewaldcoeff_lj, dd, ir);
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -854,24 +884,24 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
             // TODO: with pme on GPU the receive should make a list of synchronizers and pass it here #3157
             auto xReadyOnDevice = nullptr;
 
-            pme_gpu_launch_spread(pme,
+            pme_gpu_launch_spread(pme.get(),
                                   xReadyOnDevice,
                                   wcycle,
                                   lambda_q,
                                   pme_pp->useGpuPmePpCommunication,
                                   pme_pp->pmeCoordinateReceiverGpu.get(),
                                   pme_pp->useMdGpuGraph);
-            pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
-            pme_gpu_launch_gather(pme, wcycle, lambda_q, stepWork.computeVirial);
+            pme_gpu_launch_complex_transforms(pme.get(), wcycle, stepWork);
+            pme_gpu_launch_gather(pme.get(), wcycle, lambda_q, stepWork.computeVirial);
             output = pme_gpu_wait_finish_task(
-                    pme, stepWork.computeEnergy || stepWork.computeVirial, lambda_q, wcycle);
+                    pme.get(), stepWork.computeEnergy || stepWork.computeVirial, lambda_q, wcycle);
         }
         else
         {
             GMX_ASSERT(pme_pp->x.size() == static_cast<size_t>(natoms),
                        "The coordinate buffer should have size natoms");
 
-            gmx_pme_do(pme,
+            gmx_pme_do(pme.get(),
                        pme_pp->x,
                        pme_pp->f,
                        pme_pp->chargeA,
@@ -905,7 +935,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         {
             // Reinit before PME->PP force send so it is included in graph
             // which implicitly joins back to PP task as part of force transfer
-            pme_gpu_finish_step(pme, pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(pme.get(), pme_pp->useMdGpuGraph, wcycle);
         }
 
         gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles, stepWork.computeVirial);
@@ -913,19 +943,16 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         // Reinit after PME->PP force send so it is removed from the critical path
         if (useGpuForPme && !pme_pp->useMdGpuGraph)
         {
-            pme_gpu_finish_step(pme, pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(pme.get(), pme_pp->useMdGpuGraph, wcycle);
         }
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
-    for (size_t i = 0; i < pmedata.size(); i++)
+    for (auto& pmedata : pmedataList)
     {
-        bool destroySharedData = (i == pmedata.size() - 1);
-        gmx_pme_destroy(pmedata[i], destroySharedData);
+        pmedata.reset();
     }
-    // reset the PME pointer passed from runner
-    *pmeFromRunnerPtr = nullptr;
     walltime_accounting_end_time(walltime_accounting);
 
-    return 0;
+    return pme_gpu_get_timings(pme.get());
 }

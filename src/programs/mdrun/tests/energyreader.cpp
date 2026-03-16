@@ -80,20 +80,14 @@ EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string& filename,
      * resulting data structure would leak if an exception was thrown,
      * so transfer the contents that we actually need to a map we can
      * keep.
-     *
-     * TODO Technically, the insertions into the map could throw
-     * std::bad_alloc and we could leak memory allocated by
-     * do_enxnms(), but there's nothing we can do about this right
-     * now. */
+     */
     std::map<std::string, int> indicesOfEnergyTerms;
     {
-        int          numEnergyTerms;
-        gmx_enxnm_t* energyNames = nullptr;
-        do_enxnms(energyFile.get(), &numEnergyTerms, &energyNames);
-        for (int i = 0; i != numEnergyTerms; ++i)
+        const std::vector<gmx_enxnm_t> energyNames = readEnxNames(energyFile.get());
+        for (int i = 0; i != gmx::ssize(energyNames); ++i)
         {
-            const char* name           = energyNames[i].name;
-            auto        requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyTerms),
+            const std::string& name           = energyNames[i].name;
+            auto               requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyTerms),
                                                std::end(namesOfRequiredEnergyTerms),
                                                [name](const std::string& n) { return name == n; });
             if (requiredEnergy != namesOfRequiredEnergyTerms.end())
@@ -101,8 +95,6 @@ EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string& filename,
                 indicesOfEnergyTerms[name] = i;
             }
         }
-        // Clean up old data structures
-        free_enxnms(numEnergyTerms, energyNames);
     }
 
     // Throw if we failed to find the terms we need

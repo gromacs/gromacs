@@ -82,6 +82,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
                shiftBuffer),
     virialProxy(forceBuffer, true),
     forceOutputs(shiftProxy, true, virialProxy),
+    fr{ false },
     enerd(1, nullptr),
     lambdaBuffer(42) // values unused; just initialized with something larger than the number of enum types in FreeEnergyPerturbationCouplingType
 {

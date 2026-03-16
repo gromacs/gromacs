@@ -42,6 +42,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/units.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -53,8 +54,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
-
-static const double bohr = 0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
 
 int gmx_spatial(int argc, char* argv[])
 {
@@ -347,17 +346,18 @@ int gmx_spatial(int argc, char* argv[])
     fprintf(flp, "test\n");
     /*
       Values in .cube file represent the density at the grid point.
-     Corresponding coordinates to the binned value is the center of the bin, i.e. + 0.5 to the bin index.
+      Corresponding coordinates to the binned value is the center of the bin, i.e. + 0.5 to the bin
+      index. Bohr conversion factor is used to compensate for VMD plugin conversion.
    */
     fprintf(flp,
             "%5d%12.6f%12.6f%12.6f\n",
             nidxp,
-            (MINBIN[XX] + (outputStarts[XX] + 0.5) * rBINWIDTH) * 10. / bohr,
-            (MINBIN[YY] + (outputStarts[YY] + 0.5) * rBINWIDTH) * 10. / bohr,
-            (MINBIN[ZZ] + (outputStarts[ZZ] + 0.5) * rBINWIDTH) * 10. / bohr);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[XX] - outputStarts[XX], rBINWIDTH * 10. / bohr, 0., 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[YY] - outputStarts[YY], 0., rBINWIDTH * 10. / bohr, 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[ZZ] - outputStarts[ZZ], 0., 0., rBINWIDTH * 10. / bohr);
+            (MINBIN[XX] + (outputStarts[XX] + 0.5) * rBINWIDTH) / gmx::c_bohr2Nm,
+            (MINBIN[YY] + (outputStarts[YY] + 0.5) * rBINWIDTH) / gmx::c_bohr2Nm,
+            (MINBIN[ZZ] + (outputStarts[ZZ] + 0.5) * rBINWIDTH) / gmx::c_bohr2Nm);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[XX] - outputStarts[XX], rBINWIDTH / gmx::c_bohr2Nm, 0., 0.);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[YY] - outputStarts[YY], 0., rBINWIDTH / gmx::c_bohr2Nm, 0.);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[ZZ] - outputStarts[ZZ], 0., 0., rBINWIDTH / gmx::c_bohr2Nm);
 
     for (int i = 0; i < nidxp; i++)
     {
@@ -386,9 +386,9 @@ int gmx_spatial(int argc, char* argv[])
                 "%5d%12.6f%12.6f%12.6f%12.6f\n",
                 v,
                 0.,
-                fr.x[indexp[i]][XX] * 10.0 / bohr,
-                fr.x[indexp[i]][YY] * 10.0 / bohr,
-                fr.x[indexp[i]][ZZ] * 10.0 / bohr);
+                fr.x[indexp[i]][XX] / gmx::c_bohr2Nm,
+                fr.x[indexp[i]][YY] / gmx::c_bohr2Nm,
+                fr.x[indexp[i]][ZZ] / gmx::c_bohr2Nm);
     }
 
     tot = 0;

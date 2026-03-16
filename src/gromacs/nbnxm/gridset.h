@@ -137,7 +137,7 @@ public:
     void setNonLocalGrid(const int                           gridIndex,
                          const int                           ddZone,
                          const GridDimensions&               gridDimensions,
-                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const std::pair<int, int>> cells,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,
                          nbnxn_atomdata_t*                   nbat)
@@ -161,7 +161,7 @@ public:
         const int binOffset = previousGrid.binOffset() + previousGrid.numBins();
 
         grids_[gridIndex].setNonLocalGrid(
-                ddZone, gridDimensions, columns, binOffset, atomInfo, x, &gridSetData_, nbat);
+                ddZone, gridDimensions, cells, binOffset, atomInfo, x, &gridSetData_, nbat);
 
         numRealAtomsTotal_ = -1;
     }
@@ -194,7 +194,7 @@ public:
     ArrayRef<const int> getLocalAtomorder() const
     {
         /* Return the atom order for the home bin (index 0) */
-        const int numIndices = grids_[0].atomIndexEnd() - grids_[0].firstAtomInColumn(0);
+        const int numIndices = grids_[0].atomIndexEnd() - grids_[0].firstAtomInCell(0);
 
         return constArrayRefFromArray(atomIndices().data(), numIndices);
     }
@@ -223,14 +223,14 @@ public:
     //! Returns the unit cell in \p box
     void getBox(matrix box) const { copy_mat(box_, box); }
 
-    //! Returns the maximum number of columns across all grids
-    int numColumnsMax() const { return numColumnsMax_; }
+    //! Returns the maximum number of cells across all grids
+    int numCellsMax() const { return numCellsMax_; }
 
-    //! Sets the maximum number of columns across all grids
-    void setNumColumnsMax(int numColumnsMax) { numColumnsMax_ = numColumnsMax; }
+    //! Sets the maximum number of cells across all grids
+    void setNumCellsMax(int numCellsMax) { numCellsMax_ = numCellsMax; }
 
-    //! Returns the number of atoms for each column of the local grid
-    ArrayRef<const int> getLocalGridNumAtomsPerColumn() const;
+    //! Returns the number of atoms for each cell of the local grid
+    ArrayRef<const int> getLocalGridNumAtomsPerCell() const;
 
 private:
     /* Data members */
@@ -258,11 +258,11 @@ private:
     int numRealAtomsTotal_;
     //! Working data for constructing a single grid, one entry per thread
     std::vector<GridWork> gridWork_;
-    //! Maximum number of columns across all grids
-    int numColumnsMax_;
+    //! Maximum number of cells across all grids
+    int numCellsMax_;
 
-    //! Buffer for returning the number of grid atoms per column
-    mutable std::vector<int> localGridNumAtomsPerColumn_;
+    //! Buffer for returning the number of grid atoms per cell
+    mutable std::vector<int> localGridNumAtomsPerCell_;
 };
 
 } // namespace gmx

@@ -126,7 +126,7 @@ ArrayRef<const int> nonbonded_verlet_t::getLocalAtomOrder() const
     /* Return the atom order for the home cell (index 0) */
     const Grid& grid = pairSearch_->gridSet().grid(0);
 
-    const int numIndices = grid.atomIndexEnd() - grid.firstAtomInColumn(0);
+    const int numIndices = grid.atomIndexEnd() - grid.firstAtomInCell(0);
 
     return constArrayRefFromArray(pairSearch_->gridSet().atomIndices().data(), numIndices);
 }
@@ -182,9 +182,9 @@ ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
     return pairSearch_->gridSet().bins();
 }
 
-ArrayRef<const int> nonbonded_verlet_t::getLocalGridNumAtomsPerColumn() const
+ArrayRef<const int> nonbonded_verlet_t::getLocalGridNumAtomsPerCell() const
 {
-    return pairSearch_->gridSet().getLocalGridNumAtomsPerColumn();
+    return pairSearch_->gridSet().getLocalGridNumAtomsPerCell();
 }
 
 void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const AtomLocality locality, ArrayRef<RVec> force)
@@ -281,11 +281,11 @@ const Grid& nonbonded_verlet_t::localGrid() const
 void nonbonded_verlet_t::setNonLocalGrid(const int                           gridIndex,
                                          const int                           ddZone,
                                          const GridDimensions&               gridDimensions,
-                                         ArrayRef<const std::pair<int, int>> columns,
+                                         ArrayRef<const std::pair<int, int>> cells,
                                          ArrayRef<const int32_t>             atomInfo,
                                          ArrayRef<const RVec>                x)
 {
-    pairSearch_->setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat_.get());
+    pairSearch_->setNonLocalGrid(gridIndex, ddZone, gridDimensions, cells, atomInfo, x, nbat_.get());
 }
 
 std::optional<std::string> nbnxmGpuClusteringDescription()

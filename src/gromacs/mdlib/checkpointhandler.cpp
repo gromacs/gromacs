@@ -67,7 +67,6 @@ CheckpointHandler::CheckpointHandler(compat::not_null<SimulationSignal*> signal,
                                      bool                                writeFinalCheckpoint,
                                      real                                checkpointingPeriod) :
     signal_(*signal),
-    checkpointThisStep_(false),
     numberOfNextCheckpoint_(1),
     rankCanSetSignal_(checkpointingPeriod >= 0 && isMain),
     checkpointingIsActive_(checkpointingPeriod >= 0),
@@ -93,17 +92,19 @@ void CheckpointHandler::setSignalImpl(gmx_walltime_accounting_t walltime_account
     }
 }
 
-void CheckpointHandler::decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep)
+bool CheckpointHandler::decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep)
 {
-    checkpointThisStep_ = (((convertToCheckpointSignal(signal_.set) == CheckpointSignal::doCheckpoint
-                             && (bNS || neverUpdateNeighborlist_))
-                            || (bLastStep && writeFinalCheckpoint_))
-                           && !bFirstStep);
-    if (checkpointThisStep_)
+    bool checkpointThisStep = (((convertToCheckpointSignal(signal_.set) == CheckpointSignal::doCheckpoint
+                                 && (bNS || neverUpdateNeighborlist_))
+                                || (bLastStep && writeFinalCheckpoint_))
+                               && !bFirstStep);
+    if (checkpointThisStep)
     {
         signal_.set = static_cast<signed char>(CheckpointSignal::noSignal);
         numberOfNextCheckpoint_++;
     }
+
+    return checkpointThisStep;
 }
 
 } // namespace gmx

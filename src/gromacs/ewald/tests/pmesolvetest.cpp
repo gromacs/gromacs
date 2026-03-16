@@ -304,26 +304,26 @@ public:
                 ewaldCoeff_lj));
 
         /* Running the test */
-        PmeSafePointer pmeSafe = pmeInitWrapper(&inputRec,
-                                                codePath,
-                                                pmeTestHardwareContext.deviceContext(),
-                                                pmeTestHardwareContext.deviceStream(),
-                                                pmeTestHardwareContext.pmeGpuProgram(),
-                                                box,
-                                                ewaldCoeff_q,
-                                                ewaldCoeff_lj);
-        pmeSetComplexGrid(pmeSafe.get(), codePath, gridOrdering, nonZeroGridValues);
+        PmePointer pme = pmeInitWrapper(&inputRec,
+                                        codePath,
+                                        pmeTestHardwareContext.deviceContext(),
+                                        pmeTestHardwareContext.deviceStream(),
+                                        pmeTestHardwareContext.pmeGpuProgram(),
+                                        box,
+                                        ewaldCoeff_q,
+                                        ewaldCoeff_lj);
+        pmeSetComplexGrid(pme.get(), codePath, gridOrdering, nonZeroGridValues);
         const real cellVolume = box[0] * box[4] * box[8];
         // FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
-        pmePerformSolve(pmeSafe.get(), codePath, method, cellVolume, gridOrdering, computeEnergyAndVirial);
-        pmeFinalizeTest(pmeSafe.get(), codePath);
+        pmePerformSolve(pme.get(), codePath, method, cellVolume, gridOrdering, computeEnergyAndVirial);
+        pmeFinalizeTest(pme.get(), codePath);
 
         /* Check the outputs */
         TestReferenceData    refData(makeRefDataFileName());
         TestReferenceChecker checker(refData.rootChecker());
 
         SparseComplexGridValuesOutput nonZeroGridValuesOutput =
-                pmeGetComplexGrid(pmeSafe.get(), codePath, gridOrdering);
+                pmeGetComplexGrid(pme.get(), codePath, gridOrdering);
         /* Transformed grid */
         TestReferenceChecker gridValuesChecker(
                 checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
@@ -368,7 +368,7 @@ public:
         if (computeEnergyAndVirial)
         {
             // Extract the energy and virial
-            const auto  output = pmeGetReciprocalEnergyAndVirial(pmeSafe.get(), codePath, method);
+            const auto  output = pmeGetReciprocalEnergyAndVirial(pme.get(), codePath, method);
             const auto& energy = (method == PmeSolveAlgorithm::Coulomb) ? output.coulombEnergy_
                                                                         : output.lennardJonesEnergy_;
             const auto& virial = (method == PmeSolveAlgorithm::Coulomb) ? output.coulombVirial_

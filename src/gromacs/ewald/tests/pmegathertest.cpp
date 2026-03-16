@@ -386,29 +386,29 @@ public:
                              pmeOrder,
                              atomCount));
 
-        PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
-                                                codePath,
-                                                pmeTestHardwareContext.deviceContext(),
-                                                pmeTestHardwareContext.deviceStream(),
-                                                pmeTestHardwareContext.pmeGpuProgram(),
-                                                box);
+        PmePointer                              pme = pmeInitWrapper(&inputRec,
+                                        codePath,
+                                        pmeTestHardwareContext.deviceContext(),
+                                        pmeTestHardwareContext.deviceStream(),
+                                        pmeTestHardwareContext.pmeGpuProgram(),
+                                        box);
         std::unique_ptr<StatePropagatorDataGpu> stateGpu =
                 (codePath == CodePath::GPU)
-                        ? makeStatePropagatorDataGpu(*pmeSafe.get(),
+                        ? makeStatePropagatorDataGpu(*pme.get(),
                                                      pmeTestHardwareContext.deviceContext(),
                                                      pmeTestHardwareContext.deviceStream())
                         : nullptr;
 
-        pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, testSystem.coordinates, testSystem.charges);
+        pmeInitAtoms(pme.get(), stateGpu.get(), codePath, testSystem.coordinates, testSystem.charges);
 
         /* Setting some more inputs */
-        pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);
-        pmeSetGridLineIndices(pmeSafe.get(), codePath, testSystem.gridLineIndices);
+        pmeSetRealGrid(pme.get(), codePath, nonZeroGridValues);
+        pmeSetGridLineIndices(pme.get(), codePath, testSystem.gridLineIndices);
         for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
         {
             pmeSetSplineData(
-                    pmeSafe.get(), codePath, splineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
-            pmeSetSplineData(pmeSafe.get(),
+                    pme.get(), codePath, splineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
+            pmeSetSplineData(pme.get(),
                              codePath,
                              splineData.splineDerivatives[dimIndex],
                              PmeSplineDataType::Derivatives,
@@ -421,8 +421,8 @@ public:
         auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
 
         /* Running the force gathering itself */
-        pmePerformGather(pmeSafe.get(), codePath, forces);
-        pmeFinalizeTest(pmeSafe.get(), codePath);
+        pmePerformGather(pme.get(), codePath, forces);
+        pmeFinalizeTest(pme.get(), codePath);
 
         /* Check the output forces correctness */
         TestReferenceData    refData(makeRefDataFileName());

@@ -119,8 +119,14 @@ struct MDModulesAtomsRedistributedSignal
 {
     MDModulesAtomsRedistributedSignal(const matrix                            box,
                                       gmx::ArrayRef<const RVec>               x,
+                                      gmx::ArrayRef<const real>               charges,
+                                      gmx::ArrayRef<const real>               masses,
                                       std::optional<gmx::ArrayRef<const int>> globalAtomIndices) :
-        box_(createMatrix3x3FromLegacyMatrix(box)), x_(x), globalAtomIndices_(globalAtomIndices)
+        box_(createMatrix3x3FromLegacyMatrix(box)),
+        x_(x),
+        charges_(charges),
+        masses_(masses),
+        globalAtomIndices_(globalAtomIndices)
     {
     }
 
@@ -128,6 +134,10 @@ struct MDModulesAtomsRedistributedSignal
     const Matrix3x3 box_;
     //! List of local atom coordinates after partitioning
     gmx::ArrayRef<const RVec> x_;
+    //! List of charges of local atoms, they are for the A-state when free-energy is active
+    gmx::ArrayRef<const real> charges_;
+    //! List of masses of local atoms, when masses are perturbed, these might only be valid at the current step
+    gmx::ArrayRef<const real> masses_;
     /*! \brief List of global atom indices for the home atoms
      *
      * Filler particles might be present in the home atom list, these have index -1

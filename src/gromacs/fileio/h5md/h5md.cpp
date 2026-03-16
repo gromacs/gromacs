@@ -58,7 +58,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/sysinfo.h"
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
@@ -122,8 +121,6 @@ constexpr char c_h5mdNameAttributeKey[] = "name";
 constexpr char c_h5mdVersionAttributeKey[] = "version";
 //! \brief Path to H5MD connectivity group from the file root.
 constexpr char c_h5mdConnectivityGroupPath[] = "/connectivity";
-//! \brief Maximum length of author names (used to allocate memory).
-constexpr int c_maxUserNameLength = 4096;
 //! \brief Unit for position data for simulations produced by mdrun.
 constexpr char c_positionUnit[] = "nm";
 //! \brief Unit for velocity data for simulations produced by mdrun.
@@ -201,9 +198,12 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
     switch (mode)
     {
         case H5mdFileMode::Write:
-            file_ = H5Fcreate(
-                    fileName.string().c_str(), H5F_ACC_TRUNC, H5Pcreate(H5P_FILE_CREATE), H5P_DEFAULT);
-            break;
+        {
+            const auto [createPropertyList, createPropertyListGuard] =
+                    makeH5mdPropertyListGuard(H5Pcreate(H5P_FILE_CREATE));
+            file_ = H5Fcreate(fileName.string().c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
+        }
+        break;
         case H5mdFileMode::Read:
             file_ = H5Fopen(fileName.string().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
             break;
@@ -456,12 +456,7 @@ void H5md::setupMetadataGroup()
 
     const auto [authorGroup, authorGroupGuard] =
             makeH5mdGroupGuard(createGroup(group, c_h5mdAuthorGroupName));
-    std::string username(c_maxUserNameLength, '\0');
-    if (gmx_getusername(username.data(), c_maxUserNameLength) != 0)
-    {
-        username = "<unknown author>";
-    }
-    setAttribute(authorGroup, c_h5mdNameAttributeKey, username);
+    setAttribute(authorGroup, c_h5mdNameAttributeKey, "N/A");
 
     const auto [creatorGroup, creatorGroupGuard] =
             makeH5mdGroupGuard(createGroup(group, c_h5mdCreatorGroupName));

@@ -269,7 +269,7 @@ HIP
 
 Supported hardware:
 
-* AMD GPUs: GFX9, CDNA 1/2, RDNA 1/2/3 GPUs
+* AMD GPUs: GFX9, CDNA 1/2,3 RDNA 1/2/3 GPUs
 
 Requirements:
 
@@ -279,11 +279,12 @@ Limitations:
 
 * Available from |Gromacs| 2025
 * |Gromacs| 2025 supports only main non-bonded kernels
+* |Gromacs| 2026 has full offload support
 
 Experimental branch:
-* Experimental feature branch supporting all compute kernels: `HIP feature branch <https://gitlab.com/gromacs/gromacs/-/tree/4947-hip-feature-enablement>`_
-* Supported by AMD and aimed to get merged in the next major release
-* Updated together with 2025 releases to be based on latest fixes
+* Experimental feature branch with remaining AMD specific optimizations: `HIP feature branch <https://gitlab.com/gromacs/gromacs/-/tree/4947-hip-feature-enablement>`_
+* Supported by AMD, with aim to merge all remaining code during the coming release cycle
+* Updated together with 2026 releases to be based on latest fixes
 * For support, `contact acmnpv here <mailto:paul.bauer.q@gmail.com>`_
 
 More information can be found in the `AMD-HIP`_ section.

@@ -75,18 +75,18 @@ namespace gmx
 namespace
 {
 
-//! Collection of information for an NBNxM grid column
-class GridColumnInfo
+//! Collection of information for an NBNxM grid cell
+class GridCellInfo
 {
 public:
-    /*! \brief Returns information on a column of the local grid
+    /*! \brief Returns information on a cell of the local grid
      *
-     * Note that the column bounding boxes are computed for the centers of update groups.
+     * Note that the cell bounding boxes are computed for the centers of update groups.
      * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
      */
-    GridColumnInfo(const Grid& grid, int columnIndex);
+    GridCellInfo(const Grid& grid, int cellIndex);
 
-    //! Returns the bounding box of the cluster with local index \p cluster in this column
+    //! Returns the bounding box of the cluster with local index \p cluster in this cell
     BoundingBox clusterBB(const int cluster) const
     {
         if (usePackedBoundingBoxes_)
@@ -111,9 +111,9 @@ public:
         }
     }
 
-    //! The bounding box of the column
-    BoundingBox columnBB_;
-    //! The number of clusters in this column
+    //! The bounding box of the cell
+    BoundingBox cellBB_;
+    //! The number of clusters in this cell
     int numClusters_;
 
 private:
@@ -125,23 +125,22 @@ private:
     ArrayRef<const float> packedClusterBBs_;
 };
 
-GridColumnInfo::GridColumnInfo(const Grid& grid, const int columnIndex)
+GridCellInfo::GridCellInfo(const Grid& grid, const int cellIndex)
 {
     const GridDimensions& dims = grid.dimensions();
 
-    GMX_ASSERT(columnIndex >= 0 && columnIndex < grid.numColumns(),
-               "columnIndex should be in range");
+    GMX_ASSERT(cellIndex >= 0 && cellIndex < grid.numCells(), "cellIndex should be in range");
 
-    // Determine the x-column through division with rounding down
-    const int cx = columnIndex / dims.numCells[YY];
-    const int cy = columnIndex - cx * dims.numCells[YY];
+    // Determine the x-cell through division with rounding down
+    const int cx = cellIndex / dims.numCells[YY];
+    const int cy = cellIndex - cx * dims.numCells[YY];
 
-    columnBB_.lower.x = dims.lowerCorner[XX] + cx * dims.cellSize[XX];
-    columnBB_.upper.x = dims.lowerCorner[XX] + (cx + 1) * dims.cellSize[XX];
-    columnBB_.lower.y = dims.lowerCorner[YY] + cy * dims.cellSize[YY];
-    columnBB_.upper.y = dims.lowerCorner[YY] + (cy + 1) * dims.cellSize[YY];
-    columnBB_.lower.z = dims.lowerCorner[ZZ];
-    columnBB_.upper.z = dims.upperCorner[ZZ];
+    cellBB_.lower.x = dims.lowerCorner[XX] + cx * dims.cellSize[XX];
+    cellBB_.upper.x = dims.lowerCorner[XX] + (cx + 1) * dims.cellSize[XX];
+    cellBB_.lower.y = dims.lowerCorner[YY] + cy * dims.cellSize[YY];
+    cellBB_.upper.y = dims.lowerCorner[YY] + (cy + 1) * dims.cellSize[YY];
+    cellBB_.lower.z = dims.lowerCorner[ZZ];
+    cellBB_.upper.z = dims.upperCorner[ZZ];
 
     const Grid::Geometry& geometry = grid.geometry();
 
@@ -150,17 +149,17 @@ GridColumnInfo::GridColumnInfo(const Grid& grid, const int columnIndex)
 
     const int numIClustersPerBin = geometry.numAtomsPerBin_ / geometry.numAtomsICluster_;
 
-    numClusters_ = grid.numBinsInColumn(columnIndex) * numIClustersPerBin;
+    numClusters_ = grid.numBinsInCell(cellIndex) * numIClustersPerBin;
 
     if (usePackedBoundingBoxes_)
     {
         const int bbSize  = DIM * c_numBoundingBoxBounds1D;
         packedClusterBBs_ = grid.packedBoundingBoxes().subArray(
-                grid.firstBinInColumn(columnIndex) * numIClustersPerBin * bbSize, numClusters_ * bbSize);
+                grid.firstBinInCell(cellIndex) * numIClustersPerBin * bbSize, numClusters_ * bbSize);
     }
     else if (geometry.numAtomsJCluster_ <= geometry.numAtomsICluster_)
     {
-        clusterBBs_ = grid.iBoundingBoxes().subArray(grid.firstBinInColumn(columnIndex), numClusters_);
+        clusterBBs_ = grid.iBoundingBoxes().subArray(grid.firstBinInCell(cellIndex), numClusters_);
     }
     else
     {
@@ -169,7 +168,7 @@ GridColumnInfo::GridColumnInfo(const Grid& grid, const int columnIndex)
                    "i-cluster size are supported");
         // j-clusters are twice as large as i, need to divide counts by 2
         numClusters_ /= 2;
-        clusterBBs_ = grid.jBoundingBoxes().subArray(grid.firstBinInColumn(columnIndex) / 2, numClusters_);
+        clusterBBs_ = grid.jBoundingBoxes().subArray(grid.firstBinInCell(cellIndex) / 2, numClusters_);
     }
 }
 
@@ -492,39 +491,39 @@ void DomainCommBackward::getTargetZoneCorners(const gmx_domdec_t&   dd,
 namespace
 {
 
-/*! \brief Computes and adds the cluster ranges we will communicatie for grid column \p columnIndex
+/*! \brief Computes and adds the cluster ranges we will communicatie for grid cell \p cellIndex
  *
- * The cluster ranges are added to \p columnInfo.
+ * The cluster ranges are added to \p cellInfo.
  *
  * \returns the number of clusters added
  */
 template<bool doChecksForBondeds>
-int addClusterRangesForGridColumn(const Grid&                    grid,
-                                  const int                      columnIndex,
-                                  const ZoneCorners&             zoneCorners,
-                                  const DistanceCalculationInfo& dci,
-                                  const std::vector<bool>&       isClusterMissingLinks,
-                                  FastVector<DomainCommBackward::GridClusterRange>* gridClusterRanges)
+int addClusterRangesForGridCell(const Grid&                    grid,
+                                const int                      cellIndex,
+                                const ZoneCorners&             zoneCorners,
+                                const DistanceCalculationInfo& dci,
+                                const std::vector<bool>&       isClusterMissingLinks,
+                                FastVector<DomainCommBackward::GridClusterRange>* gridClusterRanges)
 {
-    const GridColumnInfo gci(grid, columnIndex);
+    const GridCellInfo gci(grid, cellIndex);
 
-    const int numClustersInColumn = gci.numClusters_;
-    if (numClustersInColumn == 0)
+    const int numClustersInCell = gci.numClusters_;
+    if (numClustersInCell == 0)
     {
-        /* Empty column */
+        /* Empty cell */
         return 0;
     }
 
     const auto distancesSquared =
-            cornerToBoundingBoxDistance(dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.columnBB_);
+            cornerToBoundingBoxDistance(dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.cellBB_);
 
-    const bool columnIsInRange =
+    const bool cellIsInRange =
             distancesSquared.pair < dci.cutoffSquaredTwoBody2
             || (dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody2)
             || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody2);
-    if (!columnIsInRange)
+    if (!cellIsInRange)
     {
-        /* This whole column is out of range */
+        /* This whole cell is out of range */
         return {};
     }
 
@@ -532,11 +531,11 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
     // so we need to convert the size used in grid, which is always of the i-clusters
     const int clusterFactor = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_)
                               / grid.geometry().numAtomsICluster_;
-    const int firstClusterInColumn = grid.atomToCluster(grid.firstAtomInColumn(columnIndex)) / clusterFactor;
+    const int firstClusterInCell = grid.atomToCluster(grid.firstAtomInCell(cellIndex)) / clusterFactor;
 
     int numClustersAdded    = 0;
     int firstClusterInRange = -1;
-    for (int cluster = 0; cluster < numClustersInColumn; cluster++)
+    for (int cluster = 0; cluster < numClustersInCell; cluster++)
     {
         const auto distancesSquaredCluster = cornerToBoundingBoxDistance(
                 dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.clusterBB(cluster));
@@ -556,7 +555,7 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
                     isInRange
                     || (((dci.checkMultiBodyDistance && distancesSquaredCluster.multiBody < dci.cutoffSquaredMultiBody1)
                          || (dci.checkTwoBodyDistance && distancesSquaredCluster.pair < dci.cutoffSquaredMultiBody1))
-                        && (!dci.filterBondComm || isClusterMissingLinks[firstClusterInColumn + cluster]));
+                        && (!dci.filterBondComm || isClusterMissingLinks[firstClusterInCell + cluster]));
         }
 
         if (firstClusterInRange < 0 && isInRange)
@@ -565,14 +564,14 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
             firstClusterInRange = cluster;
         }
 
-        // We should add a range when a range finished or we are at the end of the column
-        if (firstClusterInRange >= 0 && (!isInRange || cluster == numClustersInColumn - 1))
+        // We should add a range when a range finished or we are at the end of the cell
+        if (firstClusterInRange >= 0 && (!isInRange || cluster == numClustersInCell - 1))
         {
             const int lastClusterInRange = (isInRange ? cluster : cluster - 1);
 
-            gridClusterRanges->push_back({ columnIndex,
-                                           { firstClusterInColumn + firstClusterInRange,
-                                             firstClusterInColumn + lastClusterInRange + 1 } });
+            gridClusterRanges->push_back({ cellIndex,
+                                           { firstClusterInCell + firstClusterInRange,
+                                             firstClusterInCell + lastClusterInRange + 1 } });
             numClustersAdded += gridClusterRanges->back().clusterRange.size();
 
             // Mark that we no longer have an open bin range that is in range
@@ -580,7 +579,7 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
         }
     }
 
-    // With GPU grids, the number of clusters in a column needs to be a multiple of the number
+    // With GPU grids, the number of clusters in a cell needs to be a multiple of the number
     // of clusters per bin. Here this is not guaranteed, so we might need to add some clusters,
     // which will then be clusters that do not actually need to be communicated.
     if (!grid.geometry().isSimple_)
@@ -593,8 +592,8 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
             // We need to add this many clusters
             int numClustersToAdd = numClustersPerBin - numClustersModBin;
 
-            // First add clusters up to the end of this column
-            const int numNonSelectedClustersAtEnd = firstClusterInColumn + numClustersInColumn
+            // First add clusters up to the end of this cell
+            const int numNonSelectedClustersAtEnd = firstClusterInCell + numClustersInCell
                                                     - *gridClusterRanges->back().clusterRange.end();
             const int numClustersToAddAtEnd = std::min(numClustersToAdd, numNonSelectedClustersAtEnd);
             gridClusterRanges->back().clusterRange = { *gridClusterRanges->back().clusterRange.begin(),
@@ -781,19 +780,19 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
     // We only need to check bonded distances when only single domain shifts are involved
     const bool checkBondedDistances =
             (!shiftMultipleDomains_ && (dci.checkMultiBodyDistance || dci.checkTwoBodyDistance));
-    for (int columnIndex = 0; columnIndex < grid.numColumns(); columnIndex++)
+    for (int cellIndex = 0; cellIndex < grid.numCells(); cellIndex++)
     {
         int numClustersAdded;
 
         if (checkBondedDistances)
         {
-            numClustersAdded = addClusterRangesForGridColumn<true>(
-                    grid, columnIndex, targetZoneCorners_, dci, isClusterMissingLinks, &clusterRangesToSend_);
+            numClustersAdded = addClusterRangesForGridCell<true>(
+                    grid, cellIndex, targetZoneCorners_, dci, isClusterMissingLinks, &clusterRangesToSend_);
         }
         else
         {
-            numClustersAdded = addClusterRangesForGridColumn<false>(
-                    grid, columnIndex, targetZoneCorners_, dci, isClusterMissingLinks, &clusterRangesToSend_);
+            numClustersAdded = addClusterRangesForGridCell<false>(
+                    grid, cellIndex, targetZoneCorners_, dci, isClusterMissingLinks, &clusterRangesToSend_);
         }
 
         numAtomsToSend_ += numClustersAdded * numAtomsPerCluster_;
@@ -820,10 +819,10 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
     // Copy the global atom indices to the send buffer
     globalAtomIndices_.clear();
-    for (const auto& columnInfo : clusterRangesToSend_)
+    for (const auto& cellInfo : clusterRangesToSend_)
     {
-        const int at_start = *columnInfo.clusterRange.begin() * numAtomsPerCluster_;
-        const int at_end   = *columnInfo.clusterRange.end() * numAtomsPerCluster_;
+        const int at_start = *cellInfo.clusterRange.begin() * numAtomsPerCluster_;
+        const int at_end   = *cellInfo.clusterRange.end() * numAtomsPerCluster_;
         globalAtomIndices_.insert(globalAtomIndices_.end(),
                                   dd.globalAtomIndices.begin() + at_start,
                                   dd.globalAtomIndices.begin() + at_end);
@@ -832,9 +831,9 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                "Here we should have all global atom indices to send");
 }
 
-FastVector<std::pair<int, int>> DomainCommBackward::makeColumnsSendBuffer() const
+FastVector<std::pair<int, int>> DomainCommBackward::makeCellsSendBuffer() const
 {
-    // Store the grid info with only index and cluster range sizes per column
+    // Store the grid info with only index and cluster range sizes per cell
     FastVector<std::pair<int, int>> sendBuffer;
     sendBuffer.reserve(clusterRangesToSend_.size());
     for (const auto& clusterRange : clusterRangesToSend_)
@@ -866,8 +865,8 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
         fprintf(debug, "For zone %d, receiving %d atoms\n", zone_, numAtoms());
     }
 
-    // Store the grid info with only pairs of column indices and cluster range sizes
-    const FastVector<std::pair<int, int>> sendBuffer = send.makeColumnsSendBuffer();
+    // Store the grid info with only pairs of cell indices and cluster range sizes
+    const FastVector<std::pair<int, int>> sendBuffer = send.makeCellsSendBuffer();
 
     clusterRangesReceived_.resize(receiveSizes[0]);
 
@@ -878,7 +877,7 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
                   send.clusterRangesToSend().size(),
                   clusterRangesReceived_.data(),
                   clusterRangesReceived_.size(),
-                  HaloMpiTag::GridColumns);
+                  HaloMpiTag::GridCells);
 }
 
 DomainPairComm::DomainPairComm(int         backwardRank,

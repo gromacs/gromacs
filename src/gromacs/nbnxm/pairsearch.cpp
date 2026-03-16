@@ -116,12 +116,12 @@ PairSearch::PairSearch(const PbcType      pbcType,
 void PairSearch::setNonLocalGrid(const int                           gridIndex,
                                  const int                           ddZone,
                                  const GridDimensions&               gridDimensions,
-                                 ArrayRef<const std::pair<int, int>> columns,
+                                 ArrayRef<const std::pair<int, int>> cells,
                                  ArrayRef<const int32_t>             atomInfo,
                                  ArrayRef<const RVec>                x,
                                  nbnxn_atomdata_t*                   nbat)
 {
-    gridSet_.setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat);
+    gridSet_.setNonLocalGrid(gridIndex, ddZone, gridDimensions, cells, atomInfo, x, nbat);
 }
 
 } // namespace gmx

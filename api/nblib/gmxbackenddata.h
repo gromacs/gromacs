@@ -105,7 +105,7 @@ public:
     std::unique_ptr<gmx::nonbonded_verlet_t> nbv_;
 
     //! Only shift_vec is used
-    t_forcerec forcerec_;
+    t_forcerec forcerec_{ false };
 
     //! Parameters for various interactions in the system
     interaction_const_t interactionConst_;

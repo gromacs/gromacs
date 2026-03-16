@@ -57,7 +57,7 @@ function(gmx_add_hipcc_flag_if_supported _output_variable_name_to_append_to _fla
     if (NOT DEFINED ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if hipcc accepts flags ${ARGN}")
         execute_process(
-                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} --offload-arch=gfx90a -Werror "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
+                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} -x hip --offload-arch=gfx90a -Werror "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
             RESULT_VARIABLE _hip_success
             OUTPUT_QUIET
             ERROR_QUIET
@@ -188,7 +188,6 @@ if(${_cmake_build_type} STREQUAL "RELEASE")
     gmx_hip_check_single_flag("-DNDEBUG")
 elseif(${_cmake_build_type} MATCHES "DEB") # should match all builds that include debug symbols, but exclude other RELWITH* builds
     gmx_hip_check_single_flag("-ggdb")
-    gmx_hip_check_single_flag("-O0")
 endif()
 
 # This helper function creates a temporary scope in which we can set
