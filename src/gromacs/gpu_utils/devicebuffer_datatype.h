@@ -45,6 +45,8 @@
 
 #include "config.h"
 
+#include <cstdint>
+
 #include <memory>
 
 #include "gromacs/utility/vectypes.h"

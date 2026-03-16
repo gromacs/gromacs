@@ -45,6 +45,7 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
+#include <cstdint>
 #include <cstdio>
 
 #include <memory>
