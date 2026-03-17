@@ -795,7 +795,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                 &deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
                 deviceStreamManager->context(),
                 GpuApiCallBehavior::Async,
-                pme_gpu_get_block_size(pme.get()),
+                pme_gpu_get_block_size(*pme),
                 useNvshmem,
                 wcycle);
     }
@@ -935,7 +935,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
         {
             // Reinit before PME->PP force send so it is included in graph
             // which implicitly joins back to PP task as part of force transfer
-            pme_gpu_finish_step(pme.get(), pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(pme->gpu.get(), pme_pp->useMdGpuGraph, wcycle);
         }
 
         gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles, stepWork.computeVirial);
@@ -943,7 +943,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
         // Reinit after PME->PP force send so it is removed from the critical path
         if (useGpuForPme && !pme_pp->useMdGpuGraph)
         {
-            pme_gpu_finish_step(pme.get(), pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(pme->gpu.get(), pme_pp->useMdGpuGraph, wcycle);
         }
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
@@ -954,5 +954,5 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
     }
     walltime_accounting_end_time(walltime_accounting);
 
-    return pme_gpu_get_timings(pme.get());
+    return pme_gpu_get_timings(*pme);
 }

@@ -1176,13 +1176,14 @@ PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, c
     return output;
 }
 
-void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused box)
+void pme_gpu_update_input_box(PmeGpu* pmeGpu, const matrix box, matrix recipBox, real* boxVolume)
 {
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
+    GMX_UNUSED_VALUE(pmeGpu);
+    GMX_UNUSED_VALUE(box);
 #else
-    matrix  scaledBox;
-    PmeGpu* pmeGpu = pme->gpu.get();
+    matrix scaledBox;
     pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     // Set (scaled) box volume to use in GPU kernels
     auto* kernelParamsPtr              = pme_gpu_get_kernel_params_ptr(pmeGpu);
@@ -1192,8 +1193,7 @@ void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused
     // Data in pme object is only needed when
     // !pme_gpu_settings(pmeGpu).performGPUSolve), but it's simpler to
     // always use that storage.
-    pme->boxVolume   = kernelParamsPtr->current.boxVolume;
-    matrix& recipBox = pme->recipbox;
+    *boxVolume = kernelParamsPtr->current.boxVolume;
     gmx::invertBoxMatrix(scaledBox, recipBox);
 
     /* Set reciprocal box to use in GPU kernels
@@ -1277,13 +1277,13 @@ static void pme_gpu_reinit_grids(PmeGpu* pmeGpu)
  * Copies everything useful from the PME CPU to the PME GPU structure.
  * The goal is to minimize interaction with the PME CPU structure in the GPU code.
  *
- * \param[in] pme         The PME structure.
+ * \param[in,out] pmeGpu      The PME GPU structure.
+ * \param[in]     pme         The PME structure.
  */
-static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
+static void pme_gpu_copy_common_data_from(PmeGpu* pmeGpu, const gmx_pme_t* pme)
 {
     /* TODO: Consider refactoring the CPU PME code to use the same structure,
      * so that this function becomes 2 lines */
-    PmeGpu* pmeGpu               = pme->gpu.get();
     pmeGpu->common->ngrids       = pme->bFEP_q ? 2 : 1;
     pmeGpu->common->epsilon_r    = pme->epsilon_r;
     pmeGpu->common->ewaldcoeff_q = pme->ewaldcoeff_q;
@@ -1363,54 +1363,38 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
     }
 }
 
-
-/*! \libinternal \brief
- * Initializes the PME GPU data at the beginning of the run.
- * TODO: this should become PmeGpu::PmeGpu()
- *
- * \param[in,out] pme            The PME structure.
- * \param[in]     deviceContext  The GPU context.
- * \param[in]     deviceStream   The GPU stream.
- * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside
- *                               (e.g. in unit tests/runner)
- * \param[in]     box            Simulation box
- */
-static void pme_gpu_init(gmx_pme_t*           pme,
-                         const DeviceContext& deviceContext,
-                         const DeviceStream&  deviceStream,
-                         const PmeGpuProgram* pmeGpuProgram,
-                         const matrix         box)
+PmeGpu::PmeGpu(const gmx_pme_t&     pme,
+               const DeviceContext& deviceContext,
+               const DeviceStream&  deviceStream,
+               const PmeGpuProgram* pmeGpuProgram)
 {
-    pme->gpu       = std::make_unique<PmeGpu>();
-    PmeGpu* pmeGpu = pme->gpu.get();
-    changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());
-    pmeGpu->common = std::make_shared<PmeShared>();
+    changePinningPolicy(&staging.h_forces, pme_get_pinning_policy());
+    common = std::make_shared<PmeShared>();
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
     /* A convenience variable. */
-    pmeGpu->settings.useDecomposition = (pme->nnodes != 1);
+    settings.useDecomposition = (pme.nnodes != 1);
     /* TODO: CPU gather with GPU spread is broken due to different theta/dtheta layout. */
-    pmeGpu->settings.performGPUGather = true;
+    settings.performGPUGather = true;
     // By default GPU-side reduction is off (explicitly set here for tests, otherwise reset per-step)
-    pmeGpu->settings.useGpuForceReduction = false;
+    settings.useGpuForceReduction = false;
 
-    pme_gpu_set_testing(pmeGpu, false);
+    pme_gpu_set_testing(this, false);
 
     GMX_ASSERT(pmeGpuProgram != nullptr, "GPU kernels must be already compiled");
-    pmeGpu->programHandle_ = pmeGpuProgram;
+    programHandle_ = pmeGpuProgram;
 
-    pmeGpu->initializedClfftLibrary_ = std::make_unique<gmx::ClfftInitializer>();
+    initializedClfftLibrary_ = std::make_unique<gmx::ClfftInitializer>();
 
-    pme_gpu_init_internal(pmeGpu, deviceContext, deviceStream);
+    pme_gpu_init_internal(this, deviceContext, deviceStream);
 
-    pme_gpu_copy_common_data_from(pme);
-    pme_gpu_alloc_energy_virial(pmeGpu);
+    pme_gpu_copy_common_data_from(this, &pme);
+    pme_gpu_alloc_energy_virial(this);
 
-    GMX_ASSERT(pmeGpu->common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
+    GMX_ASSERT(common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
 
-    auto* kernelParamsPtr               = pme_gpu_get_kernel_params_ptr(pmeGpu);
-    kernelParamsPtr->constants.elFactor = gmx::c_one4PiEps0 / pmeGpu->common->epsilon_r;
-    pme_gpu_update_input_box(pme, box);
+    auto* kernelParamsPtr               = pme_gpu_get_kernel_params_ptr(this);
+    kernelParamsPtr->constants.elFactor = gmx::c_one4PiEps0 / common->epsilon_r;
 }
 
 void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx::IVec* paddedGridSize)
@@ -1426,40 +1410,21 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t*           pme,
-                    const DeviceContext* deviceContext,
-                    const DeviceStream*  deviceStream,
-                    const PmeGpuProgram* pmeGpuProgram,
-                    const bool           useMdGpuGraph,
-                    const matrix         box)
+void pme_gpu_reinit(PmeGpu* pmeGpu, gmx_pme_t* pme, const bool useMdGpuGraph)
 {
-    GMX_ASSERT(pme != nullptr, "Need valid PME object");
+    /* After this call nothing in the GPU code should refer to the gmx_pme_t *pme itself - until the next pme_gpu_reinit */
+    pme_gpu_copy_common_data_from(pmeGpu, pme);
 
-    if (!pme->gpu)
-    {
-        GMX_RELEASE_ASSERT(deviceContext != nullptr,
-                           "Device context can not be nullptr when setting up PME on GPU.");
-        GMX_RELEASE_ASSERT(deviceStream != nullptr,
-                           "Device stream can not be nullptr when setting up PME on GPU.");
-        /* First-time initialization */
-        pme_gpu_init(pme, *deviceContext, *deviceStream, pmeGpuProgram, box);
-    }
-    else
-    {
-        /* After this call nothing in the GPU code should refer to the gmx_pme_t *pme itself - until the next pme_gpu_reinit */
-        pme_gpu_copy_common_data_from(pme);
-    }
-
-    pme->gpu->settings.performGPUFFT   = (pme->gpu->common->runMode == PmeRunMode::GPU);
-    pme->gpu->settings.performGPUSolve = (pme->gpu->common->runMode == PmeRunMode::GPU);
+    pmeGpu->settings.performGPUFFT   = (pmeGpu->common->runMode == PmeRunMode::GPU);
+    pmeGpu->settings.performGPUSolve = (pmeGpu->common->runMode == PmeRunMode::GPU);
 
     /* Reinit active timers */
-    pme_gpu_reinit_timings(pme->gpu.get());
+    pme_gpu_reinit_timings(pmeGpu);
 
-    pme_gpu_reinit_grids(pme->gpu.get());
+    pme_gpu_reinit_grids(pmeGpu);
     // Note: if timing the reinit launch overhead becomes more relevant
     // (e.g. with regular PP-PME re-balancing), we should pass wcycle here.
-    pme_gpu_finish_step(pme, useMdGpuGraph, nullptr);
+    pme_gpu_finish_step(pmeGpu, useMdGpuGraph, nullptr);
 }
 
 PmeGpu::~PmeGpu()
@@ -1622,7 +1587,7 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 static CommandEvent* pme_gpu_fetch_timing_event(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 {
     CommandEvent* timingEvent = nullptr;
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         GMX_ASSERT(pmeStageId < PmeStage::Count, "Wrong PME GPU timing event index");
         timingEvent = pmeGpu->archSpecific->timingEvents[pmeStageId].fetchNextEvent();

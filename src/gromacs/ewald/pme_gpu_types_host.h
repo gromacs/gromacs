@@ -79,7 +79,9 @@ struct PmeGpuKernelParams;
 typedef int PmeGpuKernelParams;
 #endif
 
+class DeviceContext;
 struct DeviceInformation;
+class DeviceStream;
 
 /*! \internal \brief
  * Contains information about the PP ranks that partners this PME rank.
@@ -189,6 +191,27 @@ struct PmeNvshmemHost
  */
 struct PmeGpu
 {
+    /*! \brief* Initializes the PME GPU data at the beginning of the run.
+     *
+     * \param[in]     pme            The PME structure.
+     * \param[in]     deviceContext  The GPU context.
+     * \param[in]     deviceStream   The GPU stream.
+     * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside
+     *                               (e.g. in unit tests/runner)
+     *
+     * \note The box needs to be set and pme_gpu_reinit() needs to be called before it is ready for use
+     */
+    PmeGpu(const gmx_pme_t gmx_unused&     pme,
+           const DeviceContext gmx_unused& deviceContext,
+           const DeviceStream gmx_unused&  deviceStream,
+           const PmeGpuProgram gmx_unused* pmeGpuProgram)
+#if GMX_GPU_CUDA || GMX_GPU_OPENCL || GMX_GPU_SYCL || GMX_GPU_HIP
+            ;
+#else
+    {
+    }
+#endif
+
 #if GMX_GPU_CUDA || GMX_GPU_OPENCL || GMX_GPU_SYCL || GMX_GPU_HIP || defined DOXYGEN
     ~PmeGpu();
 #endif
@@ -219,7 +242,7 @@ struct PmeGpu
      * TODO: memory allocation/padding properties should be handled by
      * something like a container
      */
-    int nAtomsAlloc;
+    int nAtomsAlloc = 0;
 
     /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
      * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.

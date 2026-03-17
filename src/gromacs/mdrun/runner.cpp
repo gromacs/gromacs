@@ -2327,7 +2327,7 @@ int Mdrunner::mdrunner()
                 stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
                         *deviceStreamManager,
                         transferKind,
-                        pme_gpu_get_block_size(fr->pmedata.get()),
+                        fr->pmedata ? pme_gpu_get_block_size(*fr->pmedata) : 0,
                         runScheduleWork.simulationWork.useNvshmem,
                         runScheduleWork.simulationWork.useGpuFBufferOpsWhenAllowed,
                         wcycle.get());
@@ -2377,7 +2377,10 @@ int Mdrunner::mdrunner()
             {
                 finish_pull(pull_work);
             }
-            pmeGpuTimings = pme_gpu_get_timings(fr->pmedata.get());
+            if (fr->pmedata)
+            {
+                pmeGpuTimings = pme_gpu_get_timings(*fr->pmedata);
+            }
         }
         else
         {

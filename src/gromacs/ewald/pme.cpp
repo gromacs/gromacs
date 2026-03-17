@@ -1053,8 +1053,20 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
         {
             GMX_THROW(gmx::NotImplementedError(errorString));
         }
+        if (!pme->gpu)
+        {
+            GMX_RELEASE_ASSERT(deviceContext != nullptr,
+                               "Device context can not be nullptr when setting up PME on GPU.");
+            GMX_RELEASE_ASSERT(deviceStream != nullptr,
+                               "Device stream can not be nullptr when setting up PME on GPU.");
+
+            pme->gpu = std::make_unique<PmeGpu>(*pme, *deviceContext, *deviceStream, pmeGpuProgram);
+
+            // Set the box, this is only done once, here, when the box is constant
+            pme_gpu_update_input_box(pme->gpu.get(), box, pme->recipbox, &pme->boxVolume);
+        }
         const bool useMdGpuGraph = false; // This will be reset later after PP communication
-        pme_gpu_reinit(pme.get(), deviceContext, deviceStream, pmeGpuProgram, useMdGpuGraph, box);
+        pme_gpu_reinit(pme->gpu.get(), pme.get(), useMdGpuGraph);
     }
     else
     {

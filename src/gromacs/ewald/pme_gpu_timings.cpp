@@ -49,14 +49,14 @@
 #include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"
 
-bool pme_gpu_timings_enabled(const PmeGpu* pmeGpu)
+bool pme_gpu_timings_enabled(const PmeGpu& pmeGpu)
 {
-    return pmeGpu->archSpecific->useTiming;
+    return pmeGpu.archSpecific->useTiming;
 }
 
 void pme_gpu_start_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 {
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         GMX_ASSERT(pmeStageId < PmeStage::Count, "Wrong PME GPU timing event index");
         pmeGpu->archSpecific->timingEvents[pmeStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream_);
@@ -65,22 +65,22 @@ void pme_gpu_start_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 
 void pme_gpu_stop_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 {
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         GMX_ASSERT(pmeStageId < PmeStage::Count, "Wrong PME GPU timing event index");
         pmeGpu->archSpecific->timingEvents[pmeStageId].closeTimingRegion(pmeGpu->archSpecific->pmeStream_);
     }
 }
 
-std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const PmeGpu* pmeGpu)
+std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const PmeGpu& pmeGpu)
 {
     if (pme_gpu_timings_enabled(pmeGpu))
     {
         gmx_wallclock_gpu_pme_t timings;
         for (auto key : keysOf(timings.timing))
         {
-            timings.timing[key].t = pmeGpu->archSpecific->timingEvents[key].getTotalTime();
-            timings.timing[key].c = pmeGpu->archSpecific->timingEvents[key].getCallCount();
+            timings.timing[key].t = pmeGpu.archSpecific->timingEvents[key].getTotalTime();
+            timings.timing[key].c = pmeGpu.archSpecific->timingEvents[key].getCallCount();
         }
         return timings;
     }
@@ -89,7 +89,7 @@ std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const PmeGpu* pmeGpu)
 
 void pme_gpu_update_timings(const PmeGpu* pmeGpu)
 {
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         for (const auto& activeTimer : pmeGpu->archSpecific->activeTimers)
         {
@@ -100,7 +100,7 @@ void pme_gpu_update_timings(const PmeGpu* pmeGpu)
 
 void pme_gpu_reinit_timings(const PmeGpu* pmeGpu)
 {
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         pmeGpu->archSpecific->activeTimers.clear();
         pmeGpu->archSpecific->activeTimers.insert(PmeStage::SplineAndSpread);
@@ -124,7 +124,7 @@ void pme_gpu_reinit_timings(const PmeGpu* pmeGpu)
 
 void pme_gpu_reset_timings(const PmeGpu* pmeGpu)
 {
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         for (auto key : keysOf(pmeGpu->archSpecific->timingEvents))
         {

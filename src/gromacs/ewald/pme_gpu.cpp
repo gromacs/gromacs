@@ -69,48 +69,33 @@
 #include "pme_internal.h"
 #include "pme_solve.h"
 
-/*! \brief
- * Finds out if PME is currently running on GPU.
- *
- * \todo The GPU module should not be constructed (or at least called)
- * when it is not active, so there should be no need to check whether
- * it is active. An assertion that this is true makes sense.
- *
- * \param[in] pme  The PME structure.
- * \returns        True if PME runs on GPU currently, false otherwise.
- */
-static inline bool pme_gpu_active(const gmx_pme_t* pme)
-{
-    return (pme != nullptr) && (pme->runMode != PmeRunMode::CPU);
-}
-
 void pme_gpu_reset_timings(const gmx_pme_t* pme)
 {
-    if (pme_gpu_active(pme))
+    if (pme->gpu)
     {
         pme_gpu_reset_timings(pme->gpu.get());
     }
 }
 
-std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const gmx_pme_t* pme)
+std::optional<gmx_wallclock_gpu_pme_t> pme_gpu_get_timings(const gmx_pme_t& pme)
 {
-    if (pme_gpu_active(pme))
+    if (pme.gpu)
     {
-        return pme_gpu_get_timings(pme->gpu.get());
+        return pme_gpu_get_timings(*pme.gpu);
     }
     return std::nullopt;
 }
 
-int pme_gpu_get_block_size(const gmx_pme_t* pme)
+int pme_gpu_get_block_size(const gmx_pme_t& pme)
 {
 
-    if (!pme || !pme_gpu_active(pme))
+    if (!pme.gpu)
     {
         return 0;
     }
     else
     {
-        return pme_gpu_get_atom_data_block_size(pme->gpu->programHandle_->warpSize());
+        return pme_gpu_get_atom_data_block_size(pme.gpu->programHandle_->warpSize());
     }
 }
 
@@ -155,7 +140,7 @@ void pme_gpu_prepare_computation(gmx_pme_t*               pme,
                                  const bool               updateBox,
                                  const gmx::StepWorkload& stepWork)
 {
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(pme->nnodes > 0, "");
     GMX_ASSERT(pme->nnodes == 1 || pme->ndecompdim > 0, "");
 
@@ -163,7 +148,7 @@ void pme_gpu_prepare_computation(gmx_pme_t*               pme,
 
     if (updateBox)
     {
-        pme_gpu_update_input_box(pme, box);
+        pme_gpu_update_input_box(pme->gpu.get(), box, pme->recipbox, &pme->boxVolume);
     }
 }
 
@@ -175,7 +160,7 @@ void pme_gpu_launch_spread(gmx_pme_t*                     pme,
                            gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
                            const bool                     useMdGpuGraph)
 {
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(xReadyOnDevice || !pme->bPPnode, "Need a valid xReadyOnDevice on PP+PME ranks.");
     GMX_ASSERT(pme->doCoulomb, "Only Coulomb PME can be run on GPU.");
 
@@ -256,7 +241,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
 
 void pme_gpu_launch_gather(gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, const real lambdaQ, const bool computeVirial)
 {
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
 
     if (!pme_gpu_settings(pme->gpu.get()).performGPUGather)
     {
@@ -311,7 +296,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
                              const real               lambdaQ,
                              GpuTaskCompletion        completionKind)
 {
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(!pme->gpu->settings.useGpuForceReduction,
                "GPU force reduction should not be active on the pme_gpu_try_finish_task() path");
 
@@ -365,7 +350,7 @@ PmeOutput pme_gpu_wait_finish_task(gmx_pme_t*     pme,
                                    const real     lambdaQ,
                                    gmx_wallcycle* wcycle)
 {
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
 
     wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmeGather);
 
@@ -400,23 +385,23 @@ void pme_gpu_wait_and_reduce(gmx_pme_t*               pme,
     pme_gpu_reduce_outputs(computeEnergyAndVirial, output, wcycle, forceWithVirial, enerd);
 }
 
-void pme_gpu_finish_step(const gmx_pme_t* pme, const bool gpuGraphWithSeparatePmeRank, gmx_wallcycle* wcycle)
+void pme_gpu_finish_step(PmeGpu* pmeGpu, const bool gpuGraphWithSeparatePmeRank, gmx_wallcycle* wcycle)
 {
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pmeGpu, "This should be a GPU run of PME but it is not enabled.");
 
     wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-    pme_gpu_update_timings(pme->gpu.get());
+    pme_gpu_update_timings(pmeGpu);
 
-    pme_gpu_clear_grids(pme->gpu.get());
-    pme_gpu_clear_energy_virial(pme->gpu.get(), gpuGraphWithSeparatePmeRank);
+    pme_gpu_clear_grids(pmeGpu);
+    pme_gpu_clear_energy_virial(pmeGpu, gpuGraphWithSeparatePmeRank);
 
     wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
 }
 
 DeviceBuffer<gmx::RVec> pme_gpu_get_device_f(const gmx_pme_t* pme)
 {
-    if (!pme || !pme_gpu_active(pme))
+    if (!pme || !pme->gpu)
     {
         return DeviceBuffer<gmx::RVec>{};
     }
@@ -426,14 +411,14 @@ DeviceBuffer<gmx::RVec> pme_gpu_get_device_f(const gmx_pme_t* pme)
 void pme_gpu_set_device_x(const gmx_pme_t* pme, DeviceBuffer<gmx::RVec> d_x)
 {
     GMX_ASSERT(pme != nullptr, "Null pointer is passed as a PME to the set coordinates function.");
-    GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
+    GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
 
     pme_gpu_set_kernelparam_coordinates(pme->gpu.get(), d_x);
 }
 
 GpuEventSynchronizer* pme_gpu_get_f_ready_synchronizer(const gmx_pme_t* pme)
 {
-    if (!pme || !pme_gpu_active(pme))
+    if (!pme || !pme->gpu)
     {
         return nullptr;
     }

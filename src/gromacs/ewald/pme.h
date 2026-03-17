@@ -364,7 +364,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_use_nvshmem(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  *
  * \param[in]  pme  The PME data structure.
  */
-GPU_FUNC_QUALIFIER int pme_gpu_get_block_size(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
+GPU_FUNC_QUALIFIER int pme_gpu_get_block_size(const gmx_pme_t& GPU_FUNC_ARGUMENT(pme))
         GPU_FUNC_TERM_WITH_RETURN(0);
 
 // The following functions are all the PME GPU entry points,
@@ -385,7 +385,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_reset_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT
  * \returns                     The gmx_wallclock_gpu_pme_t structure.
  */
 GPU_FUNC_QUALIFIER std::optional<gmx_wallclock_gpu_pme_t>
-pme_gpu_get_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(std::nullopt);
+pme_gpu_get_timings(const gmx_pme_t& GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(std::nullopt);
 
 /* The main PME GPU functions */
 
@@ -502,12 +502,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t* GPU_FUNC_ARGUMENT(pme
  * the PME computation without calling this.
  * Note that unlike in the nbnxn module, the force buffer does not need clearing.
  *
- * \param[in] pme                            The PME data structure.
+ * \param[in,out] pmeGpu                     The PME GPU data structure.
  * \param[in] gpuGraphWithSeparatePmeRank    Whether MD GPU Graph with separate PME rank is in use.
  * \param[in] wcycle                         The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_finish_step(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
-                                            bool GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
+GPU_FUNC_QUALIFIER void pme_gpu_finish_step(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
+                                            bool    GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
                                             gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief Set pointer to device copy of coordinate data.

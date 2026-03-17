@@ -61,6 +61,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
+#include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_pp.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
@@ -989,7 +990,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
         bool gpuGraphWithSeparatePmeRank = false;
-        pme_gpu_finish_step(pmedata, gpuGraphWithSeparatePmeRank, wcycle);
+        pme_gpu_finish_step(pmedata->gpu.get(), gpuGraphWithSeparatePmeRank, wcycle);
         wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
     }
 
