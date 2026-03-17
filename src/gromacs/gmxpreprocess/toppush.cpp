@@ -826,7 +826,7 @@ static std::vector<int> atomTypesFromAtomNames(const PreprocessingAtomTypes*    
                 {
                     std::strcpy(atomName, name);
                 }
-                auto message = gmx::formatString("Unknown atomtype %s\n", atomName);
+                auto message = gmx::formatString("Unknown atomtype '%s'\n", atomName);
                 warning_error_and_exit(wi, message, FARGS);
             }
             atomTypesFromAtomNames.emplace_back(*atomType);
@@ -1248,13 +1248,21 @@ void push_cmaptype(Directive                                                    
                    char*                                                           line,
                    WarningHandler*                                                 wi)
 {
-    GMX_ASSERT(nral == NRAL(InteractionFunction::DihedralEnergyCorrectionMap),
-               "CMAP requires 5 atoms per interaction");
+    GMX_RELEASE_ASSERT(
+            CmapInteractionType::sc_numAtomTypesPerCmapInteraction
+                    == NRAL(InteractionFunction::DihedralEnergyCorrectionMap),
+            "Storage used when parsing CMAP interaction definitions has mismatching size");
+    GMX_RELEASE_ASSERT(nral == NRAL(InteractionFunction::DihedralEnergyCorrectionMap),
+                       "CMAP requires 5 atoms per interaction");
 
     std::istringstream cmapLine(line);
     std::string        buffer;
 
-    std::array<std::string, MAXATOMLIST> atomTypeNames, residueTypeNames;
+    // Create a new CMAP type to fill with data from the topology file
+    CmapInteractionType cmapType;
+
+    std::array<std::string, CmapInteractionType::sc_numAtomTypesPerCmapInteraction> atomTypeNames,
+            residueTypeNames;
     for (std::size_t idx = 0; idx < static_cast<std::size_t>(nral); idx++)
     {
         if (cmapLine.eof())
@@ -1300,10 +1308,10 @@ void push_cmaptype(Directive                                                    
         }
     }
     bool allResidueTyped  = std::all_of(residueTypeNames.cbegin(),
-                                       residueTypeNames.cbegin() + nral,
+                                       residueTypeNames.cend(),
                                        std::not_fn(std::mem_fn(&std::string::empty)));
     bool noneResidueTyped = std::none_of(residueTypeNames.cbegin(),
-                                         residueTypeNames.cbegin() + nral,
+                                         residueTypeNames.cend(),
                                          std::not_fn(std::mem_fn(&std::string::empty)));
     if (!allResidueTyped && !noneResidueTyped)
     {
@@ -1367,27 +1375,24 @@ void push_cmaptype(Directive                                                    
                 "Not the same grid extent in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
         wi->addError(message);
     }
-    // Set grid extent (when not yet set) or check that the extent
-    // matches previous entries.
-    if (!bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.has_value())
-    {
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_ =
-                nxcmap; /* Or nycmap, they need to be equal */
-    }
-    else if (bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value() != nxcmap)
+    // Check that the grid extent matches previous entries.
+    if (!bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_.empty()
+        && bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_.front().gridA_.extent(0) != nxcmap)
     {
         auto message = gmx::formatString(
                 "In the current implementation, each CMAP must have the same grid extent. "
-                "Early CMAP entries used %d and then %d were found for line:\n %s",
-                bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridExtent_.value(),
+                "Early CMAP entries used %td and then %d were found for line:\n %s",
+                bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_.front().gridA_.extent(0),
                 nxcmap,
                 line);
         wi->addError(message);
     }
 
-    // Compute the number of CMAP grid values
-    std::size_t ncmap = static_cast<std::size_t>(nxcmap) * static_cast<std::size_t>(nycmap);
-    for (std::size_t idx = 0; idx < ncmap; idx++)
+    // Fill in the CMAP grid for FEP state A
+    cmapType.gridA_.resize(nxcmap, nycmap);
+    gmx::ArrayRef<real> flattenedGridA = cmapType.gridA_.toArrayRef();
+    // In C++20, std::views::enumerate would be useful here
+    for (auto gridEntryIt = flattenedGridA.begin(); gridEntryIt != flattenedGridA.end(); ++gridEntryIt)
     {
         if (cmapLine.eof())
         {
@@ -1407,15 +1412,16 @@ void push_cmaptype(Directive                                                    
                                              residueTypeNames[3].c_str(),
                                              residueTypeNames[4].c_str());
             }
-            message += gmx::formatString(
-                    ": found %d, expected %d", static_cast<int>(idx), static_cast<int>(ncmap));
+            message += gmx::formatString(": found %ld, expected %zu",
+                                         std::distance(flattenedGridA.begin(), gridEntryIt),
+                                         flattenedGridA.size());
             wi->addError(message);
         }
 
         cmapLine >> buffer;
         try
         {
-            bt[InteractionFunction::DihedralEnergyCorrectionMap].cmap.emplace_back(std::stod(buffer));
+            *gridEntryIt = std::stod(buffer);
         }
         catch (...)
         {
@@ -1438,12 +1444,11 @@ void push_cmaptype(Directive                                                    
             wi->addError(message);
         }
     }
-    for (std::size_t idx = 0; idx < ncmap; idx++)
-    {
-        /* Fill in the parameters for state B */
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmap.emplace_back(
-                bt[InteractionFunction::DihedralEnergyCorrectionMap].cmap[idx]);
-    }
+
+    // Copy the parameters to state B, but note that actual FEP of CMAP
+    // parameters is not supported
+    cmapType.gridB_ = cmapType.gridA_;
+
     if (!cmapLine.eof())
     {
         auto message = gmx::formatString(
@@ -1468,7 +1473,6 @@ void push_cmaptype(Directive                                                    
 
     for (int i = 0; (i < nral); i++)
     {
-        /* Assign a grid number to each cmap_type */
         std::optional<int> cmapBondAtomType = bondAtomType.bondAtomTypeFromName(atomTypeNames[i]);
         if (!cmapBondAtomType)
         {
@@ -1483,36 +1487,17 @@ void push_cmaptype(Directive                                                    
             wi->addError(message);
             continue;
         }
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes.emplace_back(
-                cmapBondAtomType.value());
-        bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapResidueTypeNames_.emplace_back(
-                std::move(residueTypeNames[i]));
+        cmapType.atomTypes_[i]        = cmapBondAtomType.value();
+        cmapType.residueTypeNames_[i] = std::move(residueTypeNames[i]);
     }
 
-    /* Assign a type number to this cmap */
-    bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes.emplace_back(
-            bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_);
-    bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapResidueTypeNames_.emplace_back(""); // align the arrays for simpliciy
-    bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_++;
-
-    /* Check for the correct number of atoms (again) */
-    int nct = (nral + 1) * bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_;
-    if (bt[InteractionFunction::DihedralEnergyCorrectionMap].nct() != static_cast<std::size_t>(nct))
-    {
-        auto message = gmx::formatString("Incorrect number of atomtypes (%d) in cmap type %d\n",
-                                         nct,
-                                         bt[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_);
-        wi->addError(message);
-    }
-
-    gmx::ArrayRef<const int> allAtomTypes =
-            gmx::makeConstArrayRef(bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes);
-    gmx::ArrayRef<const int> atomTypesForThisInteraction =
-            allAtomTypes.subArray(allAtomTypes.size() - nral, nral);
     std::array<real, MAXFORCEPARAM> forceParam = { NOTSET };
-    /* Push the bond to the bondlist */
+    // Push the interaction to the interaction list
     push_bondtype(
-            &(bt[ftype]), InteractionOfType(atomTypesForThisInteraction, forceParam), nral, ftype, FALSE, line, wi);
+            &(bt[ftype]), InteractionOfType(cmapType.atomTypes_, forceParam), nral, ftype, FALSE, line, wi);
+
+    // Finally move the new CMAP type into the list
+    bt[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_.emplace_back(std::move(cmapType));
 }
 
 
@@ -1887,18 +1872,17 @@ public:
     }
 
     //! Call operator that does the actual matching
-    bool operator()(gmx::ArrayRef<const int>         cmapTypeAtomTypes,
-                    gmx::ArrayRef<const std::string> cmapTypeResidueTypeNames)
+    bool operator()(const CmapInteractionType& cmapType)
     {
         GMX_RELEASE_ASSERT(
-                atomTypes_.size() == cmapTypeAtomTypes.size(),
+                atomTypes_.size() == cmapType.atomTypes_.size(),
                 "Must have matching sizes for interaction atom list and CMAP atom-type list");
         // Loop over the five atoms
         for (size_t i = 0; i != atomTypes_.size(); ++i)
         {
             // If the corresponding atom types don't match, then the
             // interaction does not match the CMAP type.
-            if (atomTypes_[i] != cmapTypeAtomTypes[i])
+            if (atomTypes_[i] != cmapType.atomTypes_[i])
             {
                 return false;
             }
@@ -1907,9 +1891,9 @@ public:
             // matching. For CHARMM force fields these names are empty.)
             // If the corresponding residue type names don't match, then
             // the interaction does not match the CMAP type.
-            if (!cmapTypeResidueTypeNames[i].empty()
-                && (cmapTypeResidueTypeNames[i] != "*"
-                    && cmapTypeResidueTypeNames[i] != residueTypeNames_[i]))
+            if (!cmapType.residueTypeNames_[i].empty()
+                && (cmapType.residueTypeNames_[i] != "*"
+                    && cmapType.residueTypeNames_[i] != residueTypeNames_[i]))
             {
                 return false;
             }
@@ -1944,7 +1928,8 @@ static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsO
                         const InteractionOfType&                                        p,
                         WarningHandler*                                                 wi)
 {
-    const int nral = NRAL(InteractionFunction::DihedralEnergyCorrectionMap);
+    gmx::ArrayRef<const CmapInteractionType> cmapTypes =
+            bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_;
     if (!p.forceParam().empty() && gmx::roundToInt(p.forceParam()[0]) > 0)
     {
         // The user specified the CMAP interaction type for a CMAP
@@ -1953,38 +1938,24 @@ static int findCmapType(gmx::EnumerationArray<InteractionFunction, InteractionsO
         // indexed starting from 1 so we subtract that
         const int cmapTypeIndexFromUser = gmx::roundToInt(p.forceParam()[0]) - 1;
         // Check that the user-specified CMAP type exists
-        for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
-             i += nral + 1)
+        if (cmapTypeIndexFromUser < cmapTypes.ssize())
         {
-            // Confusingly, the last entry in cmapAtomTypes is the
-            // index into the list of CMAP types.
-            if (bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[i + nral]
-                == cmapTypeIndexFromUser)
-            {
-                // Use the user-specified CMAP type
-                return cmapTypeIndexFromUser;
-            }
+            // Use the user-specified CMAP type
+            return cmapTypeIndexFromUser;
         }
+        // If that user-specified CMAP type does not exist, give an error below
     }
     else
     {
-        // Match the current cmap angle p against the list of CMAP types
-        CmapTypeMatcher          matcher(p.atoms(), at, atypes);
-        gmx::ArrayRef<const int> cmapTypeAtomTypes =
-                bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes;
-        gmx::ArrayRef<const std::string> cmapTypeResidueTypeNames =
-                bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapResidueTypeNames_;
-        // Loop over all the CMAP types, to see if matcher can match
-        for (std::size_t i = 0; i < bondtype[InteractionFunction::DihedralEnergyCorrectionMap].nct();
-             i += nral + 1)
+        // Seek a match for the current CMAP angle against the CMAP
+        // types for this force field.
+        const CmapTypeMatcher matcher(p.atoms(), at, atypes);
+        if (const auto cmapTypeIt = std::find_if(cmapTypes.begin(), cmapTypes.end(), matcher);
+            cmapTypeIt != cmapTypes.end())
         {
-            if (matcher(cmapTypeAtomTypes.subArray(i, nral), cmapTypeResidueTypeNames.subArray(i, nral)))
-            {
-                // Confusingly, the last entry in cmapAtomTypes is the
-                // index into the list of CMAP types.
-                return bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapAtomTypes[i + nral];
-            }
+            return std::distance(cmapTypes.begin(), cmapTypeIt);
         }
+        // If no CMAP type match is found, give an error below
     }
 
     auto message = gmx::formatString(

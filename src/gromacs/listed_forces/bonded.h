@@ -47,12 +47,12 @@
 #include <string>
 
 #include "gromacs/libgromacs_export.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
-struct gmx_cmap_t;
 struct t_fcdata;
 struct t_nrnb;
 struct t_pbc;
@@ -118,7 +118,7 @@ void do_dih_fup(int                 i,
 real cmap_dihs(int                 nbonds,
                const t_iatom       forceatoms[],
                const t_iparams     forceparams[],
-               const gmx_cmap_t*   cmap_grid,
+               const CmapGrids&    grids,
                const rvec          x[],
                rvec4               f[],
                rvec                fshift[],

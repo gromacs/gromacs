@@ -608,9 +608,6 @@ static char** read_topol(const char*                                 infile,
 
     *reppow = 12.0; /* Default value for repulsion power     */
 
-    /* Init the number of CMAP torsion angles */
-    interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_ = 0;
-
     bWarn_copy_A_B = bFEP;
 
     PreprocessingBondAtomType bondAtomType;

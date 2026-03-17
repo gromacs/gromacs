@@ -3144,7 +3144,7 @@ void accumulateCmapForces(const rvec      x[],
 real cmap_dihs(int                 nbonds,
                const t_iatom       forceatoms[],
                const t_iparams     forceparams[],
-               const gmx_cmap_t*   cmap_grid,
+               const CmapGrids&    grids,
                const rvec          x[],
                rvec4               f[],
                rvec                fshift[],
@@ -3183,8 +3183,9 @@ real cmap_dihs(int                 nbonds,
         const int am   = forceatoms[n++];
 
         /* Which CMAP type is this */
-        const int                 cmapA = forceparams[type].cmap.cmapA;
-        gmx::ArrayRef<const real> cmapd = cmap_grid->cmapdata[cmapA].cmap;
+        const int                                cmapA      = forceparams[type].cmap.cmapA;
+        const size_t                             gridExtent = grids[cmapA].extent(0);
+        gmx::ArrayRef<const std::array<real, 4>> cmapd      = grids[cmapA].toArrayRef();
 
         /* First torsion */
         const int a1i = ai;
@@ -3320,42 +3321,42 @@ real cmap_dihs(int                 nbonds,
         }
 
         /* Number of grid points */
-        real dx = 2 * M_PI / cmap_grid->gridExtent;
+        real dx = 2 * M_PI / gridExtent;
 
         /* Where on the grid are we */
         int iphi1 = static_cast<int>(xphi1 / dx);
         int iphi2 = static_cast<int>(xphi2 / dx);
 
-        iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->gridExtent, &ip1m1, &ip1p1, &ip1p2);
-        iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->gridExtent, &ip2m1, &ip2p1, &ip2p2);
+        iphi1 = cmap_setup_grid_index(iphi1, gridExtent, &ip1m1, &ip1p1, &ip1p2);
+        iphi2 = cmap_setup_grid_index(iphi2, gridExtent, &ip2m1, &ip2p1, &ip2p2);
 
-        const int pos1 = iphi1 * cmap_grid->gridExtent + iphi2;
-        const int pos2 = ip1p1 * cmap_grid->gridExtent + iphi2;
-        const int pos3 = ip1p1 * cmap_grid->gridExtent + ip2p1;
-        const int pos4 = iphi1 * cmap_grid->gridExtent + ip2p1;
+        const int pos1 = iphi1 * gridExtent + iphi2;
+        const int pos2 = ip1p1 * gridExtent + iphi2;
+        const int pos3 = ip1p1 * gridExtent + ip2p1;
+        const int pos4 = iphi1 * gridExtent + ip2p1;
 
-        ty[0] = cmapd[pos1 * 4];
-        ty[1] = cmapd[pos2 * 4];
-        ty[2] = cmapd[pos3 * 4];
-        ty[3] = cmapd[pos4 * 4];
+        ty[0] = cmapd[pos1][0];
+        ty[1] = cmapd[pos2][0];
+        ty[2] = cmapd[pos3][0];
+        ty[3] = cmapd[pos4][0];
 
-        ty1[0] = cmapd[pos1 * 4 + 1];
-        ty1[1] = cmapd[pos2 * 4 + 1];
-        ty1[2] = cmapd[pos3 * 4 + 1];
-        ty1[3] = cmapd[pos4 * 4 + 1];
+        ty1[0] = cmapd[pos1][1];
+        ty1[1] = cmapd[pos2][1];
+        ty1[2] = cmapd[pos3][1];
+        ty1[3] = cmapd[pos4][1];
 
-        ty2[0] = cmapd[pos1 * 4 + 2];
-        ty2[1] = cmapd[pos2 * 4 + 2];
-        ty2[2] = cmapd[pos3 * 4 + 2];
-        ty2[3] = cmapd[pos4 * 4 + 2];
+        ty2[0] = cmapd[pos1][2];
+        ty2[1] = cmapd[pos2][2];
+        ty2[2] = cmapd[pos3][2];
+        ty2[3] = cmapd[pos4][2];
 
-        ty12[0] = cmapd[pos1 * 4 + 3];
-        ty12[1] = cmapd[pos2 * 4 + 3];
-        ty12[2] = cmapd[pos3 * 4 + 3];
-        ty12[3] = cmapd[pos4 * 4 + 3];
+        ty12[0] = cmapd[pos1][3];
+        ty12[1] = cmapd[pos2][3];
+        ty12[2] = cmapd[pos3][3];
+        ty12[3] = cmapd[pos4][3];
 
         /* Switch to degrees */
-        dx    = 360.0 / cmap_grid->gridExtent;
+        dx    = 360.0 / gridExtent;
         xphi1 = xphi1 * gmx::c_rad2Deg;
         xphi2 = xphi2 * gmx::c_rad2Deg;
 

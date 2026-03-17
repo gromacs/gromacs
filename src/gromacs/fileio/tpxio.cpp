@@ -2681,34 +2681,32 @@ static void do_symtab(gmx::ISerializer* serializer, t_symtab* symtab)
     }
 }
 
-static void do_cmap(gmx::ISerializer* serializer, gmx_cmap_t* cmap_grid)
+static void do_cmap(gmx::ISerializer* serializer, CmapGrids* cmapGrids)
 {
 
-    int ngrid = cmap_grid->cmapdata.size();
+    int ngrid = cmapGrids->size();
     serializer->doInt(&ngrid);
-    serializer->doInt(&cmap_grid->gridExtent);
-
-    int gs    = cmap_grid->gridExtent;
-    int nelem = gs * gs;
+    int gridExtent = cmapGrids->empty() ? 0 : (*cmapGrids)[0].extent(0);
+    serializer->doInt(&gridExtent);
 
     if (serializer->reading())
     {
-        cmap_grid->cmapdata.resize(ngrid);
+        cmapGrids->resize(ngrid);
 
-        for (int i = 0; i < ngrid; i++)
+        for (auto& grid : *cmapGrids)
         {
-            cmap_grid->cmapdata[i].cmap.resize(4 * nelem);
+            grid.resize(gridExtent, gridExtent);
         }
     }
 
-    for (int i = 0; i < ngrid; i++)
+    for (auto& grid : *cmapGrids)
     {
-        for (int j = 0; j < nelem; j++)
+        for (std::array<real, 4>& gridElement : grid)
         {
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4]);
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4 + 1]);
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4 + 2]);
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4 + 3]);
+            for (real& value : gridElement)
+            {
+                serializer->doReal(&value);
+            }
         }
     }
 }
@@ -2852,12 +2850,11 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
 
     if (file_version >= tpxv_Pre96Version65)
     {
-        do_cmap(serializer, &mtop->ffparams.cmap_grid);
+        do_cmap(serializer, &mtop->ffparams.cmapGrids);
     }
     else
     {
-        mtop->ffparams.cmap_grid.gridExtent = 0;
-        mtop->ffparams.cmap_grid.cmapdata.clear();
+        mtop->ffparams.cmapGrids.clear();
     }
 
     do_groups(serializer, &mtop->groups, &(mtop->symtab));

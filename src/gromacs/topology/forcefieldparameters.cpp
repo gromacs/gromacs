@@ -45,37 +45,43 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/txtdump.h"
 
-static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* cmap_grid, gmx_bool bShowNumbers)
+static void pr_cmap(FILE* fp, int indent, const char* title, const CmapGrids& cmapGrids, gmx_bool bShowNumbers)
 {
-    const real dx = cmap_grid->gridExtent != 0 ? 360.0 / cmap_grid->gridExtent : 0;
-
-    const int nelem = cmap_grid->gridExtent * cmap_grid->gridExtent;
-
-    if (available(fp, cmap_grid, indent, title))
+    if (available(fp, &cmapGrids, indent, title))
     {
         fprintf(fp, "%s\n", title);
 
-        for (gmx::Index i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
+        if (cmapGrids.empty())
+        {
+            return;
+        }
+        const size_t gridExtent = cmapGrids[0].extent(0);
+        const real   dx         = gridExtent != 0 ? 360.0 / gridExtent : 0;
+
+        for (size_t i = 0; i < cmapGrids.size(); ++i)
         {
             real idx = -180.0;
             fprintf(fp, "%8s %8s %8s %8s\n", "V", "dVdx", "dVdy", "d2dV");
 
-            fprintf(fp, "grid[%3zd]={\n", bShowNumbers ? i : -1);
+            fprintf(fp, "grid[%3zu]={\n", bShowNumbers ? i : -1);
 
-            for (int j = 0; j < nelem; j++)
+            auto grid2DView = cmapGrids[i].asConstView();
+            for (gmx::Index r = 0; r != grid2DView.extent(0); ++r)
             {
-                if ((j % cmap_grid->gridExtent) == 0)
-                {
-                    fprintf(fp, "%8.1f\n", idx);
-                    idx += dx;
-                }
+                fprintf(fp, "%8.1f\n", idx);
+                idx += dx;
 
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4]);
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4 + 1]);
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4 + 2]);
-                fprintf(fp, "%8.3f\n", cmap_grid->cmapdata[i].cmap[j * 4 + 3]);
+                const auto& gridRow = grid2DView[r];
+                for (const std::array<real, 4>& gridElement : gridRow)
+                {
+                    for (const real value : gridElement)
+                    {
+                        fprintf(fp, "%8.3f ", value);
+                    }
+                    fputc('\n', fp);
+                }
             }
-            fprintf(fp, "\n");
+            fputc('\n', fp);
         }
     }
 }
@@ -98,5 +104,5 @@ void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* 
     }
     pr_double(fp, indent, "reppow", ffparams->reppow);
     pr_real(fp, indent, "fudgeQQ", ffparams->fudgeQQ);
-    pr_cmap(fp, indent, "cmap", &ffparams->cmap_grid, bShowNumbers);
+    pr_cmap(fp, indent, "cmap", ffparams->cmapGrids, bShowNumbers);
 }

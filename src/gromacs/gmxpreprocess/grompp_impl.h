@@ -39,6 +39,8 @@
 #include <string>
 
 #include "gromacs/gmxpreprocess/notset.h"
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -129,6 +131,17 @@ private:
     bool specbond_;
 };
 
+struct CmapInteractionType
+{
+    static constexpr size_t sc_numAtomTypesPerCmapInteraction = 5;
+    //! Grid data for a CMAP type, for FEP state A or B.
+    gmx::MultiDimArray<std::vector<real>, gmx::dynamicExtents2D> gridA_, gridB_;
+    //! The five atomtypes
+    std::array<int, sc_numAtomTypesPerCmapInteraction> atomTypes_;
+    //! The names of the five residue types
+    std::array<std::string, sc_numAtomTypesPerCmapInteraction> residueTypeNames_;
+};
+
 /*! \libinternal \brief
  * A set of interactions of a given type
  * (found in the enumeration in ifunc.h), complete with
@@ -142,16 +155,8 @@ struct InteractionsOfType
 { // NOLINT (clang-analyzer-optin.performance.Padding)
     //! The different parameters in the system.
     std::vector<InteractionOfType> interactionTypes;
-    //! CMAP grid extent, when used.
-    std::optional<int> cmapGridExtent_;
-    //! Number of CMAP dihedral angle pairs.
-    int numCmaps_ = -1;
-    //! CMAP grid data.
-    std::vector<real> cmap;
-    //! The five atomtypes followed by a number that identifies the type.
-    std::vector<int> cmapAtomTypes;
-    //! The names of the five residue types followed by empty string for alignment with \link cmapAtomTypes \endlink.
-    std::vector<std::string> cmapResidueTypeNames_;
+    //! Data for all CMAP interaction types.
+    std::vector<CmapInteractionType> cmapTypes_;
     //! \brief Processed dihedral types
     //!
     //! When Amber LEaP-like ordering is used, only dihedrals after the first one of the
@@ -175,10 +180,6 @@ struct InteractionsOfType
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }
-    //! Elements in cmap grid data.
-    std::size_t ncmap() const { return cmap.size(); }
-    //! Number of elements in cmapAtomTypes.
-    std::size_t nct() const { return cmapAtomTypes.size(); }
 };
 
 struct t_excls
