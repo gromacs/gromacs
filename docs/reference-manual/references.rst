@@ -2741,13 +2741,35 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
    
 .. raw:: html
 
-   <div id="refKokh20">
+   <div id="refLuedemann2000">
+
+.. _refLuedemann2000:
+
+:sup:`199` S. K. Lüdemann, V. Lounnas, R. C. Wade, "How do substrates enter and products exit the buried active site of cytochrome P450cam? Random expulsion molecular dynamics investigation of ligand access channels and mechanisms", *J Mol Biol.* **303**, 797–811 (2000).
+
+.. raw:: html
+
+   </div>
+   
+.. raw:: html
+
+   <div id="refKokh2018">
+
+.. _refKokh2018:
+
+:sup:`200` D. B. Kokh, M. Amaral, J. Bomke, U. Grädler, D. Musil, H. Buchstaller, M. K. Dreyer, M. Frech, M. Lowinski, F. Vallee, M. Bianciotto, A. Rak, R. C. Wade, "Estimation of Drug-Target Residence Times by τ-Random Acceleration Molecular Dynamics Simulations", *J. Chem. Theory Comput.* **14(7)**, 3859-3869 (2018).
+
+.. raw:: html
+
+   </div>
+   
+.. raw:: html
+
+   <div id="refKokh2020">
 
 .. _refKokh2020:
 
-:sup:`199` D. B. Kokh, B. Doser, S. Richter, F. Ormersbach, X. Cheng, and R.C. Wade, "A Workflow for Exploring Ligand Dissociation from a Macromolecule: Efficient
-    Random Acceleration Molecular Dynamics Simulation and Interaction Fingerprints Analysis of
-    Ligand Trajectories" J. Chem Phys. **158** 125102 (2020).
+:sup:`201` D. B. Kokh, B. Doser, S. Richter, F. Ormersbach, X. Cheng, and R.C. Wade, "A Workflow for Exploring Ligand Dissociation from a Macromolecule: Efficient Random Acceleration Molecular Dynamics Simulation and Interaction Fingerprints Analysis of Ligand Trajectories", *J. Chem Phys.* **158**, 125102 (2020).
 
 .. raw:: html
 

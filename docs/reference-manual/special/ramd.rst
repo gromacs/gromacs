@@ -6,7 +6,7 @@ Random Acceleration Molecular Dynamics (RAMD)
 RAMD is a method to carry out molecular dynamics simulations with an additional randomly oriented
 force applied to a molecule in the system. This is useful to accelerate the unbinding of ligands from
 proteins or to study the egress pathways of ligands from proteins. The method is described in ref. \
-:ref:`199 <refKokh2020>`.
+:ref:`199 <refLuedemann2000>`, :ref:`200 <refKokh2018>`, and :ref:`201 <refKokh2020>`.
 
 
 Using RAMD
