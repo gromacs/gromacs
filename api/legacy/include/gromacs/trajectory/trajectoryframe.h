@@ -39,12 +39,9 @@
 #ifndef GMX_TRAJECTORY_TRX_H
 #define GMX_TRAJECTORY_TRX_H
 
-#include <cstdio>
-
-#include <array>
-
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -89,24 +86,17 @@ void done_frame(t_trxframe* frame);
 namespace gmx
 {
 
-/*!\brief A 3x3 matrix data type useful for simulation boxes
- *
- * \todo Implement a full replacement for C-style real[DIM][DIM] */
-using BoxMatrix = std::array<std::array<real, DIM>, DIM>;
-
 /*! \internal
  * \brief Contains a valid trajectory frame.
  *
  * Valid frames have a step and time, but need not have any particular
  * other fields.
  *
- * \todo Eventually t_trxframe should be replaced by a class such as
- * this. Currently we need to introduce BoxMatrix so that we can have
- * a normal C++ getter that returns the contents of a box matrix,
- * since you cannot use a real[DIM][DIM] as a function return type.
+ * \todo Eventually t_trxframe should be replaced by a class such as this.
  *
  * \todo Consider a std::optional work-alike type for expressing that
- * a field may or may not have content. */
+ * a field may or may not have content.
+ */
 class TrajectoryFrame
 {
 public:
@@ -134,13 +124,13 @@ public:
     //! Return whether the frame has a box.
     bool hasBox() const;
     //! Return a handle to the frame's box, which is all zero if the frame has no box.
-    const BoxMatrix& box() const;
+    const Matrix3x3& box() const;
 
 private:
     //! Handle to trajectory data
     const t_trxframe& frame_;
     //! Box matrix data from the frame_.
-    BoxMatrix box_;
+    Matrix3x3 box_;
 };
 
 } // namespace gmx

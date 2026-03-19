@@ -36,11 +36,9 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 
 #include <cinttypes>
-#include <cstdint>
 #include <cstdio>
 
 #include <algorithm>
-#include <array>
 #include <string>
 
 #include "gromacs/topology/atoms.h"
@@ -115,7 +113,7 @@ void done_frame(t_trxframe* frame)
 namespace gmx
 {
 
-TrajectoryFrame::TrajectoryFrame(const t_trxframe& frame) : frame_(frame), box_{ { { { 0 } } } }
+TrajectoryFrame::TrajectoryFrame(const t_trxframe& frame) : frame_(frame)
 {
     if (!frame.bStep)
     {
@@ -127,13 +125,7 @@ TrajectoryFrame::TrajectoryFrame(const t_trxframe& frame) : frame_(frame), box_{
     }
     if (frame.bBox)
     {
-        for (int d = 0; d < DIM; ++d)
-        {
-            for (int dd = 0; dd < DIM; ++dd)
-            {
-                box_[d][dd] = frame.box[d][dd];
-            }
-        }
+        box_ = createMatrix3x3FromLegacyMatrix(frame.box);
     }
 }
 
@@ -163,10 +155,7 @@ ArrayRef<const RVec> TrajectoryFrame::x() const
     {
         return arrayRefFromArray(reinterpret_cast<RVec*>(frame_.x), frame_.natoms);
     }
-    else
-    {
-        return {};
-    }
+    return {};
 }
 
 ArrayRef<const RVec> TrajectoryFrame::v() const
@@ -175,10 +164,7 @@ ArrayRef<const RVec> TrajectoryFrame::v() const
     {
         return arrayRefFromArray(reinterpret_cast<RVec*>(frame_.v), frame_.natoms);
     }
-    else
-    {
-        return {};
-    }
+    return {};
 }
 
 ArrayRef<const RVec> TrajectoryFrame::f() const
@@ -187,10 +173,7 @@ ArrayRef<const RVec> TrajectoryFrame::f() const
     {
         return arrayRefFromArray(reinterpret_cast<RVec*>(frame_.f), frame_.natoms);
     }
-    else
-    {
-        return {};
-    }
+    return {};
 }
 
 bool TrajectoryFrame::hasBox() const
@@ -198,7 +181,7 @@ bool TrajectoryFrame::hasBox() const
     return frame_.bBox;
 }
 
-const BoxMatrix& TrajectoryFrame::box() const
+const Matrix3x3& TrajectoryFrame::box() const
 {
     return box_;
 }
