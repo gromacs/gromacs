@@ -249,7 +249,7 @@ void TorchModel::prepareAtomPositions(ArrayRef<RVec> positions)
     inputs_.push_back(posTensor);
 }
 
-void TorchModel::prepareAtomNumbers(ArrayRef<int> atomTypes)
+void TorchModel::prepareAtomNumbers(ArrayRef<int32_t> atomTypes)
 {
     const int     N = atomTypes.size();
     torch::Tensor typesTensor =
@@ -310,7 +310,7 @@ void TorchModel::preparePbcType(PbcType& pbcType)
     inputs_.push_back(pbcTensor);
 }
 
-void TorchModel::prepareAtomPairs(ArrayRef<int> atomPairs)
+void TorchModel::prepareAtomPairs(ArrayRef<int32_t> atomPairs)
 {
     const int     numPairs    = atomPairs.size() / 2;
     torch::Tensor pairsTensor = torch::from_blob(
@@ -338,12 +338,12 @@ void TorchModel::prepareNNPCharge(real charge)
 
 void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
                                ArrayRef<RVec>                   forces,
-                               ArrayRef<const int>              indexLookup,
-                               ArrayRef<const int>              mmIndices,
+                               ArrayRef<const int32_t>          indexLookup,
+                               ArrayRef<const int32_t>          mmIndices,
                                ArrayRef<const std::string>      inputs,
                                ArrayRef<RVec>                   positions,
-                               ArrayRef<int>                    atomNumbers,
-                               ArrayRef<int>                    atomPairs,
+                               ArrayRef<int32_t>                atomNumbers,
+                               ArrayRef<int32_t>                atomPairs,
                                ArrayRef<RVec>                   pairShifts,
                                ArrayRef<RVec>                   positionsMM,
                                ArrayRef<real>                   chargesMM,

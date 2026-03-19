@@ -584,8 +584,8 @@ void NNPotOptions::checkNNPotModel()
 
     // check if model accepts inputs
     // Prepare somewhat realistic dummy input
-    const size_t     numNNPAtoms = params_.nnpIndices_.size();
-    std::vector<int> indices(numNNPAtoms);
+    const size_t         numNNPAtoms = params_.nnpIndices_.size();
+    std::vector<int32_t> indices(numNNPAtoms);
     std::iota(indices.begin(), indices.end(), 0);
     std::vector<RVec> positions(numNNPAtoms);
     // set positions to arbitrary values to avoid issues with certain models
@@ -597,9 +597,9 @@ void NNPotOptions::checkNNPotModel()
             positions[i][j] = 0.01 * static_cast<real>(i + 1) * static_cast<real>(j + 1);
         }
     }
-    std::vector<int> atomNumbers(
+    std::vector<int32_t> atomNumbers(
             numNNPAtoms, linkAtomNumber); // to check that the model can accept the link atom type
-    std::vector<int> atomPairs;
+    std::vector<int32_t> atomPairs;
     for (size_t i = 0; i < numNNPAtoms - 1; i++)
     {
         for (size_t j = i + 1; j < numNNPAtoms; j++)
@@ -609,7 +609,7 @@ void NNPotOptions::checkNNPotModel()
     }
     std::vector<RVec>             pairShifts(atomPairs.size() / 2, RVec({ 0.0, 0.0, 0.0 }));
     std::vector<real>             mmCharges(1, 1.0);
-    std::vector<int>              mmIndices(1, 1);
+    std::vector<int32_t>          mmIndices(1, 1);
     matrix                        box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType                       pbc = PbcType();
     std::vector<LinkFrontierAtom> link;
