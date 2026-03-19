@@ -39,11 +39,12 @@
  * \author Alexey Shvetsov <alexxyum@gmail.com>
  * \author Anatolii Titov <Wapuk-cobaka@yandex.ru>
  * \author Berk Hess <hess@kth.se>
- * \ingroup module_math
+ * \inlibraryapi
+ * \ingroup module_utility
  */
 
-#ifndef GMX_MATH_MATRIX_H_
-#define GMX_MATH_MATRIX_H_
+#ifndef GMX_UTILITY_MATRIX_H_
+#define GMX_UTILITY_MATRIX_H_
 
 #include <array>
 
@@ -61,16 +62,15 @@ namespace gmx
 template<class ElementType>
 class BasicMatrix3x3
 {
-private:
     //! array size
-    static const size_t matrixSize_ = DIM * DIM;
+    static constexpr size_t sc_matrixSize = DIM * DIM;
 
 public:
     //! Default constructor
-    constexpr BasicMatrix3x3() noexcept : storage_{ 0, 0, 0, 0, 0, 0, 0, 0, 0 } {}
+    constexpr BasicMatrix3x3() noexcept = default;
 
     //! Constructor from a 9 element std::array
-    constexpr BasicMatrix3x3(const std::array<ElementType, matrixSize_>& array) noexcept :
+    constexpr BasicMatrix3x3(const std::array<ElementType, sc_matrixSize>& array) noexcept :
         storage_{ array }
     {
     }
@@ -91,12 +91,13 @@ public:
 
     //! Proxy class for row-wise access via a[i][j] syntax
     //! * \tparam MatrixType type of matrix (const or non-const)
+    //! * \tparam LocalElementType type of local matrix element
     template<class MatrixType, class LocalElementType>
     class RowProxy
     {
     public:
         //! Construct proxy for given row of matrix
-        RowProxy(MatrixType& mat, size_t row) : mat_(mat), row_(row) {}
+        RowProxy(MatrixType& mat, const size_t row) : mat_(mat), row_(row) {}
 
         //! Non-const element access: returns reference to element at (row, col)
         LocalElementType& operator[](const size_t col) { return mat_(row_, col); }
@@ -279,18 +280,18 @@ public:
     //! Returns a const pointer to start of the storage
     const ElementType* data() const { return storage_; }
 
-    //! Swaps two matrixies
+    //! Swaps two matrices
     void swap(BasicMatrix3x3& other) noexcept { std::swap(storage_, other.storage_); }
 
     //! Sets all elements to 0
     void clear() { std::fill(storage_.begin(), storage_.end(), 0); }
 
 private:
-    //! local "multi dim array" 3x3
-    std::array<ElementType, matrixSize_> storage_;
+    //! local linear storage for  3x3 matrix initialized with zeros
+    std::array<ElementType, sc_matrixSize> storage_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 };
 
-//! Stand alone swap function based on https://en.cppreference.com/w/cpp/named_req/Swappable
+//! Stand-alone swap function based on https://en.cppreference.com/w/cpp/named_req/Swappable
 template<class ElementType>
 void swap(BasicMatrix3x3<ElementType>& mat1, BasicMatrix3x3<ElementType>& mat2) noexcept
 {
