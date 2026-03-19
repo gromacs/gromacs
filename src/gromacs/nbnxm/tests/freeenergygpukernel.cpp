@@ -69,7 +69,6 @@
 #    include "gromacs/gpu_utils/gpu_utils.h"
 #    include "gromacs/gpu_utils/gputraits.h"
 #    include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#    include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #    include "gromacs/hardware/device_information.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/math/arrayrefwithpadding.h"
@@ -184,6 +183,7 @@ public:
         vdwEwaldCoeff_         = tmp.vdw.ewaldCoeff;
         tmp.coulomb.type       = coulType;
         tmp.vdw.type           = vdwType;
+        tmp.vdw.modifier       = vdwMod;
         tmp.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
         tmp.vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
@@ -394,9 +394,10 @@ public:
     AtomData atoms;
     //! forcerec helper
     ForcerecHelper frHelper;
+    //! LJ combination rule (for Cut VdW; determines Cut vs CutCombGeom vs CutCombLB)
+    LJCombinationRule ljCombinationRule = LJCombinationRule::None;
     //! Description for test naming
     std::string description;
-
 
     //! Constructor
     ListInput() {}
@@ -417,14 +418,20 @@ public:
      * \param[in] coulType coulomb type
      * \param[in] vdwType  vdw type
      * \param[in] vdwMod   vdw potential modifier
+     * \param[in] ljComb   LJ combination rule (for VanDerWaalsType::Cut with None/PotShift)
      */
-    ListInput setInteraction(CoulombInteractionType coulType, VanDerWaalsType vdwType, InteractionModifiers vdwMod)
+    ListInput setInteraction(CoulombInteractionType coulType,
+                             VanDerWaalsType        vdwType,
+                             InteractionModifiers   vdwMod,
+                             LJCombinationRule      ljComb = LJCombinationRule::None)
     {
+        ljCombinationRule = ljComb;
         frHelper.initForcerec(atoms.idef, coulType, vdwType, vdwMod);
-        description = formatString("coul_%s_vdw_%s_vdwmod_%s",
+        description = formatString("coul_%s_vdw_%s_vdwmod_%s_ljrule_%s",
                                    enumValueToString(coulType),
                                    enumValueToString(vdwType),
-                                   enumValueToString(vdwMod));
+                                   enumValueToString(vdwMod),
+                                   enumValueToString(ljComb));
         return *this;
     }
 };
@@ -450,6 +457,7 @@ void setGpuNbParams(NBParamGpu*                nbp,
                     const t_forcerec&          fr,
                     const interaction_const_t& ic,
                     const std::vector<real>&   lambdas,
+                    LJCombinationRule          ljCombinationRule,
                     const DeviceContext&       deviceContext,
                     const DeviceStream&        localStream)
 {
@@ -466,50 +474,115 @@ void setGpuNbParams(NBParamGpu*                nbp,
     nbp->ewald_beta    = ic.coulomb.ewaldCoeff;
 
 
-    VdwType vdwType = ic.vdw.modifier == InteractionModifiers::PotSwitch ? VdwType::PSwitch : VdwType::Cut;
-    nbp->vdwType  = vdwType;
-    nbp->elecType = static_cast<ElecType>(ic.coulomb.type);
+    // Map VanDerWaalsType, modifier, and LJ combination rule to GPU VdwType
+    VdwType vdwType = VdwType::Cut;
+    if (ic.vdw.type == VanDerWaalsType::Pme)
+    {
+        vdwType = VdwType::EwaldGeom;
+    }
+    else if (ic.vdw.modifier == InteractionModifiers::PotSwitch)
+    {
+        vdwType = VdwType::PSwitch;
+    }
+    else if (ic.vdw.modifier == InteractionModifiers::ForceSwitch)
+    {
+        vdwType = VdwType::FSwitch;
+    }
+    else if (ic.vdw.type == VanDerWaalsType::Cut
+             && (ic.vdw.modifier == InteractionModifiers::None
+                 || ic.vdw.modifier == InteractionModifiers::PotShift))
+    {
+        switch (ljCombinationRule)
+        {
+            case LJCombinationRule::Geometric: vdwType = VdwType::CutCombGeom; break;
+            case LJCombinationRule::LorentzBerthelot: vdwType = VdwType::CutCombLB; break;
+            default: vdwType = VdwType::Cut; break;
+        }
+    }
+    nbp->vdwType = vdwType;
+    // Map Coulomb type to GPU ElecType (Cut and RF match by enum value; Pme/Ewald -> EwaldTab)
+    if (ic.coulomb.type == CoulombInteractionType::RF)
+    {
+        nbp->elecType = ElecType::RF;
+    }
+    else if (usingPmeOrEwald(ic.coulomb.type))
+    {
+        nbp->elecType = ElecType::EwaldTab;
+    }
+    else
+    {
+        nbp->elecType = static_cast<ElecType>(ic.coulomb.type);
+    }
 
     nbp->dispersion_shift = ic.vdw.dispersionShift;
     nbp->repulsion_shift  = ic.vdw.repulsionShift;
     nbp->rvdw_switch      = ic.vdw.switchDistance;
     nbp->vdw_switch       = ic.vdw.switchConstants;
 
-    if (nbp->vdwType == VdwType::PSwitch)
+    if (nbp->vdwType == VdwType::PSwitch || nbp->vdwType == VdwType::FSwitch)
     {
         potential_switch_constants(ic.vdw.switchDistance, ic.vdw.cutoff, &(nbp->vdw_switch));
     }
 
-    static_assert(sizeof(decltype(nbp->nbfp)) == 2 * sizeof(decltype(*fr.nbfp.data())),
-                  "Mismatch in the size of host / device data types");
+    // Upload nbfp only when not using combination rules (Cut uses full matrix; CutCombGeom/CutCombLB use ljComb4)
+    if (!useLjCombRule(nbp->vdwType))
+    {
+        static_assert(sizeof(decltype(nbp->nbfp)) == 2 * sizeof(decltype(*fr.nbfp.data())),
+                      "Mismatch in the size of host / device data types");
 
-    allocateDeviceBuffer(&nbp->nbfp, c_numAtomTypes * c_numAtomTypes, deviceContext);
-    copyToDeviceBuffer(&nbp->nbfp,
-                       reinterpret_cast<const Float2*>(fr.nbfp.data()),
-                       0,
-                       c_numAtomTypes * c_numAtomTypes,
-                       localStream,
-                       GpuApiCallBehavior::Sync,
-                       nullptr);
+        allocateDeviceBuffer(&nbp->nbfp, c_numAtomTypes * c_numAtomTypes, deviceContext);
+        copyToDeviceBuffer(&nbp->nbfp,
+                           reinterpret_cast<const Float2*>(fr.nbfp.data()),
+                           0,
+                           c_numAtomTypes * c_numAtomTypes,
+                           localStream,
+                           GpuApiCallBehavior::Sync,
+                           nullptr);
 
 #    if GMX_GPU_CUDA
-    if (!c_disableCudaTextures)
-    {
-        cudaResourceDesc rd;
-        cudaTextureDesc  td;
+        if (!c_disableCudaTextures)
+        {
+            cudaResourceDesc rd;
+            cudaTextureDesc  td;
 
-        memset(&rd, 0, sizeof(rd));
-        rd.resType                = cudaResourceTypeLinear;
-        rd.res.linear.devPtr      = nbp->nbfp;
-        rd.res.linear.desc        = cudaCreateChannelDesc<Float2>();
-        rd.res.linear.sizeInBytes = c_numAtomTypes * sizeof(Float2);
+            memset(&rd, 0, sizeof(rd));
+            rd.resType                = cudaResourceTypeLinear;
+            rd.res.linear.devPtr      = nbp->nbfp;
+            rd.res.linear.desc        = cudaCreateChannelDesc<Float2>();
+            rd.res.linear.sizeInBytes = c_numAtomTypes * sizeof(Float2);
 
-        memset(&td, 0, sizeof(td));
-        td.readMode      = cudaReadModeElementType;
-        cudaError_t stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, nullptr);
-        gmx::checkDeviceError(stat, "Binding of the texture object failed.");
-    }
+            memset(&td, 0, sizeof(td));
+            td.readMode      = cudaReadModeElementType;
+            cudaError_t stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, nullptr);
+            gmx::checkDeviceError(stat, "Binding of the texture object failed.");
+        }
 #    endif
+    }
+
+    // LJ-PME: build and upload nbfp_comb for EwaldGeom combination rule
+    if (ic.vdw.type == VanDerWaalsType::Pme)
+    {
+        const int           numTypes = c_numAtomTypes;
+        std::vector<Float2> nbfp_comb_h(numTypes);
+        const real*         nbfp = fr.nbfp.data();
+        for (int i = 0; i < numTypes; i++)
+        {
+            const real c6  = nbfp[(i * numTypes + i) * 2] / 6.0;
+            const real c12 = nbfp[(i * numTypes + i) * 2 + 1] / 12.0;
+            if (c6 > 0 && c12 > 0)
+            {
+                nbfp_comb_h[i].x = static_cast<float>(gmx::sixthroot(c12 / c6));
+                nbfp_comb_h[i].y = static_cast<float>(0.25 * c6 * c6 / c12);
+            }
+            else
+            {
+                nbfp_comb_h[i].x = 0.0F;
+                nbfp_comb_h[i].y = 0.0F;
+            }
+        }
+        initParamLookupTable(
+                &nbp->nbfp_comb, &nbp->nbfp_comb_texobj, nbfp_comb_h.data(), numTypes, deviceContext, localStream);
+    }
 
     // FEP params
     nbp->bFepGpuNonBonded       = true;
@@ -521,6 +594,19 @@ void setGpuNbParams(NBParamGpu*                nbp,
     nbp->alphaVdw   = ic.softCoreParameters->alphaVdw;
     nbp->lambdaCoul = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
     nbp->lambdaVdw  = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
+
+    // Upload Coulomb Ewald correction table when using tabulated Ewald
+    if (nbp->elecType == ElecType::EwaldTab || nbp->elecType == ElecType::EwaldTabTwin)
+    {
+        GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+        nbp->coulomb_tab_scale = ic.coulombEwaldTables->scale;
+        initParamLookupTable(&nbp->coulomb_tab,
+                             &nbp->coulomb_tab_texobj,
+                             ic.coulombEwaldTables->tableF.data(),
+                             ic.coulombEwaldTables->tableF.size(),
+                             deviceContext,
+                             localStream);
+    }
 }
 
 // Brief function to copy fep pair list to GPU
@@ -603,7 +689,8 @@ NbnxmGpu* gpu_fep_init(const DeviceStreamManager& deviceStreamManager,
                        const AtomPairlist         nblist,
                        const PaddedVector<RVec>&  x,
                        const t_forcerec&          fr,
-                       const std::vector<real>&   lambdas)
+                       const std::vector<real>&   lambdas,
+                       LJCombinationRule          ljCombinationRule)
 {
     auto* nb           = new NbnxmGpu();
     nb->deviceContext_ = &deviceStreamManager.context();
@@ -704,7 +791,62 @@ NbnxmGpu* gpu_fep_init(const DeviceStreamManager& deviceStreamManager,
                        nullptr);
 
     // set up nb fep parameters
-    setGpuNbParams(nb->nbparam, fr, *fr.ic, lambdas, *nb->deviceContext_, localStream);
+    setGpuNbParams(nb->nbparam, fr, *fr.ic, lambdas, ljCombinationRule, *nb->deviceContext_, localStream);
+
+    // When using LJ combination rules, upload ljComb4 (per-atom A/B combination params) for the FEP kernel
+    if (useLjCombRule(nb->nbparam->vdwType))
+    {
+        const int   numTypes = c_numAtomTypes;
+        const real* nbfp     = fr.nbfp.data();
+        // Per-type combination params: for Geometric (sqrt(c6), sqrt(c12)); for LB (sigma/2, sqrt(c6²/c12))
+        std::vector<Float2> typeCombA(numTypes), typeCombB(numTypes);
+        for (int i = 0; i < numTypes; i++)
+        {
+            const real c6  = nbfp[(i * numTypes + i) * 2] / 6.0;
+            const real c12 = nbfp[(i * numTypes + i) * 2 + 1] / 12.0;
+            if (nb->nbparam->vdwType == VdwType::CutCombGeom)
+            {
+                if (c6 > 0 && c12 > 0)
+                {
+                    typeCombA[i].x = static_cast<float>(std::sqrt(c6));
+                    typeCombA[i].y = static_cast<float>(std::sqrt(c12));
+                }
+                else
+                {
+                    typeCombA[i].x = typeCombA[i].y = 0.0F;
+                }
+                typeCombB[i] = typeCombA[i];
+            }
+            else
+            {
+                GMX_ASSERT(nb->nbparam->vdwType == VdwType::CutCombLB,
+                           "Only CutCombGeom and CutCombLB use ljComb4");
+                if (c6 > 0 && c12 > 0)
+                {
+                    typeCombA[i].x = static_cast<float>(0.5 * gmx::sixthroot(c12 / c6));
+                    typeCombA[i].y = static_cast<float>(std::sqrt(c6 * c6 / c12));
+                }
+                else
+                {
+                    typeCombA[i].x = typeCombA[i].y = 0.0F;
+                }
+                typeCombB[i] = typeCombA[i];
+            }
+        }
+        HostVector<Float4> ljComb4_h(c_numAtoms, { PinningPolicy::PinnedIfSupported });
+        for (int k = 0; k < c_numAtoms; k++)
+        {
+            const int tA = atoms.typeA[k], tB = atoms.typeB[k];
+            ljComb4_h[k].x = typeCombA[tA].x;
+            ljComb4_h[k].y = typeCombA[tA].y;
+            ljComb4_h[k].z = typeCombB[tB].x;
+            ljComb4_h[k].w = typeCombB[tB].y;
+        }
+        allocateDeviceBuffer(&nb->atdat->ljComb4, c_numAtoms, *nb->deviceContext_);
+        copyToDeviceBuffer(
+                &nb->atdat->ljComb4, ljComb4_h.data(), 0, c_numAtoms, localStream, GpuApiCallBehavior::Sync, nullptr);
+    }
+
     // construct the gpu fep list
     constructFeppairlist(nb->feplist[0].get(), &nblist, *nb->deviceContext_, localStream);
 
@@ -857,7 +999,8 @@ protected:
             auto               deviceStreamManager = std::make_shared<DeviceStreamManager>(
                     testDevice->deviceInfo(), simulationWorkload, false);
             // Construct NbnxmGpu object nb
-            NbnxmGpu* nb = gpu_fep_init(*deviceStreamManager, input_.atoms, nbl, x_, fr, lambdas);
+            NbnxmGpu* nb = gpu_fep_init(
+                    *deviceStreamManager, input_.atoms, nbl, x_, fr, lambdas, input_.ljCombinationRule);
 
             // Run fep gpu kernel
             gpu_launch_free_energy_kernel(nb, simulationWorkload, stepWork, InteractionLocality::Local);
@@ -877,7 +1020,16 @@ protected:
 
             freeDeviceBuffer(&nb->atdat->q4);
             freeDeviceBuffer(&nb->atdat->atomTypes4);
-            freeDeviceBuffer(&nb->nbparam->nbfp);
+            if (useLjCombRule(nb->nbparam->vdwType))
+            {
+                freeDeviceBuffer(&nb->atdat->ljComb4);
+            }
+            destroyParamLookupTable(&nb->nbparam->coulomb_tab, &nb->nbparam->coulomb_tab_texobj);
+            destroyParamLookupTable(&nb->nbparam->nbfp_comb, &nb->nbparam->nbfp_comb_texobj);
+            if (!useLjCombRule(nb->nbparam->vdwType))
+            {
+                freeDeviceBuffer(&nb->nbparam->nbfp);
+            }
 
             delete nb->atdat;
             delete nb->nbparam;
@@ -893,10 +1045,102 @@ TEST_P(NonbondedFepGpuTest, testGpuKernel)
     testGpuKernel();
 }
 
-//! configurations to test
+//! configurations to test (each (elec, vdw, modifier) exercises a different GPU kernel flavor)
 std::vector<ListInput> c_interaction = {
     { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Cut, VanDerWaalsType::Cut, InteractionModifiers::None) },
-    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Cut, VanDerWaalsType::Cut, InteractionModifiers::PotSwitch) }
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Cut,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::None,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Cut,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::None,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Cut, VanDerWaalsType::Cut, InteractionModifiers::PotShift) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Cut,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::PotShift,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Cut,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::PotShift,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Cut, VanDerWaalsType::Cut, InteractionModifiers::ForceSwitch) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Cut,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::ForceSwitch,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Cut,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::ForceSwitch,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::RF, VanDerWaalsType::Cut, InteractionModifiers::None) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::RF,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::None,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::RF,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::None,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::RF, VanDerWaalsType::Cut, InteractionModifiers::PotShift) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::RF,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::PotShift,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::RF,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::PotShift,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::RF, VanDerWaalsType::Cut, InteractionModifiers::ForceSwitch) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::RF,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::ForceSwitch,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::RF,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::ForceSwitch,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Pme, VanDerWaalsType::Cut, InteractionModifiers::None) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Pme,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::None,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Pme,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::None,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Pme, VanDerWaalsType::Cut, InteractionModifiers::PotShift) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Pme,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::PotShift,
+                              LJCombinationRule::Geometric) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Pme,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::PotShift,
+                              LJCombinationRule::LorentzBerthelot) },
+    { ListInput(1e-6, 1e-8).setInteraction(CoulombInteractionType::Pme, VanDerWaalsType::Cut, InteractionModifiers::ForceSwitch) },
+    { ListInput(1e-6, 1e-8)
+              .setInteraction(CoulombInteractionType::Pme,
+                              VanDerWaalsType::Cut,
+                              InteractionModifiers::ForceSwitch,
+                              LJCombinationRule::Geometric) }
 };
 
 //! test parameters
