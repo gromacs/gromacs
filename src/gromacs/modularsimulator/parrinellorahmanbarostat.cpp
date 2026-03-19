@@ -201,7 +201,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
 
 void ParrinelloRahmanBarostat::elementSetup()
 {
-    if (!propagatorCallback_ || scalingTensor_ == nullptr || scalingTensor_->asConstView().rank() == 0)
+    if (!propagatorCallback_ || scalingTensor_ == nullptr)
     {
         throw MissingElementConnectionError(
                 "Parrinello-Rahman barostat was not connected to a propagator.\n"

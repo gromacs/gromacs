@@ -37,6 +37,8 @@
  *
  * \author Christian Blau <cblau@gwdg.de>
  * \author Alexey Shvetsov <alexxyum@gmail.com>
+ * \author Anatolii Titov <Wapuk-cobaka@yandex.ru>
+ * \author Berk Hess <hess@kth.se>
  * \ingroup module_math
  */
 
@@ -45,8 +47,7 @@
 
 #include <array>
 
-#include "gromacs/math/multidimarray.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
@@ -58,111 +59,96 @@ namespace gmx
  * \tparam ElementType type of element to be stored in matrix
  */
 template<class ElementType>
-class BasicMatrix3x3 : public MultiDimArray<std::array<ElementType, DIM * DIM>, extents<DIM, DIM>>
+class BasicMatrix3x3
 {
+private:
+    //! array size
+    static const size_t matrixSize_ = DIM * DIM;
+
 public:
     //! Default constructor
-    BasicMatrix3x3() : MultiDimArray<std::array<ElementType, DIM * DIM>, extents<DIM, DIM>>({}) {}
+    constexpr BasicMatrix3x3() noexcept : storage_{ 0, 0, 0, 0, 0, 0, 0, 0, 0 } {}
 
-    //! Propagate constructor from Base
-    template<typename... Args>
-    BasicMatrix3x3(Args&&... args) :
-        MultiDimArray<std::array<ElementType, DIM * DIM>, extents<DIM, DIM>>(std::forward<Args>(args)...)
+    //! Constructor for a matrix with all entries equal
+    constexpr BasicMatrix3x3(const ElementType& initValue) noexcept :
+        storage_{ initValue, initValue, initValue, initValue, initValue,
+                  initValue, initValue, initValue, initValue }
     {
     }
 
-    //! Proxy class for row-wise access via a[i][j] and a[i] syntax
+    //! Constructor from a 9 element std::array
+    constexpr BasicMatrix3x3(const std::array<ElementType, matrixSize_>& array) noexcept :
+        storage_{ array }
+    {
+    }
+
+    //! Old style access operator()
+    //[[deprecated("Use [][] instead, operator () will be deleted at some point")]]
+    ElementType& operator()(const size_t row, const size_t col)
+    {
+        return storage_[(row * DIM) + col];
+    }
+
+    //! Old style access operator()
+    //[[deprecated("Use [][] instead, operator () will be deleted at some point")]]
+    const ElementType& operator()(const size_t row, const size_t col) const
+    {
+        return storage_[(row * DIM) + col];
+    }
+
+    //! Proxy class for row-wise access via a[i][j] syntax
+    //! * \tparam MatrixType type of matrix (const or non-const)
+    template<class MatrixType, class LocalElementType>
     class RowProxy
     {
-        BasicMatrix3x3& mat_;
-        size_t          row_;
-
     public:
         //! Construct proxy for given row of matrix
-        RowProxy(BasicMatrix3x3& mat, size_t row) : mat_(mat), row_(row) {}
+        RowProxy(MatrixType& mat, size_t row) : mat_(mat), row_(row) {}
 
         //! Non-const element access: returns reference to element at (row, col)
-        ElementType& operator[](size_t col) { return mat_(row_, col); }
+        LocalElementType& operator[](const size_t col) { return mat_(row_, col); }
 
         //! Const element access: returns reference to element at (row, col)
-        const ElementType& operator[](size_t col) const { return mat_(row_, col); }
+        const LocalElementType& operator[](const size_t col) const { return mat_(row_, col); }
 
-        //! Implicit copy as const BasicVector for convenient row-wise read access
-        operator const BasicVector<ElementType>() const
+        //! Implicit conversion to BasicVector for convenient row access
+        operator BasicVector<ElementType>()
         {
-            return BasicVector<ElementType>{ (*this)[0], (*this)[1], (*this)[2] };
+            return BasicVector<ElementType>{ mat_(row_, XX), mat_(row_, YY), mat_(row_, ZZ) };
         }
-    };
 
-    //! Proxy class for row-wise const access via a[i][j] and a[i] syntax
-    class ConstRowProxy
-    {
-        const BasicMatrix3x3& mat_;
-        size_t                row_;
-
-    public:
-        //! Construct proxy for given row of matrix
-        ConstRowProxy(const BasicMatrix3x3& mat, const size_t row) : mat_(mat), row_(row) {}
-
-        //! Const element access: returns reference to element at (row, col)
-        const ElementType& operator[](size_t col) const { return mat_(row_, col); }
-
-        //! Implicit copy as const BasicVector for convenient row-wise read access
-        operator const BasicVector<ElementType>() const
+        //! Implicit conversion to BasicVector for convenient row access
+        operator BasicVector<ElementType>() const
         {
-            return BasicVector<ElementType>{ (*this)[0], (*this)[1], (*this)[2] };
+            return BasicVector<ElementType>{ mat_(row_, XX), mat_(row_, YY), mat_(row_, ZZ) };
         }
+
+    private:
+        //! stored reference to matrix
+        MatrixType& mat_;
+        //! store row number
+        size_t row_;
     };
 
     //! Row access: returns proxy for the given row, enabling a[i][j] syntax
-    RowProxy operator[](size_t row) { return RowProxy(*this, row); }
-
-    //! Const row access: returns const proxy for the given row, enabling a[i][j] syntax (const matrix)
-    ConstRowProxy operator[](size_t row) const { return ConstRowProxy(*this, row); }
-
-    //! Constructor for list initializer (either 1 or 9 elements in row major ordering)
-    BasicMatrix3x3(std::initializer_list<ElementType> initList)
+    RowProxy<BasicMatrix3x3, ElementType> operator[](const size_t row)
     {
-        if ((initList.size() != DIM * DIM) && (initList.size() != 1))
-        {
-            throw std::invalid_argument(
-                    "Initializer list must contain exactly either 1 or 9 elements");
-        }
-        if (initList.size() != 1)
-        {
-            auto it = initList.begin();
-            for (size_t i = 0; i < DIM; ++i)
-            {
-                for (size_t j = 0; j < DIM; ++j)
-                {
-                    (*this)(i, j) = *it++;
-                }
-            }
-        }
-        else
-        {
-            auto initValue = *initList.begin();
-            for (size_t i = 0; i < DIM; ++i)
-            {
-                for (size_t j = 0; j < DIM; ++j)
-                {
-                    (*this)(i, j) = initValue;
-                }
-            }
-        }
+        return RowProxy<BasicMatrix3x3, ElementType>(*this, row);
     }
 
+    //! const Row access: returns a const proxy for the given row, enabling a[i][j] syntax
+    RowProxy<const BasicMatrix3x3, const ElementType> operator[](const size_t row) const
+    {
+        return RowProxy<const BasicMatrix3x3, const ElementType>(*this, row);
+    }
 
     //! Return result of adding \c other matrix to this one
     BasicMatrix3x3 operator+(const BasicMatrix3x3& other) const
     {
         BasicMatrix3x3<ElementType> result;
-        for (int i = 0; i < DIM; i++)
+        for (size_t i = 0; i < storage_.size(); ++i)
         {
-            for (int j = 0; j < DIM; j++)
-            {
-                result(i, j) = (*this)(i, j) + other(i, j);
-            }
+            result.storage_[i] = storage_[i] + other.storage_[i];
         }
         return result;
     }
@@ -171,12 +157,9 @@ public:
     BasicMatrix3x3 operator-(const BasicMatrix3x3& other) const
     {
         BasicMatrix3x3<ElementType> result;
-        for (int i = 0; i < DIM; i++)
+        for (size_t i = 0; i < storage_.size(); ++i)
         {
-            for (int j = 0; j < DIM; j++)
-            {
-                result(i, j) = (*this)(i, j) - other(i, j);
-            }
+            result.storage_[i] = storage_[i] - other.storage_[i];
         }
         return result;
     }
@@ -185,29 +168,38 @@ public:
     BasicMatrix3x3 operator-() const
     {
         BasicMatrix3x3<ElementType> result;
-        for (int i = 0; i < DIM; i++)
+        for (size_t i = 0; i < storage_.size(); ++i)
         {
-            for (int j = 0; j < DIM; j++)
-            {
-                result(i, j) = -(*this)(i, j);
-            }
+            result.storage_[i] = -storage_[i];
         }
         return result;
     }
+
+    //! Return == result, true if all element pairs are equal
+    bool operator==(const BasicMatrix3x3& other) const { return storage_ == other.storage_; }
 
     //! Return result of multiplication (inner product) of this matrix by \c other matrix
     BasicMatrix3x3 operator*(const BasicMatrix3x3& other) const
     {
         BasicMatrix3x3<ElementType> result(
-                { (*this)(0, 0) * other(0, 0) + (*this)(0, 1) * other(1, 0) + (*this)(0, 2) * other(2, 0),
-                  (*this)(0, 0) * other(0, 1) + (*this)(0, 1) * other(1, 1) + (*this)(0, 2) * other(2, 1),
-                  (*this)(0, 0) * other(0, 2) + (*this)(0, 1) * other(1, 2) + (*this)(0, 2) * other(2, 2),
-                  (*this)(1, 0) * other(0, 0) + (*this)(1, 1) * other(1, 0) + (*this)(1, 2) * other(2, 0),
-                  (*this)(1, 0) * other(0, 1) + (*this)(1, 1) * other(1, 1) + (*this)(1, 2) * other(2, 1),
-                  (*this)(1, 0) * other(0, 2) + (*this)(1, 1) * other(1, 2) + (*this)(1, 2) * other(2, 2),
-                  (*this)(2, 0) * other(0, 0) + (*this)(2, 1) * other(1, 0) + (*this)(2, 2) * other(2, 0),
-                  (*this)(2, 0) * other(0, 1) + (*this)(2, 1) * other(1, 1) + (*this)(2, 2) * other(2, 1),
-                  (*this)(2, 0) * other(0, 2) + (*this)(2, 1) * other(1, 2) + (*this)(2, 2) * other(2, 2) });
+                { (*this)(XX, XX) * other(XX, XX) + (*this)(XX, YY) * other(YY, XX)
+                          + (*this)(XX, ZZ) * other(ZZ, XX),
+                  (*this)(XX, XX) * other(XX, YY) + (*this)(XX, YY) * other(YY, YY)
+                          + (*this)(XX, ZZ) * other(ZZ, YY),
+                  (*this)(XX, XX) * other(XX, ZZ) + (*this)(XX, YY) * other(YY, ZZ)
+                          + (*this)(XX, ZZ) * other(ZZ, ZZ),
+                  (*this)(YY, XX) * other(XX, XX) + (*this)(YY, YY) * other(YY, XX)
+                          + (*this)(YY, ZZ) * other(ZZ, XX),
+                  (*this)(YY, XX) * other(XX, YY) + (*this)(YY, YY) * other(YY, YY)
+                          + (*this)(YY, ZZ) * other(ZZ, YY),
+                  (*this)(YY, XX) * other(XX, ZZ) + (*this)(YY, YY) * other(YY, ZZ)
+                          + (*this)(YY, ZZ) * other(ZZ, ZZ),
+                  (*this)(ZZ, XX) * other(XX, XX) + (*this)(ZZ, YY) * other(YY, XX)
+                          + (*this)(ZZ, ZZ) * other(ZZ, XX),
+                  (*this)(ZZ, XX) * other(XX, YY) + (*this)(ZZ, YY) * other(YY, YY)
+                          + (*this)(ZZ, ZZ) * other(ZZ, YY),
+                  (*this)(ZZ, XX) * other(XX, ZZ) + (*this)(ZZ, YY) * other(YY, ZZ)
+                          + (*this)(ZZ, ZZ) * other(ZZ, ZZ) });
         return result;
     }
 
@@ -215,12 +207,9 @@ public:
     BasicMatrix3x3 operator*(const ElementType& scalar) const
     {
         BasicMatrix3x3<ElementType> result;
-        for (int i = 0; i < DIM; i++)
+        for (size_t i = 0; i < storage_.size(); ++i)
         {
-            for (int j = 0; j < DIM; j++)
-            {
-                result(i, j) = (*this)(i, j) * scalar;
-            }
+            result.storage_[i] = storage_[i] * scalar;
         }
         return result;
     }
@@ -230,12 +219,9 @@ public:
     {
         GMX_RELEASE_ASSERT(scalar != 0, "Division by zero.");
         BasicMatrix3x3<ElementType> result;
-        for (int i = 0; i < DIM; i++)
+        for (size_t i = 0; i < storage_.size(); ++i)
         {
-            for (int j = 0; j < DIM; j++)
-            {
-                result(i, j) = (*this)(i, j) / scalar;
-            }
+            result.storage_[i] = storage_[i] / scalar;
         }
         return result;
     }
@@ -264,7 +250,6 @@ public:
     //! Return result of division with assignment of this matrix by \c scalar
     BasicMatrix3x3& operator/=(const ElementType& scalar)
     {
-        GMX_RELEASE_ASSERT(scalar != 0, "Division by zero.");
         *this = *this / scalar;
         return *this;
     }
@@ -273,16 +258,51 @@ public:
     BasicVector<ElementType> operator*(const BasicVector<ElementType>& vector) const
     {
         BasicVector<ElementType> result = { 0, 0, 0 };
-        for (auto i = 0; i < DIM; ++i)
+        for (size_t i = XX; i < DIM; ++i)
         {
-            for (auto j = 0; j < DIM; ++j)
+            for (size_t j = XX; j < DIM; ++j)
             {
-                result[i] += (*this)(i, j) * vector[j];
+                result[i] += storage_[(i * DIM) + j] * vector[j];
             }
         }
         return result;
     }
+
+    //! Conversion to gmx::ArrayRef
+    ArrayRef<ElementType> toArrayRef()
+    {
+        return { storage_.data(), storage_.data() + storage_.size() };
+    }
+
+    //! Conversion to const ArrayRef
+    ArrayRef<const ElementType> toConstArrayRef() const
+    {
+        return { storage_.data(), storage_.data() + storage_.size() };
+    }
+
+    //! Returns a pointer to the start of the storage
+    ElementType* data() { return storage_; }
+
+    //! Returns a const pointer to start of the storage
+    const ElementType* data() const { return storage_; }
+
+    //! Swaps two matrixies
+    void swap(BasicMatrix3x3& other) noexcept { std::swap(storage_, other.storage_); }
+
+    //! Sets all elements to 0
+    void clear() { std::fill(storage_.begin(), storage_.end(), 0); }
+
+private:
+    //! local "multi dim array" 3x3
+    std::array<ElementType, matrixSize_> storage_;
 };
+
+//! Stand alone swap function based on https://en.cppreference.com/w/cpp/named_req/Swappable
+template<class ElementType>
+void swap(BasicMatrix3x3<ElementType>& mat1, BasicMatrix3x3<ElementType>& mat2) noexcept
+{
+    mat1.swap(mat2);
+}
 
 //! Return the product of multiplying the 3x3 matrix \c other by the \c scalar
 template<typename ElementType>
@@ -302,33 +322,39 @@ BasicVector<ElementType> diagonal(const BasicMatrix3x3<ElementType>& matrix)
 template<typename ElementType>
 BasicMatrix3x3<ElementType> transpose(BasicMatrix3x3<ElementType> matrix)
 {
-
-    return { matrix(0, 0), matrix(1, 0), matrix(2, 0), matrix(0, 1), matrix(1, 1),
-             matrix(2, 1), matrix(0, 2), matrix(1, 2), matrix(2, 2) };
+    return { { matrix(XX, XX),
+               matrix(YY, XX),
+               matrix(ZZ, XX),
+               matrix(XX, YY),
+               matrix(YY, YY),
+               matrix(ZZ, YY),
+               matrix(XX, ZZ),
+               matrix(YY, ZZ),
+               matrix(ZZ, ZZ) } };
 }
 
 //! Returns the determinant of \c matrix
 template<typename ElementType>
 constexpr ElementType determinant(BasicMatrix3x3<ElementType> matrix)
 {
-    return { matrix(0, 0) * (matrix(1, 1) * matrix(2, 2) - matrix(2, 1) * matrix(1, 2))
-             - matrix(1, 0) * (matrix(0, 1) * matrix(2, 2) - matrix(2, 1) * matrix(0, 2))
-             + matrix(2, 0) * (matrix(0, 1) * matrix(1, 2) - matrix(1, 1) * matrix(0, 2)) };
+    return { matrix(XX, XX) * (matrix(YY, YY) * matrix(ZZ, ZZ) - matrix(ZZ, YY) * matrix(YY, ZZ))
+             - matrix(YY, XX) * (matrix(XX, YY) * matrix(ZZ, ZZ) - matrix(ZZ, YY) * matrix(XX, ZZ))
+             + matrix(ZZ, XX) * (matrix(XX, YY) * matrix(YY, ZZ) - matrix(YY, YY) * matrix(XX, ZZ)) };
 }
 
 //! Returns the trace of \c matrix
 template<typename ElementType>
 constexpr ElementType trace(BasicMatrix3x3<ElementType> matrix)
 {
-    return matrix(0, 0) + matrix(1, 1) + matrix(2, 2);
+    return matrix(XX, XX) + matrix(YY, YY) + matrix(ZZ, ZZ);
 }
 
 //! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
 template<typename ElementType>
-BasicMatrix3x3<ElementType> inner(const BasicMatrix3x3<ElementType>& a,
-                                  const BasicMatrix3x3<ElementType>& b)
+BasicMatrix3x3<ElementType> inner(const BasicMatrix3x3<ElementType>& matrixA,
+                                  const BasicMatrix3x3<ElementType>& matrixB)
 {
-    return a * b;
+    return matrixA * matrixB;
 }
 
 /*! \brief Three-by-three real number matrix.
@@ -347,8 +373,8 @@ using Matrix3x3 = BasicMatrix3x3<real>;
 template<typename ElementType>
 BasicMatrix3x3<ElementType> diagonalMatrix(const ElementType value)
 {
-    BasicMatrix3x3<ElementType> matrix = { 0 };
-    for (auto i = 0; i < DIM; i++)
+    BasicMatrix3x3<ElementType> matrix;
+    for (size_t i = XX; i < DIM; ++i)
     {
         matrix(i, i) = value;
     }
@@ -371,9 +397,9 @@ static inline Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatri
 {
     GMX_RELEASE_ASSERT(legacyMatrix, "Need valid legacy matrix");
     Matrix3x3 newMatrix;
-    for (int i = 0; i < DIM; i++)
+    for (size_t i = XX; i < DIM; ++i)
     {
-        for (int j = 0; j < DIM; j++)
+        for (size_t j = XX; j < DIM; ++j)
         {
             newMatrix(i, j) = legacyMatrix[i][j];
         }
@@ -385,9 +411,9 @@ static inline Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatri
 static inline void fillLegacyMatrix(Matrix3x3 newMatrix, matrix legacyMatrix)
 {
     GMX_RELEASE_ASSERT(legacyMatrix, "Need valid legacy matrix");
-    for (int i = 0; i < DIM; i++)
+    for (size_t i = XX; i < DIM; ++i)
     {
-        for (int j = 0; j < DIM; j++)
+        for (size_t j = XX; j < DIM; ++j)
         {
             legacyMatrix[i][j] = newMatrix(i, j);
         }
