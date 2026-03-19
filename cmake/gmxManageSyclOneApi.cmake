@@ -82,6 +82,15 @@ else()
     message(FATAL_ERROR "Cannot compile a SYCL program with ${SYCL_CXX_FLAGS}. Try a different compiler or disable SYCL.")
 endif()
 
+# When using the Ninja generator, CMake uses linker itself for dependency tracking.
+# In case of ICPX, the dependencies include many temporary files.
+# This causes re-linking of libgromacs.so (which is rather slow) every
+# time any build command is run, including `ninja check`.
+# No such problems observed with plain Make.
+if(CMAKE_GENERATOR MATCHES "Ninja")
+    set(CMAKE_LINK_DEPENDS_USE_LINKER FALSE)
+endif()
+
 # Try compiling an empty kernel to sniff out the enabled targets
 set(SAMPLE_SYCL_KERNEL_PROBE_SOURCE
 "#include <sycl/sycl.hpp>
