@@ -39,7 +39,7 @@
 #include <optional>
 #include <vector>
 
-#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -70,7 +70,6 @@ class GpuForceReduction;
 class ForceProviders;
 class MdGpuGraph;
 class StatePropagatorDataGpu;
-class PmePpCommGpu;
 class WholeMoleculeTransform;
 } // namespace gmx
 
@@ -273,16 +272,13 @@ struct t_forcerec
     // TODO: Should not be here. This is here only to pass the pointer around.
     gmx::DeviceStreamManager* deviceStreamManager = nullptr;
 
-    /* For PME-PP GPU communication */
-    std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;
+    //! Manages communication with the partner PME rank, when active
+    std::unique_ptr<gmx::PmePpComm> pmePpComm;
 
     /* For GPU force reduction (on both local and non-local atoms) */
     gmx::EnumerationArray<gmx::AtomLocality, std::unique_ptr<gmx::GpuForceReduction>> gpuForceReduction;
 
     gmx::EnumerationArray<MdGraphEvenOrOddStep, std::unique_ptr<gmx::MdGpuGraph>> mdGraph;
-
-    //! Buffer into which this PP rank receives PME forces, possibly from a GPU
-    gmx::HostVector<gmx::RVec> pmeForceReceiveBuffer;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

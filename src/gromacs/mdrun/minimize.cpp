@@ -550,15 +550,14 @@ static void init_em(FILE*                        fplog,
 }
 
 //! Finalize the minimization
-static void finish_em(const t_commrec*          cr,
+static void finish_em(const gmx::PmePpComm*     pmePpComm,
                       gmx_mdoutf_t              outf,
                       gmx_walltime_accounting_t walltime_accounting,
                       gmx_wallcycle*            wcycle)
 {
-    if (!thisRankHasPmeDuty(cr->dd))
+    if (pmePpComm)
     {
-        /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr->dd);
+        pmePpComm->sendFinish();
     }
 
     done_mdoutf(outf);
@@ -2031,7 +2030,7 @@ void LegacySimulator::do_cg()
         fprintf(fpLog_, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr_, outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step);
@@ -2854,7 +2853,7 @@ void LegacySimulator::do_lbfgs()
         fprintf(fpLog_, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr_, outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step);
@@ -3196,7 +3195,7 @@ void LegacySimulator::do_steep()
         print_converged(fpLog_, SD, inputRec_->em_tol, count, bDone, nsteps, s_min, sqrtNumAtoms);
     }
 
-    finish_em(cr_, outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, count);
 }
@@ -3562,7 +3561,7 @@ void LegacySimulator::do_nm()
         gmx_mtxio_write(ftp2fn(efMTX, nFile_, fnm_), sz, sz, full_matrix, sparse_matrix);
     }
 
-    finish_em(cr_, outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, numSteps);
 }

@@ -144,6 +144,7 @@ bool ResetHandler::resetCountersImpl(int64_t                   step,
                                      const MDLogger&           mdlog,
                                      FILE*                     fplog,
                                      const t_commrec*          cr,
+                                     const PmePpComm*          pmePpComm,
                                      nonbonded_verlet_t*       nbv,
                                      t_nrnb*                   nrnb,
                                      const gmx_pme_t*          pme,
@@ -211,10 +212,10 @@ bool ResetHandler::resetCountersImpl(int64_t                   step,
         print_date_and_time(fplog, cr->commMyGroup.rank(), "Restarted time", gmx_gettime());
 
         wcycle_set_reset_counters(wcycle, -1);
-        if (!thisRankHasPmeDuty(cr->dd))
+        if (pmePpComm)
         {
-            /* Tell our PME node to reset its counters */
-            gmx_pme_send_resetcounters(cr->commMySim, cr->dd, step);
+            // Tell our PME-only rank to reset its counters
+            pmePpComm->sendResetCounters(step);
         }
         /* Reset can only happen once, so clear the triggering flag. */
         signal_.set = static_cast<signed char>(ResetSignal::noSignal);

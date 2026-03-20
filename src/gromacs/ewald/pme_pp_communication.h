@@ -77,8 +77,9 @@ enum
 //@{
 /*! \brief Flags used to coordinate PP-PME communication and computation phases
  *
- * Some parts of the code(gmx_pme_send_q, gmx_pme_recv_q_x) assume
- * that the six first flags are exactly in this order.
+ * The parts of the code sending and receiving parameters require that
+ * the value of the B-state flags is double that of the corresponding
+ * A-state flag.
  */
 
 #define PP_PME_CHARGE (1 << 0)
@@ -111,23 +112,24 @@ enum
  * \brief Helper struct for PP-PME communication of parameters.
  *
  * The contents are communicated over MPI in memcpy style, so should
- * remain suitable for that.
+ * remain suitable for that. In particular, they should be initialized
+ * so that memory checkers don't raise false positives.
  */
 struct gmx_pme_comm_n_box_t
 {
-    int          natoms;     /**< Number of atoms */
-    matrix       box;        /**< Box */
-    int          maxshift_x; /**< Maximum shift in x direction */
-    int          maxshift_y; /**< Maximum shift in y direction */
-    real         lambda_q;   /**< Free-energy lambda for electrostatics */
-    real         lambda_lj;  /**< Free-energy lambda for Lennard-Jones */
-    unsigned int flags;      /**< Control flags */
-    int64_t      step;       /**< MD integration step number */
-    //@{
-    /*! \brief Used in PME grid tuning */
-    ivec grid_size;
-    real ewaldcoeff_q;
-    real ewaldcoeff_lj;
+    int          natoms     = 0;         /**< Number of atoms */
+    matrix       box        = { { 0 } }; /**< Box */
+    int          maxshift_x = 0;         /**< Maximum shift in x direction */
+    int          maxshift_y = 0;         /**< Maximum shift in y direction */
+    real         lambda_q   = 0;         /**< Free-energy lambda for electrostatics */
+    real         lambda_lj  = 0;         /**< Free-energy lambda for Lennard-Jones */
+    unsigned int flags      = 0;         /**< Control flags */
+    int64_t      step       = 0;         /**< MD integration step number */
+                                         //@{
+                                         /*! \brief Used in PME grid tuning */
+    ivec grid_size     = { 0 };
+    real ewaldcoeff_q  = 0;
+    real ewaldcoeff_lj = 0;
     //@}
 };
 static_assert(std::is_trivially_copyable_v<gmx_pme_comm_n_box_t>,
@@ -155,5 +157,22 @@ struct gmx_pme_comm_vir_ene_t
 };
 static_assert(std::is_trivially_copyable_v<gmx_pme_comm_vir_ene_t>,
               "Must be trivially copyable to be sent over MPI");
+
+namespace gmx
+{
+
+/*! \brief Holds PmePpComm configuration from
+ * DomainDecompositionBuilder until they can be used to make the
+ * PmePpComm. */
+struct PmePpCommSettings
+{
+    //! Rank of partner PME rank
+    int rankOfPartnerPmeRank;
+    /*! \brief Whether this rank receives virial and energy from
+     * the PME rank */
+    bool thisRankReceivesVirialAndEnergy;
+};
+
+} // namespace gmx
 
 #endif

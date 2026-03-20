@@ -799,7 +799,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
 
     comm = dd->comm.get();
 
-    bSepPME = (dd->pme_nodeid >= 0);
+    bSepPME = (dd->numPmeOnlyRanks > 0);
 
     if (dd->ndim == 0 && bSepPME)
     {
@@ -3182,21 +3182,23 @@ void dd_partition_system(FILE*                     fplog,
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     auto* mdatoms = mdAtoms->mdatoms();
-    if (!dd->hasPmeDuty)
+    if (fr->pmePpComm)
     {
-        /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(dd,
-                                *fr->ic,
-                                mdatoms->nChargePerturbed != 0,
-                                mdatoms->nTypePerturbed != 0,
-                                mdatoms->chargeA,
-                                mdatoms->chargeB,
-                                mdatoms->sqrt_c6A,
-                                mdatoms->sqrt_c6B,
-                                mdatoms->sigmaA,
-                                mdatoms->sigmaB,
-                                dd_pme_maxshift_x(*dd),
-                                dd_pme_maxshift_y(*dd));
+        // PP rank partnered with a PME-only rank
+
+        // Send the charges and/or c6/sigmas to the PME-only rank
+        // and prepare for PP-rank operations.
+        fr->pmePpComm->sendParameters(dd_numHomeAtoms(*dd),
+                                      mdatoms->nChargePerturbed != 0,
+                                      mdatoms->nTypePerturbed != 0,
+                                      mdatoms->chargeA,
+                                      mdatoms->chargeB,
+                                      mdatoms->sqrt_c6A,
+                                      mdatoms->sqrt_c6B,
+                                      mdatoms->sigmaA,
+                                      mdatoms->sigmaB,
+                                      dd_pme_maxshift_x(*dd),
+                                      dd_pme_maxshift_y(*dd));
     }
 
     if (dd->atomSets != nullptr)

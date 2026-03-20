@@ -133,6 +133,7 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
 GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  dd,
                                                            const DeviceContext& context,
                                                            const DeviceStream&  stream,
+                                                           const std::optional<int>& /* rankOfControlledPmeRank */,
                                                            const std::optional<int>& /* peerRank */,
                                                            gmx_wallcycle* /*wcycle*/,
                                                            MPI_Comm /*mpi_comm_mygroup*/,

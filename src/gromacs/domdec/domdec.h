@@ -57,6 +57,7 @@
 
 #include <cstddef>
 
+#include <optional>
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
@@ -279,15 +280,17 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
 
 /*! \brief Construct the GPU halo exchange object(s).
  *
- * \param[in] cr                  The commrec object.
- * \param[in] deviceStreamManager Manager of the GPU context and streams.
- * \param[in] wcycle              The wallclock counter.
- * \param[in] useNvshmem          Whether NVSHMEM is in use for GPU halo exchange
+ * \param[in] cr                       The commrec object.
+ * \param[in] deviceStreamManager      Manager of the GPU context and streams.
+ * \param[in] wcycle                   The wallclock counter.
+ * \param[in] useNvshmem               Whether NVSHMEM is in use for GPU halo exchange
+ * \param[in] rankOfControlledPmeRank  The rank of the PME rank controlled by this PP rank, if any
  */
 void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
                               gmx_wallcycle*                  wcycle,
-                              bool                            useNvshmem);
+                              bool                            useNvshmem,
+                              std::optional<int>              rankOfControlledPmeRank);
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange

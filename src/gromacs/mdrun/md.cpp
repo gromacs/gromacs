@@ -1034,8 +1034,22 @@ void gmx::LegacySimulator::do_md()
             GMX_RELEASE_ASSERT(fr_->deviceStreamManager != nullptr,
                                "GPU device manager has to be initialized to use GPU "
                                "version of halo exchange.");
-            constructGpuHaloExchange(
-                    *cr_, *fr_->deviceStreamManager, wallCycleCounters_, simulationWork.useNvshmem);
+            // When using NVSHMEM, we use the PP rank which receives
+            // virial and energy from PME rank to send the data about
+            // the number of halo-exchange pulses to the PME rank.
+            std::optional<int> rankOfControlledPmeRank;
+            if (simulationWork.haveSeparatePmeRank)
+            {
+                // When there is a separate PME rank, only one PP rank
+                // controls it, and that PP rank returns a valid value
+                // here.
+                rankOfControlledPmeRank = fr_->pmePpComm->rankOfControlledPmeRank();
+            }
+            constructGpuHaloExchange(*cr_,
+                                     *fr_->deviceStreamManager,
+                                     wallCycleCounters_,
+                                     simulationWork.useNvshmem,
+                                     rankOfControlledPmeRank);
         }
 
         if (isMainRank && do_log)
@@ -2154,6 +2168,7 @@ void gmx::LegacySimulator::do_md()
                                     mdLog_,
                                     fpLog_,
                                     cr_,
+                                    fr_->pmePpComm.get(),
                                     fr_->nbv.get(),
                                     nrnb_,
                                     fr_->pmedata.get(),
@@ -2183,8 +2198,8 @@ void gmx::LegacySimulator::do_md()
 
     if (simulationWork.haveSeparatePmeRank)
     {
-        /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_->dd);
+        // Tell the PME-only rank to finish
+        fr_->pmePpComm->sendFinish();
     }
 
     // This is to free PP ranks gpuhaloexchange symmetric buffer `d_recvBuf_`

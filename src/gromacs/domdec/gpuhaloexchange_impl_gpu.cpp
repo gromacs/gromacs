@@ -698,14 +698,20 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
     return impl_->getForcesReadyOnDeviceEvent();
 }
 
-GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&       dd,
-                                                           const DeviceContext&      context,
-                                                           const DeviceStream&       stream,
+GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  dd,
+                                                           const DeviceContext& context,
+                                                           const DeviceStream&  stream,
+                                                           const std::optional<int>& rankOfControlledPmeRank,
                                                            const std::optional<int>& peerRank,
                                                            gmx_wallcycle*            wcycle,
                                                            MPI_Comm mpi_comm_mygroup,
                                                            MPI_Comm mpi_comm_mysim_world) :
-    dd_(dd), stream_(stream), peerRank_(peerRank), context_(context), wcycle_(wcycle)
+    dd_(dd),
+    stream_(stream),
+    rankOfControlledPmeRank_(rankOfControlledPmeRank),
+    peerRank_(peerRank),
+    context_(context),
+    wcycle_(wcycle)
 {
 #if GMX_NVSHMEM
     fusedPpHaloExchange_ = std::make_unique<gmx::FusedGpuHaloExchange>(
@@ -838,11 +844,16 @@ void GpuHaloExchangeNvshmemHelper::reinit()
             totalNumPulses += dd_.comm->cd[d].numPulses();
         }
 #if GMX_MPI
-        // we use PP rank which receives virial and energy from PME rank
-        // to send the number of pulses data to PME rank.
-        if (dd_.pme_receive_vir_ener)
+        // Send from the same PP rank that controls the PME rank in
+        // PmePpComm.
+        if (rankOfControlledPmeRank_.has_value())
         {
-            MPI_Send(&totalNumPulses, 1, MPI_INT, dd_.pme_nodeid, 0, dd_.mpiCommMySim().comm());
+            MPI_Send(&totalNumPulses,
+                     1,
+                     MPI_INT,
+                     rankOfControlledPmeRank_.value(),
+                     0,
+                     dd_.mpiCommMySim().comm());
         }
 #endif
     }

@@ -927,10 +927,10 @@ void gmx::LegacySimulator::do_rerun()
         close_trx(status);
     }
 
-    if (!thisRankHasPmeDuty(cr_->dd))
+    if (runScheduleWork_->simulationWork.haveSeparatePmeRank)
     {
-        /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_->dd);
+        // Tell the PME-only rank to finish
+        fr_->pmePpComm->sendFinish();
     }
 
     done_mdoutf(outf);

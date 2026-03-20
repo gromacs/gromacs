@@ -258,6 +258,7 @@ public:
                                        interaction_const_t*         ic,
                                        nonbonded_verlet_t*          nbv,
                                        std::unique_ptr<gmx_pme_t>&& oldPmedata,
+                                       const PmePpComm*             pmePpComm,
                                        int64_t                      step);
 
     /*! \brief Prepare for another round of PME load balancing
@@ -660,7 +661,8 @@ static void applySetup(pme_setup_t*         setup,
                        const t_inputrec&    ir,
                        interaction_const_t* ic,
                        nonbonded_verlet_t*  nbv,
-                       gmx_domdec_t*        dd)
+                       gmx_domdec_t*        dd,
+                       const PmePpComm*     pmePpComm)
 {
     ic->coulomb.cutoff = setup->rcut_coulomb;
     nbv->changePairlistRadii(setup->rlistOuter, setup->rlistInner);
@@ -692,7 +694,7 @@ static void applySetup(pme_setup_t*         setup,
 
     gpu_pme_loadbal_update_param(nbv, *ic);
 
-    if (dd == nullptr || dd->hasPmeDuty)
+    if (!pmePpComm)
     {
         /* FIXME:
          * CPU PME keeps a list of allocated pmedata's, that's why setups_[currentSetup_].pmedata is not always nullptr.
@@ -710,8 +712,8 @@ static void applySetup(pme_setup_t*         setup,
     }
     else
     {
-        /* Tell our PME-only rank to switch grid */
-        gmx_pme_send_switchgrid(*dd, setup->grid, setup->ewaldcoeff_q, setup->ewaldcoeff_lj);
+        // Tell our PME-only rank to switch grid
+        pmePpComm->sendSwitchGrid(setup->grid, setup->ewaldcoeff_q, setup->ewaldcoeff_lj);
     }
 }
 
@@ -785,6 +787,7 @@ std::unique_ptr<gmx_pme_t> PmeLoadBalancing::Impl::balance(FILE*                
                                                            interaction_const_t*         ic,
                                                            nonbonded_verlet_t*          nbv,
                                                            std::unique_ptr<gmx_pme_t>&& oldPmedata,
+                                                           const PmePpComm*             pmePpComm,
                                                            int64_t                      step)
 {
     if (dd_ && dd_->nnodes > 1)
@@ -1010,7 +1013,7 @@ std::unique_ptr<gmx_pme_t> PmeLoadBalancing::Impl::balance(FILE*                
     }
 
     /* Change the Coulomb cut-off and the PME grid */
-    applySetup(&setups_[currentSetup_], oldPmedata.get(), ir_, ic, nbv, dd_);
+    applySetup(&setups_[currentSetup_], oldPmedata.get(), ir_, ic, nbv, dd_, pmePpComm);
 
     // PME data to use for the next stage of simulation
     std::unique_ptr<gmx_pme_t> pmedata;
@@ -1194,6 +1197,7 @@ void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
                               fr->ic.get(),
                               fr->nbv.get(),
                               std::move(fr->pmedata),
+                              fr->pmePpComm.get(),
                               step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */

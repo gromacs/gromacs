@@ -143,7 +143,7 @@ struct interaction_const_t
     //! Settings and parameters for Coulomb functional forms
     struct CoulombSettings
     {
-        //! Cutoff distance
+        //! The type of Coulomb interaction
         CoulombInteractionType type = CoulombInteractionType::Cut;
         //! The potential modifier
         InteractionModifiers modifier = InteractionModifiers::None;

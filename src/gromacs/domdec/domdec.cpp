@@ -731,15 +731,15 @@ std::vector<int> get_pme_ddranks(const gmx_domdec_t& dd, const int pmenodeid)
     return ddranks;
 }
 
-static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int> pmeRanks)
+static gmx_bool receive_vir_ener(const gmx_domdec_t& dd, gmx::ArrayRef<const int> pmeRanks)
 {
     bool bReceive = true;
 
-    const DDRankSetup& ddRankSetup = dd->comm->ddRankSetup;
+    const DDRankSetup& ddRankSetup = dd.comm->ddRankSetup;
     if (ddRankSetup.usePmeOnlyRanks)
     {
-        const gmx::MpiComm&       commMySim = dd->comm->mpiCommMySim_;
-        const CartesianRankSetup& cartSetup = dd->comm->cartesianRankSetup;
+        const gmx::MpiComm&       commMySim = dd.comm->mpiCommMySim_;
+        const CartesianRankSetup& cartSetup = dd.comm->cartesianRankSetup;
         if (cartSetup.bCartesianPP_PME)
         {
 #if GMX_MPI
@@ -748,7 +748,7 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int
             ivec coords;
             MPI_Cart_coords(commMySim.comm(), commMySim.rank(), DIM, coords);
             coords[cartSetup.cartpmedim]++;
-            if (coords[cartSetup.cartpmedim] < dd->numCells[cartSetup.cartpmedim])
+            if (coords[cartSetup.cartpmedim] < dd.numCells[cartSetup.cartpmedim])
             {
                 int rank = 0;
                 MPI_Cart_rank(commMySim.comm(), coords, &rank);
@@ -1456,14 +1456,12 @@ static CommSetup makeGroupCommunicators(const MDLogger&    mdlog,
  * For PME ranks get the rank id.
  * For PP only ranks, sets the PME-only rank.
  */
-static void setupGroupCommunication(const MDLogger&     mdlog,
-                                    const DDSettings&   ddSettings,
-                                    ArrayRef<const int> pmeRanks,
-                                    const int           numAtomsInSystem,
-                                    gmx_domdec_t*       dd)
+static void setupGroupCommunication(const MDLogger&   mdlog,
+                                    const DDSettings& ddSettings,
+                                    const int         numAtomsInSystem,
+                                    gmx_domdec_t*     dd)
 {
-    const DDRankSetup&        ddRankSetup = dd->comm->ddRankSetup;
-    const CartesianRankSetup& cartSetup   = dd->comm->cartesianRankSetup;
+    const CartesianRankSetup& cartSetup = dd->comm->cartesianRankSetup;
 
     if (dd->hasPPDuty)
     {
@@ -1483,25 +1481,6 @@ static void setupGroupCommunication(const MDLogger&     mdlog,
     else
     {
         receive_ddindex2simnodeid(dd);
-    }
-
-    if (!dd->hasPmeDuty)
-    {
-        /* Set up the commnuication to our PME node */
-        dd->pme_nodeid = dd_simnode2pmenode(
-                ddRankSetup, cartSetup, pmeRanks, dd->comm->mpiCommMySim_, dd->comm->mpiCommMySim_.rank());
-        dd->pme_receive_vir_ener = receive_vir_ener(dd, pmeRanks);
-        if (debug)
-        {
-            fprintf(debug,
-                    "My pme_nodeid %d receive ener %s\n",
-                    dd->pme_nodeid,
-                    gmx::boolToString(dd->pme_receive_vir_ener));
-        }
-    }
-    else
-    {
-        dd->pme_nodeid = -1;
     }
 
     if (dd->mpiComm_.isMainRank())
@@ -2590,7 +2569,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     else
     {
         ddRankSetup.numRanksDoingPme = 0;
-        if (dd->pme_nodeid >= 0)
+        if (dd->numPmeOnlyRanks > 0)
         {
             gmx_fatal_collective(FARGS,
                                  dd->mpiComm().comm(),
@@ -2725,6 +2704,8 @@ public:
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
+    //! Get the settings for the manager for PME-PP communication, if used
+    std::optional<PmePpCommSettings> pmePpCommSettings(const gmx_domdec_t& dd) const;
 
     //! Objects used in constructing and configuring DD
     //! {
@@ -2895,7 +2876,7 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                   ir_,
                   ddbox_);
 
-    setupGroupCommunication(mdlog_, ddSettings_, commSetup_.pmeRanks, mtop_.natoms, dd.get());
+    setupGroupCommunication(mdlog_, ddSettings_, mtop_.natoms, dd.get());
 
     // The simulation main rank is the PP rank with rank id 0, check that this matches
     // the main simulation rank in t_commrec
@@ -2933,6 +2914,36 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                                                                       observablesReducerBuilder);
 
     return dd;
+}
+
+std::optional<PmePpCommSettings> DomainDecompositionBuilder::Impl::pmePpCommSettings(const gmx_domdec_t& dd) const
+{
+    std::optional<PmePpCommSettings> pmePpCommSettings;
+    if (!dd.hasPmeDuty)
+    {
+        // Set up the communication to our PME-only rank
+        const DDRankSetup&        ddRankSetup = dd.comm->ddRankSetup;
+        const CartesianRankSetup& cartSetup   = dd.comm->cartesianRankSetup;
+
+        pmePpCommSettings = PmePpCommSettings{
+
+            dd_simnode2pmenode(ddRankSetup,
+                               cartSetup,
+                               commSetup_.pmeRanks,
+                               dd.comm->mpiCommMySim_,
+                               dd.comm->mpiCommMySim_.rank()),
+            receive_vir_ener(dd, commSetup_.pmeRanks)
+        };
+
+        if (debug)
+        {
+            fprintf(debug,
+                    "My PME partner rank %d receive ener %s\n",
+                    pmePpCommSettings->rankOfPartnerPmeRank,
+                    boolToString(pmePpCommSettings->thisRankReceivesVirialAndEnergy));
+        }
+    }
+    return pmePpCommSettings;
 }
 
 DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&           mdlog,
@@ -2977,6 +2988,11 @@ std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetMana
                                                                 ObservablesReducerBuilder* observablesReducerBuilder)
 {
     return impl_->build(atomSets, haveFillerParticlesInLocalState, observablesReducerBuilder);
+}
+
+std::optional<PmePpCommSettings> DomainDecompositionBuilder::pmePpCommSettings(const gmx_domdec_t& dd) const
+{
+    return impl_->pmePpCommSettings(dd);
 }
 
 DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;
@@ -3103,7 +3119,8 @@ bool change_dd_cutoff(gmx_domdec_t*                  dd,
 void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
                               gmx_wallcycle*                  wcycle,
-                              const bool                      useNvshmem)
+                              const bool                      useNvshmem,
+                              const std::optional<int>        rankOfControlledPmeRank)
 {
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be valid when using"
@@ -3124,6 +3141,7 @@ void constructGpuHaloExchange(const t_commrec&                cr,
                     *cr.dd,
                     deviceStreamManager.context(),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                    rankOfControlledPmeRank,
                     std::nullopt,
                     wcycle,
                     cr.commMyGroup.comm(),

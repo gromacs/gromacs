@@ -156,6 +156,7 @@ public:
     GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&       dd,
                                  const DeviceContext&      context,
                                  const DeviceStream&       stream,
+                                 const std::optional<int>& rankOfControlledPmeRank,
                                  const std::optional<int>& peerRank,
                                  gmx_wallcycle*            wcycle,
                                  MPI_Comm                  mpi_comm_mygroup,
@@ -207,6 +208,12 @@ private:
     DeviceBuffer<uint64_t> d_ppHaloExSyncBase_;
     //! Device stream
     const DeviceStream& stream_;
+
+    //! Data structures used on PP ranks to implement symmetric allocations
+    //! \{
+    //! Rank of partner PME rank controlled by this PP rank, if any
+    std::optional<int> rankOfControlledPmeRank_;
+    //! \}
 
     //! Data structures used on PME-only ranks to implement symmetric allocations
     /*! \{ */

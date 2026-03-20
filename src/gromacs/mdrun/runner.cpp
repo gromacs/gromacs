@@ -74,7 +74,7 @@
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_only.h"
-#include "gromacs/ewald/pme_pp_comm_gpu.h"
+#include "gromacs/ewald/pme_pp_communication.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -1538,6 +1538,9 @@ int Mdrunner::mdrunner()
 
     std::unique_ptr<gmx_domdec_t> domdec;
     std::unique_ptr<t_commrec>    commRec;
+    // When there is a PME rank to communicate with, contains settings
+    // to build a PmePpComm object.
+    std::optional<PmePpCommSettings> pmePpCommSettings;
 
     if (ddBuilder)
     {
@@ -1546,6 +1549,7 @@ int Mdrunner::mdrunner()
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
         domdec = ddBuilder->build(&atomSets, haveFillerParticlesInLocalState, &observablesReducerBuilder);
+        pmePpCommSettings = ddBuilder->pmePpCommSettings(*domdec);
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
 
@@ -1894,22 +1898,17 @@ int Mdrunner::mdrunner()
         // TODO: Forcerec is not a correct place to store it.
         fr->deviceStreamManager = deviceStreamManager.get();
 
-        if (runScheduleWork.simulationWork.useGpuPmePpCommunication && !thisRankHasPmeDuty(cr->dd))
+        if (runScheduleWork.simulationWork.haveSeparatePmeRank)
         {
-            GMX_RELEASE_ASSERT(
-                    deviceStreamManager != nullptr,
-                    "GPU device stream manager should be valid in order to use PME-PP direct "
-                    "communications.");
-            GMX_RELEASE_ASSERT(
-                    deviceStreamManager->streamIsValid(DeviceStreamType::PmePpTransfer),
-                    "GPU PP-PME stream should be valid in order to use GPU PME-PP direct "
-                    "communications.");
-            fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(
-                    cr->commMySim.comm(),
-                    cr->dd->pme_nodeid,
-                    deviceStreamManager->context(),
-                    deviceStreamManager->stream(DeviceStreamType::PmePpTransfer),
-                    runScheduleWork.simulationWork.useNvshmem);
+            fr->pmePpComm =
+                    std::make_unique<PmePpComm>(cr->commMySim,
+                                                pmePpCommSettings->rankOfPartnerPmeRank,
+                                                fr->ic->vdw.type,
+                                                fr->ic->coulomb.type,
+                                                pmePpCommSettings->thisRankReceivesVirialAndEnergy,
+                                                runScheduleWork.simulationWork.useGpuPmePpCommunication,
+                                                runScheduleWork.simulationWork.useNvshmem,
+                                                deviceStreamManager.get());
         }
 
         fr->nbv = init_nb_verlet(
@@ -2366,12 +2365,6 @@ int Mdrunner::mdrunner()
             // build and run simulator object based on user-input
             auto simulator = simulatorBuilder.build(useModularSimulator);
             simulator->run();
-
-            if (fr->pmePpCommGpu)
-            {
-                // destroy object since it is no longer required. (This needs to be done while the GPU context still exists.)
-                fr->pmePpCommGpu.reset();
-            }
 
             if (inputrec->bPull)
             {

@@ -261,10 +261,10 @@ void ModularSimulatorAlgorithm::simulatorTeardown()
     // Stop measuring walltime
     walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (!thisRankHasPmeDuty(cr_.dd))
+    if (fr_->pmePpComm)
     {
-        /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_.dd);
+        // Tell the PME-only rank to finish
+        fr_->pmePpComm->sendFinish();
     }
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_ - inputRec_->init_step);
@@ -333,6 +333,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
             mdLog_,
             fpLog_,
             &cr_,
+            fr_->pmePpComm.get(),
             fr_->nbv.get(),
             nrnb_,
             fr_->pmedata.get(),
