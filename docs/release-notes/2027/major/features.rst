@@ -7,4 +7,8 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Multiple molecule types with identical SETTLE parameters are now supported
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+This can be useful when one, for instance, wants to apply position restraints
+to a subset of water molecules.

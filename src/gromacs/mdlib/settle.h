@@ -64,6 +64,22 @@ template<typename>
 class ArrayRefWithPadding;
 enum class ConstraintVariable : int;
 
+//! Composite data for settle initialization.
+struct SettleWaterTopology
+{
+    //! Oxygen mass.
+    real mO;
+    //! Hydrogen mass.
+    real mH;
+    //! Distance H-O.
+    real dOH;
+    //! Distance H-H.
+    real dHH;
+};
+
+//! Validates that settle can run and returns setup data.
+SettleWaterTopology getSettleTopologyData(const gmx_mtop_t& mtop);
+
 /* \brief Parameters for SETTLE algorithm.
  *
  * \todo Remove duplicates, check if recomputing makes more sense in some cases.

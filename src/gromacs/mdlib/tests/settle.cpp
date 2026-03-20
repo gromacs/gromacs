@@ -92,6 +92,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/vec.h"
@@ -111,6 +112,64 @@ namespace test
 {
 namespace
 {
+
+static constexpr real dOHTest = 0.10;
+static constexpr real dHHTest = 0.15;
+static constexpr real mOTest  = 10;
+static constexpr real mHTest  = 2;
+
+std::unique_ptr<gmx_mtop_t> mtopTwoIdenticalMoltypes()
+{
+    t_iparams ip1;
+    ip1.settle.doh = dOHTest;
+    ip1.settle.dhh = dHHTest;
+
+    std::unique_ptr<gmx_mtop_t> mtop = std::make_unique<gmx_mtop_t>();
+    mtop->ffparams.iparams.push_back(ip1);
+    mtop->ffparams.iparams.push_back(ip1);
+
+    const int nral = NRAL(InteractionFunction::SETTLE);
+
+    mtop->moltype.resize(2);
+    for (int m = 0; m < 2; m++)
+    {
+        gmx_moltype_t& molt = mtop->moltype[m];
+
+        molt.atoms.nr = nral;
+        snew(molt.atoms.atom, molt.atoms.nr);
+        molt.atoms.atom[0].m = mOTest;
+        molt.atoms.atom[1].m = mHTest;
+        molt.atoms.atom[2].m = mHTest;
+
+        molt.ilist[InteractionFunction::SETTLE].iatoms.push_back(0);
+        for (int a = 0; a < NRAL(InteractionFunction::SETTLE); a++)
+        {
+            molt.ilist[InteractionFunction::SETTLE].iatoms.push_back(a);
+        }
+    }
+
+    return mtop;
+}
+
+TEST(Settle, MultipleIdenticalSettlesWork)
+{
+    std::unique_ptr<gmx_mtop_t> mtop = mtopTwoIdenticalMoltypes();
+
+    SettleWaterTopology settleTop = getSettleTopologyData(*mtop);
+
+    EXPECT_EQ(settleTop.dOH, dOHTest);
+    EXPECT_EQ(settleTop.dHH, dHHTest);
+    EXPECT_EQ(settleTop.mO, mOTest);
+    EXPECT_EQ(settleTop.mH, mHTest);
+}
+
+TEST(Settle, MultipleDifferentSettlesThrow)
+{
+    std::unique_ptr<gmx_mtop_t> mtop = mtopTwoIdenticalMoltypes();
+    mtop->moltype[1].atoms.atom[0].m *= 0.5;
+
+    EXPECT_THROW(getSettleTopologyData(*mtop), InvalidInputError);
+}
 
 /*! \brief Parameters that will vary from test to test.
  */

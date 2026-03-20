@@ -122,22 +122,6 @@ struct WaterMolecule
 //! Calculate total number of molecules to settle.
 int computeTotalNumSettles(const gmx_mtop_t& mtop);
 
-//! Composite data for settle initialization.
-struct SettleWaterTopology
-{
-    //! Oxygen mass.
-    real mO;
-    //! Hydrogen mass.
-    real mH;
-    //! Distance H-O.
-    real dOH;
-    //! Distance H-H.
-    real dHH;
-};
-
-//! Validates that settle can run and returns setup data.
-SettleWaterTopology getSettleTopologyData(const gmx_mtop_t& mtop);
-
 //! Local settle data.
 struct LocalSettleData
 {
