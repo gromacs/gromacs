@@ -294,11 +294,11 @@ void constructGpuHaloExchange(const t_commrec&                cr,
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange
- * \param [in] cr                   The commrec object
+ * \param [in] dd                   Domain-decomposition structure
  * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
  * \param [in] d_forcesBuffer       pointer to forces buffer in GPU memory
  */
-void reinitGpuHaloExchange(const t_commrec&        cr,
+void reinitGpuHaloExchange(const gmx_domdec_t&     dd,
                            DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            DeviceBuffer<gmx::RVec> d_forcesBuffer);
 
@@ -307,9 +307,9 @@ void reinitGpuHaloExchange(const t_commrec&        cr,
  *
  * Does global communication and symmetric reallocation
  *
- * \param [in] cr                   The commrec object
+ * \param [in] dd                   Domain-decomposition structure
  */
-void reinitGpuHaloExchangeNvshmem(const t_commrec& cr);
+void reinitGpuHaloExchangeNvshmem(const gmx_domdec_t& dd);
 
 /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
  * \param [in] cr                The commrec object

@@ -730,15 +730,14 @@ GpuHaloExchangeNvshmemHelper::~GpuHaloExchangeNvshmemHelper()
     }
 }
 // Fused pass-through API definitions to avoid incomplete-type usage in header
-void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(const t_commrec&   cr,
-                                                          DeviceBuffer<RVec> d_coordinatesBuffer,
+void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(DeviceBuffer<RVec> d_coordinatesBuffer,
                                                           DeviceBuffer<RVec> d_forcesBuffer)
 {
 #if GMX_NVSHMEM
     fusedPpHaloExchange_->reinitAllHaloExchanges(
-            cr, d_coordinatesBuffer, d_forcesBuffer, d_ppHaloExSyncBase_, totalNumPulses_);
+            dd_, d_coordinatesBuffer, d_forcesBuffer, d_ppHaloExSyncBase_, totalNumPulses_);
 #else
-    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(dd_);
     GMX_UNUSED_VALUE(d_coordinatesBuffer);
     GMX_UNUSED_VALUE(d_forcesBuffer);
 #endif

@@ -3172,30 +3172,30 @@ void constructGpuHaloExchange(const t_commrec&                cr,
     }
 }
 
-void reinitGpuHaloExchange(const t_commrec&              cr,
+void reinitGpuHaloExchange(const gmx_domdec_t&           dd,
                            const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            const DeviceBuffer<gmx::RVec> d_forcesBuffer)
 {
-    if (cr.dd->useGpuHaloExchangeNvshmem)
+    if (dd.useGpuHaloExchangeNvshmem)
     {
-        cr.dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(cr, d_coordinatesBuffer, d_forcesBuffer);
+        dd.gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(d_coordinatesBuffer, d_forcesBuffer);
     }
     else
     {
-        for (int d = 0; d < cr.dd->ndim; d++)
+        for (int d = 0; d < dd.ndim; d++)
         {
-            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            for (int pulse = 0; pulse < dd.comm->cd[d].numPulses(); pulse++)
             {
-                cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+                dd.gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
             }
         }
     }
 }
 
-void reinitGpuHaloExchangeNvshmem(const t_commrec& cr)
+void reinitGpuHaloExchangeNvshmem(const gmx_domdec_t& dd)
 {
     // Does global communication and symmetric reallocation
-    cr.dd->gpuHaloExchangeNvshmemHelper->reinit();
+    dd.gpuHaloExchangeNvshmemHelper->reinit();
 }
 
 void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)

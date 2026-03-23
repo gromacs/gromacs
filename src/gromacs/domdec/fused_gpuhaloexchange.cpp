@@ -53,7 +53,6 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/mdtypes/commrec.h" // t_commrec definition
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -251,7 +250,7 @@ GpuEventSynchronizer* FusedGpuHaloExchange::getForcesReadyOnDeviceEvent()
     return &forceHaloLaunched_;
 }
 
-void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
+void FusedGpuHaloExchange::reinitAllHaloExchanges(const gmx_domdec_t&    dd,
                                                   DeviceBuffer<RVec>     d_coordinatesBuffer,
                                                   DeviceBuffer<RVec>     d_forcesBuffer,
                                                   DeviceBuffer<uint64_t> d_syncBase,
@@ -274,16 +273,16 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
     changePinningPolicy(&haloExchangeData_, PinningPolicy::PinnedIfSupported);
     haloExchangeData_.resize(totalNumPulses_);
 
-    const gmx_domdec_comm_t& comm     = *cr.dd->comm;
+    const gmx_domdec_comm_t& comm     = *dd.comm;
     int                      idxEntry = 0;
-    for (int d = 0; d < cr.dd->ndim; d++)
+    for (int d = 0; d < dd.ndim; d++)
     {
         const int  dimIndex  = d;
-        const int  sendRankX = cr.dd->neighbor[dimIndex][1];
-        const int  recvRankX = cr.dd->neighbor[dimIndex][0];
-        const bool usePBC    = (cr.dd->ci[cr.dd->dim[dimIndex]] == 0);
+        const int  sendRankX = dd.neighbor[dimIndex][1];
+        const int  recvRankX = dd.neighbor[dimIndex][0];
+        const bool usePBC    = (dd.ci[dd.dim[dimIndex]] == 0);
 
-        if (usePBC && cr.dd->unitCellInfo.haveScrewPBC)
+        if (usePBC && dd.unitCellInfo.haveScrewPBC)
         {
             gmx_fatal(FARGS, "Error: screw is not yet supported in GPU halo exchange\n");
         }
@@ -307,9 +306,9 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
             data.atomOffset        = atomOffset;
             data.sendRankX         = sendRankX;
             data.recvRankX         = recvRankX;
-            data.boxDimensionIndex = cr.dd->dim[dimIndex];
+            data.boxDimensionIndex = dd.dim[dimIndex];
             data.usePBC            = usePBC;
-            data.accumulateForces  = (pulse > 0 || cr.dd->ndim > 1);
+            data.accumulateForces  = (pulse > 0 || dd.ndim > 1);
 
             // Copy index map to device; set pinning policy on the original allocation
             const int mapSize = xSendSize;

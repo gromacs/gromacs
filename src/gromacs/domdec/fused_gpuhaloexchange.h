@@ -59,7 +59,6 @@
 
 struct gmx_wallcycle;
 // Forward decls for types used in signatures without including heavy headers
-struct t_commrec;
 class DeviceStream;
 struct gmx_domdec_t;
 struct gmx_wallcycle;
@@ -118,13 +117,13 @@ public:
 
     /*! \brief (Re-)initialize fused halo exchanges for all dimensions and pulses.
      * Builds per-pulse entries, sets shared buffers, NVSHMEM signals, and prepares metadata.
-     * \param [in] cr                  Communication record
+     * \param [in] dd                  Domain-decomposition structure
      * \param [in] d_coordinatesBuffer Pointer to coordinates buffer in GPU memory
      * \param [in] d_forcesBuffer      Pointer to forces buffer in GPU memory
      * \param [in] d_syncBase          Base device pointer for NVSHMEM signal buffer
      * \param [in] totalNumPulses      Total number of pulses across all dimensions
      */
-    void reinitAllHaloExchanges(const t_commrec&       cr,
+    void reinitAllHaloExchanges(const gmx_domdec_t&    dd,
                                 DeviceBuffer<RVec>     d_coordinatesBuffer,
                                 DeviceBuffer<RVec>     d_forcesBuffer,
                                 DeviceBuffer<uint64_t> d_syncBase,

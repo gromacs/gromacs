@@ -1355,7 +1355,7 @@ static void doPairSearch(const t_commrec*             cr,
         if (simulationWork.useGpuHaloExchange && runScheduleWork.simulationWork.useNvshmem)
         {
             // Does global communication and symmetric reallocation
-            reinitGpuHaloExchangeNvshmem(*cr);
+            reinitGpuHaloExchangeNvshmem(*cr->dd);
         }
     }
 
@@ -1520,7 +1520,7 @@ static void doPairSearch(const t_commrec*             cr,
         // global operations must be preserved.
         if (simulationWork.useGpuHaloExchange)
         {
-            reinitGpuHaloExchange(*cr, stateGpu->getCoordinates(), stateGpu->getForces());
+            reinitGpuHaloExchange(*cr->dd, stateGpu->getCoordinates(), stateGpu->getForces());
         }
     }
 

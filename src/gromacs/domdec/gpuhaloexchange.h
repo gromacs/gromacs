@@ -56,7 +56,6 @@ struct gmx_wallcycle;
 class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
-struct t_commrec;
 
 namespace gmx
 {
@@ -182,9 +181,7 @@ public:
     std::unique_ptr<int> fusedPpHaloExchange_;
 #endif
     // Fused pass-through API (defined in gpuhaloexchange_impl_gpu.cpp)
-    void                  reinitAllHaloExchanges(const t_commrec&   cr,
-                                                 DeviceBuffer<RVec> d_coordinatesBuffer,
-                                                 DeviceBuffer<RVec> d_forcesBuffer);
+    void reinitAllHaloExchanges(DeviceBuffer<RVec> d_coordinatesBuffer, DeviceBuffer<RVec> d_forcesBuffer);
     GpuEventSynchronizer* launchAllCoordinateExchanges(const matrix          box,
                                                        GpuEventSynchronizer* dependencyEvent);
     GpuEventSynchronizer* launchAllForceExchanges(bool accumulateForces,
