@@ -49,12 +49,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "gromacs/math/multidimarray.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
@@ -252,6 +252,14 @@ public:
     void arrayRef(const std::string& key, ArrayRef<RVec> values) const;
     //! }
 
+    /*! \brief Read or write a Matrix3x3 from / to checkpoint
+     *
+     * \tparam operation  Whether we are reading or writing
+     * \param key         The key to [read|write] the tensor [from|to]
+     * \param values      The tensor to [read|write]
+     */
+    void matrix3x3(const std::string& key, gmx::Matrix3x3& values) const;
+
     /*! \brief Read or write a tensor from / to checkpoint
      *
      * \tparam operation  Whether we are reading or writing
@@ -302,6 +310,9 @@ public:
     // Write ArrayRef of RVec
     void arrayRef(const std::string& key, ArrayRef<const RVec> values);
     //! }
+
+    //! \copydoc CheckpointData<CheckpointDataOperation::Read>::matrix3x3
+    void matrix3x3(const std::string& key, const gmx::Matrix3x3& values);
 
     //! \copydoc CheckpointData<CheckpointDataOperation::Read>::tensor
     void tensor(const std::string& key, const ::tensor values);
@@ -551,6 +562,20 @@ inline void WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const
     }
 }
 
+inline void ReadCheckpointData::matrix3x3(const std::string& key, gmx::Matrix3x3& values) const
+{
+    auto array     = (*inputTree_)[key].asArray().values();
+    values[XX][XX] = array[0].cast<real>();
+    values[XX][YY] = array[1].cast<real>();
+    values[XX][ZZ] = array[2].cast<real>();
+    values[YY][XX] = array[3].cast<real>();
+    values[YY][YY] = array[4].cast<real>();
+    values[YY][ZZ] = array[5].cast<real>();
+    values[ZZ][XX] = array[6].cast<real>();
+    values[ZZ][YY] = array[7].cast<real>();
+    values[ZZ][ZZ] = array[8].cast<real>();
+}
+
 inline void ReadCheckpointData::tensor(const std::string& key, ::tensor values) const
 {
     auto array     = (*inputTree_)[key].asArray().values();
@@ -563,6 +588,20 @@ inline void ReadCheckpointData::tensor(const std::string& key, ::tensor values) 
     values[ZZ][XX] = array[6].cast<real>();
     values[ZZ][YY] = array[7].cast<real>();
     values[ZZ][ZZ] = array[8].cast<real>();
+}
+
+inline void WriteCheckpointData::matrix3x3(const std::string& key, const gmx::Matrix3x3& values)
+{
+    auto builder = outputTreeBuilder_->addUniformArray<real>(key);
+    builder.addValue(values[XX][XX]);
+    builder.addValue(values[XX][YY]);
+    builder.addValue(values[XX][ZZ]);
+    builder.addValue(values[YY][XX]);
+    builder.addValue(values[YY][YY]);
+    builder.addValue(values[YY][ZZ]);
+    builder.addValue(values[ZZ][XX]);
+    builder.addValue(values[ZZ][YY]);
+    builder.addValue(values[ZZ][ZZ]);
 }
 
 inline void WriteCheckpointData::tensor(const std::string& key, const ::tensor values)

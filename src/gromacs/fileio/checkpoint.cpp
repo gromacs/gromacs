@@ -1005,16 +1005,10 @@ static int do_cpte_matrix(XdrSerializer* serializer, Enum ecpt, matrix v, FILE* 
 }
 
 template<typename Enum>
-static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int n, matrix** v, FILE* list)
+static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int n, std::vector<gmx::Matrix3x3>* v, FILE* list)
 {
-    bool_t  res = 0;
-    matrix *vp, *va = nullptr;
-    real*   vr;
-    int     nf, i, j, k;
-    int     ret;
-
-    nf  = n;
-    res = xdr_int(serializer->xdr(), &nf);
+    int nf  = n;
+    int res = xdr_int(serializer->xdr(), &nf);
     if (res == 0)
     {
         return -1;
@@ -1027,54 +1021,56 @@ static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int n, matrix*
                   n,
                   nf);
     }
+    std::vector<gmx::Matrix3x3>   va;
+    gmx::ArrayRef<gmx::Matrix3x3> vp;
     if (list)
     {
-        snew(va, nf);
+        va.resize(nf);
         vp = va;
     }
     else
     {
-        if (*v == nullptr)
+        if (v->empty())
         {
-            snew(*v, nf);
+            v->resize(nf);
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(gmx::ssize(*v) == nf, "The sizes should match");
         }
         vp = *v;
     }
-    snew(vr, nf * DIM * DIM);
-    for (i = 0; i < nf; i++)
+    std::vector<real> vr(nf * DIM * DIM);
+    for (int i = 0; i < nf; i++)
     {
-        for (j = 0; j < DIM; j++)
+        for (int j = 0; j < DIM; j++)
         {
-            for (k = 0; k < DIM; k++)
+            for (int k = 0; k < DIM; k++)
             {
                 vr[(i * DIM + j) * DIM + k] = vp[i][j][k];
             }
         }
     }
-    ret = doVectorLow<real, std::allocator<real>>(
-            serializer, ecpt, nf * DIM * DIM, &vr, nullptr, nullptr, CptElementType::matrix3x3);
-    for (i = 0; i < nf; i++)
+    real* vrData = vr.data();
+    int   ret    = doVectorLow<real, std::allocator<real>>(
+            serializer, ecpt, gmx::ssize(vr), &vrData, nullptr, nullptr, CptElementType::matrix3x3);
+    for (int i = 0; i < nf; i++)
     {
-        for (j = 0; j < DIM; j++)
+        for (int j = 0; j < DIM; j++)
         {
-            for (k = 0; k < DIM; k++)
+            for (int k = 0; k < DIM; k++)
             {
                 vp[i][j][k] = vr[(i * DIM + j) * DIM + k];
             }
         }
     }
-    sfree(vr);
 
     if (list && ret == 0)
     {
-        for (i = 0; i < nf; i++)
+        for (int i = 0; i < nf; i++)
         {
-            pr_rvecs(list, 0, enumValueToString(ecpt), vp[i], DIM);
+            pr_matrix3x3(list, 0, enumValueToString(ecpt), vp[i]);
         }
-    }
-    if (va)
-    {
-        sfree(va);
     }
 
     return ret;

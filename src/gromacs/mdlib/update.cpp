@@ -1441,9 +1441,9 @@ static void do_update_bd(int                                 start,
 extern void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir)
 {
     ekinstate->ekin_n = ir->opts.ngtc;
-    snew(ekinstate->ekinh, ekinstate->ekin_n);
-    snew(ekinstate->ekinf, ekinstate->ekin_n);
-    snew(ekinstate->ekinh_old, ekinstate->ekin_n);
+    ekinstate->ekinh.resize(ekinstate->ekin_n);
+    ekinstate->ekinf.resize(ekinstate->ekin_n);
+    ekinstate->ekinh_old.resize(ekinstate->ekin_n);
     ekinstate->ekinscalef_nhc.resize(ekinstate->ekin_n);
     ekinstate->ekinscaleh_nhc.resize(ekinstate->ekin_n);
     ekinstate->vscale_nhc.resize(ekinstate->ekin_n);
@@ -1529,8 +1529,8 @@ void update_ekinstate(ekinstate_t*          ekinstate,
         {
             for (int g = 0; g < ekinstate->ekin_n; g++)
             {
-                copy_mat(ekind->tcstat[g].ekinh, ekinstate->ekinh[g]);
-                copy_mat(ekind->tcstat[g].ekinf, ekinstate->ekinf[g]);
+                ekinstate->ekinh[g] = createMatrix3x3FromLegacyMatrix(ekind->tcstat[g].ekinh);
+                ekinstate->ekinf[g] = createMatrix3x3FromLegacyMatrix(ekind->tcstat[g].ekinf);
             }
             ekinstate->dekindl = ekind->dekindl;
         }
@@ -1556,8 +1556,8 @@ void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm, gmx_ekindata_t* e
     {
         for (i = 0; i < ekinstate->ekin_n; i++)
         {
-            copy_mat(ekinstate->ekinh[i], ekind->tcstat[i].ekinh);
-            copy_mat(ekinstate->ekinf[i], ekind->tcstat[i].ekinf);
+            fillLegacyMatrix(ekinstate->ekinh[i], ekind->tcstat[i].ekinh);
+            fillLegacyMatrix(ekinstate->ekinf[i], ekind->tcstat[i].ekinf);
             ekind->tcstat[i].ekinscalef_nhc = ekinstate->ekinscalef_nhc[i];
             ekind->tcstat[i].ekinscaleh_nhc = ekinstate->ekinscaleh_nhc[i];
             ekind->tcstat[i].vscale_nhc     = ekinstate->vscale_nhc[i];

@@ -19,7 +19,6 @@ leak:gmx_make_edi
 leak:gmx_pme_receive_f
 leak:init_disres
 leak:init_edsam
-leak:init_ekinstate
 leak:init_rot
 leak:init_swapcoords
 leak:make_bondeds_zone

@@ -68,9 +68,6 @@ history_t::history_t() : disre_initf(0), orire_initf(0) {}
 ekinstate_t::ekinstate_t() :
     bUpToDate(FALSE),
     ekin_n(0),
-    ekinh(nullptr),
-    ekinf(nullptr),
-    ekinh_old(nullptr),
     ekin_total(),
 
     dekindl(0),
@@ -115,9 +112,9 @@ void ekinstate_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData)
     }
     for (int idx = 0; idx < numOfTensors; ++idx)
     {
-        checkpointData.tensor(gmx::formatString("ekinh %d", idx), ekinh[idx]);
-        checkpointData.tensor(gmx::formatString("ekinf %d", idx), ekinf[idx]);
-        checkpointData.tensor(gmx::formatString("ekinh_old %d", idx), ekinh_old[idx]);
+        checkpointData.matrix3x3(gmx::formatString("ekinh %d", idx), ekinh[idx]);
+        checkpointData.matrix3x3(gmx::formatString("ekinf %d", idx), ekinf[idx]);
+        checkpointData.matrix3x3(gmx::formatString("ekinh_old %d", idx), ekinh_old[idx]);
     }
     checkpointData.arrayRef("ekinscalef_nhc", gmx::makeCheckpointArrayRef<operation>(ekinscalef_nhc));
     checkpointData.arrayRef("ekinscaleh_nhc", gmx::makeCheckpointArrayRef<operation>(ekinscaleh_nhc));

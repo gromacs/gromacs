@@ -203,6 +203,14 @@ void dumpRvecArrayRefWrapper(TextWriter* writer, const char* description, ArrayR
     dumpRvecArrayRef(writer, description, values);
 }
 
+//! Wrapper that ignores the "show indices" boolean
+void pr_matrix3x3_wrapper(FILE* fp, int indent, const char* title, const Matrix3x3* matrix3x3, int n, gmx_bool /* unused */)
+{
+    GMX_RELEASE_ASSERT(n == 1, "Only a single matrix3x3 is supported here");
+
+    pr_matrix3x3(fp, indent, title, *matrix3x3);
+}
+
 TEST_P(DumpingVectorsTest, CanDumpRvecIdentically)
 {
     const TestParameters parameters = GetParam();
@@ -230,6 +238,24 @@ TEST_P(DumpingVectorsTest, CanDumpRvecIdentically)
         testModernFunction(dumpRvecArrayRefWrapper, testArrayRef, "long format", testingLongFormat);
         gmxUnsetenv("GMX_PRINT_LONGFORMAT");
     }
+}
+
+TEST_P(DumpingVectorsTest, CanDumpMatrix3x3)
+{
+    const TestParameters parameters = GetParam();
+    if (parameters.showIndices || !parameters.valuesAvailable)
+    {
+        // This facility is not supported for these methods.  We don't
+        // use GTEST_SKIP because we don't want to imply to the user
+        // of the test binary that something that *might* be tested
+        // was not tested.
+        return;
+    }
+    using TestType = Matrix3x3;
+    std::vector<TestType> matrix3x3{ { { 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9 } } };
+    const auto            testArrayRef =
+            parameters.valuesAvailable ? ArrayRef<TestType>(matrix3x3) : ArrayRef<TestType>{};
+    testLegacyFunction(pr_matrix3x3_wrapper, testArrayRef.data(), testArrayRef.size(), "output");
 }
 
 //! Define the space for testing

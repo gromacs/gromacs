@@ -37,6 +37,7 @@
 #include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/vectypes.h"
 
 
@@ -65,6 +66,7 @@ void pr_rvec(FILE* fp, int indent, const char* title, const real vec[], int n, g
 void pr_fvec(FILE* fp, int indent, const char* title, const float vec[], int n, gmx_bool bShowNumbers);
 void pr_dvec(FILE* fp, int indent, const char* title, const double vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n);
+void pr_matrix3x3(FILE* fp, int indent, const char* title, const gmx::Matrix3x3& matrix3x3);
 
 //! New interface receiving an ArrayRef as input
 void prRVecs(FILE* fp, int indent, const char* title, gmx::ArrayRef<const gmx::RVec> vec);

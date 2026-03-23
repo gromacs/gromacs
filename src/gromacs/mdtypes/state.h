@@ -63,6 +63,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -176,16 +177,16 @@ class ekinstate_t
 public:
     ekinstate_t();
 
-    bool                bUpToDate;      //!< Test if all data is up to date
-    int                 ekin_n;         //!< The number of tensors
-    tensor*             ekinh;          //!< Half step Ekin, size \p ekin_n
-    tensor*             ekinf;          //!< Full step Ekin, size \p ekin_n
-    tensor*             ekinh_old;      //!< Half step Ekin of the previous step, size \p ekin_n
-    tensor              ekin_total;     //!< Total kinetic energy
-    std::vector<double> ekinscalef_nhc; //!< Nose-Hoover Ekin scaling factors for full step Ekin
-    std::vector<double> ekinscaleh_nhc; //!< Nose-Hoover Ekin scaling factors for half step Ekin
-    std::vector<double> vscale_nhc;     //!< Nose-Hoover velocity scaling factors
-    real                dekindl;        //!< dEkin/dlambda, with free-energy
+    bool                        bUpToDate;  //!< Test if all data is up to date
+    int                         ekin_n;     //!< The number of tensors
+    std::vector<gmx::Matrix3x3> ekinh;      //!< Half step Ekin, size \p ekin_n
+    std::vector<gmx::Matrix3x3> ekinf;      //!< Full step Ekin, size \p ekin_n
+    std::vector<gmx::Matrix3x3> ekinh_old;  //!< Half step Ekin of the previous step, size \p ekin_n
+    tensor                      ekin_total; //!< Total kinetic energy
+    std::vector<double> ekinscalef_nhc;     //!< Nose-Hoover Ekin scaling factors for full step Ekin
+    std::vector<double> ekinscaleh_nhc;     //!< Nose-Hoover Ekin scaling factors for half step Ekin
+    std::vector<double> vscale_nhc;         //!< Nose-Hoover velocity scaling factors
+    real                dekindl;            //!< dEkin/dlambda, with free-energy
     real                mvcos; //!< Cosine(z) component of the momentum, for viscosity calculations
     /*! \brief Whether KE terms have been read from the checkpoint.
      *
