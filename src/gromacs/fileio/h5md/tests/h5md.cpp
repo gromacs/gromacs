@@ -64,6 +64,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/setenv.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testmatchers.h"
@@ -221,18 +222,80 @@ TEST_F(H5mdIoTest, SetupFileFromInputWritesMetadataGroup)
             << "Program version must match";
 }
 
-TEST_F(H5mdIoTest, AuthorNameIsNA)
+//! \brief Test fixture which unsets author-related environment variables for each test
+class H5mdAuthorGroupTest : public H5mdTestBase
+{
+public:
+    H5mdAuthorGroupTest()
+    {
+        gmxUnsetenv("GMX_AUTHOR_NAME");
+        gmxUnsetenv("GMX_AUTHOR_EMAIL");
+    }
+};
+
+TEST_F(H5mdAuthorGroupTest, AuthorNameAndEmailIsSetFromEnvironmentVariable)
+{
+    constexpr char authorName[]  = "Alvar Aalto";
+    constexpr char authorEmail[] = "noreply@gromacs.org";
+    gmxSetenv("GMX_AUTHOR_NAME", authorName, false);
+    gmxSetenv("GMX_AUTHOR_EMAIL", authorEmail, false);
+
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
+    EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"),
+                ::testing::Optional(::testing::StrEq(authorName)));
+    EXPECT_THAT(getAttribute<std::string>(authorGroup, "email"),
+                ::testing::Optional(::testing::StrEq(authorEmail)));
+}
+
+TEST_F(H5mdAuthorGroupTest, AuthorNameDefaultsToPlaceHolder)
 {
     gmx_mtop_t mtop;
     mtop.natoms = 1;
     t_inputrec inputRecord;
-
     file().setupFileFromInput(mtop, inputRecord);
 
-    const auto [group, groupGuard]             = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
-    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(group, "author"));
-    EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"), ::testing::Optional(::testing::StrEq("N/A")))
-            << "Author name must be written";
+    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
+
+    EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"),
+                ::testing::Optional(::testing::StrEq("N/A")));
+}
+
+TEST_F(H5mdAuthorGroupTest, AuthorEmailDefaultsToNotBeingSet)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
+
+    EXPECT_FALSE(getAttribute<std::string>(authorGroup, "email").has_value());
+}
+
+TEST_F(H5mdAuthorGroupTest, EmptyAuthorNameAndEmailVariablesAreWrittenAsEmptyStrings)
+{
+    gmxSetenv("GMX_AUTHOR_NAME", "", false);
+    gmxSetenv("GMX_AUTHOR_EMAIL", "", false);
+
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
+
+    EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"), ::testing::Optional(::testing::StrEq("")));
+    EXPECT_THAT(getAttribute<std::string>(authorGroup, "email"),
+                ::testing::Optional(::testing::StrEq("")));
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputWritesModuleInformation)

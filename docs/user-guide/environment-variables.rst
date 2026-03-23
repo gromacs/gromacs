@@ -26,6 +26,12 @@ Output Control
 ..
    Please keep these in alphabetical order!
 
+``GMX_AUTHOR_EMAIL``
+        Email address of corresponding author in ``GMX_AUTHOR_NAME``.
+
+``GMX_AUTHOR_NAME``
+        Name of corresponding author that simulation data is attributed to.
+
 ``GMX_COMPELDUMP``
         Applies for computational electrophysiology setups
         only (see reference manual). The initial structure gets dumped to

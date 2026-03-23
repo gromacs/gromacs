@@ -117,6 +117,8 @@ constexpr char c_h5mdCreatorGroupName[] = "creator";
 constexpr char c_h5mdModulesGroupName[] = "modules";
 //! \brief Attribute name for the author or creator (program) name.
 constexpr char c_h5mdNameAttributeKey[] = "name";
+//! \brief Attribute name for the author email address.
+constexpr char c_h5mdEmailAttributeKey[] = "email";
 //! \brief Attribute name for a version specification.
 constexpr char c_h5mdVersionAttributeKey[] = "version";
 //! \brief Path to H5MD connectivity group from the file root.
@@ -456,7 +458,16 @@ void H5md::setupMetadataGroup()
 
     const auto [authorGroup, authorGroupGuard] =
             makeH5mdGroupGuard(createGroup(group, c_h5mdAuthorGroupName));
-    setAttribute(authorGroup, c_h5mdNameAttributeKey, "N/A");
+
+    // Author name and email are optionally set from environment variables,
+    // write if available. The H5MD spec requires a name to be written, so
+    // use a fallback if it is not set.
+    const char* authorName = std::getenv("GMX_AUTHOR_NAME");
+    setAttribute(authorGroup, c_h5mdNameAttributeKey, authorName != nullptr ? authorName : "N/A");
+    if (const char* authorEmail = std::getenv("GMX_AUTHOR_EMAIL"); authorEmail != nullptr)
+    {
+        setAttribute(authorGroup, c_h5mdEmailAttributeKey, authorEmail);
+    }
 
     const auto [creatorGroup, creatorGroupGuard] =
             makeH5mdGroupGuard(createGroup(group, c_h5mdCreatorGroupName));
