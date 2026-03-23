@@ -733,7 +733,7 @@ void gmx::LegacySimulator::do_md()
     {
         for (int i = 0; (i < ir->opts.ngtc); i++)
         {
-            copy_mat(ekind_->tcstat[i].ekinh, ekind_->tcstat[i].ekinh_old);
+            ekind_->tcstat[i].ekinh_old = ekind_->tcstat[i].ekinh;
         }
     }
 

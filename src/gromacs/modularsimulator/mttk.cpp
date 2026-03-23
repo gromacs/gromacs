@@ -529,22 +529,21 @@ void MttkData::updateScalingFactors()
 
 void MttkElement::propagateEtaVelocity(Step step)
 {
-    const auto* ekind         = energyData_->ekindata();
-    const auto* virial        = energyData_->totalVirial(step);
-    const real  currentVolume = det(statePropagatorData_->constBox());
+    const auto*     ekind         = energyData_->ekindata();
+    const Matrix3x3 virial        = createMatrix3x3FromLegacyMatrix(energyData_->totalVirial(step));
+    const real      currentVolume = det(statePropagatorData_->constBox());
     // Tuckerman et al. 2006, Eq 5.8
     // Note that we're using the dof of the first temperature group only
     const real alpha = 1.0 + DIM / (numDegreesOfFreedom_);
     // Also here, using first group only
     const real kineticEnergyFactor = alpha * ekind->tcstat[0].ekinscalef_nhc;
     // Now, we're using full system kinetic energy!
-    tensor modifiedKineticEnergy;
-    msmul(ekind->ekin, kineticEnergyFactor, modifiedKineticEnergy);
+    const Matrix3x3 modifiedKineticEnergy = ekind->ekin * kineticEnergyFactor;
 
-    tensor currentPressureTensor;
+    Matrix3x3 currentPressureTensor;
 
     const real currentPressure = calc_pres(
-            pbcType_, numWalls_, statePropagatorData_->constBox(), modifiedKineticEnergy, virial, currentPressureTensor);
+            pbcType_, numWalls_, statePropagatorData_->constBox(), modifiedKineticEnergy, virial, &currentPressureTensor);
 
     const real etaAcceleration = DIM * currentVolume * (mttkData_->invEtaMass() / c_presfac)
                                  * (currentPressure - mttkData_->referencePressure());

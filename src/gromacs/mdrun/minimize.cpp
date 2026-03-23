@@ -128,6 +128,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vec.h"
@@ -149,6 +150,7 @@ struct gmx_shellfc_t;
 struct pull_t;
 
 using gmx::ArrayRef;
+using gmx::Matrix3x3;
 using gmx::MDModulesNotifiers;
 using gmx::MdrunScheduleWorkload;
 using gmx::RVec;
@@ -989,7 +991,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 {
     real     t;
     gmx_bool bNS;
-    tensor   force_vir, shake_vir, ekin;
+    tensor   force_vir, shake_vir;
     real     dvdl_constr;
     real     terminate = 0;
 
@@ -1174,9 +1176,12 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         copy_mat(force_vir, vir);
     }
 
-    clear_mat(ekin);
-    enerd->term[InteractionFunction::Pressure] =
-            calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
+    // The kinetic energy is needed for calling calc_pres(); it is zero with EM
+    const Matrix3x3 ekin;
+    Matrix3x3       pressure;
+    enerd->term[InteractionFunction::Pressure] = calc_pres(
+            fr->pbcType, inputrec->nwall, ems->s.box, ekin, gmx::createMatrix3x3FromLegacyMatrix(vir), &pressure);
+    fillLegacyMatrix(pressure, pres);
 
     if (inputrec->efep != FreeEnergyPerturbationType::No)
     {

@@ -40,6 +40,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -58,11 +59,11 @@ struct t_grp_tcstat
     //! Temperature at full step
     real T = 0;
     //! Kinetic energy at half step
-    tensor ekinh = { { 0 } };
+    gmx::Matrix3x3 ekinh;
     //! Kinetic energy at old half step
-    tensor ekinh_old = { { 0 } };
+    gmx::Matrix3x3 ekinh_old;
     //! Kinetic energy at full step
-    tensor ekinf = { { 0 } };
+    gmx::Matrix3x3 ekinf;
     //! Berendsen coupling lambda
     real lambda = 0;
     //! Scaling factor for NHC- full step
@@ -195,15 +196,15 @@ public:
     //! T-coupling data
     std::vector<t_grp_tcstat> tcstat;
     //! Allocated locations for *_work members
-    tensor** ekin_work_alloc = nullptr;
+    std::vector<std::vector<gmx::Matrix3x3>> ekin_work_alloc;
     //! Work arrays for tcstat per thread
-    tensor** ekin_work = nullptr;
+    std::vector<gmx::ArrayRef<gmx::Matrix3x3>> ekin_work;
     //! Work location for dekindl per thread
-    real** dekindl_work = nullptr;
+    std::vector<real*> dekindl_work;
     //! overall kinetic energy
-    tensor ekin = { { 0 } };
+    gmx::Matrix3x3 ekin;
     //! overall 1/2 step kinetic energy
-    tensor ekinh = { { 0 } };
+    gmx::Matrix3x3 ekinh;
     //! dEkin/dlambda at half step
     real dekindl = 0;
     //! dEkin/dlambda at old half step
@@ -216,8 +217,6 @@ public:
     t_cos_acc cosacc;
     //! Last step at which kinetic energy terms were accumulated over the ranks
     int64_t lastComputeGlobalsStep = -2;
-
-    ~gmx_ekindata_t();
 
 private:
     //! Whether the box is continuously deformed

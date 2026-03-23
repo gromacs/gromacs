@@ -58,7 +58,7 @@ real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, 
     T    = 0;
     nrdf = 0;
 
-    clear_mat(ekind->ekin);
+    ekind->ekin.clear();
 
     for (i = 0; (i < ngtc); i++)
     {
@@ -78,7 +78,7 @@ real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, 
                 if (!bScaleEkin)
                 {
                     /* in this case, kinetic energy is from the current velocities already */
-                    msmul(tcstat->ekinf, tcstat->ekinscalef_nhc, tcstat->ekinf);
+                    tcstat->ekinf *= tcstat->ekinscalef_nhc;
                 }
             }
             else
@@ -94,7 +94,7 @@ real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, 
                     }
                 }
             }
-            m_add(tcstat->ekinf, ekind->ekin, ekind->ekin);
+            ekind->ekin += tcstat->ekinf;
 
             tcstat->Th = calc_temp(trace(tcstat->ekinh), nd);
             tcstat->T  = calc_temp(trace(tcstat->ekinf), nd);

@@ -594,7 +594,6 @@ static void boxv_trotter(const t_inputrec*     ir,
     double alpha;
     int    nwall;
     real   GW, vol;
-    tensor ekinmod, localpres;
 
     /* The heat bath is coupled to a separate barostat, the last temperature group.  In the
        2006 Tuckerman et al paper., the order is iL_{T_baro} iL {T_part}
@@ -623,11 +622,13 @@ static void boxv_trotter(const t_inputrec*     ir,
     /* alpha factor for phase space volume, then multiply by the ekin scaling factor.  */
     alpha = 1.0 + DIM / (static_cast<double>(ir->opts.nrdf[0]));
     alpha *= ekind->tcstat[0].ekinscalef_nhc;
-    msmul(ekind->ekin, alpha, ekinmod);
+    gmx::Matrix3x3 ekinmod = ekind->ekin * alpha;
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
 
-    pscal = calc_pres(ir->pbcType, nwall, box, ekinmod, vir, localpres);
+    gmx::Matrix3x3 localpres;
+    pscal = calc_pres(
+            ir->pbcType, nwall, box, ekinmod, gmx::createMatrix3x3FromLegacyMatrix(vir), &localpres);
 
     vol = det(box);
     GW  = (vol * (MassQ->Winv / gmx::c_presfac))
@@ -644,14 +645,16 @@ static void boxv_trotter(const t_inputrec*     ir,
  *
  */
 
-real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres)
+real calc_pres(PbcType               pbcType,
+               int                   nwall,
+               const matrix          box,
+               const gmx::Matrix3x3& ekin,
+               const gmx::Matrix3x3& vir,
+               gmx::Matrix3x3*       pres)
 {
-    int  n, m;
-    real fac;
-
     if (pbcType == PbcType::No || (pbcType == PbcType::XY && nwall != 2))
     {
-        clear_mat(pres);
+        pres->clear();
     }
     else
     {
@@ -660,24 +663,18 @@ real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, 
          * het systeem...
          */
 
-        fac = gmx::c_presfac * 2.0 / det(box);
-        for (n = 0; (n < DIM); n++)
-        {
-            for (m = 0; (m < DIM); m++)
-            {
-                pres[n][m] = (ekin[n][m] - vir[n][m]) * fac;
-            }
-        }
+        real fac = gmx::c_presfac * 2.0 / det(box);
+        *pres    = (ekin - vir) * fac;
 
         if (debug)
         {
-            pr_rvecs(debug, 0, "PC: pres", pres, DIM);
-            pr_rvecs(debug, 0, "PC: ekin", ekin, DIM);
-            pr_rvecs(debug, 0, "PC: vir ", vir, DIM);
+            pr_matrix3x3(debug, 0, "PC: pres", *pres);
+            pr_matrix3x3(debug, 0, "PC: ekin", ekin);
+            pr_matrix3x3(debug, 0, "PC: vir ", vir);
             pr_rvecs(debug, 0, "PC: box ", box, DIM);
         }
     }
-    return trace(pres) / DIM;
+    return trace(*pres) / DIM;
 }
 
 real calc_temp(real ekin, real nrdf)

@@ -530,7 +530,7 @@ void EnergyData::updateKineticEnergy()
 
     enerd_->term[InteractionFunction::Temperature] = sum_ekin(
             &(inputrec_->opts), ekind_, dEkinDLambda, useFullStepKineticEnergy, ignoreScalingFactor);
-    enerd_->term[InteractionFunction::KineticEnergy] = ::trace(ekind_->ekin);
+    enerd_->term[InteractionFunction::KineticEnergy] = trace(ekind_->ekin);
 }
 
 EnergyData::Element* EnergyData::element()

@@ -1529,8 +1529,8 @@ void update_ekinstate(ekinstate_t*          ekinstate,
         {
             for (int g = 0; g < ekinstate->ekin_n; g++)
             {
-                ekinstate->ekinh[g] = createMatrix3x3FromLegacyMatrix(ekind->tcstat[g].ekinh);
-                ekinstate->ekinf[g] = createMatrix3x3FromLegacyMatrix(ekind->tcstat[g].ekinf);
+                ekinstate->ekinh[g] = ekind->tcstat[g].ekinh;
+                ekinstate->ekinf[g] = ekind->tcstat[g].ekinf;
             }
             ekinstate->dekindl = ekind->dekindl;
         }
@@ -1556,8 +1556,8 @@ void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm, gmx_ekindata_t* e
     {
         for (i = 0; i < ekinstate->ekin_n; i++)
         {
-            fillLegacyMatrix(ekinstate->ekinh[i], ekind->tcstat[i].ekinh);
-            fillLegacyMatrix(ekinstate->ekinf[i], ekind->tcstat[i].ekinf);
+            ekind->tcstat[i].ekinh          = ekinstate->ekinh[i];
+            ekind->tcstat[i].ekinf          = ekinstate->ekinf[i];
             ekind->tcstat[i].ekinscalef_nhc = ekinstate->ekinscalef_nhc[i];
             ekind->tcstat[i].ekinscaleh_nhc = ekinstate->ekinscaleh_nhc[i];
             ekind->tcstat[i].vscale_nhc     = ekinstate->vscale_nhc[i];
@@ -1574,10 +1574,10 @@ void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm, gmx_ekindata_t* e
         for (i = 0; i < n; i++)
         {
             gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinh[0][0]),
-                      ekind->tcstat[i].ekinh[0],
+                      &ekind->tcstat[i].ekinh[0][0],
                       mpiComm.comm());
             gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinf[0][0]),
-                      ekind->tcstat[i].ekinf[0],
+                      &ekind->tcstat[i].ekinf[0][0],
                       mpiComm.comm());
 
             gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc),
