@@ -56,6 +56,7 @@
 #    include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #    include "gromacs/timing/wallcycle.h"
 #    include "gromacs/utility/classhelpers.h"
+#    include "gromacs/utility/mpicomm.h"
 #    include "gromacs/utility/vectypes.h"
 
 #    include "state_propagator_data_gpu_impl.h"
@@ -71,6 +72,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
                                    int                        allocationBlockSizeDivisor,
                                    bool                       useNvshmem,
                                    bool                       useGpuFBufferOpsWhenAllowed,
+                                   const MpiComm&             commMySim,
                                    gmx_wallcycle*             wcycle) :
     deviceContext_(deviceStreamManager.context()),
     transferKind_(transferKind),
@@ -78,7 +80,8 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
     wcycle_(wcycle),
     useNvshmem_(useNvshmem),
     useGpuFBufferOpsWhenAllowed_(useGpuFBufferOpsWhenAllowed),
-    isPmeRank(false)
+    isPmeRank(false),
+    commMySim_(commMySim.comm())
 {
     static_assert(
             GMX_GPU,
@@ -123,6 +126,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
                                    GpuApiCallBehavior   transferKind,
                                    int                  allocationBlockSizeDivisor,
                                    bool                 useNvshmem,
+                                   const MpiComm&       commMySim,
                                    gmx_wallcycle*       wcycle) :
     deviceContext_(deviceContext),
     transferKind_(transferKind),
@@ -130,7 +134,8 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     wcycle_(wcycle),
     useNvshmem_(useNvshmem),
     useGpuFBufferOpsWhenAllowed_(false),
-    isPmeRank(true)
+    isPmeRank(true),
+    commMySim_(commMySim.comm())
 {
     static_assert(
             GMX_GPU,
@@ -176,7 +181,7 @@ StatePropagatorDataGpu::Impl::~Impl()
     freeDeviceBuffer(&d_f_);
 }
 
-void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim)
+void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
@@ -198,9 +203,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, MP
     if (useNvshmem_)
     {
 #    if GMX_MPI
-        MPI_Allreduce(&numAtomsPadded, &maxNumAtomsPadded, 1, MPI_INT, MPI_MAX, mpiCommMySim);
-#    else
-        GMX_UNUSED_VALUE(mpiCommMySim);
+        MPI_Allreduce(&numAtomsPadded, &maxNumAtomsPadded, 1, MPI_INT, MPI_MAX, commMySim_);
 #    endif
     }
 
@@ -693,8 +696,15 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStreamManager& device
                                                int            allocationBlockSizeDivisor,
                                                bool           useNvshmem,
                                                bool           useGpuFBufferOpsWhenAllowed,
+                                               const MpiComm& commMySim,
                                                gmx_wallcycle* wcycle) :
-    impl_(new Impl(deviceStreamManager, transferKind, allocationBlockSizeDivisor, useNvshmem, useGpuFBufferOpsWhenAllowed, wcycle))
+    impl_(new Impl(deviceStreamManager,
+                   transferKind,
+                   allocationBlockSizeDivisor,
+                   useNvshmem,
+                   useGpuFBufferOpsWhenAllowed,
+                   commMySim,
+                   wcycle))
 {
 }
 
@@ -703,8 +713,9 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream*  pmeStream,
                                                GpuApiCallBehavior   transferKind,
                                                int                  allocationBlockSizeDivisor,
                                                bool                 useNvshmem,
+                                               const MpiComm&       commMySim,
                                                gmx_wallcycle*       wcycle) :
-    impl_(new Impl(pmeStream, deviceContext, transferKind, allocationBlockSizeDivisor, useNvshmem, wcycle))
+    impl_(new Impl(pmeStream, deviceContext, transferKind, allocationBlockSizeDivisor, useNvshmem, commMySim, wcycle))
 {
 }
 
@@ -715,9 +726,9 @@ StatePropagatorDataGpu& StatePropagatorDataGpu::operator=(StatePropagatorDataGpu
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
 
-void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim)
+void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll)
 {
-    return impl_->reinit(numAtomsLocal, numAtomsAll, mpiCommMySim);
+    return impl_->reinit(numAtomsLocal, numAtomsAll);
 }
 
 std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality atomLocality) const

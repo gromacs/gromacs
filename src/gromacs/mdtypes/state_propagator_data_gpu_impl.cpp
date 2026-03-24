@@ -79,7 +79,8 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStreamManager& /* dev
                                                int /* allocationBlockSizeDivisor */,
                                                bool /*useNvshmem*/,
                                                bool /*useGpuFBufferOpsWhenAllowed*/,
-                                               gmx_wallcycle* /*   wcycle */) :
+                                               const MpiComm& /* commMySim */,
+                                               gmx_wallcycle* /* wcycle */) :
     impl_(nullptr)
 {
 }
@@ -89,7 +90,8 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream* /* pmeStream 
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* allocationBlockSizeDivisor */,
                                                bool /*useNvshmem*/,
-                                               gmx_wallcycle* /*   wcycle */) :
+                                               const MpiComm& /* commMySim */,
+                                               gmx_wallcycle* /* wcycle */) :
     impl_(nullptr)
 {
 }
@@ -100,7 +102,7 @@ StatePropagatorDataGpu& StatePropagatorDataGpu::operator=(StatePropagatorDataGpu
 
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
-void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll*/, MPI_Comm /*mpiCommMySim*/)
+void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll*/)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "

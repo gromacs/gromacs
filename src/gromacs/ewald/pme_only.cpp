@@ -280,7 +280,6 @@ static std::unique_ptr<gmx_pme_t> gmx_pmeonly_switch(std::unique_ptr<gmx_pme_t>&
  * \param[in]  stateGpu               GPU state propagator object.
  * \param[in]  gpuHaloExchangeNvshmemHelper  Supports symmetric operations with NVSHMEM halo
  *                                           exchange
- * \param[in]  dd                     The domain decompostion object.
  * \param[in]  runMode                PME run mode.
  *
  * \retval pmerecvqxX                 All parameters were set, chargeA and chargeB can be NULL.
@@ -304,7 +303,6 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       bool                         useGpuForPme,
                                       gmx::StatePropagatorDataGpu* stateGpu,
                                       gmx::GpuHaloExchangeNvshmemHelper* gpuHaloExchangeNvshmemHelper,
-                                      const gmx_domdec_t&   dd,
                                       PmeRunMode gmx_unused runMode)
 {
     int status = -1;
@@ -563,7 +561,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             if (useGpuForPme)
             {
                 // Does global communication and symmetric reallocation with NVSHMEM
-                stateGpu->reinit(nat, nat, dd.mpiCommMySim().comm());
+                stateGpu->reinit(nat, nat);
                 if (pme_pp->useNvshmem && pme_pp->useGpuHaloExchange)
                 {
                     // Does global communication and symmetric reallocation
@@ -603,7 +601,6 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(useGpuForPme);
     GMX_UNUSED_VALUE(stateGpu);
     GMX_UNUSED_VALUE(gpuHaloExchangeNvshmemHelper);
-    GMX_UNUSED_VALUE(dd);
 
     status = pmerecvqxX;
 #endif
@@ -807,6 +804,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                 GpuApiCallBehavior::Async,
                 pme_gpu_get_block_size(*pme),
                 useNvshmem,
+                dd.mpiCommMySim(),
                 wcycle);
     }
 
@@ -840,7 +838,6 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                                              useGpuForPme,
                                              stateGpu.get(),
                                              gpuHaloExchangeNvshmemHelper.get(),
-                                             dd,
                                              runMode);
 
             if (ret == pmerecvqxSWITCHGRID)

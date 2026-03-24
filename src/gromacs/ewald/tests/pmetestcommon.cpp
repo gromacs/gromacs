@@ -78,6 +78,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/test_hardware_environment.h"
@@ -205,8 +206,10 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Pin the host buffer and use async memory copies
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
+    MpiComm        mpiComm{ MpiComm::SingleRank{} };
+    gmx_wallcycle* wcycle = nullptr;
     return std::make_unique<StatePropagatorDataGpu>(
-            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(pme), false, nullptr);
+            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(pme), false, mpiComm, wcycle);
 }
 
 //! PME initialization with atom data
@@ -237,7 +240,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc->setNumAtoms(atomCount);
             gmx_pme_reinit_atoms(pme, atomCount, charges, {});
 
-            stateGpu->reinit(atomCount, atomCount, MPI_COMM_NULL);
+            stateGpu->reinit(atomCount, atomCount);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
                                            gmx::AtomLocality::Local);
             pme_gpu_set_kernelparam_coordinates(pme->gpu.get(), stateGpu->getCoordinates());

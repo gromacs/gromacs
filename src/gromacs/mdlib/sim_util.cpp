@@ -1350,8 +1350,7 @@ static void doPairSearch(const t_commrec*             cr,
         //
         // Does global communication and symmetric reallocation with NVSHMEM
         stateGpu->reinit(mdatoms.homenr,
-                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition),
-                         cr->commMySim.comm());
+                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition));
         if (simulationWork.useGpuHaloExchange && runScheduleWork.simulationWork.useNvshmem)
         {
             // Does global communication and symmetric reallocation
