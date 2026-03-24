@@ -90,7 +90,7 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
     /* We add 2 for the header */
     nste = div_nsteps(2 + nsteps, ir->nstenergy);
 
-    cio = 80 * natoms;
+    cio = 80.0 * natoms;
     cio += (nstx + nstf + nstv) * sizeof(real) * (3.0 * natoms);
     cio += nstxtc * (14 * 4 + nxtcatoms * 5.0); /* roughly 5 bytes per atom */
     cio += nstlog * (nrener * 16 * 2.0);        /* 16 bytes per energy term plus header */
