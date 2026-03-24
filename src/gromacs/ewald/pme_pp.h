@@ -114,7 +114,6 @@ public:
                          real                  lambda_lj,
                          bool                  computeEnergyAndVirial,
                          int64_t               step,
-                         bool                  reinitGpuPmePpComms,
                          bool                  sendCoordinatesFromGpu,
                          bool                  receiveForcesToGpu,
                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,

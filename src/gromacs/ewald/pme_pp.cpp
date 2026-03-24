@@ -300,6 +300,17 @@ void PmePpComm::sendParameters(const int            numHomeAtoms,
         // Wait for pending communication to finish
         waitForSentData(&requests_);
     }
+
+    // Resize the PME force-receive buffer on the CPU.
+    cpuPmeForceReceiveBuffer_.resize(numHomeAtoms_);
+    if (useGpuPmePpCommunication_)
+    {
+        // When using GPU-direct PP-PME communication, notify
+        // the receiver where it should store forces when they
+        // arrive on the CPU, since it may have changed just
+        // above.
+        pmePpCommGpu_->reinit(cpuPmeForceReceiveBuffer_);
+    }
 }
 
 void PmePpComm::sendCoordinates(DeviceBuffer<RVec>    coordinates,
@@ -309,7 +320,6 @@ void PmePpComm::sendCoordinates(DeviceBuffer<RVec>    coordinates,
                                 const real            lambda_lj,
                                 const bool            computeEnergyAndVirial,
                                 const int64_t         step,
-                                const bool            reinitGpuPmePpComms,
                                 const bool            sendCoordinatesFromGpu,
                                 const bool            receiveForcesToGpu,
                                 GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
@@ -378,20 +388,6 @@ void PmePpComm::sendCoordinates(DeviceBuffer<RVec>    coordinates,
     // With direct-GPU PME-PP communication, coordinates and
     // forces are always transferred each step, even for empty
     // domains.
-
-    // Resize the PME force-receive buffer on the CPU.
-    //
-    // TODO If/when this moves, adjust the related comment in
-    // receiveForces()
-    cpuPmeForceReceiveBuffer_.resize(numHomeAtoms_);
-    if (reinitGpuPmePpComms)
-    {
-        GMX_ASSERT(useGpuPmePpCommunication_, "Flag mismatch, cannot reinitialize PME-PP comms");
-        // When using GPU-direct PP-PME communication, notify the
-        // receiver where it should store forces when they arrive
-        // on the CPU.
-        pmePpCommGpu_->reinit(cpuPmeForceReceiveBuffer_);
-    }
 
     // Ensure that with GPU PME-PP comms, even empty domains still
     // have the chance to post a possible non-blocking matching
@@ -588,12 +584,16 @@ void PmePpComm::receiveResults(ForceWithVirial* forceWithVirial,
 
     receiveForces(receivePmeForceToGpu);
 
-    int nt = gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread::Default, numHomeAtoms_);
-
-    ArrayRef<RVec> f = forceWithVirial->force_;
-
     if (!receivePmeForceToGpu)
     {
+        ArrayRef<RVec> f = forceWithVirial->force_;
+        // The force buffer size can be larger than the number of home atoms
+        GMX_ASSERT(f.ssize() >= numHomeAtoms_,
+                   formatString("Mismatch in size of PME receive buffer %d and force buffer %td",
+                                numHomeAtoms_,
+                                f.ssize())
+                           .c_str());
+        const int nt = gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread::Default, numHomeAtoms_);
         /* Note that we would like to avoid this conditional by putting it
          * into the omp pragma instead, but then we still take the full
          * omp parallel for overhead (at least with gcc5).

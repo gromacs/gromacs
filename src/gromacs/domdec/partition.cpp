@@ -71,7 +71,6 @@
 #include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/nsgrid.h"
-#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
@@ -3180,26 +3179,6 @@ void dd_partition_system(FILE*                     fplog,
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
     mdAlgorithmsSetupAtomData(dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
-
-    auto* mdatoms = mdAtoms->mdatoms();
-    if (fr->pmePpComm)
-    {
-        // PP rank partnered with a PME-only rank
-
-        // Send the charges and/or c6/sigmas to the PME-only rank
-        // and prepare for PP-rank operations.
-        fr->pmePpComm->sendParameters(dd_numHomeAtoms(*dd),
-                                      mdatoms->nChargePerturbed != 0,
-                                      mdatoms->nTypePerturbed != 0,
-                                      mdatoms->chargeA,
-                                      mdatoms->chargeB,
-                                      mdatoms->sqrt_c6A,
-                                      mdatoms->sqrt_c6B,
-                                      mdatoms->sigmaA,
-                                      mdatoms->sigmaB,
-                                      dd_pme_maxshift_x(*dd),
-                                      dd_pme_maxshift_y(*dd));
-    }
 
     if (dd->atomSets != nullptr)
     {

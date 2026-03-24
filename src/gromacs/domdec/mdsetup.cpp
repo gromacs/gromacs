@@ -42,6 +42,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localtopology.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -142,13 +143,33 @@ void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
         listedForces.setup(top->idef, fr->natoms_force, fr->listedForcesGpu != nullptr, mdatoms->cVCM);
     }
 
-    if ((usingPme(fr->ic->coulomb.type) || usingLJPme(fr->ic->vdw.type)) && thisRankHasPmeDuty(dd))
+    if (usingPme(fr->ic->coulomb.type) || usingLJPme(fr->ic->vdw.type))
     {
-        /* This handles the PP+PME rank case where fr->pmedata is valid.
-         * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
-         */
-        const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
-        gmx_pme_reinit_atoms(fr->pmedata.get(), numPmeAtoms, mdatoms->chargeA, mdatoms->chargeB);
+        if (!fr->pmePpComm)
+        {
+            // This handles the PP+PME rank case where fr->pmedata is valid.
+            // For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
+            const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
+            gmx_pme_reinit_atoms(fr->pmedata.get(), numPmeAtoms, mdatoms->chargeA, mdatoms->chargeB);
+        }
+        else
+        {
+            // PP rank partnered with a PME-only rank
+
+            // Send the charges and/or c6/sigmas to the PME-only rank
+            // and prepare for PP-rank operations.
+            fr->pmePpComm->sendParameters(dd_numHomeAtoms(*dd),
+                                          mdatoms->nChargePerturbed != 0,
+                                          mdatoms->nTypePerturbed != 0,
+                                          mdatoms->chargeA,
+                                          mdatoms->chargeB,
+                                          mdatoms->sqrt_c6A,
+                                          mdatoms->sqrt_c6B,
+                                          mdatoms->sigmaA,
+                                          mdatoms->sigmaB,
+                                          dd_pme_maxshift_x(*dd),
+                                          dd_pme_maxshift_y(*dd));
+        }
     }
 
     if (constr)

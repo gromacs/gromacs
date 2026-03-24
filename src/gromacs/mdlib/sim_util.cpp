@@ -1591,7 +1591,6 @@ void do_force(FILE*                         fplog,
     const bool pmeSendCoordinatesFromGpu =
             simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
 
-    const bool reinitGpuPmePpComms = simulationWork.useGpuPmePpCommunication && stepWork.doNeighborSearch;
     if (stepWork.computePmeOnSeparateRank && stepWork.doNeighborSearch)
     {
         // We call the pmePpComm.sendCoordinates early for reinit case
@@ -1605,7 +1604,6 @@ void do_force(FILE*                         fplog,
                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
                 (stepWork.computeVirial || stepWork.computeEnergy),
                 step,
-                reinitGpuPmePpComms,
                 pmeSendCoordinatesFromGpu,
                 stepWork.useGpuPmeFReduction,
                 nullptr,
@@ -1723,7 +1721,6 @@ void do_force(FILE*                         fplog,
                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
                 (stepWork.computeVirial || stepWork.computeEnergy),
                 step,
-                reinitGpuPmePpComms,
                 pmeSendCoordinatesFromGpu,
                 stepWork.useGpuPmeFReduction,
                 pmeSendCoordinatesFromGpu ? localXReadyOnDevice : nullptr,

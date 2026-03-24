@@ -311,9 +311,12 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     int nat    = 0;
 
 #if GMX_MPI
-    int  messages       = 0;
-    bool atomSetChanged = false;
+    int messages = 0;
 
+    // This loop repeats until either some signal has been received
+    // (finish, reset, or switch PME grid) or coordinates have been
+    // received (possibly preceded by parameters after a domain
+    // repartitioning).
     do
     {
         gmx_pme_comm_n_box_t cnb;
@@ -364,10 +367,9 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             status = pmerecvqxRESETCOUNTERS;
         }
 
-        if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
+        const bool atomSetChanged = (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA)) != 0u;
+        if (atomSetChanged)
         {
-            atomSetChanged = true;
-
             /* Receive the send counts from the other PP nodes */
             for (auto& sender : pme_pp->ppRanks)
             {
@@ -474,33 +476,6 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 
         if (cnb.flags & PP_PME_COORD)
         {
-            if (atomSetChanged)
-            {
-                gmx_pme_reinit_atoms(pme, nat, pme_pp->chargeA, pme_pp->chargeB);
-                if (useGpuForPme)
-                {
-                    // Does global communication and symmetric reallocation with NVSHMEM
-                    stateGpu->reinit(nat, nat, dd.mpiCommMySim().comm());
-                    if (pme_pp->useNvshmem && pme_pp->useGpuHaloExchange)
-                    {
-                        // Does global communication and symmetric reallocation
-                        gpuHaloExchangeNvshmemHelper->reinit();
-                    }
-                    pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
-                }
-                if (pme_pp->useGpuPmePpCommunication)
-                {
-                    GMX_ASSERT((runMode == PmeRunMode::GPU || runMode == PmeRunMode::Mixed),
-                               "GPU Direct PME-PP communication has been enabled, "
-                               "but PME run mode does not support it\n");
-
-                    // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses and re-set atom ranges associated with transfers.
-                    pme_pp->pmeCoordinateReceiverGpu->reinitCoordinateReceiver(stateGpu->getCoordinates());
-                    pme_pp->pmeForceSenderGpu->setForceSendBuffer(pme_gpu_get_device_f(pme));
-                }
-            }
-
-
             /* The box, FE flag and lambda are sent along with the coordinates
              *  */
             copy_mat(cnb.box, box);
@@ -577,6 +552,40 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
         /* Wait for the coordinates and/or charges to arrive */
         MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
         messages = 0;
+
+        if (atomSetChanged)
+        {
+            // This transfers charges to the GPU as well as various
+            // resize operations, so must wait until after the charge
+            // values have been received.
+            gmx_pme_reinit_atoms(pme, nat, pme_pp->chargeA, pme_pp->chargeB);
+
+            if (useGpuForPme)
+            {
+                // Does global communication and symmetric reallocation with NVSHMEM
+                stateGpu->reinit(nat, nat, dd.mpiCommMySim().comm());
+                if (pme_pp->useNvshmem && pme_pp->useGpuHaloExchange)
+                {
+                    // Does global communication and symmetric reallocation
+                    gpuHaloExchangeNvshmemHelper->reinit();
+                }
+                pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
+            }
+            if (pme_pp->useGpuPmePpCommunication)
+            {
+                GMX_ASSERT((runMode == PmeRunMode::GPU || runMode == PmeRunMode::Mixed),
+                           "GPU Direct PME-PP communication has been enabled, "
+                           "but PME run mode does not support it\n");
+
+                // This rank will have its data accessed directly by
+                // PP rank, so needs to send the remote addresses and
+                // re-set atom ranges associated with transfers. That
+                // means these calls must come after those that might
+                // resize the GPU coordinate and force buffers.
+                pme_pp->pmeCoordinateReceiverGpu->reinitCoordinateReceiver(stateGpu->getCoordinates());
+                pme_pp->pmeForceSenderGpu->setForceSendBuffer(pme_gpu_get_device_f(pme));
+            }
+        }
     } while (status == -1);
 #else
     GMX_UNUSED_VALUE(pme);
