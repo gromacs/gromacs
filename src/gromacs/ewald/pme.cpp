@@ -939,13 +939,6 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
     pme->bsp_mod[YY].resize(pme->nky);
     pme->bsp_mod[ZZ].resize(pme->nkz);
 
-    if (pmeGpu)
-    {
-        GMX_ASSERT(!pme->gpu, "We expect to have only a single PmeGpu object");
-        std::swap(pme->gpu, pmeGpu); /* Carrying over the single GPU structure */
-    }
-    pme->runMode = runMode;
-
     /* The required size of the interpolation grid, including overlap.
      * The allocated size (pmegrid_n?) might be slightly larger.
      */
@@ -969,6 +962,67 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
             pme->nkz, pme->pmegrid_start_iz, pme->pmegrid_nz_base, checkRoundingAtBoundary);
 
     pme->spline_work = std::make_unique<pme_spline_work>(pme->pme_order);
+
+    if (!pme->bP3M)
+    {
+        /* Use plain SPME B-spline interpolation */
+        pme->bsp_mod = make_bspline_moduli(pme->nkx, pme->nky, pme->nkz, pme->pme_order);
+    }
+    else
+    {
+        /* Use the P3M grid-optimized influence function */
+        pme->bsp_mod = make_p3m_bspline_moduli(pme->nkx, pme->nky, pme->nkz, pme->pme_order);
+    }
+
+    /* Use atc[0] for spreading */
+    const int firstDimIndex   = (numPmeDomains.x > 1 ? 0 : 1);
+    MPI_Comm  mpiCommFirstDim = (pme->nnodes > 1 ? pme->mpi_comm_d[firstDimIndex] : MPI_COMM_NULL);
+    bool      doSpread        = true;
+    pme->atc.emplace_back(mpiCommFirstDim, pme->nthread, pme->pme_order, firstDimIndex, doSpread);
+    if (pme->ndecompdim >= 2)
+    {
+        const int secondDimIndex = 1;
+        doSpread                 = false;
+        pme->atc.emplace_back(pme->mpi_comm_d[1], pme->nthread, pme->pme_order, secondDimIndex, doSpread);
+    }
+
+    pme->runMode = runMode;
+    if (pme->runMode != PmeRunMode::CPU)
+    {
+        // Initialize PME GPU before grids storage, because in mixed
+        // run mode they can do pinned host allocations.
+        if (pmeGpu)
+        {
+            // This must be a re-initialization
+            GMX_ASSERT(!pme->gpu, "We expect to have only a single PmeGpu object");
+            std::swap(pme->gpu, pmeGpu); /* Carrying over the single GPU structure */
+        }
+        // Initial check of validity of the input for running on the GPU
+        std::string errorString;
+        bool        canRunOnGpu = pme_gpu_check_restrictions(pme.get(), &errorString);
+        if (!canRunOnGpu)
+        {
+            GMX_THROW(gmx::NotImplementedError(errorString));
+        }
+        if (!pme->gpu)
+        {
+            GMX_RELEASE_ASSERT(deviceContext != nullptr,
+                               "Device context can not be nullptr when setting up PME on GPU.");
+            GMX_RELEASE_ASSERT(deviceStream != nullptr,
+                               "Device stream can not be nullptr when setting up PME on GPU.");
+
+            pme->gpu = std::make_unique<PmeGpu>(*pme, *deviceContext, *deviceStream, pmeGpuProgram);
+
+            // Set the box, this is only done once, here, when the box is constant
+            pme_gpu_update_input_box(pme->gpu.get(), box, pme->recipbox, &pme->boxVolume);
+        }
+        const bool useMdGpuGraph = false; // This will be reset later after PP communication
+        pme_gpu_reinit(pme->gpu.get(), pme.get(), useMdGpuGraph);
+    }
+    else
+    {
+        GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object when PME is on a CPU.");
+    }
 
     if (pme->doCoulomb)
     {
@@ -1019,58 +1073,6 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
                 i++;
             }
         }
-    }
-
-    if (!pme->bP3M)
-    {
-        /* Use plain SPME B-spline interpolation */
-        pme->bsp_mod = make_bspline_moduli(pme->nkx, pme->nky, pme->nkz, pme->pme_order);
-    }
-    else
-    {
-        /* Use the P3M grid-optimized influence function */
-        pme->bsp_mod = make_p3m_bspline_moduli(pme->nkx, pme->nky, pme->nkz, pme->pme_order);
-    }
-
-    /* Use atc[0] for spreading */
-    const int firstDimIndex   = (numPmeDomains.x > 1 ? 0 : 1);
-    MPI_Comm  mpiCommFirstDim = (pme->nnodes > 1 ? pme->mpi_comm_d[firstDimIndex] : MPI_COMM_NULL);
-    bool      doSpread        = true;
-    pme->atc.emplace_back(mpiCommFirstDim, pme->nthread, pme->pme_order, firstDimIndex, doSpread);
-    if (pme->ndecompdim >= 2)
-    {
-        const int secondDimIndex = 1;
-        doSpread                 = false;
-        pme->atc.emplace_back(pme->mpi_comm_d[1], pme->nthread, pme->pme_order, secondDimIndex, doSpread);
-    }
-
-    // Initial check of validity of the input for running on the GPU
-    if (pme->runMode != PmeRunMode::CPU)
-    {
-        std::string errorString;
-        bool        canRunOnGpu = pme_gpu_check_restrictions(pme.get(), &errorString);
-        if (!canRunOnGpu)
-        {
-            GMX_THROW(gmx::NotImplementedError(errorString));
-        }
-        if (!pme->gpu)
-        {
-            GMX_RELEASE_ASSERT(deviceContext != nullptr,
-                               "Device context can not be nullptr when setting up PME on GPU.");
-            GMX_RELEASE_ASSERT(deviceStream != nullptr,
-                               "Device stream can not be nullptr when setting up PME on GPU.");
-
-            pme->gpu = std::make_unique<PmeGpu>(*pme, *deviceContext, *deviceStream, pmeGpuProgram);
-
-            // Set the box, this is only done once, here, when the box is constant
-            pme_gpu_update_input_box(pme->gpu.get(), box, pme->recipbox, &pme->boxVolume);
-        }
-        const bool useMdGpuGraph = false; // This will be reset later after PP communication
-        pme_gpu_reinit(pme->gpu.get(), pme.get(), useMdGpuGraph);
-    }
-    else
-    {
-        GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object when PME is on a CPU.");
     }
 
     pme->pmeSolve = std::make_unique<PmeSolve>(pme->nthread, pme->nkx);
