@@ -201,6 +201,14 @@ a release.
   use ``auto`` with lengthy types, such as iterators or lambdas, where
   specifying the type explicitly would reduce readability. If in doubt, avoid
   using ``auto``.
+* When writing a class, put common infrastructure like constructors, destructors,
+  move and copy operations first, then public member functions, then private
+  member functions, and finally private data. Newly written classes should not
+  have public data.
+* Prefer storing handles (ie. pointers, references) to common "constant"
+  infrastructure objects like ``MpiComm`` and ``gmx_wallcycle``, even if they are
+  small and fast to copy. We want modules to have consistent usage patterns,
+  be easy to debug, and (where possible) to depend only on type names.
 
 
 .. |linkref1| replace:: `c++ guidelines <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines>`__
