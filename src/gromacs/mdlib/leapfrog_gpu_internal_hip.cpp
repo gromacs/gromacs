@@ -125,7 +125,7 @@ __launch_bounds__(c_threadsPerBlock) __global__
 
             if constexpr (numTempScaleValues != NumTempScaleValues::None)
             {
-                float lambda = 1.0F;
+                float lambda = 1.0f;
                 if constexpr (numTempScaleValues == NumTempScaleValues::Single)
                 {
                     lambda = gm_lambdas[0];

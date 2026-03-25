@@ -389,9 +389,9 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
                 kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, sm_dtheta, sm_gridlineIndices);
         __builtin_amdgcn_wave_barrier();
     }
-    float fx = 0.0F;
-    float fy = 0.0F;
-    float fz = 0.0F;
+    float fx = 0.0f;
+    float fy = 0.0f;
+    float fz = 0.0f;
 
     const bool chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsA[atomIndexGlobal]);
 
@@ -471,9 +471,9 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
 
         /* We must sync here since the same shared memory is used as above. */
         __syncthreads();
-        fx                      = 0.0F;
-        fy                      = 0.0F;
-        fz                      = 0.0F;
+        fx                      = 0.0f;
+        fy                      = 0.0f;
+        fz                      = 0.0f;
         const bool chargeCheckB = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
         if (chargeCheckB)
         {
@@ -508,7 +508,7 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
                                         forceIndexLocal,
                                         forceIndexGlobal,
                                         kernelParams.current.recipBox,
-                                        1.0F - scale,
+                                        1.0f - scale,
                                         gm_coefficientsB);
         }
 

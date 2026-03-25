@@ -55,7 +55,7 @@ static __forceinline__ __host__ __device__ float4 make_float4(float s)
 }
 static __forceinline__ __host__ __device__ float4 make_float4(float3 a)
 {
-    return make_float4(a.x, a.y, a.z, 0.0F);
+    return make_float4(a.x, a.y, a.z, 0.0f);
 }
 /**** atomics ****/
 static __forceinline__ __device__ void atomicAdd(float3* __restrict__ addr, float3 val)

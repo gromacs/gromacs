@@ -117,13 +117,13 @@ __global__ void pmeSolveKernel(const struct PmeGpuKernelParams kernelParams)
     const int indexMajor        = blockIdx.z;
 
     /* Optional outputs */
-    float energy = 0.0F;
-    float virxx  = 0.0F;
-    float virxy  = 0.0F;
-    float virxz  = 0.0F;
-    float viryy  = 0.0F;
-    float viryz  = 0.0F;
-    float virzz  = 0.0F;
+    float energy = 0.0f;
+    float virxx  = 0.0f;
+    float virxy  = 0.0f;
+    float virxz  = 0.0f;
+    float viryy  = 0.0f;
+    float viryz  = 0.0f;
+    float virzz  = 0.0f;
 
     GMX_DEVICE_ASSERT(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
     if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
@@ -166,7 +166,7 @@ __global__ void pmeSolveKernel(const struct PmeGpuKernelParams kernelParams)
         const int  kZ    = (gridOrdering == GridOrdering::YZX ? kMiddle : kMinor);
         const bool isFirstOrLastZComponent = (kZ == 0 | kZ == maxkZ);
         /* 0.5 correction factor for the first and last components of a Z dimension */
-        const float corner_fac = (isFirstOrLastZComponent ? 0.5F : 1.0F);
+        const float corner_fac = (isFirstOrLastZComponent ? 0.5f : 1.0f);
 
         if (notZeroPoint)
         {
@@ -186,7 +186,7 @@ __global__ void pmeSolveKernel(const struct PmeGpuKernelParams kernelParams)
             mhk               = a + b + c;
 
             const float m2k = mhk.norm2();
-            GMX_DEVICE_ASSERT(m2k != 0.0F);
+            GMX_DEVICE_ASSERT(m2k != 0.0f);
 
             // TODO: use textures for gm_splineValue
             float vMajor  = LDG(gm_splineValueMajor + kMajor);
@@ -194,7 +194,7 @@ __global__ void pmeSolveKernel(const struct PmeGpuKernelParams kernelParams)
             float vMinor  = LDG(gm_splineValueMinor + kMinor);
             float denom = m2k * float(HIP_PI) * kernelParams.current.boxVolume * vMajor * vMiddle * vMinor;
             GMX_DEVICE_ASSERT(isfinite(denom));
-            GMX_DEVICE_ASSERT(denom != 0.0F);
+            GMX_DEVICE_ASSERT(denom != 0.0f);
 
             const float tmp1   = __expf(-kernelParams.grid.ewaldFactor * m2k);
             const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
@@ -208,9 +208,9 @@ __global__ void pmeSolveKernel(const struct PmeGpuKernelParams kernelParams)
             if constexpr (computeEnergyAndVirial)
             {
                 const float tmp1k =
-                        2.0F * (gridValue.x * oldGridValue.x + gridValue.y * oldGridValue.y);
+                        2.0f * (gridValue.x * oldGridValue.x + gridValue.y * oldGridValue.y);
 
-                float vfactor = (kernelParams.grid.ewaldFactor + 1.0F / m2k) * 2.0F;
+                float vfactor = (kernelParams.grid.ewaldFactor + 1.0f / m2k) * 2.0f;
                 float ets2    = corner_fac * tmp1k;
                 energy        = ets2;
 

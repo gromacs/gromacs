@@ -225,7 +225,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         AmdPackedFloat3 fCiBuffer[c_clusterPerSuperCluster]; // i force buffer
         for (int i = 0; i < c_clusterPerSuperCluster; i++)
         {
-            fCiBuffer[i] = { 0.0F, 0.0F, 0.0F };
+            fCiBuffer[i] = { 0.0f, 0.0f, 0.0f };
         }
 
         const nbnxn_sci_t nbSci          = gm_plistSci[bidx];
@@ -293,7 +293,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         float energyVdw, energyElec; // Only needed if (doCalcEnergies)
         if constexpr (doCalcEnergies)
         {
-            energyVdw = energyElec = 0.0F;
+            energyVdw = energyElec = 0.0f;
         }
         if constexpr (doCalcEnergies && doExclusionForces)
         {
@@ -320,13 +320,13 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                 if constexpr (props.vdwEwald)
                 {
                     energyVdw /= c_clSize * nthreadZ;
-                    energyVdw *= 0.5F * c_oneSixth * ewaldCoeffLJ_6_6; // c_OneTwelfth?
+                    energyVdw *= 0.5f * c_oneSixth * ewaldCoeffLJ_6_6; // c_OneTwelfth?
                 }
                 if constexpr (props.elecRF || props.elecCutoff)
                 {
                     // Correct for epsfac^2 due to adding qi^2 */
                     energyElec /= epsFac * c_clSize * nthreadZ;
-                    energyElec *= -0.5F * cRF;
+                    energyElec *= -0.5f * cRF;
                 }
                 if constexpr (props.elecEwald)
                 {
@@ -383,7 +383,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                     atomTypeJ = gm_atomTypes[aj];
                 }
 
-                AmdPackedFloat3 fCjBuf(0.0F, 0.0F, 0.0F);
+                AmdPackedFloat3 fCjBuf(0.0f, 0.0f, 0.0f);
 
 #pragma unroll c_clusterPerSuperCluster
                 for (int i = 0; i < c_clusterPerSuperCluster; i++)
@@ -487,7 +487,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                                 {
                                     sig_r6 *= pairExclMask;
                                 }
-                                fInvR = epsilon * sig_r6 * (sig_r6 - 1.0F) * r2Inv;
+                                fInvR = epsilon * sig_r6 * (sig_r6 - 1.0f) * r2Inv;
                             } // (!props.vdwCombLB || doCalcEnergies)
                             if constexpr (doCalcEnergies || props.vdwPSwitch)
                             {
@@ -523,7 +523,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                             {
                                 // Separate VDW cut-off check to enable twin-range cut-offs
                                 // (rVdw < rCoulomb <= rList)
-                                const float vdwInRange = (r2 < rVdwSq) ? 1.0F : 0.0F;
+                                const float vdwInRange = (r2 < rVdwSq) ? 1.0f : 0.0f;
                                 fInvR *= vdwInRange;
                                 if constexpr (doCalcEnergies)
                                 {
@@ -573,7 +573,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                                 if constexpr (props.elecRF)
                                 {
                                     energyElec +=
-                                            qi * qj * (pairExclMask * rInv + 0.5F * twoKRf * r2 - cRF);
+                                            qi * qj * (pairExclMask * rInv + 0.5f * twoKRf * r2 - cRF);
                                 }
                                 if constexpr (props.elecEwald)
                                 {
