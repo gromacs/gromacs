@@ -58,6 +58,8 @@ namespace gmx
 class Constraints;
 class ForceBuffers;
 class MDAtoms;
+class SimulationWorkload;
+class StatePropagatorDataGpu;
 class VirtualSitesHandler;
 
 /*! \brief Gets the local shell with domain decomposition
@@ -75,6 +77,7 @@ void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, gmx_shellfc_
  * This routine sets the atom data for the (locally available) atoms.
  * This is called at the start of serial runs and during domain decomposition.
  *
+ * \param[in]     simulationWork The simulation workload
  * \param[in]     dd         Domain decomposition struct, can be nullptr
  * \param[in]     inputrec   Input parameter record
  * \param[in]     top_global The global topology
@@ -85,17 +88,20 @@ void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, gmx_shellfc_
  * \param[in,out] constr     The constraints handler, can be NULL
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
+ * \param[in]     stateGpu   The state-on-GPU manager, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
-                               const t_inputrec&    inputrec,
-                               const gmx_mtop_t&    top_global,
-                               gmx_localtop_t*      top,
-                               t_forcerec*          fr,
-                               ForceBuffers*        force,
-                               MDAtoms*             mdAtoms,
-                               Constraints*         constr,
-                               VirtualSitesHandler* vsite,
-                               gmx_shellfc_t*       shellfc);
+void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
+                               const gmx_domdec_t*       dd,
+                               const t_inputrec&         inputrec,
+                               const gmx_mtop_t&         top_global,
+                               gmx_localtop_t*           top,
+                               t_forcerec*               fr,
+                               ForceBuffers*             force,
+                               MDAtoms*                  mdAtoms,
+                               Constraints*              constr,
+                               VirtualSitesHandler*      vsite,
+                               gmx_shellfc_t*            shellfc,
+                               StatePropagatorDataGpu*   stateGpu);
 
 } // namespace gmx
 

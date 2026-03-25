@@ -2613,6 +2613,7 @@ void print_dd_statistics(gmx_domdec_t* dd, const t_inputrec& inputrec, FILE* fpl
 //!\brief TODO Remove fplog when group scheme and charge groups are gone
 void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
+                         const SimulationWorkload& simulationWork,
                          int64_t                   step,
                          gmx_domdec_t*             dd,
                          bool                      bMainState,
@@ -2623,6 +2624,7 @@ void dd_partition_system(FILE*                     fplog,
                          gmx::ImdSession*          imdSession,
                          pull_t*                   pull_work,
                          t_state*                  state_local,
+                         StatePropagatorDataGpu*   stateGpu,
                          gmx::ForceBuffers*        f,
                          gmx::MDAtoms*             mdAtoms,
                          gmx_localtop_t*           top_local,
@@ -3177,7 +3179,8 @@ void dd_partition_system(FILE*                     fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
-    mdAlgorithmsSetupAtomData(dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
+    mdAlgorithmsSetupAtomData(
+            simulationWork, dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr, stateGpu);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     if (dd->atomSets != nullptr)

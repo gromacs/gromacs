@@ -472,6 +472,7 @@ static void init_em(FILE*                        fplog,
         /* Distribute the charge groups over the nodes from the main node */
         dd_partition_system(fplog,
                             mdlog,
+                            runScheduleWork.simulationWork,
                             ir->init_step,
                             cr->dd,
                             TRUE,
@@ -482,6 +483,7 @@ static void init_em(FILE*                        fplog,
                             imdSession,
                             pull_work,
                             &ems->s,
+                            fr->stateGpu,
                             &ems->f,
                             mdAtoms,
                             top,
@@ -498,8 +500,18 @@ static void init_em(FILE*                        fplog,
         /* Just copy the state */
         ems->s = *state_global;
 
-        mdAlgorithmsSetupAtomData(
-                cr->dd, *ir, top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
+        mdAlgorithmsSetupAtomData(runScheduleWork.simulationWork,
+                                  cr->dd,
+                                  *ir,
+                                  top_global,
+                                  top,
+                                  fr,
+                                  &ems->f,
+                                  mdAtoms,
+                                  constr,
+                                  vsite,
+                                  shellfc ? *shellfc : nullptr,
+                                  fr->stateGpu);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
@@ -819,13 +831,14 @@ static bool do_em_step(const t_commrec*                          cr,
 }
 
 //! Prepare EM for using domain decomposition parallellization
-static void em_dd_partition_system(FILE*                     fplog,
-                                   const gmx::MDLogger&      mdlog,
-                                   int                       step,
-                                   const t_commrec*          cr,
-                                   const gmx_mtop_t&         top_global,
-                                   const t_inputrec*         ir,
-                                   const MDModulesNotifiers& mdModulesNotifiers,
+static void em_dd_partition_system(FILE*                          fplog,
+                                   const gmx::MDLogger&           mdlog,
+                                   const gmx::SimulationWorkload& simulationWork,
+                                   int                            step,
+                                   const t_commrec*               cr,
+                                   const gmx_mtop_t&              top_global,
+                                   const t_inputrec*              ir,
+                                   const MDModulesNotifiers&      mdModulesNotifiers,
 
                                    gmx::ImdSession*     imdSession,
                                    pull_t*              pull_work,
@@ -841,6 +854,7 @@ static void em_dd_partition_system(FILE*                     fplog,
     /* Repartition the domain decomposition */
     dd_partition_system(fplog,
                         mdlog,
+                        simulationWork,
                         step,
                         cr->dd,
                         FALSE,
@@ -851,6 +865,7 @@ static void em_dd_partition_system(FILE*                     fplog,
                         imdSession,
                         pull_work,
                         &ems->s,
+                        fr->stateGpu,
                         &ems->f,
                         mdAtoms,
                         top,
@@ -1027,6 +1042,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
             /* Repartition the domain decomposition */
             em_dd_partition_system(fplog,
                                    mdlog,
+                                   runScheduleWork->simulationWork,
                                    count,
                                    cr,
                                    top_global,
@@ -1626,6 +1642,7 @@ void LegacySimulator::do_cg()
         {
             em_dd_partition_system(fpLog_,
                                    mdLog_,
+                                   runScheduleWork_->simulationWork,
                                    step,
                                    cr_,
                                    topGlobal_,
@@ -1745,6 +1762,7 @@ void LegacySimulator::do_cg()
                     /* Reload the old state */
                     em_dd_partition_system(fpLog_,
                                            mdLog_,
+                                           runScheduleWork_->simulationWork,
                                            -1,
                                            cr_,
                                            topGlobal_,
@@ -3117,6 +3135,7 @@ void LegacySimulator::do_steep()
                 /* Reload the old state */
                 em_dd_partition_system(fpLog_,
                                        mdLog_,
+                                       runScheduleWork_->simulationWork,
                                        count,
                                        cr_,
                                        topGlobal_,

@@ -301,6 +301,7 @@ void gmx::LegacySimulator::do_mimic()
         /* Distribute the charge groups over the nodes from the main node */
         dd_partition_system(fpLog_,
                             mdLog_,
+                            runScheduleWork_->simulationWork,
                             ir->init_step,
                             cr_->dd,
                             TRUE,
@@ -311,6 +312,7 @@ void gmx::LegacySimulator::do_mimic()
                             imdSession_,
                             pullWork_,
                             state_,
+                            fr_->stateGpu,
                             &f,
                             mdAtoms_,
                             top_,
@@ -323,8 +325,18 @@ void gmx::LegacySimulator::do_mimic()
     }
     else
     {
-        mdAlgorithmsSetupAtomData(
-                cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+        mdAlgorithmsSetupAtomData(runScheduleWork_->simulationWork,
+                                  cr_->dd,
+                                  *ir,
+                                  topGlobal_,
+                                  top_,
+                                  fr_,
+                                  &f,
+                                  mdAtoms_,
+                                  constr_,
+                                  virtualSites_,
+                                  shellfc,
+                                  fr_->stateGpu);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();
@@ -476,6 +488,7 @@ void gmx::LegacySimulator::do_mimic()
             const bool bMainState = true;
             dd_partition_system(fpLog_,
                                 mdLog_,
+                                runScheduleWork_->simulationWork,
                                 step,
                                 cr_->dd,
                                 bMainState,
@@ -486,6 +499,7 @@ void gmx::LegacySimulator::do_mimic()
                                 imdSession_,
                                 pullWork_,
                                 state_,
+                                fr_->stateGpu,
                                 &f,
                                 mdAtoms_,
                                 top_,

@@ -61,6 +61,7 @@ class ImdSession;
 class MDAtoms;
 class MDLogger;
 struct MDModulesNotifiers;
+class SimulationWorkload;
 class StatePropagatorData;
 class TopologyHolder;
 class VirtualSitesHandler;
@@ -99,6 +100,7 @@ public:
                  t_nrnb*                       nrnb,
                  gmx_wallcycle*                wcycle,
                  t_forcerec*                   fr,
+                 const SimulationWorkload&     simulationWork,
                  VirtualSitesHandler*          vsite,
                  ImdSession*                   imdSession,
                  pull_t*                       pull_work,
@@ -162,6 +164,8 @@ private:
     gmx_wallcycle* wcycle_;
     //! Parameters for force calculations.
     t_forcerec* fr_;
+    //! Describes the workload of the simulation
+    const SimulationWorkload& simulationWork_;
     //! Handles virtual sites.
     VirtualSitesHandler* vsite_;
     //! The Interactive Molecular Dynamics session.
@@ -188,6 +192,7 @@ public:
     {
         state_ = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
         std::vector<DomDecCallback> callbacks;
+        callbacks.reserve(clients_.size());
         for (const auto& client : clients_)
         {
             callbacks.emplace_back(client->registerDomDecCallback());

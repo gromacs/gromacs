@@ -560,7 +560,11 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 
             if (useGpuForPme)
             {
-                // Does global communication and symmetric reallocation with NVSHMEM
+                // Does global communication and symmetric
+                // reallocation with NVSHMEM. Note that this must come
+                // after receiving parameters so that the symmetric
+                // reallocation within stateGpu for NVSHMEM happens at
+                // the same time on all ranks.
                 stateGpu->reinit(nat, nat);
                 if (pme_pp->useNvshmem && pme_pp->useGpuHaloExchange)
                 {

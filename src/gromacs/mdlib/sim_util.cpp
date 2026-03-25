@@ -1344,23 +1344,10 @@ static void doPairSearch(const t_commrec*             cr,
     const StepWorkload&           stepWork       = runScheduleWork.stepWork;
     const DomainLifetimeWorkload& domainWork     = runScheduleWork.domainWork;
 
-    if (needStateGpu(simulationWork))
-    {
-        // TODO refactor this to do_md, after partitioning.
-        //
-        // Does global communication and symmetric reallocation with NVSHMEM
-        stateGpu->reinit(mdatoms.homenr,
-                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition));
-        if (simulationWork.useGpuHaloExchange && runScheduleWork.simulationWork.useNvshmem)
-        {
-            // Does global communication and symmetric reallocation
-            reinitGpuHaloExchangeNvshmem(*cr->dd);
-        }
-    }
-
     if (simulationWork.haveGpuPmeOnPpRank())
     {
-        GMX_ASSERT(needStateGpu(simulationWork), "StatePropagatorDataGpu is needed");
+        GMX_ASSERT(needStateGpu(simulationWork) && stateGpu != nullptr,
+                   "StatePropagatorDataGpu is needed");
         // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
         pme_gpu_set_device_x(fr->pmedata.get(), stateGpu->getCoordinates());
     }

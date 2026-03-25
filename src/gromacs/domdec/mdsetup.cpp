@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
@@ -70,16 +71,18 @@ namespace gmx
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
-                               const t_inputrec&    inputrec,
-                               const gmx_mtop_t&    top_global,
-                               gmx_localtop_t*      top,
-                               t_forcerec*          fr,
-                               ForceBuffers*        force,
-                               MDAtoms*             mdAtoms,
-                               Constraints*         constr,
-                               VirtualSitesHandler* vsite,
-                               gmx_shellfc_t*       shellfc)
+void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
+                               const gmx_domdec_t*       dd,
+                               const t_inputrec&         inputrec,
+                               const gmx_mtop_t&         top_global,
+                               gmx_localtop_t*           top,
+                               t_forcerec*               fr,
+                               ForceBuffers*             force,
+                               MDAtoms*                  mdAtoms,
+                               Constraints*              constr,
+                               VirtualSitesHandler*      vsite,
+                               gmx_shellfc_t*            shellfc,
+                               StatePropagatorDataGpu*   stateGpu)
 {
     int numAtomIndex;
     int numHomeAtoms;
@@ -169,6 +172,21 @@ void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
                                           mdatoms->sigmaB,
                                           dd_pme_maxshift_x(*dd),
                                           dd_pme_maxshift_y(*dd));
+        }
+    }
+
+    // Note that this must follow the call to send parameters to the
+    // PME-only rank, so that it can do the symmetric reallocation
+    // within stateGpu for NVSHMEM at the same time on all ranks.
+    if (needStateGpu(simulationWork))
+    {
+        // Does global communication and symmetric reallocation with NVSHMEM
+        stateGpu->reinit(mdatoms->homenr,
+                         simulationWork.havePpDomainDecomposition ? dd_numAtomsZones(*dd) : mdatoms->homenr);
+        if (simulationWork.useGpuHaloExchange && simulationWork.useNvshmem)
+        {
+            // Does global communication and symmetric reallocation
+            reinitGpuHaloExchangeNvshmem(*dd);
         }
     }
 

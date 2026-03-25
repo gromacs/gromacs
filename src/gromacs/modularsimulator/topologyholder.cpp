@@ -45,6 +45,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
 #include "gromacs/topology/topology.h"
 
@@ -58,6 +59,7 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
                                t_forcerec*                         fr,
                                MDAtoms*                            mdAtoms,
                                Constraints*                        constr,
+                               const SimulationWorkload&           simulationWork,
                                VirtualSitesHandler*                vsite) :
     globalTopology_(globalTopology), localTopology_(localTopology), clients_(std::move(clients))
 {
@@ -69,8 +71,18 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
         // Note: Legacy mdrun resizes the force buffer in mdAlgorithmsSetupAtomData()
         //       TopologyHolder has no access to the forces, so we are passing a nullptr
         //       TODO: Find a unique approach to resizing the forces in modular simulator (#3461)
-        mdAlgorithmsSetupAtomData(
-                cr->dd, *inputrec, globalTopology, localTopology_, fr, nullptr, mdAtoms, constr, vsite, nullptr);
+        mdAlgorithmsSetupAtomData(simulationWork,
+                                  cr->dd,
+                                  *inputrec,
+                                  globalTopology,
+                                  localTopology_,
+                                  fr,
+                                  nullptr,
+                                  mdAtoms,
+                                  constr,
+                                  vsite,
+                                  nullptr,
+                                  fr->stateGpu);
     }
     // Send copy of initial topology to clients
     updateLocalTopology();

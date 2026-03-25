@@ -366,11 +366,12 @@ void gmx::LegacySimulator::do_md()
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
-    ForceBuffers     f(simulationWork.useMts,
+    ForceBuffers            f(simulationWork.useMts,
                    (simulationWork.useGpuFBufferOpsWhenAllowed || useGpuForUpdate)
-                               ? PinningPolicy::PinnedIfSupported
-                               : PinningPolicy::CannotBePinned);
-    const t_mdatoms* md = mdAtoms_->mdatoms();
+                                      ? PinningPolicy::PinnedIfSupported
+                                      : PinningPolicy::CannotBePinned);
+    const t_mdatoms*        md       = mdAtoms_->mdatoms();
+    StatePropagatorDataGpu* stateGpu = fr_->stateGpu;
     if (haveDDAtomOrdering(*cr_))
     {
         // Local state only becomes valid now.
@@ -379,6 +380,7 @@ void gmx::LegacySimulator::do_md()
         /* Distribute the charge groups over the nodes from the main node */
         dd_partition_system(fpLog_,
                             mdLog_,
+                            simulationWork,
                             ir->init_step,
                             cr_->dd,
                             TRUE,
@@ -389,6 +391,7 @@ void gmx::LegacySimulator::do_md()
                             imdSession_,
                             pullWork_,
                             state_,
+                            stateGpu,
                             &f,
                             mdAtoms_,
                             top_,
@@ -405,7 +408,7 @@ void gmx::LegacySimulator::do_md()
     {
         /* Generate and initialize new topology */
         mdAlgorithmsSetupAtomData(
-                cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+                simulationWork, cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc, stateGpu);
 
         upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*md);
@@ -422,8 +425,6 @@ void gmx::LegacySimulator::do_md()
                           &pressureCouplingMu);
 
     std::unique_ptr<UpdateConstrainGpu> integrator;
-
-    StatePropagatorDataGpu* stateGpu = fr_->stateGpu;
 
     // TODO: the assertions below should be handled by UpdateConstraintsBuilder.
     if (useGpuForUpdate)
@@ -1004,6 +1005,7 @@ void gmx::LegacySimulator::do_md()
                 /* Repartition the domain decomposition */
                 dd_partition_system(fpLog_,
                                     mdLog_,
+                                    simulationWork,
                                     step,
                                     cr_->dd,
                                     bMainState,
@@ -1014,6 +1016,7 @@ void gmx::LegacySimulator::do_md()
                                     imdSession_,
                                     pullWork_,
                                     state_,
+                                    stateGpu,
                                     &f,
                                     mdAtoms_,
                                     top_,
@@ -2090,6 +2093,7 @@ void gmx::LegacySimulator::do_md()
         {
             dd_partition_system(fpLog_,
                                 mdLog_,
+                                simulationWork,
                                 step,
                                 cr_->dd,
                                 TRUE,
@@ -2100,6 +2104,7 @@ void gmx::LegacySimulator::do_md()
                                 imdSession_,
                                 pullWork_,
                                 state_,
+                                stateGpu,
                                 &f,
                                 mdAtoms_,
                                 top_,

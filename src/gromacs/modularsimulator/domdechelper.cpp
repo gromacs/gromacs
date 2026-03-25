@@ -45,6 +45,7 @@
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -69,6 +70,7 @@ DomDecHelper::DomDecHelper(bool                          isVerbose,
                            t_nrnb*                       nrnb,
                            gmx_wallcycle*                wcycle,
                            t_forcerec*                   fr,
+                           const SimulationWorkload&     simulationWork,
                            VirtualSitesHandler*          vsite,
                            ImdSession*                   imdSession,
                            pull_t*                       pull_work,
@@ -89,6 +91,7 @@ DomDecHelper::DomDecHelper(bool                          isVerbose,
     nrnb_(nrnb),
     wcycle_(wcycle),
     fr_(fr),
+    simulationWork_(simulationWork),
     vsite_(vsite),
     imdSession_(imdSession),
     pull_work_(pull_work)
@@ -158,6 +161,7 @@ void DomDecHelper::partitionSystem(bool           verbose,
     // Distribute the charge groups over the nodes from the main node
     dd_partition_system(fplog_,
                         mdlog_,
+                        simulationWork_,
                         inputrec_->init_step,
                         cr_->dd,
                         isMainState,
@@ -168,6 +172,7 @@ void DomDecHelper::partitionSystem(bool           verbose,
                         imdSession_,
                         pull_work_,
                         localState,
+                        fr_->stateGpu,
                         forcePointer,
                         mdAtoms_,
                         topologyHolder_->localTopology_,
