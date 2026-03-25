@@ -48,19 +48,10 @@ static __forceinline__ __host__ __device__ float gmxDeviceNorm2(float3 a)
 {
     return (a.x * a.x + a.y * a.y + a.z * a.z);
 }
-static __forceinline__ __host__ __device__ float gmxDeviceDist3(float3 a, float3 b)
-{
-    return gmxDeviceNorm(b - a);
-}
 
 static __forceinline__ __host__ __device__ float gmxDeviceNorm(float4 a)
 {
     return sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
-}
-
-static __forceinline__ __host__ __device__ float gmxDeviceDist3(float4 a, float4 b)
-{
-    return gmxDeviceNorm(b - a);
 }
 
 /* \brief Compute the scalar product of two vectors.
