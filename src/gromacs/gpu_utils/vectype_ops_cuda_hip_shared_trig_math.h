@@ -126,27 +126,19 @@ static __forceinline__ __device__ float gmxDeviceCos(const float a)
  */
 static __forceinline__ __device__ float gmxDeviceCosAngle(const float3 a, const float3 b)
 {
-    float cosval;
+    const float ipa    = gmxDeviceNorm2(a);
+    const float ipb    = gmxDeviceNorm2(b);
+    const float ip     = gmxDeviceInternalProd(a, b);
+    const float ipab   = ipa * ipb;
+    const float cosval = (ipab > 0.0f) ? ip * gmxDeviceRSqrt(ipab) : 1.0f;
 
-    float ipa  = gmxDeviceNorm2(a);
-    float ipb  = gmxDeviceNorm2(b);
-    float ip   = gmxDeviceInternalProd(a, b);
-    float ipab = ipa * ipb;
-    if (ipab > 0.0F)
+    if (cosval > 1.0f)
     {
-        cosval = ip * gmxDeviceRSqrt(ipab);
+        return 1.0f;
     }
-    else
+    if (cosval < -1.0f)
     {
-        cosval = 1.0F;
-    }
-    if (cosval > 1.0F)
-    {
-        return 1.0F;
-    }
-    if (cosval < -1.0F)
-    {
-        return -1.0F;
+        return -1.0f;
     }
 
     return cosval;
