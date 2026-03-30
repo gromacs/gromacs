@@ -201,8 +201,13 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                 *inputrec_, *fr_, pull_work_, ed, *mdAtoms_->mdatoms(), runScheduleWork_->simulationWork);
     }
 
-    runScheduleWork_->stepWork = setupStepWorkload(
-            flags, inputrec_->mtsLevels, step, runScheduleWork_->domainWork, runScheduleWork_->simulationWork);
+    runScheduleWork_->stepWork = setupStepWorkload(flags,
+                                                   inputrec_->mtsLevels,
+                                                   step,
+                                                   {},
+                                                   runScheduleWork_->domainWork,
+                                                   runScheduleWork_->simulationWork,
+                                                   *inputrec_);
 
     /* The coordinates (x) are shifted (to get whole molecules)
      * in do_force.

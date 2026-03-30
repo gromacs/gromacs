@@ -1098,8 +1098,10 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     runScheduleWork->stepWork = setupStepWorkload(legacyForceFlags,
                                                   inputrec->mtsLevels,
                                                   step,
+                                                  {},
                                                   runScheduleWork->domainWork,
-                                                  runScheduleWork->simulationWork);
+                                                  runScheduleWork->simulationWork,
+                                                  *inputrec);
 
     /* Calc force & energy on new trial position  */
     /* do_force always puts the charge groups in the box and shifts again

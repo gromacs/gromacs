@@ -547,8 +547,10 @@ void gmx::LegacySimulator::do_mimic()
         runScheduleWork_->stepWork = setupStepWorkload(legacyForceFlags,
                                                        ir->mtsLevels,
                                                        step,
+                                                       {},
                                                        runScheduleWork_->domainWork,
-                                                       runScheduleWork_->simulationWork);
+                                                       runScheduleWork_->simulationWork,
+                                                       *ir);
 
         if (shellfc)
         {

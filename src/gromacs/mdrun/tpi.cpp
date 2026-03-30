@@ -569,8 +569,10 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
     runScheduleWork->stepWork = setupStepWorkload(legacyForceFlags,
                                                   inputRec_.mtsLevels,
                                                   step,
+                                                  {},
                                                   runScheduleWork->domainWork,
-                                                  runScheduleWork->simulationWork);
+                                                  runScheduleWork->simulationWork,
+                                                  inputRec_);
 
     tensor force_vir;
     clear_mat(force_vir);

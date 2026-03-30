@@ -1097,10 +1097,6 @@ void gmx::LegacySimulator::do_md()
         }
         clear_mat(force_vir);
 
-        // After signals have been processed in compute_globals() above, we can decide on checkpointing
-        const bool isCheckpointingStep =
-                checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
-
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
@@ -1160,8 +1156,18 @@ void gmx::LegacySimulator::do_md()
         const int shellfcFlags = force_flags | (mdrunOptions_.verbose ? GMX_FORCE_ENERGY : 0);
         const int legacyForceFlags = ((shellfc) ? shellfcFlags : force_flags) | (bNS ? GMX_FORCE_NS : 0);
 
-        runScheduleWork_->stepWork = setupStepWorkload(
-                legacyForceFlags, ir->mtsLevels, step, runScheduleWork_->domainWork, simulationWork);
+        // Note that signals, including for checkpointing, have been processed in compute_globals()
+        // at the end of the previous step
+        const bool isCheckpointingStep =
+                checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
+
+        runScheduleWork_->stepWork = setupStepWorkload(legacyForceFlags,
+                                                       ir->mtsLevels,
+                                                       step,
+                                                       isCheckpointingStep,
+                                                       runScheduleWork_->domainWork,
+                                                       simulationWork,
+                                                       *ir);
 
         const bool doTemperatureScaling = (ir->etc != TemperatureCoupling::No
                                            && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
@@ -1197,9 +1203,9 @@ void gmx::LegacySimulator::do_md()
                 mdGraph->setUsedGraphLastStep(usedMdGpuGraphLastStep);
                 bool canUseMdGpuGraphThisStep =
                         !bNS && !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
-                        && !needHalfStepKineticEnergy && !do_per_step(step, ir->nstxout)
-                        && !do_per_step(step, ir->nstxout_compressed) && !do_per_step(step, ir->nstvout)
-                        && !do_per_step(step, ir->nstfout) && !isCheckpointingStep;
+                        && !needHalfStepKineticEnergy && !runScheduleWork_->stepWork.copyXFromGpuForIO
+                        && !runScheduleWork_->stepWork.copyVFromGpuForIO
+                        && !do_per_step(step, ir->nstfout);
                 if (mdGraph->captureThisStep(canUseMdGpuGraphThisStep))
                 {
                     mdGraph->startRecord(stateGpu->getCoordinatesReadyOnDeviceEvent(
@@ -1384,15 +1390,14 @@ void gmx::LegacySimulator::do_md()
             // Copy coordinate from the GPU for the output/checkpointing if the update is offloaded
             // and coordinates have not already been copied for i) search or ii) CPU force tasks.
             if (useGpuForUpdate && !bNS && !runScheduleWork_->domainWork.haveCpuLocalForceWork
-                && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)
-                    || isCheckpointingStep))
+                && runScheduleWork_->stepWork.copyXFromGpuForIO)
             {
                 stateGpu->copyCoordinatesFromGpu(state_->x, AtomLocality::Local);
                 stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
             }
             // Copy velocities if needed for the output/checkpointing.
             // NOTE: Copy on the search steps is done at the beginning of the step.
-            if (useGpuForUpdate && !bNS && (do_per_step(step, ir->nstvout) || isCheckpointingStep))
+            if (useGpuForUpdate && !bNS && runScheduleWork_->stepWork.copyVFromGpuForIO)
             {
                 stateGpu->copyVelocitiesFromGpu(state_->v, AtomLocality::Local);
                 stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);

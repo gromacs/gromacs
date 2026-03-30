@@ -56,6 +56,7 @@
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -173,6 +174,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
             && !(haveSyclWithGraphIncompatibleGpuFftLibrary && simulationWorkload.useGpuPmeFft);
 
     simulationWorkload.useNvshmem = devFlags.enableNvshmem && simulationWorkload.useGpuDirectCommunication;
+
     return simulationWorkload;
 }
 
@@ -246,21 +248,13 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     return domainWork;
 }
 
-/*! \brief Set up force flag struct from the force bitmask.
- *
- * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
- * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
- * \param[in]      step                 The current MD step
- * \param[in]      domainWork           Domain lifetime workload description.
- * \param[in]      simulationWork       Simulation workload description.
- *
- * \returns New Stepworkload description.
- */
 StepWorkload setupStepWorkload(const int                     legacyFlags,
                                ArrayRef<const gmx::MtsLevel> mtsLevels,
                                const int64_t                 step,
+                               const std::optional<bool>     writeCheckpoint,
                                const DomainLifetimeWorkload& domainWork,
-                               const SimulationWorkload&     simulationWork)
+                               const SimulationWorkload&     simulationWork,
+                               const t_inputrec&             inputrec)
 {
     GMX_ASSERT(mtsLevels.empty() || mtsLevels.size() == 2, "Expect 0 or 2 MTS levels");
     const bool computeSlowForces = (mtsLevels.empty() || step % mtsLevels[1].stepFactor == 0);
@@ -301,6 +295,16 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
     // On NS steps, the buffer is cleared in stateGpu->reinit, no need to clear it twice.
     flags.clearGpuFBufferEarly =
             flags.useGpuFHalo && !domainWork.haveCpuLocalForceWork && !flags.doNeighborSearch;
+
+    GMX_ASSERT(!simulationWork.useGpuUpdate || writeCheckpoint.has_value(),
+               "Need a writeCheckpoint value when update is on GPU");
+    flags.copyXFromGpuForIO =
+            simulationWork.useGpuUpdate
+            && (do_per_step(step, inputrec.nstxout)
+                || do_per_step(step, inputrec.nstxout_compressed) || writeCheckpoint.value());
+    flags.copyVFromGpuForIO = simulationWork.useGpuUpdate
+                              && (do_per_step(step, inputrec.nstvout)
+                                  || (writeCheckpoint.value() && EI_STATE_VELOCITY(inputrec.eI)));
 
     return flags;
 }
