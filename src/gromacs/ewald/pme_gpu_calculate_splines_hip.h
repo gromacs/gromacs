@@ -242,8 +242,8 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
         {
             int   tableIndex = 0;
             int   tInt       = 0;
-            float n          = 0.;
-            float t          = 0.;
+            float n          = 0.0f;
+            float t          = 0.0f;
             GMX_DEVICE_ASSERT(atomIndexLocal < DIM * atomsPerBlock);
             /* Accessing fields in fshOffset/nXYZ/recipbox/... with dimIndex offset
              * puts them into local memory(!) instead of accessing the constant memory directly.
