@@ -66,6 +66,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gpu_utils.h"
 #include "pmalloc.h"
 
 //! Default context to use for pinning memory.
@@ -153,4 +154,12 @@ void pmallocClearDefaultDeviceContext()
                            "Clearing default context when there are allocations in it");
         g_threadDefaultContext = std::nullopt;
     }
+}
+
+bool isHostMemoryPinned(const void* h_ptr)
+{
+    GMX_RELEASE_ASSERT(g_threadDefaultContext.has_value(),
+                       "Calling isHostMemoryPinned before creating a context");
+
+    return sycl::get_pointer_type(h_ptr, g_threadDefaultContext.value()) == sycl::usm::alloc::host;
 }
