@@ -9,7 +9,7 @@
     <Int Name="Length">4</Int>
     <Vector>
       <Real Name="X">-131.09085</Real>
-      <Real Name="Y">-196.63623</Real>
+      <Real Name="Y">-196.6362</Real>
       <Real Name="Z">521.91742</Real>
     </Vector>
     <Vector>
@@ -18,20 +18,20 @@
       <Real Name="Z">-141.73683</Real>
     </Vector>
     <Vector>
-      <Real Name="X">5.9344621</Real>
-      <Real Name="Y">8.9016895</Real>
-      <Real Name="Z">11.868921</Real>
+      <Real Name="X">5.9344611</Real>
+      <Real Name="Y">8.9016886</Real>
+      <Real Name="Z">11.868918</Real>
     </Vector>
     <Vector>
-      <Real Name="X">196.02481</Real>
-      <Real Name="Y">294.03711</Real>
+      <Real Name="X">196.0248</Real>
+      <Real Name="Y">294.03708</Real>
       <Real Name="Z">-392.0495</Real>
     </Vector>
   </Sequence>
   <Shift-Forces Name="Shift-forces">
     <Vector Name="Central">
       <Real Name="X">-131.09085</Real>
-      <Real Name="Y">-196.63623</Real>
+      <Real Name="Y">-196.6362</Real>
       <Real Name="Z">521.91742</Real>
     </Vector>
   </Shift-Forces>

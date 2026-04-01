@@ -869,19 +869,19 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 void gpu_init_feppairlist(NbnxmGpu*                 nb,
                           const AtomPairlist&       h_feplist,
                           const InteractionLocality iloc,
-                          const GridSet&            gridSet)
+                          ArrayRef<const int>       atomIndices)
 {
     GpuFeplist*     d_feplist       = nb->feplist[iloc].get();
     GpuFepHostData* h_fepdata       = nb->fephostdata;
-    const int*      atomIndices     = gridSet.atomIndices().data();
-    const int       atomIndicesSize = gridSet.atomIndices().size();
+    const int       atomIndicesSize = atomIndices.ssize();
 
+    const int* atomIndicesData = atomIndices.data();
     h_fepdata->atomIndicesInv.resize(atomIndicesSize);
     for (int i = 0; i < atomIndicesSize; i++)
     {
-        if (atomIndices[i] < atomIndicesSize && atomIndices[i] >= 0)
+        if (atomIndicesData[i] < atomIndicesSize && atomIndicesData[i] >= 0)
         {
-            h_fepdata->atomIndicesInv[atomIndices[i]] = i;
+            h_fepdata->atomIndicesInv[atomIndicesData[i]] = i;
         }
     }
 

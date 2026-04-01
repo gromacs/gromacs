@@ -4073,7 +4073,7 @@ void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
             gpu_init_feppairlist(gpuNbv_,
                                  pairlistSets().pairlistSet(iLocality).fepGpuList(),
                                  iLocality,
-                                 pairSearch_->gridSet());
+                                 pairSearch_->gridSet().atomIndices());
         }
     }
     /* With FEP we might need to check that we have all perturbed inclusions within rlist */

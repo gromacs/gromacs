@@ -81,6 +81,7 @@ target_link_libraries(
     math
     mdlib
     mdtypes
+    nbnxm
     pbcutil
     tables
     testutils

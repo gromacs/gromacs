@@ -3,7 +3,7 @@
 <ReferenceData>
   <Real Name="EVdw ">3.1048522</Real>
   <Real Name="ECoul ">-30.984138</Real>
-  <Real Name="dVdlCoul ">72.786049</Real>
+  <Real Name="dVdlCoul ">72.786041</Real>
   <Real Name="dVdlVdw ">-0.73574162</Real>
   <Sequence Name="Forces">
     <Int Name="Length">4</Int>

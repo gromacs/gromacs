@@ -52,8 +52,10 @@
 
 #include <cmath>
 
+#include <array>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -82,13 +84,17 @@
 #    include "gromacs/mdtypes/md_enums.h"
 #    include "gromacs/mdtypes/mdatom.h"
 #    include "gromacs/mdtypes/simulation_workload.h"
+#    include "gromacs/nbnxm/atomdata.h"
 #    include "gromacs/nbnxm/atompairlist.h"
 #    if GMX_GPU_CUDA
 #        include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
 #    endif
+#    include "gromacs/nbnxm/gpu_data_mgmt.h"
 #    include "gromacs/nbnxm/gpu_types_common.h"
 #    include "gromacs/nbnxm/nbnxm.h"
 #    include "gromacs/nbnxm/nbnxm_gpu.h"
+#    include "gromacs/nbnxm/pairlist.h"
+#    include "gromacs/nbnxm/pairlistparams.h"
 #    include "gromacs/pbcutil/ishift.h"
 #    include "gromacs/pbcutil/pbc.h"
 #    include "gromacs/tables/forcetable.h"
@@ -98,6 +104,7 @@
 #    include "gromacs/utility/arrayref.h"
 #    include "gromacs/utility/enumerationhelpers.h"
 #    include "gromacs/utility/gmxassert.h"
+#    include "gromacs/utility/logger.h"
 #    include "gromacs/utility/real.h"
 #    include "gromacs/utility/stringutil.h"
 #    include "gromacs/utility/template_mp.h"
@@ -436,422 +443,83 @@ public:
     }
 };
 
-// Function to calculate potential switch constants
-static void potential_switch_constants(real rsw, real rc, switch_consts_t* sc)
+//! Build nbnxn_atomdata_t for the 4-atom FEP test using production code path
+static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const AtomData&           atoms,
+                                                            const PaddedVector<RVec>& x,
+                                                            const t_forcerec&         fr,
+                                                            ArrayRef<const real>      lambdas,
+                                                            LJCombinationRule ljCombinationRule)
 {
-    /* The switch function is 1 at rsw and 0 at rc.
-     * The derivative and second derivate are zero at both ends.
-     * rsw        = max(r - r_switch, 0)
-     * sw         = 1 + c3*rsw^3 + c4*rsw^4 + c5*rsw^5
-     * dsw        = 3*c3*rsw^2 + 4*c4*rsw^3 + 5*c5*rsw^4
-     * force      = force*dsw - potential*sw
-     * potential *= sw
-     */
-    sc->c3 = -10 / gmx::power3(rc - rsw);
-    sc->c4 = 15 / gmx::power4(rc - rsw);
-    sc->c5 = -6 / gmx::power5(rc - rsw);
+    const int  numAtoms   = c_numAtoms;
+    const real lambdaCoul = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
+    const real lambdaVdw  = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
+
+    std::optional<LJCombinationRule> ljRule = (ljCombinationRule != LJCombinationRule::None)
+                                                      ? std::optional<LJCombinationRule>(ljCombinationRule)
+                                                      : std::nullopt;
+
+    auto nbat = std::make_unique<nbnxn_atomdata_t>(PinningPolicy::PinnedIfSupported,
+                                                   MDLogger(),
+                                                   NbnxmKernelType::Gpu8x8x8,
+                                                   ljRule,
+                                                   LJCombinationRule::None,
+                                                   fr.nbfp,
+                                                   true,
+                                                   1,
+                                                   1);
+
+    nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
+    params.typeA.resize(numAtoms);
+    params.typeB.resize(numAtoms);
+    params.qA.resize(numAtoms);
+    params.qB.resize(numAtoms);
+    params.type.resize(numAtoms);
+    for (int i = 0; i < numAtoms; i++)
+    {
+        params.typeA[i] = atoms.typeA[i];
+        params.typeB[i] = atoms.typeB[i];
+        params.qA[i]    = atoms.chargeA[i];
+        params.qB[i]    = atoms.chargeB[i];
+        params.type[i]  = atoms.typeA[i];
+    }
+
+    if (params.ljCombinationRule != LJCombinationRule::None)
+    {
+        params.lj_comb.resize(numAtoms * 2);
+        params.ljCombA.resize(numAtoms * 2);
+        params.ljCombB.resize(numAtoms * 2);
+        for (int i = 0; i < numAtoms; i++)
+        {
+            const int tA = params.typeA[i], tB = params.typeB[i];
+            params.lj_comb[2 * i]     = params.nbfp_comb[tA * 2];
+            params.lj_comb[2 * i + 1] = params.nbfp_comb[tA * 2 + 1];
+            params.ljCombA[2 * i]     = params.nbfp_comb[tA * 2];
+            params.ljCombA[2 * i + 1] = params.nbfp_comb[tA * 2 + 1];
+            params.ljCombB[2 * i]     = params.nbfp_comb[tB * 2];
+            params.ljCombB[2 * i + 1] = params.nbfp_comb[tB * 2 + 1];
+        }
+    }
+
+    nbat->resizeCoordinateBuffer(numAtoms, 0);
+    std::copy(fr.shift_vec.begin(), fr.shift_vec.end(), nbat->shift_vec.begin());
+    nbat->bDynamicBox = false;
+
+    // Fill x with x,y,z,q (nbatXYZQ format); q = interpolated charge
+    ArrayRef<real> xbat = nbat->x();
+    for (int i = 0; i < numAtoms; i++)
+    {
+        const real q    = (1 - lambdaCoul) * atoms.chargeA[i] + lambdaCoul * atoms.chargeB[i];
+        xbat[4 * i]     = x[i][XX];
+        xbat[4 * i + 1] = x[i][YY];
+        xbat[4 * i + 2] = x[i][ZZ];
+        xbat[4 * i + 3] = q;
+    }
+
+    return nbat;
 }
 
-// Brief function to set up FEP GPU parameters
-void setGpuNbParams(NBParamGpu*                nbp,
-                    const t_forcerec&          fr,
-                    const interaction_const_t& ic,
-                    const std::vector<real>&   lambdas,
-                    LJCombinationRule          ljCombinationRule,
-                    const DeviceContext&       deviceContext,
-                    const DeviceStream&        localStream)
-{
-
-    nbp->rvdw_sq     = fr.rlist * fr.rlist;
-    nbp->rcoulomb_sq = nbp->rvdw_sq;
-
-    nbp->epsfac        = ic.coulomb.epsfac;
-    nbp->c_rf          = ic.coulomb.reactionFieldShift;
-    nbp->two_k_rf      = 2.0 * ic.coulomb.reactionFieldCoefficient;
-    nbp->sh_ewald      = ic.coulomb.ewaldShift;
-    nbp->sh_lj_ewald   = ic.vdw.ewaldShift;
-    nbp->ewaldcoeff_lj = ic.vdw.ewaldCoeff;
-    nbp->ewald_beta    = ic.coulomb.ewaldCoeff;
-
-
-    // Map VanDerWaalsType, modifier, and LJ combination rule to GPU VdwType
-    VdwType vdwType = VdwType::Cut;
-    if (ic.vdw.type == VanDerWaalsType::Pme)
-    {
-        vdwType = VdwType::EwaldGeom;
-    }
-    else if (ic.vdw.modifier == InteractionModifiers::PotSwitch)
-    {
-        vdwType = VdwType::PSwitch;
-    }
-    else if (ic.vdw.modifier == InteractionModifiers::ForceSwitch)
-    {
-        vdwType = VdwType::FSwitch;
-    }
-    else if (ic.vdw.type == VanDerWaalsType::Cut
-             && (ic.vdw.modifier == InteractionModifiers::None
-                 || ic.vdw.modifier == InteractionModifiers::PotShift))
-    {
-        switch (ljCombinationRule)
-        {
-            case LJCombinationRule::Geometric: vdwType = VdwType::CutCombGeom; break;
-            case LJCombinationRule::LorentzBerthelot: vdwType = VdwType::CutCombLB; break;
-            default: vdwType = VdwType::Cut; break;
-        }
-    }
-    nbp->vdwType = vdwType;
-    // Map Coulomb type to GPU ElecType (Cut and RF match by enum value; Pme/Ewald -> EwaldTab)
-    if (ic.coulomb.type == CoulombInteractionType::RF)
-    {
-        nbp->elecType = ElecType::RF;
-    }
-    else if (usingPmeOrEwald(ic.coulomb.type))
-    {
-        nbp->elecType = ElecType::EwaldTab;
-    }
-    else
-    {
-        nbp->elecType = static_cast<ElecType>(ic.coulomb.type);
-    }
-
-    nbp->dispersion_shift = ic.vdw.dispersionShift;
-    nbp->repulsion_shift  = ic.vdw.repulsionShift;
-    nbp->rvdw_switch      = ic.vdw.switchDistance;
-    nbp->vdw_switch       = ic.vdw.switchConstants;
-
-    if (nbp->vdwType == VdwType::PSwitch || nbp->vdwType == VdwType::FSwitch)
-    {
-        potential_switch_constants(ic.vdw.switchDistance, ic.vdw.cutoff, &(nbp->vdw_switch));
-    }
-
-    // Upload nbfp only when not using combination rules (Cut uses full matrix; CutCombGeom/CutCombLB use ljComb4)
-    if (!useLjCombRule(nbp->vdwType))
-    {
-        static_assert(sizeof(decltype(nbp->nbfp)) == 2 * sizeof(decltype(*fr.nbfp.data())),
-                      "Mismatch in the size of host / device data types");
-
-        allocateDeviceBuffer(&nbp->nbfp, c_numAtomTypes * c_numAtomTypes, deviceContext);
-        copyToDeviceBuffer(&nbp->nbfp,
-                           reinterpret_cast<const Float2*>(fr.nbfp.data()),
-                           0,
-                           c_numAtomTypes * c_numAtomTypes,
-                           localStream,
-                           GpuApiCallBehavior::Sync,
-                           nullptr);
-
-#    if GMX_GPU_CUDA
-        if (!c_disableCudaTextures)
-        {
-            cudaResourceDesc rd;
-            cudaTextureDesc  td;
-
-            memset(&rd, 0, sizeof(rd));
-            rd.resType                = cudaResourceTypeLinear;
-            rd.res.linear.devPtr      = nbp->nbfp;
-            rd.res.linear.desc        = cudaCreateChannelDesc<Float2>();
-            rd.res.linear.sizeInBytes = c_numAtomTypes * sizeof(Float2);
-
-            memset(&td, 0, sizeof(td));
-            td.readMode      = cudaReadModeElementType;
-            cudaError_t stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, nullptr);
-            gmx::checkDeviceError(stat, "Binding of the texture object failed.");
-        }
-#    endif
-    }
-
-    // LJ-PME: build and upload nbfp_comb for EwaldGeom combination rule
-    if (ic.vdw.type == VanDerWaalsType::Pme)
-    {
-        const int           numTypes = c_numAtomTypes;
-        std::vector<Float2> nbfp_comb_h(numTypes);
-        const real*         nbfp = fr.nbfp.data();
-        for (int i = 0; i < numTypes; i++)
-        {
-            const real c6  = nbfp[(i * numTypes + i) * 2] / 6.0;
-            const real c12 = nbfp[(i * numTypes + i) * 2 + 1] / 12.0;
-            if (c6 > 0 && c12 > 0)
-            {
-                nbfp_comb_h[i].x = static_cast<float>(gmx::sixthroot(c12 / c6));
-                nbfp_comb_h[i].y = static_cast<float>(0.25 * c6 * c6 / c12);
-            }
-            else
-            {
-                nbfp_comb_h[i].x = 0.0F;
-                nbfp_comb_h[i].y = 0.0F;
-            }
-        }
-        initParamLookupTable(
-                &nbp->nbfp_comb, &nbp->nbfp_comb_texobj, nbfp_comb_h.data(), numTypes, deviceContext, localStream);
-    }
-
-    // FEP params
-    nbp->bFepGpuNonBonded       = true;
-    nbp->lambdaPower            = ic.softCoreParameters->lambdaPower;
-    nbp->sigma6WithInvalidSigma = ic.softCoreParameters->sigma6WithInvalidSigma;
-    nbp->sigma6Minimum          = ic.softCoreParameters->sigma6Minimum;
-
-    nbp->alphaCoul  = ic.softCoreParameters->alphaCoulomb;
-    nbp->alphaVdw   = ic.softCoreParameters->alphaVdw;
-    nbp->lambdaCoul = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
-    nbp->lambdaVdw  = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
-
-    // Upload Coulomb Ewald correction table when using tabulated Ewald
-    if (nbp->elecType == ElecType::EwaldTab || nbp->elecType == ElecType::EwaldTabTwin)
-    {
-        GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-        nbp->coulomb_tab_scale = ic.coulombEwaldTables->scale;
-        initParamLookupTable(&nbp->coulomb_tab,
-                             &nbp->coulomb_tab_texobj,
-                             ic.coulombEwaldTables->tableF.data(),
-                             ic.coulombEwaldTables->tableF.size(),
-                             deviceContext,
-                             localStream);
-    }
-}
-
-// Brief function to copy fep pair list to GPU
-void constructFeppairlist(GpuFeplist*          d_feplist,
-                          const AtomPairlist*  h_feplist,
-                          const DeviceContext& deviceContext,
-                          const DeviceStream&  localStream)
-{
-
-    // Extract pair list data
-    ArrayRef<const AtomPairlist::IEntry> iList     = h_feplist->iList();
-    ArrayRef<const AtomPairlist::JEntry> jList     = h_feplist->flatJList();
-    const int                            numiAtoms = iList.ssize();
-    const int                            numjAtoms = jList.ssize();
-
-    HostVector<int> iinr(numiAtoms, { PinningPolicy::PinnedIfSupported });
-    for (int i = 0; i < numiAtoms; i++)
-    {
-        iinr[i] = iList[i].atom;
-    }
-
-    HostVector<int> jjnr(numjAtoms, { PinningPolicy::PinnedIfSupported });
-    for (int j = 0; j < numjAtoms; j++)
-    {
-        jjnr[j] = jList[j].atom;
-    }
-
-    HostVector<int> jIndex(numiAtoms + 1, { PinningPolicy::PinnedIfSupported });
-    int             count = 0;
-    for (int i = 0; i < numiAtoms; i++)
-    {
-        int incr = h_feplist->jList(i).size();
-        count += incr;
-        jIndex[i + 1] = count;
-    }
-
-    HostVector<int> shift(numiAtoms, { PinningPolicy::PinnedIfSupported });
-    for (int i = 0; i < numiAtoms; i++)
-    {
-        shift[i] = iList[i].shiftIndex;
-    }
-
-    HostVector<int> exclFep(numjAtoms, { PinningPolicy::PinnedIfSupported });
-    for (int j = 0; j < numjAtoms; j++)
-    {
-        exclFep[j] = jList[j].interacts;
-    }
-
-    reallocateDeviceBuffer(
-            &d_feplist->iinr, numiAtoms, &d_feplist->numiAtoms, &d_feplist->maxNumiAtoms, deviceContext);
-    copyToDeviceBuffer(
-            &d_feplist->iinr, iinr.data(), 0, numiAtoms, localStream, GpuApiCallBehavior::Async, nullptr);
-
-    reallocateDeviceBuffer(
-            &d_feplist->shift, numiAtoms, &d_feplist->numShift, &d_feplist->maxNumShift, deviceContext);
-    copyToDeviceBuffer(
-            &d_feplist->shift, shift.data(), 0, numiAtoms, localStream, GpuApiCallBehavior::Async, nullptr);
-
-    reallocateDeviceBuffer(
-            &d_feplist->jIndex, numiAtoms + 1, &d_feplist->numjIndex, &d_feplist->maxNumjIndex, deviceContext);
-    copyToDeviceBuffer(
-            &d_feplist->jIndex, jIndex.data(), 0, numiAtoms + 1, localStream, GpuApiCallBehavior::Async, nullptr);
-
-    reallocateDeviceBuffer(
-            &d_feplist->jjnr, numjAtoms, &d_feplist->numjAtoms, &d_feplist->maxNumjAtoms, deviceContext);
-    copyToDeviceBuffer(
-            &d_feplist->jjnr, jjnr.data(), 0, numjAtoms, localStream, GpuApiCallBehavior::Async, nullptr);
-
-    reallocateDeviceBuffer(
-            &d_feplist->exclFep, numjAtoms, &d_feplist->numExcl, &d_feplist->maxNumExcl, deviceContext);
-    copyToDeviceBuffer(
-            &d_feplist->exclFep, exclFep.data(), 0, numjAtoms, localStream, GpuApiCallBehavior::Async, nullptr);
-}
-
-using GpuPairlistByLocality = EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>>;
-
-// A simpler version of gpu_init where only fep relevant things are initialized
-NbnxmGpu* gpu_fep_init(const DeviceStreamManager& deviceStreamManager,
-                       const AtomData             atoms,
-                       const AtomPairlist         nblist,
-                       const PaddedVector<RVec>&  x,
-                       const t_forcerec&          fr,
-                       const std::vector<real>&   lambdas,
-                       LJCombinationRule          ljCombinationRule)
-{
-    auto* nb           = new NbnxmGpu();
-    nb->deviceContext_ = &deviceStreamManager.context();
-    nb->atdat          = new NBAtomDataGpu;
-    nb->nbparam        = new NBParamGpu;
-
-    nb->feplist[0] = std::make_unique<GpuFeplist>();
-
-    GpuPairlistByLocality list;
-    list[InteractionLocality::Local] = std::make_unique<GpuPairlist>();
-    nb->plist                        = std::move(list);
-    nb->bUseTwoStreams               = false;
-
-    const DeviceStream& localStream = deviceStreamManager.stream(DeviceStreamType::NonBondedLocal);
-    nb->deviceStreams[InteractionLocality::Local] = &localStream;
-
-    // initialize atdat and nbparam
-    nb->atdat->numTypes = c_numAtomTypes;
-    nb->atdat->numAtoms = c_numAtoms;
-
-    allocateDeviceBuffer(&nb->atdat->shiftVec, 1, *nb->deviceContext_);
-    copyToDeviceBuffer(&nb->atdat->shiftVec,
-                       asGenericFloat3Pointer(fr.shift_vec),
-                       0,
-                       1,
-                       localStream,
-                       GpuApiCallBehavior::Sync,
-                       nullptr);
-    nb->atdat->shiftVecUploaded = true;
-
-    allocateDeviceBuffer(&nb->atdat->fShift, 1, *nb->deviceContext_);
-    allocateDeviceBuffer(&nb->atdat->eLJ, 1, *nb->deviceContext_);
-    allocateDeviceBuffer(&nb->atdat->eElec, 1, *nb->deviceContext_);
-    allocateDeviceBuffer(&nb->atdat->dvdlLJ, 1, *nb->deviceContext_);
-    allocateDeviceBuffer(&nb->atdat->dvdlElec, 1, *nb->deviceContext_);
-
-    clearDeviceBufferAsync(&nb->atdat->fShift, 0, 1, localStream);
-    clearDeviceBufferAsync(&nb->atdat->eElec, 0, 1, localStream);
-    clearDeviceBufferAsync(&nb->atdat->eLJ, 0, 1, localStream);
-    clearDeviceBufferAsync(&nb->atdat->dvdlElec, 0, 1, localStream);
-    clearDeviceBufferAsync(&nb->atdat->dvdlLJ, 0, 1, localStream);
-
-    HostVector<RVec> f_h(c_numAtoms, { 0.0, 0.0, 0.0 }, { PinningPolicy::PinnedIfSupported });
-    allocateDeviceBuffer(&nb->atdat->f, c_numAtoms, *nb->deviceContext_);
-    copyToDeviceBuffer(
-            &nb->atdat->f, f_h.data(), 0, c_numAtoms, localStream, GpuApiCallBehavior::Async, nullptr);
-
-    allocateDeviceBuffer(&nb->atdat->xq, c_numAtoms, *nb->deviceContext_);
-    HostVector<float> xq_h(c_numAtoms * 4, { PinningPolicy::PinnedIfSupported });
-    for (int k = 0; k < c_numAtoms; k++)
-    {
-        xq_h[4 * k]     = x[k][0];
-        xq_h[4 * k + 1] = x[k][1];
-        xq_h[4 * k + 2] = x[k][2];
-    }
-    static_assert(sizeof(nb->atdat->xq[0]) == sizeof(Float4),
-                  "Size of the xq parameters element should be equal to the size of float4.");
-    copyToDeviceBuffer(&nb->atdat->xq,
-                       reinterpret_cast<Float4*>(xq_h.data()),
-                       0,
-                       c_numAtoms,
-                       localStream,
-                       GpuApiCallBehavior::Async,
-                       nullptr);
-
-    allocateDeviceBuffer(&nb->atdat->q4, c_numAtoms, *nb->deviceContext_);
-    HostVector<float> q4_h(c_numAtoms * 4, { PinningPolicy::PinnedIfSupported });
-    for (int k = 0; k < c_numAtoms; k++)
-    {
-        q4_h[4 * k]     = (float)atoms.chargeA[k];
-        q4_h[4 * k + 1] = (float)atoms.chargeB[k];
-    }
-    static_assert(sizeof(nb->atdat->q4[0]) == sizeof(Float4),
-                  "Size of the q4 parameters element should be equal to the size of float4.");
-    copyToDeviceBuffer(&nb->atdat->q4,
-                       reinterpret_cast<Float4*>(q4_h.data()),
-                       0,
-                       c_numAtoms,
-                       localStream,
-                       GpuApiCallBehavior::Async,
-                       nullptr);
-
-    allocateDeviceBuffer(&nb->atdat->atomTypes4, c_numAtoms, *nb->deviceContext_);
-    HostVector<int> atomTypes4_h(c_numAtoms * 4, { PinningPolicy::PinnedIfSupported });
-    for (int k = 0; k < c_numAtoms; k++)
-    {
-        atomTypes4_h[4 * k]     = (int)atoms.typeA[k];
-        atomTypes4_h[4 * k + 1] = (int)atoms.typeB[k];
-    }
-    static_assert(sizeof(nb->atdat->atomTypes4[0]) == sizeof(Int4),
-                  "Size of the atomTypes4 parameters element should be equal to the size of Int4.");
-    copyToDeviceBuffer(&nb->atdat->atomTypes4,
-                       reinterpret_cast<Int4*>(atomTypes4_h.data()),
-                       0,
-                       c_numAtoms,
-                       localStream,
-                       GpuApiCallBehavior::Async,
-                       nullptr);
-
-    // set up nb fep parameters
-    setGpuNbParams(nb->nbparam, fr, *fr.ic, lambdas, ljCombinationRule, *nb->deviceContext_, localStream);
-
-    // When using LJ combination rules, upload ljComb4 (per-atom A/B combination params) for the FEP kernel
-    if (useLjCombRule(nb->nbparam->vdwType))
-    {
-        const int   numTypes = c_numAtomTypes;
-        const real* nbfp     = fr.nbfp.data();
-        // Per-type combination params: for Geometric (sqrt(c6), sqrt(c12)); for LB (sigma/2, sqrt(c6²/c12))
-        std::vector<Float2> typeCombA(numTypes), typeCombB(numTypes);
-        for (int i = 0; i < numTypes; i++)
-        {
-            const real c6  = nbfp[(i * numTypes + i) * 2] / 6.0;
-            const real c12 = nbfp[(i * numTypes + i) * 2 + 1] / 12.0;
-            if (nb->nbparam->vdwType == VdwType::CutCombGeom)
-            {
-                if (c6 > 0 && c12 > 0)
-                {
-                    typeCombA[i].x = static_cast<float>(std::sqrt(c6));
-                    typeCombA[i].y = static_cast<float>(std::sqrt(c12));
-                }
-                else
-                {
-                    typeCombA[i].x = typeCombA[i].y = 0.0F;
-                }
-                typeCombB[i] = typeCombA[i];
-            }
-            else
-            {
-                GMX_ASSERT(nb->nbparam->vdwType == VdwType::CutCombLB,
-                           "Only CutCombGeom and CutCombLB use ljComb4");
-                if (c6 > 0 && c12 > 0)
-                {
-                    typeCombA[i].x = static_cast<float>(0.5 * gmx::sixthroot(c12 / c6));
-                    typeCombA[i].y = static_cast<float>(std::sqrt(c6 * c6 / c12));
-                }
-                else
-                {
-                    typeCombA[i].x = typeCombA[i].y = 0.0F;
-                }
-                typeCombB[i] = typeCombA[i];
-            }
-        }
-        HostVector<Float4> ljComb4_h(c_numAtoms, { PinningPolicy::PinnedIfSupported });
-        for (int k = 0; k < c_numAtoms; k++)
-        {
-            const int tA = atoms.typeA[k], tB = atoms.typeB[k];
-            ljComb4_h[k].x = typeCombA[tA].x;
-            ljComb4_h[k].y = typeCombA[tA].y;
-            ljComb4_h[k].z = typeCombB[tB].x;
-            ljComb4_h[k].w = typeCombB[tB].y;
-        }
-        allocateDeviceBuffer(&nb->atdat->ljComb4, c_numAtoms, *nb->deviceContext_);
-        copyToDeviceBuffer(
-                &nb->atdat->ljComb4, ljComb4_h.data(), 0, c_numAtoms, localStream, GpuApiCallBehavior::Sync, nullptr);
-    }
-
-    // construct the gpu fep list
-    constructFeppairlist(nb->feplist[0].get(), &nblist, *nb->deviceContext_, localStream);
-
-    return nb;
-}
+//! Identity atom index mapping for the 4-atom test (grid-local index == global index)
+static const std::array<int, c_numAtoms> c_identityAtomIndices = { 0, 1, 2, 3 };
 
 // Copy results back to CPU
 void gpuLaunchCpyback(NbnxmGpu* nb, struct OutputQuantities* output)
@@ -998,42 +666,47 @@ protected:
             SimulationWorkload simulationWorkload;
             auto               deviceStreamManager = std::make_shared<DeviceStreamManager>(
                     testDevice->deviceInfo(), simulationWorkload, false);
-            // Construct NbnxmGpu object nb
-            NbnxmGpu* nb = gpu_fep_init(
-                    *deviceStreamManager, input_.atoms, nbl, x_, fr, lambdas, input_.ljCombinationRule);
 
-            // Run fep gpu kernel
+            auto nbat = makeNbatForFepTest(input_.atoms, x_, fr, lambdas, input_.ljCombinationRule);
+
+            PairlistParams pairlistParams(NbnxmKernelType::Gpu8x8x8, sc_layoutType, true, fr.rlist, false);
+            pairlistParams.haveNonbondedFEGpu_ = true;
+
+            NbnxmGpu* nb = gpu_init(
+                    *deviceStreamManager, fr.ic.get(), pairlistParams, nbat.get(), false, std::optional<int>(1));
+
+            EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> all_lambda;
+            all_lambda[FreeEnergyPerturbationCouplingType::Coul] = {
+                lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]
+            };
+            all_lambda[FreeEnergyPerturbationCouplingType::Vdw] = {
+                lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)]
+            };
+            copy_gpu_fepparams(nb,
+                               true,
+                               fr.ic->softCoreParameters->alphaCoulomb,
+                               fr.ic->softCoreParameters->alphaVdw,
+                               fr.ic->softCoreParameters->lambdaPower,
+                               fr.ic->softCoreParameters->sigma6WithInvalidSigma,
+                               fr.ic->softCoreParameters->sigma6Minimum,
+                               lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                               lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
+                               1,
+                               all_lambda);
+
+            gpu_init_atomdata(nb, nbat.get());
+            gpu_upload_shiftvec(nb, nbat.get());
+            gpu_copy_xq_to_gpu(nb, nbat.get(), AtomLocality::Local);
+            gpu_init_feppairlist(nb, nbl, InteractionLocality::Local, c_identityAtomIndices);
+
+            // Clear force buffer before kernel (matches production step flow)
+            gpu_clear_outputs(nb, stepWork.computeVirial);
+
             gpu_launch_free_energy_kernel(nb, simulationWorkload, stepWork, InteractionLocality::Local);
 
-            // Transfer results to host buffer
             gpuLaunchCpyback(nb, &output);
 
-            /* Free atdat */
-            freeDeviceBuffer(&nb->atdat->xq);
-            freeDeviceBuffer(&nb->atdat->f);
-            freeDeviceBuffer(&nb->atdat->eLJ);
-            freeDeviceBuffer(&nb->atdat->eElec);
-            freeDeviceBuffer(&nb->atdat->dvdlLJ);
-            freeDeviceBuffer(&nb->atdat->dvdlElec);
-            freeDeviceBuffer(&nb->atdat->fShift);
-            freeDeviceBuffer(&nb->atdat->shiftVec);
-
-            freeDeviceBuffer(&nb->atdat->q4);
-            freeDeviceBuffer(&nb->atdat->atomTypes4);
-            if (useLjCombRule(nb->nbparam->vdwType))
-            {
-                freeDeviceBuffer(&nb->atdat->ljComb4);
-            }
-            destroyParamLookupTable(&nb->nbparam->coulomb_tab, &nb->nbparam->coulomb_tab_texobj);
-            destroyParamLookupTable(&nb->nbparam->nbfp_comb, &nb->nbparam->nbfp_comb_texobj);
-            if (!useLjCombRule(nb->nbparam->vdwType))
-            {
-                freeDeviceBuffer(&nb->nbparam->nbfp);
-            }
-
-            delete nb->atdat;
-            delete nb->nbparam;
-            delete nb;
+            gpu_free(nb);
 
             checkOutput(&checker_, output);
         }
