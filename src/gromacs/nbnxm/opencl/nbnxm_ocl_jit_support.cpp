@@ -204,16 +204,16 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
                                                "gromacs/nbnxm/opencl",
                                                "nbnxm_ocl_kernels.cl",
                                                extraDefines,
-                                               nb->deviceContext_->context(),
-                                               nb->deviceContext_->deviceInfo().oclDeviceId,
-                                               nb->deviceContext_->deviceInfo().deviceVendor);
+                                               nb->deviceContext.context(),
+                                               nb->deviceContext.deviceInfo().oclDeviceId,
+                                               nb->deviceContext.deviceInfo().deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
             e.prependContext(
                     gmx::formatString("Failed to compile/load nbnxm kernels for GPU #%d %s\n",
-                                      nb->deviceContext_->deviceInfo().id,
-                                      nb->deviceContext_->deviceInfo().device_name));
+                                      nb->deviceContext.deviceInfo().id,
+                                      nb->deviceContext.deviceInfo().device_name));
             throw;
         }
     }

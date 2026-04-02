@@ -332,7 +332,7 @@ void gpu_launch_free_energy_kernel(NbnxmGpu*                      nb,
     // one warp per nri
     const int nriPerBlock      = bsize / warp_size;
     int       nblock           = (feplist->numiAtoms + nriPerBlock - 1) / nriPerBlock;
-    nblock                     = calc_nb_kernel_nblock(nblock, &nb->deviceContext_->deviceInfo());
+    nblock                     = calc_nb_kernel_nblock(nblock, &nb->deviceContext.deviceInfo());
     fepConfig.gridSize[0]      = nblock;
     fepConfig.gridSize[1]      = 1;
     fepConfig.gridSize[2]      = 1;
@@ -371,7 +371,7 @@ void gpu_launch_free_energy_kernel(NbnxmGpu*                      nb,
         // one warp per nri
         const int nriPerBlock = blockSize / warp_size;
         nblock                = (feplist->numiAtoms + nriPerBlock - 1) / nriPerBlock;
-        nblock                = calc_nb_kernel_nblock(nblock, &nb->deviceContext_->deviceInfo());
+        nblock                = calc_nb_kernel_nblock(nblock, &nb->deviceContext.deviceInfo());
         fepForeignConfig.gridSize[0]      = nblock;
         fepForeignConfig.gridSize[1]      = 1;
         fepForeignConfig.gridSize[2]      = 1;
@@ -393,7 +393,7 @@ void gpu_launch_free_energy_kernel(NbnxmGpu*                      nb,
         }
 
         const auto fepForeignKernel = select_nbfe_foreign_kernel(
-                nbp->elecType, nbp->vdwType, &nb->deviceContext_->deviceInfo());
+                nbp->elecType, nbp->vdwType, &nb->deviceContext.deviceInfo());
         const auto fepForeignKernelArgs = prepareGpuKernelArguments(
                 fepForeignKernel, fepForeignConfig, adat, nbp, feplist, &nLambda);
 

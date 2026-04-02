@@ -59,17 +59,16 @@
 
 namespace gmx
 {
+class DeviceStreamManager;
 
 /*! \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
 struct NbnxmGpu
 {
-    /*! \brief GPU device context.
-     *
-     * \todo Make it constant reference, once NbnxmGpu is a proper class.
-     */
-    const DeviceContext* deviceContext_;
+    NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional<size_t> nLambda);
+    //! GPU device context.
+    const DeviceContext& deviceContext;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
     //! true indicates that the nonlocal_done event was marked
@@ -106,7 +105,7 @@ struct NbnxmGpu
     /*! \brief staging area where fshift/energies get downloaded */
     NBStagingData nbst;
     /*! \brief local and non-local GPU streams */
-    EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams;
+    EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams = { { nullptr } };
 
     /*! \brief Event triggered when the non-local non-bonded
      * kernel is done (and the local transfer can proceed) */

@@ -561,7 +561,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     config.blockSize[1]     = c_clSize;
     config.gridSize[0]      = plist->numSci;
 
-    validate_global_work_size(config, 3, &nb->deviceContext_->deviceInfo());
+    validate_global_work_size(config, 3, &nb->deviceContext.deviceInfo());
 
     if (debug)
     {
@@ -758,7 +758,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = numSciInPart;
 
-    validate_global_work_size(config, 3, &nb->deviceContext_->deviceInfo());
+    validate_global_work_size(config, 3, &nb->deviceContext.deviceInfo());
 
     if (debug)
     {

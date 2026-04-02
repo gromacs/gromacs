@@ -59,17 +59,17 @@ class GpuEventSynchronizer;
 
 namespace gmx
 {
+class DeviceStreamManager;
 
+#ifndef DOXYGEN
 /*! \internal
  * \brief Main data structure for SYCL nonbonded force calculations.
  */
 struct NbnxmGpu
 {
-    /*! \brief GPU device context.
-     *
-     * \todo Make it constant reference, once NbnxmGpu is a proper class.
-     */
-    const DeviceContext* deviceContext_;
+    NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional<size_t> nLambda);
+    //! GPU device context.
+    const DeviceContext& deviceContext;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
     /*! \brief true indicates that the nonlocal_done event was marked */
@@ -107,7 +107,7 @@ struct NbnxmGpu
     /*! \brief staging area where fshift/energies get downloaded. Will be removed in SYCL. */
     NBStagingData nbst;
     /*! \brief local and non-local GPU streams */
-    EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams;
+    EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams = { { nullptr } };
 
     /*! \brief True if event-based timing is enabled. Always false for SYCL. */
     bool bDoTime = false;
@@ -143,6 +143,7 @@ struct NbnxmGpu
      * will be true. */
     EnumerationArray<InteractionLocality, bool> haveWork = { { false } };
 };
+#endif
 
 } // namespace gmx
 

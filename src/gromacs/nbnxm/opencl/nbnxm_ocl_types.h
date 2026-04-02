@@ -76,6 +76,7 @@ enum ePruneKind
 
 namespace gmx
 {
+class DeviceStreamManager;
 
 /*! \internal
  * \brief Data structure shared between the OpenCL device code and OpenCL host code
@@ -130,16 +131,15 @@ typedef struct cl_nbparam_params
 } cl_nbparam_params_t;
 
 
+#ifndef DOXYGEN
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
  */
 struct NbnxmGpu
 {
-    /* \brief OpenCL device context
-     *
-     * \todo Make it constant reference, once NbnxmGpu is a proper class.
-     */
-    const DeviceContext* deviceContext_;
+    NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional<size_t> nLambda);
+    //! GPU device context.
+    const DeviceContext& deviceContext;
     //! OpenCL runtime data (context, kernels)
     struct gmx_device_runtime_data_t* dev_rundata = nullptr;
 
@@ -203,7 +203,7 @@ struct NbnxmGpu
     int cellToBinAlloc = 0;
 
     //! local and non-local GPU queues
-    gmx::EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams;
+    gmx::EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams = { { nullptr } };
 
     /*! \brief Events used for synchronization */
     /*! \{ */
@@ -231,6 +231,7 @@ struct NbnxmGpu
     //! Timing data. TODO: deprecate this and query timers for accumulated data instead
     std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
 };
+#endif
 
 } // namespace gmx
 

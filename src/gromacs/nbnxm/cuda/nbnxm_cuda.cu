@@ -566,11 +566,11 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->deviceContext_->deviceInfo().prop.major == 3 && nb->deviceContext_->deviceInfo().prop.minor == 7)
+    if (nb->deviceContext.deviceInfo().prop.major == 3 && nb->deviceContext.deviceInfo().prop.minor == 7)
     {
         num_threads_z = 2;
     }
-    int nblock = calc_nb_kernel_nblock(plist->numSci, &nb->deviceContext_->deviceInfo());
+    int nblock = calc_nb_kernel_nblock(plist->numSci, &nb->deviceContext.deviceInfo());
 
 
     KernelLaunchConfig config;
@@ -579,7 +579,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     config.blockSize[2] = num_threads_z;
     config.gridSize[0]  = nblock;
     config.sharedMemorySize =
-            calc_shmem_required_nonbonded(num_threads_z, &nb->deviceContext_->deviceInfo(), nbp);
+            calc_shmem_required_nonbonded(num_threads_z, &nb->deviceContext.deviceInfo(), nbp);
 
     if (debug)
     {
@@ -605,7 +605,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
      * call to the interaction kernel after a neighbour list step */
     bool       bDoPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
     const auto kernel   = select_nbnxn_kernel(
-            nbp->elecType, nbp->vdwType, stepWork.computeEnergy, bDoPrune, &nb->deviceContext_->deviceInfo());
+            nbp->elecType, nbp->vdwType, stepWork.computeEnergy, bDoPrune, &nb->deviceContext.deviceInfo());
     const auto kernelArgs =
             prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
     launchGpuKernel(kernel, config, deviceStream, timingEvent, "k_calc_nb", kernelArgs);
@@ -725,15 +725,14 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = c_pruneKernelJPackedConcurrency;
-    int nblock        = calc_nb_kernel_nblock(numSciInPartMax, &nb->deviceContext_->deviceInfo());
+    int nblock        = calc_nb_kernel_nblock(numSciInPartMax, &nb->deviceContext.deviceInfo());
 
     KernelLaunchConfig config;
     config.blockSize[0] = c_clusterSize;
     config.blockSize[1] = c_clusterSize;
     config.blockSize[2] = num_threads_z;
     config.gridSize[0]  = nblock;
-    config.sharedMemorySize =
-            calc_shmem_required_prune(num_threads_z, &nb->deviceContext_->deviceInfo());
+    config.sharedMemorySize = calc_shmem_required_prune(num_threads_z, &nb->deviceContext.deviceInfo());
 
     if (debug)
     {

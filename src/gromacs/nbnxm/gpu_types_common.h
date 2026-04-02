@@ -43,6 +43,8 @@
 
 #include "config.h"
 
+#include <optional>
+
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
@@ -136,12 +138,10 @@ static constexpr float c_oneTwelfth = 0.08333333F;
 
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.
- *
- * Since SYCL buffers already have host-side storage, this is a bit redundant.
- * But it allows prefetching of the data from GPU, and brings GPU backends closer together.
  */
 struct NBStagingData
 {
+    NBStagingData(std::optional<size_t> nLambda);
     //! LJ energy
     HostVector<float> eLJ;
     //! electrostatic energy

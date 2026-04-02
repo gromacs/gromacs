@@ -96,7 +96,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     launchNbnxmKernelPruneOnly(nb, iloc, numParts, numSciInPartMax);
     if (plist->haveFreshList && nbnxmSortListsOnGpu())
     {
-        const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+        const auto& deviceInfo = nb->deviceContext.deviceInfo();
         launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
     }
 
@@ -143,7 +143,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     launchNbnxmKernel(nb, stepWork, iloc, doPrune);
     if (doPrune && nbnxmSortListsOnGpu())
     {
-        const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+        const auto& deviceInfo = nb->deviceContext.deviceInfo();
         launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
     }
 }

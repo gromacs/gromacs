@@ -125,7 +125,7 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
     {
         return 0;
     }
-    const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+    const auto& deviceInfo = nb->deviceContext.deviceInfo();
     return getGpuMinCiBalancedFactor(deviceInfo) * deviceInfo.prop.multiProcessorCount;
 }
 

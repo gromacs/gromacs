@@ -95,7 +95,7 @@ static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
         gmx_fatal(FARGS,
                   "Failed to create kernel '%s' for GPU #%s: OpenCL error %d",
                   kernel_name,
-                  nb->deviceContext_->deviceInfo().device_name,
+                  nb->deviceContext.deviceInfo().device_name,
                   cl_error);
     }
 
@@ -133,8 +133,8 @@ void gpu_init_platform_specific(NbnxmGpu* nb)
      * TODO: decide about NVIDIA
      */
     nb->bPrefetchLjParam = (std::getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr)
-                           && ((nb->deviceContext_->deviceInfo().deviceVendor == DeviceVendor::Amd)
-                               || (nb->deviceContext_->deviceInfo().deviceVendor == DeviceVendor::Intel)
+                           && ((nb->deviceContext.deviceInfo().deviceVendor == DeviceVendor::Amd)
+                               || (nb->deviceContext.deviceInfo().deviceVendor == DeviceVendor::Intel)
                                || (std::getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
@@ -216,8 +216,8 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
     if (nb != nullptr)
     {
-        return gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().compute_units
-               / getDeviceComputeUnitFactor(nb->deviceContext_->deviceInfo());
+        return gpu_min_ci_balanced_factor * nb->deviceContext.deviceInfo().compute_units
+               / getDeviceComputeUnitFactor(nb->deviceContext.deviceInfo());
     }
     else
     {

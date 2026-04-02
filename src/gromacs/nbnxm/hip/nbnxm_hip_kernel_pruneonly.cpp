@@ -355,7 +355,7 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, co
     NBAtomDataGpu*           adat          = nb->atdat;
     NBParamGpu*              nbp           = nb->nbparam;
     const DeviceStream&      deviceStream  = *nb->deviceStreams[iloc];
-    const DeviceInformation& deviceInfo    = nb->deviceContext_->deviceInfo();
+    const DeviceInformation& deviceInfo    = nb->deviceContext.deviceInfo();
     auto*                    plist         = nb->plist[iloc].get();
     const bool               haveFreshList = plist->haveFreshList;
 

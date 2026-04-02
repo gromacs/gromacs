@@ -704,7 +704,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
     NBAtomDataGpu*           adat         = nb->atdat;
     NBParamGpu*              nbp          = nb->nbparam;
     const DeviceStream&      deviceStream = *nb->deviceStreams[iloc];
-    const DeviceInformation& deviceInfo   = nb->deviceContext_->deviceInfo();
+    const DeviceInformation& deviceInfo   = nb->deviceContext.deviceInfo();
 
     auto* plist = nb->plist[iloc].get();
 

@@ -71,7 +71,7 @@ extern template void launchNbnxmKernelHelper<true, true, false>(NbnxmGpu* nb, co
 
 void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
-    const bool hasLargeRegisterPool = targetHasLargeRegisterPool(nb->deviceContext_->deviceInfo());
+    const bool hasLargeRegisterPool = targetHasLargeRegisterPool(nb->deviceContext.deviceInfo());
     const bool doCalcEnergies       = stepWork.computeEnergy;
     dispatchTemplatedFunction(
             [&](auto hasLargeRegisterPool_, auto doCalcEnergies_, auto doPruneNBL_)
