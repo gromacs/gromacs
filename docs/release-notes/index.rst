@@ -44,8 +44,6 @@ Major release
    2026/major/highlights
    2026/major/features
    2026/major/performance
-   2026/major/api
-   2026/major/tools
    2026/major/bugs-fixed
    2026/major/deprecated-functionality
    2026/major/removed-functionality
@@ -77,7 +75,6 @@ Major release
    2025/major/highlights
    2025/major/features
    2025/major/performance
-   2025/major/api
    2025/major/tools
    2025/major/bugs-fixed
    2025/major/deprecated-functionality
@@ -115,11 +112,9 @@ Major release
    2024/major/highlights
    2024/major/features
    2024/major/performance
-   2024/major/api
    2024/major/tools
    2024/major/bugs-fixed
    2024/major/deprecated-functionality
-   2024/major/removed-functionality
    2024/major/portability
    2024/major/miscellaneous
 
