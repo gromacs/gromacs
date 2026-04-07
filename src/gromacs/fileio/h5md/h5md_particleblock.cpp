@@ -39,6 +39,7 @@
 
 #include "h5md_particleblock.h"
 
+#include "gromacs/fileio/h5md/h5md_error.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -116,28 +117,28 @@ H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setBox(H5mdFrameDataSet<real
     GMX_H5MD_THROW_UPON_ERROR(
             box.frameDims().size() != 2 || box.frameDims()[0] != DIM || box.frameDims()[1] != DIM,
             "Simulation box does not have required dimensions { 3, 3 }");
-    box_ = std::move(box);
+    box_.emplace(std::move(box));
     return *this;
 }
 
 H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setPosition(H5mdTimeDataBlock<RVec>&& position)
 {
     ensureParticleCountConsistency(position);
-    position_ = std::move(position);
+    position_.emplace(std::move(position));
     return *this;
 }
 
 H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setVelocity(H5mdTimeDataBlock<RVec>&& velocity)
 {
     ensureParticleCountConsistency(velocity);
-    velocity_ = std::move(velocity);
+    velocity_.emplace(std::move(velocity));
     return *this;
 }
 
 H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setForce(H5mdTimeDataBlock<RVec>&& force)
 {
     ensureParticleCountConsistency(force);
-    force_ = std::move(force);
+    force_.emplace(std::move(force));
     return *this;
 }
 

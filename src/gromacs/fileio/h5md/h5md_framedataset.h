@@ -42,8 +42,6 @@
 
 #include <hdf5.h>
 
-#include <memory>
-
 #include "gromacs/fileio/h5md/h5md_datasetbase.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 
@@ -103,8 +101,8 @@ public:
     ~H5mdFrameDataSet() noexcept;
     //! \brief Move constructor.
     H5mdFrameDataSet(H5mdFrameDataSet<ValueType>&&) noexcept;
-    //! \brief Move assignment.
-    H5mdFrameDataSet& operator=(H5mdFrameDataSet<ValueType>&&) noexcept;
+    //! \brief Move assignment explicitly deleted (not supported by H5mdDataSetBase).
+    H5mdFrameDataSet& operator=(H5mdFrameDataSet<ValueType>&&) = delete;
 
     /*! \brief Return the dimensions of a single frame of the templated type in data set.
      *
@@ -206,7 +204,8 @@ private:
         FrameDescription(const FrameDescription&)            = delete;
         FrameDescription& operator=(const FrameDescription&) = delete;
         FrameDescription(FrameDescription&&)                 = default;
-        FrameDescription& operator=(FrameDescription&&)      = default;
+        // explicitly deleted (not supported by sg::scope_guard).
+        FrameDescription& operator=(FrameDescription&&) = delete;
 
         /*! \brief Construct and return a data space for reading a frame at \p frameIndex.
          *
@@ -259,20 +258,13 @@ private:
         //!< Memory data space for a single frame, called `mem_space_id` in hdf5 documentation.
         hid_t memoryDataSpace_;
 
-        /*! \brief Handle to scope guard which closes the memory data space handle when the destructor is called.
-         *
-         * Scope guards have no move semantics, so in order for the class to have move semantics
-         * we must store this indirectly. For the default move constructor this will be swapped
-         * with a nullptr, and thus not result in an extra close of the moved handle. For default
-         * move assignment this and the handle will be swapped together, and thus closed by the
-         * moved-from object's destructor.
+        /*! \brief Scope guard which closes the memory data space handle when the destructor is called.
          *
          * \note Must be declared directly below and thus initialized just after the guarded
          * handle. If not the guard may not be active if a subsequent initialization fails,
          * resulting in a memory leak.
          */
-        std::unique_ptr<H5mdGuard> memoryDataSpaceGuard_ = std::make_unique<H5mdGuard>(
-                sg::make_scope_guard(H5mdCloser(memoryDataSpace_, H5Sclose)));
+        H5mdGuard memoryDataSpaceGuard_ = sg::make_scope_guard(H5mdCloser(memoryDataSpace_, H5Sclose));
 
         /*! \brief Offset for hyperslab used to select frame.
          *

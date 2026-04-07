@@ -160,9 +160,6 @@ template<typename ValueType>
 H5mdFrameDataSet<ValueType>::H5mdFrameDataSet(H5mdFrameDataSet<ValueType>&&) noexcept = default;
 
 template<typename ValueType>
-H5mdFrameDataSet<ValueType>& H5mdFrameDataSet<ValueType>::operator=(H5mdFrameDataSet<ValueType>&&) noexcept = default;
-
-template<typename ValueType>
 const DataSetDims& H5mdFrameDataSet<ValueType>::frameDims() const
 {
     return frameDescription_.dims();
