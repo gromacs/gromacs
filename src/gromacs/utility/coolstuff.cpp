@@ -1710,6 +1710,8 @@ std::string getCoolQuote()
           "used is sufficient to justify the enormous usage of computer power and energy.",
           "Anonymous reviewer, upon reading a draft of 10.1002/jcc.70059" },
         { "Software was a mistake.", "Paul Bauer" },
+        { "Rule #1, don't trust anything with electricity in it.",
+          "Ian Bogle, while discussing GPU kernel debugging." },
     };
 
     if (beCool())
