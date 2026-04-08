@@ -27,6 +27,13 @@ NNP models (e.g. Nutmeg) within the NNPot interface.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Better error reporting in ``gmx x2top``
+"""""""""""""""""""""""""""""""""""""""
+
+Properly print the filename when a forcefield parsing error is encountered.
+
+:issue:`5601`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
