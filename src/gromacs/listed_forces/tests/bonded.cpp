@@ -57,31 +57,31 @@
 #include <ostream>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/units.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
-#include "gromacs/utility/stringstream.h"
-#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
+#include "testutils/test_device.h"
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
+
+#include "bondedtestdata.h"
+#include "bondedtestrunners.h"
 
 namespace gmx
 {
@@ -90,457 +90,25 @@ namespace test
 namespace
 {
 
-//! Number of atoms used in these tests.
-constexpr int c_numAtoms = 4;
-
-/*! \brief Output from bonded kernels
- *
- * \todo Later this might turn into the actual output struct. */
-struct OutputQuantities
-{
-    //! Energy of this interaction
-    real energy = 0;
-    //! Derivative with respect to lambda
-    real dvdlambda = 0;
-    //! Shift vectors
-    rvec fshift[c_numShiftVectors] = { { 0 } };
-    //! Forces
-    alignas(GMX_REAL_MAX_SIMD_WIDTH * sizeof(real)) rvec4 f[c_numAtoms] = { { 0 } };
-};
-
-/*! \brief Utility to check the output from bonded tests
- *
- * \param[in] checker Reference checker
- * \param[in] output  The output from the test to check
- * \param[in] bondedKernelFlavor  Flavor for determining what output to check
- */
-void checkOutput(TestReferenceChecker*    checker,
-                 const OutputQuantities&  output,
-                 const BondedKernelFlavor bondedKernelFlavor)
-{
-    if (computeEnergy(bondedKernelFlavor))
-    {
-        checker->checkReal(output.energy, "Epot ");
-        // Should still be zero when not doing FEP, so may as well test it.
-        checker->checkReal(output.dvdlambda, "dVdlambda ");
-    }
-    checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
-}
-
-/*! \brief Input structure for listed forces tests
- */
-struct iListInput
-{
-public:
-    //! Function type
-    std::optional<InteractionFunction> ftype;
-    //! Tolerance for float evaluation
-    float ftoler = 1e-6;
-    //! Tolerance for double evaluation
-    double dtoler = 1e-8;
-    //! Do free energy perturbation?
-    bool fep = false;
-    //! Interaction parameters
-    t_iparams iparams = { { 0 } };
-
-    friend std::ostream& operator<<(std::ostream& out, const iListInput& input);
-
-    //! Constructor
-    iListInput() {}
-
-    /*! \brief Constructor with tolerance
-     *
-     * \param[in] ftol Single precision tolerance
-     * \param[in] dtol Double precision tolerance
-     */
-    iListInput(float ftol, double dtol)
-    {
-        ftoler = ftol;
-        dtoler = dtol;
-    }
-    /*! \brief Set parameters for harmonic potential
-     *
-     * Free energy perturbation is turned on when A
-     * and B parameters are different.
-     * \param[in] ft  Function type
-     * \param[in] rA  Equilibrium value A
-     * \param[in] krA Force constant A
-     * \param[in] rB  Equilibrium value B
-     * \param[in] krB Force constant B
-     * \return The structure itself.
-     */
-    iListInput setHarmonic(InteractionFunction ft, real rA, real krA, real rB, real krB)
-    {
-        iparams.harmonic.rA  = rA;
-        iparams.harmonic.rB  = rB;
-        iparams.harmonic.krA = krA;
-        iparams.harmonic.krB = krB;
-        ftype                = ft;
-        fep                  = (rA != rB || krA != krB);
-        return *this;
-    }
-    /*! \brief Set parameters for harmonic potential
-     *
-     * \param[in] ft  Function type
-     * \param[in] rA  Equilibrium value
-     * \param[in] krA Force constant
-     * \return The structure itself.
-     */
-    iListInput setHarmonic(InteractionFunction ft, real rA, real krA)
-    {
-        return setHarmonic(ft, rA, krA, rA, krA);
-    }
-    /*! \brief Set parameters for cubic potential
-     *
-     * \param[in] b0   Equilibrium bond length
-     * \param[in] kb   Harmonic force constant
-     * \param[in] kcub Cubic force constant
-     * \return The structure itself.
-     */
-    iListInput setCubic(real b0, real kb, real kcub)
-    {
-        ftype              = InteractionFunction::CubicBonds;
-        iparams.cubic.b0   = b0;
-        iparams.cubic.kb   = kb;
-        iparams.cubic.kcub = kcub;
-        return *this;
-    }
-    /*! \brief Set parameters for morse potential
-     *
-     * Free energy perturbation is turned on when A
-     * and B parameters are different.
-     * \param[in] b0A   Equilibrium value A
-     * \param[in] cbA   Force constant A
-     * \param[in] betaA Steepness parameter A
-     * \param[in] b0B   Equilibrium value B
-     * \param[in] cbB   Force constant B
-     * \param[in] betaB Steepness parameter B
-     * \return The structure itself.
-     */
-    iListInput setMorse(real b0A, real cbA, real betaA, real b0B, real cbB, real betaB)
-    {
-        ftype               = InteractionFunction::MorsePotential;
-        iparams.morse.b0A   = b0A;
-        iparams.morse.cbA   = cbA;
-        iparams.morse.betaA = betaA;
-        iparams.morse.b0B   = b0B;
-        iparams.morse.cbB   = cbB;
-        iparams.morse.betaB = betaB;
-        fep                 = (b0A != b0B || cbA != cbB || betaA != betaB);
-        return *this;
-    }
-    /*! \brief Set parameters for morse potential
-     *
-     * \param[in] b0A   Equilibrium value
-     * \param[in] cbA   Force constant
-     * \param[in] betaA Steepness parameter
-     * \return The structure itself.
-     */
-    iListInput setMorse(real b0A, real cbA, real betaA)
-    {
-        return setMorse(b0A, cbA, betaA, b0A, cbA, betaA);
-    }
-    /*! \brief Set parameters for fene potential
-     *
-     * \param[in] bm Equilibrium bond length
-     * \param[in] kb Force constant
-     * \return The structure itself.
-     */
-    iListInput setFene(real bm, real kb)
-    {
-        ftype           = InteractionFunction::FENEBonds;
-        iparams.fene.bm = bm;
-        iparams.fene.kb = kb;
-        return *this;
-    }
-    /*! \brief Set parameters for linear angle potential
-     *
-     * Free energy perturbation is turned on when A
-     * and B parameters are different.
-     * \param[in] klinA Force constant A
-     * \param[in] aA    The position of the central atom A
-     * \param[in] klinB Force constant B
-     * \param[in] aB    The position of the central atom B
-     * \return The structure itself.
-     */
-    iListInput setLinearAngle(real klinA, real aA, real klinB, real aB)
-    {
-        ftype                  = InteractionFunction::LinearAngles;
-        iparams.linangle.klinA = klinA;
-        iparams.linangle.aA    = aA;
-        iparams.linangle.klinB = klinB;
-        iparams.linangle.aB    = aB;
-        fep                    = (klinA != klinB || aA != aB);
-        return *this;
-    }
-    /*! \brief Set parameters for linear angle potential
-     *
-     * \param[in] klinA Force constant
-     * \param[in] aA    The position of the central atom
-     * \return The structure itself.
-     */
-    iListInput setLinearAngle(real klinA, real aA) { return setLinearAngle(klinA, aA, klinA, aA); }
-    /*! \brief Set parameters for Urey Bradley potential
-     *
-     * Free energy perturbation is turned on when A
-     * and B parameters are different.
-     * \param[in] thetaA  Equilibrium angle A
-     * \param[in] kthetaA Force constant A
-     * \param[in] r13A    The distance between i and k atoms A
-     * \param[in] kUBA    The force constant for 1-3 distance A
-     * \param[in] thetaB  Equilibrium angle B
-     * \param[in] kthetaB Force constant B
-     * \param[in] r13B    The distance between i and k atoms B
-     * \param[in] kUBB    The force constant for 1-3 distance B
-     * \return The structure itself.
-     */
-    iListInput
-    setUreyBradley(real thetaA, real kthetaA, real r13A, real kUBA, real thetaB, real kthetaB, real r13B, real kUBB)
-    {
-        ftype               = InteractionFunction::UreyBradleyPotential;
-        iparams.u_b.thetaA  = thetaA;
-        iparams.u_b.kthetaA = kthetaA;
-        iparams.u_b.r13A    = r13A;
-        iparams.u_b.kUBA    = kUBA;
-        iparams.u_b.thetaB  = thetaB;
-        iparams.u_b.kthetaB = kthetaB;
-        iparams.u_b.r13B    = r13B;
-        iparams.u_b.kUBB    = kUBB;
-        fep = (thetaA != thetaB || kthetaA != kthetaB || r13A != r13B || kUBA != kUBB);
-        return *this;
-    }
-    /*! \brief Set parameters for Urey Bradley potential
-     *
-     * \param[in] thetaA  Equilibrium angle
-     * \param[in] kthetaA Force constant
-     * \param[in] r13A    The distance between i and k atoms
-     * \param[in] kUBA    The force constant for 1-3 distance
-     * \return The structure itself.
-     */
-    iListInput setUreyBradley(real thetaA, real kthetaA, real r13A, real kUBA)
-    {
-        return setUreyBradley(thetaA, kthetaA, r13A, kUBA, thetaA, kthetaA, r13A, kUBA);
-    }
-    /*! \brief Set parameters for Cross Bond Bonds potential
-     *
-     * \param[in] r1e  First bond length i-j
-     * \param[in] r2e  Second bond length i-k
-     * \param[in] krr  The force constant
-     * \return The structure itself.
-     */
-    iListInput setCrossBondBonds(real r1e, real r2e, real krr)
-    {
-        ftype                = InteractionFunction::CrossBondBonds;
-        iparams.cross_bb.r1e = r1e;
-        iparams.cross_bb.r2e = r2e;
-        iparams.cross_bb.krr = krr;
-        return *this;
-    }
-    /*! \brief Set parameters for Cross Bond Angles potential
-     *
-     * \param[in] r1e  First bond length i-j
-     * \param[in] r2e  Second bond length j-k
-     * \param[in] r3e  Third bond length i-k
-     * \param[in] krt  The force constant
-     * \return The structure itself.
-     */
-    iListInput setCrossBondAngles(real r1e, real r2e, real r3e, real krt)
-    {
-        ftype                = InteractionFunction::CrossBondAngles;
-        iparams.cross_ba.r1e = r1e;
-        iparams.cross_ba.r2e = r2e;
-        iparams.cross_ba.r3e = r3e;
-        iparams.cross_ba.krt = krt;
-        return *this;
-    }
-    /*! \brief Set parameters for Quartic Angles potential
-     *
-     * \param[in] theta Angle
-     * \param[in] c     Array of parameters
-     * \return The structure itself.
-     */
-    iListInput setQuarticAngles(real theta, const real c[5])
-    {
-        ftype                = InteractionFunction::QuarticAngles;
-        iparams.qangle.theta = theta;
-        iparams.qangle.c[0]  = c[0];
-        iparams.qangle.c[1]  = c[1];
-        iparams.qangle.c[2]  = c[2];
-        iparams.qangle.c[3]  = c[3];
-        iparams.qangle.c[4]  = c[4];
-        return *this;
-    }
-    /*! \brief Set parameters for proper dihedrals potential
-     *
-     * Free energy perturbation is turned on when A
-     * and B parameters are different.
-     * \param[in] ft   Function type
-     * \param[in] phiA Dihedral angle A
-     * \param[in] cpA  Force constant A
-     * \param[in] mult Multiplicity of the angle
-     * \param[in] phiB Dihedral angle B
-     * \param[in] cpB  Force constant B
-     * \return The structure itself.
-     */
-    iListInput setPDihedrals(InteractionFunction ft, real phiA, real cpA, int mult, real phiB, real cpB)
-    {
-        ftype              = ft;
-        iparams.pdihs.phiA = phiA;
-        iparams.pdihs.cpA  = cpA;
-        iparams.pdihs.phiB = phiB;
-        iparams.pdihs.cpB  = cpB;
-        iparams.pdihs.mult = mult;
-        fep                = (phiA != phiB || cpA != cpB);
-        return *this;
-    }
-    /*! \brief Set parameters for proper dihedrals potential
-     *
-     * \param[in] ft   Function type
-     * \param[in] phiA Dihedral angle
-     * \param[in] cpA  Force constant
-     * \param[in] mult Multiplicity of the angle
-     * \return The structure itself.
-     */
-    iListInput setPDihedrals(InteractionFunction ft, real phiA, real cpA, int mult)
-    {
-        return setPDihedrals(ft, phiA, cpA, mult, phiA, cpA);
-    }
-    /*! \brief Set parameters for Ryckaert-Bellemans dihedrals potential
-     *
-     * Free energy perturbation is turned on when A
-     * and B parameters are different.
-     * \param[in] rbcA Force constants A
-     * \param[in] rbcB Force constants B
-     * \return The structure itself.
-     */
-    iListInput setRbDihedrals(const real rbcA[NR_RBDIHS], const real rbcB[NR_RBDIHS])
-    {
-        ftype = InteractionFunction::RyckaertBellemansDihedrals;
-        fep   = false;
-        for (int i = 0; i < NR_RBDIHS; i++)
-        {
-            iparams.rbdihs.rbcA[i] = rbcA[i];
-            iparams.rbdihs.rbcB[i] = rbcB[i];
-            fep                    = fep || (rbcA[i] != rbcB[i]);
-        }
-        return *this;
-    }
-    /*! \brief Set parameters for Ryckaert-Bellemans dihedrals potential
-     *
-     * \param[in] rbc Force constants
-     * \return The structure itself.
-     */
-    iListInput setRbDihedrals(const real rbc[NR_RBDIHS]) { return setRbDihedrals(rbc, rbc); }
-    /*! \brief Set parameters for Polarization
-     *
-     * \param[in] alpha Polarizability
-     * \return The structure itself.
-     */
-    iListInput setPolarization(real alpha)
-    {
-        ftype                  = InteractionFunction::Polarization;
-        fep                    = false;
-        iparams.polarize.alpha = alpha;
-        return *this;
-    }
-    /*! \brief Set parameters for Anharmonic Polarization
-     *
-     * \param[in] alpha Polarizability (nm^3)
-     * \param[in] drcut The cut-off distance (nm) after which the
-     *                  fourth power kicks in
-     * \param[in] khyp  The force constant for the fourth power
-     * \return The structure itself.
-     */
-    iListInput setAnharmPolarization(real alpha, real drcut, real khyp)
-    {
-        ftype                         = InteractionFunction::AnharmonicPolarization;
-        fep                           = false;
-        iparams.anharm_polarize.alpha = alpha;
-        iparams.anharm_polarize.drcut = drcut;
-        iparams.anharm_polarize.khyp  = khyp;
-        return *this;
-    }
-    /*! \brief Set parameters for Thole Polarization
-     *
-     * \param[in] a      Thole factor
-     * \param[in] alpha1 Polarizability 1 (nm^3)
-     * \param[in] alpha2 Polarizability 2 (nm^3)
-     * \return The structure itself.
-     */
-    iListInput setTholePolarization(real a, real alpha1, real alpha2)
-    {
-        ftype                = InteractionFunction::TholePolarization;
-        fep                  = false;
-        iparams.thole.a      = a;
-        iparams.thole.alpha1 = alpha1;
-        iparams.thole.alpha2 = alpha2;
-        return *this;
-    }
-    /*! \brief Set parameters for Water Polarization
-     *
-     * \param[in] alpha_x Polarizability X (nm^3)
-     * \param[in] alpha_y Polarizability Y (nm^3)
-     * \param[in] alpha_z Polarizability Z (nm^3)
-     * \param[in] rOH     Oxygen-Hydrogen distance
-     * \param[in] rHH     Hydrogen-Hydrogen distance
-     * \param[in] rOD     Oxygen-Dummy distance
-     * \return The structure itself.
-     */
-    iListInput setWaterPolarization(real alpha_x, real alpha_y, real alpha_z, real rOH, real rHH, real rOD)
-    {
-        ftype             = InteractionFunction::WaterPolarization;
-        fep               = false;
-        iparams.wpol.al_x = alpha_x;
-        iparams.wpol.al_y = alpha_y;
-        iparams.wpol.al_z = alpha_z;
-        iparams.wpol.rOH  = rOH;
-        iparams.wpol.rHH  = rHH;
-        iparams.wpol.rOD  = rOD;
-        return *this;
-    }
-};
-
-//! Prints the interaction and parameters to a stream
-std::ostream& operator<<(std::ostream& out, const iListInput& input)
-{
-    using std::endl;
-    const InteractionFunction ftype = input.ftype.value();
-    out << "Function type " << static_cast<int>(ftype) << " called " << interaction_function[ftype].name
-        << " ie. labelled '" << interaction_function[ftype].longname << "' in an energy file" << endl;
-
-    // Organize to print the legacy C union t_iparams, whose
-    // relevant contents vary with ftype.
-    StringOutputStream stream;
-    {
-        TextWriter writer(&stream);
-        printInteractionParameters(&writer, input.ftype.value(), input.iparams);
-    }
-    out << "Function parameters " << stream.toString();
-    out << "Parameters trigger FEP? " << (input.fep ? "true" : "false") << endl;
-    return out;
-}
-
-/*! \brief Utility to fill iatoms struct
- *
- * \param[in]  ftype  Function type
- * \param[out] iatoms Pointer to iatoms struct
- */
-void fillIatoms(std::optional<InteractionFunction> ftype, std::vector<t_iatom>* iatoms)
-{
-    std::unordered_map<int, std::vector<int>> ia   = { { 2, { 0, 0, 1, 0, 1, 2, 0, 2, 3 } },
-                                                       { 3, { 0, 0, 1, 2, 0, 1, 2, 3 } },
-                                                       { 4, { 0, 0, 1, 2, 3 } },
-                                                       { 5, { 0, 0, 1, 2, 3, 0 } } };
-    int                                       nral = interaction_function[ftype.value()].nratoms;
-    for (auto& i : ia[nral])
-    {
-        iatoms->push_back(i);
-    }
-}
-
 class ListedForcesTest :
     public ::testing::TestWithParam<std::tuple<iListInput, PaddedVector<RVec>, PbcType>>
 {
+public:
+    //! Before any test is run, work out whether any compatible GPUs exist.
+    static std::vector<std::unique_ptr<IBondedTestRunner>> getRunners()
+    {
+        std::vector<std::unique_ptr<IBondedTestRunner>> runners;
+        runners.push_back(std::make_unique<BondedHostTestRunner>());
+        if (GpuConfigurationCapabilities::Bonded)
+        {
+            for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+            {
+                runners.push_back(std::make_unique<BondedDeviceTestRunner>(*testDevice));
+            }
+        }
+        return runners;
+    }
+
 protected:
     matrix                 box_;
     t_pbc                  pbc_;
@@ -588,53 +156,38 @@ protected:
     void testOneIfunc(TestReferenceChecker* checker, const std::vector<t_iatom>& iatoms, const real lambda)
     {
         SCOPED_TRACE(std::string("Testing PBC type: ") + c_pbcTypeNames[pbcType_]);
-        std::vector<int>  ddgatindex = { 0, 1, 2, 3 };
-        std::vector<real> charge     = { 1.5, -2.0, 1.5, -1.0 };
-        /* Here we run both the standard, plain-C force+shift-forces+energy+free-energy
-         * kernel flavor and the potentially optimized, with SIMD and less output,
-         * force only kernels. Note that we also run the optimized kernel for free-energy
-         * input when lambda=0, as the force output should match the non free-energy case.
-         */
+
         std::vector<BondedKernelFlavor> flavors = { BondedKernelFlavor::ForcesAndVirialAndEnergy };
         if (!input_.fep || lambda == 0)
         {
             flavors.push_back(BondedKernelFlavor::ForcesSimdWhenAvailable);
         }
-        for (const auto flavor : flavors)
+
+        for (const auto& runner : getRunners())
         {
-            SCOPED_TRACE("Testing bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor]);
-            OutputQuantities output;
-            output.energy = calculateSimpleBond(input_.ftype.value(),
-                                                iatoms.size(),
-                                                iatoms.data(),
-                                                &input_.iparams,
-                                                as_rvec_array(x_.data()),
-                                                output.f,
-                                                output.fshift,
-                                                &pbc_,
-                                                lambda,
-                                                &output.dvdlambda,
-                                                charge,
-                                                /* struct t_fcdata * */ nullptr,
-                                                nullptr,
-                                                nullptr,
-                                                ddgatindex.data(),
-                                                flavor);
-            // Internal consistency test of both test input
-            // and bonded functions.
-            EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;
-            checkOutput(checker, output, flavor);
-            auto shiftForcesChecker = checker->checkCompound("Shift-Forces", "Shift-forces");
-            if (computeVirial(flavor))
+            for (const auto flavor : flavors)
             {
-                shiftForcesChecker.setDefaultTolerance(shiftForcesTolerance_);
-                shiftForcesChecker.checkVector(output.fshift[c_centralShiftIndex], "Central");
-            }
-            else
-            {
-                // Permit omitting to compare shift forces with
-                // reference data when that is useless.
-                shiftForcesChecker.disableUnusedEntriesCheck();
+                if (!runner->supportsFlavor(flavor, input_, lambda))
+                {
+                    continue;
+                }
+                SCOPED_TRACE("Testing on " + runner->hardwareDescription()
+                             + " with bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor]);
+                OutputQuantities output;
+                runner->run(input_, x_, pbc_, lambda, iatoms, flavor, &output);
+                EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0)))
+                        << "dvdlambda was " << output.dvdlambda;
+                checkOutput(checker, output, flavor);
+                auto shiftForcesChecker = checker->checkCompound("Shift-Forces", "Shift-forces");
+                if (computeVirial(flavor))
+                {
+                    shiftForcesChecker.setDefaultTolerance(shiftForcesTolerance_);
+                    shiftForcesChecker.checkVector(output.fshift[c_centralShiftIndex], "Central");
+                }
+                else
+                {
+                    shiftForcesChecker.disableUnusedEntriesCheck();
+                }
             }
         }
     }
