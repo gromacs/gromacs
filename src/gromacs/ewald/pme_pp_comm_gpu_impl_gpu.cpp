@@ -210,8 +210,8 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(const bool receivePmeFor
 
     // The PME rank always sends forces, even when the domain is
     // empty, so each PP rank must always post a receive.
-    Float3* pmeForcePtr =
-            receivePmeForceToGpu ? asMpiPointer(d_pmeForces_) : pmeCpuForceReceiveBuffer_.data();
+    Float3*   pmeForcePtr = receivePmeForceToGpu ? asRawDevicePointer(d_pmeForces_)
+                                                 : pmeCpuForceReceiveBuffer_.data();
     const int recvSize = receivePmeForceToGpu ? d_pmeForcesSize_ : pmeCpuForceReceiveBuffer_.size();
     // Ensure that the two PME force receive buffers were resized
     // consistently, when relevant.
@@ -290,7 +290,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
 #if GMX_LIB_MPI
         // A non-blocking receive is used so that the data transfer
         // neither blocks nor is blocked by other PP MPI activities.
-        MPI_Irecv(asMpiPointer(d_pmeForces_),
+        MPI_Irecv(asRawDevicePointer(d_pmeForces_),
                   sendSize * DIM,
                   MPI_FLOAT,
                   pmeRank_,
@@ -372,7 +372,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
                                                bool                  receiveForcesToGpu)
 {
     impl_->sendCoordinatesToPme(
-            asMpiPointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
+            asRawDevicePointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
 }
 
 void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize, bool receiveForcesToGpu)

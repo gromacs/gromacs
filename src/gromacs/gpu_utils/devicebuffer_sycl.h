@@ -445,7 +445,7 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, DeviceTextur
 }
 
 template<typename ValueType>
-ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
+ValueType* asRawDevicePointer(DeviceBuffer<ValueType>& buffer)
 {
     return buffer.get_pointer();
 }

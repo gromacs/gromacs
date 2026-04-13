@@ -382,7 +382,7 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const Device
 CLANG_DIAGNOSTIC_RESET
 
 template<typename ValueType>
-ValueType* asMpiPointer(DeviceBuffer<ValueType>& /*buffer*/)
+ValueType* asRawDevicePointer(DeviceBuffer<ValueType>& /*buffer*/)
 {
     assert(false);
     return nullptr;

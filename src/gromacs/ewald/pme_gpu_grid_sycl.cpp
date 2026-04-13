@@ -677,8 +677,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         {
             int sendOffsetDown = myGridX * localPmeSize[YY] * localPmeSize[ZZ];
             int sendOffsetUp = (localPmeSize[XX] - overlapUp) * localPmeSize[YY] * localPmeSize[ZZ];
-            sendGridUp       = &asMpiPointer(realGrid)[sendOffsetUp];
-            sendGridDown     = &asMpiPointer(realGrid)[sendOffsetDown];
+            sendGridUp       = &asRawDevicePointer(realGrid)[sendOffsetUp];
+            sendGridDown     = &asRawDevicePointer(realGrid)[sendOffsetDown];
         }
         else
         {
@@ -707,9 +707,9 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     overlapDown,
                     overlapLeft,
                     overlapRight);
-            sendGridUp = asMpiPointer(
+            sendGridUp = asRawDevicePointer(
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Center]);
-            sendGridDown = asMpiPointer(
+            sendGridDown = asRawDevicePointer(
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]);
 
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
@@ -739,7 +739,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     overlapDown * myGridY * localPmeSize[ZZ],
                     down,
                     &req[reqCount],
-                    asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center]),
                     overlapX * myGridY * localPmeSize[ZZ],
                     up,
                     &req[reqCount + 1],
@@ -755,7 +756,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                         overlapUp * myGridY * localPmeSize[ZZ],
                         up,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]),
                         overlapX * myGridY * localPmeSize[ZZ],
                         down,
                         &req[reqCount + 1],
@@ -772,11 +774,13 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 
             // recv from left rank and send to right rank
             receiveAndSend(
-                    asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
                     overlapRight * myGridX * localPmeSize[ZZ],
                     right,
                     &req[reqCount],
-                    asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
                     overlapY * myGridX * localPmeSize[ZZ],
                     left,
                     &req[reqCount + 1],
@@ -788,11 +792,13 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // recv from right rank and send data to left rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
                         overlapLeft * myGridX * localPmeSize[ZZ],
                         left,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
                         overlapY * myGridX * localPmeSize[ZZ],
                         right,
                         &req[reqCount + 1],
@@ -814,11 +820,13 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 
             // send data to down rank and recv from up rank
             receiveAndSend(
-                    asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
                     overlapDown * overlapRight * localPmeSize[ZZ],
                     rankDownRight,
                     &req[reqCount],
-                    asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
                     overlapX * overlapY * localPmeSize[ZZ],
                     rankUpLeft,
                     &req[reqCount + 1],
@@ -830,11 +838,13 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // send data to down left rank and recv from up right rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
                         overlapDown * overlapLeft * localPmeSize[ZZ],
                         rankDownLeft,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
                         overlapX * overlapY * localPmeSize[ZZ],
                         rankUpRight,
                         &req[reqCount + 1],
@@ -847,11 +857,13 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // send data to up right rank and recv from down left rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
                         overlapUp * overlapRight * localPmeSize[ZZ],
                         rankUpRight,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
                         overlapX * overlapY * localPmeSize[ZZ],
                         rankDownLeft,
                         &req[reqCount + 1],
@@ -864,11 +876,13 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // send data to up left rank and recv from down right rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
                         overlapUp * overlapLeft * localPmeSize[ZZ],
                         rankUpLeft,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
                         overlapX * overlapY * localPmeSize[ZZ],
                         rankDownRight,
                         &req[reqCount + 1],
@@ -958,10 +972,10 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             int sendOffsetDown = (myGridX - overlapX) * localPmeSize[YY] * localPmeSize[ZZ];
             int recvOffsetUp = (localPmeSize[XX] - overlapUp) * localPmeSize[YY] * localPmeSize[ZZ];
             int recvOffsetDown = myGridX * localPmeSize[YY] * localPmeSize[ZZ];
-            sendGridUp         = &asMpiPointer(realGrid)[sendOffsetUp];
-            sendGridDown       = &asMpiPointer(realGrid)[sendOffsetDown];
-            recvGridUp         = &asMpiPointer(realGrid)[recvOffsetUp];
-            recvGridDown       = &asMpiPointer(realGrid)[recvOffsetDown];
+            sendGridUp         = &asRawDevicePointer(realGrid)[sendOffsetUp];
+            sendGridDown       = &asRawDevicePointer(realGrid)[sendOffsetDown];
+            recvGridUp         = &asRawDevicePointer(realGrid)[recvOffsetUp];
+            recvGridDown       = &asRawDevicePointer(realGrid)[recvOffsetDown];
         }
         else
         {
@@ -991,13 +1005,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
                     overlapUp,
                     overlapLeft);
 
-            sendGridUp = asMpiPointer(
+            sendGridUp = asRawDevicePointer(
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Center]);
-            sendGridDown = asMpiPointer(
+            sendGridDown = asRawDevicePointer(
                     pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]);
-            recvGridUp = asMpiPointer(
+            recvGridUp = asRawDevicePointer(
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center]);
-            recvGridDown = asMpiPointer(
+            recvGridDown = asRawDevicePointer(
                     pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center]);
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
@@ -1056,11 +1070,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 
             // recv from right rank and send data to left rank
             receiveAndSend(
-                    asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
                     overlapY * myGridX * localPmeSize[ZZ],
                     left,
                     &req[reqCount],
-                    asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
                     overlapRight * myGridX * localPmeSize[ZZ],
                     right,
                     &req[reqCount + 1],
@@ -1072,11 +1088,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // recv from left rank and send data to right rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right]),
                         overlapY * myGridX * localPmeSize[ZZ],
                         right,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left]),
                         overlapLeft * myGridX * localPmeSize[ZZ],
                         left,
                         &req[reqCount + 1],
@@ -1098,11 +1116,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 
             // send data to up left and recv from down right rank
             receiveAndSend(
-                    asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
                     overlapX * overlapY * localPmeSize[ZZ],
                     rankUpLeft,
                     &req[reqCount],
-                    asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
+                    asRawDevicePointer(
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
                     overlapDown * overlapRight * localPmeSize[ZZ],
                     rankDownRight,
                     &req[reqCount + 1],
@@ -1114,11 +1134,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // send data to up right rank and recv from down left rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
                         overlapX * overlapY * localPmeSize[ZZ],
                         rankUpRight,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
                         overlapDown * overlapLeft * localPmeSize[ZZ],
                         rankDownLeft,
                         &req[reqCount + 1],
@@ -1131,11 +1153,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // send data to down left rank and recv from up right rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left]),
                         overlapX * overlapY * localPmeSize[ZZ],
                         rankDownLeft,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right]),
                         overlapUp * overlapRight * localPmeSize[ZZ],
                         rankUpRight,
                         &req[reqCount + 1],
@@ -1148,11 +1172,13 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             {
                 // send data to down right rank and recv from up left rank
                 receiveAndSend(
-                        asMpiPointer(pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]),
                         overlapX * overlapY * localPmeSize[ZZ],
                         rankDownRight,
                         &req[reqCount],
-                        asMpiPointer(pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
+                        asRawDevicePointer(
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left]),
                         overlapUp * overlapLeft * localPmeSize[ZZ],
                         rankUpLeft,
                         &req[reqCount + 1],
@@ -1364,8 +1390,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         int fftSize = localFftSize[ZZ] * localFftSize[YY] * localFftNData[XX];
         if (pmeToFft)
         {
-            copyBetweenDeviceBuffers(asMpiPointer(*d_fftRealGrid),
-                                     asMpiPointer(pmeGpu->kernelParams->grid.d_realGrid[gridIndex]),
+            copyBetweenDeviceBuffers(asRawDevicePointer(*d_fftRealGrid),
+                                     asRawDevicePointer(pmeGpu->kernelParams->grid.d_realGrid[gridIndex]),
                                      0,
                                      fftSize,
                                      pmeGpu->archSpecific->pmeStream_,
@@ -1374,8 +1400,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         }
         else
         {
-            copyBetweenDeviceBuffers(asMpiPointer(pmeGpu->kernelParams->grid.d_realGrid[gridIndex]),
-                                     asMpiPointer(*d_fftRealGrid),
+            copyBetweenDeviceBuffers(asRawDevicePointer(pmeGpu->kernelParams->grid.d_realGrid[gridIndex]),
+                                     asRawDevicePointer(*d_fftRealGrid),
                                      0,
                                      fftSize,
                                      pmeGpu->archSpecific->pmeStream_,

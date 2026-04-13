@@ -217,7 +217,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
         // the pointers will not change until the next NS step.
 
         // Coordinates buffer:
-        Float3* recvPtr = &asMpiPointer(d_x_)[atomOffset_];
+        Float3* recvPtr = &asRawDevicePointer(d_x_)[atomOffset_];
         MPI_Sendrecv(&recvPtr,
                      sizeof(void*),
                      MPI_BYTE,
@@ -232,7 +232,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
                      MPI_STATUS_IGNORE);
 
         // Force buffer:
-        recvPtr = asMpiPointer(d_recvBuf_);
+        recvPtr = asRawDevicePointer(d_recvBuf_);
         MPI_Sendrecv(&recvPtr,
                      sizeof(void*),
                      MPI_BYTE,
@@ -310,11 +310,11 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const ma
 
     if (receiveInPlace_)
     {
-        communicateHaloData(asMpiPointer(d_sendBuf_),
+        communicateHaloData(asRawDevicePointer(d_sendBuf_),
                             0,
                             xSendSize_,
                             sendRankX_,
-                            GMX_THREAD_MPI ? remoteXPtr_ : asMpiPointer(d_x_),
+                            GMX_THREAD_MPI ? remoteXPtr_ : asRawDevicePointer(d_x_),
                             GMX_THREAD_MPI ? 0 : atomOffset_,
                             xRecvSize_,
                             recvRankX_,
@@ -352,11 +352,11 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
     // Communicate halo data
     if (receiveInPlace_)
     {
-        communicateHaloData(asMpiPointer(d_f_),
+        communicateHaloData(asRawDevicePointer(d_f_),
                             atomOffset_,
                             fSendSize_,
                             sendRankF_,
-                            GMX_THREAD_MPI ? remoteFPtr_ : asMpiPointer(d_recvBuf_),
+                            GMX_THREAD_MPI ? remoteFPtr_ : asRawDevicePointer(d_recvBuf_),
                             0,
                             fRecvSize_,
                             recvRankF_,

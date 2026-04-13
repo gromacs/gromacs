@@ -157,8 +157,13 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
             const DeviceStream& stream =
                     deviceStreamManager.stream(gmx::DeviceStreamType::UpdateAndConstraints);
             clearDeviceBufferAsync(&d_staging, 0, 1, stream);
-            copyBetweenDeviceBuffers(
-                    asMpiPointer(d_output), asMpiPointer(d_staging), 0, 1, stream, GpuApiCallBehavior::Async, nullptr);
+            copyBetweenDeviceBuffers(asRawDevicePointer(d_output),
+                                     asRawDevicePointer(d_staging),
+                                     0,
+                                     1,
+                                     stream,
+                                     GpuApiCallBehavior::Async,
+                                     nullptr);
 
             if (mdGpuGraph.graphIsCapturingThisStep()) // denote end of graph region
             {

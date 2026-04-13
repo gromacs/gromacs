@@ -106,7 +106,7 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
             ind_end   = ind_start + receiver.numAtoms;
 
 #if GMX_MPI
-            setMpiPointer(ppCommManagers_[i].localForcePtr, asMpiPointer(d_f) + ind_start);
+            setMpiPointer(ppCommManagers_[i].localForcePtr, asRawDevicePointer(d_f) + ind_start);
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
             MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
                      sizeof(Float3*),
@@ -165,7 +165,7 @@ void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
     // before sending it to PP ranks
     pmeForcesReady_->waitForEvent();
 
-    MPI_Isend(asMpiPointer(sendbuf) + offset, numBytes, MPI_BYTE, ppRank, eCommType_FORCES_GPU, comm_, request);
+    MPI_Isend(asRawDevicePointer(sendbuf) + offset, numBytes, MPI_BYTE, ppRank, eCommType_FORCES_GPU, comm_, request);
 #else
     GMX_UNUSED_VALUE(sendbuf);
     GMX_UNUSED_VALUE(offset);

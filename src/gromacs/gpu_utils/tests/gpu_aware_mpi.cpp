@@ -153,7 +153,7 @@ public:
                            nullptr);
 
         // Send to partner rank
-        MPI_Send(asMpiPointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, mpiTag, mpiComm_.comm());
+        MPI_Send(asRawDevicePointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, mpiTag, mpiComm_.comm());
 
         freeDeviceBuffer(&sendBuffer);
     }
@@ -172,7 +172,7 @@ public:
         HostVector<int> valuesReceived(numValuesInMessage, -1, { PinningPolicy::PinnedIfSupported });
 
         // Post receive from partner rank
-        MPI_Recv(asMpiPointer(receiveBuffer),
+        MPI_Recv(asRawDevicePointer(receiveBuffer),
                  numValuesInMessage,
                  MPI_INT,
                  partnerRank,
@@ -409,7 +409,7 @@ TEST_P(GpuAwareMpiTest, IrecvSendPair)
 
     // Post initial non-blocking receive from partner rank
     MPI_Request request;
-    MPI_Irecv(asMpiPointer(receiveBuffer),
+    MPI_Irecv(asRawDevicePointer(receiveBuffer),
               numValuesInMessage,
               MPI_INT,
               partnerRank,
@@ -428,7 +428,12 @@ TEST_P(GpuAwareMpiTest, IrecvSendPair)
                        nullptr);
 
     // Send to partner rank
-    MPI_Send(asMpiPointer(sendBuffer), numValuesInMessage, MPI_INT, partnerRank, deviceToDeviceTag_, mpiComm_.comm());
+    MPI_Send(asRawDevicePointer(sendBuffer),
+             numValuesInMessage,
+             MPI_INT,
+             partnerRank,
+             deviceToDeviceTag_,
+             mpiComm_.comm());
     // Wait for non-blocking receive
     MPI_Wait(&request, MPI_STATUS_IGNORE);
 
