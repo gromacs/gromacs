@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed PME mixed mode with spread/gather on GPU and FFT and solve on CPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With PME mixed mode, mdrun would exit with an error about infinite energies
+or with a CUDA error.
+
+:issue:`5336`
+
 Fixed a RuntimeError within the NNPot interface
 """""""""""""""""""""""""""""""""""""""""""""""
 

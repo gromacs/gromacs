@@ -1108,6 +1108,12 @@ void gmx_pme_reinit(struct gmx_pme_t**  pmedata,
         {
             gmx_pme_reinit_atoms(*pmedata, pme_src->atc[0].numAtoms(), {}, {});
         }
+        // When the box is static and mixed mode is used, we need to set the box sizes in gmx_pme_t
+        if (pme_src->gpu)
+        {
+            copy_mat(pme_src->recipbox, (*pmedata)->recipbox);
+            (*pmedata)->boxVolume = pme_src->boxVolume;
+        }
         // TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
