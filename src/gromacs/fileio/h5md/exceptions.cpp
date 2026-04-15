@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2024- The GROMACS Authors
+ * Copyright 2026- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Definitions of error utility functions for the H5md module.
+/*! \brief Definitions for H5MD exception class.
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Petter Johansson <pettjoha@kth.se>
@@ -40,37 +40,25 @@
 
 #include "gmxpre.h"
 
-#include "h5md_error.h"
+#include "exceptions.h"
 
 #include <hdf5.h>
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-
-// HDF5 constants use old style casts.
-CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
 namespace gmx
 {
 
-void printHdf5ErrorsDebug()
+H5mdError::H5mdError(const ExceptionInitializer& details) : FileIOError(details)
 {
     if (debug)
     {
         H5Eprint2(H5E_DEFAULT, debug);
     }
 #ifndef NDEBUG
-    H5Eprint2(H5E_DEFAULT, nullptr);
+    H5Eprint2(H5E_DEFAULT, nullptr); // nullptr means print to stderr
 #endif
 }
 
-void throwH5mdError(const std::string& message)
-{
-    gmx::printHdf5ErrorsDebug();
-    throw gmx::FileIOError(message.c_str());
-}
-
 } // namespace gmx
-
-CLANG_DIAGNOSTIC_RESET

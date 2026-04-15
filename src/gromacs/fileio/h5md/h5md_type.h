@@ -43,7 +43,7 @@
 
 #include <hdf5.h>
 
-#include "gromacs/fileio/h5md/h5md_error.h"
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/vectypes.h"

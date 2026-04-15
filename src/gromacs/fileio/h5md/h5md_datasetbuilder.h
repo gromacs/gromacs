@@ -49,9 +49,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbase.h"
-#include "gromacs/fileio/h5md/h5md_error.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/h5md_util.h"

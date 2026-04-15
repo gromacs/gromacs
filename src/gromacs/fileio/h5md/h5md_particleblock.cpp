@@ -39,7 +39,7 @@
 
 #include "h5md_particleblock.h"
 
-#include "gromacs/fileio/h5md/h5md_error.h"
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2024- The GROMACS Authors
+ * Copyright 2026- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,23 +32,43 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Declarations of error utility functions for the H5md module.
+/*! \brief Declaration of H5MD exception class and helper macros.
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Petter Johansson <pettjoha@kth.se>
  */
 
-#ifndef GMX_FILEIO_H5MD_ERROR_H
-#define GMX_FILEIO_H5MD_ERROR_H
+#ifndef GMX_FILEIO_H5MD_EXCEPTIONS_H
+#define GMX_FILEIO_H5MD_EXCEPTIONS_H
 
-#include <hdf5.h>
-
-#include <string>
+#include "gromacs/utility/exceptions.h"
 
 #include "h5md_util.h" // required for GMX_H5MD_THROW_UPON_INVALID_HID
 
 namespace gmx
 {
+
+/*! \brief Exception class for H5MD errors.
+ */
+class H5mdError : public FileIOError
+{
+public:
+    /*! \brief Creates an exception object with the provided initializer/reason.
+     *
+     * Prints the current HDF5 error stack to the \c debug log file (if
+     * not null) and to \c stderr (if not compiling in \c NDEBUG mode).
+     *
+     * \param[in] details  Initializer for the exception.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * It is possible to call this constructor either with an explicit
+     * ExceptionInitializer object (useful for more complex cases), or
+     * a simple string if only a reason string needs to be provided.
+     */
+    H5mdError(const ExceptionInitializer& details);
+};
+
+} // namespace gmx
 
 /*! \def GMX_H5MD_THROW_UPON_ERROR
  * \brief Macro for checking an error condition and throwing an HDF5 error with a message if true.
@@ -57,7 +77,7 @@ namespace gmx
  * and thus avoids (possibly expensive) string construction in the happy case.
  */
 #define GMX_H5MD_THROW_UPON_ERROR(errorExists, errorMessage) \
-    ((void)((!(errorExists)) ? (void)0 : [&]() { throwH5mdError(errorMessage); }()))
+    ((void)((!(errorExists)) ? (void)0 : [&]() { GMX_THROW(gmx::H5mdError(errorMessage)); }()))
 
 /*! \def GMX_H5MD_THROW_UPON_INVALID_HID
  * \brief Macro for checking an HDF5 handle and throwing an HDF5 error with a message if it is invalid.
@@ -66,23 +86,6 @@ namespace gmx
  * and thus avoids (possibly expensive) string construction in the happy case.
  */
 #define GMX_H5MD_THROW_UPON_INVALID_HID(handle, errorMessage) \
-    GMX_H5MD_THROW_UPON_ERROR(!handleIsValid(handle), errorMessage)
+    GMX_H5MD_THROW_UPON_ERROR(!gmx::handleIsValid(handle), errorMessage)
 
-/*! \brief Helper function for printing debug statements.
- *
- * We'd like to embed H5md diagnostic output in an exception
- * object but it can only write it directly to a POSIX stream.
- * Calling this helper method allows some useful information to
- * be passed to the user.
- */
-void printHdf5ErrorsDebug();
-
-/*! \brief Throw a gmx::FileIOError with extra HDF5 debugging.
- *
- * \param[in] message The message to throw.
- */
-void throwH5mdError(const std::string& message);
-
-} // namespace gmx
-
-#endif // GMX_FILEIO_H5MD_ERROR_H
+#endif // GMX_FILEIO_H5MD_EXCEPTIONS_H

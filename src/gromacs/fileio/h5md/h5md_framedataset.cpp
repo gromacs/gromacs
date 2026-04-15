@@ -41,15 +41,13 @@
 
 #include "h5md_framedataset.h"
 
+#include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
-
-#include "h5md_error.h"
-#include "h5md_guard.h"
-#include "h5md_util.h" // required for GMX_ASSERT calls
 
 namespace gmx
 {

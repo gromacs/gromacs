@@ -41,14 +41,13 @@
 
 #include "h5md_fixeddataset.h"
 
+#include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
-
-#include "h5md_error.h"
-#include "h5md_guard.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")

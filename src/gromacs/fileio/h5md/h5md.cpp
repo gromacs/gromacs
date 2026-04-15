@@ -62,8 +62,8 @@
 #if GMX_USE_HDF5
 #    include <hdf5.h>
 
+#    include "exceptions.h"
 #    include "h5md_attribute.h"
-#    include "h5md_error.h"
 #    include "h5md_framedatasetbuilder.h"
 #    include "h5md_group.h"
 #    include "h5md_guard.h"

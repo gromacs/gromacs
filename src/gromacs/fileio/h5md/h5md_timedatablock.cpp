@@ -42,7 +42,7 @@
 #include <optional>
 #include <utility>
 
-#include "gromacs/fileio/h5md/h5md_error.h"
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
