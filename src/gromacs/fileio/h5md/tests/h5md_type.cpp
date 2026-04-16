@@ -46,9 +46,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
 
 #include "testutils/testfilemanager.h"
 
@@ -169,7 +169,7 @@ TEST(H5mdTypeTest, hdf5TypeForFixedStringWorks)
 
 TEST(H5mdTypeTest, hdf5TypeForFixedStringThrowsForSize0)
 {
-    EXPECT_THROW(hdf5DataTypeForFixedSizeString(0), gmx::FileIOError);
+    EXPECT_THROW(hdf5DataTypeForFixedSizeString(0), gmx::H5mdError);
 }
 
 TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForFixedSizeStrings)

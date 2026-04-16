@@ -48,9 +48,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -294,11 +294,11 @@ TEST_P(WithFrameDims, ReadFrameThrowsForNonMatchingInputBufferSizePrimitive)
     dataSet.writeNextFrame(values);
 
     std::vector<ValueType> readBufferEmpty;
-    EXPECT_THROW(dataSet.readFrame(0, readBufferEmpty), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(0, readBufferEmpty), gmx::H5mdError);
     std::vector<ValueType> readBufferTooSmall(GetParam().numValuesPerFrame_ - 1, 0);
-    EXPECT_THROW(dataSet.readFrame(0, readBufferTooSmall), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(0, readBufferTooSmall), gmx::H5mdError);
     std::vector<ValueType> readBufferTooLarge(GetParam().numValuesPerFrame_ + 1, 0);
-    EXPECT_THROW(dataSet.readFrame(0, readBufferTooLarge), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(0, readBufferTooLarge), gmx::H5mdError);
     std::vector<ValueType> readBufferJustRight(GetParam().numValuesPerFrame_, 0);
     EXPECT_NO_THROW(dataSet.readFrame(0, readBufferJustRight));
 }
@@ -322,11 +322,11 @@ TEST_P(WithFrameDims, ReadFrameThrowsForNonMatchingInputBufferSizeVector)
     dataSet.writeNextFrame(values);
 
     std::vector<ValueType> readBufferEmpty;
-    EXPECT_THROW(dataSet.readFrame(0, readBufferEmpty), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(0, readBufferEmpty), gmx::H5mdError);
     std::vector<ValueType> readBufferTooSmall(GetParam().numValuesPerFrame_ - 1, { 0.0, 0.0, 0.0 });
-    EXPECT_THROW(dataSet.readFrame(0, readBufferTooSmall), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(0, readBufferTooSmall), gmx::H5mdError);
     std::vector<ValueType> readBufferTooLarge(GetParam().numValuesPerFrame_ + 1, { 0.0, 0.0, 0.0 });
-    EXPECT_THROW(dataSet.readFrame(0, readBufferTooLarge), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(0, readBufferTooLarge), gmx::H5mdError);
     std::vector<ValueType> readBufferJustRight(GetParam().numValuesPerFrame_, { 0.0, 0.0, 0.0 });
     EXPECT_NO_THROW(dataSet.readFrame(0, readBufferJustRight));
 }
@@ -349,8 +349,8 @@ TEST_P(WithFrameDims, ReadFrameThrowsForInvalidFrameIndexPrimitive)
 
     std::vector<ValueType> readBuffer(GetParam().numValuesPerFrame_, 0);
     EXPECT_NO_THROW(dataSet.readFrame(numFrames - 1, readBuffer));
-    EXPECT_THROW(dataSet.readFrame(numFrames, readBuffer), gmx::FileIOError);
-    EXPECT_THROW(dataSet.readFrame(numFrames + 1, readBuffer), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(numFrames, readBuffer), gmx::H5mdError);
+    EXPECT_THROW(dataSet.readFrame(numFrames + 1, readBuffer), gmx::H5mdError);
 }
 TEST_P(WithFrameDims, ReadFrameThrowsForInvalidFrameIndexVector)
 {
@@ -366,8 +366,8 @@ TEST_P(WithFrameDims, ReadFrameThrowsForInvalidFrameIndexVector)
 
     std::vector<ValueType> readBuffer(GetParam().numValuesPerFrame_, { 0.0, 0.0, 0.0 });
     EXPECT_NO_THROW(dataSet.readFrame(numFrames - 1, readBuffer));
-    EXPECT_THROW(dataSet.readFrame(numFrames, readBuffer), gmx::FileIOError);
-    EXPECT_THROW(dataSet.readFrame(numFrames + 1, readBuffer), gmx::FileIOError);
+    EXPECT_THROW(dataSet.readFrame(numFrames, readBuffer), gmx::H5mdError);
+    EXPECT_THROW(dataSet.readFrame(numFrames + 1, readBuffer), gmx::H5mdError);
 }
 /**@}*/
 
@@ -398,8 +398,8 @@ TEST_P(WithFrameDims, H5mdScalarFrameDataSetWorksForEmptyFrameDimensionPrimitive
     }
     else
     {
-        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(builder.build()), gmx::FileIOError);
-        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(this->fileid(), "closedDataSet"), gmx::FileIOError);
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(builder.build()), gmx::H5mdError);
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(this->fileid(), "closedDataSet"), gmx::H5mdError);
     }
 }
 TEST_P(WithFrameDims, H5mdScalarFrameDataSetWorksForEmptyFrameDimensionVector)
@@ -426,8 +426,8 @@ TEST_P(WithFrameDims, H5mdScalarFrameDataSetWorksForEmptyFrameDimensionVector)
     }
     else
     {
-        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(builder.build()), gmx::FileIOError);
-        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(this->fileid(), "closedDataSet"), gmx::FileIOError);
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(builder.build()), gmx::H5mdError);
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(this->fileid(), "closedDataSet"), gmx::H5mdError);
     }
 }
 /**@}*/
@@ -648,9 +648,9 @@ TEST_P(WithFrameDims, ShrinkToNumFramesWorks)
     EXPECT_EQ(dataSet.numFrames(), 2) << "Must have 2 frames after shrinking";
 
     std::vector<ValueType> readFrameBuffer(GetParam().numValuesPerFrame_, 0);
-    EXPECT_THROW(dataSet.readFrame(2, readFrameBuffer), gmx::FileIOError)
+    EXPECT_THROW(dataSet.readFrame(2, readFrameBuffer), gmx::H5mdError)
             << "Must not be able to read frame 2 after shrinking";
-    EXPECT_THROW(dataSet.readFrame(3, readFrameBuffer), gmx::FileIOError)
+    EXPECT_THROW(dataSet.readFrame(3, readFrameBuffer), gmx::H5mdError)
             << "Must not be able to read frame 3 after shrinking";
 
     // Now resume writing a good frame, then assert that all frames are good
@@ -686,7 +686,7 @@ TEST_F(H5mdFrameDataSetTest, WriteNextFrameIndexingBeginsAtZeroForNewDataSets)
 
     ValueType readBuffer;
 
-    EXPECT_THROW(dataSet.readFrame(numFrames, arrayRefFromArray(&readBuffer, 1)), gmx::FileIOError)
+    EXPECT_THROW(dataSet.readFrame(numFrames, arrayRefFromArray(&readBuffer, 1)), gmx::H5mdError)
             << "Frame at created index should not exist before call to writeNextFrame()";
 
     ValueType valueToWrite = 7;
@@ -740,7 +740,7 @@ TEST_F(H5mdFrameDataSetTest, WriteAfterMaxNumFramesThrows)
         dataSet.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1));
     }
 
-    EXPECT_THROW(dataSet.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1)), gmx::FileIOError)
+    EXPECT_THROW(dataSet.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1)), gmx::H5mdError)
             << "Must throw when writing more than maxNumFrames to a data set";
 }
 
@@ -764,7 +764,7 @@ TEST_F(H5mdFrameDataSetTest, WriteAfterMaxNumFramesThrowsAfterReopen)
     {
         SCOPED_TRACE("Reopen the data set and try to write another frame to it");
         H5mdFrameDataSet<ValueType> dataSet(fileid(), "testDataSet");
-        EXPECT_THROW(dataSet.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1)), gmx::FileIOError)
+        EXPECT_THROW(dataSet.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1)), gmx::H5mdError)
                 << "Must throw when writing more than maxNumFrames to a data set";
     }
 }
@@ -780,7 +780,7 @@ TEST_F(H5mdFrameDataSetTest, ShrinkToNumFramesThrowsIfNewNumFramesIsLargerThanCu
                     .build();
 
     ASSERT_NO_THROW(dataSet.shrinkToNumFrames(numFrames));
-    EXPECT_THROW(dataSet.shrinkToNumFrames(numFrames + 1), gmx::FileIOError);
+    EXPECT_THROW(dataSet.shrinkToNumFrames(numFrames + 1), gmx::H5mdError);
 }
 
 } // namespace

@@ -116,7 +116,7 @@ public:
 
     /*! \brief Return the dimensions of the data set.
      *
-     *  \throws gmx::FileIOError if the dimensions cannot be read.
+     *  \throws gmx::H5mdError if the dimensions cannot be read.
      */
     DataSetDims dims() const;
 

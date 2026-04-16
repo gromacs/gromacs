@@ -167,27 +167,27 @@ public:
 
     /*! \brief Assign a per-frame box data set.
      *
-     * \throws gmx::FileIOError if the data set frame dimensions are not { 3, 3 }.
+     * \throws gmx::H5mdError if the data set frame dimensions are not { 3, 3 }.
      */
     H5mdParticleBlockBuilder& setBox(H5mdFrameDataSet<real>&& box);
 
     /*! \brief Assign a position data set.
      *
-     * \throws gmx::FileIOError if the value frame dimensions are not 1-dimensional
+     * \throws gmx::H5mdError if the value frame dimensions are not 1-dimensional
      * or do not exactly match the frame dimensions of other already added data sets.
      */
     H5mdParticleBlockBuilder& setPosition(H5mdTimeDataBlock<RVec>&& position);
 
     /*! \brief Assign a velocity data set.
      *
-     * \throws gmx::FileIOError if the value frame dimensions are not 1-dimensional
+     * \throws gmx::H5mdError if the value frame dimensions are not 1-dimensional
      * or do not exactly match the frame dimensions of other already added data sets.
      */
     H5mdParticleBlockBuilder& setVelocity(H5mdTimeDataBlock<RVec>&& velocity);
 
     /*! \brief Assign a force data set.
      *
-     * \throws gmx::FileIOError if the value frame dimensions are not 1-dimensional
+     * \throws gmx::H5mdError if the value frame dimensions are not 1-dimensional
      * or do not exactly match the frame dimensions of other already added data sets.
      */
     H5mdParticleBlockBuilder& setForce(H5mdTimeDataBlock<RVec>&& force);
@@ -203,7 +203,7 @@ private:
      * in \p dataBlock is compared against this value. Any inconsistency results
      * in a throw.
      *
-     * \throws gmx::FileIOError if an inconsistency is found.
+     * \throws gmx::H5mdError if an inconsistency is found.
      */
     void ensureParticleCountConsistency(const H5mdTimeDataBlock<RVec>& dataBlock);
 

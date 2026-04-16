@@ -286,7 +286,7 @@ void H5md::flush(bool throwExceptionUponError)
  * \param[in]  selectionGroup Handle to selection group inside /particles.
  * \param[out] blockBuilder   Builder to assign the simulation box data set to.
  *
- * \throws gmx::FileIOError if there was an error setting up the links to the position
+ * \throws gmx::H5mdError if there was an error setting up the links to the position
  * step or time data sets.
  */
 static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBlockBuilder& blockBuilder)

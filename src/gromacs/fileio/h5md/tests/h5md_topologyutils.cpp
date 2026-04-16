@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_fixeddataset.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
@@ -86,7 +87,7 @@ inline std::vector<std::string> readFixedStringDataset(hid_t baseContainer, cons
     std::vector<char> buffer(nrStrings * strLength, '\0');
     if (H5Dread(dataset.id(), dataset.dataType(), memSpace, dataSpace, H5P_DEFAULT, buffer.data()) < 0)
     {
-        GMX_THROW(FileIOError("Failed to read string data from dataset."));
+        GMX_THROW(H5mdError("Failed to read string data from dataset."));
     }
 
     // Unpack the string buffer into vector of strings

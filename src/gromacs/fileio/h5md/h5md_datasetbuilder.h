@@ -93,7 +93,7 @@ class H5mdDataSetBuilder
 public:
     //! \brief Construct a builder for a data set with \p name in \p container.
     //
-    // \throws gmx::FileIOError if an object with \p name already exists in \p container.
+    // \throws gmx::H5mdError if an object with \p name already exists in \p container.
     H5mdDataSetBuilder(const hid_t container, const std::string& name) :
         container_(container), name_(name)
     {
@@ -209,7 +209,7 @@ public:
 
     //! \brief Finalize all set options, then build and return the data set.
     //
-    // \throws gmx::FileIOError if any set options are incorrect or incompatible with other
+    // \throws gmx::H5mdError if any set options are incorrect or incompatible with other
     // options, or if an error occurred when creating the data set.
     H5mdDataSetBase<ValueType> build()
     {

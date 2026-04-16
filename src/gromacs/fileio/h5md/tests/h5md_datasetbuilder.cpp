@@ -50,11 +50,11 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -250,7 +250,7 @@ TEST_P(Primitive, Works)
     }
     else
     {
-        EXPECT_THROW(builder.build(), gmx::FileIOError);
+        EXPECT_THROW(builder.build(), gmx::H5mdError);
     }
 }
 
@@ -334,7 +334,7 @@ TEST_P(BasicVector, Works)
     }
     else
     {
-        EXPECT_THROW(builder.build(), gmx::FileIOError);
+        EXPECT_THROW(builder.build(), gmx::H5mdError);
     }
 }
 
@@ -489,18 +489,18 @@ TEST_F(H5mdDataSetBuilderTest, ThrowsForNonPositiveMaxStringLength)
                          .withMaxStringLength(0)
                          .withDimension({ 0 })
                          .build(),
-                 gmx::FileIOError);
+                 gmx::H5mdError);
 
     EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NegativeMaxLength")
                          .withMaxStringLength(-1)
                          .withDimension({ 0 })
                          .build(),
-                 gmx::FileIOError);
+                 gmx::H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForUnsetDimension)
 {
-    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").build(), gmx::FileIOError);
+    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").build(), gmx::H5mdError);
     EXPECT_NO_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build());
 }
 
@@ -509,18 +509,18 @@ TEST_F(H5mdDataSetBuilderTest, ThrowsForDuplicateNameInGroup)
     const std::string sharedName = "testDataSet";
     ASSERT_NO_THROW(H5mdDataSetBuilder<int32_t>(fileid(), sharedName).withDimension({ 0 }).build());
     EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), sharedName).withDimension({ 0 }).build(),
-                 gmx::FileIOError);
+                 gmx::H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForEmptyName)
 {
-    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "").withDimension({ 0 }).build(), gmx::FileIOError);
+    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "").withDimension({ 0 }).build(), gmx::H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForInvalidContainer)
 {
     EXPECT_THROW(H5mdDataSetBuilder<int32_t>(H5I_INVALID_HID, "testDataSet").withDimension({ 0 }).build(),
-                 gmx::FileIOError);
+                 gmx::H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, UnitAttributeNotSetByDefault)

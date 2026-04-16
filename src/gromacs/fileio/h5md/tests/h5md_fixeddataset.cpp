@@ -48,10 +48,10 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -331,7 +331,7 @@ TEST_P(WithDims, OpenDataSetThrowsForWrongType)
 
     ASSERT_NO_THROW(H5mdFixedDataSet<int32_t>(fileid(), "int32"))
             << "Sanity check failed: Open with same type must work";
-    EXPECT_THROW(H5mdFixedDataSet<float>(fileid(), "int32"), gmx::FileIOError)
+    EXPECT_THROW(H5mdFixedDataSet<float>(fileid(), "int32"), gmx::H5mdError)
             << "Must throw when opening as float";
 }
 
@@ -345,13 +345,13 @@ TEST_P(WithDims, ThrowsForReadAndWriteWithWrongSizeBuffers)
     if (dataSet.numValues() > 0)
     {
         std::vector<int32_t> bufferTooSmall(dataSet.numValues() - 1);
-        EXPECT_THROW(dataSet.writeData(bufferTooSmall), gmx::FileIOError);
-        EXPECT_THROW(dataSet.readData(bufferTooSmall), gmx::FileIOError);
+        EXPECT_THROW(dataSet.writeData(bufferTooSmall), gmx::H5mdError);
+        EXPECT_THROW(dataSet.readData(bufferTooSmall), gmx::H5mdError);
     }
 
     std::vector<int32_t> bufferTooLarge(dataSet.numValues() + 1);
-    EXPECT_THROW(dataSet.writeData(bufferTooLarge), gmx::FileIOError);
-    EXPECT_THROW(dataSet.readData(bufferTooLarge), gmx::FileIOError);
+    EXPECT_THROW(dataSet.writeData(bufferTooLarge), gmx::H5mdError);
+    EXPECT_THROW(dataSet.readData(bufferTooLarge), gmx::H5mdError);
 }
 
 INSTANTIATE_TEST_SUITE_P(H5mdFixedDataSetTest, WithDims, ::testing::ValuesIn(g_dataSetDimsToTest), nameOfTest);
@@ -664,9 +664,9 @@ TEST_F(StringTypes, ThrowsWhenConstructingFixedSize0String)
 {
     // H5mdFixedDataSet constructs from H5mdDataSetBase, so ensure that
     // we cannot construct those with fixed-size 0 (or smaller) strings
-    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "negativeSize").withMaxStringLength(-1), gmx::FileIOError)
+    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "negativeSize").withMaxStringLength(-1), gmx::H5mdError)
             << "Must throw when constructing data set for fixed-size -1 strings";
-    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "size0").withMaxStringLength(0), gmx::FileIOError)
+    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "size0").withMaxStringLength(0), gmx::H5mdError)
             << "Must throw when constructing data set for fixed-size 0 strings";
     EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "size1").withMaxStringLength(1))
             << "Sanity check: Must not throw for fixed-size 1 strings";

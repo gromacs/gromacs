@@ -45,12 +45,12 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -206,7 +206,7 @@ void testOpenDataSetAsType(const hid_t container)
     }
     else
     {
-        EXPECT_THROW(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()), gmx::FileIOError)
+        EXPECT_THROW(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()), gmx::H5mdError)
                 << gmx::formatString(
                            "Must throw if compiled data set type does not match original type %s",
                            typeid(OriginalType).name());
@@ -236,7 +236,7 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsIfOriginalTypeDoesNotMatchTempl
 
 TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsForInvalidContainer)
 {
-    EXPECT_THROW(H5mdDataSetBase<TypeParam>(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
+    EXPECT_THROW(H5mdDataSetBase<TypeParam>(H5I_INVALID_HID, "testDataSet"), gmx::H5mdError);
 }
 
 TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsForInvalidSetName)
@@ -246,9 +246,9 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsForInvalidSetName)
         H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
     }
 
-    EXPECT_THROW(H5mdDataSetBase<TypeParam>(this->fileid(), ""), gmx::FileIOError)
+    EXPECT_THROW(H5mdDataSetBase<TypeParam>(this->fileid(), ""), gmx::H5mdError)
             << "Should throw for empty name";
-    EXPECT_THROW(H5mdDataSetBase<TypeParam>(this->fileid(), "aBadIdea"), gmx::FileIOError)
+    EXPECT_THROW(H5mdDataSetBase<TypeParam>(this->fileid(), "aBadIdea"), gmx::H5mdError)
             << "Should throw for bad name";
 }
 
@@ -332,13 +332,13 @@ TEST_P(H5mdDataSetBaseBasicVectorTest, A)
                 << "Sanity check failed: should not throw for inner dimension = 3";
         ASSERT_NO_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_3"))
                 << "Sanity check failed: should not throw for inner dimension = 3";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_2"), gmx::FileIOError)
+        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_2"), gmx::H5mdError)
                 << "Must throw for inner dimension = 2 (BasicVector<float>)";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_2"), gmx::FileIOError)
+        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_2"), gmx::H5mdError)
                 << "Must throw for inner dimension = 2 (BasicVector<double>)";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_4"), gmx::FileIOError)
+        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_4"), gmx::H5mdError)
                 << "Must throw for inner dimension = 4 (BasicVector<float>)";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_4"), gmx::FileIOError)
+        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_4"), gmx::H5mdError)
                 << "Must throw for inner dimension = 4 (BasicVector<double>)";
     }
 }

@@ -127,7 +127,7 @@ inline hid_t hdf5DataTypeFor<uint64_t>() noexcept
  *
  * \param[in] maxStringLength Fixed maximum size of string.
  *
- * \throws gmx::FileIOError if \p maxStringLength is not a positive value.
+ * \throws gmx::H5mdError if \p maxStringLength is not a positive value.
  */
 inline hid_t hdf5DataTypeForFixedSizeString(const hsize_t maxStringLength)
 {

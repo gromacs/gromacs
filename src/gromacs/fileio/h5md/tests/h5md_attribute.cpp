@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
@@ -373,15 +374,15 @@ TEST_F(H5mdAttributeTest, ScalarAttributeEdgeCases)
     {
         SCOPED_TRACE("Testing H5MD reading from a mismatched data type.");
         // Supposed to fail to match the required type and the attribute type
-        EXPECT_THROW(getAttribute<int64_t>(group, "height"), FileIOError);
-        EXPECT_THROW(getAttribute<int64_t>(group, "name"), FileIOError);
+        EXPECT_THROW(getAttribute<int64_t>(group, "height"), H5mdError);
+        EXPECT_THROW(getAttribute<int64_t>(group, "name"), H5mdError);
     }
 
     {
         SCOPED_TRACE("Testing H5MD write to an existing attribute.");
         // Supposed to fail to rewrite to an existing attribute
-        EXPECT_THROW(setAttribute(group, "name", "Maria Nearl"), FileIOError);
-        EXPECT_THROW(setAttribute(group, "height", 165), FileIOError);
+        EXPECT_THROW(setAttribute(group, "name", "Maria Nearl"), H5mdError);
+        EXPECT_THROW(setAttribute(group, "height", 165), H5mdError);
     }
 
     {
@@ -449,8 +450,8 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
 
     {
         SCOPED_TRACE("Testing H5MD reading from a mismatched data type.");
-        EXPECT_THROW(getAttributeVector<int64_t>(group, "index"), FileIOError);
-        EXPECT_THROW(getAttributeVector<int64_t>(group, "residue_names"), FileIOError);
+        EXPECT_THROW(getAttributeVector<int64_t>(group, "index"), H5mdError);
+        EXPECT_THROW(getAttributeVector<int64_t>(group, "residue_names"), H5mdError);
     }
 
     {
@@ -459,27 +460,27 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
         const std::vector<int32_t>     resID2       = { 1, 2, 3, 4 };
         const std::vector<std::string> resName2     = { "ALA", "GLY", "PHE", "VAL" };
         auto                           resName2_ref = makeArrayRef(resName2);
-        EXPECT_THROW(setAttributeVector<int32_t>(group, "index", resID2), FileIOError);
+        EXPECT_THROW(setAttributeVector<int32_t>(group, "index", resID2), H5mdError);
         EXPECT_THROW(buffer = setAttributeStringVector(group,
                                                        "residue_names",
                                                        std::move(buffer),
                                                        resName2_ref.begin(),
                                                        resName2_ref.end()),
-                     FileIOError);
+                     H5mdError);
     }
 
     {
         SCOPED_TRACE("Testing H5MD writing an empty vector.");
         // NOTE: Empty vector throws in H5Awrite
         std::vector<int32_t> emptyIntegerVector{};
-        EXPECT_THROW(setAttributeVector<int32_t>(group, "empty_int", emptyIntegerVector), FileIOError);
+        EXPECT_THROW(setAttributeVector<int32_t>(group, "empty_int", emptyIntegerVector), H5mdError);
 
         // NOTE: Empty buffer throws as expected similar to numerical attributes
         std::vector<std::string>    emptyStringVector{};
         ArrayRef<const std::string> emptyStringRef = makeArrayRef(emptyStringVector);
         EXPECT_THROW(buffer = setAttributeStringVector(
                              group, "empty_string", {}, emptyStringRef.begin(), emptyStringRef.end()),
-                     FileIOError);
+                     H5mdError);
     }
 
     {

@@ -89,7 +89,7 @@ public:
      *
      * \param[out] data Buffer to read data into from the data set.
      *
-     * \throws gmx::FileIOError if the buffer size does not match the data set.
+     * \throws gmx::H5mdError if the buffer size does not match the data set.
      */
     void readData(ArrayRef<ValueType> data) const;
 
@@ -100,7 +100,7 @@ public:
      *
      * \param[in] data Buffer with values to write into the data set.
      *
-     * \throws gmx::FileIOError if the buffer size does not match the data set.
+     * \throws gmx::H5mdError if the buffer size does not match the data set.
      */
     void writeData(ArrayRef<const ValueType> data) const;
 

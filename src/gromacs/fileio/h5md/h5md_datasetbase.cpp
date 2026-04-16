@@ -80,7 +80,7 @@ static hid_t openDataSet(const hid_t container, const char* name)
  * \param[in] nativeDataType Native data type of data set.
  * \param[in] dims           Primitive dimensions of data set.
  *
- * \throws gmx::FileIOError if there is an inconsitency.
+ * \throws gmx::H5mdError if there is an inconsistency.
  */
 template<typename ValueType>
 static void verifyDataSetConsistency(const hid_t nativeDataType, const DataSetDims& dims)
