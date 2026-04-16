@@ -53,6 +53,8 @@
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -94,7 +96,7 @@ class H5mdBasicVectorFrameDataSetBuilderTest : public H5mdTestBase
 };
 
 using DataTypes =
-        ::testing::Types<int32_t, int64_t, float, double, gmx::BasicVector<float>, gmx::BasicVector<double>>;
+        ::testing::Types<int32_t, int64_t, float, double, BasicVector<float>, BasicVector<double>>;
 TYPED_TEST_SUITE(H5mdFrameDataSetBuilderTest, DataTypes);
 
 using NumericPrimitives = ::testing::Types<int32_t, int64_t, float, double>;
@@ -160,7 +162,7 @@ TEST_F(H5mdStringFrameDataSetBuilderTest, StringDSetWithDefaultFrameNumber)
     {
         SCOPED_TRACE("Check variable length string data set");
 
-        EXPECT_NO_THROW(
+        EXPECT_NO_THROW_GMX(
                 H5mdFrameDataSetBuilder<std::string>(this->fileid(), "DataSetWithVariableLength")
                         .withVariableStringLength()
                         .build());
@@ -291,16 +293,16 @@ TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, SetFrameDimensionAddsDim
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, DataTypeIsCorrect)
 {
-    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet").build();
+    const H5mdDataSetBase<BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<BasicVector<TypeParam>>(this->fileid(), "testDataSet").build();
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
     EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataType));
 }
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, DefaultDimsIs2d)
 {
-    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet").build();
+    const H5mdDataSetBase<BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<BasicVector<TypeParam>>(this->fileid(), "testDataSet").build();
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
     EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), 2)
             << "BasicVector data sets should be 2d by default";
@@ -308,9 +310,9 @@ TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, DefaultDimsIs2d)
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, BasicVectorDimIsInnerDimension)
 {
-    constexpr int                                      numFrames = 5;
-    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
+    constexpr int                                 numFrames = 5;
+    const H5mdDataSetBase<BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withNumFrames(numFrames)
                     .build();
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
@@ -322,10 +324,10 @@ TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, BasicVectorDimIsInnerDimensio
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensionInCenter1)
 {
-    constexpr int                                      numFrames      = 3;
-    const std::vector<hsize_t>                         frameDimension = { 5 };
-    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
+    constexpr int                                 numFrames      = 3;
+    const std::vector<hsize_t>                    frameDimension = { 5 };
+    const H5mdDataSetBase<BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withNumFrames(numFrames)
                     .withFrameDimension(frameDimension)
                     .build();
@@ -343,10 +345,10 @@ TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensio
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensionInCenter2)
 {
-    constexpr int                                      numFrames      = 3;
-    const std::vector<hsize_t>                         frameDimension = { 5, 7 };
-    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
+    constexpr int                                 numFrames      = 3;
+    const std::vector<hsize_t>                    frameDimension = { 5, 7 };
+    const H5mdDataSetBase<BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withNumFrames(numFrames)
                     .withFrameDimension(frameDimension)
                     .build();

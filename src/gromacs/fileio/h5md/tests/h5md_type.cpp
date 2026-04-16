@@ -50,7 +50,7 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
 
-#include "testutils/testfilemanager.h"
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -169,7 +169,7 @@ TEST(H5mdTypeTest, hdf5TypeForFixedStringWorks)
 
 TEST(H5mdTypeTest, hdf5TypeForFixedStringThrowsForSize0)
 {
-    EXPECT_THROW(hdf5DataTypeForFixedSizeString(0), gmx::H5mdError);
+    EXPECT_THROW_GMX(hdf5DataTypeForFixedSizeString(0), H5mdError);
 }
 
 TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForFixedSizeStrings)

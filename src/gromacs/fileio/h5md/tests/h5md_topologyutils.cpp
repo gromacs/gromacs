@@ -63,7 +63,6 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
 
 namespace gmx
@@ -188,7 +187,7 @@ TEST_F(H5mdTopologyUtilTest, WriteFullTopologyAtomProp)
         TestReferenceChecker checker(data.rootChecker());
         checker.setDefaultTolerance(test::absoluteTolerance(0.1));
 
-        for (auto& name : { "systemNoSelection", "systemSelectAll" })
+        for (const auto& name : { "systemNoSelection", "systemSelectAll" })
         {
             const auto [baseContainer, baseContainerGuard] =
                     makeH5mdGroupGuard(openGroup(fileid(), formatString("/particles/%s", name).c_str()));
@@ -278,7 +277,7 @@ TEST_F(H5mdTopologyUtilTest, WriteFullTopologyResInfo)
         TestReferenceChecker checker(data.rootChecker());
         checker.setDefaultTolerance(test::absoluteTolerance(0.1));
 
-        for (auto& name : { "systemNoSelection", "systemSelectAll" })
+        for (const auto& name : { "systemNoSelection", "systemSelectAll" })
         {
             const auto [baseContainer, baseContainerGuard] =
                     makeH5mdGroupGuard(openGroup(fileid(), formatString("/particles/%s", name).c_str()));
@@ -503,8 +502,8 @@ TEST_F(H5mdTopologyUtilTest, ThrowUponEmptyIndexMap)
     const auto [baseContainer, baseContainerGuard] =
             makeH5mdGroupGuard(createGroup(fileid(), "/particles/empty_selection"));
 
-    EXPECT_THROW(writeAtomicProperties(atomRange, baseContainer, IndexMap({})), InternalError);
-    EXPECT_THROW(writeResidueInfo(atomRange, baseContainer, IndexMap({})), InternalError);
+    EXPECT_THROW_GMX(writeAtomicProperties(atomRange, baseContainer, IndexMap({})), InternalError);
+    EXPECT_THROW_GMX(writeResidueInfo(atomRange, baseContainer, IndexMap({})), InternalError);
 }
 
 TEST_F(H5mdTopologyUtilTest, WriteConnectivityProteinPart)
@@ -592,6 +591,7 @@ TEST_F(H5mdTopologyUtilTest, WriteDisulfideBonds)
         "AA", "BB",       // Dummy atoms
     };
     std::vector<char*> charAtomNames;
+    charAtomNames.reserve(atomNames.size());
     for (const auto& atomName : atomNames)
     {
         charAtomNames.push_back(const_cast<char*>(atomName.data()));
@@ -623,7 +623,7 @@ TEST_F(H5mdTopologyUtilTest, WriteDisulfideBonds)
         for (size_t i = 0; i < expectedBonds.size(); ++i)
         {
             EXPECT_EQ(retBonds[2 * i], expectedBonds[i].first);
-            EXPECT_EQ(retBonds[2 * i + 1], expectedBonds[i].second);
+            EXPECT_EQ(retBonds[(2 * i) + 1], expectedBonds[i].second);
         }
     }
 
@@ -649,7 +649,7 @@ TEST_F(H5mdTopologyUtilTest, WriteDisulfideBonds)
             for (int b = 0; b < blockReplication; ++b)
             {
                 const size_t offset = b * topology.moltype[0].atoms.nr;
-                const size_t index  = b * expectedBonds.size() * 2 + i * 2;
+                const size_t index  = (b * expectedBonds.size() * 2) + (i * 2);
                 EXPECT_EQ(retBonds[index], expectedBonds[i].first + offset);
                 EXPECT_EQ(retBonds[index + 1], expectedBonds[i].second + offset);
             }
@@ -882,9 +882,10 @@ TEST_F(H5mdTopologyUtilTest, FailUponMoleculeBlockPointToInvalidType)
     // Molecule 2 (SOL) is not valid after removal
     topology.moltype.pop_back();
 
-    EXPECT_THROW(writeMoleculeBlocks(
-                         gmxMol, makeConstArrayRef(topology.molblock), makeConstArrayRef(topology.moltype)),
-                 InternalError);
+    EXPECT_THROW_GMX(writeMoleculeBlocks(gmxMol,
+                                         makeConstArrayRef(topology.molblock),
+                                         makeConstArrayRef(topology.moltype)),
+                     InternalError);
 }
 
 

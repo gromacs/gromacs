@@ -58,6 +58,8 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -106,9 +108,9 @@ void PrintTo(const DataSetDimensions& info, std::ostream* os)
         }
     };
 
-    *os << "Dims {" << gmx::formatAndJoin(info.dims_, ", ", toString) << "}" << ", "
-        << "MaxDims {" << gmx::formatAndJoin(info.maxDims_, ", ", toString) << "}" << ", "
-        << "ChunkDims {" << gmx::formatAndJoin(info.chunkDims_, ", ", toString) << "}" << ", "
+    *os << "Dims {" << formatAndJoin(info.dims_, ", ", toString) << "}" << ", "
+        << "MaxDims {" << formatAndJoin(info.maxDims_, ", ", toString) << "}" << ", "
+        << "ChunkDims {" << formatAndJoin(info.chunkDims_, ", ", toString) << "}" << ", "
         << "ExpectedResult = " << (info.expectedResult_ ? "true" : "false");
 }
 
@@ -160,7 +162,7 @@ std::string nameOfTest(const ::testing::TestParamInfo<DataSetDimensions>& info)
         partNames.push_back(partName);
     }
 
-    std::string testName = gmx::joinStrings(partNames.cbegin(), partNames.cend(), "_");
+    std::string testName = joinStrings(partNames.cbegin(), partNames.cend(), "_");
     // Note that the returned names must be unique and may use only
     // alphanumeric ASCII characters. It's not supposed to contain
     // underscores (see the GoogleTest FAQ
@@ -185,12 +187,12 @@ class H5mdDataSetBuilderTestBase : public H5mdTestBase, public ::testing::WithPa
 };
 
 //! Parametrized test suite for data sets of simple primitives
-using Primitive = H5mdDataSetBuilderTestBase<int32_t>;
+using PrimitiveType = H5mdDataSetBuilderTestBase<int32_t>;
 
 //! Parametrized test suite for data sets of BasicVector<T>
-using BasicVector = H5mdDataSetBuilderTestBase<gmx::BasicVector<float>>;
+using BasicVectorType = H5mdDataSetBuilderTestBase<BasicVector<float>>;
 
-TEST_P(Primitive, Works)
+TEST_P(PrimitiveType, Works)
 {
     const DataSetDimensions& testParam = GetParam();
 
@@ -250,11 +252,11 @@ TEST_P(Primitive, Works)
     }
     else
     {
-        EXPECT_THROW(builder.build(), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.build(), H5mdError);
     }
 }
 
-TEST_P(BasicVector, Works)
+TEST_P(BasicVectorType, Works)
 {
     const DataSetDimensions& testParam = GetParam();
 
@@ -263,14 +265,14 @@ TEST_P(BasicVector, Works)
     // primitive types but the expected dims is the input testParam.dims_ + [3],
     // and so on for maxDims_ and chunkDims_.
 
-    H5mdDataSetBuilder<gmx::BasicVector<float>> builder(this->fileid(), "testDataSet");
+    H5mdDataSetBuilder<BasicVector<float>> builder(this->fileid(), "testDataSet");
     builder.withDimension(testParam.dims_);
     builder.withMaxDimension(testParam.maxDims_);
     builder.withChunkDimension(testParam.chunkDims_);
 
     if (testParam.expectedResult_)
     {
-        const H5mdDataSetBase<gmx::BasicVector<float>> dataSet = builder.build();
+        const H5mdDataSetBase<BasicVector<float>> dataSet = builder.build();
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
@@ -334,7 +336,7 @@ TEST_P(BasicVector, Works)
     }
     else
     {
-        EXPECT_THROW(builder.build(), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.build(), H5mdError);
     }
 }
 
@@ -406,15 +408,15 @@ const DataSetDimensions g_invalidDimensionCombinations[] = {
  */
 //! {
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderValidDims,
-                         Primitive,
+                         PrimitiveType,
                          ::testing::ValuesIn(g_validDataSetDimensions),
                          nameOfTest);
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderValidDimCombinations,
-                         Primitive,
+                         PrimitiveType,
                          ::testing::ValuesIn(g_validDimensionCombinations),
                          nameOfTest);
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderInvalidDimCombinations,
-                         Primitive,
+                         PrimitiveType,
                          ::testing::ValuesIn(g_invalidDimensionCombinations),
                          nameOfTest);
 //! }
@@ -426,15 +428,15 @@ INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderInvalidDimCombinations,
  */
 //! {
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderValidDims,
-                         BasicVector,
+                         BasicVectorType,
                          ::testing::ValuesIn(g_validDataSetDimensions),
                          nameOfTest);
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderValidDimCombinations,
-                         BasicVector,
+                         BasicVectorType,
                          ::testing::ValuesIn(g_validDimensionCombinations),
                          nameOfTest);
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderInvalidDimCombinations,
-                         BasicVector,
+                         BasicVectorType,
                          ::testing::ValuesIn(g_invalidDimensionCombinations),
                          nameOfTest);
 //! }
@@ -447,10 +449,10 @@ TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
     {
         SCOPED_TRACE("Check the builder for fixed sized string data set");
 
-        EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "withMaxLength")
-                                .withMaxStringLength(256)
-                                .withDimension({ 0 })
-                                .build());
+        EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "withMaxLength")
+                                    .withMaxStringLength(256)
+                                    .withDimension({ 0 })
+                                    .build());
 
         // Check data type
         const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withMaxLength");
@@ -462,10 +464,10 @@ TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
     {
         SCOPED_TRACE("Check the builder for variable sized string data set");
 
-        EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "withVariableLength")
-                                .withVariableStringLength()
-                                .withDimension({ 0 })
-                                .build());
+        EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "withVariableLength")
+                                    .withVariableStringLength()
+                                    .withDimension({ 0 })
+                                    .build());
 
         // Check data type
         const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withVariableLength");
@@ -477,7 +479,8 @@ TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
 
 TEST_F(H5mdDataSetBuilderTest, NoThrowForDefaultStringType)
 {
-    EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NoMaxLength").withDimension({ 0 }).build());
+    EXPECT_NO_THROW_GMX(
+            H5mdDataSetBuilder<std::string>(fileid(), "NoMaxLength").withDimension({ 0 }).build());
     const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "NoMaxLength");
     EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType())) << "By default, use variable length string";
 }
@@ -485,42 +488,43 @@ TEST_F(H5mdDataSetBuilderTest, NoThrowForDefaultStringType)
 TEST_F(H5mdDataSetBuilderTest, ThrowsForNonPositiveMaxStringLength)
 {
     // NOTE: H5Tset_size accepts only positive values for fixed-size strings.
-    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "ZeroMaxLength")
-                         .withMaxStringLength(0)
-                         .withDimension({ 0 })
-                         .build(),
-                 gmx::H5mdError);
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "ZeroMaxLength")
+                             .withMaxStringLength(0)
+                             .withDimension({ 0 })
+                             .build(),
+                     H5mdError);
 
-    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NegativeMaxLength")
-                         .withMaxStringLength(-1)
-                         .withDimension({ 0 })
-                         .build(),
-                 gmx::H5mdError);
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "NegativeMaxLength")
+                             .withMaxStringLength(-1)
+                             .withDimension({ 0 })
+                             .build(),
+                     H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForUnsetDimension)
 {
-    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").build(), gmx::H5mdError);
-    EXPECT_NO_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build());
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").build(), H5mdError);
+    EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build());
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForDuplicateNameInGroup)
 {
     const std::string sharedName = "testDataSet";
-    ASSERT_NO_THROW(H5mdDataSetBuilder<int32_t>(fileid(), sharedName).withDimension({ 0 }).build());
-    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), sharedName).withDimension({ 0 }).build(),
-                 gmx::H5mdError);
+    ASSERT_NO_THROW_GMX(H5mdDataSetBuilder<int32_t>(fileid(), sharedName).withDimension({ 0 }).build());
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<int32_t>(fileid(), sharedName).withDimension({ 0 }).build(),
+                     H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForEmptyName)
 {
-    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(fileid(), "").withDimension({ 0 }).build(), gmx::H5mdError);
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<int32_t>(fileid(), "").withDimension({ 0 }).build(), H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForInvalidContainer)
 {
-    EXPECT_THROW(H5mdDataSetBuilder<int32_t>(H5I_INVALID_HID, "testDataSet").withDimension({ 0 }).build(),
-                 gmx::H5mdError);
+    EXPECT_THROW_GMX(
+            H5mdDataSetBuilder<int32_t>(H5I_INVALID_HID, "testDataSet").withDimension({ 0 }).build(),
+            H5mdError);
 }
 
 TEST_F(H5mdDataSetBuilderTest, UnitAttributeNotSetByDefault)

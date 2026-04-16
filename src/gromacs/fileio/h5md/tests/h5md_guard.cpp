@@ -65,7 +65,7 @@ TEST(H5mdGuardTest, H5mdTypeGuardWorks)
     hid_t dataTypeToTest = H5I_INVALID_HID;
 
     {
-        const auto [dataType, dataTypeGuard] = gmx::makeH5mdTypeGuard(H5Tcopy(H5T_NATIVE_INT));
+        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Tcopy(H5T_NATIVE_INT));
         dataTypeToTest                       = dataType;
 
         ASSERT_GT(H5Iis_valid(dataTypeToTest), 0);
@@ -85,9 +85,8 @@ TEST(H5mdGuardTest, H5mdGroupGuardWorks)
     hid_t groupToTest = H5I_INVALID_HID;
 
     {
-        const auto [group, groupGuard] =
-                gmx::makeH5mdGroupGuard(createGroup(file.fileid(), "group"));
-        groupToTest = group;
+        const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(file.fileid(), "group"));
+        groupToTest                    = group;
 
         ASSERT_GT(H5Iis_valid(groupToTest), 0);
     }
@@ -106,7 +105,7 @@ TEST(H5mdGuardTest, H5mdDataSpaceGuardWorks)
     hid_t dataSpaceToTest = H5I_INVALID_HID;
 
     {
-        const auto [dataSpace, dataSpaceGuard] = gmx::makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
+        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
         dataSpaceToTest                        = dataSpace;
 
         ASSERT_GT(H5Iis_valid(dataSpaceToTest), 0);
@@ -125,10 +124,10 @@ TEST(H5mdGuardTest, H5mdDataSetGuardWorks)
 
     hid_t dataSetToTest = H5I_INVALID_HID;
 
-    const auto [dataSpace, dataSpaceGuard] = gmx::makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
 
     {
-        const auto [dataSet, dataSetGuard] = gmx::makeH5mdDataSetGuard(H5Dcreate(
+        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(H5Dcreate(
                 file.fileid(), "testDataSet", H5T_NATIVE_INT, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
         dataSetToTest                      = dataSet;
 
@@ -148,10 +147,10 @@ TEST(H5mdGuardTest, H5mdAttributeGuardWorks)
 
     hid_t attributeToTest = H5I_INVALID_HID;
 
-    const auto [dataSpace, dataSpaceGuard] = gmx::makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
 
     {
-        const auto [attribute, attributeGuard] = gmx::makeH5mdAttributeGuard(H5Acreate(
+        const auto [attribute, attributeGuard] = makeH5mdAttributeGuard(H5Acreate(
                 file.fileid(), "testAttribute", H5T_NATIVE_INT, dataSpace, H5P_DEFAULT, H5P_DEFAULT));
         attributeToTest                        = attribute;
 
@@ -168,7 +167,7 @@ TEST(H5mdGuardTest, H5mdPropertyListGuardWorks)
 
     {
         const auto [propertyList, propertyListGuard] =
-                gmx::makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
+                makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
         propertyListToTest = propertyList;
 
         ASSERT_GT(H5Iis_valid(propertyListToTest), 0);

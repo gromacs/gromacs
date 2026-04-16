@@ -54,6 +54,8 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -217,33 +219,34 @@ TEST_F(H5mdParticleBlockTest, SetBoxThrowsForBadDims)
 {
     H5mdParticleBlockBuilder builder;
 
-    ASSERT_NO_THROW(H5mdFrameDataSetBuilder<RVec>(fileid(), "3x3").withFrameDimension({ DIM, DIM }).build())
+    ASSERT_NO_THROW_GMX(
+            H5mdFrameDataSetBuilder<RVec>(fileid(), "3x3").withFrameDimension({ DIM, DIM }).build())
             << "Matrices are { 3, 3 }, so this should work and all other cases should throw";
 
-    EXPECT_THROW(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "2x3")
-                                        .withFrameDimension({ DIM - 1, DIM })
-                                        .build()),
-                 gmx::H5mdError);
-    EXPECT_THROW(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "3x2")
-                                        .withFrameDimension({ DIM, DIM - 1 })
-                                        .build()),
-                 gmx::H5mdError);
-    EXPECT_THROW(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "4x3")
-                                        .withFrameDimension({ DIM + 1, DIM })
-                                        .build()),
-                 gmx::H5mdError);
-    EXPECT_THROW(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "3x4")
-                                        .withFrameDimension({ DIM, DIM + 1 })
-                                        .build()),
-                 gmx::H5mdError);
-    EXPECT_THROW(
+    EXPECT_THROW_GMX(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "2x3")
+                                            .withFrameDimension({ DIM - 1, DIM })
+                                            .build()),
+                     H5mdError);
+    EXPECT_THROW_GMX(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "3x2")
+                                            .withFrameDimension({ DIM, DIM - 1 })
+                                            .build()),
+                     H5mdError);
+    EXPECT_THROW_GMX(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "4x3")
+                                            .withFrameDimension({ DIM + 1, DIM })
+                                            .build()),
+                     H5mdError);
+    EXPECT_THROW_GMX(builder.setBox(H5mdFrameDataSetBuilder<real>(fileid(), "3x4")
+                                            .withFrameDimension({ DIM, DIM + 1 })
+                                            .build()),
+                     H5mdError);
+    EXPECT_THROW_GMX(
             builder.setBox(
                     H5mdFrameDataSetBuilder<real>(fileid(), "3x1").withFrameDimension({ DIM, 1 }).build()),
-            gmx::H5mdError);
-    EXPECT_THROW(
+            H5mdError);
+    EXPECT_THROW_GMX(
             builder.setBox(
                     H5mdFrameDataSetBuilder<real>(fileid(), "1x3").withFrameDimension({ 1, DIM }).build()),
-            gmx::H5mdError);
+            H5mdError);
 }
 
 TEST_F(H5mdParticleBlockTest, SetBlockThrowsForBadDims)
@@ -253,27 +256,27 @@ TEST_F(H5mdParticleBlockTest, SetBlockThrowsForBadDims)
         H5mdTimeDataBlockBuilder<RVec>(fileid(), "1d").withFrameDimension({ 1 }).build();
 
         H5mdParticleBlockBuilder builder;
-        EXPECT_NO_THROW(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "1d")));
-        EXPECT_NO_THROW(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "1d")));
-        EXPECT_NO_THROW(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "1d")));
+        EXPECT_NO_THROW_GMX(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "1d")));
+        EXPECT_NO_THROW_GMX(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "1d")));
+        EXPECT_NO_THROW_GMX(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "1d")));
     }
     {
         SCOPED_TRACE("Zero-dimensional (empty) frames must throw");
         H5mdTimeDataBlockBuilder<RVec>(fileid(), "Empty").build();
 
         H5mdParticleBlockBuilder builder;
-        EXPECT_THROW(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "Empty")), gmx::H5mdError);
-        EXPECT_THROW(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "Empty")), gmx::H5mdError);
-        EXPECT_THROW(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "Empty")), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "Empty")), H5mdError);
+        EXPECT_THROW_GMX(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "Empty")), H5mdError);
+        EXPECT_THROW_GMX(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "Empty")), H5mdError);
     }
     {
         SCOPED_TRACE("Two-dimensional frames must throw");
         H5mdTimeDataBlockBuilder<RVec>(fileid(), "2d").withFrameDimension({ 1, 1 }).build();
 
         H5mdParticleBlockBuilder builder;
-        EXPECT_THROW(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "2d")), gmx::H5mdError);
-        EXPECT_THROW(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "2d")), gmx::H5mdError);
-        EXPECT_THROW(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "2d")), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "2d")), H5mdError);
+        EXPECT_THROW_GMX(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "2d")), H5mdError);
+        EXPECT_THROW_GMX(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "2d")), H5mdError);
     }
 }
 
@@ -288,8 +291,8 @@ TEST_F(H5mdParticleBlockTest, SetBlockThrowsForInconsistentFrameDims)
         SCOPED_TRACE("Position before velocity and force");
         H5mdParticleBlockBuilder builder;
         builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "frameDims3")); // write
-        EXPECT_THROW(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), gmx::H5mdError);
-        EXPECT_THROW(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), H5mdError);
+        EXPECT_THROW_GMX(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), H5mdError);
         EXPECT_EQ(builder.build().numParticles(), 3)
                 << "numParticles should be as for the position block";
     }
@@ -297,8 +300,8 @@ TEST_F(H5mdParticleBlockTest, SetBlockThrowsForInconsistentFrameDims)
         SCOPED_TRACE("Velocity before position and force");
         H5mdParticleBlockBuilder builder;
         builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4"));
-        EXPECT_THROW(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "frameDims3")), gmx::H5mdError);
-        EXPECT_THROW(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "frameDims3")), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "frameDims3")), H5mdError);
+        EXPECT_THROW_GMX(builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "frameDims3")), H5mdError);
         EXPECT_EQ(builder.build().numParticles(), 4)
                 << "numParticles should be as for the velocity block";
         ;
@@ -307,8 +310,8 @@ TEST_F(H5mdParticleBlockTest, SetBlockThrowsForInconsistentFrameDims)
         SCOPED_TRACE("Force before position and velocity");
         H5mdParticleBlockBuilder builder;
         builder.setForce(H5mdTimeDataBlock<RVec>(fileid(), "frameDims3"));
-        EXPECT_THROW(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), gmx::H5mdError);
-        EXPECT_THROW(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), gmx::H5mdError);
+        EXPECT_THROW_GMX(builder.setPosition(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), H5mdError);
+        EXPECT_THROW_GMX(builder.setVelocity(H5mdTimeDataBlock<RVec>(fileid(), "frameDims4")), H5mdError);
         EXPECT_EQ(builder.build().numParticles(), 3)
                 << "numParticles should be as for the force block";
         ;

@@ -54,6 +54,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace gmx
@@ -71,7 +72,7 @@ class H5mdDataSetBaseTest : public H5mdTestBase
 
 //! \brief List of all data types to create tests for
 using DataTypesToTest =
-        ::testing::Types<int32_t, int64_t, float, double, gmx::BasicVector<float>, gmx::BasicVector<double>>;
+        ::testing::Types<int32_t, int64_t, float, double, BasicVector<float>, BasicVector<double>>;
 TYPED_TEST_SUITE(H5mdDataSetBaseTest, DataTypesToTest);
 
 TYPED_TEST(H5mdDataSetBaseTest, DataTypesAreCorrect)
@@ -79,11 +80,11 @@ TYPED_TEST(H5mdDataSetBaseTest, DataTypesAreCorrect)
     H5mdDataSetBase<TypeParam> dataSet =
             H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
 
-    if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<float>>)
+    if constexpr (std::is_same_v<TypeParam, BasicVector<float>>)
     {
         EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()));
     }
-    else if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<double>>)
+    else if constexpr (std::is_same_v<TypeParam, BasicVector<double>>)
     {
         EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.dataType()));
     }
@@ -136,12 +137,12 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetWorksForWriteModeFiles)
     }
     {
         const H5mdDataSetBase<TypeParam> dataSet(this->fileid(), dataSetName);
-        if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<float>>)
+        if constexpr (std::is_same_v<TypeParam, BasicVector<float>>)
         {
             EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
                     << "Data types must match after opening";
         }
-        else if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<double>>)
+        else if constexpr (std::is_same_v<TypeParam, BasicVector<double>>)
         {
             EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.dataType()))
                     << "Data types must match after opening";
@@ -169,12 +170,12 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetWorksForReadOnlyFiles)
     {
         H5md                             file(fileName, H5mdFileMode::Read);
         const H5mdDataSetBase<TypeParam> dataSet(file.fileid(), dataSetName);
-        if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<float>>)
+        if constexpr (std::is_same_v<TypeParam, BasicVector<float>>)
         {
             EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
                     << "Data types must match after opening";
         }
-        else if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<double>>)
+        else if constexpr (std::is_same_v<TypeParam, BasicVector<double>>)
         {
             EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.dataType()))
                     << "Data types must match after opening";
@@ -201,13 +202,13 @@ void testOpenDataSetAsType(const hid_t container)
 {
     if constexpr (std::is_same_v<AsType, OriginalType>)
     {
-        EXPECT_NO_THROW(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()))
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()))
                 << "Sanity check failed: could not open data set of same type";
     }
     else
     {
-        EXPECT_THROW(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()), gmx::H5mdError)
-                << gmx::formatString(
+        EXPECT_THROW_GMX(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()), H5mdError)
+                << formatString(
                            "Must throw if compiled data set type does not match original type %s",
                            typeid(OriginalType).name());
     }
@@ -215,8 +216,8 @@ void testOpenDataSetAsType(const hid_t container)
 
 TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsIfOriginalTypeDoesNotMatchTemplate)
 {
-    if constexpr (std::is_same_v<TypeParam, gmx::BasicVector<float>>
-                  || std::is_same_v<TypeParam, gmx::BasicVector<double>>)
+    if constexpr (std::is_same_v<TypeParam, BasicVector<float>>
+                  || std::is_same_v<TypeParam, BasicVector<double>>)
     {
         // Non-primitive types require more advanced testing: their base types should
         // be matched against the native type, and the data set dimensions checked.
@@ -236,7 +237,7 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsIfOriginalTypeDoesNotMatchTempl
 
 TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsForInvalidContainer)
 {
-    EXPECT_THROW(H5mdDataSetBase<TypeParam>(H5I_INVALID_HID, "testDataSet"), gmx::H5mdError);
+    EXPECT_THROW_GMX(H5mdDataSetBase<TypeParam>(H5I_INVALID_HID, "testDataSet"), H5mdError);
 }
 
 TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsForInvalidSetName)
@@ -246,9 +247,9 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetThrowsForInvalidSetName)
         H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
     }
 
-    EXPECT_THROW(H5mdDataSetBase<TypeParam>(this->fileid(), ""), gmx::H5mdError)
+    EXPECT_THROW_GMX(H5mdDataSetBase<TypeParam>(this->fileid(), ""), H5mdError)
             << "Should throw for empty name";
-    EXPECT_THROW(H5mdDataSetBase<TypeParam>(this->fileid(), "aBadIdea"), gmx::H5mdError)
+    EXPECT_THROW_GMX(H5mdDataSetBase<TypeParam>(this->fileid(), "aBadIdea"), H5mdError)
             << "Should throw for bad name";
 }
 
@@ -280,14 +281,14 @@ void PrintTo(const TestDimensions& info, std::ostream* os)
 {
     const auto toString = [&](hsize_t value) -> std::string { return std::to_string(value); };
 
-    *os << "Dims {" << gmx::formatAndJoin(info.dims_, ", ", toString) << "}";
+    *os << "Dims {" << formatAndJoin(info.dims_, ", ", toString) << "}";
 }
 
 //! \brief Helper function for GTest to construct test names.
 std::string nameOfTest(const ::testing::TestParamInfo<TestDimensions>& info)
 {
     const auto  toString = [](const hsize_t value) -> std::string { return std::to_string(value); };
-    std::string testName = gmx::formatAndJoin(info.param.dims_, "_", toString);
+    std::string testName = formatAndJoin(info.param.dims_, "_", toString);
 
     // Note that the returned names must be unique and may use only
     // alphanumeric ASCII characters. It's not supposed to contain
@@ -328,17 +329,17 @@ TEST_P(H5mdDataSetBaseBasicVectorTest, A)
     }
     {
         SCOPED_TRACE("Open the data sets as BasicVector<float/double>");
-        ASSERT_NO_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_3"))
+        ASSERT_NO_THROW_GMX(H5mdDataSetBase<BasicVector<float>>(this->fileid(), "float_3"))
                 << "Sanity check failed: should not throw for inner dimension = 3";
-        ASSERT_NO_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_3"))
+        ASSERT_NO_THROW_GMX(H5mdDataSetBase<BasicVector<double>>(this->fileid(), "double_3"))
                 << "Sanity check failed: should not throw for inner dimension = 3";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_2"), gmx::H5mdError)
+        EXPECT_THROW_GMX(H5mdDataSetBase<BasicVector<float>>(this->fileid(), "float_2"), H5mdError)
                 << "Must throw for inner dimension = 2 (BasicVector<float>)";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_2"), gmx::H5mdError)
+        EXPECT_THROW_GMX(H5mdDataSetBase<BasicVector<double>>(this->fileid(), "double_2"), H5mdError)
                 << "Must throw for inner dimension = 2 (BasicVector<double>)";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<float>>(this->fileid(), "float_4"), gmx::H5mdError)
+        EXPECT_THROW_GMX(H5mdDataSetBase<BasicVector<float>>(this->fileid(), "float_4"), H5mdError)
                 << "Must throw for inner dimension = 4 (BasicVector<float>)";
-        EXPECT_THROW(H5mdDataSetBase<gmx::BasicVector<double>>(this->fileid(), "double_4"), gmx::H5mdError)
+        EXPECT_THROW_GMX(H5mdDataSetBase<BasicVector<double>>(this->fileid(), "double_4"), H5mdError)
                 << "Must throw for inner dimension = 4 (BasicVector<double>)";
     }
 }

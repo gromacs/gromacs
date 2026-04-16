@@ -57,6 +57,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 
 namespace gmx
@@ -82,11 +83,11 @@ TEST_F(H5mdTimeDataBlockTest, BuilderWorks)
     {
         SCOPED_TRACE("Open the data sets individually to ensure that they were created");
         const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(fileid(), groupName));
-        EXPECT_NO_THROW(H5mdFrameDataSet<float>(group, "value"))
+        EXPECT_NO_THROW_GMX(H5mdFrameDataSet<float>(group, "value"))
                 << "Value data set was not created in group with given name";
-        EXPECT_NO_THROW(H5mdScalarFrameDataSet<int64_t>(group, "step"))
+        EXPECT_NO_THROW_GMX(H5mdScalarFrameDataSet<int64_t>(group, "step"))
                 << "Step data set was not created in group with given name";
-        EXPECT_NO_THROW(H5mdScalarFrameDataSet<double>(group, "time"))
+        EXPECT_NO_THROW_GMX(H5mdScalarFrameDataSet<double>(group, "time"))
                 << "Time data set was not created in group with given name";
     }
 }
@@ -133,9 +134,9 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfValueDataSetIsMissing)
     H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
     H5mdFrameDataSetBuilder<double>(group, "time").build();
 
-    EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
+    EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
     H5mdFrameDataSetBuilder<float>(group, "value").build();
-    EXPECT_NO_THROW(H5mdTimeDataBlock<float>(fileid(), groupName));
+    EXPECT_NO_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName));
 }
 
 TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfStepDataSetIsMissing)
@@ -146,9 +147,9 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfStepDataSetIsMissing)
     H5mdFrameDataSetBuilder<float>(group, "value").build();
     H5mdFrameDataSetBuilder<double>(group, "time").build();
 
-    EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
+    EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
     H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
-    EXPECT_NO_THROW(H5mdTimeDataBlock<float>(fileid(), groupName));
+    EXPECT_NO_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName));
 }
 
 TEST_F(H5mdTimeDataBlockTest, OpenConstructorWorksIfTimeDataSetIsMissing)
@@ -159,7 +160,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorWorksIfTimeDataSetIsMissing)
     H5mdFrameDataSetBuilder<float>(group, "value").build();
     H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
 
-    EXPECT_NO_THROW(H5mdTimeDataBlock<float>(fileid(), groupName))
+    EXPECT_NO_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName))
             << "Must not throw for missing time data set since it is optional";
 }
 
@@ -176,7 +177,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForIncorrectTypes)
             H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
             H5mdFrameDataSetBuilder<double>(group, "time").build();
         }
-        EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
+        EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
                 << "Must throw when opening a float time data block where the value type is int64";
     }
     {
@@ -189,7 +190,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForIncorrectTypes)
             H5mdFrameDataSetBuilder<int32_t>(group, "step").build();
             H5mdFrameDataSetBuilder<double>(group, "time").build();
         }
-        EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
+        EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
                 << "Must throw when opening a time data block where the step data set is not "
                    "int64_t";
     }
@@ -203,7 +204,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForIncorrectTypes)
             H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
             H5mdFrameDataSetBuilder<float>(group, "time").build();
         }
-        EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
+        EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
                 << "Must throw when opening a time data block where the time data set is not "
                    "double";
     }
@@ -211,20 +212,20 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForIncorrectTypes)
 
 TEST_F(H5mdTimeDataBlockTest, BuilderThrowsForEmptyAndDuplicateName)
 {
-    EXPECT_THROW(H5mdTimeDataBlockBuilder<float>(fileid(), "").build(), H5mdError)
+    EXPECT_THROW_GMX(H5mdTimeDataBlockBuilder<float>(fileid(), "").build(), H5mdError)
             << "Must throw for empty name";
 
     createGroup(fileid(), "goodName");
-    EXPECT_THROW(H5mdTimeDataBlockBuilder<float>(fileid(), "goodName").build(), H5mdError)
+    EXPECT_THROW_GMX(H5mdTimeDataBlockBuilder<float>(fileid(), "goodName").build(), H5mdError)
             << "Must throw if group with name already exists";
 }
 
 TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForBadName)
 {
     H5mdTimeDataBlockBuilder<float>(fileid(), "goodName").build();
-    EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), "aBadName"), H5mdError);
-    EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), ""), H5mdError);
-    EXPECT_NO_THROW(H5mdTimeDataBlock<float>(fileid(), "goodName"));
+    EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), "aBadName"), H5mdError);
+    EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), ""), H5mdError);
+    EXPECT_NO_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), "goodName"));
 }
 
 TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfDataSetsHaveDifferentNumFrames)
@@ -236,7 +237,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfDataSetsHaveDifferentNumFra
         H5mdFrameDataSetBuilder<float>(group, "value").withNumFrames(1).build();
         H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
         H5mdFrameDataSetBuilder<double>(group, "time").build();
-        EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
+        EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
     }
     {
         SCOPED_TRACE("Step data set has numFrames = 1, others = 0");
@@ -245,7 +246,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfDataSetsHaveDifferentNumFra
         H5mdFrameDataSetBuilder<float>(group, "value").build();
         H5mdFrameDataSetBuilder<int64_t>(group, "step").withNumFrames(1).build();
         H5mdFrameDataSetBuilder<double>(group, "time").build();
-        EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
+        EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
     }
     {
         SCOPED_TRACE("Time data set has numFrames = 1, others = 0");
@@ -254,7 +255,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfDataSetsHaveDifferentNumFra
         H5mdFrameDataSetBuilder<float>(group, "value").build();
         H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
         H5mdFrameDataSetBuilder<double>(group, "time").withNumFrames(1).build();
-        EXPECT_THROW(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
+        EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError);
     }
     {
         SCOPED_TRACE(
@@ -264,7 +265,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsIfDataSetsHaveDifferentNumFra
         const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), groupName));
         H5mdFrameDataSetBuilder<float>(group, "value").withNumFrames(1).build();
         H5mdFrameDataSetBuilder<int64_t>(group, "step").withNumFrames(1).build();
-        EXPECT_NO_THROW(H5mdTimeDataBlock<float>(fileid(), groupName));
+        EXPECT_NO_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName));
     }
 }
 
@@ -314,9 +315,9 @@ TEST_F(H5mdTimeDataBlockTest, WriteNextFrameNoTimeOverloadThrowsIfTimeIsManaged)
     H5mdTimeDataBlock<float> dataBlock(fileid(), groupName);
 
     constexpr float valueToWrite = 0.0;
-    ASSERT_NO_THROW(dataBlock.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1), 0, 0))
+    ASSERT_NO_THROW_GMX(dataBlock.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1), 0, 0))
             << "Sanity check: Must not throw when passing a time value";
-    EXPECT_THROW(dataBlock.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1), 0), gmx::H5mdError)
+    EXPECT_THROW_GMX(dataBlock.writeNextFrame(constArrayRefFromArray(&valueToWrite, 1), 0), H5mdError)
             << "Must throw when using no-time writeNextFrame with a managed time data set";
 }
 

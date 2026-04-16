@@ -61,7 +61,6 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/baseversion.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/setenv.h"
@@ -94,10 +93,10 @@ TEST(H5mdFileTest, CanCreateAndCloseH5mdFile)
         EXPECT_THROW_GMX(H5md fileToRead(filename, H5mdFileMode::Read), H5mdError);
     }
     {
-        gmx::H5md fileToWrite(filename, H5mdFileMode::Write);
+        H5md fileToWrite(filename, H5mdFileMode::Write);
     }
     {
-        gmx::H5md fileToRead(filename, H5mdFileMode::Read);
+        H5md fileToRead(filename, H5mdFileMode::Read);
     }
 }
 
@@ -112,9 +111,9 @@ TEST(H5mdFileTest, OpeningFileInReadModeDoesNotAllowWrite)
     }
     {
         H5md fileToRead(filename, H5mdFileMode::Read);
-        EXPECT_THROW(createGroup(fileToRead.fileid(), "h5md"), gmx::H5mdError)
+        EXPECT_THROW_GMX(createGroup(fileToRead.fileid(), "h5md"), H5mdError)
                 << "Must not be able to create group in read-mode file";
-        EXPECT_THROW(H5mdFrameDataSetBuilder<int32_t>(fileToRead.fileid(), "dataSet").build(), gmx::H5mdError)
+        EXPECT_THROW_GMX(H5mdFrameDataSetBuilder<int32_t>(fileToRead.fileid(), "dataSet").build(), H5mdError)
                 << "Must not be able to create data set in read-mode file";
     }
 }
@@ -332,7 +331,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesParticlesGroup)
     t_inputrec inputRecord;
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system"));
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system"));
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)
@@ -344,7 +343,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)
     inputRecord.nstvout = 1;
     inputRecord.nstfout = 1;
 
-    EXPECT_THROW(file().setupFileFromInput(mtop, inputRecord), gmx::H5mdError);
+    EXPECT_THROW_GMX(file().setupFileFromInput(mtop, inputRecord), H5mdError);
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputCreatesNoTrajectoryGroupsIfNoOutput)
@@ -357,10 +356,10 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesNoTrajectoryGroupsIfNoOutput)
     inputRecord.nstfout = 0;
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system"));
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::H5mdError);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::H5mdError);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::H5mdError);
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system"));
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputCreatesPositionGroupIfSet)
@@ -374,13 +373,13 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesPositionGroupIfSet)
     inputRecord.nstfout = 0;
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/position"));
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::H5mdError);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::H5mdError);
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/position"));
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
 
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
             << "Box group must always be created";
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box/edges"))
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"))
             << "Edges group must only be created if position data is output";
 }
 
@@ -395,13 +394,13 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesVelocityGroupIfSet)
     inputRecord.nstfout = 0;
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::H5mdError);
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/velocity"));
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"));
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
 
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
             << "Box group must always be created";
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/box/edges"), gmx::H5mdError)
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"), H5mdError)
             << "Edges group must only be created if position data is output";
 }
 
@@ -416,13 +415,13 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesForceGroupIfSet)
     inputRecord.nstfout = 1;
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::H5mdError);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::H5mdError);
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/force"));
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/force"));
 
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
             << "Box group must always be created";
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/box/edges"), gmx::H5mdError)
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"), H5mdError)
             << "Edges group must only be created if position data is output";
 }
 
@@ -439,13 +438,13 @@ TEST_F(H5mdIoTest, SetupFileFromInputIgnoresNstxoutCompressed)
     inputRecord.nstxout_compressed = 1;
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::H5mdError);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::H5mdError);
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
 
-    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
             << "Box group must always be created";
-    EXPECT_THROW(openGroup(fileid(), "/particles/system/box/edges"), gmx::H5mdError)
+    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"), H5mdError)
             << "Edges group must not be created for compressed output";
 }
 
@@ -486,7 +485,7 @@ TEST_F(H5mdSetupFromExistingFile, WorksForTrajectoryData)
     H5mdTimeDataBlockBuilder<RVec>(group, "force").withFrameDimension({ 1 }).build();
     const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
     H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
-    EXPECT_NO_THROW(file().setupFromExistingFile());
+    EXPECT_NO_THROW_GMX(file().setupFromExistingFile());
 }
 
 TEST_F(H5mdSetupFromExistingFile, WorksForPositionPlusBoxDataOnly)
@@ -495,14 +494,14 @@ TEST_F(H5mdSetupFromExistingFile, WorksForPositionPlusBoxDataOnly)
     H5mdTimeDataBlockBuilder<RVec>(group, "position").withFrameDimension({ 1 }).build();
     const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
     H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
-    EXPECT_NO_THROW(file().setupFromExistingFile());
+    EXPECT_NO_THROW_GMX(file().setupFromExistingFile());
 }
 
 TEST_F(H5mdSetupFromExistingFile, ThrowsForPositionWithoutBoxData)
 {
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
     H5mdTimeDataBlockBuilder<RVec>(group, "position").withFrameDimension({ 1 }).build();
-    EXPECT_THROW(file().setupFromExistingFile(), gmx::H5mdError)
+    EXPECT_THROW_GMX(file().setupFromExistingFile(), H5mdError)
             << "Must throw if there is a position but not a box data block";
 }
 
@@ -510,22 +509,22 @@ TEST_F(H5mdSetupFromExistingFile, WorksForVelocityDataOnly)
 {
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
     H5mdTimeDataBlockBuilder<RVec>(group, "velocity").withFrameDimension({ 1 }).build();
-    EXPECT_NO_THROW(file().setupFromExistingFile());
+    EXPECT_NO_THROW_GMX(file().setupFromExistingFile());
 }
 
 TEST_F(H5mdSetupFromExistingFile, WorksForForceDataOnly)
 {
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
     H5mdTimeDataBlockBuilder<RVec>(group, "force").withFrameDimension({ 1 }).build();
-    EXPECT_NO_THROW(file().setupFromExistingFile());
+    EXPECT_NO_THROW_GMX(file().setupFromExistingFile());
 }
 
 TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryGroupDoesNotExist)
 {
-    EXPECT_THROW(file().setupFromExistingFile(), gmx::H5mdError)
+    EXPECT_THROW_GMX(file().setupFromExistingFile(), H5mdError)
             << "Must throw before setting up /particles/system";
     makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
-    EXPECT_NO_THROW(file().setupFromExistingFile());
+    EXPECT_NO_THROW_GMX(file().setupFromExistingFile());
 }
 
 TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNumParticles)
@@ -536,7 +535,7 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNu
     H5mdTimeDataBlockBuilder<RVec>(group, "force").withFrameDimension({ 1 }).build();
     const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
     H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
-    EXPECT_THROW(file().setupFromExistingFile(), gmx::H5mdError)
+    EXPECT_THROW_GMX(file().setupFromExistingFile(), H5mdError)
             << "Must throw if blocks have different numParticles";
 }
 
@@ -550,12 +549,12 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfParticleCountIsNotMatchingIfGiven)
     const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(createGroup(group, "box/edges"));
     H5mdFrameDataSetBuilder<real>(boxGroup, "value").withFrameDimension({ DIM, DIM }).build();
 
-    ASSERT_NO_THROW(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock))
+    ASSERT_NO_THROW_GMX(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock))
             << "Sanity check failed: should not throw for numAtoms == numAtomsInParticleBlock";
 
-    EXPECT_THROW(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock - 1), gmx::H5mdError)
+    EXPECT_THROW_GMX(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock - 1), H5mdError)
             << "Must throw for numAtoms < numAtomsInParticleBlock";
-    EXPECT_THROW(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock + 1), gmx::H5mdError)
+    EXPECT_THROW_GMX(file().setupFromExistingFileForAppending(0, numAtomsInParticleBlock + 1), H5mdError)
             << "Must throw for numAtoms > numAtomsInParticleBlock";
 }
 
@@ -568,7 +567,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
     readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
     const auto [group, groupGuard] =
             makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
 
@@ -584,7 +583,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
     for (auto& moltype : mtop.moltype)
     {
         const std::string molPath = formatString("/h5md/modules/gromacs_topology/%s", *(moltype.name));
-        EXPECT_NO_THROW(openGroup(fileid(), molPath.c_str()));
+        EXPECT_NO_THROW_GMX(openGroup(fileid(), molPath.c_str()));
 
         const auto [molGroup, molGroupGuard] = makeH5mdGroupGuard(openGroup(fileid(), molPath.c_str()));
 
@@ -593,16 +592,16 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
         EXPECT_GT(getAttribute<int>(molGroup, "residue_count").value_or(-1), 0);
 
         // Check atomic properties datasets for each molecule type.
-        EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(molGroup, "id"));
-        EXPECT_NO_THROW(H5mdDataSetBase<real>(molGroup, "mass"));
-        EXPECT_NO_THROW(H5mdDataSetBase<real>(molGroup, "charge"));
-        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "species"));
-        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "particle_name"));
-        EXPECT_NO_THROW(H5mdDataSetBase<std::string>(molGroup, "particle_name_table"));
-        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "residue_id"));
-        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "sequence"));
-        EXPECT_NO_THROW(H5mdDataSetBase<int>(molGroup, "residue_name"));
-        EXPECT_NO_THROW(H5mdDataSetBase<std::string>(molGroup, "residue_name_table"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int64_t>(molGroup, "id"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<real>(molGroup, "mass"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<real>(molGroup, "charge"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "species"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "particle_name"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<std::string>(molGroup, "particle_name_table"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "residue_id"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "sequence"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "residue_name"));
+        EXPECT_NO_THROW_GMX(H5mdDataSetBase<std::string>(molGroup, "residue_name_table"));
     }
 }
 
@@ -615,11 +614,11 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesConnectivity)
     readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW(openGroup(fileid(), "/connectivity"));
+    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/connectivity"));
     const auto [connGroup, connGroupGuard] =
             makeH5mdGroupGuard(openGroup(fileid(), "/connectivity"));
-    EXPECT_NO_THROW(getAttribute<int64_t>(connGroup, "bond_count"));
-    EXPECT_NO_THROW(H5mdDataSetBase<int64_t>(connGroup, "bonds"));
+    EXPECT_NO_THROW_GMX(getAttribute<int64_t>(connGroup, "bond_count"));
+    EXPECT_NO_THROW_GMX(H5mdDataSetBase<int64_t>(connGroup, "bonds"));
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritingSkipsEmptyTopology)
@@ -628,7 +627,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritingSkipsEmptyTopology)
     mtop.natoms = 1;
     t_inputrec inputRecord;
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW(openGroup(fileid(), "/h5md/modules/gromacs_topology"), gmx::H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/h5md/modules/gromacs_topology"), H5mdError);
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputSetsUnitsToTrajectoryDataSets)
@@ -978,11 +977,11 @@ TEST_F(H5mdIoTest, WriteNextFrameThrowsForNotCreatedDataSets)
     file().setupFileFromInput(mtop, inputRecord);
 
     std::vector<RVec> valuesToWrite(numAtoms, { 0.0, 0.0, 0.0 });
-    ASSERT_NO_THROW(file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0))
+    ASSERT_NO_THROW_GMX(file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0))
             << "Sanity check failed: should not throw when not trying to write any data";
-    EXPECT_THROW(file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_THROW(file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_THROW(file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0), gmx::H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0), H5mdError);
 }
 
 TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
@@ -1006,15 +1005,15 @@ TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
     std::vector<RVec> bufferTooLarge(numAtoms + 1, { 0.0, 0.0, 0.0 });
     std::vector<RVec> bufferJustRight(numAtoms, { 0.0, 0.0, 0.0 });
 
-    EXPECT_THROW(file().writeNextFrame(bufferTooSmall, {}, {}, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_THROW(file().writeNextFrame(bufferTooLarge, {}, {}, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_NO_THROW(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0));
-    EXPECT_THROW(file().writeNextFrame({}, bufferTooSmall, {}, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_THROW(file().writeNextFrame({}, bufferTooLarge, {}, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_NO_THROW(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0));
-    EXPECT_THROW(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_THROW(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0), gmx::H5mdError);
-    EXPECT_NO_THROW(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
+    EXPECT_THROW_GMX(file().writeNextFrame(bufferTooSmall, {}, {}, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame(bufferTooLarge, {}, {}, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_NO_THROW_GMX(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0));
+    EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooSmall, {}, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooLarge, {}, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0));
+    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
 }
 
 //! \brief Helper function to return an ArrayRef<RVec> from an input rvec pointer \p values.

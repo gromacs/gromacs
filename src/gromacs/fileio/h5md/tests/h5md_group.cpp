@@ -90,7 +90,7 @@ TEST(H5mdGroupTest, CreateGroupWithEmptyNameThrows)
 
     H5md file(fileName, H5mdFileMode::Write);
 
-    EXPECT_THROW(createGroup(file.fileid(), ""), gmx::H5mdError);
+    EXPECT_THROW_GMX(createGroup(file.fileid(), ""), H5mdError);
 }
 
 TEST(H5mdGroupTest, CreateGroupWithDuplicateNameThrows)
@@ -103,13 +103,13 @@ TEST(H5mdGroupTest, CreateGroupWithDuplicateNameThrows)
     constexpr char groupName[] = "testGroup";
 
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(file.fileid(), groupName));
-    EXPECT_THROW(createGroup(file.fileid(), groupName), gmx::H5mdError);
+    EXPECT_THROW_GMX(createGroup(file.fileid(), groupName), H5mdError);
 }
 
 TEST(H5mdGroupTest, CreateGroupForNonexistingContainerThrows)
 {
     constexpr char groupName[] = "testGroup";
-    EXPECT_THROW(createGroup(H5I_INVALID_HID, groupName), gmx::H5mdError);
+    EXPECT_THROW_GMX(createGroup(H5I_INVALID_HID, groupName), H5mdError);
 }
 
 TEST(H5mdGroupTest, CreateGroupForReadOnlyFileThrows)
@@ -126,7 +126,7 @@ TEST(H5mdGroupTest, CreateGroupForReadOnlyFileThrows)
     {
         SCOPED_TRACE("Create group in read-only file");
         H5md file(fileName, H5mdFileMode::Read);
-        EXPECT_THROW(createGroup(file.fileid(), groupName), gmx::H5mdError);
+        EXPECT_THROW_GMX(createGroup(file.fileid(), groupName), H5mdError);
     }
 }
 
@@ -181,18 +181,18 @@ TEST(H5mdGroupTest, OpenNonExistingGroupThrows)
 
     {
         SCOPED_TRACE("Open group with non-existing name");
-        EXPECT_THROW_GMX(openGroup(file.fileid(), groupName), gmx::H5mdError);
+        EXPECT_THROW_GMX(openGroup(file.fileid(), groupName), H5mdError);
     }
     {
         SCOPED_TRACE("Open group with empty name");
-        EXPECT_THROW_GMX(openGroup(file.fileid(), ""), gmx::H5mdError);
+        EXPECT_THROW_GMX(openGroup(file.fileid(), ""), H5mdError);
     }
 }
 
 TEST(H5mdGroupTest, OpenGroupInNonexistingContainerThrows)
 {
     constexpr char groupName[] = "testGroup";
-    EXPECT_THROW_GMX(openGroup(H5I_INVALID_HID, groupName), gmx::H5mdError);
+    EXPECT_THROW_GMX(openGroup(H5I_INVALID_HID, groupName), H5mdError);
 }
 
 } // namespace

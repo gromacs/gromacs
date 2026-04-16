@@ -57,6 +57,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -151,7 +153,7 @@ TEST_F(H5mdAttributeTest, NumericAttributeViaVector)
     }
 }
 
-/*! \brief Test the reading and writing of array-like (gmx::ArrayRef) attributes.
+/*! \brief Test the reading and writing of array-like (ArrayRef) attributes.
  */
 TEST_F(H5mdAttributeTest, NumericAttributeViaArrayRef)
 {
@@ -374,15 +376,15 @@ TEST_F(H5mdAttributeTest, ScalarAttributeEdgeCases)
     {
         SCOPED_TRACE("Testing H5MD reading from a mismatched data type.");
         // Supposed to fail to match the required type and the attribute type
-        EXPECT_THROW(getAttribute<int64_t>(group, "height"), H5mdError);
-        EXPECT_THROW(getAttribute<int64_t>(group, "name"), H5mdError);
+        EXPECT_THROW_GMX(getAttribute<int64_t>(group, "height"), H5mdError);
+        EXPECT_THROW_GMX(getAttribute<int64_t>(group, "name"), H5mdError);
     }
 
     {
         SCOPED_TRACE("Testing H5MD write to an existing attribute.");
         // Supposed to fail to rewrite to an existing attribute
-        EXPECT_THROW(setAttribute(group, "name", "Maria Nearl"), H5mdError);
-        EXPECT_THROW(setAttribute(group, "height", 165), H5mdError);
+        EXPECT_THROW_GMX(setAttribute(group, "name", "Maria Nearl"), H5mdError);
+        EXPECT_THROW_GMX(setAttribute(group, "height", 165), H5mdError);
     }
 
     {
@@ -450,8 +452,8 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
 
     {
         SCOPED_TRACE("Testing H5MD reading from a mismatched data type.");
-        EXPECT_THROW(getAttributeVector<int64_t>(group, "index"), H5mdError);
-        EXPECT_THROW(getAttributeVector<int64_t>(group, "residue_names"), H5mdError);
+        EXPECT_THROW_GMX(getAttributeVector<int64_t>(group, "index"), H5mdError);
+        EXPECT_THROW_GMX(getAttributeVector<int64_t>(group, "residue_names"), H5mdError);
     }
 
     {
@@ -460,27 +462,27 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
         const std::vector<int32_t>     resID2       = { 1, 2, 3, 4 };
         const std::vector<std::string> resName2     = { "ALA", "GLY", "PHE", "VAL" };
         auto                           resName2_ref = makeArrayRef(resName2);
-        EXPECT_THROW(setAttributeVector<int32_t>(group, "index", resID2), H5mdError);
-        EXPECT_THROW(buffer = setAttributeStringVector(group,
-                                                       "residue_names",
-                                                       std::move(buffer),
-                                                       resName2_ref.begin(),
-                                                       resName2_ref.end()),
-                     H5mdError);
+        EXPECT_THROW_GMX(setAttributeVector<int32_t>(group, "index", resID2), H5mdError);
+        EXPECT_THROW_GMX(buffer = setAttributeStringVector(group,
+                                                           "residue_names",
+                                                           std::move(buffer),
+                                                           resName2_ref.begin(),
+                                                           resName2_ref.end()),
+                         H5mdError);
     }
 
     {
         SCOPED_TRACE("Testing H5MD writing an empty vector.");
         // NOTE: Empty vector throws in H5Awrite
         std::vector<int32_t> emptyIntegerVector{};
-        EXPECT_THROW(setAttributeVector<int32_t>(group, "empty_int", emptyIntegerVector), H5mdError);
+        EXPECT_THROW_GMX(setAttributeVector<int32_t>(group, "empty_int", emptyIntegerVector), H5mdError);
 
         // NOTE: Empty buffer throws as expected similar to numerical attributes
         std::vector<std::string>    emptyStringVector{};
         ArrayRef<const std::string> emptyStringRef = makeArrayRef(emptyStringVector);
-        EXPECT_THROW(buffer = setAttributeStringVector(
-                             group, "empty_string", {}, emptyStringRef.begin(), emptyStringRef.end()),
-                     H5mdError);
+        EXPECT_THROW_GMX(buffer = setAttributeStringVector(
+                                 group, "empty_string", {}, emptyStringRef.begin(), emptyStringRef.end()),
+                         H5mdError);
     }
 
     {
@@ -553,6 +555,7 @@ TEST_F(H5mdAttributeTest, AtomNameAttributes)
     // have in the plan, whereever that is.
     std::vector<std::string> atomNames = { "AA", "BBB", "C", "DD", "EEE", "F", "GGG", "HH", "III" };
     std::vector<char*>       handlesToAtomNames;
+    handlesToAtomNames.reserve(atomNames.size());
     for (const auto& atomName : atomNames)
     {
         handlesToAtomNames.push_back(const_cast<char*>(atomName.data()));
