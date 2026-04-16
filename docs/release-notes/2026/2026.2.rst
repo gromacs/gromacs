@@ -23,7 +23,15 @@ Fixed a "RuntimeError: Global alloc not supported yet" when running GPU inferenc
 NNP models (e.g. Nutmeg) within the NNPot interface.
 
 :issue:`5586`
-       
+
+Correctly restore deltaH history from a checkpoint
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Was reset to zero. This would only affect results when continuing from a checkpoint
+that was written at a step that is not a multiple of nstdhdl.
+
+:issue:`5584`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
