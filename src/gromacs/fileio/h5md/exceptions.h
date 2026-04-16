@@ -77,7 +77,10 @@ public:
  * and thus avoids (possibly expensive) string construction in the happy case.
  */
 #define GMX_H5MD_THROW_UPON_ERROR(errorExists, errorMessage) \
-    ((void)((!(errorExists)) ? (void)0 : [&]() { GMX_THROW(gmx::H5mdError(errorMessage)); }()))
+    if (errorExists)                                         \
+    {                                                        \
+        GMX_THROW(gmx::H5mdError(errorMessage));             \
+    }
 
 /*! \def GMX_H5MD_THROW_UPON_INVALID_HID
  * \brief Macro for checking an HDF5 handle and throwing an HDF5 error with a message if it is invalid.
