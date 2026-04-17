@@ -331,7 +331,7 @@ std::vector<char> setAttributeStringVector(const hid_t         container,
     }
     else
     {
-        throw FileIOError(formatString("Unsupported string type for attribute: %s", attributeName));
+        GMX_THROW(H5mdError(formatString("Unsupported string type for attribute: %s", attributeName)));
     }
     size_t expectedSize = (maxStrLength + 1) * strCount;
     GMX_H5MD_THROW_UPON_ERROR(
@@ -358,7 +358,7 @@ std::vector<char> setAttributeStringVector(const hid_t         container,
     }
     else
     {
-        throw FileIOError(formatString("Unsupported string type for attribute: %s", attributeName));
+        GMX_THROW(H5mdError(formatString("Unsupported string type for attribute: %s", attributeName)));
     }
     setStringAttributeByBuffer(container, attributeName, strCount, maxStrLength, buffer);
     return std::move(buffer);

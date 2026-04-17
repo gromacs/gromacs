@@ -235,7 +235,7 @@ void H5mdFrameDataSet<ValueType>::writeNextFrame(ArrayRef<const ValueType> value
         // If our write failed we shrink the data set back to its original number of frames before
         // throwing. Ignore any error here, as we are already handling a bigger problem.
         H5Dset_extent(Base::id(), extentForNumFrames(numFrames_).data());
-        GMX_H5MD_THROW_UPON_ERROR(true, "Error writing frame data.");
+        GMX_THROW(H5mdError("Error writing frame data."));
     }
 
     // Only increment frame index if the write was successful.
