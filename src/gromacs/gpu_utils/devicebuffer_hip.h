@@ -44,6 +44,8 @@
  *  \inlibraryapi
  */
 
+#include <type_traits>
+
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
@@ -63,6 +65,10 @@
 template<typename ValueType>
 void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, const DeviceContext& /* deviceContext */)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     hipError_t stat = hipMalloc(buffer, numValues * sizeof(ValueType));
     gmx::checkDeviceError(stat, "Allocation of the device buffer failed.");
@@ -79,6 +85,10 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 template<typename ValueType>
 void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     if (*buffer)
     {
@@ -107,6 +117,11 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                         GpuApiCallBehavior       transferKind,
                         CommandEvent* /*timingEvent*/)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -159,6 +174,11 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                           GpuApiCallBehavior       transferKind,
                           CommandEvent* /*timingEvent*/)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -217,6 +237,11 @@ void copyBetweenDeviceBuffers(ValueType*               destinationDeviceBuffer,
                               GpuApiCallBehavior       transferKind,
                               CommandEvent* gmx_unused timingEvent)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -261,6 +286,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
                             size_t                   numValues,
                             const DeviceStream&      deviceStream)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     if (numValues == 0)
     {
         return;
@@ -289,6 +318,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
 template<typename T>
 gmx_unused static bool checkDeviceBuffer(DeviceBuffer<T> buffer, gmx_unused int requiredSize)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<T>, "ValueType of DeviceBuffer cannot be a pointer");
+
     return buffer != nullptr;
 }
 

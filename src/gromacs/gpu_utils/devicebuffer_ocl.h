@@ -44,6 +44,8 @@
  *  \inlibraryapi
  */
 
+#include <type_traits>
+
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
@@ -66,6 +68,10 @@
 template<typename ValueType>
 void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, const DeviceContext& deviceContext)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     void*  hostPtr = nullptr;
     cl_int clError;
@@ -89,6 +95,10 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 template<typename ValueType>
 void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     if (*buffer)
     {
@@ -127,6 +137,11 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                         GpuApiCallBehavior       transferKind,
                         CommandEvent*            timingEvent)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return; // such calls are actually made with empty domains
@@ -190,6 +205,11 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                           GpuApiCallBehavior       transferKind,
                           CommandEvent*            timingEvent)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -241,6 +261,11 @@ void copyBetweenDeviceBuffers(ValueType* /* destinationDeviceBuffer */,
                               GpuApiCallBehavior /* transferKind */,
                               CommandEvent* /*timingEvent*/)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     // OpenCL-TODO
     gmx_fatal(FARGS, "D2D copy stub was called. Not yet implemented in OpenCL.");
 }
@@ -260,6 +285,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
                             size_t                   numValues,
                             const DeviceStream&      deviceStream)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     if (numValues == 0)
     {
         return;
@@ -317,6 +346,10 @@ CLANG_DIAGNOSTIC_IGNORE("-Wunused-template")
 template<typename T>
 static bool checkDeviceBuffer(DeviceBuffer<T> buffer, int requiredSize)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<T>, "ValueType of DeviceBuffer cannot be a pointer");
+
     const size_t requiredSizeBytes = requiredSize * sizeof(T);
     size_t       sizeBytes;
     cl_int retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(sizeBytes), &sizeBytes, nullptr);

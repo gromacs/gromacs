@@ -46,6 +46,7 @@
  *  \inlibraryapi
  */
 
+#include <type_traits>
 #include <utility>
 
 #include "gromacs/gpu_utils/device_context.h"
@@ -219,7 +220,67 @@ void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 }
 
 /*! \brief
- * Performs the host-to-device data copy, synchronous or asynchronously on request.
+ * Performs the host-to-device data copy, synchronous or asynchronously on request
+ * from a pointer-to-value
+ *
+ * Unlike in CUDA and OpenCL, synchronous call does not guarantee that all previously
+ * submitted operations are complete, only the ones that are required for \p buffer consistency.
+ *
+ * \tparam        ValueType            Raw value type of the \p buffer.
+ * \param[in,out] buffer               Pointer to the address of the device-side memory
+ * \param[in]     hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType.
+ * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy into.
+ * \param[in]     numValues            Number of values to copy.
+ * \param[in]     deviceStream         GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind         Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
+ *                                     Ignored in SYCL.
+ */
+template<typename ValueType>
+void copyToDeviceBuffer(ValueType**              buffer,
+                        const ValueType*         hostBuffer,
+                        size_t                   startingOffset,
+                        size_t                   numValues,
+                        const DeviceStream&      deviceStream,
+                        GpuApiCallBehavior       transferKind,
+                        CommandEvent* gmx_unused timingEvent)
+{
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+    if (numValues == 0)
+    {
+        return; // such calls are actually made with empty domains
+    }
+    GMX_ASSERT(buffer, "needs a pointer to the buffer pointer");
+    GMX_ASSERT(*buffer, "needs a buffer pointer");
+    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
+
+    if (transferKind == GpuApiCallBehavior::Async)
+    {
+        using sycl::usm::alloc;
+        GMX_ASSERT(sycl::get_pointer_type(hostBuffer, deviceStream.stream().get_context()) == alloc::host,
+                   "Trying to launch async copy from unpinned host buffer");
+    }
+
+    ValueType*   dstPtr = *buffer + startingOffset;
+    const size_t size   = numValues * sizeof(ValueType);
+    if (transferKind == GpuApiCallBehavior::Sync)
+    {
+        deviceStream.stream()
+                .submit([&](sycl::handler& cgh) { cgh.memcpy(dstPtr, hostBuffer, size); })
+                .wait_and_throw();
+    }
+    else
+    {
+        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), dstPtr, hostBuffer, size);
+    }
+}
+
+/*! \brief
+ * Performs the host-to-device data copy, synchronous or asynchronously on request
+ * from a pointer-to-DeviceBuffer.
  *
  * Unlike in CUDA and OpenCL, synchronous call does not guarantee that all previously
  * submitted operations are complete, only the ones that are required for \p buffer consistency.
@@ -248,34 +309,76 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
         return; // such calls are actually made with empty domains
     }
     GMX_ASSERT(buffer, "needs a buffer pointer");
-    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
 
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
+    ValueType* deviceDestinationPointer = buffer->buffer_->ptr_;
+    copyToDeviceBuffer(
+            &deviceDestinationPointer, hostBuffer, startingOffset, numValues, deviceStream, transferKind, timingEvent);
+}
+
+/*! \brief
+ * Performs the device-to-host data copy, synchronous or asynchronously on request
+ * from a pointer-to-value
+ *
+ * Unlike in CUDA and OpenCL, synchronous call does not guarantee that all previously
+ * submitted operations are complete, only the ones that are required for \p buffer consistency.
+ *
+ * \tparam        ValueType            Raw value type of the \p buffer.
+ * \param[in,out] hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
+ * \param[in]     buffer               Pointer to the address of the device-side buffer.
+ * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy from.
+ * \param[in]     numValues            Number of values to copy.
+ * \param[in]     deviceStream         GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind         Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
+ *                                     Ignored in SYCL.
+ */
+template<typename ValueType>
+void copyFromDeviceBuffer(ValueType*               hostBuffer,
+                          ValueType**              buffer,
+                          size_t                   startingOffset,
+                          size_t                   numValues,
+                          const DeviceStream&      deviceStream,
+                          GpuApiCallBehavior       transferKind,
+                          CommandEvent* gmx_unused timingEvent)
+{
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+    if (numValues == 0)
+    {
+        return; // such calls are actually made with empty domains
+    }
+    GMX_ASSERT(buffer, "needs a pointer to the buffer pointer");
+    GMX_ASSERT(*buffer, "needs a buffer pointer");
+    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
 
     if (transferKind == GpuApiCallBehavior::Async)
     {
         using sycl::usm::alloc;
-        GMX_ASSERT(sycl::get_pointer_type(hostBuffer, buffer->buffer_->context_) == alloc::host,
-                   "Trying to launch async copy from unpinned host buffer");
+        GMX_ASSERT(sycl::get_pointer_type(hostBuffer, deviceStream.stream().get_context()) == alloc::host,
+                   "Trying to launch async copy to unpinned host buffer");
     }
 
-    ValueType*   dstPtr = buffer->buffer_->ptr_ + startingOffset;
-    const size_t size   = numValues * sizeof(ValueType);
+    const ValueType* srcPtr = *buffer + startingOffset;
+    const size_t     size   = numValues * sizeof(ValueType);
     if (transferKind == GpuApiCallBehavior::Sync)
     {
         deviceStream.stream()
-                .submit([&](sycl::handler& cgh) { cgh.memcpy(dstPtr, hostBuffer, size); })
+                .submit([&](sycl::handler& cgh) { cgh.memcpy(hostBuffer, srcPtr, size); })
                 .wait_and_throw();
     }
     else
     {
-        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), dstPtr, hostBuffer, size);
+        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), hostBuffer, srcPtr, size);
     }
 }
 
 /*! \brief
- * Performs the device-to-host data copy, synchronous or asynchronously on request.
+ * Performs the device-to-host data copy, synchronous or asynchronously on request
+ * from a pointer-to-DeviceBuffer.
  *
  * Unlike in CUDA and OpenCL, synchronous call does not guarantee that all previously
  * submitted operations are complete, only the ones that are required for \p buffer consistency.
@@ -304,30 +407,12 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
         return; // such calls are actually made with empty domains
     }
     GMX_ASSERT(buffer, "needs a buffer pointer");
-    GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
 
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
-
-    if (transferKind == GpuApiCallBehavior::Async)
-    {
-        using sycl::usm::alloc;
-        GMX_ASSERT(sycl::get_pointer_type(hostBuffer, buffer->buffer_->context_) == alloc::host,
-                   "Trying to launch async copy to unpinned host buffer");
-    }
-
-    const ValueType* srcPtr = buffer->buffer_->ptr_ + startingOffset;
-    const size_t     size   = numValues * sizeof(ValueType);
-    if (transferKind == GpuApiCallBehavior::Sync)
-    {
-        deviceStream.stream()
-                .submit([&](sycl::handler& cgh) { cgh.memcpy(hostBuffer, srcPtr, size); })
-                .wait_and_throw();
-    }
-    else
-    {
-        gmx::syclMemcpyWithoutEvent(deviceStream.stream(), hostBuffer, srcPtr, size);
-    }
+    ValueType* deviceSourcePointer = buffer->buffer_->ptr_;
+    copyFromDeviceBuffer(
+            hostBuffer, &deviceSourcePointer, startingOffset, numValues, deviceStream, transferKind, timingEvent);
 }
 
 /*! \brief
@@ -354,6 +439,11 @@ void copyBetweenDeviceBuffers(ValueType*               destinationDeviceBuffer,
                               GpuApiCallBehavior       transferKind,
                               CommandEvent* gmx_unused timingEvent)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return; // such calls are actually made with empty domains

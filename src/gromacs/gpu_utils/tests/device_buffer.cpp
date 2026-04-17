@@ -236,6 +236,83 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
     }
 }
 
+// When thread-MPI builds do direct-GPU communication, they sometimes
+// copy to/from host buffers and subregions of device buffers, perhaps
+// on a different rank. Both are tested here.
+//
+// This test case is distinct from CanCopyToAndFromDeviceWithOffset
+// because in SYCL build configurations there is a different
+// implementation because DeviceBuffer<T> is a struct, not a raw
+// pointer-to-T. On CUDA and HIP build configurations, this tests the
+// same code path.
+TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceFromPointerToValue)
+{
+    if (GMX_GPU_OPENCL)
+    {
+        GTEST_SKIP() << "No need to test interface not supported on OpenCL";
+    }
+
+    for (auto transferKind : { GpuApiCallBehavior::Sync, GpuApiCallBehavior::Async })
+    {
+        PinningPolicy pinningPolicy = (transferKind == GpuApiCallBehavior::Async)
+                                              ? PinningPolicy::PinnedIfSupported
+                                              : PinningPolicy::CannotBePinned;
+        for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+        {
+            const DeviceContext& deviceContext = testDevice->deviceContext();
+            const DeviceStream&  deviceStream  = testDevice->deviceStream();
+            deviceContext.activate();
+
+            DeviceBuffer<TypeParam> buffer;
+            int                     numValues = 123;
+            allocateDeviceBuffer(&buffer, 2 * numValues, deviceContext);
+            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
+            HostVector<TypeParam> valuesOut(2 * numValues, { pinningPolicy });
+
+            std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
+
+            // Fill the buffer with two copies of valuesIn, one after the other.
+            copyToDeviceBuffer(&buffer, valuesIn.data(), 0, numValues, deviceStream, transferKind, nullptr);
+#    if !GMX_GPU_OPENCL
+            TypeParam* d_values = asRawDevicePointer(buffer);
+            copyToDeviceBuffer(
+                    &d_values, valuesIn.data(), numValues, numValues, deviceStream, transferKind, nullptr);
+#    endif
+            // Do the same copying on the CPU, so we can test it works correctly.
+            HostVector<TypeParam> expectedResult = valuesIn;
+            expectedResult.insert(expectedResult.end(), valuesIn.begin(), valuesIn.end());
+
+            copyFromDeviceBuffer(
+                    valuesOut.data(), &buffer, 0, 2 * numValues, deviceStream, transferKind, nullptr);
+            if (transferKind == GpuApiCallBehavior::Async)
+            {
+                deviceStream.synchronize();
+            }
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), expectedResult))
+                    << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
+
+            SCOPED_TRACE("Checking the copy respects the output range");
+
+            // Remove the first element, and push another copy of the last
+            // element, so we can check that a copy of all of the data
+            // skipping the first element correctly over-writes exactly
+            // all but one of the old values.
+            expectedResult.erase(expectedResult.begin());
+            expectedResult.push_back(expectedResult.back());
+#    if !GMX_GPU_OPENCL
+            copyFromDeviceBuffer(
+                    valuesOut.data(), &d_values, 1, 2 * numValues - 1, deviceStream, transferKind, nullptr);
+#    endif
+            if (transferKind == GpuApiCallBehavior::Async)
+            {
+                deviceStream.synchronize();
+            }
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), expectedResult))
+                    << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
+        }
+    }
+}
+
 #    if GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
 
 TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffersOnSameDevice)
