@@ -1015,15 +1015,13 @@ std::unique_ptr<gmx_pme_t> PmeLoadBalancing::Impl::balance(FILE*                
     if (stage_ == numStages_)
     {
         printGrid(fp_err, mdlog_, "", "optimal", setups_[currentSetup_], -1);
-
-        // When load balancing is finished we can end up not switching setup
-        if (currentSetup_ == oldCurrentSetup)
-        {
-            return std::move(oldPmedata);
-        }
     }
 
-    GMX_RELEASE_ASSERT(currentSetup_ != oldCurrentSetup, "We expect to have switched setup");
+    // When switching stages or when load balancing is finished we can end up not switching setup
+    if (currentSetup_ == oldCurrentSetup)
+    {
+        return std::move(oldPmedata);
+    }
 
     /* Change the Coulomb cut-off and the PME grid */
     applySetup(&setups_[currentSetup_], oldPmedata.get(), ir_, ic, nbv, dd_, pmePpComm);
