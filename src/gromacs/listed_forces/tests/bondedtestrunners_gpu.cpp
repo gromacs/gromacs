@@ -94,9 +94,7 @@ bool BondedDeviceTestRunner::supportsFlavor(BondedKernelFlavor flavor, const iLi
     {
         return false;
     }
-    const auto* begin = std::begin(fTypesOnGpu);
-    const auto* end   = std::end(fTypesOnGpu);
-    return std::find(begin, end, input.ftype.value()) != end;
+    return std::find(fTypesOnGpu.begin(), fTypesOnGpu.end(), input.ftype.value()) != fTypesOnGpu.end();
 }
 
 #if GMX_GPU && !GMX_GPU_OPENCL
