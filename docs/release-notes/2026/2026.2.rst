@@ -68,5 +68,13 @@ A configure-time check that MKL can link in a SYCL build referred to a header
 deprecated in oneAPI 2025.0 that is removed in oneAPI 2026.0. The check now
 flexibly refers to the new header whenever it exists.
 
+Improved detection of GPU-awareness in MPI
+""""""""""""""""""""""""""""""""""""""""""
+
+Previously, |Gromacs| could fail to detect that the MPI library has
+extensions to query its GPU support, necessitating the use of
+``GMX_FORCE_GPU_AWARE_MPI=1`` environment variable.
+Cray MPICH 9 with ROCm was affected.
+
 Miscellaneous
 ^^^^^^^^^^^^^
