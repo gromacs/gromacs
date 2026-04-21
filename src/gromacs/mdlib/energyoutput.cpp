@@ -1414,13 +1414,13 @@ void EnergyOutput::fillEnergyHistory(energyhistory_t* enerhist) const
     if (ebin_->accumulation().sumCount() > 0)
     {
         /* This will only actually resize the first time */
-        enerhist->ener_ave.resize(ebin_->numTerms());
+        enerhist->ener_sumSqDev.resize(ebin_->numTerms());
         enerhist->ener_sum.resize(ebin_->numTerms());
 
         for (int i = 0; i < ebin_->numTerms(); i++)
         {
-            enerhist->ener_ave[i] = ebin_->accumulation().energies()[i].eav;
-            enerhist->ener_sum[i] = ebin_->accumulation().energies()[i].esum;
+            enerhist->ener_sumSqDev[i] = ebin_->accumulation().energies()[i].sumSqDev;
+            enerhist->ener_sum[i]      = ebin_->accumulation().energies()[i].esum;
         }
     }
 

@@ -242,7 +242,7 @@ static const char* enumValueToString(StateKineticEntry enumValue)
 enum class StateEnergyEntry : int
 {
     N,
-    Aver,
+    SumSqDev,
     Sum,
     NumSum,
     SumSim,
@@ -303,7 +303,7 @@ static const char* enumValueToString(StateEnergyEntry enumValue)
 {
     static constexpr gmx::EnumerationArray<StateEnergyEntry, const char*> stateEnergyEntryNames = {
         "energy_n",
-        "energy_aver",
+        "energy_sum_sq_dev",
         "energy_sum",
         "energy_nsum",
         "energy_sum_sim",
@@ -1666,8 +1666,8 @@ static int do_cpt_enerhist(XdrSerializer* serializer, gmx_bool bRead, int fflags
                 case StateEnergyEntry::N:
                     ret = do_cpte_int(serializer, *i, &energyHistoryNumEnergies, list);
                     break;
-                case StateEnergyEntry::Aver:
-                    ret = doVector<double>(serializer, *i, &enerhist->ener_ave, list);
+                case StateEnergyEntry::SumSqDev:
+                    ret = doVector<double>(serializer, *i, &enerhist->ener_sumSqDev, list);
                     break;
                 case StateEnergyEntry::Sum:
                     ret = doVector<double>(serializer, *i, &enerhist->ener_sum, list);
@@ -2362,7 +2362,7 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
                                     | enumValueToBitMask(StateEnergyEntry::NumStepsSim);
         if (enerhist->nsum > 0)
         {
-            headerContents.flags_enh |= (enumValueToBitMask(StateEnergyEntry::Aver)
+            headerContents.flags_enh |= (enumValueToBitMask(StateEnergyEntry::SumSqDev)
                                          | enumValueToBitMask(StateEnergyEntry::Sum)
                                          | enumValueToBitMask(StateEnergyEntry::NumSum));
         }

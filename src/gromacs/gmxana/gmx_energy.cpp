@@ -2109,7 +2109,7 @@ int gmx_energy(int argc, char* argv[])
                         {
                             sss                    = set[i];
                             edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
-                            edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
+                            edat.s[i].es[nfr].sum2 = fr->ener[sss].sumSqDev;
                         }
                         edat.npoints += fr->nsum;
                     }
@@ -2162,7 +2162,7 @@ int gmx_energy(int argc, char* argv[])
                             print_time(out, fr->t);
                             print1(out, bDp, fr->ener[set[0]].e);
                             print1(out, bDp, fr->ener[set[0]].esum / fr->nsum);
-                            print1(out, bDp, std::sqrt(fr->ener[set[0]].eav / fr->nsum));
+                            print1(out, bDp, std::sqrt(fr->ener[set[0]].sumSqDev / fr->nsum));
                             fprintf(out, "\n");
                         }
                     }

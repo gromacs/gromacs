@@ -486,7 +486,7 @@ void list_ene(const char* fn)
                 printf("%24s  %12s  %12s  %12s\n",
                        "Component",
                        "Energy",
-                       "Av. Energy",
+                       "Sum sq. dev.",
                        "Sum Energy");
                 if (fr->nsum > 0)
                 {
@@ -495,7 +495,7 @@ void list_ene(const char* fn)
                         printf("%24s  %12.5e  %12.5e  %12.5e\n",
                                enm[i].name.c_str(),
                                fr->ener[i].e,
-                               fr->ener[i].eav,
+                               fr->ener[i].sumSqDev,
                                fr->ener[i].esum);
                     }
                 }

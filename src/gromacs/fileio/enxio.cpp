@@ -909,7 +909,7 @@ static void convert_full_sums(ener_old_t* ener_old, t_enxframe* fr)
 {
     int    nstep_all;
     int    ne, ns, i;
-    double esum_all, eav_all;
+    double esum_all, sumSqDev_all;
 
     if (fr->nsum > 0)
     {
@@ -942,14 +942,14 @@ static void convert_full_sums(ener_old_t* ener_old, t_enxframe* fr)
         for (i = 0; i < fr->nre; i++)
         {
             esum_all         = fr->ener[i].esum;
-            eav_all          = fr->ener[i].eav;
+            sumSqDev_all     = fr->ener[i].sumSqDev;
             fr->ener[i].esum = esum_all - ener_old->ener_prev[i].esum;
-            fr->ener[i].eav =
-                    eav_all - ener_old->ener_prev[i].eav
+            fr->ener[i].sumSqDev =
+                    sumSqDev_all - ener_old->ener_prev[i].sumSqDev
                     - gmx::square(ener_old->ener_prev[i].esum / (nstep_all - fr->nsum) - esum_all / nstep_all)
                               * (nstep_all - fr->nsum) * nstep_all / static_cast<double>(fr->nsum);
-            ener_old->ener_prev[i].esum = esum_all;
-            ener_old->ener_prev[i].eav  = eav_all;
+            ener_old->ener_prev[i].esum     = esum_all;
+            ener_old->ener_prev[i].sumSqDev = sumSqDev_all;
         }
         ener_old->nsum_prev = nstep_all;
     }
@@ -969,8 +969,8 @@ static void convert_full_sums(ener_old_t* ener_old, t_enxframe* fr)
         /* Copy all sums to ener_prev */
         for (i = 0; i < fr->nre; i++)
         {
-            ener_old->ener_prev[i].esum = fr->ener[i].esum;
-            ener_old->ener_prev[i].eav  = fr->ener[i].eav;
+            ener_old->ener_prev[i].esum     = fr->ener[i].esum;
+            ener_old->ener_prev[i].sumSqDev = fr->ener[i].sumSqDev;
         }
     }
 
@@ -1044,9 +1044,9 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
         srenew(fr->ener, fr->nre);
         for (int i = fr->e_alloc; (i < fr->nre); i++)
         {
-            fr->ener[i].e    = 0;
-            fr->ener[i].eav  = 0;
-            fr->ener[i].esum = 0;
+            fr->ener[i].e        = 0;
+            fr->ener[i].sumSqDev = 0;
+            fr->ener[i].esum     = 0;
         }
         fr->e_alloc = fr->nre;
     }
@@ -1060,11 +1060,11 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
          */
         if (file_version == 1 || (bRead && fr->nsum > 0) || fr->nsum > 1)
         {
-            tmp1 = fr->ener[i].eav;
+            tmp1 = fr->ener[i].sumSqDev;
             bOK  = bOK && gmx_fio_do_real(ef->fio, tmp1);
             if (bRead)
             {
-                fr->ener[i].eav = tmp1;
+                fr->ener[i].sumSqDev = tmp1;
             }
 
             /* This is to save only in single precision (unless compiled in DP) */
