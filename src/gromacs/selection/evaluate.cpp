@@ -740,6 +740,16 @@ void _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t*                    
         _gmx_selvalue_setstore_alloc(&sel->child->child->v, sel->v.u.ptr, sel->child->child->v.nalloc);
         sel->child->evaluate(data, sel->child, g);
     }
+    else
+    {
+        /* For g == nullptr, recompute the inner numeric expression */
+        if (sel->child->child != nullptr && (sel->v.type == INT_VALUE || sel->v.type == REAL_VALUE)
+            && (sel->child->child->type == SEL_EXPRESSION) && sel->child->child->evaluate != nullptr)
+        {
+            sel->child->child->evaluate(data, sel->child->child, g);
+        }
+    }
+
     sel->v.nr = sel->child->v.nr;
     if (sel->u.param)
     {

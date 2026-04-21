@@ -50,6 +50,14 @@ Properly print the filename when a forcefield parsing error is encountered.
 
 :issue:`5601`
 
+Fixed a selection evaluation issue for numeric expressions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed a selection issue that would lead to a crash when a numeric expression 
+would reference a variable derived from a position expression.
+
+:issue:`5576`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
