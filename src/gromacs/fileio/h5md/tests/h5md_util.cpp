@@ -52,6 +52,8 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 
+#include "testutils/testmatchers.h"
+
 namespace gmx
 {
 namespace test
@@ -152,27 +154,23 @@ TEST_F(H5mdPathsOfHandleTest, HandlePathOfGroups)
 {
     {
         const auto [handleTest, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
-        const auto path                = getHandlePath(handleTest);
-        ASSERT_TRUE(path.has_value());
-        EXPECT_EQ(path.value(), "/testGroup");
+        EXPECT_THAT(getHandlePath(handleTest), ::testing::Optional(::testing::StrEq("/testGroup")));
     }
 
     {
         SCOPED_TRACE("Test long path");
         const auto [handleTest, guard] = makeH5mdGroupGuard(
                 createGroup(fileid(), "/This/is/a/extremely/long/path/to/a/testgp"));
-        const auto path = getHandlePath(handleTest);
-        ASSERT_TRUE(path.has_value());
-        EXPECT_EQ(path.value(), "/This/is/a/extremely/long/path/to/a/testgp");
+        EXPECT_THAT(getHandlePath(handleTest),
+                    ::testing::Optional(
+                            ::testing::StrEq("/This/is/a/extremely/long/path/to/a/testgp")));
     }
 
     {
         SCOPED_TRACE("Test path with trailing slash");
         const auto [handleTest, guard] =
                 makeH5mdGroupGuard(createGroup(fileid(), "slash/in/the/end/"));
-        const auto path = getHandlePath(handleTest);
-        ASSERT_TRUE(path.has_value());
-        EXPECT_EQ(path.value(), "/slash/in/the/end");
+        EXPECT_THAT(getHandlePath(handleTest), ::testing::Optional(::testing::StrEq("/slash/in/the/end")));
     }
 }
 
@@ -180,21 +178,21 @@ TEST_F(H5mdPathsOfHandleTest, BaseNameOfGroups)
 {
     {
         const auto [handleTest, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
-        EXPECT_EQ(getHandleBaseName(handleTest).value_or("NoAName"), "testGroup");
+        EXPECT_THAT(getHandleBaseName(handleTest), ::testing::Optional(::testing::StrEq("testGroup")));
     }
 
     {
         SCOPED_TRACE("Test long path");
         const auto [handleTest, guard] = makeH5mdGroupGuard(
                 createGroup(fileid(), "/This/is/a/extremely/long/path/to/a/testgp"));
-        EXPECT_EQ(getHandleBaseName(handleTest).value_or("NoAName"), "testgp");
+        EXPECT_THAT(getHandleBaseName(handleTest), ::testing::Optional(::testing::StrEq("testgp")));
     }
 
     {
         SCOPED_TRACE("Test path with trailing slash");
         const auto [handleTest, guard] =
                 makeH5mdGroupGuard(createGroup(fileid(), "slash/in/the/end/"));
-        EXPECT_EQ(getHandleBaseName(handleTest).value_or("NoAName"), "end");
+        EXPECT_THAT(getHandleBaseName(handleTest), ::testing::Optional(::testing::StrEq("end")));
     }
 }
 
@@ -203,9 +201,8 @@ TEST_F(H5mdPathsOfHandleTest, HandleNameOfDatasets)
     const auto [grpHandle, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
     const H5mdDataSetBase<float> dataSet =
             H5mdFrameDataSetBuilder<float>(grpHandle, "testDataSet").build();
-    const auto datasetPath = getHandlePath(dataSet.id());
-    ASSERT_TRUE(datasetPath.has_value());
-    EXPECT_EQ(datasetPath.value(), "/testGroup/testDataSet");
+    EXPECT_THAT(getHandlePath(dataSet.id()),
+                ::testing::Optional(::testing::StrEq("/testGroup/testDataSet")));
 }
 
 TEST_F(H5mdPathsOfHandleTest, BaseNameOfDatasets)
@@ -213,7 +210,7 @@ TEST_F(H5mdPathsOfHandleTest, BaseNameOfDatasets)
     const auto [grpHandle, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
     const H5mdDataSetBase<float> dataSet =
             H5mdFrameDataSetBuilder<float>(grpHandle, "testDataSet").build();
-    EXPECT_EQ(getHandleBaseName(dataSet.id()).value_or("NoAName"), "testDataSet");
+    EXPECT_THAT(getHandleBaseName(dataSet.id()), ::testing::Optional(::testing::StrEq("testDataSet")));
 }
 
 TEST_F(H5mdPathsOfHandleTest, ReturnEmptyForInvalidHandle)
@@ -238,7 +235,7 @@ TEST_F(H5mdPathsOfHandleTest, ReturnEmptyForInvalidHandle)
             // Within the Scope guard, the handle is valid
             auto resource = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
             handleTest    = resource.first;
-            ASSERT_EQ(getHandlePath(handleTest).value_or("NotAPath"), "/testGroup")
+            ASSERT_THAT(getHandlePath(handleTest), ::testing::Optional(::testing::StrEq("/testGroup")))
                     << "Sanity check: must be valid before scope guard exits scope";
         }
         EXPECT_EQ(getHandlePath(handleTest), std::nullopt);
@@ -250,12 +247,12 @@ TEST_F(H5mdPathsOfHandleTest, NameOfRoot)
 {
     {
         SCOPED_TRACE("The full name of the root group should be /");
-        EXPECT_EQ(getHandlePath(fileid()).value_or("NotAPath"), "/");
+        EXPECT_THAT(getHandlePath(fileid()), ::testing::Optional(::testing::StrEq("/")));
     }
 
     {
         SCOPED_TRACE("The base name of the root group should be an empty string");
-        EXPECT_EQ(getHandleBaseName(fileid()).value_or("NoAName"), "");
+        EXPECT_THAT(getHandleBaseName(fileid()), ::testing::Optional(::testing::StrEq("")));
     }
 }
 

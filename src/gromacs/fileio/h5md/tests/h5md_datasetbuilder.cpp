@@ -59,6 +59,7 @@
 #include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -548,10 +549,8 @@ TEST_F(H5mdDataSetBuilderTest, WithUnitAttribute)
                         .withUnit(std::string{ unit })
                         .build();
 
-        const std::optional<std::string> unitAttribute =
-                getAttribute<std::string>(dataSet.id(), "unit");
-        ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
-        EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
+        EXPECT_THAT(getAttribute<std::string>(dataSet.id(), "unit"),
+                    ::testing::Optional(::testing::StrEq(unit)));
     }
     {
         SCOPED_TRACE("Unit as const char*");
@@ -562,10 +561,8 @@ TEST_F(H5mdDataSetBuilderTest, WithUnitAttribute)
                         .withUnit(unit)
                         .build();
 
-        const std::optional<std::string> unitAttribute =
-                getAttribute<std::string>(dataSet.id(), "unit");
-        ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
-        EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
+        EXPECT_THAT(getAttribute<std::string>(dataSet.id(), "unit"),
+                    ::testing::Optional(::testing::StrEq(unit)));
     }
 }
 

@@ -481,8 +481,8 @@ TEST_F(H5mdTimeDataBlockTest, ReadStepAndTimeAtIndexWorks)
     // Read the values out of order to test non-sequential reading
     for (const int i : { 1, 2, 0 })
     {
-        EXPECT_EQ(dataBlock.readStepAtIndex(i).value(), steps[i]);
-        EXPECT_FLOAT_EQ(dataBlock.readTimeAtIndex(i).value(), times[i]);
+        EXPECT_THAT(dataBlock.readStepAtIndex(i), ::testing::Optional(steps[i]));
+        EXPECT_THAT(dataBlock.readTimeAtIndex(i), ::testing::Optional(times[i]));
     }
 }
 
@@ -498,10 +498,10 @@ TEST_F(H5mdTimeDataBlockTest, ReadStepAndTimeAtIndexReturnsNulloptIfOutOfBounds)
 
     EXPECT_FALSE(dataBlock.readStepAtIndex(-1).has_value());
     EXPECT_FALSE(dataBlock.readStepAtIndex(1).has_value());
-    EXPECT_EQ(dataBlock.readStepAtIndex(0).value(), stepToWrite);
+    EXPECT_THAT(dataBlock.readStepAtIndex(0), ::testing::Optional(stepToWrite));
     EXPECT_FALSE(dataBlock.readTimeAtIndex(-1).has_value());
     EXPECT_FALSE(dataBlock.readTimeAtIndex(1).has_value());
-    EXPECT_EQ(dataBlock.readTimeAtIndex(0).value(), timeToWrite);
+    EXPECT_THAT(dataBlock.readTimeAtIndex(0), ::testing::Optional(timeToWrite));
 }
 
 TEST_F(H5mdTimeDataBlockTest, ReadTimeAtIndexReturnsNulloptIfNotManaged)
@@ -790,7 +790,7 @@ TEST_F(H5mdTimeDataBlockTest, UnitsAreSetCorrectly)
 
         const auto [timeDataSet, timeDataSetGuard] =
                 makeH5mdDataSetGuard(H5Dopen(blockGroup, "time", H5P_DEFAULT));
-        EXPECT_EQ(getAttribute<std::string>(timeDataSet, "unit").value_or(""), "ps")
+        EXPECT_THAT(getAttribute<std::string>(timeDataSet, "unit"), ::testing::Optional(::testing::StrEq("ps")))
                 << "The time data set unit must always be ps";
     }
     {
@@ -806,7 +806,7 @@ TEST_F(H5mdTimeDataBlockTest, UnitsAreSetCorrectly)
 
         const auto [valueDataSet, valueDataSetGuard] =
                 makeH5mdDataSetGuard(H5Dopen(blockGroup, "value", H5P_DEFAULT));
-        EXPECT_EQ(getAttribute<std::string>(valueDataSet, "unit").value_or(""), valueUnit)
+        EXPECT_THAT(getAttribute<std::string>(valueDataSet, "unit"), ::testing::Optional(::testing::StrEq(valueUnit)))
                 << "The value data set unit must be correct";
 
         const auto [stepDataSet, stepDataSetGuard] =
@@ -816,7 +816,7 @@ TEST_F(H5mdTimeDataBlockTest, UnitsAreSetCorrectly)
 
         const auto [timeDataSet, timeDataSetGuard] =
                 makeH5mdDataSetGuard(H5Dopen(blockGroup, "time", H5P_DEFAULT));
-        EXPECT_EQ(getAttribute<std::string>(timeDataSet, "unit").value_or(""), "ps")
+        EXPECT_THAT(getAttribute<std::string>(timeDataSet, "unit"), ::testing::Optional(::testing::StrEq("ps")))
                 << "The time data set unit must always be ps";
     }
 }

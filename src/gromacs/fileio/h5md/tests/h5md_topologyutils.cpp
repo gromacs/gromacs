@@ -63,6 +63,7 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 #include "testutils/tprfilegenerator.h"
 
 namespace gmx
@@ -193,9 +194,8 @@ TEST_F(H5mdTopologyUtilTest, WriteFullTopologyAtomProp)
                     makeH5mdGroupGuard(openGroup(fileid(), formatString("/particles/%s", name).c_str()));
             // Check the correctness of the dumped atomic properties
             auto retNrAtoms = getAttribute<int64_t>(baseContainer, "particle_count");
-            ASSERT_TRUE(retNrAtoms.has_value());
             // 1 protein (29) + 10 water (30) = 59
-            ASSERT_EQ(retNrAtoms.value(), 59);
+            ASSERT_THAT(retNrAtoms, ::testing::Optional(59));
 
             // Match the reordered atom indices
             std::vector<int64_t> expectedID(retNrAtoms.value());
@@ -282,10 +282,8 @@ TEST_F(H5mdTopologyUtilTest, WriteFullTopologyResInfo)
             const auto [baseContainer, baseContainerGuard] =
                     makeH5mdGroupGuard(openGroup(fileid(), formatString("/particles/%s", name).c_str()));
 
-            auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
-            ASSERT_TRUE(retNrResidues.has_value());
             // 1 protein (2) + 10 water (10)
-            ASSERT_EQ(retNrResidues.value(), 12);
+            ASSERT_THAT(getAttribute<int32_t>(baseContainer, "residue_count"), ::testing::Optional(12));
 
             std::vector<std::string> retResidueNameTable =
                     readFixedStringDataset(baseContainer, "residue_name_table");
@@ -326,9 +324,7 @@ TEST_F(H5mdTopologyUtilTest, WriteThreeSelectedWater)
     {
         writeResidueInfo(atomRange, baseContainer, selectedAtomsIndexMap);
 
-        auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
-        ASSERT_TRUE(retNrResidues.has_value());
-        EXPECT_EQ(retNrResidues.value(), 5);
+        EXPECT_THAT(getAttribute<int32_t>(baseContainer, "residue_count"), ::testing::Optional(5));
 
         H5mdFixedDataSet<int32_t> datasetResidueIDs =
                 H5mdFixedDataSet<int32_t>(baseContainer, "residue_id");
@@ -368,9 +364,7 @@ TEST_F(H5mdTopologyUtilTest, WriteThreeSelectedWater)
         writeAtomicProperties(atomRange, baseContainer, selectedAtomsIndexMap);
 
         // Match the number of particles
-        auto retNrAtoms = getAttribute<int64_t>(baseContainer, "particle_count");
-        ASSERT_TRUE(retNrAtoms.has_value());
-        EXPECT_EQ(retNrAtoms.value(), 15);
+        EXPECT_THAT(getAttribute<int64_t>(baseContainer, "particle_count"), ::testing::Optional(15));
 
         // Match the reordered atom indices
         std::vector<int64_t> expectedID(15);
@@ -436,9 +430,7 @@ TEST_F(H5mdTopologyUtilTest, WriteProteinTopology)
 
         writeResidueInfo(atomRange, baseContainer, selectedAtomsIndexMap);
 
-        auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
-        ASSERT_TRUE(retNrResidues.has_value());
-        EXPECT_EQ(retNrResidues.value(), 2);
+        EXPECT_THAT(getAttribute<int32_t>(baseContainer, "residue_count"), ::testing::Optional(2));
 
         std::vector<std::string> retResidueNameTable =
                 readFixedStringDataset(baseContainer, "residue_name_table");
@@ -457,8 +449,7 @@ TEST_F(H5mdTopologyUtilTest, WriteProteinTopology)
         writeAtomicProperties(atomRange, baseContainer, selectedAtomsIndexMap);
 
         auto retNrAtoms = getAttribute<int64_t>(baseContainer, "particle_count");
-        ASSERT_TRUE(retNrAtoms.has_value());
-        EXPECT_EQ(retNrAtoms.value(), protNumAtoms);
+        ASSERT_THAT(retNrAtoms, ::testing::Optional(protNumAtoms));
 
         // Match the reordered atom indices
         std::vector<int64_t> expectedID(retNrAtoms.value());
@@ -529,8 +520,7 @@ TEST_F(H5mdTopologyUtilTest, WriteConnectivityProteinPart)
 
     writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
     const auto nrBonds = getAttribute<int64_t>(connectivity, "bond_count");
-    ASSERT_TRUE(nrBonds.has_value());
-    EXPECT_EQ(nrBonds.value(), 22);
+    EXPECT_THAT(nrBonds, ::testing::Optional(22));
 
     H5mdFixedDataSet<int64_t> datasetBonds = H5mdFixedDataSet<int64_t>(connectivity, "bonds");
     std::vector<int64_t>      bondData(datasetBonds.numValues());
@@ -563,8 +553,7 @@ TEST_F(H5mdTopologyUtilTest, WriteConnectivityRandomSelectedWater)
     writeBonds(topology, connectivity, mapSelectionToInternalIndices(indices));
 
     const auto nrBonds = getAttribute<int64_t>(connectivity, "bond_count");
-    ASSERT_TRUE(nrBonds.has_value());
-    EXPECT_EQ(nrBonds.value(), 10);
+    EXPECT_THAT(nrBonds, ::testing::Optional(10));
 
     H5mdFixedDataSet<int64_t> datasetBonds = H5mdFixedDataSet<int64_t>(connectivity, "bonds");
     std::vector<int64_t>      bondData(datasetBonds.numValues());
@@ -694,9 +683,8 @@ TEST_F(H5mdTopologyUtilTest, LabelVersionH5MDMTop)
     labelInternalTopologyVersion(topologyContainer);
 
     // Read back the version and compare with the internal version constant
-    const auto version = getAttributeVector<int32_t>(topologyContainer, "version");
-    ASSERT_TRUE(version.has_value());
-    EXPECT_EQ(version.value(), expectedVersion);
+    EXPECT_THAT(getAttributeVector<int32_t>(topologyContainer, "version"),
+                ::testing::Optional(expectedVersion));
 }
 
 TEST_F(H5mdTopologyUtilTest, LabelSystemName)
@@ -708,10 +696,8 @@ TEST_F(H5mdTopologyUtilTest, LabelSystemName)
     // Set headers for the internal topology
     labelTopologyName(topologyContainer, systemName.c_str());
 
-    // Read back the version and compare with the internal version constant
-    const auto version = getAttribute<std::string>(topologyContainer, "system_name");
-    ASSERT_TRUE(version.has_value());
-    EXPECT_EQ(version.value(), systemName);
+    EXPECT_THAT(getAttribute<std::string>(topologyContainer, "system_name"),
+                ::testing::Optional(::testing::StrEq(systemName)));
 }
 
 TEST_F(H5mdTopologyUtilTest, WritesMoleculeTypes)
@@ -811,17 +797,12 @@ TEST_F(H5mdTopologyUtilTest, WriteMoleculeBlocks)
 
     writeMoleculeBlocks(gmxMol, makeConstArrayRef(topology.molblock), makeConstArrayRef(topology.moltype));
 
-    const auto molNamesOpt = getAttributeVector<std::string>(gmxMol, "molecule_block_names");
-    ASSERT_TRUE(molNamesOpt.has_value());
-    const auto molNumberOpt = getAttributeVector<int32_t>(gmxMol, "molecule_block_counts");
-    ASSERT_TRUE(molNumberOpt.has_value());
-
-    EXPECT_EQ(molNumberOpt.value().size(), topology.moltype.size())
-            << "Mismatch in the size of molecule names and number of blocks.";
-    EXPECT_EQ(molNamesOpt.value(), std::vector<std::string>({ "Alanine_dipeptide", "SOL" }))
+    EXPECT_THAT(getAttributeVector<std::string>(gmxMol, "molecule_block_names"),
+                ::testing::Optional(std::vector<std::string>{ "Alanine_dipeptide", "SOL" }))
             << "Mismatch in the molecule names.";
-    EXPECT_EQ(molNumberOpt.value(), std::vector<int32_t>({ 1, 298 }))
-            << "Mismatch in the number of molecule blocks.";
+    EXPECT_THAT(getAttributeVector<int32_t>(gmxMol, "molecule_block_counts"),
+                ::testing::Optional(std::vector<int32_t>{ 1, 298 }))
+            << "Mismatch in the molecule block counts.";
 }
 
 TEST_F(H5mdTopologyUtilTest, WriteMoleculeDuplicatedBlocks)
@@ -857,13 +838,10 @@ TEST_F(H5mdTopologyUtilTest, WriteMoleculeDuplicatedBlocks)
     writeMoleculeBlocks(gmxMol, makeConstArrayRef(topology.molblock), makeConstArrayRef(topology.moltype));
 
     {
-        const auto molNamesOpt  = getAttributeVector<std::string>(gmxMol, "molecule_block_names");
-        const auto molNumberOpt = getAttributeVector<int32_t>(gmxMol, "molecule_block_counts");
-        ASSERT_TRUE(molNamesOpt.has_value());
-        ASSERT_TRUE(molNumberOpt.has_value());
-        EXPECT_EQ(molNumberOpt.value().size(), topology.molblock.size());
-        EXPECT_EQ(molNumberOpt.value(), expectedMolNumbers);
-        EXPECT_EQ(molNamesOpt.value(), expectedMolNames);
+        EXPECT_THAT(getAttributeVector<std::string>(gmxMol, "molecule_block_names"),
+                    ::testing::Optional(expectedMolNames));
+        EXPECT_THAT(getAttributeVector<int32_t>(gmxMol, "molecule_block_counts"),
+                    ::testing::Optional(expectedMolNumbers));
     }
 }
 
