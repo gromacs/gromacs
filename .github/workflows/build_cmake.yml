@@ -2,6 +2,9 @@ name: CMake Build Matrix
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 env:
   CMAKE_VERSION: 3.28.0 # Oldest supported
   NINJA_VERSION: 1.12.1 # Latest
@@ -53,15 +56,16 @@ jobs:
       ENVIRONMENT_SCRIPT: ${{ matrix.config.environment_script }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         show-progress: false
+        persist-credentials: false
 
     - name: Download Ninja, CMake, and CCache
       run: cmake -P .github/scripts/download-ninja-cmake.cmake
 
     - name: ccache cache files
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .ccache
         key: ${{ matrix.config.name }}-ccache-${{ github.sha }}

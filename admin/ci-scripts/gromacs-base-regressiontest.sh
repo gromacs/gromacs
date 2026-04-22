@@ -4,6 +4,9 @@ cd regressiontests
 # Needed to run MPI enabled code in the docker images, until we set up different users
 export OMPI_ALLOW_RUN_AS_ROOT=1
 export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+# Disable CPU binding, since different jobs on the same node and sometimes tests
+# in the same job see the same set of CPUs and so all pin to the same cores
+export PRTE_MCA_hwloc_default_binding_policy=none
 export ASAN_OPTIONS="check_initialization_order=1:detect_invalid_pointer_pairs=1:strict_init_order=true:strict_string_checks=true:detect_stack_use_after_return=true"
 export LSAN_OPTIONS="suppressions=$CI_PROJECT_DIR/admin/lsan-suppressions.txt:print_suppressions=0"
 
