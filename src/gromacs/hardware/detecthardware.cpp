@@ -319,8 +319,8 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
     hardwareInfo->ncore_min            = nCores;
     hardwareInfo->ncore_max            = nCores;
     hardwareInfo->nProcessingUnits_tot = nProcessingUnits;
-    hardwareInfo->nProcessingUnits_tot = nProcessingUnits;
-    hardwareInfo->nProcessingUnits_tot = nProcessingUnits;
+    hardwareInfo->nProcessingUnits_min = nProcessingUnits;
+    hardwareInfo->nProcessingUnits_max = nProcessingUnits;
     hardwareInfo->maxThreads_tot       = maxThreads;
     hardwareInfo->maxThreads_min       = maxThreads;
     hardwareInfo->maxThreads_max       = maxThreads;
