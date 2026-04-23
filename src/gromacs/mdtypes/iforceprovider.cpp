@@ -46,7 +46,6 @@
 #include <vector>
 
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/arrayref.h"
 
 using namespace gmx;
 
@@ -82,18 +81,18 @@ bool ForceProviders::hasForceProvider() const
 void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInput,
                                      ForceProviderOutput*      forceProviderOutput) const
 {
-    for (auto& provider : impl_->providers_)
+    for (auto& [provider, wallCycleCounter] : impl_->providers_)
     {
-        if (provider.second)
+        if (wallCycleCounter.has_value())
         {
-            wallcycle_start(impl_->wallCycle_, provider.second.value());
+            wallcycle_start(impl_->wallCycle_, wallCycleCounter.value());
         }
 
-        provider.first->calculateForces(forceProviderInput, forceProviderOutput);
+        provider->calculateForces(forceProviderInput, forceProviderOutput);
 
-        if (provider.second)
+        if (wallCycleCounter.has_value())
         {
-            wallcycle_stop(impl_->wallCycle_, provider.second.value());
+            wallcycle_stop(impl_->wallCycle_, wallCycleCounter.value());
         }
     }
 }
