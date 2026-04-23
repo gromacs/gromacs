@@ -1712,6 +1712,9 @@ std::string getCoolQuote()
         { "Software was a mistake.", "Paul Bauer" },
         { "Rule #1, don't trust anything with electricity in it.",
           "Ian Bogle, while discussing GPU kernel debugging." },
+        { "Of course, ff14SB is the acronym for Amber's force field from 2014 with Stony Brook "
+          "refinements, not Final Fantasy XIV: Shadowbringers.",
+          "Vedran Miletic" }
     };
 
     if (beCool())
