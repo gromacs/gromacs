@@ -80,12 +80,12 @@ static hid_t openDataSet(const hid_t container, const char* name)
  * \param[in] nativeDataType Native data type of data set.
  * \param[in] dims           Primitive dimensions of data set.
  *
- * \throws gmx::H5mdError if there is an inconsistency.
+ * \throws H5mdError if there is an inconsistency.
  */
 template<typename ValueType>
 static void verifyDataSetConsistency(const hid_t nativeDataType, const DataSetDims& dims)
 {
-    if constexpr (std::is_same_v<ValueType, gmx::BasicVector<float>>)
+    if constexpr (std::is_same_v<ValueType, BasicVector<float>>)
     {
         GMX_H5MD_THROW_UPON_ERROR(dims.empty() || dims.back() != DIM,
                                   "Could not open data set: inner dimension of data set must = 3 "
@@ -94,7 +94,7 @@ static void verifyDataSetConsistency(const hid_t nativeDataType, const DataSetDi
                                   "Could not open data set: compiled type parameter does not match "
                                   "the primitive type of the data set");
     }
-    else if constexpr (std::is_same_v<ValueType, gmx::BasicVector<double>>)
+    else if constexpr (std::is_same_v<ValueType, BasicVector<double>>)
     {
         GMX_H5MD_THROW_UPON_ERROR(dims.empty() || dims.back() != DIM,
                                   "Could not open data set: inner dimension of data set must = 3 "
@@ -172,9 +172,9 @@ template class H5mdDataSetBase<float>;
 
 template class H5mdDataSetBase<double>;
 
-template class H5mdDataSetBase<gmx::BasicVector<float>>;
+template class H5mdDataSetBase<BasicVector<float>>;
 
-template class H5mdDataSetBase<gmx::BasicVector<double>>;
+template class H5mdDataSetBase<BasicVector<double>>;
 
 template class H5mdDataSetBase<std::string>;
 

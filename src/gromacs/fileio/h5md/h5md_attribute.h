@@ -65,13 +65,13 @@ constexpr char c_unitAttributeKey[] = "unit";
  * \returns The value of the desired type, or std::nullopt if the attribute does not exist.
  */
 template<typename ValueType>
-std::optional<ValueType> getAttribute(const hid_t container, const char* attributeName);
+std::optional<ValueType> getAttribute(hid_t container, const char* attributeName);
 
 /*! \copydoc getAttribute()
  * \brief Specialization of getAttribute() for reading attributes of string type.
  */
 template<>
-std::optional<std::string> getAttribute<std::string>(const hid_t container, const char* attributeName);
+std::optional<std::string> getAttribute<std::string>(hid_t container, const char* attributeName);
 
 /*! \brief Read a vector-like attribute of a given data type
  *
@@ -81,13 +81,13 @@ std::optional<std::string> getAttribute<std::string>(const hid_t container, cons
  * \returns The 1D vector of the desired data, or std::nullopt if the attribute does not exist.
  */
 template<typename ValueType>
-std::optional<std::vector<ValueType>> getAttributeVector(const hid_t container, const char* attributeName);
+std::optional<std::vector<ValueType>> getAttributeVector(hid_t container, const char* attributeName);
 
 /*! \copydoc getAttributeVector()
  * \brief Specialization of getAttributeVector() for reading attributes of string type.
  */
 template<>
-std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hid_t container,
+std::optional<std::vector<std::string>> getAttributeVector<std::string>(hid_t       container,
                                                                         const char* attributeName);
 
 /*! \brief Write a scalar attribute of a given data type
@@ -98,17 +98,17 @@ std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hi
  * \param[in] value The scalar to write.
  */
 template<typename ValueType>
-void setAttribute(const hid_t container, const char* attributeName, const ValueType& value);
+void setAttribute(hid_t container, const char* attributeName, const ValueType& value);
 
 /*! \copydoc setAttribute()
  * \brief Specialization of setAttribute() for writing attributes of char* type.
  */
-void setAttribute(const hid_t container, const char* attributeName, const char* value);
+void setAttribute(hid_t container, const char* attributeName, const char* value);
 
 /*! \copydoc setAttribute()
  * \brief Specialization of setAttribute() for writing attributes of std::string type.
  */
-void setAttribute(const hid_t container, const char* attributeName, const std::string& value);
+void setAttribute(hid_t container, const char* attributeName, const std::string& value);
 
 /*! \brief Write a vector-like attribute of a given data type
  *
@@ -118,7 +118,7 @@ void setAttribute(const hid_t container, const char* attributeName, const std::s
  * \param[in] value The 1D-vector to write, provided as an ArrayRef.
  */
 template<typename ValueType>
-void setAttributeVector(const hid_t container, const char* attributeName, ArrayRef<const ValueType> value);
+void setAttributeVector(hid_t container, const char* attributeName, ArrayRef<const ValueType> value);
 
 /*! \brief Write a vector-like attribute of strings.
  *
@@ -150,7 +150,7 @@ void setAttributeVector(hid_t container, const char* attributeName, ArrayRef<con
  * \param[in] end           The ending iterator of the data to write.
  */
 template<typename Iterator>
-std::vector<char> setAttributeStringVector(const hid_t         container,
+std::vector<char> setAttributeStringVector(hid_t               container,
                                            const char*         attributeName,
                                            std::vector<char>&& buffer,
                                            Iterator            begin,
@@ -167,10 +167,10 @@ std::vector<char> setAttributeStringVector(const hid_t         container,
  * \param[in] maxStrLength    The maximum length of the strings in the vector.
  * \param[in] buffer          The character buffer to write.
  */
-void setStringAttributeByBuffer(const hid_t          container,
+void setStringAttributeByBuffer(hid_t                container,
                                 const char*          attributeName,
-                                const size_t         numberOfStrings,
-                                const int            maxStrLength,
+                                size_t               numberOfStrings,
+                                int                  maxStrLength,
                                 ArrayRef<const char> buffer);
 
 /// @cond DO_NOT_DOCUMENT

@@ -219,8 +219,8 @@ std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hi
             formatString("Failed to read vector of strings attribute: %s", attributeName));
     for (size_t i = 0; i < nelems; i++)
     {
-        values[i] = std::string(buffer.data() + i * stringSize,
-                                strnlen(buffer.data() + i * stringSize, stringSize));
+        values[i] = std::string(buffer.data() + (i * stringSize),
+                                strnlen(buffer.data() + (i * stringSize), stringSize));
     }
     return values;
 }

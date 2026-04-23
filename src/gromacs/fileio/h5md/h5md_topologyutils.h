@@ -79,7 +79,7 @@ using BondPairs = std::vector<std::pair<int64_t, int64_t>>;
  * \param[in] selectedIndices An array of selected atom indices.
  * \return A index map with the original index as key and internal index as value.
  */
-IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t>& selectedIndices);
+IndexMap mapSelectionToInternalIndices(ArrayRef<const int32_t> selectedIndices);
 
 /*! \brief Write atomic properties to the H5MD file.
  *
@@ -98,7 +98,7 @@ IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t>& selectedIn
  * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
  */
 void writeAtomicProperties(AtomRange&                     atomRange,
-                           const hid_t                    baseContainer,
+                           hid_t                          baseContainer,
                            const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
 
 /*! \brief Write residue and sequence information to the H5MD file
@@ -115,7 +115,7 @@ void writeAtomicProperties(AtomRange&                     atomRange,
  * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
  */
 void writeResidueInfo(AtomRange&                     atomRange,
-                      const hid_t                    baseContainer,
+                      hid_t                          baseContainer,
                       const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
 
 /*! \brief Write the covalent connectivity to the H5MD file.
@@ -129,7 +129,7 @@ void writeResidueInfo(AtomRange&                     atomRange,
  * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
  */
 void writeBonds(const gmx_mtop_t&              topology,
-                const hid_t                    baseContainer,
+                hid_t                          baseContainer,
                 const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
 
 /*! \brief Write the additional annotation of disulfide bonds to the H5MD file.
@@ -141,21 +141,21 @@ void writeBonds(const gmx_mtop_t&              topology,
  * \param[in] selectedAtomsIndexMap The index map of the selected atoms, not provided means considering all atoms. Providing an empty map throws an internal error.
  */
 void writeDisulfideBonds(const gmx_mtop_t&              topology,
-                         const hid_t                    baseContainer,
+                         hid_t                          baseContainer,
                          const std::optional<IndexMap>& selectedAtomsIndexMap = std::nullopt);
 
 /*! \brief Label the version of the internal topology module.
  *
  * \param[in] baseContainer The HDF5 container to write to.
  */
-void labelInternalTopologyVersion(const hid_t baseContainer);
+void labelInternalTopologyVersion(hid_t baseContainer);
 
 /*! \brief Label the name of the simulation system.
  *
  * \param[in] baseContainer The HDF5 container to write to.
  * \param[in] topName The name of the topology.
  */
-void labelTopologyName(const hid_t baseContainer, const char* topName);
+void labelTopologyName(hid_t baseContainer, const char* topName);
 
 /*! \brief Write the internal representation of molecules \p molTypes to the HDF5
  * container \p baseContainer of GROMACS topology.
@@ -180,7 +180,7 @@ void labelTopologyName(const hid_t baseContainer, const char* topName);
  * \param[in] baseContainer The HDF5 container to write to
  * \param[in] molTypes The molecule types to write
  */
-void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> molTypes);
+void writeMoleculeTypes(hid_t baseContainer, ArrayRef<const gmx_moltype_t> molTypes);
 
 /*! \brief Write the molecule block information to the HDF5 container of GROMACS topology.
  *
@@ -191,9 +191,9 @@ void writeMoleculeTypes(const hid_t baseContainer, const ArrayRef<const gmx_molt
  * \param[in] molTypes The molecule types corresponding to the molecule blocks,
  *                     used for providing the name of each molecule block.
  */
-void writeMoleculeBlocks(const hid_t                          baseContainer,
-                         const ArrayRef<const gmx_molblock_t> molBlocks,
-                         const ArrayRef<const gmx_moltype_t>  molTypes);
+void writeMoleculeBlocks(hid_t                          baseContainer,
+                         ArrayRef<const gmx_molblock_t> molBlocks,
+                         ArrayRef<const gmx_moltype_t>  molTypes);
 
 
 } // namespace gmx

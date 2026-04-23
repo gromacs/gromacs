@@ -254,7 +254,7 @@ class H5mdTimeDataBlockBuilder
 public:
     /*! \brief Return a builder to create a \c H5mdTimeDataBlock (called \p name, in \p container).
      *
-     * \throws gmx::H5mdError if there already exists an object at the given path.
+     * \throws H5mdError if there already exists an object at the given path.
      */
     H5mdTimeDataBlockBuilder(hid_t container, const std::string& name);
 

@@ -222,7 +222,7 @@ void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
         }
         else
         {
-            throw gmx::NotImplementedError("Reading fixed-size string data is not implemented");
+            throw NotImplementedError("Reading fixed-size string data is not implemented");
         }
     }
     else

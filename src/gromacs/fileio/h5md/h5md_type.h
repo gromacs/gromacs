@@ -46,7 +46,6 @@
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -127,7 +126,7 @@ inline hid_t hdf5DataTypeFor<uint64_t>() noexcept
  *
  * \param[in] maxStringLength Fixed maximum size of string.
  *
- * \throws gmx::H5mdError if \p maxStringLength is not a positive value.
+ * \throws H5mdError if \p maxStringLength is not a positive value.
  */
 inline hid_t hdf5DataTypeForFixedSizeString(const hsize_t maxStringLength)
 {

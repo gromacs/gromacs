@@ -158,7 +158,7 @@ private:
          *
          * \returns True if a frame was read, otherwise false.
          *
-         * \throws gmx::H5mdError if \p position, \p velocity or \p force data is given
+         * \throws H5mdError if \p position, \p velocity or \p force data is given
          *     but the corresponding data set has not been created, or if the size of
          *     the data buffers do not match the number of atoms of the system.
          */
@@ -242,7 +242,7 @@ public:
      * \param[in] restartingFromStep Step which we are restarting the simulation from
      * \param[in] numParticles       Number of particles in system
      *
-     * \throws gmx::H5mdError if the existing file contents are not
+     * \throws H5mdError if the existing file contents are not
      * for a system of \p numParticles.
      */
     void setupFromExistingFileForAppending(int64_t restartingFromStep, int64_t numParticles);
@@ -265,7 +265,7 @@ public:
      * \param[in] step          Simulation step for frame.
      * \param[in] time          Simulation time for frame.
      *
-     * \throws gmx::H5mdError if \p position, \p velocity or \p force data is given
+     * \throws H5mdError if \p position, \p velocity or \p force data is given
      *     but the corresponding data set has not been created, or if the size of
      *     the data buffers do not match the number of atoms of the system.
      */
@@ -296,7 +296,7 @@ private:
      *                                 restarting from.
      * \param[in] expectedNumParticles (Optional) Expected number of particles of block in file.
      *
-     * \throws gmx::H5mdError if \p expectedNumParticles is given and the contents of the existing
+     * \throws H5mdError if \p expectedNumParticles is given and the contents of the existing
      * particle block does not match it.
      */
     void setupParticleBlockForGroupFromExistingFile(const std::string&     selectionName,

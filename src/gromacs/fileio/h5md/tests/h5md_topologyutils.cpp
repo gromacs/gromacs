@@ -99,11 +99,11 @@ inline std::vector<std::string> readFixedStringDataset(hid_t baseContainer, cons
     return retStringArray;
 }
 
-void createDisulfideBondTopology(gmx_mtop_t*                topology,
-                                 const ArrayRef<char*>&     atomNames,
-                                 const ArrayRef<const int>& resIndices,
-                                 const BondPairs&           disulfideBonds,
-                                 const int                  numMols)
+void createDisulfideBondTopology(gmx_mtop_t*               topology,
+                                 const ArrayRef<char*>     atomNames,
+                                 const ArrayRef<const int> resIndices,
+                                 const BondPairs&          disulfideBonds,
+                                 const int                 numMols)
 {
     topology->moltype.resize(1);
     topology->molblock.resize(1);

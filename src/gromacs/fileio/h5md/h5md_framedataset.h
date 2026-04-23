@@ -147,7 +147,7 @@ public:
      * \param[in]  index  Frame index to read data from.
      * \param[out] values Container of values to read data into.
      *
-     * \throws gmx::H5mdError if the size of \p values does not match the frame dimensions
+     * \throws H5mdError if the size of \p values does not match the frame dimensions
      *     or if an error occurred when reading the data.
      */
     void readFrame(hsize_t index, ArrayRef<ValueType> values);
@@ -156,7 +156,7 @@ public:
      *
      * \param[in] newNumFrames New number of frames for the data set.
      *
-     * \throws gmx::H5mdError if \p newNumFrames is larger than the current number
+     * \throws H5mdError if \p newNumFrames is larger than the current number
      * of frames in the data set.
      */
     void shrinkToNumFrames(hsize_t newNumFrames);
@@ -184,7 +184,7 @@ public:
      *
      * \param[in] values Container of values to write.
      *
-     * \throws gmx::H5mdError if the size of \p values does not match the frame dimensions,
+     * \throws H5mdError if the size of \p values does not match the frame dimensions,
      *     if the maximum number of frames set for the data set has already been written,
      *     or if another error occurred when writing the data.
      */
@@ -307,13 +307,13 @@ public:
 
     /*! \brief Constructor to manage a given \p dataSet.
      *
-     * \throws gmx::H5mdError if the data set frame dimensions is not empty.
+     * \throws H5mdError if the data set frame dimensions is not empty.
      */
     H5mdScalarFrameDataSet(H5mdFrameDataSet<ValueType>&& dataSet);
 
     /*! \brief Constructor to open an existing data set (called \p name, in \p container).
      *
-     * \throws gmx::H5mdError if the data set frame dimensions is not empty.
+     * \throws H5mdError if the data set frame dimensions is not empty.
      */
     H5mdScalarFrameDataSet(hid_t container, const char* name);
 
@@ -322,7 +322,7 @@ public:
      * \param[in]  frameIndex Frame index to read data from.
      * \param[out] value Value into which to read data.
      *
-     * \throws gmx::H5mdError if an error occurred when reading the data.
+     * \throws H5mdError if an error occurred when reading the data.
      */
     void readFrame(hsize_t frameIndex, ValueType* value);
 
@@ -330,7 +330,7 @@ public:
      *
      * \param[in] value Value to write.
      *
-     * \throws gmx::H5mdError if an error occurred when writing the data.
+     * \throws H5mdError if an error occurred when writing the data.
      */
     void writeNextFrame(const ValueType& value);
 };

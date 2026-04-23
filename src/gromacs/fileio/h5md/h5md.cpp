@@ -246,7 +246,7 @@ hid_t H5md::fileid() const
 #if GMX_USE_HDF5
     return file_;
 #else
-    throw gmx::NotImplementedError(
+    throw NotImplementedError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
@@ -286,7 +286,7 @@ void H5md::flush(bool throwExceptionUponError)
  * \param[in]  selectionGroup Handle to selection group inside /particles.
  * \param[out] blockBuilder   Builder to assign the simulation box data set to.
  *
- * \throws gmx::H5mdError if there was an error setting up the links to the position
+ * \throws H5mdError if there was an error setting up the links to the position
  * step or time data sets.
  */
 static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBlockBuilder& blockBuilder)
@@ -642,7 +642,7 @@ bool H5md::readNextFrame(t_trxframe* frame, const std::string& selectionName)
 
     return frameWasRead;
 #else
-    throw gmx::NotImplementedError(
+    throw NotImplementedError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
     GMX_UNUSED_VALUE(frame);
     GMX_UNUSED_VALUE(selectionName);
@@ -661,7 +661,7 @@ void H5md::writeNextFrame(ArrayRef<const RVec> positions,
     // Helper for error message creation when writing each array to the data sets
     const auto blockNotFoundError = [&](const char* blockType)
     {
-        return gmx::formatString(
+        return formatString(
                 "Cannot write %s for group '%s': no data set exists", blockType, c_fullSystemGroupName);
     };
 
@@ -765,7 +765,7 @@ bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
     // Helper for error message creation when writing each array to the data sets
     const auto blockNotFoundError = [&](const char* blockType)
     {
-        return gmx::formatString(
+        return formatString(
                 "Cannot read %s for group '%s': no data set exists", blockType, c_fullSystemGroupName);
     };
 
@@ -817,7 +817,7 @@ bool H5md::TrajectoryReadCursor::readNextFrame(ArrayRef<RVec> positions,
 
 H5md* makeH5md(const std::filesystem::path& fileName, H5mdFileMode mode)
 {
-    return new gmx::H5md(fileName, mode);
+    return new H5md(fileName, mode);
 }
 
 void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec& inputRecord)

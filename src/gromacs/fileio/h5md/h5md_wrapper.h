@@ -76,7 +76,7 @@ void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec
  * \param[in] restartingFromStep Step which we are restarting the simulation from
  * \param[in]  numParticles      Number of particles in system
  *
- * \throws gmx::H5mdError if the existing file contents are not
+ * \throws H5mdError if the existing file contents are not
  * for a system of \p numParticles.
  */
 void setupFromExistingFileForAppending(H5md* h5md, int64_t restartingFromStep, int64_t numParticles);
@@ -91,7 +91,7 @@ void setupFromExistingFileForAppending(H5md* h5md, int64_t restartingFromStep, i
  * \param[in] step          Simulation step for frame.
  * \param[in] time          Simulation time for frame.
  *
- * \throws gmx::H5mdError if \p position, \p velocity or \p force data is given
+ * \throws H5mdError if \p position, \p velocity or \p force data is given
  *     but the corresponding data set has not been created, or if the size of
  *     the data buffers do not match the number of atoms of the system.
  */
