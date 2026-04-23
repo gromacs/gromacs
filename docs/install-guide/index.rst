@@ -133,8 +133,8 @@ gcc.
 
 The xlc compiler is not supported and version 16.1 does not compile on
 POWER architectures for |Gromacs|\ -\ |version|. We recommend to use
-the GCC compiler, version 9.x to 11.x. Note: there are
-:ref:`known issues <gmx-users-known-issues>` with GCC 12 and newer.
+the GCC compiler. Note: there are
+:ref:`known issues <gmx-users-known-issues>` with some versions of GCC 12-14.
 
 You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
@@ -1220,14 +1220,14 @@ H5MD trajectory output file format
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `H5MD`_ is a specification for output data from molecular dynamics simulations built on
-the HDF5 format. In |Gromacs| 2026 this is added as an experimental feature. 
+the HDF5 format. In |Gromacs| 2026 this is added as an experimental feature.
 
 Build instructions
 """"""""""""""""""""""""""""""
 
 To enable support for H5MD output |Gromacs| you need to have an installed copy of the
 `HDF5`_ library. The minimum supported version is |GMX_HDF5_MINIMUM_REQUIRED_VERSION|.
-If the library is installed you can build with H5MD support by 
+If the library is installed you can build with H5MD support by
 
 ::
 
