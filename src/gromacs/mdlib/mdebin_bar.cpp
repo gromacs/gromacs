@@ -92,7 +92,7 @@ static void mde_delta_h_init(t_mde_delta_h* dh,
     }
 
 
-    dh->subblock_meta_d.resize(dh->nlambda + 1);
+    dh->subblock_meta_d.resize(2 + dh->nlambda);
 
     dh->ndhmax = ndhmax + 2;
 
