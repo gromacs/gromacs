@@ -186,10 +186,8 @@ static void print_em_start(FILE*                     fplog,
 }
 
 //! Stop counting time for EM
-static void em_time_end(gmx_walltime_accounting_t walltime_accounting, gmx_wallcycle* wcycle)
+static void em_time_end(gmx_walltime_accounting_t walltime_accounting)
 {
-    wallcycle_stop(wcycle, WallCycleCounter::Run);
-
     walltime_accounting_end_time(walltime_accounting);
 }
 
@@ -564,10 +562,7 @@ static void init_em(FILE*                        fplog,
 }
 
 //! Finalize the minimization
-static void finish_em(const gmx::PmePpComm*     pmePpComm,
-                      gmx_mdoutf_t              outf,
-                      gmx_walltime_accounting_t walltime_accounting,
-                      gmx_wallcycle*            wcycle)
+static void finish_em(const gmx::PmePpComm* pmePpComm, gmx_mdoutf_t outf, gmx_walltime_accounting_t walltime_accounting)
 {
     if (pmePpComm)
     {
@@ -576,7 +571,7 @@ static void finish_em(const gmx::PmePpComm*     pmePpComm,
 
     done_mdoutf(outf);
 
-    em_time_end(walltime_accounting, wcycle);
+    em_time_end(walltime_accounting);
 }
 
 //! Swap two different EM states during minimization
@@ -2055,7 +2050,7 @@ void LegacySimulator::do_cg()
         fprintf(fpLog_, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step);
@@ -2878,7 +2873,7 @@ void LegacySimulator::do_lbfgs()
         fprintf(fpLog_, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step);
@@ -3221,7 +3216,7 @@ void LegacySimulator::do_steep()
         print_converged(fpLog_, SD, inputRec_->em_tol, count, bDone, nsteps, s_min, sqrtNumAtoms);
     }
 
-    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, count);
 }
@@ -3587,7 +3582,7 @@ void LegacySimulator::do_nm()
         gmx_mtxio_write(ftp2fn(efMTX, nFile_, fnm_), sz, sz, full_matrix, sparse_matrix);
     }
 
-    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_, wallCycleCounters_);
+    finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, numSteps);
 }

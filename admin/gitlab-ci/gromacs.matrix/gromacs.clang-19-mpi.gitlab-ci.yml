@@ -14,7 +14,7 @@
 #   SIMD: SSE4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
-#   Subcyclecounting: Active
+#   Cyclecounting: Using subcounters; debug checks enabled
 
 gromacs:clang-19-mpi:configure:
   extends:
@@ -28,7 +28,7 @@ gromacs:clang-19-mpi:configure:
     CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     COMPILER_MAJOR_VERSION: 19
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
-    CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON -DGMX_INSTALL_LEGACY_API=ON
+    CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON -DGMX_INSTALL_LEGACY_API=ON -DCMAKE_CXX_FLAGS=-DDEBUG_WCYCLE=1
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
 
 gromacs:clang-19-mpi:build:
