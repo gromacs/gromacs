@@ -208,11 +208,12 @@ public:
     hid_t fileid() const;
 
     /*! \brief Write all unwritten data to the file.
-     * \param[in] throwExceptionUponError Whether to throw an exception if an error occurs.
+     * \tparam throwExceptionUponError Whether to throw an exception if an error occurs.
      * Assumes a valid file_ identifier.
      * \throws H5mdError If there were errors during flushing (and throwExceptionUponError is true).
      */
-    void flush(bool throwExceptionUponError = true);
+    template<bool throwExceptionUponError = true>
+    void flush();
 
     /*! \brief Set up the file from input data.
      *

@@ -231,7 +231,7 @@ H5md::~H5md()
     if (handleIsValid(file_))
     {
         // Do not throw exceptions when flushing from the destructor.
-        flush(false);
+        flush<false>();
         H5Fclose(file_);
     }
 
@@ -252,10 +252,11 @@ hid_t H5md::fileid() const
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::flush(bool throwExceptionUponError)
+template<bool throwExceptionUponError>
+void H5md::flush()
 {
 #if GMX_USE_HDF5
-    if (throwExceptionUponError)
+    if constexpr (throwExceptionUponError)
     {
         GMX_ASSERT(handleIsValid(file_), "Cannot flush an invalid H5MD file.");
         GMX_H5MD_THROW_UPON_ERROR(H5Fflush(file_, H5F_SCOPE_LOCAL) < 0, "Error flushing H5MD.");
