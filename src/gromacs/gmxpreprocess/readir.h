@@ -116,11 +116,7 @@ void done_inputrec_strings();
  *
  * Any errors, warnings or notes are added to \p wi
  */
-void check_ir(const char*                    mdparin,
-              const gmx::MDModulesNotifiers& mdModulesNotifiers,
-              t_inputrec*                    ir,
-              t_gromppopts*                  opts,
-              WarningHandler*                wi);
+void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_gromppopts* opts, WarningHandler* wi);
 
 //! Returns the index of string \p s in \p indexGroups or exit with a verbose fatal error when not found
 int getGroupIndex(const std::string& s, gmx::ArrayRef<const IndexGroup> indexGroups);
@@ -134,6 +130,11 @@ void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys);
 //! Do checks that can only be done when a complete topology is available
 void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& sys, WarningHandler* wi);
 
+/*! \brief Parse input, apply defaults, prepare mdp output
+ *
+ * Read from the mdp input file, parse data from it, and fill
+ * inputrec.  Also prints the read mdp contents plus applicable
+ * defaults back to mdparout. */
 void get_ir(const char*     mdparin,
             const char*     mdparout,
             gmx::MDModules* mdModules,
@@ -141,10 +142,6 @@ void get_ir(const char*     mdparin,
             t_gromppopts*   opts,
             WriteMdpHeader  writeMdpHeader,
             WarningHandler* wi);
-/* Read the input file, and retrieve data for inputrec.
- * More data are read, but the are only evaluated when the next
- * function is called. Also prints the input file back to mdparout.
- */
 
 void do_index(const char*                                 mdparin,
               const std::optional<std::filesystem::path>& ndx,

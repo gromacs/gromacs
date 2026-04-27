@@ -48,13 +48,14 @@ struct t_inputrec;
 namespace gmx
 {
 
+
 /*! \brief Compute the period at which FEP calculation is performed
  *
  * This harmonizes the free energy calculation period specified by
  * `nstdhdl` with the periods specified by expanded ensemble,
  * replica exchange, and AWH.
  *
- * \param inputrec      The input record
+ * \param inputrec      The input record (contains outputControl)
  * \param replExParams  The replica exchange parameters
  * \return              The period required by the involved algorithms
  */

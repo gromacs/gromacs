@@ -194,6 +194,8 @@ void gmx::LegacySimulator::do_md()
     // will go away eventually.
     const t_inputrec* ir = inputRec_;
 
+    const OutputControl& outputControl = ir->outputControl;
+
     const double t0 = ir->init_t;
     gmx_bool     bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool     bDoExpanded = FALSE;
@@ -360,7 +362,7 @@ void gmx::LegacySimulator::do_md()
     gmx_shellfc_t* shellfc = init_shell_flexcon(fpLog_,
                                                 topGlobal_,
                                                 constr_ ? constr_->numFlexibleConstraints() : 0,
-                                                ir->nstcalcenergy,
+                                                ir->outputControl.nstcalcenergy,
                                                 haveDDAtomOrdering(*cr_),
                                                 simulationWork);
 
@@ -514,7 +516,7 @@ void gmx::LegacySimulator::do_md()
     if (ir->bExpanded)
     {
         /* Check nstexpanded here, because the grompp check was broken */
-        if (ir->expandedvals->nstexpanded % ir->nstcalcenergy != 0)
+        if (ir->expandedvals->nstexpanded % ir->outputControl.nstcalcenergy != 0)
         {
             gmx_fatal(FARGS,
                       "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
@@ -933,7 +935,7 @@ void gmx::LegacySimulator::do_md()
          * Note that the || bLastStep can result in non-exact continuation
          * beyond the last step. But we don't consider that to be an issue.
          */
-        const bool do_log = (do_per_step(step, ir->nstlog)
+        const bool do_log = (do_per_step(step, outputControl.nstlog)
                              || (bFirstStep && startingBehavior_ == StartingBehavior::NewSimulation)
                              || bLastStep);
         const bool do_verbose =
@@ -967,7 +969,7 @@ void gmx::LegacySimulator::do_md()
         const int  c_virtualSiteVelocityUpdateInterval = 1000;
         const bool needVirtualVelocitiesThisStep =
                 (virtualSites_ != nullptr)
-                && (do_per_step(step, ir->nstvout)
+                && (do_per_step(step, outputControl.nstvout)
                     || do_per_step(step, c_virtualSiteVelocityUpdateInterval));
 
         if (virtualSites_ != nullptr)
@@ -1101,10 +1103,10 @@ void gmx::LegacySimulator::do_md()
          * at nstcalcenergy steps and at energy output steps (set below).
          */
 
-        const bool do_ene              = (do_per_step(step, ir->nstenergy) || bLastStep);
+        const bool do_ene              = (do_per_step(step, outputControl.nstenergy) || bLastStep);
         const bool needEnergyAndVirial = do_ene || do_log || bDoReplEx;
 
-        const bool bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
+        const bool bCalcEnerStep = do_per_step(step, outputControl.nstcalcenergy);
         const bool bCalcVir      = [&]() -> bool
         {
             auto doPressureCoupling = [ir](int64_t s) -> bool
@@ -1137,7 +1139,7 @@ void gmx::LegacySimulator::do_md()
         unsigned int force_flags =
                 (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
                  | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
-        if (simulationWork.useMts && !do_per_step(step, ir->nstfout))
+        if (simulationWork.useMts && !do_per_step(step, outputControl.nstfout))
         {
             // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
             force_flags |= GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE;
@@ -1205,7 +1207,7 @@ void gmx::LegacySimulator::do_md()
                         !bNS && !bCalcVir && !doTemperatureScaling && !doParrinelloRahman && !bGStat
                         && !needHalfStepKineticEnergy && !runScheduleWork_->stepWork.copyXFromGpuForIO
                         && !runScheduleWork_->stepWork.copyVFromGpuForIO
-                        && !do_per_step(step, ir->nstfout);
+                        && !do_per_step(step, outputControl.nstfout);
                 if (mdGraph->captureThisStep(canUseMdGpuGraphThisStep))
                 {
                     mdGraph->startRecord(stateGpu->getCoordinatesReadyOnDeviceEvent(
@@ -1412,8 +1414,8 @@ void gmx::LegacySimulator::do_md()
             //       copy call in do_force(...).
             // NOTE: The forces should not be copied here if the vsites are present, since they were modified
             //       on host after the D2H copy in do_force(...).
-            if (runScheduleWork_->stepWork.useGpuFBufferOps
-                && (simulationWork.useGpuUpdate && !virtualSites_) && do_per_step(step, ir->nstfout))
+            if (runScheduleWork_->stepWork.useGpuFBufferOps && (simulationWork.useGpuUpdate && !virtualSites_)
+                && do_per_step(step, outputControl.nstfout))
             {
                 stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
                 stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
@@ -1971,7 +1973,7 @@ void gmx::LegacySimulator::do_md()
                                           ir->bSimTemp ? ir->simtempvals.get() : nullptr,
                                           stateGlobal_->dfhist.get(),
                                           state_->fep_state,
-                                          ir->nstlog,
+                                          outputControl.nstlog,
                                           step);
             }
             if (bCalcEner)
@@ -2033,7 +2035,7 @@ void gmx::LegacySimulator::do_md()
                 pull_print_output(pullWork_, step, t);
             }
 
-            if (do_per_step(step, ir->nstlog))
+            if (do_per_step(step, outputControl.nstlog))
             {
                 if (std::fflush(fpLog_) != 0)
                 {
@@ -2222,7 +2224,7 @@ void gmx::LegacySimulator::do_md()
 
     if (isMainRank)
     {
-        if (ir->nstcalcenergy > 0)
+        if (ir->outputControl.nstcalcenergy > 0)
         {
             energyOutput.printEnergyConservation(fpLog_, ir->simulation_part, EI_MD(ir->eI));
 

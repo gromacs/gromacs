@@ -1350,7 +1350,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
 
     if (EI_DYNAMICS(ir->eI))
     {
-        impl->defaultNstImd = ir->nstcalcenergy;
+        impl->defaultNstImd = ir->outputControl.nstcalcenergy;
     }
     else if (EI_ENERGY_MINIMIZATION(ir->eI))
     {

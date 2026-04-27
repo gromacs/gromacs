@@ -2700,7 +2700,8 @@ void dd_partition_system(FILE*                     fplog,
         bool bCheckWhetherToTurnDlbOn = dd_dlb_get_should_check_whether_to_turn_dlb_on(dd);
 
         /* Print load every nstlog, first and last step to the log file */
-        bool bLogLoad = ((inputrec.nstlog > 0 && step % inputrec.nstlog == 0) || comm->n_load_collect == 0
+        bool bLogLoad = ((inputrec.outputControl.nstlog > 0 && step % inputrec.outputControl.nstlog == 0)
+                         || comm->n_load_collect == 0
                          || (inputrec.nsteps >= 0
                              && (step + inputrec.nstlist > inputrec.init_step + inputrec.nsteps)));
 

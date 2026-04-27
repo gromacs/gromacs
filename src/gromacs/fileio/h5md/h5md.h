@@ -217,8 +217,8 @@ public:
 
     /*! \brief Set up the file from input data.
      *
-     * \param[in] topology    Topology data of system.
-     * \param[in] inputRecord Simulation parameters.
+     * \param[in] topology     Topology data of system.
+     * \param[in] inputRecord  Simulation parameters.
      */
     void setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord);
 
@@ -283,7 +283,7 @@ private:
      * \param[in] topology         Molecular topology for the simulated system.
      * \param[in] selectionIndices Global indices for all atoms in the group.
      * \param[in] selectionName    Name of group.
-     * \param[in] inputRecord      Simulation input record.
+     * \param[in] inputRecord      Simulation input record (includes output control).
      */
     void setupParticleBlockForGroup(const gmx_mtop_t&   topology,
                                     ArrayRef<const int> selectionIndices,

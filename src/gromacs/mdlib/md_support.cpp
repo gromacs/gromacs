@@ -565,7 +565,7 @@ void compute_globals(gmx_global_stat*               gstat,
              * In this way we obtain the current half step kinetic energy
              * instead of the average of the previous and the current.
              */
-            GMX_ASSERT(step % ir->nstcalcenergy != 0,
+            GMX_ASSERT(step % ir->outputControl.nstcalcenergy != 0,
                        "We should only ignore ekinh_old when terminating mdrun at a "
                        "non-nstcalcenergy step");
             for (auto& tcstat : ekind->tcstat)
@@ -634,9 +634,11 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
     // Maximum period for intra/inter simulation signalling
     const int c_maximumCommunicationPeriod = 200;
 
+    const gmx::OutputControl& outputControl = ir->outputControl;
+
     int nstglobalcomm;
 
-    if (ir->nstcalcenergy == 0 && ir->etc == TemperatureCoupling::No
+    if (outputControl.nstcalcenergy == 0 && ir->etc == TemperatureCoupling::No
         && ir->pressureCouplingOptions.epc != PressureCoupling::No)
     {
         nstglobalcomm = c_maximumCommunicationPeriod;
@@ -648,7 +650,7 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
          * We plan to remove nstglobalcomm. To achieve that, we need
          * to figure out the needs of these algorithms.
          */
-        nstglobalcomm = lcd3(ir->nstcalcenergy,
+        nstglobalcomm = lcd3(outputControl.nstcalcenergy,
                              ir->etc != TemperatureCoupling::No ? ir->nsttcouple : 0,
                              ir->pressureCouplingOptions.epc != PressureCoupling::No
                                      ? ir->pressureCouplingOptions.nstpcouple

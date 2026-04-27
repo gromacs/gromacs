@@ -1433,10 +1433,12 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& ir, WarningHan
         wi->addError(message);
     }
     /* This restriction can be removed by changing a flag of print_ebin() */
-    if (ir.nstenergy == 0 || awhParams.nstout() % ir.nstenergy != 0)
+    if (ir.outputControl.nstenergy == 0 || awhParams.nstout() % ir.outputControl.nstenergy != 0)
     {
-        auto message = formatString(
-                "%s (%d) should be a multiple of nstenergy (%d)", opt.c_str(), awhParams.nstout(), ir.nstenergy);
+        auto message = formatString("%s (%d) should be a multiple of nstenergy (%d)",
+                                    opt.c_str(),
+                                    awhParams.nstout(),
+                                    ir.outputControl.nstenergy);
         wi->addError(message);
     }
 
@@ -1464,7 +1466,7 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& ir, WarningHan
 
     if (haveFepLambdaDim)
     {
-        if (awhParams.nstSampleCoord() % ir.nstcalcenergy != 0)
+        if (awhParams.nstSampleCoord() % ir.outputControl.nstcalcenergy != 0)
         {
             opt          = "awh-nstsample";
             auto message = formatString(
@@ -1472,7 +1474,7 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& ir, WarningHan
                     "sampling an FEP lambda dimension",
                     opt.c_str(),
                     awhParams.nstSampleCoord(),
-                    ir.nstcalcenergy);
+                    ir.outputControl.nstcalcenergy);
             wi->addError(message);
         }
         if (awhParams.potential() != AwhPotentialType::Umbrella)

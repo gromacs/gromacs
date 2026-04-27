@@ -65,17 +65,18 @@ static int div_nsteps(int nsteps, int nst)
 
 double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& groups, int nrener, int nrepl)
 {
+    const gmx::OutputControl& outputControl = ir->outputControl;
 
     int    nsteps    = ir->nsteps;
     int    nxtcatoms = 0;
     int    nstx, nstv, nstf, nste, nstlog, nstxtc;
     double cio;
 
-    nstx   = div_nsteps(nsteps, ir->nstxout);
-    nstv   = div_nsteps(nsteps, ir->nstvout);
-    nstf   = div_nsteps(nsteps, ir->nstfout);
-    nstxtc = div_nsteps(nsteps, ir->nstxout_compressed);
-    if (ir->nstxout_compressed > 0)
+    nstx   = div_nsteps(nsteps, outputControl.nstxout);
+    nstv   = div_nsteps(nsteps, outputControl.nstvout);
+    nstf   = div_nsteps(nsteps, outputControl.nstfout);
+    nstxtc = div_nsteps(nsteps, outputControl.nstxout_compressed);
+    if (outputControl.nstxout_compressed > 0)
     {
         for (int i = 0; i < natoms; i++)
         {
@@ -86,9 +87,9 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
             }
         }
     }
-    nstlog = div_nsteps(nsteps, ir->nstlog);
+    nstlog = div_nsteps(nsteps, outputControl.nstlog);
     /* We add 2 for the header */
-    nste = div_nsteps(2 + nsteps, ir->nstenergy);
+    nste = div_nsteps(2 + nsteps, outputControl.nstenergy);
 
     cio = 80.0 * natoms;
     cio += (nstx + nstf + nstv) * sizeof(real) * (3.0 * natoms);
@@ -145,7 +146,8 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
             else
             {
                 /* as histograms: dh_hist_size ints per histogram */
-                cio += div_nsteps(nsteps, ir->nstenergy) * sizeof(int) * ir->fepvals->dh_hist_size * ndh;
+                cio += div_nsteps(nsteps, outputControl.nstenergy) * sizeof(int)
+                       * ir->fepvals->dh_hist_size * ndh;
             }
         }
     }

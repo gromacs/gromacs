@@ -443,7 +443,7 @@ static void init_em(FILE*                        fplog,
         *shellfc = init_shell_flexcon(stdout,
                                       top_global,
                                       constr ? constr->numFlexibleConstraints() : 0,
-                                      ir->nstcalcenergy,
+                                      ir->outputControl.nstcalcenergy,
                                       haveDDAtomOrdering(*cr),
                                       runScheduleWork.simulationWork);
     }
@@ -834,17 +834,16 @@ static void em_dd_partition_system(FILE*                          fplog,
                                    const gmx_mtop_t&              top_global,
                                    const t_inputrec*              ir,
                                    const MDModulesNotifiers&      mdModulesNotifiers,
-
-                                   gmx::ImdSession*     imdSession,
-                                   pull_t*              pull_work,
-                                   em_state_t*          ems,
-                                   gmx_localtop_t*      top,
-                                   gmx::MDAtoms*        mdAtoms,
-                                   t_forcerec*          fr,
-                                   VirtualSitesHandler* vsite,
-                                   gmx::Constraints*    constr,
-                                   t_nrnb*              nrnb,
-                                   gmx_wallcycle*       wcycle)
+                                   gmx::ImdSession*               imdSession,
+                                   pull_t*                        pull_work,
+                                   em_state_t*                    ems,
+                                   gmx_localtop_t*                top,
+                                   gmx::MDAtoms*                  mdAtoms,
+                                   t_forcerec*                    fr,
+                                   VirtualSitesHandler*           vsite,
+                                   gmx::Constraints*              constr,
+                                   t_nrnb*                        nrnb,
+                                   gmx_wallcycle*                 wcycle)
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog,
@@ -1334,6 +1333,8 @@ void LegacySimulator::do_cg()
 
     const bool isMainRank = cr_->commMyGroup.isMainRank();
 
+    const OutputControl& outputControl = inputRec_->outputControl;
+
     gmx_global_stat_t gstat;
     double            tmp, minstep;
     real              stepsize;
@@ -1608,8 +1609,8 @@ void LegacySimulator::do_cg()
         }
 
         /* Write coordinates if necessary */
-        do_x = do_per_step(step, inputRec_->nstxout);
-        do_f = do_per_step(step, inputRec_->nstfout);
+        do_x = do_per_step(step, outputControl.nstxout);
+        do_f = do_per_step(step, outputControl.nstfout);
 
         write_em_traj(
                 fpLog_, cr_, outf, do_x, do_f, nullptr, topGlobal_, inputRec_, step, s_min, stateGlobal_, observablesHistory_);
@@ -1947,8 +1948,8 @@ void LegacySimulator::do_cg()
                                              mu_tot,
                                              constr_);
 
-            do_log = do_per_step(step, inputRec_->nstlog);
-            do_ene = do_per_step(step, inputRec_->nstenergy);
+            do_log = do_per_step(step, outputControl.nstlog);
+            do_ene = do_per_step(step, outputControl.nstenergy);
 
             imdSession_->fillEnergyRecord(step, TRUE);
 
@@ -2034,8 +2035,8 @@ void LegacySimulator::do_cg()
     /* Note that with 0 < nstfout != nstxout we can end up with two frames
      * in the trajectory with the same step number.
      */
-    do_x = !do_per_step(step, inputRec_->nstxout);
-    do_f = (inputRec_->nstfout > 0 && !do_per_step(step, inputRec_->nstfout));
+    do_x = !do_per_step(step, outputControl.nstxout);
+    do_f = (outputControl.nstfout > 0 && !do_per_step(step, outputControl.nstfout));
 
     write_em_traj(
             fpLog_, cr_, outf, do_x, do_f, ftp2fn(efSTO, nFile_, fnm_), topGlobal_, inputRec_, step, s_min, stateGlobal_, observablesHistory_);
@@ -2062,6 +2063,8 @@ void LegacySimulator::do_lbfgs()
     static const char* LBFGS = "Low-Memory BFGS Minimizer";
 
     const bool isMainRank = cr_->commMyGroup.isMainRank();
+
+    const OutputControl& outputControl = inputRec_->outputControl;
 
     em_state_t        ems;
     gmx_global_stat_t gstat;
@@ -2326,8 +2329,8 @@ void LegacySimulator::do_lbfgs()
     {
 
         /* Write coordinates if necessary */
-        const bool do_x = do_per_step(stepGrad, inputRec_->nstxout);
-        const bool do_f = do_per_step(stepGrad, inputRec_->nstfout);
+        const bool do_x = do_per_step(stepGrad, outputControl.nstxout);
+        const bool do_f = do_per_step(stepGrad, outputControl.nstfout);
 
         int mdof_flags = 0;
         if (do_x)
@@ -2777,8 +2780,8 @@ void LegacySimulator::do_lbfgs()
                                              mu_tot,
                                              constr_);
 
-            do_log = do_per_step(stepGrad, inputRec_->nstlog);
-            do_ene = do_per_step(stepGrad, inputRec_->nstenergy);
+            do_log = do_per_step(stepGrad, outputControl.nstlog);
+            do_ene = do_per_step(stepGrad, outputControl.nstenergy);
 
             imdSession_->fillEnergyRecord(stepGrad, TRUE);
 
@@ -2859,8 +2862,8 @@ void LegacySimulator::do_lbfgs()
      * However, we should only do it if we did NOT already write this step
      * above (which we did if do_x or do_f was true).
      */
-    const bool do_x = !do_per_step(step, inputRec_->nstxout);
-    const bool do_f = !do_per_step(step, inputRec_->nstfout);
+    const bool do_x = !do_per_step(step, outputControl.nstxout);
+    const bool do_f = !do_per_step(step, outputControl.nstfout);
     write_em_traj(
             fpLog_, cr_, outf, do_x, do_f, ftp2fn(efSTO, nFile_, fnm_), topGlobal_, inputRec_, step, &ems, stateGlobal_, observablesHistory_);
 
@@ -2884,6 +2887,8 @@ void LegacySimulator::do_steep()
     const char* SD = "Steepest Descents";
 
     const bool isMainRank = cr_->commMySim.isMainRank();
+
+    const OutputControl& outputControl = inputRec_->outputControl;
 
     gmx_global_stat_t gstat;
     real              stepsize;
@@ -3117,8 +3122,8 @@ void LegacySimulator::do_steep()
             }
 
             /* Write to trn, if necessary */
-            do_x = do_per_step(steps_accepted, inputRec_->nstxout);
-            do_f = do_per_step(steps_accepted, inputRec_->nstfout);
+            do_x = do_per_step(steps_accepted, outputControl.nstxout);
+            do_f = do_per_step(steps_accepted, outputControl.nstfout);
             write_em_traj(
                     fpLog_, cr_, outf, do_x, do_f, nullptr, topGlobal_, inputRec_, count, s_min, stateGlobal_, observablesHistory_);
         }
@@ -3199,7 +3204,7 @@ void LegacySimulator::do_steep()
                   cr_,
                   outf,
                   TRUE,
-                  inputRec_->nstfout != 0,
+                  outputControl.nstfout != 0,
                   ftp2fn(efSTO, nFile_, fnm_),
                   topGlobal_,
                   inputRec_,

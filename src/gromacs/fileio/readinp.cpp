@@ -313,12 +313,71 @@ void mark_einp_set(gmx::ArrayRef<t_inpfile> inp, const char* name)
     int i = search_einp(inp, name);
     if (i != -1)
     {
-        inp[i].count_ = inp.front().inp_count_++;
-        inp[i].bSet_  = TRUE;
-        /* Prevent mdp lines being written twice for
-           options that are handled via key-value trees. */
-        inp[i].bHandledAsKeyValueTree_ = TRUE;
+        if (!inp[i].preserveOutputOrdering_)
+        {
+            inp[i].count_ = inp.front().inp_count_++;
+            /* Prevent mdp lines being written twice for
+               options that are handled via key-value trees. */
+            inp[i].bHandledAsKeyValueTree_ = TRUE;
+        }
+        inp[i].bSet_ = TRUE;
     }
+}
+
+void create_eint_output_placeholder(std::vector<t_inpfile>* inp, const char* name, int def)
+{
+    // Create entry and assign count_ without validating the value.
+    // Validation will happen during KVT transform.
+    // Only set default value if entry didn't exist in the MDP file.
+    int ret = get_einp(inp, name);
+    int idx = (ret == -1) ? (inp->size() - 1) : ret;
+
+    if (ret == -1)
+    {
+        // Entry was just created, set default value
+        char buf[32];
+        sprintf(buf, "%d", def);
+        (*inp)[idx].value_ = buf;
+    }
+    // Always preserve count_ for these fields
+    (*inp)[idx].preserveOutputOrdering_ = true;
+}
+
+void create_ereal_output_placeholder(std::vector<t_inpfile>* inp, const char* name, double def)
+{
+    // Create entry and assign count_ without validating the value.
+    // Validation will happen during KVT transform.
+    // Only set default value if entry didn't exist in the MDP file.
+    int ret = get_einp(inp, name);
+    int idx = (ret == -1) ? (inp->size() - 1) : ret;
+
+    if (ret == -1)
+    {
+        // Entry was just created, set default value
+        // Use %g format to match get_ereal() behavior (e.g., "1000" not "1000.000000")
+        char buf[32];
+        sprintf(buf, "%g", def);
+        (*inp)[idx].value_ = buf;
+    }
+    // Always preserve count_ for these fields
+    (*inp)[idx].preserveOutputOrdering_ = true;
+}
+
+void create_estring_output_placeholder(std::vector<t_inpfile>* inp, const char* name, const char* def)
+{
+    // Create entry and assign count_ without validating the value.
+    // Validation will happen during KVT transform.
+    // Only set default value if entry didn't exist in the MDP file.
+    int ret = get_einp(inp, name);
+    int idx = (ret == -1) ? (inp->size() - 1) : ret;
+
+    if (ret == -1)
+    {
+        // Entry was just created, set default value
+        (*inp)[idx].value_ = (def && def[0] != '\0') ? def : "";
+    }
+    // Always preserve count_ for these fields
+    (*inp)[idx].preserveOutputOrdering_ = true;
 }
 
 int get_einp(std::vector<t_inpfile>* inp, const char* name)

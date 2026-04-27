@@ -156,7 +156,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
     of->bExpanded               = ir->bExpanded;
     of->elamstats               = ir->expandedvals->elamstats;
     of->simulation_part         = ir->simulation_part;
-    of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
+    of->x_compression_precision = static_cast<int>(ir->outputControl.x_compression_precision);
     of->wcycle                  = wcycle;
     of->f_global                = nullptr;
     of->outputProvider          = outputProvider;
@@ -175,7 +175,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
 
         filemode = restartWithAppending ? appendMode : writeMode;
 
-        if (EI_DYNAMICS(ir->eI) && ir->nstxout_compressed > 0)
+        if (EI_DYNAMICS(ir->eI) && ir->outputControl.nstxout_compressed > 0)
         {
             const char* filename;
             filename = ftp2fn(efCOMPRESSED, nfile, fnm);
@@ -195,7 +195,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         }
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
             && (!GMX_FAHCORE
-                && !(EI_DYNAMICS(ir->eI) && ir->nstxout == 0 && ir->nstvout == 0 && ir->nstfout == 0)))
+                && !(EI_DYNAMICS(ir->eI) && ir->outputControl.nstxout == 0
+                     && ir->outputControl.nstvout == 0 && ir->outputControl.nstfout == 0)))
         {
             const char* filename;
             filename = ftp2fn(efTRN, nfile, fnm);
@@ -206,7 +207,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     /* If there is no uncompressed coordinate output and
                        there is compressed TNG output write forces
                        and/or velocities to the TNG file instead. */
-                    if (ir->nstxout != 0 || ir->nstxout_compressed == 0 || !of->tng_low_prec)
+                    if (ir->outputControl.nstxout != 0 || ir->outputControl.nstxout_compressed == 0
+                        || !of->tng_low_prec)
                     {
                         of->fp_trn = gmx_trr_open(filename, filemode);
                     }
@@ -274,7 +276,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
             }
         }
 
-        if (ir->nstfout && cr->dd != nullptr)
+        if (ir->outputControl.nstfout && cr->dd != nullptr)
         {
             snew(of->f_global, top_global.natoms);
         }

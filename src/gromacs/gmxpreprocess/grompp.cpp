@@ -520,12 +520,14 @@ static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, WarningHandl
             nshells++;
         }
     }
-    if ((nshells > 0) && (ir->nstcalcenergy != 1))
+    if ((nshells > 0) && (ir->outputControl.nstcalcenergy != 1))
     {
         wi->setFileAndLineNumber("unknown", -1);
-        std::string warningMessage = gmx::formatString(
-                "There are %d shells, changing nstcalcenergy from %d to 1", nshells, ir->nstcalcenergy);
-        ir->nstcalcenergy = 1;
+        std::string warningMessage =
+                gmx::formatString("There are %d shells, changing nstcalcenergy from %d to 1",
+                                  nshells,
+                                  ir->outputControl.nstcalcenergy);
+        ir->outputControl.nstcalcenergy = 1;
         wi->addWarning(warningMessage);
     }
 }
@@ -2231,8 +2233,9 @@ int gmx_grompp(int argc, char* argv[])
     gmx::MDModules mdModules;
     t_inputrec     irInstance;
     t_inputrec*    ir = &irInstance;
-    t_gromppopts   optsInstance;
-    t_gromppopts*  opts = &optsInstance;
+
+    t_gromppopts  optsInstance;
+    t_gromppopts* opts = &optsInstance;
     snew(opts->include, STRLEN);
     snew(opts->define, STRLEN);
 
@@ -2280,7 +2283,41 @@ int gmx_grompp(int argc, char* argv[])
                 .asParagraph()
                 .appendTextFormatted("checking input for internal consistency...");
     }
-    check_ir(mdparin, mdModules.notifiers(), ir, opts, &wi);
+    check_ir(mdparin, &mdModules, ir, opts, &wi);
+
+    // Sync ir->outputControl back to ir->params for TPR serialization
+    // OutputControl may have been modified during validation in check_ir(), so we need to update
+    // the key-value tree before the TPR file is written. We only update the
+    // output-control section, preserving all other module data.
+    {
+        gmx::KeyValueTreeBuilder kvtBuilder;
+
+        // Copy existing params except output-control
+        if (ir->params)
+        {
+            for (const auto& prop : ir->params->properties())
+            {
+                if (prop.key() != "output-control")
+                {
+                    kvtBuilder.rootObject().addRawValue(prop.key(), gmx::KeyValueTreeValue(prop.value()));
+                }
+            }
+        }
+
+        // Add updated output-control section with current values
+        auto outputControlObj = kvtBuilder.rootObject().addObject("output-control");
+        outputControlObj.addValue<int>("nstlog", ir->outputControl.nstlog);
+        outputControlObj.addValue<int>("nstxout", ir->outputControl.nstxout);
+        outputControlObj.addValue<int>("nstvout", ir->outputControl.nstvout);
+        outputControlObj.addValue<int>("nstfout", ir->outputControl.nstfout);
+        outputControlObj.addValue<int>("nstenergy", ir->outputControl.nstenergy);
+        outputControlObj.addValue<int>("nstxout-compressed", ir->outputControl.nstxout_compressed);
+        outputControlObj.addValue<real>("x-compression-precision", ir->outputControl.x_compression_precision);
+        outputControlObj.addValue<int>("nstcalcenergy", ir->outputControl.nstcalcenergy);
+
+        delete ir->params;
+        ir->params = new gmx::KeyValueTreeObject(kvtBuilder.build());
+    }
 
     if (ir->ld_seed == -1)
     {

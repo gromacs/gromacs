@@ -38,6 +38,7 @@ gmx_add_unit_test(MdtypesUnitTest mdtypes-test
         checkpointdata.cpp
         forcebuffers.cpp
         multipletimestepping.cpp
+        output_control.cpp
         )
 target_link_libraries(mdtypes-test PRIVATE
                       mdtypes

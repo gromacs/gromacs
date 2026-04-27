@@ -358,10 +358,11 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
 /* initialize the collection*/
 t_mde_delta_h_coll::t_mde_delta_h_coll(const t_inputrec& inputrec)
 {
-    int       n;
-    double*   lambda_vec;
-    int       ndhmax = inputrec.nstenergy / inputrec.nstcalcenergy;
-    t_lambda* fep    = inputrec.fepvals.get();
+    int                       n;
+    double*                   lambda_vec;
+    const gmx::OutputControl& outputControl = inputrec.outputControl;
+    int                       ndhmax        = outputControl.nstenergy / outputControl.nstcalcenergy;
+    t_lambda*                 fep           = inputrec.fepvals.get();
 
     /* only store system temperature */
     temperature = (haveConstantEnsembleTemperature(inputrec) ? constantEnsembleTemperature(inputrec)

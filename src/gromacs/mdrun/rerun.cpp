@@ -192,6 +192,9 @@ void gmx::LegacySimulator::do_rerun()
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
     const t_inputrec* ir = inputRec_;
+
+    const OutputControl& outputControl = ir->outputControl;
+
     double            t;
     bool              isLastStep               = false;
     bool              doFreeEnergyPerturbation = false;
@@ -280,10 +283,11 @@ void gmx::LegacySimulator::do_rerun()
     /* Settings for rerun */
     {
         // TODO: Avoid changing inputrec (#3854)
-        auto* nonConstInputrec               = const_cast<t_inputrec*>(inputRec_);
-        nonConstInputrec->nstlist            = 1;
-        nonConstInputrec->nstcalcenergy      = 1;
-        nonConstInputrec->nstxout_compressed = 0;
+        auto* nonConstInputrec    = const_cast<t_inputrec*>(inputRec_);
+        nonConstInputrec->nstlist = 1;
+        // Update outputControl
+        const_cast<t_inputrec*>(ir)->outputControl.nstcalcenergy      = 1;
+        const_cast<t_inputrec*>(ir)->outputControl.nstxout_compressed = 0;
     }
     int        nstglobalcomm = 1;
     const bool bNS           = true;
@@ -331,7 +335,7 @@ void gmx::LegacySimulator::do_rerun()
     shellfc = init_shell_flexcon(fpLog_,
                                  topGlobal_,
                                  constr_ ? constr_->numFlexibleConstraints() : 0,
-                                 ir->nstcalcenergy,
+                                 ir->outputControl.nstcalcenergy,
                                  haveDDAtomOrdering(*cr_),
                                  runScheduleWork_->simulationWork);
 
@@ -866,7 +870,7 @@ void gmx::LegacySimulator::do_rerun()
                 pull_print_output(pullWork_, step, t);
             }
 
-            if (do_per_step(step, ir->nstlog))
+            if (do_per_step(step, outputControl.nstlog))
             {
                 if (std::fflush(fpLog_) != 0)
                 {

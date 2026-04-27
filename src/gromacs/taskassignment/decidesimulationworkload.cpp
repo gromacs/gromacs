@@ -298,12 +298,13 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
 
     GMX_ASSERT(!simulationWork.useGpuUpdate || writeCheckpoint.has_value(),
                "Need a writeCheckpoint value when update is on GPU");
+    const OutputControl& outputControl = inputrec.outputControl;
     flags.copyXFromGpuForIO =
             simulationWork.useGpuUpdate
-            && (do_per_step(step, inputrec.nstxout)
-                || do_per_step(step, inputrec.nstxout_compressed) || writeCheckpoint.value());
+            && (do_per_step(step, outputControl.nstxout)
+                || do_per_step(step, outputControl.nstxout_compressed) || writeCheckpoint.value());
     flags.copyVFromGpuForIO = simulationWork.useGpuUpdate
-                              && (do_per_step(step, inputrec.nstvout)
+                              && (do_per_step(step, outputControl.nstvout)
                                   || (writeCheckpoint.value() && EI_STATE_VELOCITY(inputrec.eI)));
 
     return flags;

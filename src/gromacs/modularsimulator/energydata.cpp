@@ -149,7 +149,7 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
 
 void EnergyData::teardown()
 {
-    if (inputrec_->nstcalcenergy > 0 && isMainRank_)
+    if (inputrec_->outputControl.nstcalcenergy > 0 && isMainRank_)
     {
         energyOutput_->printEnergyConservation(fplog_, inputrec_->simulation_part, EI_MD(inputrec_->eI));
         energyOutput_->printAverages(fplog_, groups_);

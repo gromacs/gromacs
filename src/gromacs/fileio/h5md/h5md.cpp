@@ -360,6 +360,8 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
                                       const t_inputrec&   inputRecord)
 {
 #if GMX_USE_HDF5
+    const OutputControl& outputControl = inputRecord.outputControl;
+
     const auto [particlesGroup, particlesGroupGuard] =
             makeH5mdGroupGuard(createGroup(file_, c_particlesGroupPath));
     const auto [selectionGroup, selectionGroupGuard] =
@@ -374,7 +376,7 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
     const DataSetDims frameDims = numAtoms > 0 ? DataSetDims{ numAtoms } : DataSetDims{};
 
     H5mdParticleBlockBuilder blockBuilder;
-    if (inputRecord.nstxout > 0)
+    if (outputControl.nstxout > 0)
     {
         blockBuilder.setPosition(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_positionGroupName)
                                          .withFrameDimension(frameDims)
@@ -382,14 +384,14 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
                                          .build());
         setupSimulationBoxDataSet(selectionGroup, blockBuilder);
     }
-    if (inputRecord.nstvout > 0)
+    if (outputControl.nstvout > 0)
     {
         blockBuilder.setVelocity(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_velocityGroupName)
                                          .withFrameDimension(frameDims)
                                          .withUnit(c_velocityUnit)
                                          .build());
     }
-    if (inputRecord.nstfout > 0)
+    if (outputControl.nstfout > 0)
     {
         blockBuilder.setForce(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_forceGroupName)
                                       .withFrameDimension(frameDims)

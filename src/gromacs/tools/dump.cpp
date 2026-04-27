@@ -119,9 +119,17 @@ void list_tpr(const char* fn,
     t_inputrec    ir;
 
     read_tpx_state(fn, tpx.bIr ? &ir : nullptr, &state, tpx.bTop ? &mtop : nullptr);
-    if (tpx.bIr && !bOriginalInputrec)
+
+    // Set up MDModules and OutputControl before any module operations
+    gmx::MDModules mdModules;
+    if (tpx.bIr)
     {
-        MDModules().adjustInputrecBasedOnModules(&ir);
+        if (!bOriginalInputrec)
+        {
+            mdModules.adjustInputrecBasedOnModules(&ir);
+        }
+
+        mdModules.assignOptionsToModules(*ir.params, nullptr, &ir);
     }
 
     if (mdpfn && tpx.bIr)

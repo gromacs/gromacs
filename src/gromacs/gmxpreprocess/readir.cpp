@@ -68,6 +68,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
+#include "gromacs/mdtypes/output_control.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
@@ -105,6 +106,8 @@
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/vec.h"
 
+#include "inputrecstrings.h"
+
 #define NOGID 255
 
 using gmx::BasicVector;
@@ -115,22 +118,6 @@ using gmx::BasicVector;
  * (like the c-shell), which will give you a very weird compiler
  * message.
  */
-
-struct gmx_inputrec_strings
-{
-    char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN], accelerationGroups[STRLEN],
-            acceleration[STRLEN], freeze[STRLEN], frdim[STRLEN], energy[STRLEN], user1[STRLEN],
-            user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN], couple_moltype[STRLEN],
-            orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN], wall_atomtype[STRLEN],
-            wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN], imd_grp[STRLEN];
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::string> fep_lambda;
-    char                                                                   lambdaWeights[STRLEN];
-    char                                                                   lambdaCounts[STRLEN];
-    char                     wlHistogramCounts[STRLEN];
-    std::vector<std::string> pullGroupNames;
-    std::vector<std::string> rotateGroupNames;
-    char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
-};
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_inputrec_strings* inputrecStrings = nullptr;
@@ -234,11 +221,7 @@ static void process_interaction_modifier(InteractionModifiers* eintmod)
     }
 }
 
-void check_ir(const char*                    mdparin,
-              const gmx::MDModulesNotifiers& mdModulesNotifiers,
-              t_inputrec*                    ir,
-              t_gromppopts*                  opts,
-              WarningHandler*                wi)
+void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_gromppopts* opts, WarningHandler* wi)
 /* Check internal consistency.
  * NOTE: index groups are not set here yet, don't check things
  * like temperature coupling group options here, but in triple_check
@@ -254,6 +237,8 @@ void check_ir(const char*                    mdparin,
     real        dt_pcoupl;
     t_lambda*   fep    = ir->fepvals.get();
     t_expanded* expand = ir->expandedvals.get();
+
+    const gmx::OutputControl& outputControl = ir->outputControl;
 
     wi->setFileAndLineNumber(mdparin, -1);
 
@@ -549,33 +534,39 @@ void check_ir(const char*                    mdparin,
     }
     if (EI_DYNAMICS(ir->eI))
     {
+        gmx::OutputControl& modifiableOutputControl = ir->outputControl;
+
         // Replace old -1 "automation" values by the default value of 100
-        if (ir->nstcalcenergy < 0)
+        if (modifiableOutputControl.nstcalcenergy < 0)
         {
-            ir->nstcalcenergy = 100;
+            modifiableOutputControl.nstcalcenergy = 100;
         }
 
-        if ((ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy)
+        if ((outputControl.nstenergy > 0 && outputControl.nstcalcenergy > outputControl.nstenergy)
             || (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl > 0
-                && (ir->nstcalcenergy > ir->fepvals->nstdhdl)))
+                && (outputControl.nstcalcenergy > ir->fepvals->nstdhdl)))
 
         {
             const char* nsten    = "nstenergy";
             const char* nstdh    = "nstdhdl";
             const char* min_name = nsten;
-            int         min_nst  = ir->nstenergy;
+            int         min_nst  = outputControl.nstenergy;
 
             /* find the smallest of ( nstenergy, nstdhdl ) */
             if (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl > 0
-                && (ir->nstenergy == 0 || ir->fepvals->nstdhdl < ir->nstenergy))
+                && (outputControl.nstenergy == 0 || ir->fepvals->nstdhdl < outputControl.nstenergy))
             {
                 min_nst  = ir->fepvals->nstdhdl;
                 min_name = nstdh;
             }
             /* If the user sets nstenergy small, we should respect that */
-            sprintf(warn_buf, "Setting nstcalcenergy (%d) equal to %s (%d)", ir->nstcalcenergy, min_name, min_nst);
+            sprintf(warn_buf,
+                    "Setting nstcalcenergy (%d) equal to %s (%d)",
+                    outputControl.nstcalcenergy,
+                    min_name,
+                    min_nst);
             wi->addNote(warn_buf);
-            ir->nstcalcenergy = min_nst;
+            modifiableOutputControl.nstcalcenergy = min_nst;
         }
 
         if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
@@ -592,28 +583,36 @@ void check_ir(const char*                    mdparin,
             }
         }
 
-        if (ir->nstcalcenergy > 0)
+        if (outputControl.nstcalcenergy > 0)
         {
             if (ir->efep != FreeEnergyPerturbationType::No)
             {
                 /* nstdhdl should be a multiple of nstcalcenergy */
-                check_nst("nstcalcenergy", ir->nstcalcenergy, "nstdhdl", &ir->fepvals->nstdhdl, wi);
+                check_nst("nstcalcenergy", outputControl.nstcalcenergy, "nstdhdl", &ir->fepvals->nstdhdl, wi);
             }
             if (ir->bExpanded)
             {
                 /* nstexpanded should be a multiple of nstcalcenergy */
-                check_nst("nstcalcenergy", ir->nstcalcenergy, "nstexpanded", &ir->expandedvals->nstexpanded, wi);
+                check_nst("nstcalcenergy",
+                          outputControl.nstcalcenergy,
+                          "nstexpanded",
+                          &ir->expandedvals->nstexpanded,
+                          wi);
             }
             /* for storing exact averages nstenergy should be
              * a multiple of nstcalcenergy
              */
-            check_nst("nstcalcenergy", ir->nstcalcenergy, "nstenergy", &ir->nstenergy, wi);
+            check_nst("nstcalcenergy",
+                      outputControl.nstcalcenergy,
+                      "nstenergy",
+                      &modifiableOutputControl.nstenergy,
+                      wi);
         }
 
         // Inquire all MDModules, if their parameters match with the energy
         // calculation frequency
-        gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(ir->nstcalcenergy);
-        mdModulesNotifiers.preProcessingNotifier_.notify(&energyCalculationFrequencyErrors);
+        gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(outputControl.nstcalcenergy);
+        mdModules->notifiers().preProcessingNotifier_.notify(&energyCalculationFrequencyErrors);
 
         // Emit all errors from the energy calculation frequency checks
         for (const std::string& energyFrequencyErrorMessage :
@@ -1208,15 +1207,15 @@ void check_ir(const char*                    mdparin,
         if (expand->nstTij > 0)
         {
             sprintf(err_buf, "nstlog must be non-zero");
-            CHECK(ir->nstlog == 0);
+            CHECK(outputControl.nstlog == 0);
             // Avoid modulus by zero in the case that already triggered an error exit.
-            if (ir->nstlog != 0)
+            if (outputControl.nstlog != 0)
             {
                 sprintf(err_buf,
                         "nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
                         expand->nstTij,
-                        ir->nstlog);
-                CHECK((expand->nstTij % ir->nstlog) != 0);
+                        outputControl.nstlog);
+                CHECK((expand->nstTij % outputControl.nstlog) != 0);
             }
         }
     }
@@ -1296,7 +1295,7 @@ void check_ir(const char*                    mdparin,
             ir->nstcomm = std::abs(ir->nstcomm);
         }
 
-        if (ir->nstcalcenergy > 0 && ir->nstcomm < ir->nstcalcenergy
+        if (outputControl.nstcalcenergy > 0 && ir->nstcomm < outputControl.nstcalcenergy
             && ir->comm_mode != ComRemovalAlgorithm::LinearAccelerationCorrection)
         {
             wi->addNote(
@@ -2281,6 +2280,11 @@ void get_ir(const char*     mdparin,
             WriteMdpHeader  writeMdpHeader,
             WarningHandler* wi)
 {
+    // Validate preconditions for grompp MDP parsing
+    GMX_RELEASE_ASSERT(mdModules, "get_ir() called with null mdModules");
+    GMX_RELEASE_ASSERT(ir, "get_ir() called with null inputrec");
+    GMX_RELEASE_ASSERT(wi, "get_ir() called with null WarningHandler");
+
     char*       dumstr[2];
     double      dumdub[2][6];
     int         i, j, m;
@@ -2408,25 +2412,32 @@ void get_ir(const char*     mdparin,
     printStringNewline(&inp, "TEST PARTICLE INSERTION OPTIONS");
     ir->rtpi = get_ereal(&inp, "rtpi", 0.05, wi);
 
-    /* Output options */
+    // The mdp contents for output control are read later via
+    // MDModules into an OutputControl. This code merely prepares to
+    // write the mdp output in the traditional order, by inserting
+    // place-holder fields in inp which will later be filled from that
+    // OutputControl. Using create_*_output_placeholder ensures their
+    // count_ values are preserved when mark_einp_set is called during
+    // KVT processing, which preserves the intended ordering in the
+    // mdp output file.
     printStringNewline(&inp, "OUTPUT CONTROL OPTIONS");
     printStringNoNewline(&inp, "Output frequency for coords (x), velocities (v) and forces (f)");
-    ir->nstxout = get_eint(&inp, "nstxout", 0, wi);
-    ir->nstvout = get_eint(&inp, "nstvout", 0, wi);
-    ir->nstfout = get_eint(&inp, "nstfout", 0, wi);
+    create_eint_output_placeholder(&inp, "nstxout", 0);
+    create_eint_output_placeholder(&inp, "nstvout", 0);
+    create_eint_output_placeholder(&inp, "nstfout", 0);
     printStringNoNewline(&inp, "Output frequency for energies to log file and energy file");
-    ir->nstlog        = get_eint(&inp, "nstlog", 1000, wi);
-    ir->nstcalcenergy = get_eint(&inp, "nstcalcenergy", 100, wi);
-    ir->nstenergy     = get_eint(&inp, "nstenergy", 1000, wi);
+    create_eint_output_placeholder(&inp, "nstlog", 1000);
+    create_eint_output_placeholder(&inp, "nstcalcenergy", 100);
+    create_eint_output_placeholder(&inp, "nstenergy", 1000);
     printStringNoNewline(&inp, "Output frequency and precision for .xtc file");
-    ir->nstxout_compressed      = get_eint(&inp, "nstxout-compressed", 0, wi);
-    ir->x_compression_precision = get_ereal(&inp, "compressed-x-precision", 1000.0, wi);
+    create_eint_output_placeholder(&inp, "nstxout-compressed", 0);
+    create_ereal_output_placeholder(&inp, "compressed-x-precision", 1000.0);
     printStringNoNewline(&inp, "This selects the subset of atoms for the compressed");
     printStringNoNewline(&inp, "trajectory file. You can select multiple groups. By");
     printStringNoNewline(&inp, "default, all atoms will be written.");
-    setStringEntry(&inp, "compressed-x-grps", inputrecStrings->x_compressed_groups, nullptr);
+    create_estring_output_placeholder(&inp, "compressed-x-grps", "");
     printStringNoNewline(&inp, "Selection of energy groups");
-    setStringEntry(&inp, "energygrps", inputrecStrings->energy, nullptr);
+    create_estring_output_placeholder(&inp, "energygrps", "");
 
     /* Neighbor searching */
     printStringNewline(&inp, "NEIGHBORSEARCHING PARAMETERS");
@@ -2754,9 +2765,16 @@ void get_ir(const char*     mdparin,
         MdpErrorHandler errorHandler(wi);
         auto            result = transform.transform(convertedValues, &errorHandler);
         ir->params             = new gmx::KeyValueTreeObject(result.object());
-        mdModules->adjustInputrecBasedOnModules(ir);
+
+        // For grompp, inputrecStrings must be valid to process preprocessing-only parameters
+        GMX_RELEASE_ASSERT(inputrecStrings,
+                           "inputrecStrings is null in get_ir. This should never happen - "
+                           "init_inputrec_strings() should have been called at function start.");
+
+        // Both inputrec and inputrecStrings must be provided for MDP parsing in grompp
+        mdModules->adjustInputrecBasedOnModules(ir, true, inputrecStrings);
         errorHandler.setBackMapping(result.backMapping());
-        mdModules->assignOptionsToModules(*ir->params, &errorHandler);
+        mdModules->assignOptionsToModules(*ir->params, &errorHandler, ir, inputrecStrings);
     }
 
     /* Ion/water position swapping ("computational electrophysiology") */
@@ -2882,6 +2900,30 @@ void get_ir(const char*     mdparin,
         {
             int ii         = search_einp(inp, "gen-seed");
             inp[ii].value_ = std::to_string(opts->seed);
+        }
+
+        // Update output-control entries with validated values from ir->outputControl
+        // These entries were added earlier to maintain proper ordering in the MDP file
+        {
+            int idx;
+            idx             = search_einp(inp, "nstxout");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstxout);
+            idx             = search_einp(inp, "nstvout");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstvout);
+            idx             = search_einp(inp, "nstfout");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstfout);
+            idx             = search_einp(inp, "nstlog");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstlog);
+            idx             = search_einp(inp, "nstcalcenergy");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstcalcenergy);
+            idx             = search_einp(inp, "nstenergy");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstenergy);
+            idx             = search_einp(inp, "nstxout-compressed");
+            inp[idx].value_ = std::to_string(ir->outputControl.nstxout_compressed);
+            idx             = search_einp(inp, "compressed-x-precision");
+            char buf[32];
+            sprintf(buf, "%g", ir->outputControl.x_compression_precision);
+            inp[idx].value_ = buf;
         }
 
         write_inpfile(&outputStream, mdparout, &inp, FALSE, writeMdpHeader, wi);
@@ -4445,7 +4487,8 @@ void do_index(const char*                                 mdparin,
         }
     }
 
-    auto energyGroupNames = gmx::splitString(inputrecStrings->energy);
+    // Get group specifications from OutputControlModule (grompp preprocessing only)
+    auto energyGroupNames = gmx::splitString(inputrecStrings->energyGroups);
     do_numbering(natoms,
                  groups,
                  energyGroupNames,
@@ -4496,7 +4539,7 @@ void do_index(const char*                                 mdparin,
                  GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
-    auto compressedXGroupNames = gmx::splitString(inputrecStrings->x_compressed_groups);
+    auto compressedXGroupNames = gmx::splitString(inputrecStrings->compressedXGroups);
     do_numbering(natoms,
                  groups,
                  compressedXGroupNames,

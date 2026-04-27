@@ -80,7 +80,7 @@ void ExpandedEnsembleElement::apply(Step step, bool doLambdaStep, bool doLog)
                                   inputrec_->bSimTemp ? inputrec_->simtempvals.get() : nullptr,
                                   dfhist_.get(),
                                   freeEnergyPerturbationData_->currentFEPState(),
-                                  inputrec_->nstlog,
+                                  inputrec_->outputControl.nstlog,
                                   step);
     }
 }
@@ -88,7 +88,7 @@ void ExpandedEnsembleElement::apply(Step step, bool doLambdaStep, bool doLog)
 void ExpandedEnsembleElement::elementSetup()
 {
     // Check nstexpanded here, because the grompp check was broken (#2714)
-    if (inputrec_->expandedvals->nstexpanded % inputrec_->nstcalcenergy != 0)
+    if (inputrec_->expandedvals->nstexpanded % inputrec_->outputControl.nstcalcenergy != 0)
     {
         gmx_fatal(FARGS,
                   "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");

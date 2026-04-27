@@ -135,7 +135,7 @@ public:
                WriteMdpHeader::no,
                &wi);
 
-        check_ir(inputMdpFilename.c_str(), mdModules_.notifiers(), &ir_, &opts_, &wi);
+        check_ir(inputMdpFilename.c_str(), &mdModules_, &ir_, &opts_, &wi);
         // Now check
         bool failure = warning_errors_exist(wi);
         EXPECT_EQ(failure, expectError);

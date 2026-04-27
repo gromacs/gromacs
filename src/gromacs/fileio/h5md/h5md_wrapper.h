@@ -43,6 +43,9 @@
 
 #include <filesystem>
 
+struct gmx_mtop_t;
+struct t_inputrec;
+
 namespace gmx
 {
 
@@ -58,9 +61,9 @@ H5md* makeH5md(const std::filesystem::path& fileName, H5mdFileMode mode);
 
 /*! \brief Set up the file from input data.
  *
- * \param[out] h5md       Handle to H5md object
- * \param[in] topology    Topology data of system.
- * \param[in] inputRecord Simulation parameters.
+ * \param[out] h5md        Handle to H5md object
+ * \param[in] topology     Topology data of system.
+ * \param[in] inputRecord  Simulation parameters.
  */
 void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec& inputRecord);
 

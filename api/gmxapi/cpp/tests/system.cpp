@@ -37,6 +37,8 @@
 
 #include "programs/mdrun/tests/moduletest.h"
 
+#include "gmxapi/compat/tpr.h"
+
 #include "testingconfiguration.h"
 
 namespace gmxapi
@@ -57,6 +59,84 @@ TEST_F(GmxApiTest, SystemConstruction)
     EXPECT_NO_THROW(gmxapi::fromTprFile(runner_.tprFileName_));
     // We have nothing to check at this point other than compilation and
     // error-free execution.
+}
+
+/*!
+ * \brief Test that OutputControl parameters can be accessed via gmxapi.
+ *
+ * This test verifies that parameters moved to OutputControl struct are still
+ * accessible through the gmxapi parameter interface after the refactoring.
+ */
+TEST_F(GmxApiTest, OutputControlParameterAccess)
+{
+    makeTprFile(1);
+
+    // Read TPR file and get parameters
+    auto tprReadHandle = gmxapicompat::readTprFile(runner_.tprFileName_);
+    ASSERT_NE(tprReadHandle, nullptr);
+
+    auto params = gmxapicompat::getMdParams(*tprReadHandle);
+    ASSERT_NE(params, nullptr);
+
+    // Test reading integer OutputControl parameters
+    int nstxout = 0;
+    EXPECT_NO_THROW(nstxout = gmxapicompat::extractParam(*params, "nstxout", int{}));
+    // Default value from test TPR should be 0
+    EXPECT_EQ(nstxout, 0);
+
+    int nstvout = 0;
+    EXPECT_NO_THROW(nstvout = gmxapicompat::extractParam(*params, "nstvout", int{}));
+    EXPECT_EQ(nstvout, 0);
+
+    int nstfout = 0;
+    EXPECT_NO_THROW(nstfout = gmxapicompat::extractParam(*params, "nstfout", int{}));
+    EXPECT_EQ(nstfout, 0);
+
+    int nstlog = 0;
+    EXPECT_NO_THROW(nstlog = gmxapicompat::extractParam(*params, "nstlog", int{}));
+    EXPECT_GT(nstlog, 0); // nstlog should have a positive default value
+
+    int nstcalcenergy = 0;
+    EXPECT_NO_THROW(nstcalcenergy = gmxapicompat::extractParam(*params, "nstcalcenergy", int{}));
+    EXPECT_GT(nstcalcenergy, 0); // nstcalcenergy should have a positive default value
+
+    int nstenergy = 0;
+    EXPECT_NO_THROW(nstenergy = gmxapicompat::extractParam(*params, "nstenergy", int{}));
+    EXPECT_GT(nstenergy, 0); // nstenergy should have a positive default value
+
+    int nstxoutCompressed = 0;
+    EXPECT_NO_THROW(nstxoutCompressed = gmxapicompat::extractParam(*params, "nstxout-compressed", int{}));
+    EXPECT_EQ(nstxoutCompressed, 0); // Default is typically 0
+
+    // Test reading real OutputControl parameter
+    double compressedXPrecision = 0.0;
+    EXPECT_NO_THROW(compressedXPrecision =
+                            gmxapicompat::extractParam(*params, "compressed-x-precision", double{}));
+    EXPECT_GT(compressedXPrecision, 0.0); // Should have a positive default value
+
+    // Test writing OutputControl parameters
+    EXPECT_NO_THROW(gmxapicompat::setParam(params.get(), "nstxout", int64_t{ 500 }));
+    EXPECT_NO_THROW(gmxapicompat::setParam(params.get(), "nstvout", int64_t{ 1000 }));
+    EXPECT_NO_THROW(gmxapicompat::setParam(params.get(), "nstlog", int64_t{ 250 }));
+    EXPECT_NO_THROW(gmxapicompat::setParam(params.get(), "compressed-x-precision", 2000.0));
+
+    // Verify the values were set correctly
+    int newNstxout = 0;
+    EXPECT_NO_THROW(newNstxout = gmxapicompat::extractParam(*params, "nstxout", int{}));
+    EXPECT_EQ(newNstxout, 500);
+
+    int newNstvout = 0;
+    EXPECT_NO_THROW(newNstvout = gmxapicompat::extractParam(*params, "nstvout", int{}));
+    EXPECT_EQ(newNstvout, 1000);
+
+    int newNstlog = 0;
+    EXPECT_NO_THROW(newNstlog = gmxapicompat::extractParam(*params, "nstlog", int{}));
+    EXPECT_EQ(newNstlog, 250);
+
+    double newCompressedXPrecision = 0.0;
+    EXPECT_NO_THROW(newCompressedXPrecision =
+                            gmxapicompat::extractParam(*params, "compressed-x-precision", double{}));
+    EXPECT_DOUBLE_EQ(newCompressedXPrecision, 2000.0);
 }
 
 } // end anonymous namespace

@@ -53,11 +53,14 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
+#include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/output_control.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -95,6 +98,8 @@ TprReader::TprReader(std::string filename)
     t_commrec           commrec(mpiComm, mpiComm, nullptr);
     gmx::ForceProviders forceProviders;
     forceRecord.forceProviders = &forceProviders;
+    gmx::MDModules mdModules;
+    mdModules.assignOptionsToModules(*inputRecord.params, nullptr, &inputRecord);
     init_forcerec(nullptr,
                   gmx::MDLogger(),
                   simulationWorkload,

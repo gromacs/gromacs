@@ -50,6 +50,7 @@ file(GLOB MDTYPES_SOURCES
     multipletimestepping.cpp
     observableshistory.cpp
     observablesreducer.cpp
+    output_control.cpp
     state.cpp
     threaded_force_buffer.cpp)
 

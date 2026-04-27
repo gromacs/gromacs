@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/output_control.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
@@ -82,10 +83,11 @@ public:
                 InteractiveMolecularDynamicsModuleInfo::create();
         modules_[std::string(QMMMModuleInfo::sc_name)] = QMMMModuleInfo::create();
         modules_[std::string(SwapCoordinatesModuleInfo::sc_name)] = SwapCoordinatesModuleInfo::create();
-        modules_[std::string(ColvarsModuleInfo::sc_name)] = ColvarsModuleInfo::create();
-        modules_[std::string(PlumedModuleInfo::sc_name)]  = PlumedModuleInfo::create();
-        modules_[std::string(NNPotModuleInfo::sc_name)]   = NNPotModuleInfo::create();
-        modules_[std::string(FmmModuleInfo::sc_name)]     = FmmModuleInfo::create();
+        modules_[std::string(ColvarsModuleInfo::sc_name)]       = ColvarsModuleInfo::create();
+        modules_[std::string(PlumedModuleInfo::sc_name)]        = PlumedModuleInfo::create();
+        modules_[std::string(NNPotModuleInfo::sc_name)]         = NNPotModuleInfo::create();
+        modules_[std::string(FmmModuleInfo::sc_name)]           = FmmModuleInfo::create();
+        modules_[std::string(OutputControlModuleInfo::sc_name)] = OutputControlModuleInfo::create();
     }
 
     void makeModuleOptions(Options* options) const
@@ -117,6 +119,13 @@ public:
         GMX_RELEASE_ASSERT(fmmMdpOptionProvider,
                            "Fast-multipole-method module must implement MDP options");
         fmmMdpOptionProvider->initMdpOptions(&fmmModuleOptions);
+
+        // Output control module
+        IMDModule* outputControlModule = modules_.at(std::string(OutputControlModuleInfo::sc_name)).get();
+        IMdpOptionProvider* outputControlMdpOptionProvider = outputControlModule->mdpOptionProvider();
+        GMX_RELEASE_ASSERT(outputControlMdpOptionProvider,
+                           "Output control module must implement MDP options");
+        outputControlMdpOptionProvider->initMdpOptions(options);
 
         // In future, other sections would also go here.
     }
@@ -181,10 +190,26 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules* rules)
     GMX_RELEASE_ASSERT(fmmMdpOptionProvider,
                        "Fast-multipole-method module must implement MDP options");
     fmmMdpOptionProvider->initMdpTransform(fmmScope.rules());
+
+    // OutputControl module handles transform at top level (not in a scoped section)
+    IMDModule* outputControlModule =
+            impl_->modules_.at(std::string(OutputControlModuleInfo::sc_name)).get();
+    IMdpOptionProvider* outputControlMdpOptionProvider = outputControlModule->mdpOptionProvider();
+    GMX_RELEASE_ASSERT(outputControlMdpOptionProvider,
+                       "OutputControl module must implement MDP options");
+    outputControlMdpOptionProvider->initMdpTransform(rules);
 }
 
 void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
 {
+    // OutputControl module outputs first (not in applied-forces section)
+    IMDModule* outputControlModule =
+            impl_->modules_.at(std::string(OutputControlModuleInfo::sc_name)).get();
+    const IMdpOptionProvider* outputControlMdpOptionProvider = outputControlModule->mdpOptionProvider();
+    GMX_RELEASE_ASSERT(outputControlMdpOptionProvider,
+                       "OutputControl module must implement MDP options");
+    outputControlMdpOptionProvider->buildMdpOutput(builder);
+
     // Note that the order here should be kept stable so that the
     // fields in the mdp output file appear in a reliable order.
     for (std::string_view moduleName : { ElectricFieldModuleInfo::sc_name,
@@ -206,8 +231,30 @@ void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
     fmmMdpOptionProvider->buildMdpOutput(builder);
 }
 
-void MDModules::assignOptionsToModules(const KeyValueTreeObject& params, IKeyValueTreeErrorHandler* errorHandler)
+void MDModules::assignOptionsToModules(const KeyValueTreeObject&  params,
+                                       IKeyValueTreeErrorHandler* errorHandler,
+                                       t_inputrec*                inputrec,
+                                       gmx_inputrec_strings*      preprocessingStrings)
 {
+    // Configure module targets if inputrec provided
+    if (inputrec)
+    {
+        // Route OutputControl sub-object to output-control module
+        IMDModule* outputControlModule =
+                impl_->modules_.at(std::string(OutputControlModuleInfo::sc_name)).get();
+        gmx::setOutputControlTarget(outputControlModule, &inputrec->outputControl);
+
+        // Set preprocessing strings if provided
+        // For grompp, both inputrec and preprocessingStrings must be valid
+        // For mdrun/tools reading TPR, only inputrec is needed
+        if (preprocessingStrings)
+        {
+            gmx::setOutputControlPreprocessingStrings(outputControlModule, preprocessingStrings);
+        }
+
+        // Future: route other sub-objects here
+    }
+
     Options moduleOptions;
     impl_->makeModuleOptions(&moduleOptions);
     // The actual output is in the data fields of the modules that
@@ -215,17 +262,40 @@ void MDModules::assignOptionsToModules(const KeyValueTreeObject& params, IKeyVal
     assignOptionsFromKeyValueTree(&moduleOptions, params, errorHandler);
 }
 
-void MDModules::adjustInputrecBasedOnModules(t_inputrec* ir)
+void MDModules::adjustInputrecBasedOnModules(t_inputrec*           ir,
+                                             bool                  routeSubObjects,
+                                             gmx_inputrec_strings* preprocessingStrings)
 {
+    GMX_RELEASE_ASSERT(ir, "adjustInputrecBasedOnModules() called with null inputrec");
+    GMX_RELEASE_ASSERT(ir->params, "adjustInputrecBasedOnModules() called but ir->params is null");
+
+    // Configure module targets if requested
+    if (routeSubObjects)
+    {
+        // Route OutputControl sub-object to output-control module
+        IMDModule* outputControlModule =
+                impl_->modules_.at(std::string(OutputControlModuleInfo::sc_name)).get();
+        gmx::setOutputControlTarget(outputControlModule, &ir->outputControl);
+
+        // Set preprocessing strings if provided so preprocessing-only options are registered
+        if (preprocessingStrings)
+        {
+            gmx::setOutputControlPreprocessingStrings(outputControlModule, preprocessingStrings);
+        }
+
+        // Future: route other sub-objects here
+    }
+
     Options moduleOptions;
     impl_->makeModuleOptions(&moduleOptions);
 
     checkForUnknownOptionsInKeyValueTree(*ir->params, moduleOptions);
 
-    std::unique_ptr<KeyValueTreeObject> params(
+    std::unique_ptr<KeyValueTreeObject> adjustedParams(
             new KeyValueTreeObject(adjustKeyValueTreeFromOptions(*ir->params, moduleOptions)));
+
     delete ir->params;
-    ir->params = params.release();
+    ir->params = adjustedParams.release();
 }
 
 IMDOutputProvider* MDModules::outputProvider()

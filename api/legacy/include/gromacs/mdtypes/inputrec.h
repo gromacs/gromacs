@@ -384,6 +384,53 @@ struct PressureCouplingOptions
     RefCoordScaling refcoord_scaling = RefCoordScaling::Default;
 };
 
+namespace gmx
+{
+
+/*! \brief
+ * Output control parameters.
+ *
+ * This struct contains output frequency parameters that control
+ * how often coordinates, velocities, forces, energies, and compressed
+ * trajectories are written during simulation.
+ *
+ * An object of this type is embedded in t_inputrec to keep all
+ * simulation-input parameters together during the transition to
+ * a more modular style.
+ *
+ * This declaration is intended to relocate to output_control.h
+ * once t_inputrec has been fully reformed.
+ */
+struct OutputControl
+{
+    //! Number of steps after which print to logfile
+    int nstlog = 1000;
+    //! Number of steps after which X is output
+    int nstxout = 0;
+    //! Number of steps after which V is output
+    int nstvout = 0;
+    //! Number of steps after which F is output
+    int nstfout = 0;
+    //! Number of steps after which energies printed
+    int nstenergy = 1000;
+    //! Number of steps after which compressed trj (.xtc,.tng) is output
+    int nstxout_compressed = 0;
+    //! Precision of x in compressed trajectory file
+    real x_compression_precision = 1000.0;
+    /*! \brief Energy calculation interval
+     *
+     * Energy is calculated every nstcalcenergy steps and accumulated. When energy
+     * is written to file (every nstenergy steps), quantities used for
+     * reporting averages and fluctuations over nstcalcenergy intervals
+     * are written. Therefore, nstenergy is considered an output parameter because it changes the
+     * average values that are written as well as perhaps over-riding the
+     * default period between energy-calculation steps.
+     */
+    int nstcalcenergy = 100;
+};
+
+} // namespace gmx
+
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
@@ -394,6 +441,9 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! The tpx version number this inputrec was read from, -1 when not read from tpr
     int tpxFileVersion = -1;
 
+    //! Output control parameters (intervals for writing coordinates, energies, etc.)
+    gmx::OutputControl outputControl;
+
     //! Integration method
     IntegrationAlgorithm eI = IntegrationAlgorithm::Default;
     //! Number of steps to be taken
@@ -402,8 +452,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     int simulation_part = 0;
     //! Start at a stepcount >0 (used w. convert-tpr)
     int64_t init_step = 0;
-    //! Frequency of energy calc. and T/P coupl. upd.
-    int nstcalcenergy = 0;
     //! Group or verlet cutoffs
     CutoffScheme cutoff_scheme = CutoffScheme::Default;
     //! Number of steps before pairlist is generated
@@ -412,18 +460,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     int nstcomm = 0;
     //! Center of mass motion removal algorithm
     ComRemovalAlgorithm comm_mode = ComRemovalAlgorithm::Default;
-    //! Number of steps after which print to logfile
-    int nstlog = 0;
-    //! Number of steps after which X is output
-    int nstxout = 0;
-    //! Number of steps after which V is output
-    int nstvout = 0;
-    //! Number of steps after which F is output
-    int nstfout = 0;
-    //! Number of steps after which energies printed
-    int nstenergy = 0;
-    //! Number of steps after which compressed trj (.xtc,.tng) is output
-    int nstxout_compressed = 0;
     //! Initial time (ps)
     double init_t = 0;
     //! Time step (ps)
@@ -435,9 +471,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 
     //! The factor for repartitioning atom masses
     real massRepartitionFactor = 1;
-
-    //! Precision of x in compressed trajectory file
-    real x_compression_precision = 0;
 
     //! Requested fourier_spacing, when nk? not set
     real fourier_spacing = 0;

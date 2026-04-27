@@ -179,9 +179,9 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
         /* We only have SIMD versions of these bondeds without energy and
          * without shift-forces, we take that into account here.
          */
-        if (ir.nstcalcenergy > 0)
+        if (ir.outputControl.nstcalcenergy > 0)
         {
-            nonsimd_step_frac = 1.0 / ir.nstcalcenergy;
+            nonsimd_step_frac = 1.0 / ir.outputControl.nstcalcenergy;
         }
         else
         {

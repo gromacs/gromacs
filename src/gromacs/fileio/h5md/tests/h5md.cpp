@@ -339,9 +339,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)
     gmx_mtop_t mtop;
     mtop.natoms = 0;
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1; // Trajectory writing is enabled for nstout >0
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1; // Trajectory writing is enabled for nstout >0
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     EXPECT_THROW_GMX(file().setupFileFromInput(mtop, inputRecord), H5mdError);
 }
@@ -351,9 +351,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesNoTrajectoryGroupsIfNoOutput)
     gmx_mtop_t mtop;
     mtop.natoms = 1;
     t_inputrec inputRecord;
-    inputRecord.nstxout = 0; // Trajectory writing is not enabled for <=0
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 0;
+    inputRecord.outputControl.nstxout = 0; // Trajectory writing is not enabled for <=0
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 0;
 
     file().setupFileFromInput(mtop, inputRecord);
     EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system"));
@@ -368,9 +368,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesPositionGroupIfSet)
     mtop.natoms = 1;
     t_inputrec inputRecord;
     // Trajectory writing is enabled for nstout >0: only enable positions here to ensure independence
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 0;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 0;
 
     file().setupFileFromInput(mtop, inputRecord);
     EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/position"));
@@ -389,9 +389,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesVelocityGroupIfSet)
     mtop.natoms = 1;
     t_inputrec inputRecord;
     // Trajectory writing is enabled for nstout >0: only enable velocities here to ensure independence
-    inputRecord.nstxout = 0;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 0;
+    inputRecord.outputControl.nstxout = 0;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 0;
 
     file().setupFileFromInput(mtop, inputRecord);
     EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
@@ -410,9 +410,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesForceGroupIfSet)
     mtop.natoms = 1;
     t_inputrec inputRecord;
     // Trajectory writing is enabled for nstout >0: only enable forces here to ensure independence
-    inputRecord.nstxout = 0;
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 0;
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 1;
 
     file().setupFileFromInput(mtop, inputRecord);
     EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
@@ -432,10 +432,10 @@ TEST_F(H5mdIoTest, SetupFileFromInputIgnoresNstxoutCompressed)
     t_inputrec inputRecord;
     // Trajectory writing is enabled for nstout >0: only enable compressed output here
     // to assert that this does not create the position group
-    inputRecord.nstxout            = 0;
-    inputRecord.nstvout            = 0;
-    inputRecord.nstfout            = 0;
-    inputRecord.nstxout_compressed = 1;
+    inputRecord.outputControl.nstxout            = 0;
+    inputRecord.outputControl.nstvout            = 0;
+    inputRecord.outputControl.nstfout            = 0;
+    inputRecord.outputControl.nstxout_compressed = 1;
 
     file().setupFileFromInput(mtop, inputRecord);
     EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
@@ -451,9 +451,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputIgnoresNstxoutCompressed)
 TEST_F(H5mdIoTest, SetupFileFromInputSetsCorrectDataSetDims)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -635,9 +635,9 @@ TEST_F(H5mdIoTest, SetupFileFromInputSetsUnitsToTrajectoryDataSets)
     gmx_mtop_t mtop;
     mtop.natoms = 1;
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
     file().setupFileFromInput(mtop, inputRecord);
 
     const auto [positionGroup, positionGroupGuard] =
@@ -668,8 +668,8 @@ TEST_F(H5mdIoTest, SetupFileFromInputSetsUnitsToTrajectoryDataSets)
 TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.pbcType = PbcType::Xyz;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.pbcType               = PbcType::Xyz;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -692,8 +692,8 @@ TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
 TEST_F(H5mdIoTest, BoxGroupAttributesPbcXy)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.pbcType = PbcType::XY;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.pbcType               = PbcType::XY;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -716,8 +716,8 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcXy)
 TEST_F(H5mdIoTest, BoxGroupAttributesPbcNo)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.pbcType = PbcType::No;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.pbcType               = PbcType::No;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -740,8 +740,8 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcNo)
 TEST_F(H5mdIoTest, BoxGroupAttributesPbcScrew)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.pbcType = PbcType::Screw;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.pbcType               = PbcType::Screw;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -764,8 +764,8 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcScrew)
 TEST_F(H5mdIoTest, BoxStepAndTimeDataSetsAreHardLinkedToPosition)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.pbcType = PbcType::Xyz;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.pbcType               = PbcType::Xyz;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -797,9 +797,9 @@ TEST_F(H5mdIoTest, BoxStepAndTimeDataSetsAreHardLinkedToPosition)
 TEST_F(H5mdIoTest, WriteNextFrameWorks)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -904,9 +904,9 @@ TEST_F(H5mdIoTest, WriteNextFrameWorks)
 TEST_F(H5mdIoTest, WriteNextFrameDoesNotWriteEmptyRefs)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -962,9 +962,9 @@ TEST_F(H5mdIoTest, WriteNextFrameThrowsForNotCreatedDataSets)
 {
     t_inputrec inputRecord;
     // Do not construct data sets for any trajectory data
-    inputRecord.nstxout = 0;
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 0;
+    inputRecord.outputControl.nstxout = 0;
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 0;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -987,9 +987,9 @@ TEST_F(H5mdIoTest, WriteNextFrameThrowsForNotCreatedDataSets)
 TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -1027,9 +1027,9 @@ using H5mdReadNextFrame = H5mdIoTest;
 TEST_F(H5mdReadNextFrame, Works)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     const int  numAtoms = 6;
     gmx_mtop_t mtop;
@@ -1113,10 +1113,10 @@ TEST_F(H5mdReadNextFrame, Works)
 TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
-    const int  numAtoms = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
+    const int  numAtoms               = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
     file().setupFileFromInput(mtop, inputRecord);
@@ -1134,10 +1134,10 @@ TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
 TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 0;
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 0;
-    const int  numAtoms = 1;
+    inputRecord.outputControl.nstxout = 0;
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 0;
+    const int  numAtoms               = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
     file().setupFileFromInput(mtop, inputRecord);
@@ -1158,10 +1158,10 @@ TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
 TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 0;
-    const int  numAtoms = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 0;
+    const int  numAtoms               = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
 
@@ -1190,10 +1190,10 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
 TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 0;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 0;
-    const int  numAtoms = 1;
+    inputRecord.outputControl.nstxout = 0;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 0;
+    const int  numAtoms               = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
 
@@ -1217,10 +1217,10 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
 TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 0;
-    inputRecord.nstvout = 0;
-    inputRecord.nstfout = 1;
-    const int  numAtoms = 1;
+    inputRecord.outputControl.nstxout = 0;
+    inputRecord.outputControl.nstvout = 0;
+    inputRecord.outputControl.nstfout = 1;
+    const int  numAtoms               = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
 
@@ -1245,9 +1245,9 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
 TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1457,9 +1457,9 @@ TEST_F(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
 TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
 {
     t_inputrec inputRecord;
-    inputRecord.nstxout = 1;
-    inputRecord.nstvout = 1;
-    inputRecord.nstfout = 1;
+    inputRecord.outputControl.nstxout = 1;
+    inputRecord.outputControl.nstvout = 1;
+    inputRecord.outputControl.nstfout = 1;
 
     const int  numAtoms = 1;
     gmx_mtop_t mtop;

@@ -86,19 +86,19 @@ void do_md_trajectory_writing(FILE*                          fplog,
     rvec* x_for_confout = nullptr;
 
     mdof_flags = 0;
-    if (do_per_step(step, ir->nstxout))
+    if (do_per_step(step, ir->outputControl.nstxout))
     {
         mdof_flags |= MDOF_X;
     }
-    if (do_per_step(step, ir->nstvout))
+    if (do_per_step(step, ir->outputControl.nstvout))
     {
         mdof_flags |= MDOF_V;
     }
-    if (do_per_step(step, ir->nstfout))
+    if (do_per_step(step, ir->outputControl.nstfout))
     {
         mdof_flags |= MDOF_F;
     }
-    if (do_per_step(step, ir->nstxout_compressed))
+    if (do_per_step(step, ir->outputControl.nstxout_compressed))
     {
         mdof_flags |= MDOF_X_COMPRESSED;
     }

@@ -47,6 +47,7 @@
 
 struct gmx_wallcycle;
 struct t_inputrec;
+struct gmx_inputrec_strings;
 
 namespace gmx
 {
@@ -59,6 +60,7 @@ class IKeyValueTreeTransformRules;
 class IMDModule;
 class IMDOutputProvider;
 struct MDModulesNotifiers;
+struct OutputControl;
 
 /*! \libinternal \brief
  * Manages the collection of all modules used for mdrun.
@@ -119,12 +121,34 @@ public:
     /*! \brief
      * Sets input parameters from `params` for each module.
      *
-     * \param[in]  params  Contains keys and values from user
+     * If \c inputrec is provided, also configures modules to write to
+     * the appropriate sub-objects within it before assigning values. Once
+     * all options are implemented with modules, they can be changed to
+     * own their own storage and this parameter will no longer be required.
+     *
+     * If \c preprocessingStrings is provided, configures modules to write
+     * preprocessing-only string parameters (like group specifications) to
+     * the provided storage. These are not serialized to TPR.
+     *
+     * \note REQUIRED FOR GROMPP: Both \c inputrec and \c preprocessingStrings
+     *       must be provided when parsing MDP files in grompp. This ensures
+     *       modules can register options for preprocessing-only parameters.
+     * \note REQUIRED FOR MDRUN: Only \c inputrec is needed when reading TPR
+     *       files in mdrun/tools (pass nullptr for \c preprocessingStrings).
+     * \note OPTIONAL FOR TESTS: Can be called without inputrec for unit tests
+     *       that don't need module sub-object routing.
+     *
+     * \param[in]  params               Contains keys and values from user
      *     input (and defaults) to configure modules that have
      *     registered options with those keys.
-     * \param[out] errorHandler  Called to report errors.
+     * \param[out] errorHandler          Called to report errors.
+     * \param[in]  inputrec              Optional inputrec for module routing (default nullptr)
+     * \param[in]  preprocessingStrings  Optional preprocessing string storage (default nullptr)
      */
-    void assignOptionsToModules(const KeyValueTreeObject& params, IKeyValueTreeErrorHandler* errorHandler);
+    void assignOptionsToModules(const KeyValueTreeObject&  params,
+                                IKeyValueTreeErrorHandler* errorHandler,
+                                t_inputrec*                inputrec             = nullptr,
+                                gmx_inputrec_strings*      preprocessingStrings = nullptr);
 
     /*! \brief
      * Normalizes inputrec parameters to match current code version.
@@ -132,8 +156,28 @@ public:
      * This orders the parameters in `ir->param` to match the current code
      * and adds any missing defaults.  It also throws an error if the
      * inputrec contains parameters that are not recognized by any module.
+     *
+     * If routeSubObjects is true, also configures modules to write to the
+     * appropriate sub-objects within inputrec before processing.
+     *
+     * If preprocessingStrings is provided, also configures modules to register
+     * preprocessing-only options so they are recognized during validation.
+     *
+     * \note REQUIRED: \c ir must not be null - this is a required parameter
+     *       for all code paths.
+     * \note FOR GROMPP: Pass both routeSubObjects=true and non-null
+     *       preprocessingStrings when processing MDP files to ensure all
+     *       parameters (including preprocessing-only) are recognized.
+     * \note FOR MDRUN: Pass routeSubObjects=true but nullptr for
+     *       preprocessingStrings when reading TPR files.
+     *
+     * \param[in] ir                  The inputrec to adjust (must not be null)
+     * \param[in] routeSubObjects     Whether to route sub-objects to modules (default true)
+     * \param[in] preprocessingStrings Optional preprocessing string storage (default nullptr)
      */
-    void adjustInputrecBasedOnModules(t_inputrec* ir);
+    void adjustInputrecBasedOnModules(t_inputrec*           ir,
+                                      bool                  routeSubObjects      = true,
+                                      gmx_inputrec_strings* preprocessingStrings = nullptr);
 
     /*! \brief
      * Returns an interface for initializing and finalizing output for modules.
