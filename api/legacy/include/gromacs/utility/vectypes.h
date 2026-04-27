@@ -84,6 +84,9 @@ template<typename ValueType>
 class BasicVector
 {
 public:
+    //! The type of the elements
+    using value_type = ValueType;
+
     //! Underlying raw C array type (rvec/dvec/ivec).
     using RawArray = ValueType[DIM];
 
@@ -219,6 +222,13 @@ public:
     constexpr BasicVector<double> toDVec() const
     {
         return { double(x_[XX]), double(x_[YY]), double(x_[ZZ]) };
+    }
+
+    //! Conversion operator to enable static_cast between BasicVectors with different ValueType
+    template<typename T>
+    operator BasicVector<T>() const
+    {
+        return { static_cast<T>(x_[XX]), static_cast<T>(x_[YY]), static_cast<T>(x_[ZZ]) };
     }
 
     //! Converts to a raw C array where implicit conversion does not work.
