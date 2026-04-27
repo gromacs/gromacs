@@ -66,7 +66,6 @@ static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_n
 {
     FILE*      fp;
     bool       bCont;
-    char       libfilename[128];
     char       format[128], f1[128];
     char       buf[1024], elem[16], type[16], nbbuf[16], **newbuf;
     int        i, nb, nnnm, line = 1;
@@ -106,7 +105,7 @@ static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_n
                         std::strcat(f1, "%s%lf");
                         if (sscanf(buf, f1, nbbuf, &(nm2t[nnnm].blen[i])) != 2)
                         {
-                            gmx_fatal(FARGS, "Error on line %d of %s", line, libfilename);
+                            gmx_fatal(FARGS, "Error on line %d of %s", line, filename.string().c_str());
                         }
                         newbuf[i] = gmx_strdup(nbbuf);
                         std::strcat(format, "%*s%*s");

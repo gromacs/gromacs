@@ -15,12 +15,66 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-       
+
+Fixed PME mixed mode with spread/gather on GPU and FFT and solve on CPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With PME mixed mode, mdrun would exit with an error about infinite energies
+or with a CUDA error.
+
+:issue:`5336`
+
+Fixed a RuntimeError within the NNPot interface
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed a "RuntimeError: Global alloc not supported yet" when running GPU inference on certain
+NNP models (e.g. Nutmeg) within the NNPot interface.
+
+:issue:`5586`
+
+Correctly restore deltaH history from a checkpoint
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Was reset to zero. This would only affect results when continuing from a checkpoint
+that was written at a step that is not a multiple of nstdhdl.
+
+:issue:`5584`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Better error reporting in ``gmx x2top``
+"""""""""""""""""""""""""""""""""""""""
+
+Properly print the filename when a forcefield parsing error is encountered.
+
+:issue:`5601`
+
+Fixed a selection evaluation issue for numeric expressions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed a selection issue that would lead to a crash when a numeric expression 
+would reference a variable derived from a position expression.
+
+:issue:`5576`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Facilitated configuring a oneAPI SYCL build with MKL from oneAPI 2026.0 and newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A configure-time check that MKL can link in a SYCL build referred to a header
+deprecated in oneAPI 2025.0 that is removed in oneAPI 2026.0. The check now
+flexibly refers to the new header whenever it exists.
+
+Improved detection of GPU-awareness in MPI
+""""""""""""""""""""""""""""""""""""""""""
+
+Previously, |Gromacs| could fail to detect that the MPI library has
+extensions to query its GPU support, necessitating the use of
+``GMX_FORCE_GPU_AWARE_MPI=1`` environment variable.
+Cray MPICH 9 with ROCm was affected.
 
 Miscellaneous
 ^^^^^^^^^^^^^

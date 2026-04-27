@@ -82,6 +82,15 @@ else()
     message(FATAL_ERROR "Cannot compile a SYCL program with ${SYCL_CXX_FLAGS}. Try a different compiler or disable SYCL.")
 endif()
 
+# When using the Ninja generator, CMake uses linker itself for dependency tracking.
+# In case of ICPX, the dependencies include many temporary files.
+# This causes re-linking of libgromacs.so (which is rather slow) every
+# time any build command is run, including `ninja check`.
+# No such problems observed with plain Make.
+if(CMAKE_GENERATOR MATCHES "Ninja")
+    set(CMAKE_LINK_DEPENDS_USE_LINKER FALSE)
+endif()
+
 # Try compiling an empty kernel to sniff out the enabled targets
 set(SAMPLE_SYCL_KERNEL_PROBE_SOURCE
 "#include <sycl/sycl.hpp>
@@ -316,8 +325,14 @@ if(GMX_GPU_FFT_MKL)
 
     list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES};${FFT_LIBRARIES}")
+    # oneAPI 2025.0 deprecated dfti.hpp in favour of dft.hpp
+    # oneAPI 2026.0 removed dfti.hpp
     check_cxx_source_compiles("
+#if __has_include(\"oneapi/mkl/dft.hpp\")
+#include <oneapi/mkl/dft.hpp>
+#else
 #include <oneapi/mkl/dfti.hpp>
+#endif
 int main() {
     oneapi::mkl::dft::descriptor<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL> d({3,5,7});
     sycl::queue q;

@@ -1180,6 +1180,12 @@ std::unique_ptr<gmx_pme_t> gmx_pme_reinit(const gmx_domdec_t*       dd,
         {
             gmx_pme_reinit_atoms(pmedata.get(), pmeSrc.atc[0].numAtoms(), {}, {});
         }
+        // When the box is static and mixed mode is used, we need to set the box sizes in gmx_pme_t
+        if (pmeSrc.gpu)
+        {
+            copy_mat(pmeSrc.recipbox, pmedata->recipbox);
+            pmedata->boxVolume = pmeSrc.boxVolume;
+        }
         // TODO this is mostly passing around current values
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

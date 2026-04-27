@@ -45,6 +45,7 @@
 #ifdef DIM
 #    undef DIM
 #endif
+#include <torch/csrc/jit/runtime/graph_executor.h>
 #include <torch/cuda.h>
 #include <torch/script.h>
 #include <torch/torch.h>

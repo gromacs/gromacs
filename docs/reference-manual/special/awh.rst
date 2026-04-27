@@ -645,7 +645,7 @@ Limitations
 The only real limitation of the AWH implementation, apart from the not uncommon
 practical issue that the method might not converge sufficiently fast, is a limit
 on the maximum free energy difference. This limit is set to :math:`700 k_B T`, because
-:math:`e^700` is close to the maximum value that can be accurately represented by
+:math:`e^{700}` is close to the maximum value that can be accurately represented by
 a double-precision floating-point value. For physical reaction coordinates, this
 is not a limit in practice. This does limit the range of applications for
 alchemical coordinates. For instance, hydration free-energies of divalent
@@ -678,7 +678,7 @@ estimate used by AWH to initialize :math:`N` in terms of more meaningful
 quantities
 
 .. math:: \frac{1}{N_0} = \frac{1}{N_0(\varepsilon_0, D)} = \Delta
-      t_\mathrm{sample} \max_d \frac{2D_d}{L_d^2} \varepsilon_0^2
+          t_\mathrm{sample} \max_d \frac{2D_d}{L_d^2} \varepsilon_0^2
           :label: eqawhn0
 
 where :math:`L_d` is the length of the interval and :math:`D_d` is

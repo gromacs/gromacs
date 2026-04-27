@@ -1708,7 +1708,7 @@ static int do_cpt_enerhist(XdrSerializer* serializer, gmx_bool bRead, int fflags
                     break;
                 }
                 case StateEnergyEntry::DeltaHList:
-                    for (auto dh : deltaH->dh)
+                    for (auto& dh : deltaH->dh)
                     {
                         ret = doVector<real>(serializer, *i, &dh, list);
                     }

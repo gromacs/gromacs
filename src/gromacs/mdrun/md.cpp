@@ -1740,9 +1740,17 @@ void gmx::LegacySimulator::do_md()
                 // update): with PME tuning, since the GPU kernels
                 // chosen by the FFT library can vary with grid size;
                 // or with an odd nstlist, since the odd/even step
-                // pruning pattern will change
-                bool forceGraphReinstantiation =
-                        (pmeLoadBal && pmeLoadBal->isActive()) || ((ir->nstlist % 2) == 1);
+                // pruning pattern will change.
+                // We also must reinstantiate to handle the one-time parity flip
+                // caused by an odd init_step with an even nstlist during the
+                // first neighbour search interval.
+                bool isFirstNsIntervalWithParityFlip =
+                        (((ir->init_step % 2) != 0) && ((ir->nstlist % 2) == 0)
+                         && (step <= ir->init_step + ir->nstlist + 1));
+
+                bool forceGraphReinstantiation = (pmeLoadBal && pmeLoadBal->isActive())
+                                                 || ((ir->nstlist % 2) == 1)
+                                                 || isFirstNsIntervalWithParityFlip;
                 mdGraph->createExecutableGraph(forceGraphReinstantiation);
             }
             if (mdGraph->useGraphThisStep())
