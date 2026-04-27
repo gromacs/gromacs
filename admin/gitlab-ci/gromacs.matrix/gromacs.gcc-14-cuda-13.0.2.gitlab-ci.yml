@@ -25,12 +25,14 @@ gromacs:gcc-14-cuda-13.0.2:configureMPI:
     - .use-mpi
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix-libtorch-2.9
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     # set CUDA_NVRTC_SHORTHASH to an arbitrary value avoid CMake warning due to PyTorch issue #129777
-    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/math_libs -DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=TORCH -Wno-dev -DCUDA_NVRTC_SHORTHASH=PYTORCHISSUE129777"
+    # Disable build with cufftmp while there are issues with it, see #5607
+    # CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/math_libs -DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=TORCH -Wno-dev -DCUDA_NVRTC_SHORTHASH=PYTORCHISSUE129777"
+    CMAKE_EXTRA_OPTIONS: "-DTorch_DIR=/usr/local/libtorch/libtorch/share/cmake/Torch -DGMX_NNPOT=TORCH -Wno-dev -DCUDA_NVRTC_SHORTHASH=PYTORCHISSUE129777"
     COMPILER_MAJOR_VERSION: 14
 
 gromacs:gcc-14-cuda-13.0.2:buildMPI:
@@ -40,9 +42,9 @@ gromacs:gcc-14-cuda-13.0.2:buildMPI:
     - .use-ccache
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix-libtorch-2.9
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
   needs:
     - job: gromacs:gcc-14-cuda-13.0.2:configureMPI
 
@@ -52,10 +54,11 @@ gromacs:gcc-14-cuda-13.0.2:testMPI:
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix-libtorch-2.9
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
-    GMX_GPU_PME_DECOMPOSITION: 1
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    # There are currently issues with cufftMp, so we disable it. See #5607
+    # GMX_GPU_PME_DECOMPOSITION: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
@@ -72,9 +75,9 @@ gromacs:gcc-14-cuda-13.0.2:regressiontest-gpucommupd-MPI:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix-libtorch-2.9
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
@@ -100,7 +103,7 @@ gromacs:gcc-14:configure-libtorch:
     - .use-cuda
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix-libtorch-2.9
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
@@ -115,7 +118,7 @@ gromacs:gcc-14:build-libtorch:
     - .use-ccache
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-libtorch-2.9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix-libtorch-2.9
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:

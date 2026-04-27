@@ -23,9 +23,9 @@ gromacs:gcc-14-cuda-13.0.2:configureMPI-NVSHMEM:
     - .use-mpi
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/comm_libs/nvshmem"
     COMPILER_MAJOR_VERSION: 14
@@ -37,9 +37,9 @@ gromacs:gcc-14-cuda-13.0.2:buildMPI-NVSHMEM:
     - .use-ccache
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2025/comm_libs/nvshmem"
     # Workaround because the CMake support for NVSHMEM needs improvement:
     LD_LIBRARY_FLAGS: /opt/nvidia/hpc_sdk/Linux_x86_64/2025/comm_libs/nvshmem
@@ -52,9 +52,9 @@ gromacs:gcc-14-cuda-13.0.2:testMPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
@@ -72,9 +72,9 @@ gromacs:gcc-14-cuda-13.0.2:regressiontest-gpucommupd-MPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
     # Test 1 PME - 1 PP rank runs in regressiontests
     # as nvshmem support is for PME to PP force transfers
@@ -103,9 +103,9 @@ gromacs:gcc-14-cuda-13.0.2:regressiontest-gpucommupd-RF-MPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
-    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
     # Test 2 PP rank runs in regressiontests for NVSHMEM enabled PP-PP haloexchange
     REGRESSIONTEST_PME_RANK_NUMBER: 0

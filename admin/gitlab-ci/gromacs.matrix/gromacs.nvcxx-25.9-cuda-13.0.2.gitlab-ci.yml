@@ -22,14 +22,15 @@ gromacs:nvcxx-25.9-cuda-13.0.2:configureMPI:
     - .use-mpi
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    # Disabling cuFFTMp due to CI issues, see #5607
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_CXX_FLAGS='--diag_suppress=2828,111,1408,490,550,177,unrecognized_attribute,integer_sign_change,implicit_return_from_non_void_function,partial_override,code_is_unreachable'
-                          -DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/math_libs/13.0
                           -DCMAKE_CXX_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/compilers/bin/nvc++
                           -DCMAKE_C_COMPILER=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/compilers/bin/nvc"
+    #                       -DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/math_libs/13.0
 
 gromacs:nvcxx-25.9-cuda-13.0.2:buildMPI:
   extends:
@@ -38,7 +39,7 @@ gromacs:nvcxx-25.9-cuda-13.0.2:buildMPI:
     # - .use-ccache # Disable CCache since it did not work correctly with NVC++ 24.1 (#5052)
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
@@ -50,10 +51,11 @@ gromacs:nvcxx-25.9-cuda-13.0.2:testMPI:
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
-    GMX_GPU_PME_DECOMPOSITION: 1
+    # There are currently issues with cufftMp, so we disable it, see #5607
+    # GMX_GPU_PME_DECOMPOSITION: 1
     # Location of CUDA FFT library, required for preload to avoid cuFFTMp on incompatible devices 
     CUFFTLIB: "/opt/nvidia/hpc_sdk/Linux_x86_64/25.9/math_libs/lib64/libcufft.so"
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -72,7 +74,7 @@ gromacs:nvcxx-25.9-cuda-13.0.2:regressiontest-gpucommupd-MPI:
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cuda-13.0.2-mpifix
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0

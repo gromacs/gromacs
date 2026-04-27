@@ -502,7 +502,13 @@ def get_mpi(args, compiler, ucx):
                 if args.oneapi is not None:
                     raise RuntimeError("oneAPI building OpenMPI is not supported")
                 use_cuda = args.cuda is not None
+                if use_cuda:
+                    compiler.toolchain.CUDA_HOME = "/usr/local/cuda/"
                 configure_opts = []
+                if use_cuda:
+                    configure_opts.append(
+                        "--with-cuda-libdir=/usr/local/cuda/lib64/stubs"
+                    )
                 if args.rocm is not None:
                     configure_opts.append("--with-rocm=/opt/rocm")
                 use_ucx = ucx is not None
