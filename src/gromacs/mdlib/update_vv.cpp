@@ -107,7 +107,6 @@ void integrateVVFirstStep(int64_t                   step,
                           bool                      bStopCM,
                           bool                      bTrotter,
                           bool                      bExchanged,
-                          bool*                     bSumEkinhOld,
                           real*                     saved_conserved_quantity,
                           gmx::ForceBuffers*        f,
                           gmx::Update*              upd,
@@ -184,10 +183,6 @@ void integrateVVFirstStep(int64_t                   step,
         bool bPres = TRUE;
         bool bTemp = ((ir->eI == IntegrationAlgorithm::VV && (!bInitStep))
                       || (ir->eI == IntegrationAlgorithm::VVAK));
-        if (bCalcEner && ir->eI == IntegrationAlgorithm::VVAK)
-        {
-            *bSumEkinhOld = TRUE;
-        }
         /* for vv, the first half of the integration actually corresponds to the previous step.
             So we need information from the last step in the first half of the integration */
         if (bGStat || do_per_step(step - 1, nstglobalcomm))
@@ -216,7 +211,6 @@ void integrateVVFirstStep(int64_t                   step,
                             pres,
                             nullSignaller,
                             state->box,
-                            bSumEkinhOld,
                             cglo_flags,
                             step,
                             observablesReducer);
@@ -295,7 +289,6 @@ void integrateVVFirstStep(int64_t                   step,
                                 nullptr,
                                 nullSignaller,
                                 state->box,
-                                bSumEkinhOld,
                                 CGLO_GSTAT | CGLO_TEMPERATURE,
                                 step,
                                 observablesReducer);
@@ -360,7 +353,6 @@ void integrateVVSecondStep(int64_t                   step,
                            bool                      do_log,
                            bool                      do_ene,
                            bool                      bGStat,
-                           bool*                     bSumEkinhOld,
                            gmx::ForceBuffers*        f,
                            std::vector<gmx::RVec>*   cbuf,
                            gmx::Update*              upd,
@@ -455,7 +447,6 @@ void integrateVVSecondStep(int64_t                   step,
                         pres,
                         nullSignaller,
                         lastbox,
-                        bSumEkinhOld,
                         (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE,
                         step,
                         observablesReducer);

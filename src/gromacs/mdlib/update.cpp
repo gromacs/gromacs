@@ -1453,8 +1453,7 @@ extern void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir)
 }
 
 void update_ekinstate(ekinstate_t*          ekinstate,
-                      const gmx_ekindata_t* ekind,
-                      const bool            sumEkin,
+                      const gmx_ekindata_t& ekind,
                       const gmx::MpiComm&   mpiComm,
                       const gmx_domdec_t*   dd)
 {
@@ -1465,7 +1464,7 @@ void update_ekinstate(ekinstate_t*          ekinstate,
      * to ekind->ekinh_old and ekind->dekindl_old.
      */
 
-    const bool reduceEkin = (sumEkin && havePPDomainDecomposition(dd));
+    const bool reduceEkin = (ekind.needToReduceEkinhOld && havePPDomainDecomposition(dd));
 
     if (reduceEkin)
     {
@@ -1474,7 +1473,7 @@ void update_ekinstate(ekinstate_t*          ekinstate,
          * precision so we get binary identical reduced results compared with
          * the reduction in compte_globals() which also uses double precision.
          */
-        const int           ntcg = ekind->numTemperatureCouplingGroups();
+        const int           ntcg = ekind.numTemperatureCouplingGroups();
         std::vector<double> buffer(ntcg * 2 * DIM * DIM + 1);
         int                 bufIndex = 0;
         for (int g = 0; g < ntcg; g++)
@@ -1483,18 +1482,18 @@ void update_ekinstate(ekinstate_t*          ekinstate,
             {
                 for (int j = 0; j < DIM; j++)
                 {
-                    buffer[bufIndex++] = ekind->tcstat[g].ekinh[i][j];
+                    buffer[bufIndex++] = ekind.tcstat[g].ekinh[i][j];
                 }
             }
             for (int i = 0; i < DIM; i++)
             {
                 for (int j = 0; j < DIM; j++)
                 {
-                    buffer[bufIndex++] = ekind->tcstat[g].ekinf[i][j];
+                    buffer[bufIndex++] = ekind.tcstat[g].ekinf[i][j];
                 }
             }
         }
-        buffer[bufIndex++] = ekind->dekindl;
+        buffer[bufIndex++] = ekind.dekindl;
 
         mpiComm.sumReduce(bufIndex, buffer.data());
 
@@ -1529,10 +1528,10 @@ void update_ekinstate(ekinstate_t*          ekinstate,
         {
             for (int g = 0; g < ekinstate->ekin_n; g++)
             {
-                ekinstate->ekinh[g] = ekind->tcstat[g].ekinh;
-                ekinstate->ekinf[g] = ekind->tcstat[g].ekinf;
+                ekinstate->ekinh[g] = ekind.tcstat[g].ekinh;
+                ekinstate->ekinf[g] = ekind.tcstat[g].ekinf;
             }
-            ekinstate->dekindl = ekind->dekindl;
+            ekinstate->dekindl = ekind.dekindl;
         }
 
         /* These terms are likely not part of the state at all and can be removed
@@ -1540,11 +1539,11 @@ void update_ekinstate(ekinstate_t*          ekinstate,
          */
         for (int g = 0; g < ekinstate->ekin_n; g++)
         {
-            ekinstate->ekinscalef_nhc[g] = ekind->tcstat[g].ekinscalef_nhc;
-            ekinstate->ekinscaleh_nhc[g] = ekind->tcstat[g].ekinscaleh_nhc;
-            ekinstate->vscale_nhc[g]     = ekind->tcstat[g].vscale_nhc;
+            ekinstate->ekinscalef_nhc[g] = ekind.tcstat[g].ekinscalef_nhc;
+            ekinstate->ekinscaleh_nhc[g] = ekind.tcstat[g].ekinscaleh_nhc;
+            ekinstate->vscale_nhc[g]     = ekind.tcstat[g].vscale_nhc;
         }
-        ekinstate->mvcos = ekind->cosacc.mvcos;
+        ekinstate->mvcos = ekind.cosacc.mvcos;
     }
 }
 

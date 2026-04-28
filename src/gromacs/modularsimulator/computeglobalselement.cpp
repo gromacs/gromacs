@@ -321,7 +321,6 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     energyData_->pressure(step),
                     signaller,
                     lastbox,
-                    energyData_->needToSumEkinhOld(),
                     flags,
                     step,
                     observablesReducer_);

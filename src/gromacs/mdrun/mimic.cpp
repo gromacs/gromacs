@@ -362,9 +362,8 @@ void gmx::LegacySimulator::do_mimic()
     int64_t step_rel = 0;
 
     {
-        int    cglo_flags   = CGLO_GSTAT;
-        bool   bSumEkinhOld = false;
-        t_vcm* vcm          = nullptr;
+        int    cglo_flags = CGLO_GSTAT;
+        t_vcm* vcm        = nullptr;
         compute_globals(gstat,
                         cr_->commMyGroup,
                         ir,
@@ -384,7 +383,6 @@ void gmx::LegacySimulator::do_mimic()
                         pres,
                         &nullSignaller,
                         state_->box,
-                        &bSumEkinhOld,
                         cglo_flags,
                         step,
                         &observablesReducer);
@@ -638,7 +636,6 @@ void gmx::LegacySimulator::do_mimic()
         {
             const bool isCheckpointingStep = false;
             const bool doRerun             = false;
-            const bool bSumEkinhOld        = false;
             do_md_trajectory_writing(fpLog_,
                                      cr_,
                                      nFile_,
@@ -659,9 +656,7 @@ void gmx::LegacySimulator::do_mimic()
                                      isCheckpointingStep,
                                      doRerun,
                                      isLastStep,
-                                     mdrunOptions_.writeConfout,
-                                     bSumEkinhOld ? EkindataState::UsedNeedToReduce
-                                                  : EkindataState::UsedDoNotNeedToReduce);
+                                     mdrunOptions_.writeConfout);
         }
 
         stopHandler->setSignal();
@@ -669,7 +664,6 @@ void gmx::LegacySimulator::do_mimic()
         {
             const bool          doInterSimSignal = false;
             const bool          doIntraSimSignal = true;
-            bool                bSumEkinhOld     = false;
             t_vcm*              vcm              = nullptr;
             SimulationSignaller signaller(&signals, cr_, ms_, doInterSimSignal, doIntraSimSignal);
 
@@ -693,7 +687,6 @@ void gmx::LegacySimulator::do_mimic()
                             nullptr,
                             &signaller,
                             state_->box,
-                            &bSumEkinhOld,
                             cglo_flags,
                             step,
                             &observablesReducer);

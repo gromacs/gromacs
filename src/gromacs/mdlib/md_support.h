@@ -132,7 +132,6 @@ void compute_globals(gmx_global_stat*               gstat,
                      tensor                         pres,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
-                     gmx_bool*                      bSumEkinhOld,
                      int                            flags,
                      int64_t                        step,
                      gmx::ObservablesReducer*       observablesReducer);

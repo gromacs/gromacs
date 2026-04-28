@@ -203,7 +203,7 @@ void gmx::LegacySimulator::do_md()
     rvec      mu_tot;
     Matrix3x3 pressureCouplingMu, parrinelloRahmanM;
     gmx_repl_ex_t     repl_ex = nullptr;
-    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool          bDoReplEx, bExchanged, bNeedRepartition;
     real              dvdl_constr;
     std::vector<RVec> cbuf;
     matrix            lastbox;
@@ -636,8 +636,6 @@ void gmx::LegacySimulator::do_md()
             (CGLO_TEMPERATURE | CGLO_GSTAT | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
              | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0) | (hasReadEkinState ? CGLO_READEKIN : 0));
 
-    bSumEkinhOld = FALSE;
-
     t_vcm vcm(topGlobal_.groups, *ir, topGlobal_.natoms);
     reportComRemovalInfo(fpLog_, vcm);
 
@@ -677,7 +675,6 @@ void gmx::LegacySimulator::do_md()
                         pres,
                         &nullSignaller,
                         state_->box,
-                        &bSumEkinhOld,
                         cglo_flags_iteration,
                         step - 1, // Pass step-1 to signal that v is from minus a half step
                         &observablesReducer);
@@ -723,7 +720,6 @@ void gmx::LegacySimulator::do_md()
                         pres,
                         &nullSignaller,
                         state_->box,
-                        &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE,
                         step,
                         &observablesReducer);
@@ -807,7 +803,6 @@ void gmx::LegacySimulator::do_md()
     bFirstStep = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
     bInitStep        = startingBehavior_ == StartingBehavior::NewSimulation || EI_VV(ir->eI);
-    bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
 
@@ -1092,7 +1087,6 @@ void gmx::LegacySimulator::do_md()
                             nullptr,
                             &nullSignaller,
                             state_->box,
-                            &bSumEkinhOld,
                             cgloFlagsExchanged,
                             step - 1, // Pass step-1 to indicate that v is from minus half a step
                             &observablesReducer);
@@ -1343,7 +1337,6 @@ void gmx::LegacySimulator::do_md()
                                      bStopCM,
                                      bTrotter,
                                      bExchanged,
-                                     &bSumEkinhOld,
                                      &saved_conserved_quantity,
                                      &f,
                                      &upd,
@@ -1424,10 +1417,6 @@ void gmx::LegacySimulator::do_md()
              * coordinates at time t. We must output all of this before
              * the update.
              */
-            const EkindataState ekindataState =
-                    bGStat ? (bSumEkinhOld ? EkindataState::UsedNeedToReduce
-                                           : EkindataState::UsedDoNotNeedToReduce)
-                           : EkindataState::NotUsed;
             do_md_trajectory_writing(fpLog_,
                                      cr_,
                                      nFile_,
@@ -1443,13 +1432,12 @@ void gmx::LegacySimulator::do_md()
                                      fr_,
                                      outf,
                                      energyOutput,
-                                     ekind_,
+                                     bGStat ? ekind_ : nullptr,
                                      f.view().force(),
                                      isCheckpointingStep,
                                      bRerunMD,
                                      bLastStep,
-                                     mdrunOptions_.writeConfout,
-                                     ekindataState);
+                                     mdrunOptions_.writeConfout);
             /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
             bInteractiveMDstep = imdSession_->run(step, bNS, state_->box, state_->x, t);
 
@@ -1564,7 +1552,6 @@ void gmx::LegacySimulator::do_md()
                                       do_log,
                                       do_ene,
                                       bGStat,
-                                      &bSumEkinhOld,
                                       &f,
                                       &cbuf,
                                       &upd,
@@ -1835,7 +1822,6 @@ void gmx::LegacySimulator::do_md()
                                 pres,
                                 &signaller,
                                 lastbox,
-                                &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
                                         | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                                         | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
@@ -1925,13 +1911,6 @@ void gmx::LegacySimulator::do_md()
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
 
         /* The coordinates (x) were unshifted in update */
-        if (!bGStat)
-        {
-            /* We will not sum ekinh_old,
-             * so signal that we still have to do it.
-             */
-            bSumEkinhOld = TRUE;
-        }
 
         if (bCalcEner)
         {

@@ -441,7 +441,6 @@ void compute_globals(gmx_global_stat*               gstat,
                      tensor                         pres,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
-                     gmx_bool*                      bSumEkinhOld,
                      const int                      flags,
                      int64_t                        step,
                      gmx::ObservablesReducer*       observablesReducer)
@@ -500,7 +499,7 @@ void compute_globals(gmx_global_stat*               gstat,
             /* We will not sum ekinh_old,
              * so signal that we still have to do it.
              */
-            *bSumEkinhOld = TRUE;
+            ekind->needToReduceEkinhOld = true;
         }
         else
         {
@@ -517,7 +516,7 @@ void compute_globals(gmx_global_stat*               gstat,
                             ekind,
                             bStopCM ? vcm : nullptr,
                             signalBuffer,
-                            *bSumEkinhOld && haveEkinhOld,
+                            ekind->needToReduceEkinhOld && haveEkinhOld,
                             flags,
                             step,
                             observablesReducer);
@@ -535,9 +534,9 @@ void compute_globals(gmx_global_stat*               gstat,
 
             if (fr->haveBoxDeformation && bTemp && !bReadEkin)
             {
-                correctEkinForBoxDeformation(ekind, bEkinAveVel, *bSumEkinhOld);
+                correctEkinForBoxDeformation(ekind, bEkinAveVel, ekind->needToReduceEkinhOld);
             }
-            *bSumEkinhOld = FALSE;
+            ekind->needToReduceEkinhOld = false;
         }
     }
 

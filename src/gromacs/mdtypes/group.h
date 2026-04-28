@@ -217,6 +217,8 @@ public:
     t_cos_acc cosacc;
     //! Last step at which kinetic energy terms were accumulated over the ranks
     int64_t lastComputeGlobalsStep = -2;
+    //! Whether we need to reduce the previous half-step kinetic energy terms over the ranks
+    bool needToReduceEkinhOld = false;
 
 private:
     //! Whether the box is continuously deformed

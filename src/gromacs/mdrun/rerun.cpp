@@ -407,9 +407,8 @@ void gmx::LegacySimulator::do_rerun()
     int64_t step_rel = 0;
 
     {
-        int    cglo_flags   = CGLO_GSTAT;
-        bool   bSumEkinhOld = false;
-        t_vcm* vcm          = nullptr;
+        int    cglo_flags = CGLO_GSTAT;
+        t_vcm* vcm        = nullptr;
         compute_globals(gstat,
                         cr_->commMyGroup,
                         ir,
@@ -429,7 +428,6 @@ void gmx::LegacySimulator::do_rerun()
                         pres,
                         &nullSignaller,
                         state_->box,
-                        &bSumEkinhOld,
                         cglo_flags,
                         step,
                         &observablesReducer);
@@ -774,13 +772,12 @@ void gmx::LegacySimulator::do_rerun()
                                      fr_,
                                      outf,
                                      energyOutput,
-                                     ekind_,
+                                     nullptr,
                                      f.view().force(),
                                      isCheckpointingStep,
                                      doRerun,
                                      isLastStep,
-                                     mdrunOptions_.writeConfout,
-                                     EkindataState::NotUsed);
+                                     mdrunOptions_.writeConfout);
         }
 
         stopHandler->setSignal();
@@ -788,7 +785,6 @@ void gmx::LegacySimulator::do_rerun()
         {
             const bool          doInterSimSignal = false;
             const bool          doIntraSimSignal = true;
-            bool                bSumEkinhOld     = false;
             t_vcm*              vcm              = nullptr;
             SimulationSignaller signaller(&signals, cr_, ms_, doInterSimSignal, doIntraSimSignal);
 
@@ -812,7 +808,6 @@ void gmx::LegacySimulator::do_rerun()
                             pres,
                             &signaller,
                             state_->box,
-                            &bSumEkinhOld,
                             cglo_flags,
                             step,
                             &observablesReducer);

@@ -186,11 +186,6 @@ public:
      */
     gmx_ekindata_t* ekindata();
 
-    /*! \brief Get pointer to needToSumEkinhOld
-     *
-     */
-    bool* needToSumEkinhOld();
-
     /*! \brief Whether kinetic energy was read from checkpoint
      *
      * This is needed by the compute globals element
@@ -287,8 +282,6 @@ private:
     //! The step number of the current pressure tensor
     Step pressureStep_;
 
-    //! Whether ekinh_old needs to be summed up (set by compute globals)
-    bool needToSumEkinhOld_;
     //! Whether we have read ekin from checkpoint
     bool hasReadEkinFromCheckpoint_;
 

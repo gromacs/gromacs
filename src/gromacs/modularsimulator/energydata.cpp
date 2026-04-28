@@ -95,7 +95,6 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     shakeVirialStep_(-1),
     totalVirialStep_(-1),
     pressureStep_(-1),
-    needToSumEkinhOld_(false),
     hasReadEkinFromCheckpoint_(false),
     startingBehavior_(startingBehavior),
     statePropagatorData_(statePropagatorData),
@@ -369,11 +368,6 @@ gmx_ekindata_t* EnergyData::ekindata()
     return ekind_;
 }
 
-bool* EnergyData::needToSumEkinhOld()
-{
-    return &needToSumEkinhOld_;
-}
-
 bool EnergyData::hasReadEkinFromCheckpoint() const
 {
     return hasReadEkinFromCheckpoint_;
@@ -411,11 +405,8 @@ void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData>
 {
     // Here we always store the ekinstate, even when it might be not be used at this step.
     // It would be cleaner make it conditional on when it is used (and thus up to date).
-    update_ekinstate(mpiComm.isMainRank() ? &energyData_->ekinstate_ : nullptr,
-                     energyData_->ekind_,
-                     energyData_->needToSumEkinhOld_,
-                     mpiComm,
-                     dd);
+    update_ekinstate(
+            mpiComm.isMainRank() ? &energyData_->ekinstate_ : nullptr, *energyData_->ekind_, mpiComm, dd);
 
     if (mpiComm.isMainRank())
     {
