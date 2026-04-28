@@ -1039,7 +1039,8 @@ int Mdrunner::mdrunner()
                                                                 canUseGpuForNonbonded,
                                                                 mdrunOptions.reproducible,
                                                                 gpusWereDetected);
-        useGpuForNonbondedFE = decideWhetherToUseGpusForNonbondedFE(useGpuForNonbonded, nonbondedFeTarget);
+        useGpuForNonbondedFE =
+                decideWhetherToUseGpusForNonbondedFE(useGpuForNonbonded, nonbondedFeTarget, *inputrec);
         useGpuForPme    = decideWhetherToUseGpusForPme(useGpuForNonbonded,
                                                     pmeTarget,
                                                     pmeFftTarget,
