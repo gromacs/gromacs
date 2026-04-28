@@ -50,6 +50,13 @@ despite never running those kernels. Now mdrun refuses to run with
 
 :issue:`5579`
 
+Fixed ``GMX_NO_CART_REORDER`` environment variable
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The ``GMX_NO_CART_REORDER`` environment variable did not disable Cartesian
+communicator rank reordering when set to 1 because the logic was inverted.
+This was broken since |Gromacs| 2020.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

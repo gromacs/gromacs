@@ -2643,7 +2643,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
-    ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
+    ddSettings.useCartesianReorder = (dd_getenv(mdlog, "GMX_NO_CART_REORDER", 0) == 0);
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
     const int recload              = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
     ddSettings.nstDDDump           = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
