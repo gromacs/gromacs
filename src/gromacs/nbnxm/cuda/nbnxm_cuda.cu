@@ -566,11 +566,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->deviceContext.deviceInfo().prop.major == 3 && nb->deviceContext.deviceInfo().prop.minor == 7)
-    {
-        num_threads_z = 2;
-    }
-    int nblock = calc_nb_kernel_nblock(plist->numSci, &nb->deviceContext.deviceInfo());
+    int nblock        = calc_nb_kernel_nblock(plist->numSci, &nb->deviceContext.deviceInfo());
 
 
     KernelLaunchConfig config;

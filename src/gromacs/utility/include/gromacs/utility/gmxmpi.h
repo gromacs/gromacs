@@ -58,20 +58,6 @@
 /* disable bindings for SGI MPT also */
 #    define MPI_NO_CPPBIND 1
 #    include <mpi.h>
-/* Starting with 2.2 MPI_INT64_T is required. Earlier version still might have it.
-   In theory MPI_Datatype doesn't have to be a #define, but current available MPI
-   implementations (OpenMPI + MPICH (+derivates)) use #define and future versions
-   should support 2.2. */
-#    if (MPI_VERSION == 1 || (MPI_VERSION == 2 && MPI_SUBVERSION < 2)) && !defined MPI_INT64_T
-#        include <limits.h>
-#        if LONG_MAX == 9223372036854775807L
-#            define MPI_INT64_T MPI_LONG
-#        elif LONG_LONG_MAX == 9223372036854775807L
-#            define MPI_INT64_T MPI_LONG_LONG
-#        else
-#            error No MPI_INT64_T and no 64 bit integer found.
-#        endif
-#    endif /*MPI_INT64_T*/
 #else
 #    if GMX_THREAD_MPI
 #        include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
