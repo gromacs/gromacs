@@ -67,6 +67,13 @@ Properly print the filename when a forcefield parsing error is encountered.
 
 :issue:`5601`
 
+gmx polystat computed internal distances between all particles
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now only particles in the index group are used.
+
+:issue:`5595`
+
 Fixed a selection evaluation issue for numeric expressions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
