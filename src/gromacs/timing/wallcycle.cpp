@@ -398,14 +398,14 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 
     subtract_cycles(wcc, WallCycleCounter::PmeFft, WallCycleCounter::PmeFftComm);
 
-    if (cr->dd && cr->dd->numPmeOnlyRanks == 0)
+    if (cr->dd == nullptr || cr->dd->numPmeOnlyRanks == 0)
     {
         /* All nodes do PME (or no PME at all) */
         subtract_cycles(wcc, WallCycleCounter::Force, WallCycleCounter::PmeMesh);
     }
     else
     {
-        /* The are PME-only nodes */
+        /* There are PME-only nodes */
         if (wcc[WallCycleCounter::PmeMesh].n > 0)
         {
             GMX_ASSERT(wcc[WallCycleCounter::PmeGpuMesh].c == 0,

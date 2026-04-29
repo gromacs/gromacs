@@ -65,6 +65,11 @@ decomposition setup.
 
 :issue:`5612`
 
+Correct wallcycle table in the md.log file with single rank simulations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5614`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
