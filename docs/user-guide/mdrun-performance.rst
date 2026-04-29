@@ -698,14 +698,15 @@ behavior.
 ``-update``
     Used to set where to execute update and constraints, when present.
     Can be set to "auto," "cpu" or "gpu."
-    Defaults to "auto," which currently always uses the CPU.
-    Setting "gpu" requires that a compatible CUDA or SYCL GPU is available,
-    the simulation uses a single rank.
-    Update and constraints on a GPU is currently not supported
-    with mass and constraints free-energy perturbation, domain
-    decomposition, virtual sites, Ewald surface correction,
-    replica exchange, constraint pulling, orientation restraints
-    and computational electrophysiology.
+    Defaults to "auto," which uses GPU when possible and falls back to CPU.
+    Setting "gpu" requires that a compatible GPU is available.
+    Update and constraints on a GPU are currently not supported
+    with mass and constraints free-energy perturbation, virtual sites,
+    Ewald surface correction, replica exchange, constraint pulling,
+    orientation restraints and computational electrophysiology.
+    The combination of constraints and domain decomposition is only
+    supported when all constraints are within so-called "update groups"
+    (see :ref:`Avoiding communication for constraints <avoid-communication-for-constraints>`).
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
@@ -1107,6 +1108,8 @@ for a distributed GPU 3D-FFT (e.g. cuFFTMp or HeFFTe), and when the
 environment variable ``GMX_GPU_PME_DECOMPOSITION`` is set (to enable
 this run path, which is currently pending validation). This may be
 optimal on HPC nodes with specialized interconnects like NVLINK.
+
+.. _avoid-communication-for-constraints:
 
 Avoiding communication for constraints
 --------------------------------------
