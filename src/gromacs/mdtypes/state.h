@@ -293,7 +293,7 @@ public:
     int              ddp_count_cg_gl; //!< The DD partitioning count for index_gl
     std::vector<int> cg_gl;           //!< The global cg number of the local cgs
 
-    std::vector<double> pull_com_prev_step; //!< The COM of the previous step of each pull group
+    std::vector<gmx::DVec> pull_com_prev_step; //!< The COM of the previous step of each pull group
 };
 
 #ifndef DOXYGEN

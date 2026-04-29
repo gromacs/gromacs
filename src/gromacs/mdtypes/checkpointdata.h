@@ -248,8 +248,9 @@ public:
     template<typename T>
     std::enable_if_t<IsSerializableType<T>::value, void> arrayRef(const std::string& key,
                                                                   ArrayRef<T>        values) const;
-    // Read ArrayRef of RVec
-    void arrayRef(const std::string& key, ArrayRef<RVec> values) const;
+    // Read ArrayRef of RVec or DVec
+    template<typename T>
+    void arrayRef(const std::string& key, ArrayRef<BasicVector<T>> values) const;
     //! }
 
     /*! \brief Read or write a Matrix3x3 from / to checkpoint
@@ -307,8 +308,9 @@ public:
     template<typename T>
     std::enable_if_t<IsSerializableType<T>::value, void> arrayRef(const std::string& key,
                                                                   ArrayRef<const T>  values);
-    // Write ArrayRef of RVec
-    void arrayRef(const std::string& key, ArrayRef<const RVec> values);
+    // Write ArrayRef of RVec or DVec
+    template<typename T>
+    void arrayRef(const std::string& key, ArrayRef<const BasicVector<T>> values);
     //! }
 
     //! \copydoc CheckpointData<CheckpointDataOperation::Read>::matrix3x3
@@ -537,7 +539,8 @@ WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const T> values)
     }
 }
 
-inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<RVec> values) const
+template<typename T>
+inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<BasicVector<T>> values) const
 {
     GMX_RELEASE_ASSERT(values.size() >= (*inputTree_)[key].asArray().values().size(),
                        "Read vector does not fit in passed ArrayRef.");
@@ -548,11 +551,12 @@ inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<RVec> 
     for (; outputIt != outputEnd && inputIt != inputEnd; outputIt++, inputIt++)
     {
         auto storedRVec = inputIt->asObject()["RVec"].asArray().values();
-        *outputIt = { storedRVec[XX].cast<real>(), storedRVec[YY].cast<real>(), storedRVec[ZZ].cast<real>() };
+        *outputIt = { storedRVec[XX].cast<T>(), storedRVec[YY].cast<T>(), storedRVec[ZZ].cast<T>() };
     }
 }
 
-inline void WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const RVec> values)
+template<typename T>
+inline void WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const BasicVector<T>> values)
 {
     auto builder = outputTreeBuilder_->addObjectArray(key);
     for (const auto& value : values)

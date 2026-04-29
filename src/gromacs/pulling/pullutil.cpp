@@ -71,6 +71,7 @@
 #include "gromacs/utility/vectypes.h"
 
 using gmx::ArrayRef;
+using gmx::DVec;
 using gmx::RVec;
 
 // Reduce data of n elements over all ranks currently participating in pull
@@ -120,10 +121,7 @@ static void setPbcAtomCoords(const pull_group_work_t& pgrp, ArrayRef<const RVec>
     }
 }
 
-static void pull_set_pbcatoms(const gmx::MpiComm&  mpiComm,
-                              struct pull_t*       pull,
-                              ArrayRef<const RVec> x,
-                              ArrayRef<RVec>       x_pbc)
+static void pull_set_pbcatoms(const gmx::MpiComm& mpiComm, pull_t* pull, ArrayRef<const RVec> x, ArrayRef<RVec> x_pbc)
 {
     int numPbcAtoms = 0;
     for (size_t g = 0; g < pull->group.size(); g++)
@@ -180,11 +178,10 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
         if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
         {
             /* pref will be the same group for all pull coordinates */
-            const pull_group_work_t& pref  = pull->group[pcrd.params_.group[0]];
-            const pull_group_work_t& pgrp  = pull->group[pcrd.params_.group[1]];
-            pull_group_work_t&       pdyna = *pcrd.dynamicGroup0;
-            rvec                     direction;
-            copy_dvec_to_rvec(pcrd.spatialData.vec, direction);
+            const pull_group_work_t& pref      = pull->group[pcrd.params_.group[0]];
+            const pull_group_work_t& pgrp      = pull->group[pcrd.params_.group[1]];
+            pull_group_work_t&       pdyna     = *pcrd.dynamicGroup0;
+            const RVec               direction = static_cast<RVec>(pcrd.spatialData.vec);
 
             /* Since we have not calculated the COM of the cylinder group yet,
              * we calculate distances with respect to location of the pull
@@ -197,11 +194,7 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
                 /* With rate=0, value_ref is set initially */
                 pcrd.value_ref = pcrd.params_.init + pcrd.params_.rate * t;
             }
-            rvec reference;
-            for (int m = 0; m < DIM; m++)
-            {
-                reference[m] = pgrp.x[m] - pcrd.spatialData.vec[m] * pcrd.value_ref;
-            }
+            const RVec reference = static_cast<RVec>(pgrp.x - pcrd.spatialData.vec * pcrd.value_ref);
 
             auto localAtomIndices = pref.atomSet_.localIndex();
 
@@ -561,8 +554,8 @@ void pull_calc_coms(const gmx::MpiComm&  mpiComm,
             pgrp->localWeights.resize(pgrp->atomSet_.localIndex().size());
         }
 
-        auto comBuffer = gmx::arrayRefFromArray(comm->comBuffer.data() + g * c_comBufferStride,
-                                                c_comBufferStride);
+        auto comBuffer =
+                arrayRefFromArray(comm->comBuffer.data() + g * c_comBufferStride, c_comBufferStride);
 
         if (pgrp->needToCalcCom)
         {
@@ -711,7 +704,7 @@ void pull_calc_coms(const gmx::MpiComm&  mpiComm,
                        "Normal pull groups should have atoms, only group 0, which should have "
                        "bCalcCom=FALSE has nat=0");
 
-            const auto comBuffer = gmx::constArrayRefFromArray(
+            const auto comBuffer = constArrayRefFromArray(
                     comm->comBuffer.data() + g * c_comBufferStride, c_comBufferStride);
 
             if (pgrp->epgrppbc != epgrppbcCOS)
@@ -961,14 +954,11 @@ bool pullCheckPbcWithinGroup(const pull_t& pull, ArrayRef<const RVec> x, const t
             group, dimUsed, x, pbc, pull.comm.pbcAtomBuffer[groupNr], pbcMargin));
 }
 
-void setPrevStepPullComFromState(struct pull_t* pull, const t_state* state)
+void setPrevStepPullComFromState(pull_t* pull, const t_state* state)
 {
     for (size_t g = 0; g < pull->group.size(); g++)
     {
-        for (int j = 0; j < DIM; j++)
-        {
-            pull->group[g].x_prev_step[j] = state->pull_com_prev_step[g * DIM + j];
-        }
+        pull->group[g].x_prev_step = state->pull_com_prev_step[g];
     }
 }
 
@@ -991,25 +981,23 @@ enum class PullBackupCOM
  * \param[in]   comPreviousStep  The COM of the previous step of each pull group
  */
 template<PullBackupCOM pullBackupToState>
-static void updatePrevStepPullComImpl(pull_t* pull, gmx::ArrayRef<double> comPreviousStep)
+static void updatePrevStepPullComImpl(pull_t* pull, ArrayRef<DVec> comPreviousStep)
 {
     for (gmx::Index g = 0; g < gmx::ssize(pull->group); g++)
     {
         if (pull->group[g].needToCalcCom)
         {
-            for (int j = 0; j < DIM; j++)
+            pull->group[g].x_prev_step = pull->group[g].x;
+
+            if (pullBackupToState == PullBackupCOM::Yes)
             {
-                pull->group[g].x_prev_step[j] = pull->group[g].x[j];
-                if (pullBackupToState == PullBackupCOM::Yes)
-                {
-                    comPreviousStep[g * DIM + j] = pull->group[g].x[j];
-                }
+                comPreviousStep[g] = pull->group[g].x;
             }
         }
     }
 }
 
-void updatePrevStepPullCom(pull_t* pull, std::optional<gmx::ArrayRef<double>> comPreviousStep)
+void updatePrevStepPullCom(pull_t* pull, std::optional<ArrayRef<DVec>> comPreviousStep)
 {
     if (comPreviousStep.has_value())
     {
@@ -1017,33 +1005,27 @@ void updatePrevStepPullCom(pull_t* pull, std::optional<gmx::ArrayRef<double>> co
     }
     else
     {
-        updatePrevStepPullComImpl<PullBackupCOM::No>(pull, gmx::ArrayRef<double>{});
+        updatePrevStepPullComImpl<PullBackupCOM::No>(pull, ArrayRef<DVec>{});
     }
 }
 
-std::vector<double> prevStepPullCom(const pull_t* pull)
+std::vector<DVec> prevStepPullCom(const pull_t* pull)
 {
-    std::vector<double> pullCom(pull->group.size() * DIM, 0.0);
+    std::vector<DVec> pullCom(pull->group.size());
     for (gmx::Index g = 0; g < gmx::ssize(pull->group); g++)
     {
-        for (int j = 0; j < DIM; j++)
-        {
-            pullCom[g * DIM + j] = pull->group[g].x_prev_step[j];
-        }
+        pullCom[g] = pull->group[g].x_prev_step;
     }
     return pullCom;
 }
 
-void setPrevStepPullCom(pull_t* pull, gmx::ArrayRef<const double> prevStepPullCom)
+void setPrevStepPullCom(pull_t* pull, ArrayRef<const DVec> prevStepPullCom)
 {
-    GMX_RELEASE_ASSERT(prevStepPullCom.size() >= pull->group.size() * DIM,
+    GMX_RELEASE_ASSERT(prevStepPullCom.size() >= pull->group.size(),
                        "Pull COM vector size mismatch.");
     for (gmx::Index g = 0; g < gmx::ssize(pull->group); g++)
     {
-        for (int j = 0; j < DIM; j++)
-        {
-            pull->group[g].x_prev_step[j] = prevStepPullCom[g * DIM + j];
-        }
+        pull->group[g].x_prev_step = prevStepPullCom[g];
     }
 }
 
@@ -1055,9 +1037,9 @@ void allocStatePrevStepPullCom(t_state* state, const pull_t* pull)
         return;
     }
     size_t ngroup = pull->group.size();
-    if (state->pull_com_prev_step.size() / DIM != ngroup)
+    if (state->pull_com_prev_step.size() != ngroup)
     {
-        state->pull_com_prev_step.resize(ngroup * DIM, NAN);
+        state->pull_com_prev_step.resize(ngroup, { NAN, NAN, NAN });
     }
 }
 
@@ -1133,8 +1115,8 @@ void initPullComFromPrevStep(const gmx::MpiComm&  mpiComm,
             }
 
             /* Copy local sums to a buffer for global summing */
-            auto localSums = gmx::arrayRefFromArray(comm->comBuffer.data() + g * c_comBufferStride,
-                                                    c_comBufferStride);
+            auto localSums = arrayRefFromArray(comm->comBuffer.data() + g * c_comBufferStride,
+                                               c_comBufferStride);
 
             localSums[0]    = comSumsTotal.sum_wmx;
             localSums[1]    = comSumsTotal.sum_wmxp;
@@ -1156,8 +1138,8 @@ void initPullComFromPrevStep(const gmx::MpiComm&  mpiComm,
         {
             if (pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
             {
-                auto localSums = gmx::arrayRefFromArray(
-                        comm->comBuffer.data() + g * c_comBufferStride, c_comBufferStride);
+                auto   localSums = arrayRefFromArray(comm->comBuffer.data() + g * c_comBufferStride,
+                                                   c_comBufferStride);
                 double wmass, wwmass;
 
                 /* Determine the inverse mass */
@@ -1171,11 +1153,7 @@ void initPullComFromPrevStep(const gmx::MpiComm&  mpiComm,
                     pgrp->invtm  = wwmass / (wmass * wmass);
                 }
                 /* Divide by the total mass */
-                for (int m = 0; m < DIM; m++)
-                {
-                    pgrp->x[m] = localSums[0][m] * pgrp->mwscale;
-                    pgrp->x[m] += comm->pbcAtomBuffer[g][m];
-                }
+                pgrp->x = localSums[0] * static_cast<double>(pgrp->mwscale) + comm->pbcAtomBuffer[g];
                 pgrp->x_prev_step = pgrp->x;
             }
         }

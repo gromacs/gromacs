@@ -897,13 +897,24 @@ static int doVector(XdrSerializer* serializer, Enum ecpt, std::vector<T>* vector
     return doVectorLow<T>(serializer, ecpt, numElements, nullptr, vector, list, CptElementType::realnum);
 }
 
-//! \brief Read/Write an ArrayRef<real>.
+#if !GMX_DOUBLE
+//! \brief Read/Write an ArrayRef<float>.
 template<typename Enum>
-static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<real> vector, FILE* list)
+static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<float> vector, FILE* list)
 {
-    real* v_real = vector.data();
-    return doVectorLow<real, std::allocator<real>>(
-            serializer, ecpt, vector.size(), &v_real, nullptr, list, CptElementType::realnum);
+    float* data = vector.data();
+    return doVectorLow<float, std::allocator<float>>(
+            serializer, ecpt, vector.size(), &data, nullptr, list, CptElementType::realnum);
+}
+#endif
+
+//! \brief Read/Write an ArrayRef<double>.
+template<typename Enum>
+static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<double> vector, FILE* list)
+{
+    double* data = vector.data();
+    return doVectorLow<double, std::allocator<double>>(
+            serializer, ecpt, vector.size(), &data, nullptr, list, CptElementType::realnum);
 }
 
 //! \brief Read/Write an ArrayRef<int>.
@@ -915,32 +926,36 @@ static int doIntArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<int
             serializer, ecpt, vector.size(), &v_int, nullptr, list, CptElementType::integer);
 }
 
-//! Convert from view of RVec to view of real.
-static gmx::ArrayRef<real> realArrayRefFromRVecArrayRef(gmx::ArrayRef<gmx::RVec> ofRVecs)
+//! Convert from view of BasicVector to view of its scalar type
+template<typename T>
+static gmx::ArrayRef<T> scalarArrayRefFromVecArrayRef(gmx::ArrayRef<gmx::BasicVector<T>> ofVecs)
 {
-    return gmx::arrayRefFromArray<real>(reinterpret_cast<real*>(ofRVecs.data()), ofRVecs.size() * DIM);
+    return gmx::arrayRefFromArray<T>(reinterpret_cast<T*>(ofVecs.data()), ofVecs.size() * DIM);
 }
 
-//! \brief Read/Write a PaddedVector whose value_type is RVec.
-template<typename PaddedVectorOfRVecType, typename Enum>
-static int doRvecVector(XdrSerializer* serializer, Enum ecpt, PaddedVectorOfRVecType* v, int numAtoms, FILE* list)
+//! \brief Read/Write a Vector whose value_type is BasicVector.
+template<typename VectorOfRVecType, typename Enum>
+static int doRvecVector(XdrSerializer* serializer, Enum ecpt, VectorOfRVecType* v, gmx::Index numElements, FILE* list)
 {
-    const int numReals = numAtoms * DIM;
+    const int numScalars = numElements * DIM;
 
     if (list == nullptr)
     {
-        GMX_RELEASE_ASSERT(v->size() == numAtoms, "v should have sufficient size for numAtoms");
+        GMX_RELEASE_ASSERT(gmx::ssize(*v) == numElements,
+                           "v should have sufficient size for numElements");
 
-        return doRealArrayRef(serializer, ecpt, realArrayRefFromRVecArrayRef(makeArrayRef(*v)), list);
+        return doRealArrayRef(serializer, ecpt, scalarArrayRefFromVecArrayRef(makeArrayRef(*v)), list);
     }
     else
     {
+        typedef typename VectorOfRVecType::value_type::value_type ScalarType;
+
         // Use the rebind facility to change the value_type of the
-        // allocator from RVec to real.
-        using realAllocator =
-                typename std::allocator_traits<typename PaddedVectorOfRVecType::allocator_type>::template rebind_alloc<real>;
-        return doVectorLow<real, realAllocator>(
-                serializer, ecpt, numReals, nullptr, nullptr, list, CptElementType::realnum);
+        // allocator from RVec/DVec to real/double.
+        using scalarAllocator =
+                typename std::allocator_traits<typename VectorOfRVecType::allocator_type>::template rebind_alloc<ScalarType>;
+        return doVectorLow<ScalarType, scalarAllocator>(
+                serializer, ecpt, numScalars, nullptr, nullptr, list, CptElementType::realnum);
     }
 }
 
@@ -1393,7 +1408,34 @@ static int do_cpt_state(XdrSerializer* serializer, t_state* state, FILE* list)
                     ret = doVector<real>(serializer, *i, &state->hist.orire_Dtav, list);
                     break;
                 case StateEntry::PullComPrevStep:
-                    ret = doVector<double>(serializer, *i, &state->pull_com_prev_step, list);
+                    // This entry is misplaced. This should be part of doCptPullHist().
+                    if (!state->pull_com_prev_step.empty())
+                    {
+                        ret = doRvecVector(serializer,
+                                           *i,
+                                           &state->pull_com_prev_step,
+                                           gmx::ssize(state->pull_com_prev_step),
+                                           list);
+                    }
+                    else
+                    {
+                        // Ugly hack to enable resizing the buffer on read.
+                        // The number of pull groups is not yet known on read due to
+                        // misplacement of this code.
+                        std::vector<double> scalarBuffer;
+                        ret = doVector<double>(serializer, *i, &scalarBuffer, list);
+                        if (!scalarBuffer.empty())
+                        {
+                            state->pull_com_prev_step.resize(scalarBuffer.size() / DIM);
+                            for (int j = 0; j < gmx::ssize(state->pull_com_prev_step); j++)
+                            {
+                                for (int d = 0; d < DIM; d++)
+                                {
+                                    state->pull_com_prev_step[j][d] = scalarBuffer[j * DIM + d];
+                                }
+                            }
+                        }
+                    }
                     break;
                 default:
                     gmx_fatal(FARGS,

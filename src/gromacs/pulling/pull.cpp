@@ -90,7 +90,6 @@
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
@@ -102,6 +101,7 @@ extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const
 } // namespace gmx
 
 using gmx::ArrayRef;
+using gmx::DVec;
 using gmx::RVec;
 
 /*! \brief Tells whether the pull geometry is an angle type */
@@ -185,9 +185,9 @@ static void apply_forces_grp_part(const pull_group_work_t& pgrp,
                                   int                      ind_start,
                                   int                      ind_end,
                                   ArrayRef<const real>     masses,
-                                  const dvec               f_pull,
+                                  const DVec&              f_pull,
                                   const int                sign,
-                                  rvec*                    f)
+                                  ArrayRef<RVec>           f)
 {
     const double inv_wm = pgrp.mwscale;
 
@@ -211,9 +211,9 @@ static void apply_forces_grp_part(const pull_group_work_t& pgrp,
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(const pull_group_work_t& pgrp,
                              ArrayRef<const real>     masses,
-                             const dvec               f_pull,
+                             const DVec&              f_pull,
                              const int                sign,
-                             rvec*                    f)
+                             ArrayRef<RVec>           f)
 {
     auto localAtomIndices = pgrp.atomSet_.localIndex();
 
@@ -252,10 +252,10 @@ static void apply_forces_grp(const pull_group_work_t& pgrp,
 static void apply_forces_cyl_grp(const pull_group_work_t& pgrp,
                                  const double             dv_corr,
                                  ArrayRef<const real>     masses,
-                                 const dvec               f_pull,
+                                 const DVec&              f_pull,
                                  double                   f_scal,
                                  const int                sign,
-                                 rvec*                    f)
+                                 ArrayRef<RVec>           f)
 {
     const double inv_wm = pgrp.mwscale;
 
@@ -299,7 +299,7 @@ static void apply_forces_cyl_grp(const pull_group_work_t& pgrp,
 static void apply_forces_vec_torque(const pull_coord_work_t&          pcrd,
                                     ArrayRef<const pull_group_work_t> pullGroups,
                                     ArrayRef<const real>              masses,
-                                    rvec*                             f)
+                                    ArrayRef<RVec>                    f)
 {
     const PullCoordSpatialData& spatialData = pcrd.spatialData;
 
@@ -317,7 +317,7 @@ static void apply_forces_vec_torque(const pull_coord_work_t&          pcrd,
      * multiplied with the ratio of the distance between the two "usual" pull
      * groups and the distance between the two groups that define the vector.
      */
-    dvec f_perp;
+    DVec f_perp;
     for (int m = 0; m < DIM; m++)
     {
         f_perp[m] = (spatialData.dr01[m] - inpr * spatialData.vec[m]) / spatialData.vec_len * pcrd.scalarForce;
@@ -333,7 +333,7 @@ static void apply_forces_coord(const pull_coord_work_t&          pcrd,
                                ArrayRef<const pull_group_work_t> pullGroups,
                                const PullCoordVectorForces&      forces,
                                ArrayRef<const real>              masses,
-                               rvec*                             f)
+                               ArrayRef<RVec>                    f)
 {
     /* Here it would be more efficient to use one large thread-parallel
      * region instead of potential parallel regions within apply_forces_grp.
@@ -350,11 +350,7 @@ static void apply_forces_coord(const pull_coord_work_t&          pcrd,
                 *pcrd.dynamicGroup0, pcrd.spatialData.cyl_dev, masses, forces.force01, pcrd.scalarForce, -1, f);
 
         /* Sum the force along the vector and the radial force */
-        dvec f_tot;
-        for (int m = 0; m < DIM; m++)
-        {
-            f_tot[m] = forces.force01[m] + pcrd.scalarForce * pcrd.spatialData.ffrad[m];
-        }
+        DVec f_tot = forces.force01 + pcrd.scalarForce * pcrd.spatialData.ffrad;
         apply_forces_grp(pullGroups[pcrd.params_.group[1]], masses, f_tot, 1, f);
     }
     else if (pcrd.params_.eGeom == PullGroupGeometry::Transformation)
@@ -466,46 +462,33 @@ real max_pull_distance2(const pull_coord_work_t& pcrd, const t_pbc& pbc)
  * \param[in]  max_dist2    The maximum distance squared
  * \param[out] dr           The distance vector
  */
-static void low_get_pull_coord_dr(const pull_t&            pull,
+static DVec low_get_pull_coord_dr(const pull_t&            pull,
                                   const pull_coord_work_t& pcrd,
                                   const t_pbc&             pbc,
-                                  const dvec               xg,
-                                  const dvec               xref,
+                                  const DVec&              xg,
+                                  const DVec&              xref,
                                   const int                groupIndex0,
                                   const int                groupIndex1,
-                                  const double             max_dist2,
-                                  dvec                     dr)
+                                  const double             max_dist2)
 {
     const pull_group_work_t& pgrp0 = pull.group[pcrd.params_.group[0]];
 
     // Group coordinate, to be updated with the reference position
-    dvec xrefr;
+    /* Only the first group can be an absolute reference, in that case pgrp0.params_.ind is empty */
+    DVec xrefr = pgrp0.params_.ind.empty() ? pcrd.params_.origin.toDVec() : xref;
 
-    /* Only the first group can be an absolute reference, in that case nat=0 */
-    if (pgrp0.params_.ind.empty())
-    {
-        for (int m = 0; m < DIM; m++)
-        {
-            xrefr[m] = pcrd.params_.origin[m];
-        }
-    }
-    else
-    {
-        copy_dvec(xref, xrefr);
-    }
-
-    dvec dref = { 0, 0, 0 };
+    DVec dref = { 0, 0, 0 };
     if (pcrd.params_.eGeom == PullGroupGeometry::DirectionPBC)
     {
-        for (int m = 0; m < DIM; m++)
-        {
-            dref[m] = pcrd.value_ref * pcrd.spatialData.vec[m];
-        }
+        dref = pcrd.value_ref * pcrd.spatialData.vec;
+
         /* Add the reference position, so we use the correct periodic image */
-        dvec_inc(xrefr, dref);
+        xrefr += dref;
     }
 
-    pbc_dx_d(&pbc, xg, xrefr, dr);
+    DVec dr;
+    pbc_dx_d(&pbc, xg, xrefr, *reinterpret_cast<dvec*>(&dr));
+
 
     bool   directional = pull_coordinate_is_directional(pcrd.params_);
     double dr2         = 0;
@@ -542,6 +525,8 @@ static void low_get_pull_coord_dr(const pull_t&            pull,
     {
         dvec_inc(dr, dref);
     }
+
+    return dr;
 }
 
 /* This function returns the distance based on the contents of the pull struct.
@@ -571,7 +556,7 @@ static void get_pull_coord_dr(const pull_t& pull, pull_coord_work_t* pcrd, const
     if (pcrd->params_.eGeom == PullGroupGeometry::DirectionRelative)
     {
         /* We need to determine the pull vector */
-        dvec vec;
+        DVec vec;
         int  m;
 
         const pull_group_work_t& pgrp2 = pull.group[pcrd->params_.group[2]];
@@ -605,7 +590,7 @@ static void get_pull_coord_dr(const pull_t& pull, pull_coord_work_t* pcrd, const
     const pull_group_work_t& pgrp0 = pull.group[pcrd->params_.group[0]];
     const pull_group_work_t& pgrp1 = pull.group[pcrd->params_.group[1]];
 
-    low_get_pull_coord_dr(
+    spatialData.dr01 = low_get_pull_coord_dr(
             pull,
             *pcrd,
             pbc,
@@ -613,22 +598,21 @@ static void get_pull_coord_dr(const pull_t& pull, pull_coord_work_t* pcrd, const
             pcrd->params_.eGeom == PullGroupGeometry::Cylinder ? pcrd->dynamicGroup0->x : pgrp0.x,
             0,
             1,
-            md2,
-            spatialData.dr01);
+            md2);
 
     if (pcrd->params_.ngroup >= 4)
     {
         const pull_group_work_t& pgrp2 = pull.group[pcrd->params_.group[2]];
         const pull_group_work_t& pgrp3 = pull.group[pcrd->params_.group[3]];
 
-        low_get_pull_coord_dr(pull, *pcrd, pbc, pgrp3.x, pgrp2.x, 2, 3, md2, spatialData.dr23);
+        spatialData.dr23 = low_get_pull_coord_dr(pull, *pcrd, pbc, pgrp3.x, pgrp2.x, 2, 3, md2);
     }
     if (pcrd->params_.ngroup >= 6)
     {
         const pull_group_work_t& pgrp4 = pull.group[pcrd->params_.group[4]];
         const pull_group_work_t& pgrp5 = pull.group[pcrd->params_.group[5]];
 
-        low_get_pull_coord_dr(pull, *pcrd, pbc, pgrp5.x, pgrp4.x, 4, 5, md2, spatialData.dr45);
+        spatialData.dr45 = low_get_pull_coord_dr(pull, *pcrd, pbc, pgrp5.x, pgrp4.x, 4, 5, md2);
     }
 }
 
@@ -701,7 +685,7 @@ static void updatePullCoordReferenceValue(double* referenceValue, const t_pull_c
 static double get_dihedral_angle_coord(PullCoordSpatialData* spatialData)
 {
     double phi, sign;
-    dvec   dr32; /* store instead of dr23? */
+    DVec   dr32; /* store instead of dr23? */
 
     dsvmul(-1, spatialData->dr23, dr32);
     dcprod(spatialData->dr01, dr32, spatialData->planevec_m); /* Normal of first plane */
@@ -843,30 +827,23 @@ static void do_constraint(struct pull_t* pull,
                           double         dt,
                           double         t)
 {
-
-    dvec*    r_ij;   /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
-    dvec     unc_ij; /* xp[i] com of i this step, before constr.   -> unc_ij  */
-    dvec*    rnew;   /* current 'new' positions of the groups */
-    double*  dr_tot; /* the total update of the coords */
-    dvec     vec;
-    double   inpr;
-    double   lambda, rm, invdt = 0;
     gmx_bool bConverged_all, bConverged = FALSE;
-    int      niter = 0, ii, m, max_iter = 100;
-    double   a;
-    dvec     tmp, tmp3;
+    int      niter = 0, max_iter = 100;
 
-    snew(r_ij, pull->coord.size());
-    snew(dr_tot, pull->coord.size());
+    /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
+    std::vector<DVec> r_ij(pull->coord.size());
+    /* the total update of the coords */
+    std::vector<double> dr_tot(pull->coord.size());
 
-    snew(rnew, pull->group.size());
+    /* current 'new' positions of the groups */
+    std::vector<DVec> rnew(pull->group.size());
 
     /* copy the current unconstrained positions for use in iterations. We
        iterate until rinew[i] and rjnew[j] obey the constraints. Then
        rinew - pull.x_unc[i] is the correction dr to group i */
     for (size_t g = 0; g < pull->group.size(); g++)
     {
-        copy_dvec(pull->group[g].xp, rnew[g]);
+        rnew[g] = pull->group[g].xp;
     }
 
     /* Determine the constraint directions from the old positions */
@@ -902,19 +879,12 @@ static void do_constraint(struct pull_t* pull,
             || pcrd->params_.eGeom == PullGroupGeometry::DirectionPBC)
         {
             /* Select the component along vec */
-            a = 0;
-            for (m = 0; m < DIM; m++)
-            {
-                a += spatialData.vec[m] * spatialData.dr01[m];
-            }
-            for (m = 0; m < DIM; m++)
-            {
-                r_ij[c][m] = a * spatialData.vec[m];
-            }
+            const double a = spatialData.vec.dot(spatialData.dr01);
+            r_ij[c]        = a * spatialData.vec;
         }
         else
         {
-            copy_dvec(spatialData.dr01, r_ij[c]);
+            r_ij[c] = spatialData.dr01;
         }
 
         if (dnorm2(r_ij[c]) == 0)
@@ -936,7 +906,6 @@ static void do_constraint(struct pull_t* pull,
         {
             pull_coord_work_t* pcrd;
             pull_group_work_t *pgrp0, *pgrp1;
-            dvec               dr0, dr1;
 
             pcrd = &pull->coord[c];
 
@@ -951,15 +920,18 @@ static void do_constraint(struct pull_t* pull,
             pgrp1 = &pull->group[pcrd->params_.group[1]];
 
             /* Get the current difference vector */
-            low_get_pull_coord_dr(
-                    *pull, *pcrd, pbc, rnew[pcrd->params_.group[1]], rnew[pcrd->params_.group[0]], 0, 1, -1, unc_ij);
+            DVec unc_ij = low_get_pull_coord_dr(
+                    *pull, *pcrd, pbc, rnew[pcrd->params_.group[1]], rnew[pcrd->params_.group[0]], 0, 1, -1);
 
             if (debug)
             {
                 fprintf(debug, "Pull coord %zu, iteration %d\n", c, niter);
             }
 
-            rm = 1.0 / (pgrp0->invtm + pgrp1->invtm);
+            const double rm = 1.0 / (pgrp0->invtm + pgrp1->invtm);
+
+            DVec dr0;
+            DVec dr1;
 
             switch (pcrd->params_.eGeom)
             {
@@ -980,6 +952,7 @@ static void do_constraint(struct pull_t* pull,
                         c_b = diprod(unc_ij, r_ij[c]) * 2;
                         c_c = diprod(unc_ij, unc_ij) - gmx::square(pcrd->value_ref);
 
+                        double lambda;
                         if (c_b < 0)
                         {
                             q      = -0.5 * (c_b - std::sqrt(c_b * c_b - 4 * c_a * c_c));
@@ -995,26 +968,23 @@ static void do_constraint(struct pull_t* pull,
                         {
                             fprintf(debug, "Pull ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n", c_a, c_b, c_c, lambda);
                         }
-                    }
 
-                    /* The position corrections dr due to the constraints */
-                    dsvmul(-lambda * rm * pgrp1->invtm, r_ij[c], dr1);
-                    dsvmul(lambda * rm * pgrp0->invtm, r_ij[c], dr0);
-                    dr_tot[c] += -lambda * dnorm(r_ij[c]);
+                        /* The position corrections dr due to the constraints */
+                        dr1 = -lambda * rm * pgrp1->invtm * r_ij[c];
+                        dr0 = lambda * rm * pgrp0->invtm * r_ij[c];
+                        dr_tot[c] += -lambda * norm(r_ij[c]);
+                    }
                     break;
                 case PullGroupGeometry::Direction:
                 case PullGroupGeometry::DirectionPBC:
                 case PullGroupGeometry::Cylinder:
+                {
                     /* A 1-dimensional constraint along a vector */
-                    a = 0;
-                    for (m = 0; m < DIM; m++)
-                    {
-                        vec[m] = pcrd->spatialData.vec[m];
-                        a += unc_ij[m] * vec[m];
-                    }
+                    const DVec&  vec = pcrd->spatialData.vec;
+                    const double a   = unc_ij.dot(vec);
                     /* Select only the component along the vector */
-                    dsvmul(a, vec, unc_ij);
-                    lambda = a - pcrd->value_ref;
+                    unc_ij              = a * vec;
+                    const double lambda = a - pcrd->value_ref;
                     if (debug)
                     {
                         fprintf(debug, "Pull inpr %e lambda: %e\n", a, lambda);
@@ -1024,7 +994,8 @@ static void do_constraint(struct pull_t* pull,
                     dsvmul(-lambda * rm * pgrp1->invtm, vec, dr1);
                     dsvmul(lambda * rm * pgrp0->invtm, vec, dr0);
                     dr_tot[c] += -lambda;
-                    break;
+                }
+                break;
                 case PullGroupGeometry::Transformation:
                     GMX_RELEASE_ASSERT(false, "transformation with constraints should never occur");
                     break;
@@ -1038,8 +1009,8 @@ static void do_constraint(struct pull_t* pull,
 
                 g0 = pcrd->params_.group[0];
                 g1 = pcrd->params_.group[1];
-                low_get_pull_coord_dr(*pull, *pcrd, pbc, rnew[g1], rnew[g0], 0, 1, -1, tmp);
-                low_get_pull_coord_dr(*pull, *pcrd, pbc, dr1, dr0, 0, 1, -1, tmp3);
+                const DVec tmp = low_get_pull_coord_dr(*pull, *pcrd, pbc, rnew[g1], rnew[g0], 0, 1, -1);
+                const DVec tmp3 = low_get_pull_coord_dr(*pull, *pcrd, pbc, dr1, dr0, 0, 1, -1);
                 fprintf(debug,
                         "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         rnew[g0][0],
@@ -1082,8 +1053,8 @@ static void do_constraint(struct pull_t* pull,
                 continue;
             }
 
-            low_get_pull_coord_dr(
-                    *pull, coord, pbc, rnew[coord.params_.group[1]], rnew[coord.params_.group[0]], 0, 1, -1, unc_ij);
+            DVec unc_ij = low_get_pull_coord_dr(
+                    *pull, coord, pbc, rnew[coord.params_.group[1]], rnew[coord.params_.group[0]], 0, 1, -1);
 
             switch (coord.params_.eGeom)
             {
@@ -1093,14 +1064,13 @@ static void do_constraint(struct pull_t* pull,
                 case PullGroupGeometry::Direction:
                 case PullGroupGeometry::DirectionPBC:
                 case PullGroupGeometry::Cylinder:
-                    for (m = 0; m < DIM; m++)
-                    {
-                        vec[m] = coord.spatialData.vec[m];
-                    }
-                    inpr = diprod(unc_ij, vec);
-                    dsvmul(inpr, vec, unc_ij);
+                {
+                    const DVec&  vec  = coord.spatialData.vec;
+                    const double inpr = unc_ij.dot(vec);
+                    unc_ij            = inpr * vec;
                     bConverged = std::fabs(diprod(unc_ij, vec) - coord.value_ref) < pull->params.constr_tol;
-                    break;
+                }
+                break;
                 default:
                     GMX_ASSERT(false,
                                gmx::formatString("Geometry %s not handled here",
@@ -1137,21 +1107,17 @@ static void do_constraint(struct pull_t* pull,
 
     /* DONE ITERATING, NOW UPDATE COORDINATES AND CALC. CONSTRAINT FORCES */
 
-    if (!v.empty())
-    {
-        invdt = 1 / dt;
-    }
+    const real invdt = (v.empty() ? 0 : 1 / dt);
 
     /* update atoms in the groups */
     for (size_t g = 0; g < pull->group.size(); g++)
     {
         const pull_group_work_t* pgrp;
-        dvec                     dr;
 
         pgrp = &pull->group[g];
 
         /* get the final constraint displacement dr for group g */
-        dvec_sub(rnew[g], pgrp->xp, dr);
+        DVec dr = rnew[g] - pgrp->xp;
 
         if (dnorm2(dr) == 0)
         {
@@ -1161,24 +1127,18 @@ static void do_constraint(struct pull_t* pull,
 
         /* update the atom positions */
         auto localAtomIndices = pgrp->atomSet_.localIndex();
-        copy_dvec(dr, tmp);
+        DVec tmp              = dr;
         for (gmx::Index j = 0; j < localAtomIndices.ssize(); j++)
         {
-            ii = localAtomIndices[j];
+            const int ii = localAtomIndices[j];
             if (!pgrp->localWeights.empty())
             {
-                dsvmul(pgrp->wscale * pgrp->localWeights[j], dr, tmp);
+                tmp = static_cast<double>(pgrp->wscale * pgrp->localWeights[j]) * dr;
             }
-            for (m = 0; m < DIM; m++)
-            {
-                x[ii][m] += tmp[m];
-            }
+            x[ii] += tmp.toRVec();
             if (!v.empty())
             {
-                for (m = 0; m < DIM; m++)
-                {
-                    v[ii][m] += invdt * tmp[m];
-                }
+                v[ii] += invdt * tmp.toRVec();
             }
         }
     }
@@ -1212,21 +1172,16 @@ static void do_constraint(struct pull_t* pull,
 
             for (int j = 0; j < DIM; j++)
             {
-                for (m = 0; m < DIM; m++)
+                for (int m = 0; m < DIM; m++)
                 {
                     vir[j][m] -= 0.5 * f_invr * r_ij[c][j] * r_ij[c][m];
                 }
             }
         }
     }
-
-    /* finished! I hope. Give back some memory */
-    sfree(r_ij);
-    sfree(dr_tot);
-    sfree(rnew);
 }
 
-static void add_virial_coord_dr(tensor vir, const dvec dr, const dvec f)
+static void add_virial_coord_dr(tensor vir, const DVec& dr, const DVec& f)
 {
     for (int j = 0; j < DIM; j++)
     {
@@ -1680,8 +1635,8 @@ void pull_apply_forces(struct pull_t*        pull,
 
         if (pcrd.params_.eGeom == PullGroupGeometry::Transformation)
         {
-            gmx::distributeTransformationPullCoordForce(
-                    &pcrd, gmx::ArrayRef<pull_coord_work_t>(pull->coord).subArray(0, pcrd.params_.coordIndex));
+            distributeTransformationPullCoordForce(
+                    &pcrd, ArrayRef<pull_coord_work_t>(pull->coord).subArray(0, pcrd.params_.coordIndex));
         }
         else if (force != nullptr)
         {
@@ -1693,8 +1648,7 @@ void pull_apply_forces(struct pull_t*        pull,
             }
 
             /* Distribute the force over the atoms in the pulled groups */
-            apply_forces_coord(
-                    pcrd, pull->group, pullCoordForces, masses, as_rvec_array(force->force_.data()));
+            apply_forces_coord(pcrd, pull->group, pullCoordForces, masses, force->force_);
         }
     }
 
@@ -2449,13 +2403,13 @@ static void destroy_pull(struct pull_t* pull)
     delete pull;
 }
 
-void preparePrevStepPullComNewSimulation(const gmx::MpiComm&                    mpiComm,
-                                         pull_t*                                pull_work,
-                                         ArrayRef<const real>                   masses,
-                                         ArrayRef<const RVec>                   x,
-                                         const matrix                           box,
-                                         PbcType                                pbcType,
-                                         std::optional<gmx::ArrayRef<double>>&& comPreviousStep)
+void preparePrevStepPullComNewSimulation(const gmx::MpiComm&             mpiComm,
+                                         pull_t*                         pull_work,
+                                         ArrayRef<const real>            masses,
+                                         ArrayRef<const RVec>            x,
+                                         const matrix                    box,
+                                         PbcType                         pbcType,
+                                         std::optional<ArrayRef<DVec>>&& comPreviousStep)
 {
     t_pbc pbc;
     set_pbc(&pbc, pbcType, box);

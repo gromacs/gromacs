@@ -116,16 +116,23 @@ namespace
  */
 enum class CheckpointVersion
 {
-    Base, //!< First version of modular checkpointing
-    Count //!< Number of entries. Add new versions right above this!
+    Base,                 //!< First version of modular checkpointing
+    PullPrevStepCommDVec, //!< Changed pull prev. step COM buffer from double to DVec
+    Count                 //!< Number of entries. Add new versions right above this!
 };
 constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
 } // namespace
 
 template<CheckpointDataOperation operation>
-static void doCheckpointData(CheckpointData<operation>* checkpointData, ArrayRef<double> previousStepCom)
+static void doCheckpointData(CheckpointData<operation>* checkpointData, ArrayRef<DVec> previousStepCom)
 {
-    checkpointVersion(checkpointData, "PullElement version", c_currentVersion);
+    const CheckpointVersion fileVersion =
+            checkpointVersion(checkpointData, "PullElement version", c_currentVersion);
+    if (fileVersion < CheckpointVersion::PullPrevStepCommDVec)
+    {
+        GMX_THROW(InvalidInputError(
+                "Reading checkpoint file with old, incompatible previous step pull COMs"));
+    }
     checkpointData->arrayRef("Previous step COM positions",
                              makeCheckpointArrayRef<operation>(previousStepCom));
 }
