@@ -56,6 +56,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -609,28 +610,22 @@ static gmx::LoggerOwner buildLogger(FILE* fplog, const bool isSimulationMainRank
 }
 
 //! Make a TaskTarget from an mdrun argument string.
-static TaskTarget findTaskTarget(const char* optionString)
+static TaskTarget findTaskTarget(const std::string_view optionString)
 {
-    TaskTarget returnValue = TaskTarget::Auto;
-
-    if (std::strncmp(optionString, "auto", 3) == 0)
+    if (optionString == "auto")
     {
-        returnValue = TaskTarget::Auto;
+        return TaskTarget::Auto;
     }
-    else if (std::strncmp(optionString, "cpu", 3) == 0)
+    if (optionString == "cpu")
     {
-        returnValue = TaskTarget::Cpu;
+        return TaskTarget::Cpu;
     }
-    else if (std::strncmp(optionString, "gpu", 3) == 0)
+    if (optionString == "gpu")
     {
-        returnValue = TaskTarget::Gpu;
+        return TaskTarget::Gpu;
     }
-    else
-    {
-        GMX_ASSERT(false, "Option string should have been checked for sanity already");
-    }
-
-    return returnValue;
+    GMX_RELEASE_ASSERT(false, "Option string should have been checked for sanity already");
+    return TaskTarget::Auto;
 }
 
 //! Finish run, aggregate data to print performance info.
