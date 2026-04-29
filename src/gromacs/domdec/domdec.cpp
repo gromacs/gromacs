@@ -1180,7 +1180,10 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
             if (cartSetup.ddindex2simnodeid[i] == 0)
             {
                 ddindex2xyz(dd->numCells, i, dd->main_ci);
-                GMX_RELEASE_ASSERT(dd->mpiComm().isMainRank(), "The main MPI rank has to be 0");
+                int mainRank = 0;
+                MPI_Cart_rank(dd->mpiComm().comm(), dd->main_ci, &mainRank);
+                GMX_RELEASE_ASSERT(mainRank == dd->mpiComm().mainRank(),
+                                   "The main MPI rank has to be 0");
             }
         }
         if (debug)

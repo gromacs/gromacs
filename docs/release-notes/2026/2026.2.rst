@@ -57,6 +57,14 @@ The ``GMX_NO_CART_REORDER`` environment variable did not disable Cartesian
 communicator rank reordering when set to 1 because the logic was inverted.
 This was broken since |Gromacs| 2020.
 
+Fixed ``mdrun -ddorder cartesian`` with PME-only ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With PME-only ranks, ``mdrun -ddorder cartesian`` could fail during domain
+decomposition setup.
+
+:issue:`5612`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
