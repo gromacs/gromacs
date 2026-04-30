@@ -73,8 +73,8 @@ Correct wallcycle table in the md.log file with single rank simulations
 Fixed MPI communicator passing to CP2K
 """"""""""""""""""""""""""""""""""""""
 
-Corrected an issue with GROMACS-CP2K interface in case it is built with support 
-for an external MPI library but ``mdrun`` runs as a single rank. The interface 
+Corrected an issue with GROMACS-CP2K interface in case it is built with support
+for an external MPI library but ``mdrun`` runs as a single rank. The interface
 erroneously passed ``MPI_COMM_NULL`` to CP2K which caused an error.
 
 Fixes for ``gmx`` tools
@@ -97,7 +97,7 @@ Now only particles in the index group are used.
 Fixed a selection evaluation issue for numeric expressions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Fixed a selection issue that would lead to a crash when a numeric expression 
+Fixed a selection issue that would lead to a crash when a numeric expression
 would reference a variable derived from a position expression.
 
 :issue:`5576`
@@ -122,3 +122,12 @@ Cray MPICH 9 with ROCm was affected.
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Adjusted fudge coefficients for AMBER14SB and AMBER19SB
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+AMBER itself uses value :math:`\frac{1}{1.2} = 0.8\overline{3}`. The new value
+of ``0.83333333333333333`` for the Lennard-Jones fudge coefficient matches the
+original value better than the previously used ``0.8333``.
+
+:issue:`5616`
