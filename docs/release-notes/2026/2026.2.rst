@@ -70,6 +70,13 @@ Correct wallcycle table in the md.log file with single rank simulations
 
 :issue:`5614`
 
+Fixed MPI communicator passing to CP2K
+""""""""""""""""""""""""""""""""""""""
+
+Corrected an issue with GROMACS-CP2K interface in case it is built with support 
+for an external MPI library but ``mdrun`` runs as a single rank. The interface 
+erroneously passed ``MPI_COMM_NULL`` to CP2K which caused an error.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
