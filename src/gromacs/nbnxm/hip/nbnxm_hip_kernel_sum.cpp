@@ -42,6 +42,7 @@
 
 #include "nbnxm_hip_kernel_sum.h"
 
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/template_mp.h"
@@ -57,15 +58,15 @@ namespace
 
 __forceinline__ __device__ void float3ReduceFinal(float3* input_ptr)
 {
-    const unsigned int flat_id = threadIdx.x;
-    const unsigned int size    = c_numShiftVectors;
-    float3             input;
-    input.x = atomicExch(&(input_ptr[size * (flat_id + 1)].x), 0.0F);
-    input.y = atomicExch(&(input_ptr[size * (flat_id + 1)].x) + 1, 0.0F);
-    input.z = atomicExch(&(input_ptr[size * (flat_id + 1)].x) + 2, 0.0F);
+    const int flat_id = threadIdx.x;
+    const int size    = c_numShiftVectors;
+    float3    input;
+    input.x = atomicExch(&(indexedAddress(input_ptr, size * (flat_id + 1))->x), 0.0F);
+    input.y = atomicExch(&(indexedAddress(input_ptr, size * (flat_id + 1))->x) + 1, 0.0F);
+    input.z = atomicExch(&(indexedAddress(input_ptr, size * (flat_id + 1))->x) + 2, 0.0F);
 
 #pragma unroll
-    for (unsigned int offset = 1; offset < warpSize; offset *= 2)
+    for (int offset = 1; offset < warpSize; offset *= 2)
     {
         input.x = input.x + __shfl_down(input.x, offset);
         input.y = input.y + __shfl_down(input.y, offset);
@@ -74,21 +75,21 @@ __forceinline__ __device__ void float3ReduceFinal(float3* input_ptr)
 
     if (flat_id == 0 || flat_id == warpSize)
     {
-        atomicAdd(&(input_ptr[0].x), input.x);
-        atomicAdd(&(input_ptr[0].x) + 1, input.y);
-        atomicAdd(&(input_ptr[0].x) + 2, input.z);
+        atomicAdd(&(indexedAddress(input_ptr, 0)->x), input.x);
+        atomicAdd(&(indexedAddress(input_ptr, 0)->x) + 1, input.y);
+        atomicAdd(&(indexedAddress(input_ptr, 0)->x) + 2, input.z);
     }
 }
 
 __forceinline__ __device__ void energyReduceFinal(float* e_lj_ptr, float* e_el_ptr)
 {
-    const unsigned int flat_id = threadIdx.x;
+    const int flat_id = threadIdx.x;
 
-    float E_lj = atomicExch(e_lj_ptr + (flat_id + 1), 0.0F);
-    float E_el = atomicExch(e_el_ptr + (flat_id + 1), 0.0F);
+    float E_lj = atomicExch(indexedAddress(e_lj_ptr, (flat_id + 1)), 0.0F);
+    float E_el = atomicExch(indexedAddress(e_el_ptr, (flat_id + 1)), 0.0F);
 
 #pragma unroll
-    for (unsigned int offset = 1; offset < warpSize; offset *= 2)
+    for (int offset = 1; offset < warpSize; offset *= 2)
     {
         E_lj += __shfl_down(E_lj, offset);
         E_el += __shfl_down(E_el, offset);
@@ -104,13 +105,13 @@ __forceinline__ __device__ void energyReduceFinal(float* e_lj_ptr, float* e_el_p
 template<unsigned int BlockSize, bool computeEnergy, bool computeVirial>
 __launch_bounds__(BlockSize) __global__ void nbnxmKernelSumUp(NBAtomDataGpu atdat)
 {
-    const unsigned int bidx = blockIdx.x;
+    const int bidx = blockIdx.x;
 
 
     // Sum up fshifts
     if constexpr (computeVirial)
     {
-        float3* values_ptr = asFloat3(atdat.fShift) + bidx;
+        float3* values_ptr = asFloat3(indexedAddress(atdat.fShift, bidx));
         float3ReduceFinal(values_ptr);
     }
 
