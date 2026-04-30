@@ -356,6 +356,10 @@ void MpiComm::initializeHierarchicalReductions(const int physicalNodeIdHash)
     if (rankIntra > 0)
     {
         MPI_Comm_free(&commInter);
+        // The MPI standard requires MPI_Comm_free to set the handle to MPI_COMM_NULL,
+        // but some MPI wrappers (e.g. TAU 2.35) are non-conformant and leave the handle unchanged.
+        // Since we assert on this later, we set it to MPI_COMM_NULL here to be safe.
+        commInter = MPI_COMM_NULL;
     }
 
     if (numPhysicalNodes > 1 && numPhysicalNodes < size_)
