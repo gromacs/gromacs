@@ -592,7 +592,9 @@ static int ddcoord2simnodeid(const gmx_domdec_t& dd, int x, int y, int z)
 
     if (cartSetup.bCartesianPP_PME)
     {
-        nodeid = dd.comm->mpiCommMySim_.rank();
+#if GMX_MPI
+        MPI_Cart_rank(dd.comm->mpiCommMySim_.comm(), coords, &nodeid);
+#endif
     }
     else
     {
