@@ -143,3 +143,11 @@ undefined. These are now corrected to use ``OW_spce`` and ``HW_spce`` atom types
 (respectively), which were converted from Amber ff14SB and ff19SB.
 
 :issue:`5615`
+Fix test failure with OMP_NUM_THREADS set
+"""""""""""""""""""""""""""""""""""""""""
+
+Fix test failure in NbnxmTests when ``OMP_NUM_THREADS`` was set
+to a value larger than 1.
+
+:issue:`5619`
+
