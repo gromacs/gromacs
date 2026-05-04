@@ -43,10 +43,13 @@ that was written at a step that is not a multiple of nstdhdl.
 Fixed performance issue with GPU FEP kernel
 """""""""""""""""""""""""""""""""""""""""""
 
-FEP kernels are not supported for the Gapsys soft-core flavor.
-Formerly ``gmx mdrun -nbfe gpu`` ran and did pair search that suited GPU NBFE kernels
-despite never running those kernels. Now mdrun refuses to run with
-``-nbfe gpu`` unless Beutler soft-core flavor is selected.
+Previously, using ``-nbfe gpu`` with Gapsys soft-core activated parts
+of GPU offloading support code while still doing the computation on
+the CPU, resulting in reduced performance and misleading log messages.
+
+Now ``mdrun`` correctly identifies that the Gapsys soft-core flavor
+is not supported by GPU non-bonded force kernels, ensuring users
+revert to the supported CPU path or switch to Beutler soft-core.
 
 :issue:`5579`
 

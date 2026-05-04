@@ -1361,7 +1361,7 @@ static CommSetup split_communicator(const MDLogger&       mdlog,
          */
         cs.commMySim = MpiComm(comm_cart);
 
-        MPI_Cart_coords(mpiCommSimulation.comm(), mpiCommSimulation.rank(), DIM, cs.ddCellIndex);
+        MPI_Cart_coords(cs.commMySim.comm(), cs.commMySim.rank(), DIM, cs.ddCellIndex);
 
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Cartesian rank %d, coordinates %d %d %d\n",
