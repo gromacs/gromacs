@@ -1495,6 +1495,10 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
     const bool haveToRealloc   = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
     pmeGpu->nAtomsAlloc        = nAtomsNewPadded;
 
+    // We need to select the correct kernel before doing any of the calculations that depend
+    // on the kernel choice, otherwise we might be operating on outdated values below.
+    pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
+
     const auto atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
     const int  nWarps       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
     pmeGpu->archSpecific->splineCountActive = DIM * nWarps * atomsPerWarp * pmeGpu->common->pme_order;
@@ -1610,7 +1614,6 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
         // re-alloc not needed but resizing is needed if nAtoms changed
         pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
     }
-    pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
 }
 
 /*! \internal \brief

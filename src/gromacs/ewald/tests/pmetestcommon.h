@@ -208,6 +208,9 @@ void pmeSetComplexGrid(gmx_pme_t*                          pme,
                        GridOrdering                        gridOrdering,
                        const SparseComplexGridValuesInput& gridValues);
 
+//! Set min atom count for spline recalculation to 0 for testing.
+void pmeResetMinSplineRecalculationAtomCount(gmx_pme_t* pme);
+
 // PME state getters
 
 //! Getting the single dimension's spline values or derivatives

@@ -50,12 +50,10 @@
 #include "pme_gpu_constants.h"
 #include "pme_gpu_types.h"
 
-template<int parallelExecutionWidth>
-static constexpr int sc_spreadHipMaxWarpsPerBlock = (parallelExecutionWidth == 64) ? 8 : 4;
+static constexpr int sc_spreadHipMaxWarpsPerBlock = 8;
 
 template<int parallelExecutionWidth>
-static constexpr int sc_spreadMaxThreadsPerBlock =
-        sc_spreadHipMaxWarpsPerBlock<parallelExecutionWidth> * parallelExecutionWidth;
+static constexpr int sc_spreadMaxThreadsPerBlock = sc_spreadHipMaxWarpsPerBlock * parallelExecutionWidth;
 
 /*! \brief
  * Charge spreading onto the grid.
