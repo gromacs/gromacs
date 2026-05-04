@@ -100,7 +100,7 @@ Now only particles in the index group are used.
 Fixed a selection evaluation issue for numeric expressions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Fixed a selection issue that would lead to a crash when a numeric expression
+Fixed a selection issue that would lead to a crash when a numeric expression 
 would reference a variable derived from a position expression.
 
 :issue:`5576`
@@ -134,3 +134,12 @@ of ``0.83333333333333333`` for the Lennard-Jones fudge coefficient matches the
 original value better than the previously used ``0.8333``.
 
 :issue:`5616`
+
+Fix SPC and SPC/E atom types in AMBER14SB and AMBER19SB force fields
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The atom type for ``OW`` and ``HW`` was ``OW_spc`` and ``HW_spc``, which are
+undefined. These are now corrected to use ``OW_spce`` and ``HW_spce`` atom types
+(respectively), which were converted from Amber ff14SB and ff19SB.
+
+:issue:`5615`
