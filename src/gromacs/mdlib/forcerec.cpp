@@ -178,10 +178,9 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                 
      */
 
     std::vector<real> grid(2 * numAtomTypes * numAtomTypes, 0.0);
-    int               k = 0;
     for (int i = 0; (i < numAtomTypes); i++)
     {
-        for (int j = 0; (j < numAtomTypes); j++, k++)
+        for (int j = 0; (j < numAtomTypes); j++)
         {
             real c6i  = iparams[i * (numAtomTypes + 1)].lj.c6;
             real c12i = iparams[i * (numAtomTypes + 1)].lj.c12;
