@@ -60,12 +60,10 @@ constexpr bool c_wrapY = true;
 constexpr int c_stateA = 0;
 constexpr int c_stateB = 1;
 
-template<int parallelExecutionWidth>
-constexpr int sc_spreadHipMaxWarpsPerBlock = (parallelExecutionWidth == 64) ? 8 : 4;
+constexpr int sc_spreadHipMaxWarpsPerBlock = 8;
 
 template<int parallelExecutionWidth>
-static constexpr int sc_spreadMaxThreadsPerBlock =
-        sc_spreadHipMaxWarpsPerBlock<parallelExecutionWidth> * parallelExecutionWidth;
+static constexpr int sc_spreadMaxThreadsPerBlock = sc_spreadHipMaxWarpsPerBlock * parallelExecutionWidth;
 
 template<int parallelExecutionWidth>
 static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock * parallelExecutionWidth;
