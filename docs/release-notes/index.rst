@@ -32,6 +32,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2026/2026.3
    2026/2026.2
    2026/2026.1
 
