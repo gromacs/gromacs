@@ -151,3 +151,26 @@ to a value larger than 1.
 
 :issue:`5619`
 
+Hardened configuration with cuFFTMp and HeFFTe
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously the CMake options for these distributed GPU FFT libraries
+would be ignored if ``GMX_MPI`` was not also set. This led to
+incorrect builds and confusing warnings from CMake. ``GMX_MPI`` is
+required, and now an error is given if support for such an FFT library
+is required and ``GMX_MPI`` is not also set.
+
+:issue:`5596`
+:issue:`5598`
+
+Hardened configuration with NVSHMEM
+"""""""""""""""""""""""""""""""""""
+
+Previously the CMake options for NVSHMEM would be ignored if
+``GMX_MPI`` was not also set. This led to incorrect builds and
+confusing warnings from CMake. ``GMX_MPI`` is required, and now an
+error is given if NVSHMEM support is required and ``GMX_MPI`` is not
+also set.
+
+:issue:`5596`
+:issue:`5598`
