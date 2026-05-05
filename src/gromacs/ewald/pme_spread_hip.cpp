@@ -218,7 +218,7 @@ __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParams kernelParams)
     /* Charges, required for both spline and spread */
     if constexpr (c_useAtomDataPrefetch)
     {
-        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
+        pme_gpu_stage_atom_data<float, atomsPerBlock, 1, !computeSplines>(
                 sm_coefficients, &kernelParams.atoms.d_coefficients[0][kernelParams.pipelineAtomStart]);
         __syncthreads();
         atomCharge = sm_coefficients[atomIndexLocal];
@@ -237,7 +237,7 @@ __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParams kernelParams)
             __shared__ float3 sm_coordinates[atomsPerBlock];
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1, !computeSplines>(
                     sm_coordinates, gm_coordinates + kernelParams.pipelineAtomStart);
             __syncthreads();
             atomX = sm_coordinates[atomIndexLocal];
@@ -257,10 +257,11 @@ __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParams kernelParams)
          * as in after running the spline kernel)
          */
         /* Spline data - only thetas (dthetas will only be needed in gather) */
-        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(sm_theta, kernelParams.atoms.d_theta);
+        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order, !computeSplines>(
+                sm_theta, kernelParams.atoms.d_theta);
         /* Gridline indices */
-        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(sm_gridlineIndices,
-                                                         kernelParams.atoms.d_gridlineIndices);
+        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM, !computeSplines>(
+                sm_gridlineIndices, kernelParams.atoms.d_gridlineIndices);
 
         __syncthreads();
     }
@@ -280,7 +281,7 @@ __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParams kernelParams)
         __syncthreads();
         if constexpr (c_useAtomDataPrefetch)
         {
-            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
+            pme_gpu_stage_atom_data<float, atomsPerBlock, 1, !computeSplines>(
                     sm_coefficients, &kernelParams.atoms.d_coefficients[1][kernelParams.pipelineAtomStart]);
             __syncthreads();
             atomCharge = sm_coefficients[atomIndexLocal];

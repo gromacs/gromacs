@@ -142,27 +142,47 @@ static __device__ inline void assertIsFinite(T gmx_unused arg)
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
  *
+ * \note The loop is necessary whenever \p atomsPerBlock * \p dataCountPerAtom exceeds the block
+ *       thread count, i.e. when there are more data items to stage than there are threads to do
+ *       it in a single pass. At call sites, \c !computeSplines is used as a proxy for this condition.
+ *
  * \tparam     T                  Data type (float/int/...)
  * \tparam     atomsPerBlock      Number of atoms processed by a block - should be accounted for in
  * the size of the shared memory array.
  * \tparam     dataCountPerAtom   Number of data elements per single atom (e.g. DIM for an rvec
  * coordinates array).
+ * \tparam     needAllElementLoop Whether we can use a single element check or need to loop over all
+ *                                elements when populating the shared memory buffer
  * \param[out] sm_destination     Shared memory array for output.
  * \param[in]  gm_source          Global memory array for input.
  */
-template<typename T, int atomsPerBlock, int dataCountPerAtom>
+template<typename T, int atomsPerBlock, int dataCountPerAtom, bool needAllElementLoop>
 static __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_destination,
                                                                const T* __restrict__ gm_source)
 {
     const int blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
     const int threadLocalIndex = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x) + threadIdx.x;
-    const int localIndex      = threadLocalIndex;
     const int globalIndexBase = blockIndex * atomsPerBlock * dataCountPerAtom;
-    const int globalIndex     = globalIndexBase + localIndex;
-    if (localIndex < atomsPerBlock * dataCountPerAtom)
+    if constexpr (needAllElementLoop)
     {
-        assertIsFinite(gm_source[globalIndex]);
-        sm_destination[localIndex] = gm_source[globalIndex];
+        const int     blockThreadCount = blockDim.x * blockDim.y * blockDim.z;
+        constexpr int totalElements    = atomsPerBlock * dataCountPerAtom;
+        for (int localIndex = threadLocalIndex; localIndex < totalElements; localIndex += blockThreadCount)
+        {
+            const int globalIndex = globalIndexBase + localIndex;
+            assertIsFinite(gm_source[globalIndex]);
+            sm_destination[localIndex] = gm_source[globalIndex];
+        }
+    }
+    else
+    {
+        const int localIndex  = threadLocalIndex;
+        const int globalIndex = globalIndexBase + localIndex;
+        if (localIndex < atomsPerBlock * dataCountPerAtom)
+        {
+            assertIsFinite(gm_source[globalIndex]);
+            sm_destination[localIndex] = gm_source[globalIndex];
+        }
     }
 }
 

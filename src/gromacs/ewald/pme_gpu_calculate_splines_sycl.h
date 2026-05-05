@@ -152,28 +152,50 @@ static inline bool pmeGpuCheckAtomCharge(const float charge)
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
  *
+ * \note The loop is necessary whenever \p atomsPerBlock * \p dataCountPerAtom exceeds the block
+ *       thread count, i.e. when there are more data items to stage than there are threads to do
+ *       it in a single pass. At call sites, \c !computeSplines is used as a proxy for this condition.
+ *
  * \tparam T Data type (float/int/...).
  * \tparam atomsPerWorkGroup Number of atoms processed by a block - should be accounted for
  *                           in the size of the shared memory array.
  * \tparam dataCountPerAtom Number of data elements
  *                          per single atom (e.g. \c DIM for an rvec coordinates array).
+ * \tparam     needAllElementLoop Whether we can use a single element check or need to loop over all
+ *                                elements when populating the shared memory buffer
  * \param[out] sm_destination Shared memory array for output.
  * \param[in]  gm_source Global memory array for input.
  * \param[in]  itemIdx SYCL thread ID.
+ *
  */
-template<typename T, int atomsPerWorkGroup, int dataCountPerAtom>
+template<typename T, int atomsPerWorkGroup, int dataCountPerAtom, bool needAllElementLoop = false>
 static inline void pmeGpuStageAtomData(sycl::local_ptr<T>              sm_destination,
                                        const sycl::global_ptr<const T> gm_source,
                                        sycl::nd_item<3>                itemIdx)
 {
-    const int blockIndex      = itemIdx.get_group_linear_id();
-    const int localIndex      = itemIdx.get_local_linear_id();
-    const int globalIndexBase = blockIndex * atomsPerWorkGroup * dataCountPerAtom;
-    const int globalIndex     = globalIndexBase + localIndex;
-    if (localIndex < atomsPerWorkGroup * dataCountPerAtom)
+    const int blockIndex       = itemIdx.get_group_linear_id();
+    const int threadLocalIndex = itemIdx.get_local_linear_id();
+    const int globalIndexBase  = blockIndex * atomsPerWorkGroup * dataCountPerAtom;
+    if constexpr (needAllElementLoop)
     {
-        assertIsFinite(gm_source[globalIndex]);
-        sm_destination[localIndex] = gm_source[globalIndex];
+        const int     blockThreadCount = itemIdx.get_local_range().size();
+        constexpr int totalElements    = atomsPerWorkGroup * dataCountPerAtom;
+        for (int localIndex = threadLocalIndex; localIndex < totalElements; localIndex += blockThreadCount)
+        {
+            const int globalIndex = globalIndexBase + localIndex;
+            assertIsFinite(gm_source[globalIndex]);
+            sm_destination[localIndex] = gm_source[globalIndex];
+        }
+    }
+    else
+    {
+        const int localIndex  = threadLocalIndex;
+        const int globalIndex = globalIndexBase + localIndex;
+        if (localIndex < atomsPerWorkGroup * dataCountPerAtom)
+        {
+            assertIsFinite(gm_source[globalIndex]);
+            sm_destination[localIndex] = gm_source[globalIndex];
+        }
     }
 }
 
