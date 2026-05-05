@@ -300,9 +300,11 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
              * as in after running the spline kernel)
              */
             /* Spline data - only thetas (dthetas will only be needed in gather) */
-            pmeGpuStageAtomData<float, atomsPerBlock, DIM * order>(sm_theta, gm_theta, itemIdx);
+            pmeGpuStageAtomData<float, atomsPerBlock, DIM * order, !computeSplines>(
+                    sm_theta, gm_theta, itemIdx);
             /* Gridline indices */
-            pmeGpuStageAtomData<int, atomsPerBlock, DIM>(sm_gridlineIndices, gm_gridlineIndices, itemIdx);
+            pmeGpuStageAtomData<int, atomsPerBlock, DIM, !computeSplines>(
+                    sm_gridlineIndices, gm_gridlineIndices, itemIdx);
 
             itemIdx.barrier(fence_space::local_space);
         }
