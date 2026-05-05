@@ -100,20 +100,6 @@ public:
         GMX_H5MD_THROW_UPON_ERROR(
                 objectExists(container, name.c_str()),
                 "Cannot create data set: object with given name already exists in the container");
-        accessPropertyList_   = H5Pcreate(H5P_DATASET_ACCESS);
-        creationPropertyList_ = H5Pcreate(H5P_DATASET_CREATE);
-    }
-
-    ~H5mdDataSetBuilder() noexcept
-    {
-        if (handleIsValid(accessPropertyList_))
-        {
-            H5Pclose(accessPropertyList_);
-        }
-        if (handleIsValid(creationPropertyList_))
-        {
-            H5Pclose(creationPropertyList_);
-        }
     }
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(H5mdDataSetBuilder);
@@ -121,17 +107,7 @@ public:
     //! \brief Set \p compression for data set.
     H5mdDataSetBuilder& withCompression(const H5mdCompression compression)
     {
-        switch (compression)
-        {
-            case H5mdCompression::Uncompressed: break;
-            case H5mdCompression::LosslessShuffle:
-                H5Pset_shuffle(creationPropertyList_);
-                [[fallthrough]];
-            case H5mdCompression::LosslessNoShuffle:
-                H5Pset_deflate(creationPropertyList_, c_h5mdDeflateCompressionLevel);
-                break;
-        }
-
+        compression_ = compression;
         return *this;
     }
 
@@ -244,12 +220,30 @@ public:
                                   "Inconsistent input when creating data set: "
                                   "chunkDims must be of same dimension as data set dims.");
 
+        // To create HDF5 data sets we need non-default property lists
+        // for data access and data creation.
+        const auto [accessPropertyList, accessPropertyListGuard] =
+                makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_ACCESS));
+        const auto [creationPropertyList, creationPropertyListGuard] =
+                makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
+
         GMX_H5MD_THROW_UPON_ERROR(
-                H5Pset_chunk(creationPropertyList_, chunkDims_.size(), chunkDims_.data()) < 0,
+                H5Pset_chunk(creationPropertyList, chunkDims_.size(), chunkDims_.data()) < 0,
                 "Cannot set chunk dimensions when creating data set.");
         GMX_H5MD_THROW_UPON_ERROR(
-                H5Pset_chunk_opts(creationPropertyList_, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS) < 0,
+                H5Pset_chunk_opts(creationPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS) < 0,
                 "Cannot set chunk options when creating data set.");
+
+        switch (compression_)
+        {
+            case H5mdCompression::Uncompressed: break;
+            case H5mdCompression::LosslessShuffle:
+                H5Pset_shuffle(creationPropertyList);
+                [[fallthrough]];
+            case H5mdCompression::LosslessNoShuffle:
+                H5Pset_deflate(creationPropertyList, c_h5mdDeflateCompressionLevel);
+                break;
+        }
 
         size_t cacheSize = H5Tget_size(dataType);
         for (const hsize_t d : chunkDims_)
@@ -257,7 +251,7 @@ public:
             cacheSize *= d;
         }
         GMX_H5MD_THROW_UPON_ERROR(
-                H5Pset_chunk_cache(accessPropertyList_, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT)
+                H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT)
                         < 0,
                 "Cannot set chunk cache size when creating data set.");
 
@@ -266,7 +260,7 @@ public:
         GMX_H5MD_THROW_UPON_INVALID_HID(dataSpace, "Cannot create data space for data set.");
 
         const hid_t dataSetHandle = H5Dcreate(
-                container_, name_.c_str(), dataType, dataSpace, H5P_DEFAULT, creationPropertyList_, accessPropertyList_);
+                container_, name_.c_str(), dataType, dataSpace, H5P_DEFAULT, creationPropertyList, accessPropertyList);
         GMX_H5MD_THROW_UPON_INVALID_HID(dataSetHandle, "Cannot create data set.");
 
         if (!unit_.empty())
@@ -328,10 +322,10 @@ private:
     }
 
     //!< Container in which to create the data set.
-    hid_t container_;
+    const hid_t container_;
 
     //!< Name of data set.
-    std::string name_;
+    const std::string name_;
 
     //!< When set, the maximum length of a string data set (default: variable-length string)
     std::optional<size_t> maxStringLength_ = std::nullopt;
@@ -345,14 +339,11 @@ private:
     //!< Chunk dimensions of data set storage.
     std::vector<hsize_t> chunkDims_;
 
-    //!< Property list for access options to create data set with.
-    hid_t accessPropertyList_;
-
-    //!< Property list for creation options to create data set with.
-    hid_t creationPropertyList_;
-
     //!< Unit for values in data set.
     std::string unit_;
+
+    //!< Compression scheme for data set.
+    H5mdCompression compression_ = H5mdCompression::Uncompressed;
 };
 
 } // namespace gmx
