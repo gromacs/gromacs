@@ -411,25 +411,32 @@ class Member(Entity):
         """Add a compound that contains this member."""
         self._parents.add(compound)
         if isinstance(compound, Class):
-            assert (
-                self._class is None
-            ), 'Class "{0}" was already added. Maybe you have two entities with the same name {1}'.format(
-                self._class, self._name
-            )
+            if self._class is not None and self._class != compound:
+                raise AssertionError(
+                    'Class "{0}" was already added, cannot add different class "{1}". '
+                    "Maybe you have two entities with the same name {2}".format(
+                        self._class, compound, self._name
+                    )
+                )
             self._class = compound
         elif isinstance(compound, Namespace):
-            assert (
-                self._namespace is None
-            ), 'Namespace "{0}" was already added. Maybe you have two entities with the same name {1}'.format(
-                self._namespace, self._name
-            )
+            if self._namespace is not None and self._namespace != compound:
+                raise AssertionError(
+                    'Namespace "{0}" was already added, cannot add different namespace "{1}". '
+                    "Maybe you have two entities with the same name {2}".format(
+                        self._namespace, compound, self._name
+                    )
+                )
             self._namespace = compound
         elif isinstance(compound, File):
             self._files.add(compound)
         elif isinstance(compound, Group):
-            assert self._group is None, 'Group "{0}" was already added.'.format(
-                self._group
-            )
+            if self._group is not None and self._group != compound:
+                raise AssertionError(
+                    'Group "{0}" was already added, cannot add different group "{1}".'.format(
+                        self._group, compound
+                    )
+                )
             self._group = compound
         else:
             assert False
@@ -439,8 +446,14 @@ class Member(Entity):
 
         See DocumentationSet.merge_duplicates().
         """
-        assert self._class is None
-        assert definition._class is None
+        if self._class is None:
+            self._class = definition._class
+        elif definition._class is not None and self._class != definition._class:
+            raise AssertionError(
+                'Cannot merge: member has class "{0}" but definition has different class "{1}"'.format(
+                    self._class, definition._class
+                )
+            )
         assert self._group == definition._group
         assert self._namespace == definition._namespace
         self._parents.update(definition._parents)
@@ -593,7 +606,12 @@ class EnumValue(Member):
         self._enum = None
 
     def set_enum(self, member):
-        assert self._enum is None
+        if self._enum is not None and self._enum != member:
+            raise AssertionError(
+                'Enum "{0}" was already set to a different enum "{1}"'.format(
+                    self._enum, member
+                )
+            )
         self._enum = member
 
     def _get_raw_location(self):
@@ -1282,6 +1300,15 @@ class DocumentationSet(object):
                         declaration
                     )
                     self._reporter.code_issue(declaration, text, details)
+                    continue
+                # Check if members are from different classes - if so, skip merging
+                # This can happen with inherited members or Doxygen quirks
+                if (
+                    declaration._class is not None
+                    and definition._class is not None
+                    and declaration._class != definition._class
+                ):
+                    # Members from different classes shouldn't be merged
                     continue
                 self._members[definition.get_id()] = declaration
                 declaration.merge_definition(definition)
