@@ -162,32 +162,24 @@ void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
     // Write CP2K input if we are Main
     if (mpiComm.isMainRank())
     {
-        // In the CP2K Input we need to substitute placeholder with the actuall *.pdb file name
+        // In the CP2K Input we need to substitute placeholder with the actual *.pdb file name
         writeStringToFile(cp2kInputName, formatString(parameters_.qmInput_.c_str(), cp2kPdbName.c_str()));
 
         // Write *.pdb with point charges for CP2K
         writeStringToFile(cp2kPdbName, parameters_.qmPdb_);
     }
 
-    // Check if we have external MPI library
+    // Check if we have an external MPI library and initialize CP2K accordingly.
     if (GMX_LIB_MPI)
     {
-        /* Attempt to init CP2K and create force environment in case we have an external MPI library.
+        /* Attempt to init CP2K in case we have an external MPI library.
          * _without_mpi - means that libcp2k will not call MPI_Init() itself,
          * but rather expects it to be called already
          */
         cp2k_init_without_mpi();
-
-        // Here #if (GMX_LIB_MPI) needed because of MPI_Comm_c2f() usage
-        // TODO: Probably there should be more elegant solution
-#if GMX_LIB_MPI
-        cp2k_create_force_env_comm(
-                &force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str(), MPI_Comm_c2f(mpiComm.comm()));
-#endif
     }
     else
     {
-
         // If we have thread-MPI or no-MPI then we should initialize CP2K differently
         if (mpiComm.isParallel())
         {
@@ -200,8 +192,27 @@ void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
             GMX_THROW(NotImplementedError(msg));
         }
 
-        // Attempt to init CP2K and create force environment
+        // Attempt to init CP2K
         cp2k_init();
+    }
+
+    // Now create force environment in CP2K.
+    if (mpiComm.isParallel())
+    {
+        // Make sure that we do not pass MPI_COMM_NULL to CP2K in case of parallel run
+        GMX_RELEASE_ASSERT(GMX_LIB_MPI && mpiComm.comm() != MPI_COMM_NULL,
+                           "Cannot have NULL communicator in parallel run.");
+        // Here #if (GMX_LIB_MPI) needed because of MPI_Comm_c2f() usage
+#if GMX_LIB_MPI
+        cp2k_create_force_env_comm(
+                &force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str(), MPI_Comm_c2f(mpiComm.comm()));
+#endif
+    }
+    else
+    {
+        /* Single rank case: we should not pass MPI_COMM_NULL to CP2K,
+         * but rather use the version of function that does not take communicator as an argument
+         */
         cp2k_create_force_env(&force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str());
     }
 }

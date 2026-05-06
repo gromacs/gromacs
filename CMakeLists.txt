@@ -303,16 +303,9 @@ gmx_dependent_option(
 mark_as_advanced(GMX_BUILD_OWN_FFTW)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
 
-gmx_dependent_option(
-    GMX_USE_HEFFTE
-    "Use HeFFTe for distributed FFT support. Used with CUDA backend"
-    OFF
-    "GMX_GPU STREQUAL CUDA OR GMX_GPU STREQUAL HIP OR GMX_GPU STREQUAL SYCL;GMX_MPI")
-gmx_dependent_option(
-    GMX_USE_CUFFTMP
-    "Use cuFFTMp for distributed FFT support. Used with CUDA backend"
-    OFF
-    "GMX_GPU STREQUAL CUDA;GMX_MPI")
+option(GMX_USE_HEFFTE "Use HeFFTe for distributed GPU FFT support with an MPI library." OFF)
+
+option(GMX_USE_CUFFTMP "Use cuFFTMp for distributed FFT support. Used with CUDA backend." OFF)
 
 # Here the default GPU FFT library is set up depending
 # on the build configuration. Other choices are
@@ -367,7 +360,8 @@ if (GMX_GPU)
         set("GMX_GPU_FFT_${_gpu_fft_library_upper}" "${_value}" CACHE INTERNAL "Use ${_gpu_fft_library} library for FFTs on GPUs")
     endforeach()
 endif()
-gmx_dependent_option(GMX_NVSHMEM "Build a parallel NVSHMEM multi-GPU code of GROMACS" OFF "GMX_GPU STREQUAL CUDA;GMX_MPI")
+
+option(GMX_NVSHMEM "Build a parallel NVSHMEM multi-GPU code of GROMACS" OFF)
 
 if (GMX_NVSHMEM)
     if (NVSHMEM_ROOT)

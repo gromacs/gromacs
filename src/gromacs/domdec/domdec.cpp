@@ -592,7 +592,9 @@ static int ddcoord2simnodeid(const gmx_domdec_t& dd, int x, int y, int z)
 
     if (cartSetup.bCartesianPP_PME)
     {
-        nodeid = dd.comm->mpiCommMySim_.rank();
+#if GMX_MPI
+        MPI_Cart_rank(dd.comm->mpiCommMySim_.comm(), coords, &nodeid);
+#endif
     }
     else
     {
@@ -1180,7 +1182,10 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
             if (cartSetup.ddindex2simnodeid[i] == 0)
             {
                 ddindex2xyz(dd->numCells, i, dd->main_ci);
-                GMX_RELEASE_ASSERT(dd->mpiComm().isMainRank(), "The main MPI rank has to be 0");
+                int mainRank = 0;
+                MPI_Cart_rank(dd->mpiComm().comm(), dd->main_ci, &mainRank);
+                GMX_RELEASE_ASSERT(mainRank == dd->mpiComm().mainRank(),
+                                   "The main MPI rank has to be 0");
             }
         }
         if (debug)
@@ -1356,7 +1361,7 @@ static CommSetup split_communicator(const MDLogger&       mdlog,
          */
         cs.commMySim = MpiComm(comm_cart);
 
-        MPI_Cart_coords(mpiCommSimulation.comm(), mpiCommSimulation.rank(), DIM, cs.ddCellIndex);
+        MPI_Cart_coords(cs.commMySim.comm(), cs.commMySim.rank(), DIM, cs.ddCellIndex);
 
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Cartesian rank %d, coordinates %d %d %d\n",
@@ -2622,7 +2627,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
-    ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
+    ddSettings.useCartesianReorder = (dd_getenv(mdlog, "GMX_NO_CART_REORDER", 0) == 0);
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
     const int recload              = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
     ddSettings.nstDDDump           = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);

@@ -99,19 +99,19 @@ static void gyro_eigen(double** gyr, double* eig, double** eigv, int* ord)
 }
 
 /* Calculate mean square internal distances (Auhl et al., JCP 119, 12718) */
-static void calc_int_dist(double* intd, rvec* x, int i0, int i1)
+static void calc_int_dist(double* intd, rvec* x, gmx::ArrayRef<const int> index)
 {
     int       ii;
-    const int ml = i1 - i0 + 1; /* Number of beads in molecule. */
-    int       bd;               /* Distance between beads */
+    const int ml = index.ssize(); /* Number of beads in index group for the molecule. */
+    int       bd;                 /* Distance between beads */
     double    d;
 
     for (bd = 1; bd < ml; bd++)
     {
         d = 0.;
-        for (ii = i0; ii <= i1 - bd; ii++)
+        for (ii = 0; ii < ml - bd; ii++)
         {
-            d += distance2(x[ii], x[ii + bd]);
+            d += distance2(x[index[ii]], x[index[ii + bd]]);
         }
         d /= ml - bd;
         intd[bd - 1] += d;
@@ -274,7 +274,7 @@ int gmx_polystat(int argc, char* argv[])
     {
         outi = xvgropen(
                 opt2fn("-i", NFILE, fnm), "Internal distances", "n", "<R\\S2\\N(n)>/n (nm\\S2\\N)", oenv);
-        i = index[molind[1] - 1] - index[molind[0]]; /* Length of polymer -1 */
+        i = molind[1] - molind[0] - 1; /* Length of polymer -1 */
         snew(intd, i);
     }
     else
@@ -337,7 +337,7 @@ int gmx_polystat(int argc, char* argv[])
             /* Determine internal distances */
             if (outi)
             {
-                calc_int_dist(intd, x, index[ind0], index[ind1 - 1]);
+                calc_int_dist(intd, x, gmx::constArrayRefFromArray(index + ind0, ind1 - ind0));
             }
 
             /* Determine the radius of gyration */
@@ -512,7 +512,7 @@ int gmx_polystat(int argc, char* argv[])
         }
         ymax = -1;
         ymin = 1e300;
-        j    = index[molind[1] - 1] - index[molind[0]]; /* Polymer length -1. */
+        j    = molind[1] - molind[0] - 1; /* Polymer length -1. */
         for (i = 0; i < j; i++)
         {
             intd[i] /= (i + 1) * frame * nmol;

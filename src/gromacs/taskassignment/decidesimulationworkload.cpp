@@ -105,12 +105,10 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     simulationWorkload.haveDynamicBox    = haveDynamicBox;
     simulationWorkload.useCpuNonbonded   = !useGpuForNonbonded;
     simulationWorkload.useGpuNonbonded   = useGpuForNonbonded;
-    simulationWorkload.useCpuNonbondedFE = !useGpuForNonbondedFE;
     simulationWorkload.useGpuNonbondedFE = useGpuForNonbondedFE;
+    simulationWorkload.useCpuNonbondedFE = !useGpuForNonbondedFE;
     simulationWorkload.useGpuForeignNonbondedFE =
-            useGpuForNonbondedFE && inputrec.fepvals->n_lambda > 0
-            && inputrec.fepvals->softcoreFunction == SoftcoreType::Beutler
-            && inputrec.fepvals->sc_alpha != 0;
+            useGpuForNonbondedFE && inputrec.fepvals->n_lambda > 0 && inputrec.fepvals->sc_alpha != 0;
     simulationWorkload.useCpuPme = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft                    = (pmeRunMode == PmeRunMode::GPU);
@@ -225,14 +223,10 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     domainWork.haveNonbondedFreeEnergyWork =
             (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
     domainWork.haveCpuNonbondedFreeEnergyWork =
-            domainWork.haveNonbondedFreeEnergyWork
-            && (simulationWork.useCpuNonbondedFE || fr.efep == FreeEnergyPerturbationType::Expanded
-                || inputrec.fepvals->softcoreFunction == SoftcoreType::Gapsys);
+            domainWork.haveNonbondedFreeEnergyWork && simulationWork.useCpuNonbondedFE;
     // Currently no GPU support for gapsys softcore type and expanded ensemble free energy calculations
     domainWork.haveGpuNonbondedFreeEnergyWork =
-            domainWork.haveNonbondedFreeEnergyWork
-            && (simulationWork.useGpuNonbondedFE && fr.efep != FreeEnergyPerturbationType::Expanded
-                && inputrec.fepvals->softcoreFunction != SoftcoreType::Gapsys);
+            domainWork.haveNonbondedFreeEnergyWork && simulationWork.useGpuNonbondedFE;
     // We assume we have local force work if there are CPU
     // force tasks including PME or nonbondeds.
     domainWork.haveCpuLocalForceWork = domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork

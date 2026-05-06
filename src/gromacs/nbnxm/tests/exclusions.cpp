@@ -72,7 +72,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vec.h"
@@ -101,14 +100,22 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 {
     const gmx::MDLogger emptyLogger;
 
-    MpiComm mpiComm(MpiComm::SingleRank{});
-
-    gmx_omp_nthreads_init(emptyLogger, mpiComm, false, 1, 1, 1, 1, false);
+    // Force single-thread execution
+    static constexpr int sc_numThreads = 1;
+    gmx_omp_nthreads_set(ModuleMultiThread::Pairsearch, sc_numThreads);
+    gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, sc_numThreads);
 
     const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
-    GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, 1, PinningPolicy::CannotBePinned);
+    GridSet gridSet(PbcType::Xyz,
+                    false,
+                    nullptr,
+                    nullptr,
+                    pairlistParams.pairlistType,
+                    false,
+                    false,
+                    sc_numThreads,
+                    PinningPolicy::CannotBePinned);
 
     std::vector<real> nbfp{ 0.0_real, 0.0_real };
 

@@ -1,7 +1,7 @@
 GROMACS 2026.2 release notes
 ----------------------------
 
-This version was released on TODO, 2026. These release notes
+This version was released on May 5th, 2026. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2026.1 version, to fix known issues. It also incorporates all
 fixes made in version 2025.4 and earlier, which you can find described
@@ -40,6 +40,46 @@ that was written at a step that is not a multiple of nstdhdl.
 
 :issue:`5584`
 
+Fixed performance issue with GPU FEP kernel
+"""""""""""""""""""""""""""""""""""""""""""
+
+Previously, using ``-nbfe gpu`` with Gapsys soft-core activated parts
+of GPU offloading support code while still doing the computation on
+the CPU, resulting in reduced performance and misleading log messages.
+
+Now ``mdrun`` correctly identifies that the Gapsys soft-core flavor
+is not supported by GPU non-bonded force kernels, ensuring users
+revert to the supported CPU path or switch to Beutler soft-core.
+
+:issue:`5579`
+
+Fixed ``GMX_NO_CART_REORDER`` environment variable
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The ``GMX_NO_CART_REORDER`` environment variable did not disable Cartesian
+communicator rank reordering when set to 1 because the logic was inverted.
+This was broken since |Gromacs| 2020.
+
+Fixed ``mdrun -ddorder cartesian`` with PME-only ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With PME-only ranks, ``mdrun -ddorder cartesian`` could fail during domain
+decomposition setup.
+
+:issue:`5612`
+
+Correct wallcycle table in the md.log file with single rank simulations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5614`
+
+Fixed MPI communicator passing to CP2K
+""""""""""""""""""""""""""""""""""""""
+
+Corrected an issue with GROMACS-CP2K interface in case it is built with support
+for an external MPI library but ``mdrun`` runs as a single rank. The interface
+erroneously passed ``MPI_COMM_NULL`` to CP2K which caused an error.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -49,6 +89,13 @@ Better error reporting in ``gmx x2top``
 Properly print the filename when a forcefield parsing error is encountered.
 
 :issue:`5601`
+
+gmx polystat computed internal distances between all particles
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Now only particles in the index group are used.
+
+:issue:`5595`
 
 Fixed a selection evaluation issue for numeric expressions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -78,3 +125,53 @@ Cray MPICH 9 with ROCm was affected.
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Adjusted fudge coefficients for AMBER14SB and AMBER19SB
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+AMBER itself uses value :math:`\frac{1}{1.2} = 0.8\overline{3}`. The new value
+of ``0.83333333333333333`` for the Lennard-Jones fudge coefficient matches the
+original value better than the previously used ``0.8333``.
+
+:issue:`5616`
+
+Fix SPC and SPC/E atom types in AMBER14SB and AMBER19SB force fields
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The atom type for ``OW`` and ``HW`` was ``OW_spc`` and ``HW_spc``, which are
+undefined. These are now corrected to use ``OW_spce`` and ``HW_spce`` atom types
+(respectively), which were converted from Amber ff14SB and ff19SB.
+
+:issue:`5615`
+
+Fix test failure with OMP_NUM_THREADS set
+"""""""""""""""""""""""""""""""""""""""""
+
+Fix test failure in NbnxmTests when ``OMP_NUM_THREADS`` was set
+to a value larger than 1.
+
+:issue:`5619`
+
+Hardened configuration with cuFFTMp and HeFFTe
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously the CMake options for these distributed GPU FFT libraries
+would be ignored if ``GMX_MPI`` was not also set. This led to
+incorrect builds and confusing warnings from CMake. ``GMX_MPI`` is
+required, and now an error is given if support for such an FFT library
+is required and ``GMX_MPI`` is not also set.
+
+:issue:`5596`
+:issue:`5598`
+
+Hardened configuration with NVSHMEM
+"""""""""""""""""""""""""""""""""""
+
+Previously the CMake options for NVSHMEM would be ignored if
+``GMX_MPI`` was not also set. This led to incorrect builds and
+confusing warnings from CMake. ``GMX_MPI`` is required, and now an
+error is given if NVSHMEM support is required and ``GMX_MPI`` is not
+also set.
+
+:issue:`5596`
+:issue:`5598`
