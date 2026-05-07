@@ -110,7 +110,8 @@
 
 #define NOGID 255
 
-using gmx::BasicVector;
+namespace gmx
+{
 
 /* Resource parameters
  * Do not change any of these until you read the instruction
@@ -139,6 +140,9 @@ void done_inputrec_strings()
     inputrecStrings = nullptr;
 }
 
+namespace
+{
+
 
 //! How to treat coverage of the whole system for a set of atom groupsx
 enum class GroupCoverage
@@ -149,12 +153,12 @@ enum class GroupCoverage
     OneGroup //<! Merge all selected groups into one group, make a rest group for the remaining particles
 };
 
-static const char* const constraints[eshNR + 1] = { "none",     "h-bonds",    "all-bonds",
-                                                    "h-angles", "all-angles", nullptr };
+const char* const constraints[eshNR + 1] = { "none",     "h-bonds",    "all-bonds",
+                                             "h-angles", "all-angles", nullptr };
 
-static const char* const couple_lam[ecouplamNR + 1] = { "vdw-q", "vdw", "q", "none", nullptr };
+const char* const couple_lam[ecouplamNR + 1] = { "vdw-q", "vdw", "q", "none", nullptr };
 
-static void getSimTemps(int ntemps, t_simtemp* simtemp, gmx::ArrayRef<double> temperature_lambdas)
+void getSimTemps(int ntemps, t_simtemp* simtemp, ArrayRef<double> temperature_lambdas)
 {
 
     int i;
@@ -191,7 +195,7 @@ static void getSimTemps(int ntemps, t_simtemp* simtemp, gmx::ArrayRef<double> te
 }
 
 
-static void _low_check(bool b, const char* s, WarningHandler* wi)
+void _low_check(bool b, const char* s, WarningHandler* wi)
 {
     if (b)
     {
@@ -199,7 +203,7 @@ static void _low_check(bool b, const char* s, WarningHandler* wi)
     }
 }
 
-static void check_nst(const char* desc_nst, int nst, const char* desc_p, int* p, WarningHandler* wi)
+void check_nst(const char* desc_nst, int nst, const char* desc_p, int* p, WarningHandler* wi)
 {
     char buf[STRLEN];
 
@@ -213,7 +217,7 @@ static void check_nst(const char* desc_nst, int nst, const char* desc_p, int* p,
 }
 
 //! Convert legacy mdp entries to modern ones.
-static void process_interaction_modifier(InteractionModifiers* eintmod)
+void process_interaction_modifier(InteractionModifiers* eintmod)
 {
     if (*eintmod == InteractionModifiers::PotShiftVerletUnsupported)
     {
@@ -221,7 +225,9 @@ static void process_interaction_modifier(InteractionModifiers* eintmod)
     }
 }
 
-void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_gromppopts* opts, WarningHandler* wi)
+} // namespace
+
+void check_ir(const char* mdparin, MDModules* mdModules, t_inputrec* ir, t_gromppopts* opts, WarningHandler* wi)
 /* Check internal consistency.
  * NOTE: index groups are not set here yet, don't check things
  * like temperature coupling group options here, but in triple_check
@@ -238,7 +244,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
     t_lambda*   fep    = ir->fepvals.get();
     t_expanded* expand = ir->expandedvals.get();
 
-    const gmx::OutputControl& outputControl = ir->outputControl;
+    const OutputControl& outputControl = ir->outputControl;
 
     wi->setFileAndLineNumber(mdparin, -1);
 
@@ -250,9 +256,9 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
     /* We cannot check MTS requirements with an invalid MTS setup
      * and we will already have generated errors with an invalid MTS setup.
      */
-    if (gmx::haveValidMtsSetup(*ir))
+    if (haveValidMtsSetup(*ir))
     {
-        std::vector<std::string> errorMessages = gmx::checkMtsRequirements(*ir);
+        std::vector<std::string> errorMessages = checkMtsRequirements(*ir);
 
         for (const auto& errorMessage : errorMessages)
         {
@@ -262,9 +268,8 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
 
     if (ir->coulombtype == CoulombInteractionType::RFNecUnsupported)
     {
-        std::string message =
-                gmx::formatString("%s electrostatics is no longer supported",
-                                  enumValueToString(CoulombInteractionType::RFNecUnsupported));
+        std::string message = formatString("%s electrostatics is no longer supported",
+                                           enumValueToString(CoulombInteractionType::RFNecUnsupported));
         wi->addError(message);
     }
 
@@ -534,7 +539,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
     }
     if (EI_DYNAMICS(ir->eI))
     {
-        gmx::OutputControl& modifiableOutputControl = ir->outputControl;
+        OutputControl& modifiableOutputControl = ir->outputControl;
 
         // Replace old -1 "automation" values by the default value of 100
         if (modifiableOutputControl.nstcalcenergy < 0)
@@ -611,7 +616,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
 
         // Inquire all MDModules, if their parameters match with the energy
         // calculation frequency
-        gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(outputControl.nstcalcenergy);
+        EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(outputControl.nstcalcenergy);
         mdModules->notifiers().preProcessingNotifier_.notify(&energyCalculationFrequencyErrors);
 
         // Emit all errors from the energy calculation frequency checks
@@ -673,7 +678,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
             /* We only forbid elements of temperature-lambdas that are < 0 */
             if (fep->all_lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Temperature)][i] < 0)
             {
-                auto message = gmx::formatString(
+                auto message = formatString(
                         "Entry %d for %s must be greater than 0, instead is %g",
                         i,
                         enumValueToString(FreeEnergyPerturbationCouplingType::Temperature),
@@ -691,7 +696,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
         }
         if (bElementsGreaterThanOne)
         {
-            auto warningText = gmx::formatString(
+            auto warningText = formatString(
                     "One or more entries for %s are greater than 1. Please only use this if you "
                     "are aware of "
                     "what you are doing. Check for inconsistencies with "
@@ -762,7 +767,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
                 int64_t intStepNumberWhenLambdaIsOne =
                         static_cast<int64_t>(std::round(stepNumberWhenLambdaIsOne));
 
-                auto warningText = gmx::formatString(
+                auto warningText = formatString(
                         "With init-lambda = %g and delta_lambda = %g, the lambda "
                         "components won't change before step %" PRId64 " of %" PRId64
                         " simulation steps in total. "
@@ -778,7 +783,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
                 /* issue an error if soft-core potentials are used */
                 if (fep->sc_alpha > 0 || fep->softcoreFunction == SoftcoreType::Gapsys)
                 {
-                    auto message = gmx::formatString(
+                    auto message = formatString(
                             "You set init-lambda greater than 1 and provided no lambda vector as "
                             "input. "
                             "Therefore, coul-lambdas and vdw-lambdas will (initially) be greater "
@@ -814,7 +819,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
 
                 if (intStepNumberWhenLambdaIsCapped < ir->nsteps || ir->nsteps < 0)
                 {
-                    auto warningText = gmx::formatString(
+                    auto warningText = formatString(
                             "With init-lambda-state = %d and delta_lambda = %g, the lambda "
                             "components "
                             "won't change anymore after step %" PRId64
@@ -846,7 +851,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
                     {
                         if (fep->sc_alpha > 0 || fep->softcoreFunction == SoftcoreType::Gapsys)
                         {
-                            auto message = gmx::formatString(
+                            auto message = formatString(
                                     "With init-lambda = %g and delta_lambda = %g and no explicit "
                                     "input, "
                                     "coul-lambdas and vdw-lambdas will be greater than 1 after "
@@ -873,7 +878,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
                 if (intStepNumberWhenLambdaIsCapped < ir->nsteps
                     || (ir->nsteps < 0 && !(fep->delta_lambda > 0 && fep->n_lambda <= 0)))
                 {
-                    auto warningText = gmx::formatString(
+                    auto warningText = formatString(
                             "With init-lambda = %g and delta_lambda = %g, the lambda components "
                             "won't change anymore after step %" PRId64
                             " until the end of the simulation after %" PRId64 " steps.\n",
@@ -887,7 +892,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
 
             else if (fep->n_lambda == 1)
             {
-                auto warningText = gmx::formatString(
+                auto warningText = formatString(
                         "You have set delta-lambda non-zero "
                         "while using a lambda vector that has one column. "
                         "The lambda components will therefore stay the same, "
@@ -980,7 +985,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
                 {
                     if ((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1))
                     {
-                        auto message = gmx::formatString(
+                        auto message = formatString(
                                 "As you are using soft-core potentials, entry %d for %s must "
                                 "be between 0 and 1, instead is %g",
                                 i,
@@ -997,7 +1002,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
                     /* We only forbid elements of the lambda value array that are < 0 */
                     if (fep->all_lambda[j][i] < 0)
                     {
-                        auto message = gmx::formatString(
+                        auto message = formatString(
                                 "Entry %d for %s must be greater than or equal to 0, instead is %g",
                                 i,
                                 enumValueToString(enumValue),
@@ -1400,7 +1405,7 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
         CHECK(ir->nstcomm > 1 && (ir->etc == TemperatureCoupling::Andersen));
         if (opts->nshake != 0 && ir->etc == TemperatureCoupling::Andersen)
         {
-            auto message = gmx::formatString(
+            auto message = formatString(
                     "%s temperature control does not work with constraints. "
                     "Use %s instead",
                     enumValueToString(TemperatureCoupling::Andersen),
@@ -1482,7 +1487,9 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
         CHECK(ir->pressureCouplingOptions.compress[XX][XX] < 0
               || ir->pressureCouplingOptions.compress[YY][YY] < 0
               || ir->pressureCouplingOptions.compress[ZZ][ZZ] < 0
-              || (trace(ir->pressureCouplingOptions.compress) == 0
+              || ((ir->pressureCouplingOptions.compress[XX][XX] + ir->pressureCouplingOptions.compress[YY][YY]
+                   + ir->pressureCouplingOptions.compress[ZZ][ZZ])
+                          == 0
                   && ir->pressureCouplingOptions.compress[YY][XX] <= 0
                   && ir->pressureCouplingOptions.compress[ZZ][XX] <= 0
                   && ir->pressureCouplingOptions.compress[ZZ][YY] <= 0));
@@ -1803,14 +1810,17 @@ void check_ir(const char* mdparin, gmx::MDModules* mdModules, t_inputrec* ir, t_
     }
 }
 
+namespace
+{
+
 /* interpret a number of doubles from a string and put them in an array,
    after allocating space for them.
    str = the input string
    n = the (pre-allocated) number of doubles read
    r = the output array of doubles. */
-static std::vector<real> parse_n_real(const std::string& str, int* n, WarningHandler* wi)
+std::vector<real> parse_n_real(const std::string& str, int* n, WarningHandler* wi)
 {
-    auto values = gmx::splitString(str);
+    auto values = splitString(str);
     *n          = values.size();
 
     std::vector<real> r;
@@ -1818,9 +1828,9 @@ static std::vector<real> parse_n_real(const std::string& str, int* n, WarningHan
     {
         try
         {
-            r.emplace_back(gmx::fromString<real>(values[i]));
+            r.emplace_back(fromString<real>(values[i]));
         }
-        catch (gmx::GromacsException&)
+        catch (GromacsException&)
         {
             wi->addError("Invalid value " + values[i]
                          + " in string in mdp file. Expected a real number.");
@@ -1830,20 +1840,20 @@ static std::vector<real> parse_n_real(const std::string& str, int* n, WarningHan
 }
 
 
-static void do_fep_params(t_inputrec*                ir,
-                          gmx::ArrayRef<std::string> fep_lambda,
-                          const char                 lambdaWeights[STRLEN],
-                          const char                 lambdaCounts[STRLEN],
-                          const char                 wlHistogramCounts[STRLEN],
-                          WarningHandler*            wi)
+void do_fep_params(t_inputrec*           ir,
+                   ArrayRef<std::string> fep_lambda,
+                   const char            lambdaWeights[STRLEN],
+                   const char            lambdaCounts[STRLEN],
+                   const char            wlHistogramCounts[STRLEN],
+                   WarningHandler*       wi)
 {
 
     int         j, max_n_lambda;
     t_lambda*   fep    = ir->fepvals.get();
     t_expanded* expand = ir->expandedvals.get();
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<real>> count_fep_lambdas;
-    bool                                                                         bOneLambda = TRUE;
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, int>               nfep;
+    EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<real>> count_fep_lambdas;
+    bool                                                                    bOneLambda = TRUE;
+    EnumerationArray<FreeEnergyPerturbationCouplingType, int>               nfep;
 
     /* FEP input processing */
     /* first, identify the number of lambda values for each type.
@@ -2035,7 +2045,7 @@ static void do_fep_params(t_inputrec*                ir,
 }
 
 
-static void do_simtemp_params(t_inputrec* ir)
+void do_simtemp_params(t_inputrec* ir)
 {
     ir->simtempvals->temperatures.resize(ir->fepvals->n_lambda);
     getSimTemps(ir->fepvals->n_lambda,
@@ -2044,18 +2054,18 @@ static void do_simtemp_params(t_inputrec* ir)
 }
 
 template<typename T>
-void convertInts(WarningHandler* wi, gmx::ArrayRef<const std::string> inputs, const char* name, T* outputs)
+void convertInts(WarningHandler* wi, ArrayRef<const std::string> inputs, const char* name, T* outputs)
 {
     int i = 0;
     for (const auto& input : inputs)
     {
         try
         {
-            outputs[i] = gmx::fromStdString<T>(input);
+            outputs[i] = fromStdString<T>(input);
         }
-        catch (gmx::GromacsException&)
+        catch (GromacsException&)
         {
-            auto message = gmx::formatString(
+            auto message = formatString(
                     "Invalid value for mdp option %s. %s should only consist of integers separated "
                     "by spaces.",
                     name,
@@ -2066,18 +2076,18 @@ void convertInts(WarningHandler* wi, gmx::ArrayRef<const std::string> inputs, co
     }
 }
 
-static void convertReals(WarningHandler* wi, gmx::ArrayRef<const std::string> inputs, const char* name, real* outputs)
+void convertReals(WarningHandler* wi, ArrayRef<const std::string> inputs, const char* name, real* outputs)
 {
     int i = 0;
     for (const auto& input : inputs)
     {
         try
         {
-            outputs[i] = gmx::fromString<real>(input);
+            outputs[i] = fromString<real>(input);
         }
-        catch (gmx::GromacsException&)
+        catch (GromacsException&)
         {
-            auto message = gmx::formatString(
+            auto message = formatString(
                     "Invalid value for mdp option %s. %s should only consist of real numbers "
                     "separated by spaces.",
                     name,
@@ -2088,28 +2098,28 @@ static void convertReals(WarningHandler* wi, gmx::ArrayRef<const std::string> in
     }
 }
 
-static std::vector<gmx::RVec> convertGroupRvecs(WarningHandler*                  wi,
-                                                gmx::ArrayRef<const std::string> inputs,
-                                                const char*                      name,
-                                                const int                        numGroupsRequired)
+std::vector<RVec> convertGroupRvecs(WarningHandler*             wi,
+                                    ArrayRef<const std::string> inputs,
+                                    const char*                 name,
+                                    const int                   numGroupsRequired)
 {
     GMX_RELEASE_ASSERT(gmx::ssize(inputs) == (numGroupsRequired - 1) * DIM,
                        "Input size must match output size (including rest group)");
     GMX_RELEASE_ASSERT(inputs.size() % DIM == 0, "Need one input per dimension");
-    std::vector<gmx::RVec> values;
+    std::vector<RVec> values;
     values.reserve(numGroupsRequired);
     for (std::size_t g = 0; g < inputs.size(); g += DIM)
     {
-        gmx::RVec v;
+        RVec v;
         for (int d = 0; d < DIM; ++d)
         {
             try
             {
-                v[d] = gmx::fromString<real>(inputs[g + d]);
+                v[d] = fromString<real>(inputs[g + d]);
             }
-            catch (gmx::GromacsException&)
+            catch (GromacsException&)
             {
-                auto message = gmx::formatString(
+                auto message = formatString(
                         "Invalid value for mdp option %s. %s should only consist of real numbers "
                         "separated by spaces.",
                         name,
@@ -2122,17 +2132,17 @@ static std::vector<gmx::RVec> convertGroupRvecs(WarningHandler*                 
         values.push_back(v);
     }
     // Ensure that the "rest" group has zero values
-    values.push_back(gmx::RVec{ 0, 0, 0 });
+    values.push_back(RVec{ 0, 0, 0 });
     GMX_RELEASE_ASSERT(gmx::ssize(values) == numGroupsRequired,
                        "Could not fill required group count");
     return values;
 }
 
-static void do_wall_params(t_inputrec*     ir,
-                           const char*     wall_atomtype,
-                           const char*     wall_density,
-                           t_gromppopts*   opts,
-                           WarningHandler* wi)
+void do_wall_params(t_inputrec*     ir,
+                    const char*     wall_atomtype,
+                    const char*     wall_density,
+                    t_gromppopts*   opts,
+                    WarningHandler* wi)
 {
     opts->wall_atomtype[0] = nullptr;
     opts->wall_atomtype[1] = nullptr;
@@ -2144,7 +2154,7 @@ static void do_wall_params(t_inputrec*     ir,
 
     if (ir->nwall > 0)
     {
-        auto wallAtomTypes = gmx::splitString(wall_atomtype);
+        auto wallAtomTypes = splitString(wall_atomtype);
         if (wallAtomTypes.size() != size_t(ir->nwall))
         {
             gmx_fatal(FARGS,
@@ -2160,7 +2170,7 @@ static void do_wall_params(t_inputrec*     ir,
 
         if (ir->wall_type == WallType::NineThree || ir->wall_type == WallType::TenFour)
         {
-            auto wallDensity = gmx::splitString(wall_density);
+            auto wallDensity = splitString(wall_density);
             if (wallDensity.size() != size_t(ir->nwall))
             {
                 gmx_fatal(FARGS,
@@ -2180,20 +2190,20 @@ static void do_wall_params(t_inputrec*     ir,
     }
 }
 
-static void add_wall_energrps(SimulationGroups* groups, int nwall, t_symtab* symtab)
+void add_wall_energrps(SimulationGroups* groups, int nwall, t_symtab* symtab)
 {
     if (nwall > 0)
     {
         AtomGroupIndices* grps = &(groups->groups[SimulationAtomGroupType::EnergyOutput]);
         for (int i = 0; i < nwall; i++)
         {
-            groups->groupNames.emplace_back(put_symtab(symtab, gmx::formatString("wall%d", i).c_str()));
+            groups->groupNames.emplace_back(put_symtab(symtab, formatString("wall%d", i).c_str()));
             grps->emplace_back(groups->groupNames.size() - 1);
         }
     }
 }
 
-static void read_expandedparams(std::vector<t_inpfile>* inp, t_expanded* expand, WarningHandler* wi)
+void read_expandedparams(std::vector<t_inpfile>* inp, t_expanded* expand, WarningHandler* wi)
 {
     /* read expanded ensemble parameters */
     printStringNewline(inp, "expanded ensemble variables");
@@ -2229,36 +2239,32 @@ static void read_expandedparams(std::vector<t_inpfile>* inp, t_expanded* expand,
  * \param[in]  couple_lambda_value  Enumeration ecouplam value describing the end state
  * \return                          Whether VDW is on (i.e. the user chose vdw or vdw-q in the .mdp file)
  */
-static bool couple_lambda_has_vdw_on(int couple_lambda_value)
+bool couple_lambda_has_vdw_on(int couple_lambda_value)
 {
     return (couple_lambda_value == ecouplamVDW || couple_lambda_value == ecouplamVDWQ);
 }
 
-namespace
-{
-
-class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
+class MdpErrorHandler : public IKeyValueTreeErrorHandler
 {
 public:
     explicit MdpErrorHandler(WarningHandler* wi) : wi_(wi), mapping_(nullptr) {}
 
-    void setBackMapping(const gmx::IKeyValueTreeBackMapping& mapping) { mapping_ = &mapping; }
+    void setBackMapping(const IKeyValueTreeBackMapping& mapping) { mapping_ = &mapping; }
 
-    bool onError(gmx::UserInputError* ex, const gmx::KeyValueTreePath& context) override
+    bool onError(UserInputError* ex, const KeyValueTreePath& context) override
     {
-        ex->prependContext(
-                gmx::formatString("Error in mdp option \"%s\":", getOptionName(context).c_str()));
-        std::string message = gmx::formatExceptionMessageToString(*ex);
+        ex->prependContext(formatString("Error in mdp option \"%s\":", getOptionName(context).c_str()));
+        std::string message = formatExceptionMessageToString(*ex);
         wi_->addError(message);
         return true;
     }
 
 private:
-    std::string getOptionName(const gmx::KeyValueTreePath& context)
+    std::string getOptionName(const KeyValueTreePath& context)
     {
         if (mapping_ != nullptr)
         {
-            gmx::KeyValueTreePath path = mapping_->originalPath(context);
+            KeyValueTreePath path = mapping_->originalPath(context);
             GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
             return path[0];
         }
@@ -2266,15 +2272,15 @@ private:
         return context[0];
     }
 
-    WarningHandler*                      wi_;
-    const gmx::IKeyValueTreeBackMapping* mapping_;
+    WarningHandler*                 wi_;
+    const IKeyValueTreeBackMapping* mapping_;
 };
 
 } // namespace
 
 void get_ir(const char*     mdparin,
             const char*     mdparout,
-            gmx::MDModules* mdModules,
+            MDModules*      mdModules,
             t_inputrec*     ir,
             t_gromppopts*   opts,
             WriteMdpHeader  writeMdpHeader,
@@ -2295,7 +2301,7 @@ void get_ir(const char*     mdparin,
     const char* no_names[] = { "no", nullptr };
 
     init_inputrec_strings();
-    gmx::TextInputFile     inputStream(mdparin);
+    TextInputFile          inputStream(mdparin);
     std::vector<t_inpfile> inp = read_inpfile(&inputStream, mdparin, wi);
 
     snew(dumstr[0], STRLEN);
@@ -2371,10 +2377,10 @@ void get_ir(const char*     mdparin,
     ir->useMts = (getEnum<Boolean>(&inp, "mts", wi) != Boolean::No);
     if (ir->useMts)
     {
-        gmx::GromppMtsOpts& mtsOpts = opts->mtsOpts;
-        mtsOpts.numLevels           = get_eint(&inp, "mts-levels", 2, wi);
-        mtsOpts.level2Forces = setStringEntry(&inp, "mts-level2-forces", "longrange-nonbonded");
-        mtsOpts.level2Factor = get_eint(&inp, "mts-level2-factor", 2, wi);
+        GromppMtsOpts& mtsOpts = opts->mtsOpts;
+        mtsOpts.numLevels      = get_eint(&inp, "mts-levels", 2, wi);
+        mtsOpts.level2Forces   = setStringEntry(&inp, "mts-level2-forces", "longrange-nonbonded");
+        mtsOpts.level2Factor   = get_eint(&inp, "mts-level2-factor", 2, wi);
 
         // We clear after reading without dynamics to not force the user to remove MTS mdp options
         if (!EI_DYNAMICS(ir->eI))
@@ -2560,7 +2566,7 @@ void get_ir(const char*     mdparin,
 
     if (opts->seed == -1)
     {
-        opts->seed      = static_cast<int>(gmx::makeRandomSeed());
+        opts->seed      = static_cast<int>(makeRandomSeed());
         opts->bMadeSeed = true;
     }
 
@@ -2634,7 +2640,7 @@ void get_ir(const char*     mdparin,
     ir->bDoAwh = (getEnum<Boolean>(&inp, "awh", wi) != Boolean::No);
     if (ir->bDoAwh)
     {
-        ir->awhParams = std::make_unique<gmx::AwhParams>(&inp, wi);
+        ir->awhParams = std::make_unique<AwhParams>(&inp, wi);
     }
 
     /* Enforced rotation */
@@ -2753,9 +2759,9 @@ void get_ir(const char*     mdparin,
 
     /* Electric fields */
     {
-        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(inp);
-        gmx::KeyValueTreeTransformer transform;
-        transform.rules()->addRule().keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+        KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(inp);
+        KeyValueTreeTransformer transform;
+        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
         mdModules->initMdpTransform(transform.rules());
         for (const auto& path : transform.mappedPaths())
         {
@@ -2764,7 +2770,7 @@ void get_ir(const char*     mdparin,
         }
         MdpErrorHandler errorHandler(wi);
         auto            result = transform.transform(convertedValues, &errorHandler);
-        ir->params             = new gmx::KeyValueTreeObject(result.object());
+        ir->params             = new KeyValueTreeObject(result.object());
 
         // For grompp, inputrecStrings must be valid to process preprocessing-only parameters
         GMX_RELEASE_ASSERT(inputrecStrings,
@@ -2842,11 +2848,11 @@ void get_ir(const char*     mdparin,
         for (size_t ig = 0; ig != ir->swap->ionGroups().size(); ig++)
         {
             ir->swap->ionGroup(ig).molname =
-                    setStringEntry(&inp, gmx::formatString("iontype%zu-name", ig), "");
+                    setStringEntry(&inp, formatString("iontype%zu-name", ig), "");
             ir->swap->ionGroup(ig).nmolReq[0] =
-                    get_eint(&inp, gmx::formatString("iontype%zu-in-A", ig).c_str(), -1, wi);
+                    get_eint(&inp, formatString("iontype%zu-in-A", ig).c_str(), -1, wi);
             ir->swap->ionGroup(ig).nmolReq[1] =
-                    get_eint(&inp, gmx::formatString("iontype%zu-in-B", ig).c_str(), -1, wi);
+                    get_eint(&inp, formatString("iontype%zu-in-B", ig).c_str(), -1, wi);
         }
 
         printStringNoNewline(
@@ -2893,7 +2899,7 @@ void get_ir(const char*     mdparin,
 
     if (mdparout)
     {
-        gmx::TextOutputFile outputStream(mdparout);
+        TextOutputFile outputStream(mdparout);
 
         // Set gen-seed line to actual value instead of -1
         if (opts->bMadeSeed)
@@ -2929,11 +2935,11 @@ void get_ir(const char*     mdparin,
         write_inpfile(&outputStream, mdparout, &inp, FALSE, writeMdpHeader, wi);
 
         // Transform module data into a flat key-value tree for output.
-        gmx::KeyValueTreeBuilder       builder;
-        gmx::KeyValueTreeObjectBuilder builderObject = builder.rootObject();
+        KeyValueTreeBuilder       builder;
+        KeyValueTreeObjectBuilder builderObject = builder.rootObject();
         mdModules->buildMdpOutput(&builderObject);
         {
-            gmx::TextWriter writer(&outputStream);
+            TextWriter writer(&outputStream);
             writeKeyValueTreeAsMdp(&writer, builder.build());
         }
         outputStream.close();
@@ -3132,7 +3138,7 @@ void get_ir(const char*     mdparin,
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
-    if (opts->bOrire && gmx::splitString(inputrecStrings->orirefitgrp).size() != 1)
+    if (opts->bOrire && splitString(inputrecStrings->orirefitgrp).size() != 1)
     {
         wi->addError("ERROR: Need one orientation restraint fit group\n");
     }
@@ -3158,9 +3164,9 @@ void get_ir(const char*     mdparin,
 
     if (std::strlen(inputrecStrings->deform) > 0 && ndeform != 6)
     {
-        wi->addError(gmx::formatString(
-                "Cannot parse exactly 6 box deformation velocities from string '%s'",
-                inputrecStrings->deform));
+        wi->addError(
+                formatString("Cannot parse exactly 6 box deformation velocities from string '%s'",
+                             inputrecStrings->deform));
     }
     for (i = 0; i < 3; i++)
     {
@@ -3224,7 +3230,7 @@ void get_ir(const char*     mdparin,
     if (ir->useMts)
     {
         std::vector<std::string> errorMessages;
-        ir->mtsLevels = gmx::setupMtsLevels(opts->mtsOpts, &errorMessages);
+        ir->mtsLevels = setupMtsLevels(opts->mtsOpts, &errorMessages);
 
         for (const auto& errorMessage : errorMessages)
         {
@@ -3234,14 +3240,14 @@ void get_ir(const char*     mdparin,
 
     if (ir->bDoAwh)
     {
-        gmx::checkAwhParams(*ir->awhParams, *ir, wi);
+        checkAwhParams(*ir->awhParams, *ir, wi);
     }
 
     sfree(dumstr[0]);
     sfree(dumstr[1]);
 }
 
-int getGroupIndex(const std::string& s, gmx::ArrayRef<const IndexGroup> indexGroups)
+int getGroupIndex(const std::string& s, ArrayRef<const IndexGroup> indexGroups)
 {
     for (int i = 0; i < gmx::ssize(indexGroups); i++)
     {
@@ -3259,7 +3265,10 @@ int getGroupIndex(const std::string& s, gmx::ArrayRef<const IndexGroup> indexGro
               s.c_str());
 }
 
-static void atomGroupRangeValidation(const int natoms, gmx::ArrayRef<const int> particleIndices)
+namespace
+{
+
+void atomGroupRangeValidation(const int natoms, ArrayRef<const int> particleIndices)
 {
     /* Now go over the atoms in the group */
     for (const int aj : particleIndices)
@@ -3286,15 +3295,15 @@ static void atomGroupRangeValidation(const int natoms, gmx::ArrayRef<const int> 
  *
  * \returns whether all atoms have been assigned to a group
  */
-static bool do_numbering(const int                        natoms,
-                         SimulationGroups*                groups,
-                         gmx::ArrayRef<const std::string> groupsFromMdpFile,
-                         gmx::ArrayRef<const IndexGroup>  indexGroups,
-                         const SimulationAtomGroupType    gtype,
-                         const int                        restnm,
-                         const GroupCoverage              coverage,
-                         const bool                       bVerbose,
-                         WarningHandler*                  wi)
+bool do_numbering(const int                     natoms,
+                  SimulationGroups*             groups,
+                  ArrayRef<const std::string>   groupsFromMdpFile,
+                  ArrayRef<const IndexGroup>    indexGroups,
+                  const SimulationAtomGroupType gtype,
+                  const int                     restnm,
+                  const GroupCoverage           coverage,
+                  const bool                    bVerbose,
+                  WarningHandler*               wi)
 {
     unsigned short*   cbuf;
     AtomGroupIndices* grps = &(groups->groups[gtype]);
@@ -3319,7 +3328,7 @@ static bool do_numbering(const int                        natoms,
         {
             grps->emplace_back(gid);
         }
-        gmx::ArrayRef<const int> indexGroup = indexGroups[gid].particleIndices;
+        ArrayRef<const int> indexGroup = indexGroups[gid].particleIndices;
         atomGroupRangeValidation(natoms, indexGroup);
         /* Now go over the atoms in the group */
         for (const int aj : indexGroup)
@@ -3405,7 +3414,7 @@ static bool do_numbering(const int                        natoms,
     return ntot == natoms;
 }
 
-static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<const std::string> gnames)
+void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, ArrayRef<const std::string> gnames)
 {
     t_grpopts*     opts;
     pull_params_t* pull;
@@ -3437,11 +3446,11 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
     snew(na_vcm, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size() + 1);
     snew(nrdf_vcm_sub, groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size() + 1);
 
-    for (gmx::Index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
+    for (Index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
     {
         nrdf_tc[i] = 0;
     }
-    for (gmx::Index i = 0;
+    for (Index i = 0;
          i < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
          i++)
     {
@@ -3487,7 +3496,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
             for (InteractionFunction ftype :
                  { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
             {
-                gmx::ArrayRef<const int> ia = molt.ilist[ftype].iatoms;
+                ArrayRef<const int> ia = molt.ilist[ftype].iatoms;
                 for (int i = 0; i < molt.ilist[ftype].size();)
                 {
                     /* Subtract degrees of freedom for the constraints,
@@ -3536,7 +3545,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
                     i += interaction_function[ftype].nratoms + 1;
                 }
             }
-            gmx::ArrayRef<const int> ia = molt.ilist[InteractionFunction::SETTLE].iatoms;
+            ArrayRef<const int> ia = molt.ilist[InteractionFunction::SETTLE].iatoms;
             for (int i = 0; i < molt.ilist[InteractionFunction::SETTLE].size();)
             {
                 /* Subtract 1 dof from every atom in the SETTLE */
@@ -3621,7 +3630,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
          * translation is removed and 6 when rotation is removed as well.
          * Note that we do not and should not include the rest group here.
          */
-        for (gmx::Index j = 0;
+        for (Index j = 0;
              j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]);
              j++)
         {
@@ -3643,12 +3652,10 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
             }
         }
 
-        for (gmx::Index i = 0;
-             i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]);
-             i++)
+        for (Index i = 0; i < gmx::ssize(groups.groups[SimulationAtomGroupType::TemperatureCoupling]); i++)
         {
             /* Count the number of atoms of TC group i for every VCM group */
-            for (gmx::Index j = 0;
+            for (Index j = 0;
                  j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
                  j++)
             {
@@ -3678,7 +3685,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
              */
             nrdf_uc    = nrdf_tc[i];
             nrdf_tc[i] = 0;
-            for (gmx::Index j = 0;
+            for (Index j = 0;
                  j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
                  j++)
             {
@@ -3711,7 +3718,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
     sfree(nrdf_vcm_sub);
 }
 
-static bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* option, const char* val, int flag)
+bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* option, const char* val, int flag)
 {
     /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
      * But since this is much larger than STRLEN, such a line can not be parsed.
@@ -3720,7 +3727,7 @@ static bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* op
     int  j, k, nr;
     bool bSet;
 
-    auto names = gmx::splitString(val);
+    auto names = splitString(val);
     if (names.size() % 2 != 0)
     {
         gmx_fatal(FARGS, "The number of groups for %s is odd", option);
@@ -3766,7 +3773,7 @@ static bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* op
 }
 
 
-static void make_swap_groups(t_swapcoords* swap, gmx::ArrayRef<const IndexGroup> indexGroups)
+void make_swap_groups(t_swapcoords* swap, ArrayRef<const IndexGroup> indexGroups)
 {
     /* Just a quick check here, more thorough checks are in mdrun */
     if (swap->requiredGroup(SwapGroupSplittingType::Split0).molname
@@ -3801,7 +3808,7 @@ static void make_swap_groups(t_swapcoords* swap, gmx::ArrayRef<const IndexGroup>
     };
 }
 
-static void make_IMD_group(t_IMD* IMDgroup, const char* IMDgname, gmx::ArrayRef<const IndexGroup> indexGroups)
+void make_IMD_group(t_IMD* IMDgroup, const char* IMDgname, ArrayRef<const IndexGroup> indexGroups)
 {
     int ig, i;
 
@@ -3833,10 +3840,10 @@ static void make_IMD_group(t_IMD* IMDgroup, const char* IMDgname, gmx::ArrayRef<
  * Also issues a warning when non-frozen atoms are not part of a COM
  * removal group while COM removal is active.
  */
-static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
-                                                    const int         numAtoms,
-                                                    const t_grpopts&  opts,
-                                                    WarningHandler*   wi)
+void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
+                                             const int         numAtoms,
+                                             const t_grpopts&  opts,
+                                             WarningHandler*   wi)
 {
     const int vcmRestGroup =
             std::max(int(groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()), 1);
@@ -3880,7 +3887,7 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
 
     if (numFullyFrozenVcmAtoms > 0)
     {
-        std::string warningText = gmx::formatString(
+        std::string warningText = formatString(
                 "There are %d atoms that are fully frozen and part of COMM removal group(s), "
                 "removing these atoms from the COMM removal group(s)",
                 numFullyFrozenVcmAtoms);
@@ -3888,7 +3895,7 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
     }
     if (numPartiallyFrozenVcmAtoms > 0 && numPartiallyFrozenVcmAtoms < numAtoms)
     {
-        std::string warningText = gmx::formatString(
+        std::string warningText = formatString(
                 "There are %d atoms that are frozen along less then %d dimensions and part of COMM "
                 "removal group(s), due to limitations in the code these still contribute to the "
                 "mass of the COM along frozen dimensions and therefore the COMM correction will be "
@@ -3899,7 +3906,7 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
     }
     if (numNonVcmAtoms > 0)
     {
-        std::string warningText = gmx::formatString(
+        std::string warningText = formatString(
                 "%d atoms are not part of any center of mass motion removal group.\n"
                 "This may lead to artifacts.\n"
                 "In most cases one should use one group for the whole system.",
@@ -3908,7 +3915,7 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
     }
 }
 
-static void processEnsembleTemperature(t_inputrec* ir, const bool allAtomsCoupled, WarningHandler* wi)
+void processEnsembleTemperature(t_inputrec* ir, const bool allAtomsCoupled, WarningHandler* wi)
 {
     if (ir->ensembleTemperatureSetting == EnsembleTemperatureSetting::NotAvailable)
     {
@@ -3998,11 +4005,13 @@ static void processEnsembleTemperature(t_inputrec* ir, const bool allAtomsCouple
     }
 }
 
+} // namespace
+
 void do_index(const char*                                 mdparin,
               const std::optional<std::filesystem::path>& ndx,
               gmx_mtop_t*                                 mtop,
               bool                                        bVerbose,
-              const gmx::MDModulesNotifiers&              mdModulesNotifiers,
+              const MDModulesNotifiers&                   mdModulesNotifiers,
               t_inputrec*                                 ir,
               WarningHandler*                             wi)
 {
@@ -4049,9 +4058,9 @@ void do_index(const char*                                 mdparin,
 
     wi->setFileAndLineNumber(mdparin, -1);
 
-    auto temperatureCouplingTauValues       = gmx::splitString(inputrecStrings->tau_t);
-    auto temperatureCouplingReferenceValues = gmx::splitString(inputrecStrings->ref_t);
-    auto temperatureCouplingGroupNames      = gmx::splitString(inputrecStrings->tcgrps);
+    auto temperatureCouplingTauValues       = splitString(inputrecStrings->tau_t);
+    auto temperatureCouplingReferenceValues = splitString(inputrecStrings->ref_t);
+    auto temperatureCouplingGroupNames      = splitString(inputrecStrings->tcgrps);
     if (temperatureCouplingTauValues.size() != temperatureCouplingGroupNames.size()
         || temperatureCouplingReferenceValues.size() != temperatureCouplingGroupNames.size())
     {
@@ -4205,9 +4214,9 @@ void do_index(const char*                                 mdparin,
     }
 
     /* Simulated annealing for each group. There are nr groups */
-    auto simulatedAnnealingGroupNames = gmx::splitString(inputrecStrings->anneal);
+    auto simulatedAnnealingGroupNames = splitString(inputrecStrings->anneal);
     if (simulatedAnnealingGroupNames.size() == 1
-        && gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[0], "N", 1))
+        && equalCaseInsensitive(simulatedAnnealingGroupNames[0], "N", 1))
     {
         simulatedAnnealingGroupNames.resize(0);
     }
@@ -4236,16 +4245,16 @@ void do_index(const char*                                 mdparin,
             bAnneal = FALSE;
             for (int i = 0; i < nr; i++)
             {
-                if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "N", 1))
+                if (equalCaseInsensitive(simulatedAnnealingGroupNames[i], "N", 1))
                 {
                     ir->opts.annealing[i] = SimulatedAnnealing::No;
                 }
-                else if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "S", 1))
+                else if (equalCaseInsensitive(simulatedAnnealingGroupNames[i], "S", 1))
                 {
                     ir->opts.annealing[i] = SimulatedAnnealing::Single;
                     bAnneal               = TRUE;
                 }
-                else if (gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[i], "P", 1))
+                else if (equalCaseInsensitive(simulatedAnnealingGroupNames[i], "P", 1))
                 {
                     ir->opts.annealing[i] = SimulatedAnnealing::Periodic;
                     bAnneal               = TRUE;
@@ -4254,7 +4263,7 @@ void do_index(const char*                                 mdparin,
             if (bAnneal)
             {
                 /* Read the other fields too */
-                auto simulatedAnnealingPoints = gmx::splitString(inputrecStrings->anneal_npoints);
+                auto simulatedAnnealingPoints = splitString(inputrecStrings->anneal_npoints);
                 if (simulatedAnnealingPoints.size() != simulatedAnnealingGroupNames.size())
                 {
                     gmx_fatal(FARGS,
@@ -4277,7 +4286,7 @@ void do_index(const char*                                 mdparin,
                     numSimulatedAnnealingFields += ir->opts.anneal_npoints[i];
                 }
 
-                auto simulatedAnnealingTimes = gmx::splitString(inputrecStrings->anneal_time);
+                auto simulatedAnnealingTimes = splitString(inputrecStrings->anneal_time);
 
                 if (simulatedAnnealingTimes.size() != numSimulatedAnnealingFields)
                 {
@@ -4286,7 +4295,7 @@ void do_index(const char*                                 mdparin,
                               simulatedAnnealingTimes.size(),
                               numSimulatedAnnealingFields);
                 }
-                auto simulatedAnnealingTemperatures = gmx::splitString(inputrecStrings->anneal_temp);
+                auto simulatedAnnealingTemperatures = splitString(inputrecStrings->anneal_temp);
                 if (simulatedAnnealingTemperatures.size() != numSimulatedAnnealingFields)
                 {
                     gmx_fatal(FARGS,
@@ -4415,11 +4424,11 @@ void do_index(const char*                                 mdparin,
         make_IMD_group(ir->imd, inputrecStrings->imd_grp, defaultIndexGroups);
     }
 
-    gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(defaultIndexGroups);
+    IndexGroupsAndNames defaultIndexGroupsAndNames(defaultIndexGroups);
     mdModulesNotifiers.preProcessingNotifier_.notify(defaultIndexGroupsAndNames);
 
-    auto accelerations          = gmx::splitString(inputrecStrings->acceleration);
-    auto accelerationGroupNames = gmx::splitString(inputrecStrings->accelerationGroups);
+    auto accelerations          = splitString(inputrecStrings->acceleration);
+    auto accelerationGroupNames = splitString(inputrecStrings->accelerationGroups);
     if (accelerationGroupNames.size() * DIM != accelerations.size())
     {
         gmx_fatal(FARGS,
@@ -4439,8 +4448,8 @@ void do_index(const char*                                 mdparin,
     nr                    = groups->groups[SimulationAtomGroupType::Acceleration].size();
     ir->opts.acceleration = convertGroupRvecs(wi, accelerations, "accelerations", nr);
 
-    auto freezeDims       = gmx::splitString(inputrecStrings->frdim);
-    auto freezeGroupNames = gmx::splitString(inputrecStrings->freeze);
+    auto freezeDims       = splitString(inputrecStrings->frdim);
+    auto freezeGroupNames = splitString(inputrecStrings->freeze);
     if (freezeDims.size() != DIM * freezeGroupNames.size())
     {
         gmx_fatal(FARGS,
@@ -4465,10 +4474,10 @@ void do_index(const char*                                 mdparin,
     {
         for (int j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.nFreeze[i][j] = static_cast<int>(gmx::equalCaseInsensitive(freezeDims[k], "Y", 1));
+            ir->opts.nFreeze[i][j] = static_cast<int>(equalCaseInsensitive(freezeDims[k], "Y", 1));
             if (!ir->opts.nFreeze[i][j])
             {
-                if (!gmx::equalCaseInsensitive(freezeDims[k], "N", 1))
+                if (!equalCaseInsensitive(freezeDims[k], "N", 1))
                 {
                     sprintf(warn_buf,
                             "Please use Y(ES) or N(O) for freezedim only "
@@ -4488,7 +4497,7 @@ void do_index(const char*                                 mdparin,
     }
 
     // Get group specifications from OutputControlModule (grompp preprocessing only)
-    auto energyGroupNames = gmx::splitString(inputrecStrings->energyGroups);
+    auto energyGroupNames = splitString(inputrecStrings->energyGroups);
     do_numbering(natoms,
                  groups,
                  energyGroupNames,
@@ -4500,7 +4509,7 @@ void do_index(const char*                                 mdparin,
                  wi);
     add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener    = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    auto vcmGroupNames = gmx::splitString(inputrecStrings->vcm);
+    auto vcmGroupNames = splitString(inputrecStrings->vcm);
     do_numbering(natoms,
                  groups,
                  vcmGroupNames,
@@ -4519,7 +4528,7 @@ void do_index(const char*                                 mdparin,
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
 
-    auto user1GroupNames = gmx::splitString(inputrecStrings->user1);
+    auto user1GroupNames = splitString(inputrecStrings->user1);
     do_numbering(natoms,
                  groups,
                  user1GroupNames,
@@ -4529,7 +4538,7 @@ void do_index(const char*                                 mdparin,
                  GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
-    auto user2GroupNames = gmx::splitString(inputrecStrings->user2);
+    auto user2GroupNames = splitString(inputrecStrings->user2);
     do_numbering(natoms,
                  groups,
                  user2GroupNames,
@@ -4539,7 +4548,7 @@ void do_index(const char*                                 mdparin,
                  GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
-    auto compressedXGroupNames = gmx::splitString(inputrecStrings->compressedXGroups);
+    auto compressedXGroupNames = splitString(inputrecStrings->compressedXGroups);
     do_numbering(natoms,
                  groups,
                  compressedXGroupNames,
@@ -4549,7 +4558,7 @@ void do_index(const char*                                 mdparin,
                  GroupCoverage::OneGroup,
                  bVerbose,
                  wi);
-    auto orirefFitGroupNames = gmx::splitString(inputrecStrings->orirefitgrp);
+    auto orirefFitGroupNames = splitString(inputrecStrings->orirefitgrp);
     do_numbering(natoms,
                  groups,
                  orirefFitGroupNames,
@@ -4561,7 +4570,7 @@ void do_index(const char*                                 mdparin,
                  wi);
 
     /* MiMiC QMMM input processing */
-    auto qmGroupNames = gmx::splitString(inputrecStrings->QMMM);
+    auto qmGroupNames = splitString(inputrecStrings->QMMM);
     if (qmGroupNames.size() > 1)
     {
         gmx_fatal(FARGS, "Currently, having more than one QM group in MiMiC is not supported");
@@ -4582,7 +4591,7 @@ void do_index(const char*                                 mdparin,
 
     if (bVerbose)
     {
-        for (auto group : gmx::keysOf(groups->groups))
+        for (auto group : keysOf(groups->groups))
         {
             fprintf(stderr, "%-16s has %zu element(s):", shortName(group), groups->groups[group].size());
             for (const auto& entry : groups->groups[group])
@@ -4623,11 +4632,11 @@ void do_index(const char*                                 mdparin,
     if ((ir->expandedvals->nstexpanded < 0) && ir->bSimTemp)
     {
         ir->expandedvals->nstexpanded = 2 * static_cast<int>(ir->opts.tau_t[0] / ir->delta_t);
-        wi->addWarning(gmx::formatString(
-                "the value for nstexpanded was not specified for "
-                " expanded ensemble simulated tempering. It is set to 2*tau_t (%d) "
-                "by default, but it is recommended to set it to an explicit value!",
-                ir->expandedvals->nstexpanded));
+        wi->addWarning(
+                formatString("the value for nstexpanded was not specified for "
+                             " expanded ensemble simulated tempering. It is set to 2*tau_t (%d) "
+                             "by default, but it is recommended to set it to an explicit value!",
+                             ir->expandedvals->nstexpanded));
     }
 
     // Now that we have the temperature coupling options, we can process the ensemble temperature
@@ -4649,7 +4658,7 @@ void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys)
 
     if (ir->useConstantAcceleration)
     {
-        gmx::RVec         acceleration = { 0.0_real, 0.0_real, 0.0_real };
+        RVec              acceleration = { 0.0_real, 0.0_real, 0.0_real };
         std::vector<real> groupMasses(numGroups, 0.0_real);
         for (const AtomProxy atomP : AtomRange(sys))
         {
@@ -4692,7 +4701,10 @@ void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys)
     }
 }
 
-static void check_disre(const gmx_mtop_t& mtop)
+namespace
+{
+
+void check_disre(const gmx_mtop_t& mtop)
 {
     if (gmx_mtop_ftype_count(mtop, InteractionFunction::DistanceRestraints) > 0)
     {
@@ -4725,7 +4737,7 @@ static void check_disre(const gmx_mtop_t& mtop)
 }
 
 //! Returns whether dimensions have an absolute reference due to walls, pbc or freezing
-static BasicVector<bool> haveAbsoluteReference(const t_inputrec& ir)
+BasicVector<bool> haveAbsoluteReference(const t_inputrec& ir)
 {
     BasicVector<bool> absRef = { false, false, false };
 
@@ -4750,7 +4762,7 @@ static BasicVector<bool> haveAbsoluteReference(const t_inputrec& ir)
 }
 
 //! Returns whether position restraints are used for dimensions
-static BasicVector<bool> havePositionRestraints(const gmx_mtop_t& sys)
+BasicVector<bool> havePositionRestraints(const gmx_mtop_t& sys)
 {
     BasicVector<bool> havePosres = { false, false, false };
 
@@ -4805,11 +4817,11 @@ static BasicVector<bool> havePositionRestraints(const gmx_mtop_t& sys)
     return havePosres;
 }
 
-static void check_combination_rule_differences(const gmx_mtop_t& mtop,
-                                               int               state,
-                                               bool* bC6ParametersWorkWithGeometricRules,
-                                               bool* bC6ParametersWorkWithLBRules,
-                                               bool* bLBRulesPossible)
+void check_combination_rule_differences(const gmx_mtop_t& mtop,
+                                        int               state,
+                                        bool*             bC6ParametersWorkWithGeometricRules,
+                                        bool*             bC6ParametersWorkWithLBRules,
+                                        bool*             bLBRulesPossible)
 {
     int         ntypes, tpi, tpj;
     int*        typecount;
@@ -4859,11 +4871,11 @@ static void check_combination_rule_differences(const gmx_mtop_t& mtop,
             {
                 if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
                 {
-                    sigmai = gmx::sixthroot(c12i / c6i);
-                    sigmaj = gmx::sixthroot(c12j / c6j);
+                    sigmai = sixthroot(c12i / c6i);
+                    sigmaj = sixthroot(c12j / c6j);
                     epsi   = c6i * c6i / (4.0 * c12i);
                     epsj   = c6j * c6j / (4.0 * c12j);
-                    c6_LB  = 4.0 * std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
+                    c6_LB  = 4.0 * std::sqrt(epsi * epsj) * power6(0.5 * (sigmai + sigmaj));
                 }
                 else
                 {
@@ -4889,7 +4901,7 @@ static void check_combination_rule_differences(const gmx_mtop_t& mtop,
     sfree(typecount);
 }
 
-static void check_combination_rules(const t_inputrec& ir, const gmx_mtop_t& mtop, WarningHandler* wi)
+void check_combination_rules(const t_inputrec& ir, const gmx_mtop_t& mtop, WarningHandler* wi)
 {
     bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
 
@@ -4935,13 +4947,13 @@ static void check_combination_rules(const t_inputrec& ir, const gmx_mtop_t& mtop
     }
 }
 
-static bool allTrue(const BasicVector<bool>& boolVector)
+bool allTrue(const BasicVector<bool>& boolVector)
 {
     return boolVector[0] && boolVector[1] && boolVector[2];
 }
 
 /* Generates an error or warning when lambda will become > 1, when appropriate */
-static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& mtop, WarningHandler* wi)
+void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& mtop, WarningHandler* wi)
 {
     /* The warnings below are only relevant if we have perturbed atoms */
     if (!haveFepPerturbedNBInteractions(mtop) && !haveFepPerturbedMasses(mtop))
@@ -4954,7 +4966,7 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
         && ir.fepvals->n_lambda <= 0 && ir.fepvals->sc_alpha <= 0
         && ir.fepvals->softcoreFunction != SoftcoreType::Gapsys)
     {
-        auto warningText = gmx::formatString(
+        auto warningText = formatString(
                 "You set init-lambda greater than 1 such that "
                 "all lambdas will (initially) be greater than 1. "
                 "Please only use this if you are aware of what you are "
@@ -4974,7 +4986,7 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
         if ((ir.nsteps < 0 || intStepNumberWhenLambdaIsOne < ir.nsteps) && ir.fepvals->n_lambda <= 0
             && ir.fepvals->sc_alpha <= 0 && ir.fepvals->softcoreFunction != SoftcoreType::Gapsys)
         {
-            auto warningText = gmx::formatString(
+            auto warningText = formatString(
                     "With init-lambda = %g and delta_lambda = %g and no lambda "
                     "vector given, "
                     "all lambdas will be greater than 1 after step %" PRId64 " of in total %" PRId64
@@ -5022,7 +5034,7 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
 
         if (bElementsGreaterThanOne)
         {
-            auto warningText = gmx::formatString(
+            auto warningText = formatString(
                     "One or more entries for %s are greater than 1. Please only use this "
                     "if you are aware of "
                     "what you are doing.",
@@ -5032,10 +5044,12 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
     }
 }
 
+} // namespace
+
 void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& sys, WarningHandler* wi)
 {
     // Not meeting MTS requirements should have resulted in a fatal error, so we can assert here
-    GMX_ASSERT(gmx::checkMtsRequirements(ir).empty(), "All MTS requirements should be met here");
+    GMX_ASSERT(checkMtsRequirements(ir).empty(), "All MTS requirements should be met here");
 
     char err_buf[STRLEN];
     char warn_buf[STRLEN];
@@ -5077,7 +5091,7 @@ void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& s
              * of errors. The factor 0.5 is because energy distributes
              * equally over Ekin and Epot.
              */
-            real max_T_error = 0.5 * tau * ir.verletbuf_tol / (nrdf_at * gmx::c_boltz * T);
+            real max_T_error = 0.5 * tau * ir.verletbuf_tol / (nrdf_at * c_boltz * T);
             if (max_T_error > T_error_warn)
             {
                 sprintf(warn_buf,
@@ -5117,7 +5131,7 @@ void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& s
         {
             for (int i = 0; i < ir.opts.ngtc; i++)
             {
-                int nsteps = gmx::roundToInt(ir.opts.tau_t[i] / ir.delta_t);
+                int nsteps = roundToInt(ir.opts.tau_t[i] / ir.delta_t);
                 sprintf(err_buf,
                         "tau_t/delta_t for group %d for temperature control method %s must be a "
                         "multiple of nstcomm (%d), as velocities of atoms in coupled groups are "
@@ -5161,7 +5175,7 @@ void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& s
         }
         if (ir.pressureCouplingOptions.tau_p < 1.9 * tau_t_max)
         {
-            std::string message = gmx::formatString(
+            std::string message = formatString(
                     "With %s T-coupling and %s p-coupling, "
                     "%s (%g) should be at least twice as large as %s (%g) to avoid resonances",
                     enumValueToString(ir.etc),
@@ -5362,7 +5376,7 @@ void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& s
                 "constant acceleration groups, cosine acceleration, box deformation");
     }
 
-    if (const auto optionalVsiteMesg = gmx::checkVsiteHierarchy(sys))
+    if (const auto optionalVsiteMesg = checkVsiteHierarchy(sys))
     {
         wi->addError(optionalVsiteMesg.value());
     }
@@ -5435,7 +5449,7 @@ void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool b
                     "With nstlist=0 atoms are only put into the box at step 0, therefore drifting "
                     "atoms might cause the simulation to crash.");
         }
-        if (gmx::square(ir->rlist) >= max_cutoff2(ir->pbcType, box))
+        if (square(ir->rlist) >= max_cutoff2(ir->pbcType, box))
         {
             sprintf(warn_buf,
                     "ERROR: The cut-off length is longer than half the shortest box vector or "
@@ -5445,3 +5459,5 @@ void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool b
         }
     }
 }
+
+} // namespace gmx

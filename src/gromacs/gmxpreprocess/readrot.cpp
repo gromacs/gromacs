@@ -60,9 +60,15 @@
 #include "gromacs/utility/vecdump.h"
 #include "gromacs/utility/vectypes.h"
 
-static const std::string RotStr = "Enforced rotation:";
+namespace gmx
+{
 
-static void string2dvec(char buf[], dvec nums)
+namespace
+{
+
+const std::string RotStr = "Enforced rotation:";
+
+void string2dvec(char buf[], dvec nums)
 {
     if (sscanf(buf, "%lf%lf%lf", &nums[0], &nums[1], &nums[2]) != 3)
     {
@@ -70,8 +76,9 @@ static void string2dvec(char buf[], dvec nums)
     }
 }
 
+} // namespace
 
-extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, WarningHandler* wi)
+std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, WarningHandler* wi)
 {
     int       g, m;
     char      buf[STRLEN];
@@ -229,9 +236,11 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
     return rotateGroups;
 }
 
+namespace
+{
 
 /* Check whether the box is unchanged */
-static void check_box_unchanged(matrix f_box, matrix box, const char fn[], WarningHandler* wi)
+void check_box_unchanged(matrix f_box, matrix box, const char fn[], WarningHandler* wi)
 {
     int  i, ii;
     bool bSame = TRUE;
@@ -257,9 +266,10 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], Warni
     }
 }
 
+} // namespace
 
 /* Extract the reference positions for the rotation group(s) */
-extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char* fn, bool bSet, WarningHandler* wi)
+void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char* fn, bool bSet, WarningHandler* wi)
 {
     int              i, ii;
     t_rotgrp*        rotg;
@@ -273,8 +283,7 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
         rotg->x_ref_original.resize(rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
-        const std::filesystem::path reffile =
-                gmx::concatenateBeforeExtension(fn, gmx::formatString(".%d", g));
+        const std::filesystem::path reffile = concatenateBeforeExtension(fn, formatString(".%d", g));
         const std::string reffileString = reffile.string();
 
         /* If the base filename for the reference position files was explicitly set by
@@ -330,9 +339,9 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
 }
 
 
-extern void make_rotation_groups(t_rot*                           rot,
-                                 gmx::ArrayRef<const std::string> rotateGroupNames,
-                                 gmx::ArrayRef<const IndexGroup>  indexGroups)
+void make_rotation_groups(t_rot*                      rot,
+                          ArrayRef<const std::string> rotateGroupNames,
+                          ArrayRef<const IndexGroup>  indexGroups)
 {
     for (int g = 0; g < gmx::ssize(rot->grp); g++)
     {
@@ -355,3 +364,5 @@ extern void make_rotation_groups(t_rot*                           rot,
         }
     }
 }
+
+} // namespace gmx

@@ -96,8 +96,8 @@ real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, 
             }
             ekind->ekin += tcstat->ekinf;
 
-            tcstat->Th = calc_temp(trace(tcstat->ekinh), nd);
-            tcstat->T  = calc_temp(trace(tcstat->ekinf), nd);
+            tcstat->Th = gmx::calc_temp(trace(tcstat->ekinh), nd);
+            tcstat->T  = gmx::calc_temp(trace(tcstat->ekinf), nd);
 
             /* after the scaling factors have been multiplied in, we can remove them */
             if (bEkinAveVel)

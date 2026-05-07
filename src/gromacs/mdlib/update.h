@@ -91,7 +91,7 @@ public:
      *
      * \returns The pointer to the intermediate coordinates buffer.
      */
-    PaddedVector<gmx::RVec>* xp();
+    PaddedVector<RVec>* xp();
     /*!\brief Getter to local copy of box deformation class.
      *
      * \returns handle to box deformation class
@@ -104,10 +104,10 @@ public:
      * \param[in] cTC       Group index for center of mass motion removal
      * \param[in] cAcceleration  Group index for constant acceleration groups
      */
-    void updateAfterPartition(int                                 numAtoms,
-                              gmx::ArrayRef<const unsigned short> cFREEZE,
-                              gmx::ArrayRef<const unsigned short> cTC,
-                              gmx::ArrayRef<const unsigned short> cAcceleration);
+    void updateAfterPartition(int                            numAtoms,
+                              ArrayRef<const unsigned short> cFREEZE,
+                              ArrayRef<const unsigned short> cTC,
+                              ArrayRef<const unsigned short> cAcceleration);
 
     /*! \brief Perform numerical integration step.
      *
@@ -129,21 +129,21 @@ public:
      * \param[in]  dd                        Domain decomposition object, nullptr without DD.
      * \param[in]  haveConstraints           If the system has constraints.
      */
-    void update_coords(const t_inputrec&                                inputRecord,
-                       int64_t                                          step,
-                       int                                              homenr,
-                       bool                                             havePartiallyFrozenAtoms,
-                       gmx::ArrayRef<const ParticleType>                ptype,
-                       gmx::ArrayRef<const real>                        invMass,
-                       gmx::ArrayRef<const gmx::RVec>                   invMassPerDim,
-                       t_state*                                         state,
-                       const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                       t_fcdata*                                        fcdata,
-                       const gmx_ekindata_t*                            ekind,
-                       const Matrix3x3&                                 parrinelloRahmanM,
-                       int                                              updatePart,
-                       const gmx_domdec_t*                              dd,
-                       bool                                             haveConstraints);
+    void update_coords(const t_inputrec&                      inputRecord,
+                       int64_t                                step,
+                       int                                    homenr,
+                       bool                                   havePartiallyFrozenAtoms,
+                       ArrayRef<const ParticleType>           ptype,
+                       ArrayRef<const real>                   invMass,
+                       ArrayRef<const RVec>                   invMassPerDim,
+                       t_state*                               state,
+                       const ArrayRefWithPadding<const RVec>& f,
+                       t_fcdata*                              fcdata,
+                       const gmx_ekindata_t*                  ekind,
+                       const Matrix3x3&                       parrinelloRahmanM,
+                       int                                    updatePart,
+                       const gmx_domdec_t*                    dd,
+                       bool                                   haveConstraints);
 
     /*! \brief Finalize the coordinate update.
      *
@@ -183,31 +183,31 @@ public:
      * \param[in]  do_log       If this is logging step.
      * \param[in]  do_ene       If this is an energy evaluation step.
      */
-    void update_sd_second_half(const t_inputrec&                 inputRecord,
-                               int64_t                           step,
-                               real*                             dvdlambda,
-                               int                               homenr,
-                               gmx::ArrayRef<const ParticleType> ptype,
-                               gmx::ArrayRef<const real>         invMass,
-                               t_state*                          state,
-                               const gmx_domdec_t*               dd,
-                               t_nrnb*                           nrnb,
-                               gmx_wallcycle*                    wcycle,
-                               gmx::Constraints*                 constr,
-                               bool                              do_log,
-                               bool                              do_ene);
+    void update_sd_second_half(const t_inputrec&            inputRecord,
+                               int64_t                      step,
+                               real*                        dvdlambda,
+                               int                          homenr,
+                               ArrayRef<const ParticleType> ptype,
+                               ArrayRef<const real>         invMass,
+                               t_state*                     state,
+                               const gmx_domdec_t*          dd,
+                               t_nrnb*                      nrnb,
+                               gmx_wallcycle*               wcycle,
+                               Constraints*                 constr,
+                               bool                         do_log,
+                               bool                         do_ene);
 
     /*! \brief Performs a leap-frog update without updating \p state so the constrain virial
      * can be computed.
      */
-    void update_for_constraint_virial(const t_inputrec&              inputRecord,
-                                      int                            homenr,
-                                      bool                           havePartiallyFrozenAtoms,
-                                      gmx::ArrayRef<const real>      invmass,
-                                      gmx::ArrayRef<const gmx::RVec> invMassPerDim,
-                                      const t_state&                 state,
-                                      const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                                      const gmx_ekindata_t&                            ekind);
+    void update_for_constraint_virial(const t_inputrec&    inputRecord,
+                                      int                  homenr,
+                                      bool                 havePartiallyFrozenAtoms,
+                                      ArrayRef<const real> invmass,
+                                      ArrayRef<const RVec> invMassPerDim,
+                                      const t_state&       state,
+                                      const ArrayRefWithPadding<const RVec>& f,
+                                      const gmx_ekindata_t&                  ekind);
 
     /*! \brief Update pre-computed constants that depend on the reference temperature for coupling.
      *
@@ -239,8 +239,6 @@ private:
     //! Implementation object.
     std::unique_ptr<Impl> impl_;
 };
-
-}; // namespace gmx
 
 /*
  * Compute the partial kinetic energy for home particles;
@@ -274,14 +272,12 @@ void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir);
  */
 void update_ekinstate(ekinstate_t*          ekinstate,
                       const gmx_ekindata_t& ekind,
-                      const gmx::MpiComm&   mpiComm,
+                      const MpiComm&        mpiComm,
                       const gmx_domdec_t*   dd);
 
 /*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
    to the rest of the simulation */
-void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm,
-                                  gmx_ekindata_t*     ekind,
-                                  const ekinstate_t*  ekinstate);
+void restore_ekinstate_from_state(const MpiComm& mpiComm, gmx_ekindata_t* ekind, const ekinstate_t* ekinstate);
 
 /*! \brief Computes the atom range for a thread to operate on, ensuring SIMD aligned ranges
  *
@@ -292,5 +288,7 @@ void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm,
  * \param[out] endAtom      The end of the atom range, note that this is in general not a multiple of the SIMD width
  */
 void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms, int* startAtom, int* endAtom);
+
+} // namespace gmx
 
 #endif

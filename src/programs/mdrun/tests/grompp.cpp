@@ -60,11 +60,15 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
 //! Test fixture for grompp
-class GromppTest : public gmx::test::MdrunTestFixture
+class GromppTest : public MdrunTestFixture
 {
 public:
     //! Execute the trajectory writing test
@@ -136,7 +140,7 @@ TEST_F(GromppTest, MaxwarnShouldBePositive)
             "tau-t   = 0.1\n"
             "ref_t   = 298\n");
     runner_.setMaxWarn(-1);
-    EXPECT_THROW_GMX(runTest(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(runTest(), InconsistentInputError);
 }
 
 #if HAVE_MUPARSER
@@ -154,7 +158,7 @@ TEST_F(GromppTest, ValidTransformationCoord)
         "pull-coord2-geometry = transformation",
         "pull-coord2-expression = x1", // Valid expression
     };
-    runner_.useStringAsMdpFile(gmx::joinStrings(inputMdpFile, "\n"));
+    runner_.useStringAsMdpFile(joinStrings(inputMdpFile, "\n"));
     runTest();
 }
 
@@ -171,8 +175,8 @@ TEST_F(GromppTest, InvalidTransformationCoord)
         "pull-coord2-geometry = transformation",
         "pull-coord2-expression = x2", // Invalid expression -> evaluation should fail
     };
-    runner_.useStringAsMdpFile(gmx::joinStrings(inputMdpFile, "\n"));
-    ASSERT_THROW(runTest(), gmx::InconsistentInputError);
+    runner_.useStringAsMdpFile(joinStrings(inputMdpFile, "\n"));
+    ASSERT_THROW(runTest(), InconsistentInputError);
     done_inputrec_strings(); // This allows grompp to be called again in another test
 }
 
@@ -188,10 +192,11 @@ TEST_F(GromppTest, RejectCRescaleAndAnisotropic)
                                    "pcoupltype              = anisotropic",
                                    "compressibility         = 1.0 1.0 1.0 1.0 1.0 1.0",
                                    "ref-p                   = 1.0 1.0 1.0 0.0 0.0 0.0" };
-    runner_.useStringAsMdpFile(gmx::joinStrings(inputMdpFile, "\n"));
+    runner_.useStringAsMdpFile(joinStrings(inputMdpFile, "\n"));
     GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(), "C-rescale does not support pressure coupling type");
 }
 #endif // HAVE_MUPARSER
 
-
 } // namespace
+} // namespace test
+} // namespace gmx
