@@ -1127,18 +1127,20 @@ static void do_constraint(struct pull_t* pull,
 
         /* update the atom positions */
         auto localAtomIndices = pgrp->atomSet_.localIndex();
-        DVec tmp              = dr;
+        // There is no point in using dr in double below, as all other quantities are reals
+        const RVec drRVec = dr.toRVec();
         for (gmx::Index j = 0; j < localAtomIndices.ssize(); j++)
         {
             const int ii = localAtomIndices[j];
+            RVec      dx = drRVec;
             if (!pgrp->localWeights.empty())
             {
-                tmp = static_cast<double>(pgrp->wscale * pgrp->localWeights[j]) * dr;
+                dx = pgrp->wscale * pgrp->localWeights[j] * drRVec;
             }
-            x[ii] += tmp.toRVec();
+            x[ii] += dx;
             if (!v.empty())
             {
-                v[ii] += invdt * tmp.toRVec();
+                v[ii] += invdt * dx;
             }
         }
     }
