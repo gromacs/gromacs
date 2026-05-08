@@ -20,9 +20,17 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Prevent buffer overflow in gmx angle
+""""""""""""""""""""""""""""""""""""
+
+Previously, if ``gmx angle`` was used to measure a dihedral, an internal loop
+would execute exactly three times, regardless of how many angles were provided.
+If fewer than three angles were provided, this led to a heap buffer overflow.
+
+:issue:`5620`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Miscellaneous
 ^^^^^^^^^^^^^
-
