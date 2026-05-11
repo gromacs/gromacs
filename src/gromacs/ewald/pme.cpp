@@ -1038,13 +1038,16 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
                                "Storage grid count should match the grid count");
         }
 
-        initGrids(pme->gridsCoulomb, *pme, bReproducible, pmeGridsStorage.coulomb);
-
-        int i = 0;
-        for (auto& grids : pme->gridsCoulomb)
+        if (pme->runMode != PmeRunMode::GPU)
         {
-            pme->gridsRefs.push_back({ grids, true, i });
-            i++;
+            initGrids(pme->gridsCoulomb, *pme, bReproducible, pmeGridsStorage.coulomb);
+
+            int i = 0;
+            for (auto& grids : pme->gridsCoulomb)
+            {
+                pme->gridsRefs.push_back({ grids, true, i });
+                i++;
+            }
         }
     }
     if (pme->doLJ)
@@ -1062,15 +1065,18 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
                                "Storage grid count should match the grid count");
         }
 
-        initGrids(pme->gridsLJ, *pme, bReproducible, pmeGridsStorage.lj);
-
-        if (!combRuleIsLB)
+        if (pme->runMode != PmeRunMode::GPU)
         {
-            int i = 0;
-            for (auto& grids : pme->gridsLJ)
+            initGrids(pme->gridsLJ, *pme, bReproducible, pmeGridsStorage.lj);
+
+            if (!combRuleIsLB)
             {
-                pme->gridsRefs.push_back({ grids, false, i });
-                i++;
+                int i = 0;
+                for (auto& grids : pme->gridsLJ)
+                {
+                    pme->gridsRefs.push_back({ grids, false, i });
+                    i++;
+                }
             }
         }
     }
