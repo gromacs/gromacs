@@ -47,6 +47,7 @@ gromacs:acpp-25.10.0-rocm-mpi:build:
 gromacs:acpp-25.10.0-rocm-mpi:test:
   extends:
     - .gromacs:base:test
+    - .use-gpu-aware-mpi-test:base
   rules:
     - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]

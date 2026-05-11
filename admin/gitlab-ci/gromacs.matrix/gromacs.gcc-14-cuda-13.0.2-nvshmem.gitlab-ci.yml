@@ -49,6 +49,7 @@ gromacs:gcc-14-cuda-13.0.2:buildMPI-NVSHMEM:
 gromacs:gcc-14-cuda-13.0.2:testMPI-NVSHMEM:
   extends:
     - .gromacs:base:test
+    - .use-gpu-aware-mpi-test:base
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]

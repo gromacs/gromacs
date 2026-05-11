@@ -70,6 +70,11 @@ namespace test
 namespace
 {
 
+static bool gpuAwareMpiIsRequired()
+{
+    return std::getenv("GMX_TEST_GPU_AWARE_MPI_IS_AVAILABLE") != nullptr;
+}
+
 MessageStringCollector getSkipMessagesIfNecessary()
 {
     MessageStringCollector errorReasons;
@@ -197,6 +202,22 @@ public:
     }
 #endif
 };
+
+TEST(GpuAwareMpiTest, DevicesSupportGpuAwareMpiWhenRequired)
+{
+    GMX_MPI_TEST(RequireRankCount<2>);
+
+    MessageStringCollector skipReasons = getSkipMessagesIfNecessary();
+    if (gpuAwareMpiIsRequired())
+    {
+        ASSERT_TRUE(GMX_GPU) << "Can only test GPU aware MPI availability in GPU build";
+        ASSERT_TRUE(GMX_LIB_MPI) << "Can only test GPU aware MPI availability in library MPI build";
+        ASSERT_TRUE(skipReasons.isEmpty())
+                << "GROMACS was supposed to test GPU aware MPI availability, but the devices or "
+                   "MPI library don't enable this because: "
+                << skipReasons.toString();
+    }
+}
 
 TEST_P(GpuAwareMpiTest, SendFromUnpinnedHostBufferToDeviceBuffer)
 {

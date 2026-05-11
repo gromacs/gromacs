@@ -44,6 +44,7 @@ gromacs:gcc-11-hip-710-mpi:build:
 gromacs:gcc-11-hip-710-mpi:test:
   extends:
     - .gromacs:base:test
+    - .use-gpu-aware-mpi-test:base
   rules:
     - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
@@ -53,6 +54,7 @@ gromacs:gcc-11-hip-710-mpi:test:
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
+    GMX_TEST_GPU_AWARE_MPI_IS_AVAILABLE: 1
   tags:
     - $GITLAB_RUNNER_TAG_2X_AMD_GPU
   needs:
@@ -73,6 +75,7 @@ gromacs:gcc-11-hip-710-mpi:regressiontest:
     REGRESSIONTEST_PARALLEL: "-np"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
+    GMX_TEST_GPU_AWARE_MPI_IS_AVAILABLE: 1
   tags:
     - $GITLAB_RUNNER_TAG_2X_AMD_GPU
   needs:
@@ -111,6 +114,7 @@ gromacs:gcc-11-hip-710-mpi-nightly:build:
 gromacs:gcc-11-hip-710-mpi-nightly:test:
   extends:
     - .gromacs:base:test
+    - .use-gpu-aware-mpi-test:base
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-7.1

@@ -52,6 +52,7 @@ gromacs:gcc-14-cuda-13.0.2:release:build:
 gromacs:gcc-14-cuda-13.0.2:release:test:
   extends:
     - .gromacs:base:test
+    - .use-gpu-aware-mpi-test:base
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-only-for-release, rules]
