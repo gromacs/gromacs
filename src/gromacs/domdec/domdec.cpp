@@ -3133,6 +3133,8 @@ void constructGpuHaloExchange(const t_commrec&                cr,
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedNonLocal),
                        "Non-local non-bonded stream should be valid when using "
                        "GPU halo exchange.");
+    GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::HaloExchange),
+                       "Halo exchange stream should be valid when using GPU halo exchange.");
 
     if (useNvshmem)
     {
@@ -3146,6 +3148,7 @@ void constructGpuHaloExchange(const t_commrec&                cr,
                     *cr.dd,
                     deviceStreamManager.context(),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                    deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
                     rankOfControlledPmeRank,
                     std::nullopt,
                     wcycle,
@@ -3171,7 +3174,14 @@ void constructGpuHaloExchange(const t_commrec&                cr,
                  pulse++)
             {
                 cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                        cr.dd, d, cr.commMyGroup.comm(), cr.commMySim.comm(), deviceStreamManager.context(), pulse, wcycle));
+                        cr.dd,
+                        d,
+                        cr.commMyGroup.comm(),
+                        cr.commMySim.comm(),
+                        deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
+                        deviceStreamManager.context(),
+                        pulse,
+                        wcycle));
             }
         }
     }

@@ -157,7 +157,7 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
     {
         if (usePBC_)
         {
-            launchPackSendBufKernel<true>(*haloStream_,
+            launchPackSendBufKernel<true>(haloStream_,
                                           size,
                                           d_sendBuf_.get_pointer(),
                                           d_x_.get_pointer(),
@@ -167,7 +167,7 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
         }
         else
         {
-            launchPackSendBufKernel<false>(*haloStream_,
+            launchPackSendBufKernel<false>(haloStream_,
                                            size,
                                            d_sendBuf_.get_pointer(),
                                            d_x_.get_pointer(),
@@ -187,7 +187,7 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
     {
         if (accumulateForces)
         {
-            launchUnpackRecvBufKernel<true>(*haloStream_,
+            launchUnpackRecvBufKernel<true>(haloStream_,
                                             size,
                                             d_f_.get_pointer(),
                                             d_recvBuf_.get_pointer(),
@@ -196,7 +196,7 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
         }
         else
         {
-            launchUnpackRecvBufKernel<false>(*haloStream_,
+            launchUnpackRecvBufKernel<false>(haloStream_,
                                              size,
                                              d_f_.get_pointer(),
                                              d_recvBuf_.get_pointer(),

@@ -160,6 +160,7 @@ gpuHalo(const TestDevice* testDevice, gmx_domdec_t* dd, matrix box, HostVector<R
     const DeviceContext&    deviceContext = testDevice->deviceContext();
     const GpuAwareMpiStatus status        = testDevice->deviceInfo().gpuAwareMpiStatus;
     DeviceStream            deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+    DeviceStream            haloStream(deviceContext, DeviceStreamPriority::High, false);
 
     if (GMX_LIB_MPI)
     {
@@ -209,7 +210,7 @@ gpuHalo(const TestDevice* testDevice, gmx_domdec_t* dd, matrix box, HostVector<R
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
             gpuHaloExchange[d].push_back(GpuHaloExchange(
-                    dd, d, mpiComm.comm(), mpiComm.comm(), deviceContext, pulse, nullptr));
+                    dd, d, mpiComm.comm(), mpiComm.comm(), haloStream, deviceContext, pulse, nullptr));
         }
     }
 

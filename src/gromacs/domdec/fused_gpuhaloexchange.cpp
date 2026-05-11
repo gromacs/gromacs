@@ -80,11 +80,12 @@ inline bool is_sufficiently_aligned(const void* ptr)
 }
 } // namespace detail
 
-FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceContext& deviceContext,
+FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceStream&  haloStream,
+                                           const DeviceContext& deviceContext,
                                            gmx_wallcycle*       wcycle,
                                            MPI_Comm             mpi_comm_mysim,
                                            MPI_Comm             mpi_comm_mysim_world) :
-    haloStream_(new DeviceStream(deviceContext, DeviceStreamPriority::High, false)),
+    haloStream_(haloStream),
     deviceContext_(deviceContext),
     wcycle_(wcycle),
     signalReceiverRankXCounter_(0),
@@ -114,14 +115,14 @@ GpuEventSynchronizer* FusedGpuHaloExchange::launchAllCoordinateExchanges(const m
 {
     wallcycle_start(wcycle_, WallCycleCounter::LaunchGpuPp);
 
-    dependencyEvent->enqueueWaitEvent(*haloStream_);
+    dependencyEvent->enqueueWaitEvent(haloStream_);
 
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuMoveX);
     // relies on device-side kernels from existing GPU halo exchange
     // to be wrapped by private helpers in this class; not shown here
     // as only the provided interface is required
     launchPackXKernel(box);
-    coordinateHaloLaunched_.markEvent(*haloStream_);
+    coordinateHaloLaunched_.markEvent(haloStream_);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuMoveX);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
@@ -136,7 +137,7 @@ GpuEventSynchronizer* FusedGpuHaloExchange::launchAllForceExchanges(
     while (!dependencyEvents->empty())
     {
         auto* dependency = dependencyEvents->back();
-        dependency->enqueueWaitEvent(*haloStream_);
+        dependency->enqueueWaitEvent(haloStream_);
         dependencyEvents->pop_back();
     }
 
@@ -144,7 +145,7 @@ GpuEventSynchronizer* FusedGpuHaloExchange::launchAllForceExchanges(
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuMoveF);
 
     launchUnpackFKernel(accumulateForces);
-    forceHaloLaunched_.markEvent(*haloStream_);
+    forceHaloLaunched_.markEvent(haloStream_);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuMoveF);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
@@ -171,7 +172,7 @@ void FusedGpuHaloExchange::allocateAndCopyHaloExchangeData()
                        haloExchangeData_.data(),
                        0,
                        haloExchangeData_.size(),
-                       *haloStream_,
+                       haloStream_,
                        GpuApiCallBehavior::Async,
                        nullptr);
 }
@@ -316,13 +317,8 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const gmx_domdec_t&    dd,
                     &data.d_indexMap, mapSize, &data.indexMapSize, &data.indexMapCapacity, deviceContext_);
             if (mapSize > 0)
             {
-                copyToDeviceBuffer(&data.d_indexMap,
-                                   ind->index.data(),
-                                   0,
-                                   mapSize,
-                                   *haloStream_,
-                                   GpuApiCallBehavior::Async,
-                                   nullptr);
+                copyToDeviceBuffer(
+                        &data.d_indexMap, ind->index.data(), 0, mapSize, haloStream_, GpuApiCallBehavior::Async, nullptr);
             }
 
             // Remote pointers and offsets for NVSHMEM
@@ -394,8 +390,8 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const gmx_domdec_t&    dd,
             &d_xGridSync_, totalNumPulses_, &d_xGridSyncSize_, &d_xGridSyncSizeAlloc_, deviceContext_);
 
     // Initialize grid sync per-pulse array for X and F
-    clearDeviceBufferAsync(&d_xGridSync_, 0, totalNumPulses_, *haloStream_);
-    clearDeviceBufferAsync(&d_fGridSync_, 0, totalNumPulses_, *haloStream_);
+    clearDeviceBufferAsync(&d_xGridSync_, 0, totalNumPulses_, haloStream_);
+    clearDeviceBufferAsync(&d_fGridSync_, 0, totalNumPulses_, haloStream_);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::DDGpu);
     wallcycle_stop(wcycle_, WallCycleCounter::Domdec);

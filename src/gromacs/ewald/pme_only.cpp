@@ -790,6 +790,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                             dd,
                             deviceStreamManager->context(),
                             deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
+                            deviceStreamManager->stream(gmx::DeviceStreamType::HaloExchange),
                             std::nullopt,
                             pme_pp->peerRankId,
                             wcycle,

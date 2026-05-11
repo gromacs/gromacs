@@ -88,12 +88,14 @@ class FusedGpuHaloExchange
 public:
     /*! \brief Creates NVSHMEM-based fused GPU halo exchange object.
      *
+     * \param [in] haloStream           GPU device stream for halo exchange
      * \param [in] deviceContext        GPU device context
      * \param [in] wcycle               Wallclock cycle accounting
      * \param [in] mpi_comm_mysim       MPI communicator used for simulation
      * \param [in] mpi_comm_mysim_world MPI communicator involving PP + PME
      */
-    FusedGpuHaloExchange(const DeviceContext& deviceContext,
+    FusedGpuHaloExchange(const DeviceStream&  haloStream,
+                         const DeviceContext& deviceContext,
                          gmx_wallcycle*       wcycle,
                          MPI_Comm             mpi_comm_mysim,
                          MPI_Comm             mpi_comm_mysim_world);
@@ -223,7 +225,7 @@ private:
      */
     static constexpr int c_haloEntryAlignBytes = 256;
     //! Device stream for this halo exchange
-    std::unique_ptr<DeviceStream> haloStream_;
+    const DeviceStream& haloStream_;
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! Wallclock cycle accounting
