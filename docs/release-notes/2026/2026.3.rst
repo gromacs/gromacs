@@ -34,3 +34,13 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Update documentation and warnings in gmx angle
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, the documentation and warning messages did not specify specific
+requirements to generate certain optional output files. Another warning message
+suggests the user uses an option from the legacy version of the tool.
+Documentation, warnings, and errors were updated for clarity.
+
+:issue:`5625`
