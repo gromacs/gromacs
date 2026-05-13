@@ -42,6 +42,7 @@
 #include <filesystem>
 
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -91,6 +92,17 @@ void eigensolver(real* a, int n, int index_lower, int index_upper, real* eigenva
     /* Call LAPACK routine using fortran interface. Note that we use upper storage,
      * but this corresponds to lower storage ("L") in Fortran.
      */
+    /*
+     * Store current FPE status
+     */
+    const bool fpeEnabled = gmx_fegetexcept();
+    /*
+     * Wrap LAPACK calls with FPE disable/enable
+     */
+    if (fpeEnabled)
+    {
+        gmx_fedisableexcept();
+    }
 #if GMX_DOUBLE
     F77_FUNC(dsyevr, DSYEVR)
     (jobz,
@@ -138,6 +150,10 @@ void eigensolver(real* a, int n, int index_lower, int index_upper, real* eigenva
      &liwork,
      &info);
 #endif
+    if (fpeEnabled)
+    {
+        gmx_feenableexcept();
+    }
 
     if (info != 0)
     {
@@ -153,6 +169,14 @@ void eigensolver(real* a, int n, int index_lower, int index_upper, real* eigenva
 
     abstol = 0;
 
+    /*
+     * Wrap LAPACK calls with FPE disable/enable
+     */
+    if (fpeEnabled)
+    {
+        gmx_fedisableexcept();
+    }
+
 #if GMX_DOUBLE
     F77_FUNC(dsyevr, DSYEVR)
     (jobz,
@@ -200,6 +224,10 @@ void eigensolver(real* a, int n, int index_lower, int index_upper, real* eigenva
      &liwork,
      &info);
 #endif
+    if (fpeEnabled)
+    {
+        gmx_feenableexcept();
+    }
 
     sfree(isuppz);
     sfree(work);

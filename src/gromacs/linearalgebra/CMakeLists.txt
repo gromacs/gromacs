@@ -85,3 +85,8 @@ target_link_libraries(linearalgebra PRIVATE legacy_api)
 target_link_libraries(linearalgebra PRIVATE common)
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
 target_link_libraries(linearalgebra PRIVATE legacy_modules utility)
+
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

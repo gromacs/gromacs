@@ -99,6 +99,14 @@ bool gmx_numzero(double a);
  */
 bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result);
 
+/*! \brief Get floating-point exceptions status if supported on OS
+ *
+ * Check for division-by-zero, invalid value, and overflow exceptions
+ *
+ * \returns true if exceptions enabled
+ */
+bool gmx_fegetexcept();
+
 /*! \brief Enable floating-point exceptions if supported on OS
  *
  * Enables division-by-zero, invalid value, and overflow.

@@ -88,6 +88,31 @@ bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
     return true;
 }
 
+bool gmx_fegetexcept()
+{
+    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
+#if HAVE_FEENABLEEXCEPT && !defined(__riscv)
+    int current_mask = feenableexcept(0);
+    if (current_mask < 0)
+    {
+        return false;
+    }
+    return (current_mask & c_FPexceptions) != 0;
+#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+    static std::fenv_t fenv;
+    if (std::fegetenv(&fenv))
+    {
+        return false;
+    }
+    else
+    {
+        return (fenv.__control & c_FPexceptions) != 0;
+    }
+#else
+    return false;
+#endif
+}
+
 int gmx_feenableexcept()
 {
     // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
