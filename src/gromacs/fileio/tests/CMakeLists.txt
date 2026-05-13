@@ -48,6 +48,7 @@ gmx_add_unit_test(FileIOTests fileio-test
         timecontrol.cpp
         ${tng_sources}
         xdr_serializer.cpp
+        xtcio.cpp
         xvgio.cpp
     )
 target_link_libraries(fileio-test PRIVATE fileio legacy_api math)
