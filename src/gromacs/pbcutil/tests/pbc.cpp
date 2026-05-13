@@ -158,18 +158,17 @@ TEST(PbcTest, PutAtomsInTriclinicBoxFromOutsideBox)
     EXPECT_REAL_EQ_TOL(pointOutside[0][2], 0.5, scTolerance);
 }
 
-#if HAVE_FEDISABLEEXCEPT && !defined(__riscv)
 /*! \brief Testing if put_atoms_in_box enters into an infinite loop
  *
  * This test checks that put_atoms_in_box does not enter into an infinite loop in case floating
  * point exceptions are not enabled. The test is not run in case floating point exceptions are
- * enabled (FE_INVALID). Untested on riscv architectures.
+ * enabled (although we only care about FE_INVALID).
  */
 TEST(PbcTest, PutAtomsInBoxHandlesInf)
 {
-    if (fegetexcept() & FE_INVALID)
+    if (gmx_fegetexcept())
     {
-        GTEST_SKIP() << "Cannot test if floating point exceptions are enabled (FE_INVALID)";
+        GTEST_SKIP() << "Cannot test if floating point exceptions are enabled";
     }
     else
     {
@@ -179,7 +178,6 @@ TEST(PbcTest, PutAtomsInBoxHandlesInf)
         put_atoms_in_box(PbcType::Xyz, box, points);
     }
 }
-#endif
 
 } // namespace test
 

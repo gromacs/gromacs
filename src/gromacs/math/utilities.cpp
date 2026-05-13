@@ -43,8 +43,20 @@
 
 #include "gromacs/utility/real.h"
 
-#if (HAVE_FEDISABLEEXCEPT && !defined(__riscv)) \
-        || (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+// RISC-V architecture does not support trapping FPEs even if fe*except functions are available
+#if (HAVE_FEDISABLEEXCEPT && HAVE_FEENABLEEXCEPT && !defined(__riscv))
+#    define SUPPORT_FENV_CONTROL 1
+#else
+#    define SUPPORT_FENV_CONTROL 0
+#endif
+
+#if ((defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__))
+#    define SUPPORT_APPLE_FENV 1
+#else
+#    define SUPPORT_APPLE_FENV 0
+#endif
+
+#if SUPPORT_FENV_CONTROL || SUPPORT_APPLE_FENV
 //! Floating point exception set that we use and care about
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 #endif
@@ -90,15 +102,14 @@ bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
 
 bool gmx_fegetexcept()
 {
-    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
-#if HAVE_FEENABLEEXCEPT && !defined(__riscv)
+#if SUPPORT_FENV_CONTROL
     int current_mask = feenableexcept(0);
     if (current_mask < 0)
     {
         return false;
     }
     return (current_mask & c_FPexceptions) != 0;
-#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+#elif SUPPORT_APPLE_FENV
     static std::fenv_t fenv;
     if (std::fegetenv(&fenv))
     {
@@ -115,13 +126,12 @@ bool gmx_fegetexcept()
 
 int gmx_feenableexcept()
 {
-    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
-#if HAVE_FEENABLEEXCEPT && !defined(__riscv)
+#if SUPPORT_FENV_CONTROL
 #    if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
     std::feclearexcept(c_FPexceptions);
 #    endif
     return feenableexcept(c_FPexceptions);
-#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+#elif SUPPORT_APPLE_FENV
     /* Author:  David N. Williams
      * License:  Public Domain
      *
@@ -148,10 +158,9 @@ int gmx_feenableexcept()
 
 int gmx_fedisableexcept()
 {
-    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
-#if HAVE_FEDISABLEEXCEPT && !defined(__riscv)
+#if SUPPORT_FENV_CONTROL
     return fedisableexcept(c_FPexceptions);
-#elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+#elif SUPPORT_APPLE_FENV
     static std::fenv_t fenv;
     unsigned int       new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
     if (std::fegetenv(&fenv))
