@@ -1714,7 +1714,10 @@ std::string getCoolQuote()
           "Ian Bogle, while discussing GPU kernel debugging." },
         { "Of course, ff14SB is the acronym for Amber's force field from 2014 with Stony Brook "
           "refinements, not Final Fantasy XIV: Shadowbringers.",
-          "Vedran Miletic" }
+          "Vedran Miletic" },
+        { "Ken Thompson said one of his most productive days was throwing away a thousand lines of "
+          "code. I enjoyed the day I removed the former particle-decomposition scheme!",
+          "Mark Abraham" },
     };
 
     if (beCool())
