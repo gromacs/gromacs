@@ -55,16 +55,23 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void get_coordnum_fp(FILE* in, char* title, int* natoms)
+static bool get_coordnum_fp(FILE* in, char* title, int* natoms)
 {
     char line[STRLEN + 1];
 
-    fgets2(title, STRLEN, in);
-    fgets2(line, STRLEN, in);
+    if (!fgets2(title, STRLEN, in))
+    {
+        return false;
+    }
+    if (!fgets2(line, STRLEN, in))
+    {
+        return false;
+    }
     if (sscanf(line, "%d", natoms) != 1)
     {
         gmx_fatal(FARGS, "gro file does not have the number of atoms on the second line");
     }
+    return true;
 }
 
 void get_coordnum(const std::filesystem::path& infile, int* natoms)
@@ -73,7 +80,10 @@ void get_coordnum(const std::filesystem::path& infile, int* natoms)
     char  title[STRLEN];
 
     in = gmx_fio_fopen(infile, "r");
-    get_coordnum_fp(in, title, natoms);
+    if (!get_coordnum_fp(in, title, natoms))
+    {
+        gmx_fatal(FARGS, "gro file is shorter than two required lines");
+    }
     gmx_fio_fclose(in);
 }
 
@@ -108,7 +118,10 @@ static gmx_bool get_w_conf(FILE*                        in,
     ddist       = 0;
 
     /* Read the title and number of atoms */
-    get_coordnum_fp(in, title, &natoms);
+    if (!get_coordnum_fp(in, title, &natoms))
+    {
+        return FALSE;
+    }
 
     if (natoms > atoms->nr)
     {
@@ -342,18 +355,6 @@ void gmx_gro_read_conf(const std::filesystem::path& infile,
     gmx_fio_fclose(in);
 }
 
-static gmx_bool gmx_one_before_eof(FILE* fp)
-{
-    char     data[4];
-    gmx_bool beof = std::fread(data, 1, 1, fp) != 1;
-
-    if (!beof)
-    {
-        gmx_fseek(fp, -1, SEEK_CUR);
-    }
-    return beof;
-}
-
 gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
 {
     t_atoms  atoms;
@@ -361,11 +362,6 @@ gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
     char     title[STRLEN], *p;
     double   tt;
     int      ndec = 0, i;
-
-    if (gmx_one_before_eof(status))
-    {
-        return FALSE;
-    }
 
     open_symtab(&symtab);
     atoms.nr = fr->natoms;
@@ -390,6 +386,10 @@ gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
     sfree(atoms.resinfo);
     sfree(atoms.atomname);
     done_symtab(&symtab);
+    if (std::feof(status))
+    {
+        return FALSE;
+    }
 
     if ((p = std::strstr(title, "t=")) != nullptr)
     {
@@ -431,7 +431,10 @@ int gro_first_x_or_v(FILE* status, t_trxframe* fr)
 
     frewind(status);
     fprintf(stderr, "Reading frames from gro file");
-    get_coordnum_fp(status, title, &fr->natoms);
+    if (!get_coordnum_fp(status, title, &fr->natoms))
+    {
+        gmx_file("No coordinates or velocities in gro file");
+    }
     frewind(status);
     fprintf(stderr, " '%s', %d atoms.\n", title, fr->natoms);
     if (fr->natoms == 0)
