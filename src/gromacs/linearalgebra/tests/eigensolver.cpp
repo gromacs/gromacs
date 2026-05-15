@@ -42,6 +42,8 @@
 
 #include "gromacs/linearalgebra/eigensolver.h"
 
+#include <cmath>
+
 #include <iterator>
 #include <string>
 #include <tuple>
@@ -69,7 +71,7 @@ TEST(EigenSolverTest, Matrix4x4)
     real refEigenVectors[4 * 4] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
     real refEigenValues[4]      = { 2, 3, 5, 7 };
 
-    eigensolver(matrix, 4, 0, 4, eigenValues, eigenVectors);
+    eigensolver(matrix, 4, 0, 3, eigenValues, eigenVectors);
     // check for eigenvalues
     for (int i = 0; i < 4; i++)
     {
