@@ -78,12 +78,12 @@ static void calc_interpolation_idx(const gmx_pme_t*  pme,
     ny = pme->nky;
     nz = pme->nkz;
 
-    rxx = pme->recipbox[XX][XX];
-    ryx = pme->recipbox[YY][XX];
-    ryy = pme->recipbox[YY][YY];
-    rzx = pme->recipbox[ZZ][XX];
-    rzy = pme->recipbox[ZZ][YY];
-    rzz = pme->recipbox[ZZ][ZZ];
+    rxx = pme->unitCell.recipbox[XX][XX];
+    ryx = pme->unitCell.recipbox[YY][XX];
+    ryy = pme->unitCell.recipbox[YY][YY];
+    rzx = pme->unitCell.recipbox[ZZ][XX];
+    rzy = pme->unitCell.recipbox[ZZ][YY];
+    rzz = pme->unitCell.recipbox[ZZ][ZZ];
 
     const int* g2tx = pmeGrids.g2t[XX].data();
     const int* g2ty = pmeGrids.g2t[YY].data();

@@ -499,7 +499,7 @@ void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
         }
         PmeAtomComm& atc = pme->atc[d];
         atc.pd.resize(xRef.size());
-        pme_calc_pidx_wrapper(xRef, pme->recipbox, &atc);
+        pme_calc_pidx_wrapper(xRef, pme->unitCell.recipbox, &atc);
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
         if (pme->haveDDAtomOrdering)
         {

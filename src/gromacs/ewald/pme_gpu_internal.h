@@ -522,17 +522,16 @@ GPU_FUNC_QUALIFIER PmeOutput pme_gpu_getOutput(gmx_pme_t* GPU_FUNC_ARGUMENT(pme)
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
 
 /*! \libinternal \brief
- * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
+ * Updates the GPU unit-cell parameters from box volume and reciprocal box. Does not
+ * check if update is necessary - that is done in pme_gpu_prepare_computation().
  *
  * \param[in] pmeGpu         The PME GPU structure.
- * \param[in] box            The unit cell box.
- * \param[out] recipBox      The reciprocal box.
- * \param[out] boxVolume     The volume of the box.
+ * \param[in] boxVolume      The volume of the (scaled) simulation box.
+ * \param[in] recipbox       The reciprocal box matrix.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
-                                                 const matrix GPU_FUNC_ARGUMENT(box),
-                                                 matrix       GPU_FUNC_ARGUMENT(recipBox),
-                                                 real* GPU_FUNC_ARGUMENT(boxVolume)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
+                                                 real    GPU_FUNC_ARGUMENT(boxVolume),
+                                                 const matrix GPU_FUNC_ARGUMENT(recipbox)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Get the normal/padded grid dimensions of the real-space PME grid on GPU. Only used in tests.

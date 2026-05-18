@@ -67,7 +67,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
@@ -1176,25 +1175,18 @@ PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, c
     return output;
 }
 
-void pme_gpu_update_input_box(PmeGpu* pmeGpu, const matrix box, matrix recipBox, real* boxVolume)
+void pme_gpu_update_input_box(PmeGpu* pmeGpu, const real boxVolume, const matrix recipbox)
 {
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
     GMX_UNUSED_VALUE(pmeGpu);
-    GMX_UNUSED_VALUE(box);
+    GMX_UNUSED_VALUE(boxVolume);
+    GMX_UNUSED_VALUE(recipbox);
 #else
-    matrix scaledBox;
-    pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     // Set (scaled) box volume to use in GPU kernels
     auto* kernelParamsPtr              = pme_gpu_get_kernel_params_ptr(pmeGpu);
-    kernelParamsPtr->current.boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
+    kernelParamsPtr->current.boxVolume = boxVolume;
     GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0F, "Zero volume of the unit cell");
-
-    // Data in pme object is only needed when
-    // !pme_gpu_settings(pmeGpu).performGPUSolve), but it's simpler to
-    // always use that storage.
-    *boxVolume = kernelParamsPtr->current.boxVolume;
-    gmx::invertBoxMatrix(scaledBox, recipBox);
 
     /* Set reciprocal box to use in GPU kernels
      *
@@ -1202,9 +1194,9 @@ void pme_gpu_update_input_box(PmeGpu* pmeGpu, const matrix box, matrix recipBox,
      * Spread uses matrix columns (while solve and gather use rows).
      * There is no particular reason for this; it might be further rethought/optimized for better access patterns.
      */
-    const real newRecipBox[DIM][DIM] = { { recipBox[XX][XX], recipBox[YY][XX], recipBox[ZZ][XX] },
-                                         { 0.0, recipBox[YY][YY], recipBox[ZZ][YY] },
-                                         { 0.0, 0.0, recipBox[ZZ][ZZ] } };
+    const real newRecipBox[DIM][DIM] = { { recipbox[XX][XX], recipbox[YY][XX], recipbox[ZZ][XX] },
+                                         { 0.0, recipbox[YY][YY], recipbox[ZZ][YY] },
+                                         { 0.0, 0.0, recipbox[ZZ][ZZ] } };
     std::memcpy(kernelParamsPtr->current.recipBox, newRecipBox, sizeof(matrix));
 #endif
 }
@@ -1337,7 +1329,6 @@ static void pme_gpu_copy_common_data_from(PmeGpu* pmeGpu, const gmx_pme_t* pme)
     pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnz.begin(), pme->nnz.end());
     pmeGpu->common->runMode       = pme->runMode;
     pmeGpu->common->isRankPmeOnly = !pme->bPPnode;
-    pmeGpu->common->boxScaler     = pme->boxScaler.get();
     pmeGpu->common->mpiCommX      = pme->mpi_comm_d[0];
     pmeGpu->common->mpiCommY      = pme->mpi_comm_d[1];
     pmeGpu->common->mpiComm       = pme->mpiComm_.comm();

@@ -50,7 +50,6 @@
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/capabilities.h"
-#include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -148,7 +147,8 @@ void pme_gpu_prepare_computation(gmx_pme_t*               pme,
 
     if (updateBox)
     {
-        pme_gpu_update_input_box(pme->gpu.get(), box, pme->recipbox, &pme->boxVolume);
+        pme->unitCell = makePmeUnitCell(*pme->boxScaler, box);
+        pme_gpu_update_input_box(pme->gpu.get(), pme->unitCell.boxVolume, pme->unitCell.recipbox);
     }
 }
 
@@ -228,7 +228,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
                 for (int thread = 0; thread < pme->nthread; thread++)
                 {
                     pme->pmeSolve->solveCoulombYZX(
-                            *pme, cfftgrid, pme->boxVolume, computeEnergyAndVirial, thread);
+                            *pme, cfftgrid, pme->unitCell.boxVolume, computeEnergyAndVirial, thread);
                 }
                 wallcycle_stop(wcycle, WallCycleCounter::PmeSolveMixedMode);
             }

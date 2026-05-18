@@ -68,7 +68,6 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -180,13 +179,9 @@ PmePointer pmeInitWrapper(const t_inputrec*    inputRec,
                                                   pmeGpuProgram,
                                                   dummyLogger);
 
-    switch (mode)
+    if (mode == CodePath::GPU)
     {
-        case CodePath::CPU: invertBoxMatrix(boxTemp, pme->recipbox); break;
-
-        case CodePath::GPU: pme_gpu_set_testing(pme->gpu.get(), true); break;
-
-        default: GMX_THROW(InternalError("Test not implemented for this mode"));
+        pme_gpu_set_testing(pme->gpu.get(), true);
     }
 
     return pme;

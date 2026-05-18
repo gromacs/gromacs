@@ -204,7 +204,7 @@ struct PmeGpuDynamicParams
     /*! \brief
      * Reciprocal (inverted unit cell) box.
      *
-     * The box is transposed as compared to the CPU pme->recipbox.
+     * The box is transposed as compared to the CPU pme->unitCell.recipbox.
      * Basically, spread uses matrix columns (while solve and gather use rows).
      * This storage format might be not the most optimal since the box is always triangular so there are zeroes.
      */

@@ -127,8 +127,6 @@ struct PmeShared
     PmeRunMode runMode;
     /*! \brief  Whether PME execution is happening on a PME-only rank (from gmx_pme_t.bPPnode). */
     bool isRankPmeOnly;
-    /*! \brief The box scaler based on inputrec - created in pme_init and managed by CPU structure */
-    class EwaldBoxZScaler* boxScaler;
 
     /*! \brief The The number of decomposition dimensions */
     int ndecompdim;
