@@ -20,6 +20,15 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix position restraint reference with pbc=xy and ref-coord-scaling=com
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With pbc=xy and ref-coord-scaling=com, ``gmx grompp`` would incorrectly
+subtract the COM of the restraint group from the z-component of the reference
+coordinates. This should in most cases have caused obvious errors.
+
+:issue:`5630`
+
 Prevent buffer overflow in gmx angle
 """"""""""""""""""""""""""""""""""""
 

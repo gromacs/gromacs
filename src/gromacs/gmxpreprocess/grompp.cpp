@@ -1166,8 +1166,11 @@ static std::vector<ComSumContents> sumComForRestraints(gmx::ArrayRef<const gmx::
 static void subComFromRestraints(gmx::ArrayRef<const gmx::RVec>     comPerGroup,
                                  const MoleculeBlockIndices&        inds,
                                  gmx::ArrayRef<const unsigned char> groupInds,
+                                 const PbcType                      pbcType,
                                  gmx::ArrayRef<gmx::RVec>           positionRestraintCoordinates)
 {
+    const int numPbcDim = numPbcDimensions(pbcType);
+
     for (gmx::Index i = 0; i < gmx::ssize(positionRestraintCoordinates); ++i)
     {
         const auto         globalIndex = inds.globalAtomStart + i;
@@ -1176,7 +1179,10 @@ static void subComFromRestraints(gmx::ArrayRef<const gmx::RVec>     comPerGroup,
         if (groupIndex < comPerGroup.size())
         {
             const auto& com = comPerGroup[groupIndex];
-            positionRestraintCoordinates[i] -= com;
+            for (int d = 0; d < numPbcDim; d++)
+            {
+                positionRestraintCoordinates[i][d] -= com[d];
+            }
         }
     }
 }
@@ -1243,7 +1249,7 @@ static std::vector<gmx::RVec> calcPosresCom(gmx_mtop_t*          mtop,
 
         auto& positionRestraintCoordinates = haveTopologyB ? molb.posres_xB : molb.posres_xA;
 
-        subComFromRestraints(comPerGroup, inds, groupInds, positionRestraintCoordinates);
+        subComFromRestraints(comPerGroup, inds, groupInds, pbcType, positionRestraintCoordinates);
     }
 
     for (int i = 0; i < gmx::ssize(comPerGroup); i++)
