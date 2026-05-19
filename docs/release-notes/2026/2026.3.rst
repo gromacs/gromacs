@@ -32,6 +32,9 @@ If fewer than three angles were provided, this led to a heap buffer overflow.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed compilation error with Visual Studio and CUDA 13
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
