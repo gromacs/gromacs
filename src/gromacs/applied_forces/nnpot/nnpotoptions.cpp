@@ -42,6 +42,8 @@
 
 #include "nnpotoptions.h"
 
+#include <numeric>
+
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/warninp.h"
@@ -61,10 +63,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "nnpot.h"
-
-#if GMX_TORCH
-#    include "gromacs/applied_forces/nnpot/torchmodel.h"
-#endif
+#include "torchmodel.h"
 
 namespace gmx
 {

@@ -41,18 +41,7 @@
 #ifndef GMX_APPLIED_FORCES_TORCHMODEL_H
 #define GMX_APPLIED_FORCES_TORCHMODEL_H
 
-// undef needed because of macro clashes with libtorch/ATen
-#ifdef DIM
-#    undef DIM
-#endif
-#include <torch/csrc/jit/runtime/graph_executor.h>
-#include <torch/cuda.h>
-#include <torch/script.h>
-#include <torch/torch.h>
-#ifdef DIM
-#    undef DIM
-#endif
-
+#include <memory>
 #include <string>
 
 #include "gromacs/applied_forces/nnpot/nnpotmodel.h"
@@ -61,12 +50,6 @@ namespace gmx
 {
 
 enum class NNPotEmbedding;
-
-/*! \brief Define the torch datatype according to GMX_DOUBLE.
- *
- * Important for converting data types, as model inference is always done in float32.
- */
-static constexpr auto torchRealType = GMX_DOUBLE ? torch::kFloat64 : torch::kFloat32;
 
 class MpiComm;
 class MDLogger;
@@ -86,6 +69,8 @@ public:
      * \param[in] mpiComm handle to MpiComm
      */
     TorchModel(const std::string& filename, NNPotEmbedding embedding, const MDLogger& logger, const MpiComm& mpiComm);
+
+    ~TorchModel() override;
 
     /*! Call inference on NN model and retrieve outputs
      * \param[out] enerd energy data struct
@@ -124,34 +109,8 @@ public:
     bool outputsForces() const override;
 
 private:
-    //! Functions to prepare inputs for NN model. Create input torch::Tensors for the model.
-    //! \{
-    void prepareAtomPositions(ArrayRef<RVec> positions);
-    void prepareAtomNumbers(ArrayRef<int32_t> atomTypes);
-    void prepareBox(matrix& box);
-    void preparePbcType(PbcType& pbcType);
-    void prepareAtomPairs(ArrayRef<int32_t> atomPairs);
-    void preparePairShifts(ArrayRef<RVec> pairShifts);
-    void prepareMMPositions(ArrayRef<RVec> pos);
-    void prepareMMCharges(ArrayRef<real> charges);
-    void prepareNNPCharge(real charge);
-    //! \}
-
-    //! pointer to the communication object
-    const MpiComm& mpiComm_;
-    //! MDLogger during mdrun
-    const MDLogger& logger_;
-
-    const NNPotEmbedding embeddingScheme_;
-
-    //! device to run the model on
-    torch::Device device_;
-    //! TorchScript model
-    torch::jit::script::Module model_;
-    //! input tensors for the model
-    std::vector<torch::jit::IValue> inputs_;
-    //! output tensors for the model
-    c10::intrusive_ptr<c10::ivalue::Tuple> outputs_;
+    class Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace gmx

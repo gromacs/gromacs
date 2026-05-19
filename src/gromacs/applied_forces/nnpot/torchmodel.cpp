@@ -45,6 +45,23 @@
 
 #include <iostream>
 
+// to avoid conflicts between torch and gromacs DIM macro
+// TODO: convert DIM macro to global static constexpr
+#ifdef DIM
+#    undef DIM
+#    define GMX_RESTORE_DIM_MACRO
+#endif
+
+#include <torch/csrc/jit/runtime/graph_executor.h>
+#include <torch/cuda.h>
+#include <torch/script.h>
+#include <torch/torch.h>
+
+#ifdef GMX_RESTORE_DIM_MACRO
+#    define DIM 3
+#    undef GMX_RESTORE_DIM_MACRO
+#endif
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -60,6 +77,12 @@
 
 namespace gmx
 {
+
+/*! \brief Define the torch datatype according to GMX_DOUBLE.
+ *
+ * Important for converting data types, as model inference is always done in float32.
+ */
+static constexpr auto sc_torchRealType = GMX_DOUBLE ? torch::kFloat64 : torch::kFloat32;
 
 //! \brief \internal Helper function to convert a torch::DataPtr to a string.
 static std::string recordToString(std::tuple<at::DataPtr, size_t> data)
@@ -205,7 +228,61 @@ static torch::Device determineDevice(const MDLogger& logger, const MpiComm& mpiC
     return device;
 }
 
-TorchModel::TorchModel(const std::string& fileName,
+class TorchModel::Impl
+{
+public:
+    Impl(const std::string& fileName, NNPotEmbedding embedding, const MDLogger& logger, const MpiComm& mpiComm);
+
+    void evaluateModel(gmx_enerdata_t*                  enerd,
+                       ArrayRef<RVec>                   forces,
+                       ArrayRef<const int32_t>          indexLookup,
+                       ArrayRef<const int32_t>          mmIndices,
+                       ArrayRef<const std::string>      inputs,
+                       ArrayRef<RVec>                   positions,
+                       ArrayRef<int32_t>                atomNumbers,
+                       ArrayRef<int32_t>                atomPairs,
+                       ArrayRef<RVec>                   pairShifts,
+                       ArrayRef<RVec>                   positionsMM,
+                       ArrayRef<real>                   chargesMM,
+                       real                             nnpCharge,
+                       ArrayRef<const LinkFrontierAtom> linkFrontier,
+                       matrix&                          box,
+                       PbcType&                         pbcType);
+
+    bool outputsForces() const;
+
+private:
+    //! Functions to prepare inputs for NN model. Create input torch::Tensors for the model.
+    //! \{
+    void prepareAtomPositions(ArrayRef<RVec> positions);
+    void prepareAtomNumbers(ArrayRef<int32_t> atomTypes);
+    void prepareBox(matrix& box);
+    void preparePbcType(PbcType& pbcType);
+    void prepareAtomPairs(ArrayRef<int32_t> atomPairs);
+    void preparePairShifts(ArrayRef<RVec> pairShifts);
+    void prepareMMPositions(ArrayRef<RVec> pos);
+    void prepareMMCharges(ArrayRef<real> charges);
+    void prepareNNPCharge(real charge);
+    //! \}
+
+    //! pointer to the communication object
+    const MpiComm& mpiComm_;
+    //! MDLogger during mdrun
+    const MDLogger& logger_;
+
+    const NNPotEmbedding embeddingScheme_;
+
+    //! device to run the model on
+    torch::Device device_;
+    //! TorchScript model
+    torch::jit::script::Module model_;
+    //! input tensors for the model
+    std::vector<torch::jit::IValue> inputs_;
+    //! output tensors for the model
+    c10::intrusive_ptr<c10::ivalue::Tuple> outputs_;
+};
+
+TorchModel::Impl::Impl(const std::string& fileName,
                        NNPotEmbedding     embedding,
                        const MDLogger&    logger,
                        const MpiComm&     mpiComm) :
@@ -236,11 +313,11 @@ TorchModel::TorchModel(const std::string& fileName,
     }
 }
 
-void TorchModel::prepareAtomPositions(ArrayRef<RVec> positions)
+void TorchModel::Impl::prepareAtomPositions(ArrayRef<RVec> positions)
 {
     int N = positions.size();
 
-    auto options = torch::TensorOptions().dtype(torchRealType).requires_grad(true);
+    auto options = torch::TensorOptions().dtype(sc_torchRealType).requires_grad(true);
     // preferrable to use from_blob here because it doesn't allocate new memory
     torch::Tensor posTensor = torch::from_blob(positions.data()->as_vec(), { N, DIM }, options);
     posTensor               = posTensor.to(torch::kFloat32);
@@ -252,7 +329,7 @@ void TorchModel::prepareAtomPositions(ArrayRef<RVec> positions)
     inputs_.push_back(posTensor);
 }
 
-void TorchModel::prepareAtomNumbers(ArrayRef<int32_t> atomTypes)
+void TorchModel::Impl::prepareAtomNumbers(ArrayRef<int32_t> atomTypes)
 {
     const int     N = atomTypes.size();
     torch::Tensor typesTensor =
@@ -262,11 +339,11 @@ void TorchModel::prepareAtomNumbers(ArrayRef<int32_t> atomTypes)
     inputs_.push_back(typesTensor);
 }
 
-void TorchModel::prepareMMPositions(ArrayRef<RVec> positions)
+void TorchModel::Impl::prepareMMPositions(ArrayRef<RVec> positions)
 {
     int N = positions.size();
 
-    auto options = torch::TensorOptions().dtype(torchRealType).requires_grad(true);
+    auto options = torch::TensorOptions().dtype(sc_torchRealType).requires_grad(true);
     // preferable to use from_blob here because it doesn't allocate new memory
     torch::Tensor posTensor = torch::from_blob(positions.data()->as_vec(), { N, DIM }, options);
     posTensor               = posTensor.to(torch::kFloat32);
@@ -278,25 +355,25 @@ void TorchModel::prepareMMPositions(ArrayRef<RVec> positions)
     inputs_.push_back(posTensor);
 }
 
-void TorchModel::prepareMMCharges(ArrayRef<real> charges)
+void TorchModel::Impl::prepareMMCharges(ArrayRef<real> charges)
 {
     const int     N = charges.size();
     torch::Tensor chargesTensor =
-            torch::from_blob(charges.data(), { N }, torch::TensorOptions().dtype(torchRealType));
+            torch::from_blob(charges.data(), { N }, torch::TensorOptions().dtype(sc_torchRealType));
     chargesTensor = chargesTensor.to(torch::kFloat32).to(device_).requires_grad_(true);
 
     inputs_.push_back(chargesTensor);
 }
 
-void TorchModel::prepareBox(matrix& box)
+void TorchModel::Impl::prepareBox(matrix& box)
 {
     torch::Tensor boxTensor =
-            torch::from_blob(box, { DIM, DIM }, torch::TensorOptions().dtype(torchRealType));
+            torch::from_blob(box, { DIM, DIM }, torch::TensorOptions().dtype(sc_torchRealType));
     boxTensor = boxTensor.to(torch::kFloat32).to(device_);
     inputs_.push_back(boxTensor);
 }
 
-void TorchModel::preparePbcType(PbcType& pbcType)
+void TorchModel::Impl::preparePbcType(PbcType& pbcType)
 {
     torch::Tensor pbcTensor =
             torch::tensor({ true, true, true }, torch::TensorOptions().dtype(torch::kBool));
@@ -313,7 +390,7 @@ void TorchModel::preparePbcType(PbcType& pbcType)
     inputs_.push_back(pbcTensor);
 }
 
-void TorchModel::prepareAtomPairs(ArrayRef<int32_t> atomPairs)
+void TorchModel::Impl::prepareAtomPairs(ArrayRef<int32_t> atomPairs)
 {
     const int     numPairs    = atomPairs.size() / 2;
     torch::Tensor pairsTensor = torch::from_blob(
@@ -323,37 +400,38 @@ void TorchModel::prepareAtomPairs(ArrayRef<int32_t> atomPairs)
     inputs_.push_back(pairsTensor);
 }
 
-void TorchModel::preparePairShifts(ArrayRef<RVec> pairShifts)
+void TorchModel::Impl::preparePairShifts(ArrayRef<RVec> pairShifts)
 {
     const int     N            = pairShifts.size();
     torch::Tensor shiftsTensor = torch::from_blob(
-            pairShifts.data()->as_vec(), { N, DIM }, torch::TensorOptions().dtype(torchRealType));
+            pairShifts.data()->as_vec(), { N, DIM }, torch::TensorOptions().dtype(sc_torchRealType));
     shiftsTensor = shiftsTensor.to(device_);
     inputs_.push_back(shiftsTensor);
 }
 
-void TorchModel::prepareNNPCharge(real charge)
+void TorchModel::Impl::prepareNNPCharge(real charge)
 {
-    torch::Tensor chargeTensor = torch::tensor({ charge }, torch::TensorOptions().dtype(torchRealType));
+    torch::Tensor chargeTensor =
+            torch::tensor({ charge }, torch::TensorOptions().dtype(sc_torchRealType));
     chargeTensor = chargeTensor.to(torch::kFloat32).to(device_);
     inputs_.push_back(chargeTensor);
 }
 
-void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
-                               ArrayRef<RVec>                   forces,
-                               ArrayRef<const int32_t>          indexLookup,
-                               ArrayRef<const int32_t>          mmIndices,
-                               ArrayRef<const std::string>      inputs,
-                               ArrayRef<RVec>                   positions,
-                               ArrayRef<int32_t>                atomNumbers,
-                               ArrayRef<int32_t>                atomPairs,
-                               ArrayRef<RVec>                   pairShifts,
-                               ArrayRef<RVec>                   positionsMM,
-                               ArrayRef<real>                   chargesMM,
-                               real                             nnpCharge,
-                               ArrayRef<const LinkFrontierAtom> linkFrontier,
-                               matrix&                          box,
-                               PbcType&                         pbcType)
+void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
+                                     ArrayRef<RVec>                   forces,
+                                     ArrayRef<const int32_t>          indexLookup,
+                                     ArrayRef<const int32_t>          mmIndices,
+                                     ArrayRef<const std::string>      inputs,
+                                     ArrayRef<RVec>                   positions,
+                                     ArrayRef<int32_t>                atomNumbers,
+                                     ArrayRef<int32_t>                atomPairs,
+                                     ArrayRef<RVec>                   pairShifts,
+                                     ArrayRef<RVec>                   positionsMM,
+                                     ArrayRef<real>                   chargesMM,
+                                     real                             nnpCharge,
+                                     ArrayRef<const LinkFrontierAtom> linkFrontier,
+                                     matrix&                          box,
+                                     PbcType&                         pbcType)
 {
     // prepare inputs for NN model
     // order in input vector is the same as in mdp file
@@ -480,10 +558,10 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
             forceTensor = -1. * inputs_[0].toTensor().grad().to(torch::kCPU);
         }
         // set energy
-        energyTensor = energyTensor.to(torchRealType).to(torch::kCPU);
+        energyTensor = energyTensor.to(sc_torchRealType).to(torch::kCPU);
         enerd->term[InteractionFunction::NeuralNetworkPotentialEnergy] = energyTensor.item<real>();
 
-        forceTensor = forceTensor.to(torchRealType).to(torch::kCPU);
+        forceTensor = forceTensor.to(sc_torchRealType).to(torch::kCPU);
     }
 
     // distribute forces
@@ -546,9 +624,57 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
     inputs_.resize(0);
 }
 
-bool TorchModel::outputsForces() const
+bool TorchModel::Impl::outputsForces() const
 {
     return outputs_->elements().size() > 1;
+}
+
+TorchModel::TorchModel(const std::string& filename,
+                       NNPotEmbedding     embedding,
+                       const MDLogger&    logger,
+                       const MpiComm&     mpiComm) :
+    impl_(std::make_unique<Impl>(filename, embedding, logger, mpiComm))
+{
+}
+
+TorchModel::~TorchModel() = default;
+
+void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
+                               ArrayRef<RVec>                   forces,
+                               ArrayRef<const int32_t>          indexLookup,
+                               ArrayRef<const int32_t>          mmIndices,
+                               ArrayRef<const std::string>      inputs,
+                               ArrayRef<RVec>                   positions,
+                               ArrayRef<int32_t>                atomNumbers,
+                               ArrayRef<int32_t>                atomPairs,
+                               ArrayRef<RVec>                   pairShifts,
+                               ArrayRef<RVec>                   positionsMM,
+                               ArrayRef<real>                   chargesMM,
+                               real                             nnpCharge,
+                               ArrayRef<const LinkFrontierAtom> linkFrontier,
+                               matrix&                          box,
+                               PbcType&                         pbcType)
+{
+    impl_->evaluateModel(enerd,
+                         forces,
+                         indexLookup,
+                         mmIndices,
+                         inputs,
+                         positions,
+                         atomNumbers,
+                         atomPairs,
+                         pairShifts,
+                         positionsMM,
+                         chargesMM,
+                         nnpCharge,
+                         linkFrontier,
+                         box,
+                         pbcType);
+}
+
+bool TorchModel::outputsForces() const
+{
+    return impl_->outputsForces();
 }
 
 } // namespace gmx
