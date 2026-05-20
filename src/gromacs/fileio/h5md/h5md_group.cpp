@@ -46,6 +46,7 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -57,13 +58,20 @@ hid_t createGroup(const hid_t container, const char* name)
 {
     // create group creation property list
     const auto [propertyList, listGuard] = makeH5mdPropertyListGuard(H5Pcreate(H5P_LINK_CREATE));
-    GMX_H5MD_THROW_UPON_INVALID_HID(propertyList, "Cannot create propertyList when creating group.");
+    GMX_H5MD_THROW_UPON_INVALID_HID(
+            propertyList,
+            formatString("Cannot create propertyList when creating group at '%s/%s'.",
+                         getHandlePath(container).value_or("<unknown>").c_str(),
+                         name));
 
     // Set the option to create intermediate groups if they are missing.
     H5Pset_create_intermediate_group(propertyList, 1);
 
     hid_t group = H5Gcreate(container, name, propertyList, H5P_DEFAULT, H5P_DEFAULT);
-    GMX_H5MD_THROW_UPON_INVALID_HID(group, "Cannot create group.");
+    GMX_H5MD_THROW_UPON_INVALID_HID(group,
+                                    formatString("Cannot create group at '%s/%s'.",
+                                                 getHandlePath(container).value_or("<unknown>").c_str(),
+                                                 name));
 
     return group;
 }
@@ -71,7 +79,10 @@ hid_t createGroup(const hid_t container, const char* name)
 hid_t openGroup(const hid_t container, const char* name)
 {
     const hid_t group = H5Gopen(container, name, H5P_DEFAULT);
-    GMX_H5MD_THROW_UPON_INVALID_HID(group, "Cannot open group.");
+    GMX_H5MD_THROW_UPON_INVALID_HID(group,
+                                    formatString("Cannot open group at '%s/%s'.",
+                                                 getHandlePath(container).value_or("<unknown>").c_str(),
+                                                 name));
 
     return group;
 }
