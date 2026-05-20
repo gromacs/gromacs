@@ -17,6 +17,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Avoid deadlock with NVSHMEM and ``GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, |Gromacs| would freeze early on with this combination of
+enabled features.
+
+:issue:`5637`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -211,7 +211,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int rec
         MPI_Wait(&forceRecvRequest_, MPI_STATUS_IGNORE);
         forceRecvRequestIsActive_ = false;
     }
-    else if (!stageLibMpiGpuCpuComm_)
+    else if (!stageLibMpiGpuCpuComm_ && !(useNvshmem_ && receivePmeForceToGpu))
     {
         MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, eCommType_FORCES_GPU, comm_, MPI_STATUS_IGNORE);
     }
