@@ -53,6 +53,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -103,7 +104,7 @@ void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
     {
 #if GMX_NVSHMEM
         // Check if NVSHMEM is initialized, nvshmem_ptr() works only in such case.
-        if (nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED)
+        if (gmx::isNvshmemInitialized())
         {
             // nvshmem_ptr() returns NULL if it is not a NVSHMEM pointer.
             if (nvshmem_ptr(*buffer, nvshmem_my_pe()) != nullptr)

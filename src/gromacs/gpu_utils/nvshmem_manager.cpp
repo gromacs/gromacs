@@ -46,6 +46,7 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
@@ -81,7 +82,7 @@ NvshmemManager::NvshmemManager(const MDLogger& mdlog, MPI_Comm comm)
     }
 
     GMX_RELEASE_ASSERT(
-            (nvshmem_stat == NVSHMEM_STATUS_IS_INITIALIZED) || (nvshmem_stat == NVSHMEM_STATUS_FULL_MPG),
+            isNvshmemInitialized(),
             formatString("NVSHMEM is not initialized correctly: status was %d", nvshmem_stat).c_str());
 #else
     GMX_UNUSED_VALUE(nvshmem_mpi_comm_);

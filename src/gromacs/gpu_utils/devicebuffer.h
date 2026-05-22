@@ -51,6 +51,7 @@
 #include "config.h"
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h" // TODO: this is only for over_alloc_large
 
@@ -101,9 +102,7 @@ void reallocateDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     if (symmetricAlloc)
     {
 #if GMX_NVSHMEM
-        GMX_RELEASE_ASSERT((nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED)
-                                   || (nvshmemx_init_status() == NVSHMEM_STATUS_FULL_MPG),
-                           "NVSHMEM is not initialized.");
+        GMX_RELEASE_ASSERT(gmx::isNvshmemInitialized(), "NVSHMEM is not initialized.");
 #else
         GMX_RELEASE_ASSERT(0, "Symmetric allocation works with NVSHMEM builds.");
 #endif
