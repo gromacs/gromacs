@@ -75,6 +75,33 @@ class TrjconvWithDifferentInputFormats :
 {
 };
 
+TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFileG96InvalidCharacters)
+{
+    if (!GMX_USE_TNG && std::strstr(GetParam(), ".tng") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
+    }
+    if (!GMX_USE_HDF5 && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
+    }
+    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
+                        "is single precision";
+    }
+    auto& cmdline = commandLine();
+
+    // Skip lines with only numbers, a lazy way to avoid handling floating point
+    auto matcher = FilteringExactTextMatch({ "[0-9\\. ]+" }, false, true);
+    setInputFile("-f", GetParam());
+    setOutputFile("-o", "spc-traj.g96", matcher);
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
 TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
 {
     if (!GMX_USE_TNG && std::strstr(GetParam(), ".tng") != nullptr)
