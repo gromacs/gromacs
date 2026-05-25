@@ -280,6 +280,7 @@ public:
     //! Returns the average spatial size of a grid bin
     RVec averageBinSize() const;
 
+private:
     //! Resizes the bouding box and FEP flag lists for at most \p maxNumBins
     void resizeBoundingBoxesAndFlags(int maxNumBins);
 
@@ -300,6 +301,47 @@ public:
                        const RVec& upperCorner,
                        real*       atomDensity,
                        real        maxAtomGroupRadius);
+
+public:
+    /*! \brief Sets the 2D search grid dimensions puts the atoms on the 2D grid
+     *
+     * The \p atomDensity parameter is used to set the, uniform, grid size.
+     * When \p atomDensity <= 0, it is computed as the atom count divided by the zone volume.
+     * For inhomogenous systems this can result in very sub-optimal performance due to many
+     * zero interactions in the list. To avoid this, this function can return an estimate
+     * of the effective atom density, which puts more weights on denser areas. This estimate
+     * is accurate for dimensions x and y, but uses the global std.dev. of the z-coordinates.
+     *
+     * \param[in,out] gridWork  Working data for each thread
+     * \param[in,out] cells     The grid cell list
+     * \param[in] lowerCorner   The minimum Cartesian coordinates of the grid
+     * \param[in] upperCorner   The maximum Cartesian coordinates of the grid
+     * \param[in] updateGroupsCog  The center of geometry of update groups, can be nullptr
+     * \param[in] atomRange     The range of atoms to put on this grid, may include moved atoms
+     * \param[in] numGridAtomsWithoutFillers  The number of atoms that are not filler particles
+     *                                        and have not moved by to another domain by DD
+     * \param[in,out] atomDensity  The atom density, will be computed when <= 0
+     * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
+     * \param[in] x             The coordinates of the atoms
+     * \param[in] ddZone        The domain decomposition zone
+     * \param[in] move          Tells whether atoms have moved to another DD domain
+     * \param[in] computeEffectiveAtomDensity  When true, return an estimate of the atom density
+     *
+     * \returns When \p computeEffectiveAtomDensity==true, an estimate of the effective atom density
+     */
+    real generateAndFill2D(ArrayRef<GridWork>     gridWork,
+                           HostVector<int>*       cells,
+                           const rvec             lowerCorner,
+                           const rvec             upperCorner,
+                           const UpdateGroupsCog* updateGroupsCog,
+                           Range<int>             atomRange,
+                           int                    numGridAtomsWithoutFillers,
+                           real*                  atomDensity,
+                           real                   maxAtomGroupRadius,
+                           ArrayRef<const RVec>   x,
+                           int                    ddZone,
+                           const int*             move,
+                           bool                   computeEffectiveAtomDensity);
 
     //! Sets the bin indices using indices in \p gridSetData and \p gridWork
     void setBinIndices(int                     ddZone,
@@ -431,41 +473,6 @@ private:
     //! Total number of clusters, used for printing
     int numClustersTotal_;
 };
-
-/*! \brief Sets the 2D search grid dimensions puts the atoms on the 2D grid
- *
- * \param[in,out] grid      The pair search grid for one DD zone
- * \param[in,out] gridWork  Working data for each thread
- * \param[in,out] bins      The grid bin list
- * \param[in] lowerCorner   The minimum Cartesian coordinates of the grid
- * \param[in] upperCorner   The maximum Cartesian coordinates of the grid
- * \param[in] updateGroupsCog  The center of geometry of update groups, can be nullptr
- * \param[in] atomRange     The range of atoms to put on this grid, may include moved atoms
- * \param[in] numGridAtomsWithoutFillers  The number of atoms that are not filler particles
- *                                        and have not moved by to another domain by DD
- * \param[in,out] atomDensity  The atom density, will be computed when <= 0
- * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
- * \param[in] x             The coordinates of the atoms
- * \param[in] ddZone        The domain decomposition zone
- * \param[in] move          Tells whether atoms have moved to another DD domain
- * \param[in] computeGridDensityRatio  When true, return the grid density ratio
- *
- * \returns When \p computeGridDensityRatio==true, the ratio of the effective 2D grid density and the uniform grid density
- */
-real generateAndFill2DGrid(Grid*                  grid,
-                           ArrayRef<GridWork>     gridWork,
-                           HostVector<int>*       bins,
-                           const rvec             lowerCorner,
-                           const rvec             upperCorner,
-                           const UpdateGroupsCog* updateGroupsCog,
-                           Range<int>             atomRange,
-                           int                    numGridAtomsWithoutFillers,
-                           real*                  atomDensity,
-                           real                   maxAtomGroupRadius,
-                           ArrayRef<const RVec>   x,
-                           int                    ddZone,
-                           const int*             move,
-                           bool                   computeGridDensityRatio);
 
 } // namespace gmx
 

@@ -249,40 +249,40 @@ void GridSet::putOnGrid(const matrix            box,
      */
     const real c_gridDensityRatioThreshold = 1.5_real;
     const bool optimizeDensity             = (ddZone == 0 && numAtomsWithoutFillers > 0);
-    real       gridDensityRatio            = 0;
+    real       effectiveAtomDensity        = 0;
     int        iteration                   = 0;
 
     while (iteration == 0
-           || (optimizeDensity && iteration == 1 && gridDensityRatio > c_gridDensityRatioThreshold))
+           || (optimizeDensity && iteration == 1
+               && effectiveAtomDensity > atomDensity * c_gridDensityRatioThreshold))
     {
         if (iteration == 1)
         {
             /* The effective 2D grid density is higher than the uniform density.
              * So we need to increase the 3D density, but we only know about
              * the density in 2D. If the inhomogeneity is 2D only (unlikely),
-             * we need to correct with a factor gridDensityRatio. If we have
+             * we need to correct with the ratio between the densities. If we have
              * a sphere-like concentration of particles, the correction factor
              * should be gridDensityRatio^3/2. We use the average exponent.
              */
-            atomDensity *= std::pow(gridDensityRatio, 1.25_real);
+            atomDensity *= std::pow(effectiveAtomDensity / atomDensity, 1.25_real);
         }
 
-        const bool computeGridDensityRatio = (iteration == 0 && optimizeDensity);
+        const bool computeEffectiveAtomDensity = (iteration == 0 && optimizeDensity);
 
-        gridDensityRatio = generateAndFill2DGrid(&grid,
-                                                 gridWork_,
-                                                 &gridSetData_.bins,
-                                                 lowerCorner,
-                                                 upperCorner,
-                                                 updateGroupsCog,
-                                                 atomRange,
-                                                 numAtomsWithoutFillers,
-                                                 &atomDensity,
-                                                 maxAtomGroupRadius,
-                                                 x,
-                                                 ddZone,
-                                                 move,
-                                                 computeGridDensityRatio);
+        effectiveAtomDensity = grid.generateAndFill2D(gridWork_,
+                                                      &gridSetData_.bins,
+                                                      lowerCorner,
+                                                      upperCorner,
+                                                      updateGroupsCog,
+                                                      atomRange,
+                                                      numAtomsWithoutFillers,
+                                                      &atomDensity,
+                                                      maxAtomGroupRadius,
+                                                      x,
+                                                      ddZone,
+                                                      move,
+                                                      computeEffectiveAtomDensity);
 
         iteration++;
     }

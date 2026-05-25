@@ -1278,11 +1278,14 @@ void Grid::sortCellsGpuGeometry(GridSetData*            gridSetData,
     }
 }
 
-//! Sets the bin index in the cell array for atom \p atomIndex and increments the atom count for the grid cell
-static void setBinAndAtomCount(ArrayRef<int> bins, int binIndex, ArrayRef<int> numAtomsPerCell, int atomIndex)
+//! Sets the cell index in the cell array for atom \p atomIndex and increments the atom count for the grid cell
+static void setCellAndAtomCount(ArrayRef<int> cells,
+                                const int     cellIndex,
+                                ArrayRef<int> numAtomsPerCell,
+                                const int     atomIndex)
 {
-    bins[atomIndex] = binIndex;
-    numAtomsPerCell[binIndex] += 1;
+    cells[atomIndex] = cellIndex;
+    numAtomsPerCell[cellIndex] += 1;
 }
 
 void Grid::calcCellIndices(const GridDimensions&  gridDims,
@@ -1293,7 +1296,7 @@ void Grid::calcCellIndices(const GridDimensions&  gridDims,
                            const int*             move,
                            const int              thread,
                            const int              nthread,
-                           ArrayRef<int>          bins,
+                           ArrayRef<int>          cells,
                            ArrayRef<int>          numAtomsPerCell)
 {
     const int numCells = gridDims.numCells[XX] * gridDims.numCells[YY];
@@ -1353,14 +1356,14 @@ void Grid::calcCellIndices(const GridDimensions&  gridDims,
                 /* For the moment cell will contain only the, grid local,
                  * x and y indices, not z.
                  */
-                setBinAndAtomCount(bins, cx * gridDims.numCells[YY] + cy, numAtomsPerCell, i);
+                setCellAndAtomCount(cells, cx * gridDims.numCells[YY] + cy, numAtomsPerCell, i);
             }
             else
             {
                 /* Put this moved particle after the end of the grid,
                  * so we can process it later without using conditionals.
                  */
-                setBinAndAtomCount(bins, numCells, numAtomsPerCell, i);
+                setCellAndAtomCount(cells, numCells, numAtomsPerCell, i);
             }
         }
     }
@@ -1383,10 +1386,10 @@ void Grid::calcCellIndices(const GridDimensions&  gridDims,
             cy = std::max(cy, 0);
             cy = std::min(cy, gridDims.numCells[YY] - 1);
 
-            /* For the moment bins will contain only the, grid local,
+            /* For the moment cells will contain only the, grid local,
              * x and y indices, not z.
              */
-            setBinAndAtomCount(bins, cx * gridDims.numCells[YY] + cy, numAtomsPerCell, i);
+            setCellAndAtomCount(cells, cx * gridDims.numCells[YY] + cy, numAtomsPerCell, i);
         }
     }
 }
@@ -1438,20 +1441,13 @@ void Grid::setBinIndices(int                  ddZone,
         {
             ncz_max = ncz;
         }
-        int numAtomsPerCell_i = gridWork[0].numAtomsPerCell[i];
-        for (int thread = 1; thread < nthread; thread++)
-        {
-            numAtomsPerCell_i += gridWork[thread].numAtomsPerCell[i];
-        }
-        ncz = divideRoundUp(numAtomsPerCell_i, numAtomsPerBin);
+        ncz = divideRoundUp(numAtomsPerCell_[i], numAtomsPerBin);
         if (geometry_.numAtomsJCluster_ == 2 * numAtomsPerBin)
         {
             /* Make the number of cell a multiple of 2 */
             ncz = (ncz + 1) & ~1;
         }
         cellToBin_[i + 1] = cellToBin_[i] + ncz;
-        /* Clear numAtomsPerCell_, so we can reuse the array below */
-        numAtomsPerCell_[i] = 0;
     }
     numBinsTotal_      = cellToBin_[numCells()] - cellToBin_[0];
     maxNumBinsPerCell_ = ncz_max;
@@ -1508,6 +1504,7 @@ void Grid::setBinIndices(int                  ddZone,
     /* Now we know the dimensions we can fill the grid.
      * This is the first, unsorted fill. We sort the cells after this.
      */
+    std::fill(numAtomsPerCell_.begin(), numAtomsPerCell_.end(), 0);
     ArrayRef<int> bins        = gridSetData->bins;
     ArrayRef<int> atomIndices = gridSetData->atomIndices;
     for (int i : atomRange)
@@ -1582,31 +1579,25 @@ void Grid::setBinIndices(int                  ddZone,
     }
 }
 
-real generateAndFill2DGrid(Grid*                  grid,
-                           ArrayRef<GridWork>     gridWork,
-                           HostVector<int>*       cells,
-                           const rvec             lowerCorner,
-                           const rvec             upperCorner,
-                           const UpdateGroupsCog* updateGroupsCog,
-                           const Range<int>       atomRange,
-                           const int              numAtomsWithoutFillers,
-                           real*                  atomDensity,
-                           const real             maxAtomGroupRadius,
-                           ArrayRef<const RVec>   x,
-                           const int              ddZone,
-                           const int*             move,
-                           const bool             computeGridDensityRatio)
+real Grid::generateAndFill2D(ArrayRef<GridWork>     gridWork,
+                             HostVector<int>*       cells,
+                             const rvec             lowerCorner,
+                             const rvec             upperCorner,
+                             const UpdateGroupsCog* updateGroupsCog,
+                             const Range<int>       atomRange,
+                             const int              numAtomsWithoutFillers,
+                             real*                  atomDensity,
+                             const real             maxAtomGroupRadius,
+                             ArrayRef<const RVec>   x,
+                             const int              ddZone,
+                             const int*             move,
+                             const bool             computeEffectiveAtomDensity)
 {
     GMX_ASSERT(numAtomsWithoutFillers <= atomRange.end(),
                "The real atoms are a subset of atomRange");
 
-    grid->setDimensions(
+    setDimensions(
             ddZone, atomRange.size(), numAtomsWithoutFillers, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
-
-    for (GridWork& work : gridWork)
-    {
-        work.numAtomsPerCell.resize(grid->numCells() + 1);
-    }
 
     /* Make space for the new cell indices */
     cells->resize(*atomRange.end());
@@ -1614,54 +1605,60 @@ real generateAndFill2DGrid(Grid*                  grid,
     const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
     GMX_ASSERT(nthread > 0, "We expect the OpenMP thread count to be set");
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
+#pragma omp parallel num_threads(nthread)
     {
         try
         {
-            Grid::calcCellIndices(grid->dimensions(),
-                                  updateGroupsCog,
-                                  atomRange,
-                                  x,
-                                  ddZone,
-                                  move,
-                                  thread,
-                                  nthread,
-                                  *cells,
-                                  gridWork[thread].numAtomsPerCell);
+            const int thread = gmx_omp_get_thread_num();
+
+            std::vector<int>& numAtomsPerCell = gridWork[thread].numAtomsPerCell;
+
+            numAtomsPerCell.resize(numCells() + 1);
+
+            calcCellIndices(
+                    dimensions(), updateGroupsCog, atomRange, x, ddZone, move, thread, nthread, *cells, numAtomsPerCell);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
-    real gridDensityRatio = 0;
+    // Reduce the atom counts over the threads
+    int64_t sumAtomsInCellSquared = 0;
+#pragma omp parallel for schedule(static) num_threads(nthread) reduction(+ : sumAtomsInCellSquared)
+    for (int i = 0; i < numCells() + 1; i++)
+    {
+        int64_t numAtomsInCell = 0;
+        for (int thread = 0; thread < nthread; thread++)
+        {
+            numAtomsInCell += gridWork[thread].numAtomsPerCell[i];
+        }
+        numAtomsPerCell_[i] = numAtomsInCell;
+        sumAtomsInCellSquared += square<int64_t>(numAtomsInCell);
+    }
+    // Remove the contribution of the moved atoms, which are in the last cell
+    sumAtomsInCellSquared -= square<int64_t>(numAtomsPerCell_[numCells()]);
 
-    if (computeGridDensityRatio)
+    real effectiveAtomDensity = 0;
+
+    if (computeEffectiveAtomDensity)
     {
         GMX_RELEASE_ASSERT(
                 numAtomsWithoutFillers > 0,
                 "Number of atoms should be > 0 when density ratio computing is requested");
 
-        // Compute the effective density ratio on the current grid
-        int64_t sumAtomsInCellSquared = 0;
-        for (int i = 0; i < grid->numCells(); i++)
-        {
-            int64_t numAtomsInCell = 0;
-            for (int thread = 0; thread < nthread; thread++)
-            {
-                numAtomsInCell += gridWork[thread].numAtomsPerCell[i];
-            }
-            sumAtomsInCellSquared += square(numAtomsInCell);
-        }
         // The effective density divided by the uniform density
-        gridDensityRatio =
-                sumAtomsInCellSquared * grid->numCells() / gmx::square(real(numAtomsWithoutFillers));
+        const real gridDensityRatio =
+                sumAtomsInCellSquared * numCells() / gmx::square(real(numAtomsWithoutFillers));
+        effectiveAtomDensity = gridDensityRatio * *atomDensity;
         if (debug)
         {
-            fprintf(debug, "ns grid effective density ratio %f\n", gridDensityRatio);
+            fprintf(debug,
+                    "pair search grid atom density: uniform %.1f effective %.1f\n",
+                    *atomDensity,
+                    effectiveAtomDensity);
         }
     }
 
-    return gridDensityRatio;
+    return effectiveAtomDensity;
 }
 
 void Grid::setNonLocalGrid(const int                           ddZone,
