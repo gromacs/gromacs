@@ -69,7 +69,7 @@ std::vector<AtomPair> addNextConstrainedEthane(const int firstAtom, std::vector<
     constraints.push_back({ firstAtom + 5, firstAtom + 6 }); // C2-H4
     constraints.push_back({ firstAtom + 5, firstAtom + 7 }); // C2-H5
     constraints.push_back({ firstAtom + 5, firstAtom + 8 }); // C2-H6
-    return constraints;
+    return std::move(constraints);
 }
 
 //! Add methane molecule to constraints
@@ -80,7 +80,7 @@ std::vector<AtomPair> addNextConstrainedMethane(const int firstAtom, std::vector
     constraints.push_back({ firstAtom + 0, firstAtom + 2 }); // C1-H2
     constraints.push_back({ firstAtom + 0, firstAtom + 3 }); // C1-H3
     constraints.push_back({ firstAtom + 0, firstAtom + 4 }); // C1-H4
-    return constraints;
+    return std::move(constraints);
 }
 
 //! Add ethanol molecule to constraints
@@ -93,7 +93,7 @@ std::vector<AtomPair> addNextConstrainedEthanol(const int firstAtom, std::vector
     constraints.push_back({ firstAtom + 5, firstAtom + 6 }); // C2-H4
     constraints.push_back({ firstAtom + 5, firstAtom + 7 }); // C2-H5
     constraints.push_back({ firstAtom + 8, firstAtom + 9 }); // O1-HO
-    return constraints;
+    return std::move(constraints);
 }
 
 static constexpr int c_numConstraintMethane = 4;
@@ -251,7 +251,7 @@ std::vector<ConstraintSystem> c_constraintReorderSystemList = []
         constraintReorderSystemList.emplace_back(mix);
     }
     {
-        const int        numConstraintThreads = 150659; // Random prime number
+        const int        numConstraintThreads = 150659; // Random large prime number
         const int        numEthanol           = numConstraintThreads / c_numConstraintEthanol;
         ConstraintSystem largeSystem;
         largeSystem.constraintsHost = fillConstraints(0, 0, numEthanol, numConstraintThreads);
