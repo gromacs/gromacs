@@ -336,27 +336,17 @@ public:
 };
 
 extern template class H5mdFrameDataSet<int32_t>;
-
 extern template class H5mdFrameDataSet<int64_t>;
-
 extern template class H5mdFrameDataSet<float>;
-
 extern template class H5mdFrameDataSet<double>;
-
 extern template class H5mdFrameDataSet<BasicVector<float>>;
-
 extern template class H5mdFrameDataSet<BasicVector<double>>;
 
 extern template class H5mdScalarFrameDataSet<int32_t>;
-
 extern template class H5mdScalarFrameDataSet<int64_t>;
-
 extern template class H5mdScalarFrameDataSet<float>;
-
 extern template class H5mdScalarFrameDataSet<double>;
-
 extern template class H5mdScalarFrameDataSet<BasicVector<float>>;
-
 extern template class H5mdScalarFrameDataSet<BasicVector<double>>;
 
 } // namespace gmx

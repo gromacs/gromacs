@@ -144,10 +144,7 @@ H5mdFrameDataSet<ValueType>::H5mdFrameDataSet(H5mdDataSetBase<ValueType>&& dataS
 
 template<typename ValueType>
 H5mdFrameDataSet<ValueType>::H5mdFrameDataSet(const hid_t container, const char* name) :
-    Base(container, name),
-    extentDimsPrimitive_{ Base::dims() },
-    frameDescription_{ extentDimsPrimitive_ },
-    numFrames_{ extentDimsPrimitive_[0] } // FrameDescription would throw above for dims.empty()
+    H5mdFrameDataSet<ValueType>(Base(container, name))
 {
 }
 
@@ -277,27 +274,17 @@ void H5mdScalarFrameDataSet<ValueType>::writeNextFrame(const ValueType& value)
 }
 
 template class H5mdFrameDataSet<int32_t>;
-
 template class H5mdFrameDataSet<int64_t>;
-
 template class H5mdFrameDataSet<float>;
-
 template class H5mdFrameDataSet<double>;
-
 template class H5mdFrameDataSet<BasicVector<float>>;
-
 template class H5mdFrameDataSet<BasicVector<double>>;
 
 template class H5mdScalarFrameDataSet<int32_t>;
-
 template class H5mdScalarFrameDataSet<int64_t>;
-
 template class H5mdScalarFrameDataSet<float>;
-
 template class H5mdScalarFrameDataSet<double>;
-
 template class H5mdScalarFrameDataSet<BasicVector<float>>;
-
 template class H5mdScalarFrameDataSet<BasicVector<double>>;
 
 } // namespace gmx
