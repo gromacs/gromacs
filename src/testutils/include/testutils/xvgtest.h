@@ -60,10 +60,14 @@ class TestReferenceChecker;
 
 struct XvgMatchSettings
 {
-    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true) {}
+    XvgMatchSettings() :
+        tolerance(defaultRealTolerance()), testData(true), matchNonRealValuesAsStrings(false)
+    {
+    }
 
     FloatingPointTolerance tolerance;
     bool                   testData;
+    bool                   matchNonRealValuesAsStrings;
 };
 
 /*! \brief
@@ -84,7 +88,8 @@ struct XvgMatchSettings
 void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const XvgMatchSettings& settings);
 
 /*! \libinternal \brief
- * Match the contents as an xvg file.
+ * Match the contents as an xvg file. By default all content is compared as reals.
+ * If xvg content contains strings, set matchNonRealValuesAsStrings to true.
  *
  * \see checkXvgFile()
  *
@@ -98,6 +103,13 @@ public:
     XvgMatch& tolerance(const FloatingPointTolerance& tolerance)
     {
         settings_.tolerance = tolerance;
+        return *this;
+    }
+    //! Sets boolean which specifies if xvg file has strings (true) or only
+    //! reals (false, default).
+    XvgMatch& matchNonRealValuesAsStrings()
+    {
+        settings_.matchNonRealValuesAsStrings = true;
         return *this;
     }
     /*! \brief

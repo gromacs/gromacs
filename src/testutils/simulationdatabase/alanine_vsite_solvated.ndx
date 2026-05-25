@@ -128,3 +128,7 @@
 [ some_water_subset ]
   30   31   32   33   34   35   36   37   38   39   40   41   42   43   44
   45   46   47
+[ Test-Angle ]
+  4     3     5
+[ Test-Dihedral ]
+  4     3     7     8

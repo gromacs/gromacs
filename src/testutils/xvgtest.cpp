@@ -87,9 +87,26 @@ bool isRelevantXvgCommand(const std::string& line)
 }
 
 //! Helper function to check a single xvg value in a sequence.
-void checkXvgDataPoint(TestReferenceChecker* checker, const std::string& value)
+void checkXvgDataPointReals(TestReferenceChecker* checker, const std::string& value)
 {
     checker->checkRealFromString(value, nullptr);
+}
+
+//! Helper function to check a single xvg value in a sequence which checks the type
+//! beforehand to allow for different types to exist in xvg file.
+void checkXvgDataPointMixed(TestReferenceChecker* checker, const std::string& value)
+{
+    char*       end;
+    const char* cvalue = value.c_str();
+    std::strtod(cvalue, &end);
+    if (end != cvalue && *end == '\0')
+    {
+        checker->checkRealFromString(value, nullptr);
+    }
+    else
+    {
+        checker->checkString(value, nullptr);
+    }
 }
 
 } // namespace
@@ -141,7 +158,14 @@ void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const X
 
         const std::vector<std::string> columns = splitString(line);
         const std::string              id      = formatString("Row%d", dataRowCount);
-        dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(), &checkXvgDataPoint);
+        if (settings.matchNonRealValuesAsStrings)
+        {
+            dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(), &checkXvgDataPointMixed);
+        }
+        else
+        {
+            dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(), &checkXvgDataPointReals);
+        }
         ++dataRowCount;
     }
     dataChecker.checkUnusedEntries();
