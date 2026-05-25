@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Energy Name="Kinetic En.">
+    <Real Name="Time 0.000000 Step 0 in frame 0">2211.2192</Real>
+    <Real Name="Time 0.025000 Step 5 in frame 1">2329.5339</Real>
+    <Real Name="Time 0.050000 Step 10 in frame 2">2253.9902</Real>
+  </Energy>
+  <Energy Name="Pressure">
+    <Real Name="Time 0.000000 Step 0 in frame 0">28.592062</Real>
+    <Real Name="Time 0.025000 Step 5 in frame 1">-130.38954</Real>
+    <Real Name="Time 0.050000 Step 10 in frame 2">-489.73935</Real>
+  </Energy>
+  <Energy Name="Potential">
+    <Real Name="Time 0.000000 Step 0 in frame 0">-11638.74</Real>
+    <Real Name="Time 0.025000 Step 5 in frame 1">-11726.237</Real>
+    <Real Name="Time 0.050000 Step 10 in frame 2">-11660.785</Real>
+  </Energy>
+  <Energy Name="COM Pull En.">
+    <Real Name="Time 0.000000 Step 0 in frame 0">11.628549</Real>
+    <Real Name="Time 0.025000 Step 5 in frame 1">11.628549</Real>
+    <Real Name="Time 0.050000 Step 10 in frame 2">11.628549</Real>
+  </Energy>
+</ReferenceData>

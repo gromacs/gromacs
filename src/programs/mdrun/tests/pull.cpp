@@ -265,6 +265,83 @@ INSTANTIATE_TEST_SUITE_P(PullTest,
                                                               "constraint-flatbottom",
                                                               "transformation-coord-umbrella-3D")));
 
+// This test was added to catch issue 5629. Before version 2026.3, the pull would choose
+// periodic images for the atoms in the cylinder reference group using the distance from
+// the pull group when using AWH (without AWH the reference distance is substracted).
+// This could lead to wrong pull distances. With that bug present this test would quit
+// with an error on pull coordinate being too far out of the AWH target range.
+TEST_F(PullIntegrationTest, CylinderWithAwh)
+{
+    MdpFieldValues mdpFieldValues;
+    addBasicMdpValues(&mdpFieldValues);
+
+    mdpFieldValues["dt"]     = "0.005";
+    mdpFieldValues["nsteps"] = "10";
+
+    mdpFieldValues["constraints"] = "all-bonds";
+
+    mdpFieldValues["rlist"]    = "0.9";
+    mdpFieldValues["rcoulomb"] = "0.9";
+    mdpFieldValues["rvdw"]     = "0.9";
+
+    mdpFieldValues["tcoupl"]  = "v-rescale";
+    mdpFieldValues["tc-grps"] = "system";
+    mdpFieldValues["tau-t"]   = "0.5";
+    mdpFieldValues["ref-t"]   = "298";
+    mdpFieldValues["ld-seed"] = "-135271747";
+
+    // Add the pull parameters
+    mdpFieldValues["pull"]            = "yes";
+    mdpFieldValues["pull_ngroups"]    = "2";
+    mdpFieldValues["pull_ncoords"]    = "1";
+    mdpFieldValues["pull-cylinder-r"] = "1";
+
+    mdpFieldValues["pull-group1-name"] = "Water";
+    mdpFieldValues["pull-group2-name"] = "Protein";
+
+    mdpFieldValues["pull-coord1-groups"]             = "1 2";
+    mdpFieldValues["pull-coord1-type"]               = "external-potential";
+    mdpFieldValues["pull-coord1-potential-provider"] = "awh";
+    mdpFieldValues["pull-coord1-geometry"]           = "cylinder";
+    mdpFieldValues["pull-coord1-dim"]                = "n n y";
+    mdpFieldValues["pull-coord1-vec"]                = "0 0 1";
+    mdpFieldValues["pull-coord1-k"]                  = "128000";
+
+    // Add teh AWH parameters
+    mdpFieldValues["awh"]                      = "yes";
+    mdpFieldValues["awh-seed"]                 = "134320267";
+    mdpFieldValues["awh1-ndim"]                = "1";
+    mdpFieldValues["awh1-dim1-start"]          = "1.0";
+    mdpFieldValues["awh1-dim1-end"]            = "2.2";
+    mdpFieldValues["awh1-dim1-force-constant"] = "128000";
+
+    // Prepare the .tpr file
+    {
+        CommandLine caller;
+        runner_.useTopGroAndNdxFromDatabase("alanine_vsite_solvated");
+        runner_.useGroFromDatabase("alanine_vsite_waterslab");
+        runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
+        EXPECT_EQ(0, runner_.callGrompp(caller));
+    }
+    // Do mdrun
+    {
+        auto        relativeEnergyTolerance   = relativeToleranceAsFloatingPoint(1, 1e-3);
+        auto        relativePressureTolerance = relativeToleranceAsFloatingPoint(1, 2e-3);
+        CommandLine mdrunCaller;
+        ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
+        EnergyTermsToCompare energyTermsToCompare{ {
+                { interaction_function[InteractionFunction::CenterOfMassPullingEnergy].longname,
+                  relativeEnergyTolerance },
+                { interaction_function[InteractionFunction::PotentialEnergy].longname, relativeEnergyTolerance },
+                { interaction_function[InteractionFunction::KineticEnergy].longname, relativeEnergyTolerance },
+                { interaction_function[InteractionFunction::Pressure].longname, relativePressureTolerance },
+        } };
+        TestReferenceData    refData;
+        auto                 checker = refData.rootChecker();
+        checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
+    }
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx
