@@ -71,6 +71,7 @@
 #include "gromacs/utility/vectypes.h"
 
 using gmx::ArrayRef;
+using gmx::DVec;
 using gmx::RVec;
 
 // Reduce data of n elements over all ranks currently participating in pull
@@ -150,6 +151,30 @@ static void pull_set_pbcatoms(const gmx::MpiComm&  mpiComm,
     }
 }
 
+// Returns the reference location for PBC for computing the COM of a cylinder reference group
+static DVec getCylinderRefGroupPbcReference(const pull_coord_work_t&          coord,
+                                            ArrayRef<const pull_group_work_t> groups)
+{
+    GMX_ASSERT(coord.params_.eGeom == PullGroupGeometry::Cylinder, "Geometry should be cylinder");
+
+    /* With standard pulling we expect the location of the reference group to be
+     * very close to the reference distance from group 1. This is the best estimate
+     * of the cylinder group location, so we use that.
+     *
+     * With an external pull potential we do not have a reference distance. So then
+     * we use the COM of the whole reference group as the PBC reference.
+     */
+    if (coord.params_.eType != PullingAlgorithm::External)
+    {
+        return groups[coord.params_.group[1]].x - coord.spatialData.vec * coord.value_ref;
+    }
+    else
+    {
+        GMX_ASSERT(groups[coord.params_.group[0]].needToCalcCom, "We need the COM");
+        return groups[coord.params_.group[0]].x;
+    }
+}
+
 static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
                              pull_t*              pull,
                              ArrayRef<const real> masses,
@@ -181,7 +206,6 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
         {
             /* pref will be the same group for all pull coordinates */
             const pull_group_work_t& pref  = pull->group[pcrd.params_.group[0]];
-            const pull_group_work_t& pgrp  = pull->group[pcrd.params_.group[1]];
             pull_group_work_t&       pdyna = *pcrd.dynamicGroup0;
             rvec                     direction;
             copy_dvec_to_rvec(pcrd.spatialData.vec, direction);
@@ -197,11 +221,7 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
                 /* With rate=0, value_ref is set initially */
                 pcrd.value_ref = pcrd.params_.init + pcrd.params_.rate * t;
             }
-            rvec reference;
-            for (int m = 0; m < DIM; m++)
-            {
-                reference[m] = pgrp.x[m] - pcrd.spatialData.vec[m] * pcrd.value_ref;
-            }
+            const RVec pbcReference = getCylinderRefGroupPbcReference(pcrd, pull->group).toRVec();
 
             auto localAtomIndices = pref.atomSet_.localIndex();
 
@@ -217,7 +237,7 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
             {
                 int  atomIndex = localAtomIndices[indexInSet];
                 rvec dx;
-                pbc_dx_aiuc(&pbc, x[atomIndex], reference, dx);
+                pbc_dx_aiuc(&pbc, x[atomIndex], pbcReference, dx);
                 double axialLocation = iprod(direction, dx);
                 dvec   radialLocation;
                 double dr2 = 0;
@@ -298,7 +318,6 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
         if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
         {
             pull_group_work_t&    dynamicGroup0 = *pcrd.dynamicGroup0;
-            pull_group_work_t&    group1        = pull->group[pcrd.params_.group[1]];
             PullCoordSpatialData& spatialData   = pcrd.spatialData;
 
             auto buffer = gmx::constArrayRefFromArray(comm->cylinderBuffer.data() + bufferOffset,
@@ -327,12 +346,12 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
              * used above, since we need it when we apply the radial forces
              * to the atoms in the cylinder group.
              */
-            spatialData.cyl_dev = 0;
+            spatialData.cyl_dev     = 0;
+            const DVec pbcReference = getCylinderRefGroupPbcReference(pcrd, pull->group);
             for (int m = 0; m < DIM; m++)
             {
-                double reference   = group1.x[m] - spatialData.vec[m] * pcrd.value_ref;
                 double dist        = -spatialData.vec[m] * buffer[2] * dynamicGroup0.mwscale;
-                dynamicGroup0.x[m] = reference - dist;
+                dynamicGroup0.x[m] = pbcReference[m] - dist;
                 spatialData.cyl_dev += dist;
             }
             /* Now we know the exact COM of the cylinder reference group,

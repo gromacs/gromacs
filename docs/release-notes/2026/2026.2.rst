@@ -40,6 +40,15 @@ that was written at a step that is not a multiple of nstdhdl.
 
 :issue:`5584`
 
+Correct cylinder pulling combined with AWH
+""""""""""""""""""""""""""""""""""""""""""
+
+When using AWH with pull-geometry=cylinder, the pull distance could be incorrect
+when distances between the pull group and some atoms in the cylinder reference group
+are above half the box size.
+
+:issue:`5629`
+
 Fixed performance issue with GPU FEP kernel
 """""""""""""""""""""""""""""""""""""""""""
 

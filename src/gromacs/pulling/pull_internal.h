@@ -150,15 +150,15 @@ struct pull_group_work_t
 /* Struct describing the instantaneous spatial layout of a pull coordinate */
 struct PullCoordSpatialData
 {
-    dvec   dr01;       /* The direction vector of group 1 relative to group 0 */
-    dvec   dr23;       /* The direction vector of group 3 relative to group 2 */
-    dvec   dr45;       /* The direction vector of group 5 relative to group 4 */
-    dvec   vec;        /* The pull direction */
-    double vec_len;    /* Length of vec for direction-relative */
-    dvec   ffrad;      /* conversion factor from vec to radial force */
-    double cyl_dev;    /* The deviation from the reference position */
-    dvec   planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
-    dvec   planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
+    dvec      dr01;       /* The direction vector of group 1 relative to group 0 */
+    dvec      dr23;       /* The direction vector of group 3 relative to group 2 */
+    dvec      dr45;       /* The direction vector of group 5 relative to group 4 */
+    gmx::DVec vec;        /* The pull direction */
+    double    vec_len;    /* Length of vec for direction-relative */
+    dvec      ffrad;      /* conversion factor from vec to radial force */
+    double    cyl_dev;    /* The deviation from the reference position */
+    dvec      planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
+    dvec      planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
 
     double value; /* The current value of the coordinate, units of nm or rad */
 };
