@@ -408,7 +408,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 }
 
 template<typename backend_tag>
-Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte<backend_tag>()
+Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte()
 {
 #if GMX_GPU_SYCL
     try

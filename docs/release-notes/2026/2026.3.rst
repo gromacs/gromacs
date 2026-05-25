@@ -17,12 +17,53 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Avoid deadlock with NVSHMEM and ``GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, |Gromacs| would freeze early on with this combination of
+enabled features.
+
+:issue:`5637`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix position restraint reference with pbc=xy and ref-coord-scaling=com
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With pbc=xy and ref-coord-scaling=com, ``gmx grompp`` would incorrectly
+subtract the COM of the restraint group from the z-component of the reference
+coordinates. This should in most cases have caused obvious errors.
+
+:issue:`5630`
+
+Prevent buffer overflow in gmx angle
+""""""""""""""""""""""""""""""""""""
+
+Previously, if ``gmx angle`` was used to measure a dihedral, an internal loop
+would execute exactly three times, regardless of how many angles were provided.
+If fewer than three angles were provided, this led to a heap buffer overflow.
+
+:issue:`5620`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed compilation error with Visual Studio and CUDA 13
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed compilation error with HeFFTe and NVHPC compiler
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Update documentation and warnings in gmx angle
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, the documentation and warning messages did not specify specific
+requirements to generate certain optional output files. Another warning message
+suggests the user uses an option from the legacy version of the tool.
+Documentation, warnings, and errors were updated for clarity.
+
+:issue:`5625`

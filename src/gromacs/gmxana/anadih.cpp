@@ -161,7 +161,6 @@ void ana_dih_trans(const char*             fn_trans,
     int* multiplicity;
     int  k;
 
-    std::vector<t_dlist> dlist(nangles);
     snew(multiplicity, nangles);
     for (k = 0; (k < nangles); k++)
     {
@@ -169,7 +168,7 @@ void ana_dih_trans(const char*             fn_trans,
     }
 
     low_ana_dih_trans(
-            TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, dlist, nframes, nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
+            TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, {}, nframes, nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
     sfree(multiplicity);
 }
 

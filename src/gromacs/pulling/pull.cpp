@@ -2114,12 +2114,14 @@ struct pull_t* init_pull(FILE*                     fplog,
 
         /* We only need to calculate the plain COM of a group
          * when it is not only used as a cylinder group.
-         * Also the absolute reference group 0 needs no COM computation.
+         * Also the absolute reference group 0 without external potentials needs no COM computation.
          */
         for (int i = 0; i < pcrd->params_.ngroup; i++)
         {
             int groupIndex = pcrd->params_.group[i];
-            if (groupIndex > 0 && !(pcrd->params_.eGeom == PullGroupGeometry::Cylinder && i == 0))
+            if (groupIndex > 0
+                && !(pcrd->params_.eGeom == PullGroupGeometry::Cylinder
+                     && pcrd->params_.eType != PullingAlgorithm::External && i == 0))
             {
                 pull->group[groupIndex].needToCalcCom = true;
             }
@@ -2140,10 +2142,9 @@ struct pull_t* init_pull(FILE*                     fplog,
                 /* With an external pull potential, the reference value loses
                  * it's meaning and should not be used. Setting it to zero
                  * makes any terms dependent on it disappear.
-                 * The only issue this causes is that with cylinder pulling
-                 * no atoms of the cylinder group within the cylinder radius
-                 * should be more than half a box length away from the COM of
-                 * the pull group along the axial direction.
+                 * Note that with cylinder pulling this reference is used for
+                 * PBC computation. In that case we use the COM of the reference
+                 * group instead.
                  */
                 pcrd->value_ref = 0.0;
             }
