@@ -183,7 +183,6 @@ StatePropagatorDataGpu::Impl::~Impl()
 
 void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
 {
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
 
     numAtomsLocal_ = numAtomsLocal;
@@ -241,7 +240,6 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     }
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
 std::tuple<int, int> StatePropagatorDataGpu::Impl::getAtomRangesFromAtomLocality(AtomLocality atomLocality) const
