@@ -86,7 +86,7 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 {
 
     // Need to send address to PP rank only for thread-MPI as PP rank pulls
-    // data using cudamemcpy
+    // data using memcpy
     if (!GMX_THREAD_MPI)
     {
         return;
@@ -175,6 +175,57 @@ void PmeForceSenderGpu::Impl::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
 #endif
 }
 
+void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(const int ppRank, const int numAtoms, const bool sendForcesDirectToPpGpu)
+{
+    GMX_ASSERT(GMX_THREAD_MPI,
+               "sendFToPpPeerToPeer is expected to be called only for thread-MPI builds");
+    GMX_ASSERT(GpuConfigurationCapabilities::ThreadMpiDirectComm,
+               "Direct peer-to-peer communications only supported with CUDA and HIP.");
+
+    pmeForcesReady_->enqueueWaitEvent(*ppCommManagers_[ppRank].stream);
+
+    if (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_)
+    {
+        // Push data to remote GPU's memory
+        copyBetweenDeviceBuffers(ppCommManagers_[ppRank].pmeRemoteGpuForcePtr,
+                                 asRawDevicePointer(ppCommManagers_[ppRank].localForcePtr),
+                                 0,
+                                 numAtoms,
+                                 *ppCommManagers_[ppRank].stream,
+                                 GpuApiCallBehavior::Async,
+                                 nullptr);
+
+        if (stageThreadMpiGpuCpuComm_ && !sendForcesDirectToPpGpu)
+        {
+            // Perform D2H (from remote GPU memory to remote PP rank's CPU memory)
+            // to finalize staged data transfer
+            copyFromDeviceBuffer(ppCommManagers_[ppRank].pmeRemoteCpuForcePtr,
+                                 &ppCommManagers_[ppRank].pmeRemoteGpuForcePtr,
+                                 0,
+                                 numAtoms,
+                                 *ppCommManagers_[ppRank].stream,
+                                 GpuApiCallBehavior::Async,
+                                 nullptr);
+        }
+    }
+    else
+    {
+        // Push data to remote CPU's memory
+        copyFromDeviceBuffer(ppCommManagers_[ppRank].pmeRemoteCpuForcePtr,
+                             &ppCommManagers_[ppRank].localForcePtr,
+                             0,
+                             numAtoms,
+                             *ppCommManagers_[ppRank].stream,
+                             GpuApiCallBehavior::Async,
+                             nullptr);
+    }
+
+    ppCommManagers_[ppRank].event->markEvent(*ppCommManagers_[ppRank].stream);
+    std::atomic<bool>* tmpPpCommEventRecordedPtr =
+            reinterpret_cast<std::atomic<bool>*>(ppCommManagers_[ppRank].eventRecorded.get());
+    tmpPpCommEventRecordedPtr->store(true, std::memory_order_release);
+}
+
 void PmeForceSenderGpu::Impl::waitForEvents()
 {
     GMX_ASSERT(GMX_LIB_MPI, "waitForEvents is expected to be called only for Lib-MPI");
@@ -207,7 +258,7 @@ void PmeForceSenderGpu::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
     impl_->sendFToPpGpuAwareMpi(sendbuf, offset, numBytes, ppRank, request);
 }
 
-void PmeForceSenderGpu::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu)
+void PmeForceSenderGpu::sendFToPpPeerToPeer(const int ppRank, const int numAtoms, const bool sendForcesDirectToPpGpu)
 {
     impl_->sendFToPpPeerToPeer(ppRank, numAtoms, sendForcesDirectToPpGpu);
 }

@@ -97,22 +97,6 @@ public:
      */
     void receiveForceFromPme(bool recvPmeForceToGpu);
 
-    /*! \brief Push coordinates buffer directly to GPU memory on PME
-     * task, from either GPU or CPU memory on PP task using GPU
-     * Memory copy or GPU-aware MPI. If sending from GPU, this method should
-     * be called after the local GPU coordinate buffer operations.
-     * The remote PME task will automatically wait for data to be copied
-     * before commencing PME force calculations.
-     * \param[in] sendPtr Buffer with coordinate data
-     * \param[in] sendSize Number of elements to send
-     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
-     * \param[in] receiveForcesToGpu Whether PME forces will be received to GPU
-     */
-    void sendCoordinatesToPme(const Float3*         sendPtr,
-                              int                   sendSize,
-                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
-                              bool                  receiveForcesToGpu);
-
     /*! \brief When this PP rank has particles with PME force
      * contributions expected from its PME-only rank, return pointer
      * to buffer used for staging PME force on GPU. */
@@ -134,9 +118,10 @@ private:
      * sender object using GPU memory copy functionality, and this
      * method performs the necessary synchronization on that
      * communication. This method is used with thread-MPI.
+     *
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu);
+    void receiveForceFromPmeDirectGpu(bool receivePmeForceToGpu);
 
     /*! \brief Receive buffer from GPU memory on PME rank to either
      * GPU or CPU memory on PP rank using GPU-aware MPI. This method
@@ -146,16 +131,20 @@ private:
      */
     void receiveForceFromPmeGpuAwareMpi(bool recvPmeForceToGpu);
 
+public:
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using GPU Memory copy.
      * This method is used with Thread-MPI.
-     * \param[in] sendPtr Buffer with coordinate data
-     * \param[in] sendSize Number of elements to send
+     *
+     * \param[in] sendPtr                       Buffer with coordinate data
+     * \param[in] sendSize                      Number of elements to send
+     * \param[in] sendCoordinatesFromGpu        Describes the location of \c sendPtr
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
      */
-    void sendCoordinatesToPmePeerToPeer(const Float3*         sendPtr,
-                                        int                   sendSize,
-                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPmeDirectGpu(const Float3*         sendPtr,
+                                       int                   sendSize,
+                                       bool                  sendCoordinatesFromGpu,
+                                       GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using GPU-aware MPI.
@@ -173,11 +162,12 @@ private:
                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
                                          bool                  receivePmeForceToGpu);
 
+private:
     //! Device context handle
     const DeviceContext& deviceContext_;
     //! Handle for the device stream used for the communication operations in this class
     const DeviceStream& pmePpCommStream_;
-    //! Remote location of PME coordinate data buffer
+    //! Remote location on PME-only rank used to store coordinates for it to use
     Float3* remotePmeXBuffer_ = nullptr;
     //! communicator for simulation
     MPI_Comm comm_;
@@ -215,6 +205,7 @@ private:
     //! small atom counts where latency is more important than
     //! bandwidth.
     bool stageLibMpiGpuCpuComm_ = true;
+#if GMX_LIB_MPI
     // MPI Request associated with non-blocking coordinate send
     MPI_Request coordinateSendRequest_;
     // MPI Request associated with non-blocking force receive
@@ -223,6 +214,7 @@ private:
     bool coordinateSendRequestIsActive_ = false;
     // Flag on whether a non-blocking force receive is active
     bool forceRecvRequestIsActive_ = false;
+#endif
     // Flag on whether to use NVSHMEM for GPU communication
     bool useNvshmem_ = false;
 };

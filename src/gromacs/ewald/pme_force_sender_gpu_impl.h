@@ -67,8 +67,6 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 
-/*! \internal \brief Class with interfaces and data for GPU version of PME Force sending functionality*/
-
 typedef struct CacheLineAlignedFlag
 {
     // gcc 12+ warns about such uses in header files in case they
@@ -78,6 +76,7 @@ typedef struct CacheLineAlignedFlag
 #if defined(__GNUC__) && __GNUC__ > 11
     GCC_DIAGNOSTIC_IGNORE("-Winterference-size")
 #endif
+    //! Flag to track the status of the item of interest
     alignas(hardware_destructive_interference_size) bool flag;
 #if defined(__GNUC__) && __GNUC__ > 11
     GCC_DIAGNOSTIC_RESET
@@ -97,12 +96,15 @@ struct PpForceCommManager
     std::unique_ptr<std::atomic<CacheLineAlignedFlag>> eventRecorded;
     //! Address of local force buffer to send to remote PP rank
     DeviceBuffer<RVec> localForcePtr;
-    //! CPU force buffer pointer for remote PP rank
+    //! CPU force buffer pointer on remote PP rank
     Float3* pmeRemoteCpuForcePtr;
-    //! GPU force buffer pointers for remote PP rank
+    //! GPU force buffer pointer on remote PP rank
     Float3* pmeRemoteGpuForcePtr;
 };
 
+/*! \internal
+ * \brief Impl for PmeForceSenderGpu
+ */
 class PmeForceSenderGpu::Impl
 {
 
@@ -144,6 +146,7 @@ public:
      */
     void sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
 
+    //! Wait for PME-force event to complete
     void waitForEvents();
 
 private:
