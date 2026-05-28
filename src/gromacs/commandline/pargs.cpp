@@ -567,13 +567,25 @@ gmx_bool parse_common_args(int*               argc,
         {
             setTimeValue(TimeControl::Begin, tbegin);
         }
+        else
+        {
+            unsetTimeValue(TimeControl::Begin);
+        }
         if (bEndTimeSet)
         {
             setTimeValue(TimeControl::End, tend);
         }
+        else
+        {
+            unsetTimeValue(TimeControl::End);
+        }
         if (bDtSet)
         {
             setTimeValue(TimeControl::Delta, tdelta);
+        }
+        else
+        {
+            unsetTimeValue(TimeControl::Delta);
         }
 
         adapter.copyValues();
