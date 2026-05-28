@@ -51,13 +51,31 @@
 
 #include "testutils/include/testutils/testasserts.h"
 
-TEST(TimeControlTest, UnSetHasNoValue)
+namespace gmx
+{
+namespace test
+{
+namespace
+{
+
+// Test fixture which resets the global state after each test.
+class TimeControlTest : public ::testing::Test
+{
+    void TearDown() override
+    {
+        unsetTimeValue(TimeControl::Begin);
+        unsetTimeValue(TimeControl::End);
+        unsetTimeValue(TimeControl::Delta);
+    }
+};
+
+TEST_F(TimeControlTest, UnSetHasNoValue)
 {
     auto value = timeValue(TimeControl::Begin);
     EXPECT_FALSE(value.has_value());
 }
 
-TEST(TimeControlTest, CanSetValue)
+TEST_F(TimeControlTest, CanSetValue)
 {
     setTimeValue(TimeControl::Begin, 13.37);
     auto value = timeValue(TimeControl::Begin);
@@ -67,7 +85,7 @@ TEST(TimeControlTest, CanSetValue)
     EXPECT_FALSE(otherValue.has_value());
 }
 
-TEST(TimeControlTest, CanUnsetValueAgain)
+TEST_F(TimeControlTest, CanUnsetValueAgain)
 {
     setTimeValue(TimeControl::Begin, 13.37);
     setTimeValue(TimeControl::End, 42.23);
@@ -81,3 +99,7 @@ TEST(TimeControlTest, CanUnsetValueAgain)
     EXPECT_FALSE(newValue.has_value());
     EXPECT_TRUE(newOtherValue.has_value());
 }
+
+} // namespace
+} // namespace test
+} // namespace gmx
