@@ -44,6 +44,11 @@
 
 #include "config.h"
 
+#include <cstdlib>
+
+#include <array>
+#include <atomic>
+
 #include "gromacs/ewald/pme_pp_communication.h"
 #include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_context.h"
@@ -102,15 +107,15 @@ void PmePpCommGpu::Impl::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
     int newSize               = pmeCpuForceReceiveBuffer_.size();
     if (useNvshmem_)
     {
+        /* Find the max nAtomsAlloc among all ranks for symmetric force-buffer allocation
+         * and the max number of PP peers per PME rank for symmetric signal allocation.
+         * PME ranks participate in the matching collective from pme_gpu_reinit_atoms. */
+        std::array<int, 2> buf{ newSize, 0 };
 #if GMX_MPI
-        const int size = newSize;
-        MPI_Allreduce(&size, &newSize, 1, MPI_INT, MPI_MAX, comm_);
+        MPI_Allreduce(MPI_IN_PLACE, buf.data(), buf.size(), MPI_INT, MPI_MAX, comm_);
 #endif
-
-        int numPpRanks = 0;
-#if GMX_MPI
-        MPI_Bcast(&numPpRanks, 1, MPI_INT, pmeRank_, comm_);
-#endif
+        newSize              = buf[0];
+        const int numPpRanks = buf[1];
         // symmetric buffer used for synchronization purpose 1 to be used to signal PME to PP rank
         // of put, and numPpRanks is intended to be used for each PP rank buffer consumption
         // completion signal to PME to allow to produce it again. this a collective call.

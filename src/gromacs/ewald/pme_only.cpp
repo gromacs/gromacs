@@ -798,7 +798,8 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                             pme_pp->mpi_comm_mysim);
                 }
                 pme_gpu_use_nvshmem(pme->gpu.get(), useNvshmem);
-                pme->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
+                pme->gpu->nvshmemParams->ppRanksRef   = pme_pp->ppRanks;
+                pme->gpu->nvshmemParams->mpiCommMySim = pme_pp->mpi_comm_mysim;
             }
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
