@@ -756,7 +756,8 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                             pme_pp->mpi_comm_mysim);
                 }
                 pme_gpu_use_nvshmem(pmeFromRunner->gpu, useNvshmem);
-                pmeFromRunner->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
+                pmeFromRunner->gpu->nvshmemParams->ppRanksRef   = pme_pp->ppRanks;
+                pmeFromRunner->gpu->nvshmemParams->mpiCommMySim = pme_pp->mpi_comm_mysim;
             }
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.

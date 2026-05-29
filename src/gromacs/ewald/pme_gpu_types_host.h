@@ -182,6 +182,8 @@ struct PmeNvshmemHost
     int forcesReadyNvshmemFlagsSize = 0;
     /*! \brief sync object for nvshmem based pme-pp force comm allocation size tracker */
     int forcesReadyNvshmemFlagsSizeAlloc = 0;
+    //! MPI Communicator for simulation == NVSHMEM Team
+    MPI_Comm mpiCommMySim;
 };
 
 /*! \internal \brief

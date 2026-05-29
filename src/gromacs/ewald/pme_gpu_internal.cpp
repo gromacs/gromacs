@@ -50,6 +50,7 @@
 
 #include "config.h"
 
+#include <array>
 #include <list>
 #include <memory>
 #include <string>
@@ -1500,18 +1501,16 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 
     if (pmeGpu->useNvshmem)
     {
-        // find the max nAtomsAlloc among all the ranks for symmetric forces buffer allocation.
+        /* Find the max nAtomsAlloc among all ranks for symmetric force-buffer allocation
+         * and the max number of PP peers per PME rank for symmetric signal allocation.
+         * PP ranks participate in the matching collective from PmePpCommGpu::Impl::reinit. */
+        std::array<int, 2> buf{ pmeGpu->nAtomsAlloc,
+                                static_cast<int>(pmeGpu->nvshmemParams->ppRanksRef.size()) };
 #if GMX_MPI
-        MPI_Allreduce(
-                &pmeGpu->nAtomsAlloc, &pmeGpu->nvshmemParams->nAtomsAlloc_symmetric, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(MPI_IN_PLACE, buf.data(), buf.size(), MPI_INT, MPI_MAX, pmeGpu->nvshmemParams->mpiCommMySim);
 #endif
-
-        int numPpRanks = pmeGpu->nvshmemParams->ppRanksRef.size();
-#if GMX_MPI
-        int myRank = -1;
-        MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-        MPI_Bcast(&numPpRanks, 1, MPI_INT, myRank, MPI_COMM_WORLD);
-#endif
+        pmeGpu->nvshmemParams->nAtomsAlloc_symmetric = buf[0];
+        const int numPpRanks                         = buf[1];
         // symmetric buffer allocation used for synchronization purpose
         // 1 to be used to signal PME to PP rank of put, and
         // numPpRanks is intended to be used for each PP rank buffer consumption completion
