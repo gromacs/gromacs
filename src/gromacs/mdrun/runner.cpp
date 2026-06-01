@@ -2367,9 +2367,16 @@ int Mdrunner::mdrunner()
             {
                 finish_pull(pull_work);
             }
+            // Ensure that with NVSHMEM, the collective deallocation
+            // of PME force buffers occurs at the same time as pmedata
+            // is destructed on the PME-only ranks.
+            fr->pmePpComm.reset(nullptr);
             if (fr->pmedata)
             {
                 pmeGpuTimings = pme_gpu_get_timings(*fr->pmedata);
+                // Destruct pmedata on PP ranks to match the behaviour
+                // on PME-only ranks.
+                fr->pmedata.reset(nullptr);
             }
         }
         else
