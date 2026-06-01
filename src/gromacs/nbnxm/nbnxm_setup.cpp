@@ -261,12 +261,20 @@ static NbnxmKernelSetup pickNbnxnKernelCpu(const t_inputrec&    inputrec,
                                            bool                 useSimd,
                                            const MDLogger&      mdlog)
 {
+    const bool forcePlainC1x1 = (std::getenv("GMX_NBNXN_PLAINC_1X1") != nullptr);
+    const bool forcePlainC4x4 = (std::getenv("GMX_NBNXN_PLAINC_4X4") != nullptr);
+    if (forcePlainC1x1 && forcePlainC4x4)
+    {
+        GMX_THROW(gmx::InvalidInputError(
+                "GMX_NBNXN_PLAINC_1X1 and GMX_NBNXN_PLAINC_4X4 should not be set simultaneously"));
+    }
+
     // Analytical Ewald exclusion correction is only an option in the SIMD kernel.
-    if (std::getenv("GMX_NBNXN_PLAINC_1X1") != nullptr)
+    if (forcePlainC1x1 || (!GMX_SIMD && !forcePlainC4x4))
     {
         return NbnxmKernelSetup{ NbnxmKernelType::Cpu1x1_PlainC, EwaldExclusionType::Table };
     }
-    if (GMX_SIMD && useSimd && nbnxmSimdSupported(mdlog, inputrec))
+    if (GMX_SIMD && useSimd && nbnxmSimdSupported(mdlog, inputrec) && !forcePlainC4x4)
     {
         return NbnxmKernelSetup{ pickNbnxmKernelCpuSimdType(inputrec, hardwareInfo),
                                  pickNbnxmKernelCpuSimdExclusion(hardwareInfo) };

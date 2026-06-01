@@ -364,15 +364,19 @@ Performance and Run Control
 
 ``GMX_NBNXN_PLAINC_1X1``
         force the use of the reference 1x1 non-SIMD CPU non-bonded kernel,
-        mutually exclusive of ``GMX_NBNXN_SIMD_2XNN`` and ``GMX_NBNXN_SIMD_4XN``.
+        mutually exclusive of ``GMX_NBNXN_PLAINC_4x4``, ``GMX_NBNXN_SIMD_2XNN`` and ``GMX_NBNXN_SIMD_4XN``.
+
+``GMX_NBNXN_PLAINC_4X4``
+        force the use of the reference 4x4 non-SIMD CPU non-bonded kernel,
+        mutually exclusive of ``GMX_NBNXN_PLAINC_1x1``, ``GMX_NBNXN_SIMD_2XNN`` and ``GMX_NBNXN_SIMD_4XN``.
 
 ``GMX_NBNXN_SIMD_2XNN``
         force the use of 2x(N+N) SIMD CPU non-bonded kernels,
-        mutually exclusive of ``GMX_NBNXN_PLAINC_1X1`` and ``GMX_NBNXN_SIMD_4XN``.
+        mutually exclusive of ``GMX_NBNXN_PLAINC_1X1``, ``GMX_NBNXN_PLAINC_4X4`` and ``GMX_NBNXN_SIMD_4XN``.
 
 ``GMX_NBNXN_SIMD_4XN``
         force the use of 4xN SIMD CPU non-bonded kernels,
-        mutually exclusive of ``GMX_NBNXN_PLAINC_1X1`` and ``GMX_NBNXN_SIMD_2XNN``.
+        mutually exclusive of ``GMX_NBNXN_PLAINC_1X1``, ``GMX_NBNXN_PLAINC_4X4`` and ``GMX_NBNXN_SIMD_2XNN``.
 
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
