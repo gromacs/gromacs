@@ -242,7 +242,7 @@ static void pme_receive_force_ener(t_forcerec*      fr,
                                    gmx_wallcycle*   wcycle)
 {
     real  e_q, e_lj, dvdl_q, dvdl_lj;
-    float cycles_ppdpme, cycles_seppme;
+    float cycles_ppdpme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, WallCycleCounter::PpDuringPme);
     dd_cycles_add(dd, cycles_ppdpme, ddCyclPPduringPME);
@@ -253,17 +253,11 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     wallcycle_start(wcycle, WallCycleCounter::PpPmeWaitRecvF);
     dvdl_q  = 0;
     dvdl_lj = 0;
-    fr->pmePpComm->receiveResults(
-            forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj, receivePmeForceToGpu, &cycles_seppme);
+    fr->pmePpComm->receiveResults(forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj, receivePmeForceToGpu);
     enerd->term[InteractionFunction::CoulombReciprocalSpace] += e_q;
     enerd->term[InteractionFunction::LennardJonesReciprocalSpace] += e_lj;
     enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Coul] += dvdl_q;
     enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Vdw] += dvdl_lj;
-
-    if (wcycle)
-    {
-        dd_cycles_add(dd, cycles_seppme, ddCyclPME);
-    }
     wallcycle_stop(wcycle, WallCycleCounter::PpPmeWaitRecvF);
 }
 

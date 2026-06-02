@@ -84,6 +84,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
+#include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -146,6 +147,12 @@ struct gmx_pme_pp
      * Together with NVSHMEM support, this requires otherwise unnecessary communication
      * and symmetric allocations */
     bool useGpuHaloExchange = false;
+    /*! \brief Accumulated PME cycle counts since the last DD/NS report
+     *
+     * Cycles are summed every step and reported to the PP rank before DD/NS
+     * work so that DLB always receives accurate PME timing, even for steps
+     * where virial and energy are not computed. */
+    gmx_pme_comm_cyclecounters_t pendingCycleCounters_ = {};
 };
 
 static std::vector<PpRanks> makePpRanks(const gmx_domdec_t& dd)
@@ -286,6 +293,7 @@ static std::unique_ptr<gmx_pme_t> gmx_pmeonly_switch(std::unique_ptr<gmx_pme_t>&
  * \retval pmerecvqxFINISH            No parameters were set.
  * \retval pmerecvqxSWITCHGRID        Only grid_size and *ewaldcoeff were set.
  * \retval pmerecvqxRESETCOUNTERS     *step was set.
+ * \retval pmerecvqxSENDCOUNTERS      No parameters were set.
  */
 static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       gmx_pme_pp*                  pme_pp,
@@ -328,12 +336,13 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
         if (debug)
         {
             fprintf(debug,
-                    "PME only rank receiving:%s%s%s%s%s\n",
+                    "PME only rank receiving:%s%s%s%s%s%s\n",
                     (cnb.flags & PP_PME_CHARGE) ? " charges" : "",
                     (cnb.flags & PP_PME_COORD) ? " coordinates" : "",
                     (cnb.flags & PP_PME_FINISH) ? " finish" : "",
                     (cnb.flags & PP_PME_SWITCHGRID) ? " switch grid" : "",
-                    (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
+                    (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "",
+                    (cnb.flags & PP_PME_SENDCOUNTERS) ? " send counters" : "");
         }
 
         stepWork->useGpuPmeFReduction = pme_pp->useGpuPmePpCommunication;
@@ -363,6 +372,11 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
         {
             /* Special case, receive the step (set above) and return */
             status = pmerecvqxRESETCOUNTERS;
+        }
+
+        if (cnb.flags & PP_PME_SENDCOUNTERS)
+        {
+            status = pmerecvqxSENDCOUNTERS;
         }
 
         const bool atomSetChanged = (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA)) != 0u;
@@ -617,17 +631,31 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     return status;
 }
 
+static void gmx_pme_send_cyclecounters(gmx_pme_pp* pme_pp)
+{
+#if GMX_MPI
+    pme_pp->pendingCycleCounters_.stop_cond = gmx_get_stop_condition();
+    MPI_Send(&pme_pp->pendingCycleCounters_,
+             sizeof(pme_pp->pendingCycleCounters_),
+             MPI_BYTE,
+             pme_pp->peerRankId,
+             eCommType_CYCLECOUNTERS,
+             pme_pp->mpi_comm_mysim);
+    pme_pp->pendingCycleCounters_ = {};
+#else
+    GMX_UNUSED_VALUE(pme_pp);
+#endif
+}
+
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
 static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
                                         gmx_pme_pp*      pme_pp,
                                         const PmeOutput& output,
-                                        float            cycles,
                                         const bool       computeVirial)
 {
 #if GMX_MPI
     gmx_pme_comm_vir_ene_t cve;
     int                    messages, ind_start, ind_end;
-    cve.cycles = cycles;
 
     if (pme_pp->useGpuPmePpCommunication)
     {
@@ -697,10 +725,6 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     cve.energy_lj    = output.lennardJonesEnergy_;
     cve.dvdlambda_q  = output.coulombDvdl_;
     cve.dvdlambda_lj = output.lennardJonesDvdl_;
-    /* check for the signals to send back to a PP node */
-    cve.stop_cond = gmx_get_stop_condition();
-
-    cve.cycles = cycles;
 
     if (debug)
     {
@@ -721,7 +745,6 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
-    GMX_UNUSED_VALUE(cycles);
     GMX_UNUSED_VALUE(computeVirial);
 #endif
 }
@@ -857,8 +880,18 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
             {
                 /* Reset the cycle and flop counters */
                 reset_pmeonly_counters(wcycle, walltime_accounting, mynrnb, step, useGpuForPme);
+                pme_pp->pendingCycleCounters_ = {};
             }
-        } while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
+
+            if (ret == pmerecvqxSENDCOUNTERS)
+            {
+                /* The PP rank requests cycle counters every nstlist steps, before DD/NS work.
+                 * When PME-only logic is refactored to be schedule-aware rather than
+                 * signal-driven, this send should occur every nstlist steps as part of
+                 * the explicit schedule. */
+                gmx_pme_send_cyclecounters(pme_pp.get());
+            }
+        } while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS || ret == pmerecvqxSENDCOUNTERS);
 
         if (ret == pmerecvqxFINISH)
         {
@@ -943,6 +976,13 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
         cycles = wallcycle_stop(
                 wcycle, useGpuForPme ? WallCycleCounter::PmeGpuMesh : WallCycleCounter::PmeMesh);
 
+        // Accumulate cycle counters to return in response to pmerecvqxSENDCOUNTERS
+        pme_pp->pendingCycleCounters_.cycles += cycles;
+        if (cycles > pme_pp->pendingCycleCounters_.cyclesMax)
+        {
+            pme_pp->pendingCycleCounters_.cyclesMax = cycles;
+        }
+        pme_pp->pendingCycleCounters_.numSteps++;
 
         if (useGpuForPme && pme_pp->useMdGpuGraph)
         {
@@ -951,7 +991,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
             pme_gpu_finish_step(pme->gpu.get(), pme_pp->useMdGpuGraph, wcycle);
         }
 
-        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles, stepWork.computeVirial);
+        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, stepWork.computeVirial);
 
         // Reinit after PME->PP force send so it is removed from the critical path
         if (useGpuForPme && !pme_pp->useMdGpuGraph)

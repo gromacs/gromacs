@@ -71,6 +71,7 @@
 #include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/nsgrid.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
@@ -2635,13 +2636,19 @@ void dd_partition_system(FILE*                     fplog,
                          gmx_wallcycle*            wcycle,
                          bool                      bVerbose)
 {
-    gmx_ddbox_t ddbox = { 0 };
-    int         ncgindex_set;
-    char        sbuf[22];
+    gmx_ddbox_t        ddbox = { 0 };
+    int                ncgindex_set;
+    char               sbuf[22];
+    gmx_domdec_comm_t* comm = dd->comm.get();
 
     wallcycle_start(wcycle, WallCycleCounter::Domdec);
 
-    gmx_domdec_comm_t* comm = dd->comm.get();
+    bool pmeCycleCountersRequestIsPending = false;
+    if (fr->pmePpComm)
+    {
+        fr->pmePpComm->sendCycleCountersAndStopConditionRequest();
+        pmeCycleCountersRequestIsPending = true;
+    }
 
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
@@ -2707,6 +2714,15 @@ void dd_partition_system(FILE*                     fplog,
 
         if (bDoDLB || bLogLoad || bCheckWhetherToTurnDlbOn || bVerbose)
         {
+            if (fr->pmePpComm)
+            {
+                GMX_ASSERT(pmeCycleCountersRequestIsPending,
+                           "The PME cycles must have been requested earlier");
+                const auto pmeCycleCounters = fr->pmePpComm->receiveCycleCountersAndStopCondition();
+                dd_cycles_add_pme(
+                        dd, pmeCycleCounters.cycles, pmeCycleCounters.cyclesMax, pmeCycleCounters.numSteps);
+                pmeCycleCountersRequestIsPending = false;
+            }
             get_load_distribution(dd, wcycle);
             if (DDMAIN(dd))
             {
@@ -3199,6 +3215,20 @@ void dd_partition_system(FILE*                     fplog,
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is true. */
     imdSession->dd_make_local_IMD_atoms(dd);
+
+    /* If we have DLB on, we have already received the counters earlier.
+     * Otherwise, receive them now. This delays the blocking MPI receive
+     * to the latest possible moment, allowing better overlap between DD work
+     * and PP->PME->PP request roundtrip. */
+    if (fr->pmePpComm && pmeCycleCountersRequestIsPending)
+    {
+        const auto pmeCycleCounters = fr->pmePpComm->receiveCycleCountersAndStopCondition();
+        if (wcycle)
+        {
+            dd_cycles_add_pme(
+                    dd, pmeCycleCounters.cycles, pmeCycleCounters.cyclesMax, pmeCycleCounters.numSteps);
+        }
+    }
 
     add_dd_statistics(dd);
 

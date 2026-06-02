@@ -129,8 +129,16 @@ public:
                         real*            energy_lj,
                         real*            dvdlambda_q,
                         real*            dvdlambda_lj,
-                        bool             receivePmeForceToGpu,
-                        float*           pme_cycles);
+                        bool             receivePmeForceToGpu);
+    /*! \brief Send a request for PME cycle counters and stop signalling before DD/NS work
+     *
+     * This method must only be called when the PME rank is known to be in its
+     * CNB-receiving loop and not executing other MPI operations. This is
+     * guaranteed when called at repartitioning (every \c nstlist steps), since
+     * the PME rank waits for a CNB message between force computation steps. */
+    void sendCycleCountersAndStopConditionRequest();
+    //! Wait for the PME cycle counter reply and return the counters
+    gmx_pme_comm_cyclecounters_t receiveCycleCountersAndStopCondition();
     //! Tell our PME-only rank to finish
     void sendFinish() const;
     //! Tell our PME-only rank to reset all cycle and flop counters
@@ -158,8 +166,7 @@ private:
                                 real*            energy_q,
                                 real*            energy_lj,
                                 real*            dvdlambda_q,
-                                real*            dvdlambda_lj,
-                                float*           pme_cycles);
+                                real*            dvdlambda_lj);
     //! Receive force data from PME ranks
     void receiveForces(bool receivePmeForceToGpu);
 
@@ -193,6 +200,10 @@ private:
     std::optional<gmx_pme_comm_n_box_t> cnb_;
     //! MPI requests for communication with the PME rank
     std::vector<MPI_Request> requests_;
+    //! PME cycle counter reply received before DD/NS work
+    gmx_pme_comm_cyclecounters_t cycleCounters_ = {};
+    //! MPI request for the PME cycle counter reply
+    MPI_Request cycleCountersRequest_ = MPI_REQUEST_NULL;
     //! CPU buffer into which this PP rank receives PME forces, possibly from a GPU
     HostVector<RVec> cpuPmeForceReceiveBuffer_;
     //! Manager of direct GPU PME-PP communication, when active.

@@ -74,6 +74,7 @@ typedef GmxNoMpiDummyMpiGroup* MPI_Group;
 #        define MPI_COMM_NULL nullptr
 #        define MPI_GROUP_NULL nullptr
 #        define MPI_COMM_WORLD nullptr
+#        define MPI_REQUEST_NULL nullptr
 #    endif
 #endif
 //! \endcond

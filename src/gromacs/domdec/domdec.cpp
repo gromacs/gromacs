@@ -910,6 +910,28 @@ void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl)
     }
 }
 
+void dd_cycles_add_pme(const gmx_domdec_t* dd,
+                       const float         pmeCycleTotal,
+                       const float         pmeCyclesMaxPerStep,
+                       const int           pmeNumSteps)
+{
+    GMX_ASSERT(pmeNumSteps >= 0, "PME cycle accounting step count should not be negative");
+
+    if (pmeNumSteps == 0)
+    {
+        GMX_ASSERT(pmeCycleTotal == 0 && pmeCyclesMaxPerStep == 0,
+                   "Non-zero cycle count for zero steps");
+        return;
+    }
+
+    dd->comm->cycl[ddCyclPME] += pmeCycleTotal;
+    dd->comm->cycl_n[ddCyclPME] += pmeNumSteps;
+    if (pmeCyclesMaxPerStep > dd->comm->cycl_max[ddCyclPME])
+    {
+        dd->comm->cycl_max[ddCyclPME] = pmeCyclesMaxPerStep;
+    }
+}
+
 #if GMX_MPI
 static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 {

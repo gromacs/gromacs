@@ -71,6 +71,7 @@ enum
     eCommType_FORCES_GPU_REMOTE_GPU_PTR,
     eCommType_FORCES_GPU_REMOTE_CPU_PTR,
     eCommType_ENERGY_VIRIAL_DVDL,
+    eCommType_CYCLECOUNTERS,
     eCommType_CNB
 };
 
@@ -97,15 +98,17 @@ enum
 #define PP_PME_RECVFTOGPU (1 << 14)
 // Whether a GPU graph should be used to execute steps in the MD loop if run conditions allow
 #define PP_PME_MDGPUGRAPH (1 << 15)
+#define PP_PME_SENDCOUNTERS (1 << 16)
 //@}
 
 /*! \brief Return values for gmx_pme_recv_q_x */
 enum
 {
-    pmerecvqxX,            /* calculate PME mesh interactions for new x    */
-    pmerecvqxFINISH,       /* the simulation should finish, we should quit */
-    pmerecvqxSWITCHGRID,   /* change the PME grid size                     */
-    pmerecvqxRESETCOUNTERS /* reset the cycle and flop counters            */
+    pmerecvqxX,             /* calculate PME mesh interactions for new x    */
+    pmerecvqxFINISH,        /* the simulation should finish, we should quit */
+    pmerecvqxSWITCHGRID,    /* change the PME grid size                     */
+    pmerecvqxRESETCOUNTERS, /* reset the cycle and flop counters            */
+    pmerecvqxSENDCOUNTERS   /* send the cycle counters and stop condition   */
 };
 
 /*! \internal
@@ -152,12 +155,19 @@ struct gmx_pme_comm_vir_ene_t
     real   dvdlambda_q;
     real   dvdlambda_lj;
     //@}
-    float         cycles;    /**< Counter of CPU cycles used */
-    StopCondition stop_cond; /**< Flag used in responding to an external signal to terminate */
 };
 static_assert(std::is_trivially_copyable_v<gmx_pme_comm_vir_ene_t>,
               "Must be trivially copyable to be sent over MPI");
 
+struct gmx_pme_comm_cyclecounters_t
+{
+    float         cycles;    /**< Total counter of CPU cycles used */
+    float         cyclesMax; /**< Maximum CPU cycles used per PME step */
+    int           numSteps;  /**< Number of PME steps counted */
+    StopCondition stop_cond; /**< Flag used in responding to an external signal to terminate */
+};
+static_assert(std::is_trivially_copyable_v<gmx_pme_comm_cyclecounters_t>,
+              "Must be trivially copyable to be sent over MPI");
 namespace gmx
 {
 

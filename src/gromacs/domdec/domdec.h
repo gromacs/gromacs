@@ -229,6 +229,9 @@ enum
 /*! \brief Add the wallcycle count to the DD counter */
 void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl);
 
+/*! \brief Add PME cycle counts collected over multiple PME steps */
+void dd_cycles_add_pme(const gmx_domdec_t* dd, float pmeCycleTotal, float pmeCyclesMaxPerStep, int pmeNumSteps);
+
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
 void dd_move_x(struct gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_wallcycle* wcycle);
 
