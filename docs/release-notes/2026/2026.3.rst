@@ -46,6 +46,20 @@ If fewer than three angles were provided, this led to a heap buffer overflow.
 
 :issue:`5620`
 
+Fix gmx anaeig -over when number of eigenvectors differs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, ``gmx anaeig -over -v ev1.trr -v2 ev2.trr -first 1 -last 1``
+would exit with a fatal error if the two eigenvector files contained a 
+different number of eigenvectors.
+Computing the subspace overlap of a set of eigenvectors should only require the 
+two eigenvector files to have the same number of atoms, not the same number of 
+stored eigenvectors. 
+
+See also
+`this discussion thread <https://gromacs.bioexcel.eu/t/gmx-anaeig-problematic-error-dimensions-in-the-eigenvector-files-dont-match/13427>`_
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
