@@ -74,6 +74,7 @@ target_sources(testutils PRIVATE
                cmdlinetest.cpp
                conftest.cpp
                filematchers.cpp
+               generate_frame_data.cpp
                interactivetest.cpp
                loggertest.cpp
                mpi_printer.cpp

@@ -63,6 +63,7 @@
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/generate_frame_data.h"
 #include "testutils/setenv.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -819,30 +820,22 @@ TEST_F(H5mdIoTest, WriteNextFrameWorks)
     std::array<std::vector<RVec>, numFrames> forces;
     std::array<matrix, numFrames>            boxes;
 
+    TrajectoryFrameDataGenerator positionGenerator(TrajectoryFrameMode::Positive);
+    TrajectoryFrameDataGenerator velocityGenerator(TrajectoryFrameMode::Negative);
+    TrajectoryFrameDataGenerator forceGenerator(TrajectoryFrameMode::Alternating);
+    MatrixFrameDataGenerator     boxGenerator;
+
     // Write unique per-frame values to the file (and to our per-frame buffers above for verification)
     for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
     {
         positions[frameIndex].resize(numAtoms);
         velocities[frameIndex].resize(numAtoms);
         forces[frameIndex].resize(numAtoms);
-        // For each atom in this frame, create a unique value and set it on all per-frame vectors
-        RVec frameValue = static_cast<real>(frameIndex) * RVec{ 1.0, 0.1, 0.01 };
-        for (hsize_t atomIndex = 0; atomIndex < numAtoms; ++atomIndex)
-        {
-            frameValue += { 1.0, 1.0, 1.0 };
-            positions[frameIndex][atomIndex]  = frameValue;
-            velocities[frameIndex][atomIndex] = static_cast<real>(10.0) * frameValue;
-            forces[frameIndex][atomIndex]     = static_cast<real>(100.0) * frameValue;
-        }
 
-        // Generate unique values for the box matrix
-        for (int i = 0; i < DIM; ++i)
-        {
-            for (int j = 0; j < DIM; ++j)
-            {
-                boxes[frameIndex][i][j] = (9 * frameIndex) + (3 * i) + j;
-            }
-        }
+        positionGenerator(positions[frameIndex]);
+        velocityGenerator(velocities[frameIndex]);
+        forceGenerator(forces[frameIndex]);
+        boxGenerator(boxes[frameIndex]);
 
         file().writeNextFrame(positions[frameIndex],
                               velocities[frameIndex],
@@ -923,14 +916,9 @@ TEST_F(H5mdIoTest, WriteNextFrameDoesNotWriteEmptyRefs)
     std::vector<RVec> forcesToWrite(numAtoms);
 
     // Generate unique values to fill each value array above
-    RVec atomValue = RVec{ 1.0, 0.1, 0.01 };
-    for (hsize_t atomIndex = 0; atomIndex < numAtoms; ++atomIndex)
-    {
-        atomValue += { 1.0, 1.0, 1.0 };
-        positionsToWrite[atomIndex]  = atomValue;
-        velocitiesToWrite[atomIndex] = static_cast<real>(10.0) * atomValue;
-        forcesToWrite[atomIndex]     = static_cast<real>(100.0) * atomValue;
-    }
+    TrajectoryFrameDataGenerator(TrajectoryFrameMode::Positive, {})(positionsToWrite);
+    TrajectoryFrameDataGenerator(TrajectoryFrameMode::Negative, {})(velocitiesToWrite);
+    TrajectoryFrameDataGenerator(TrajectoryFrameMode::Alternating, {})(forcesToWrite);
 
     file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0);
     file().writeNextFrame(positionsToWrite, {}, {}, c_unusedBox, 0, 0);
@@ -1045,31 +1033,22 @@ TEST_F(H5mdReadNextFrame, Works)
     std::array<std::vector<RVec>, numFrames> forces;
     std::array<matrix, numFrames>            boxes;
 
+    TrajectoryFrameDataGenerator positionGenerator(TrajectoryFrameMode::Positive);
+    TrajectoryFrameDataGenerator velocityGenerator(TrajectoryFrameMode::Negative);
+    TrajectoryFrameDataGenerator forceGenerator(TrajectoryFrameMode::Alternating);
+    MatrixFrameDataGenerator     boxGenerator;
+
     // Write unique per-frame values to the file (and to our per-frame buffers above for verification)
     for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
     {
         positions[frameIndex].resize(numAtoms);
         velocities[frameIndex].resize(numAtoms);
         forces[frameIndex].resize(numAtoms);
-        // For each atom in this frame, create a unique value and append to all per-frame vectors
-        RVec frameValue = static_cast<real>(frameIndex) * RVec{ 1.0, 0.1, 0.01 };
-        for (hsize_t atomIndex = 0; atomIndex < numAtoms; ++atomIndex)
-        {
-            frameValue += { 1.0, 1.0, 1.0 };
-            positions[frameIndex][atomIndex]  = frameValue;
-            velocities[frameIndex][atomIndex] = static_cast<real>(10.0) * frameValue;
-            forces[frameIndex][atomIndex]     = static_cast<real>(100.0) * frameValue;
-        }
 
-        // Generate unique values for the box matrix
-        for (int i = 0; i < DIM; ++i)
-        {
-            for (int j = 0; j < DIM; ++j)
-            {
-                boxes[frameIndex][i][j] = (9 * frameIndex) + (3 * i) + j;
-            }
-        }
-
+        positionGenerator(positions[frameIndex]);
+        velocityGenerator(velocities[frameIndex]);
+        forceGenerator(forces[frameIndex]);
+        boxGenerator(boxes[frameIndex]);
 
         file().writeNextFrame(positions[frameIndex],
                               velocities[frameIndex],

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="frame 0">
+    <Int Name="Length">9</Int>
+    <Real>0.10000000000000001</Real>
+    <Real>0.20000000000000001</Real>
+    <Real>0.30000000000000004</Real>
+    <Real>0.40000000000000002</Real>
+    <Real>0.5</Real>
+    <Real>0.59999999999999998</Real>
+    <Real>0.69999999999999996</Real>
+    <Real>0.79999999999999993</Real>
+    <Real>0.89999999999999991</Real>
+  </Sequence>
+  <Sequence Name="frame 1">
+    <Int Name="Length">9</Int>
+    <Real>1.1000000000000001</Real>
+    <Real>1.2</Real>
+    <Real>1.3</Real>
+    <Real>1.3999999999999999</Real>
+    <Real>1.5</Real>
+    <Real>1.6000000000000001</Real>
+    <Real>1.7</Real>
+    <Real>1.7999999999999998</Real>
+    <Real>1.8999999999999999</Real>
+  </Sequence>
+  <Sequence Name="frame 2">
+    <Int Name="Length">9</Int>
+    <Real>2.1000000000000001</Real>
+    <Real>2.2000000000000002</Real>
+    <Real>2.2999999999999998</Real>
+    <Real>2.3999999999999999</Real>
+    <Real>2.5</Real>
+    <Real>2.6000000000000001</Real>
+    <Real>2.7000000000000002</Real>
+    <Real>2.7999999999999998</Real>
+    <Real>2.8999999999999999</Real>
+  </Sequence>
+</ReferenceData>

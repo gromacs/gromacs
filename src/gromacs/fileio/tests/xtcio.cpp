@@ -42,12 +42,15 @@
 
 #include "gromacs/fileio/xtcio.h"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/generate_frame_data.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -80,22 +83,12 @@ TEST_F(XtcTest, WriteAndRead)
     constexpr int64_t steps[nframes]      = { 42, -5, 0 };
     constexpr real    times[nframes]      = { 50.5, -501.0, 0.0 };
     constexpr real    precisions[nframes] = { 1000, 100, 1000 };
-    constexpr matrix  boxes[nframes]      = {
-        { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 }, { 7.0, 8.0, 9.0 } },
-        { { 10.0, 20.0, 30.0 }, { 40.0, 50.0, 60.0 }, { 70.0, 80.0, 90.0 } },
-        { { 100.0, 200.0, 300.0 }, { 400.0, 500.0, 600.0 }, { 700.0, 800.0, 900.0 } }
-    };
 
-    // Create positions for frames to write and then read
+    // Generate per-frame data for box and x
+    std::array<matrix, nframes> boxes;
+    std::for_each(boxes.begin(), boxes.end(), MatrixFrameDataGenerator());
     std::array<std::array<RVec, natoms>, nframes> positions;
-    for (int frame = 0; frame < nframes; ++frame)
-    {
-        for (int i = 0; i < natoms; ++i)
-        {
-            const real f        = frame + (0.1 * i);
-            positions[frame][i] = { f + 0.01_real, f + 0.02_real, f + 0.03_real };
-        }
-    }
+    std::for_each(positions.begin(), positions.end(), TrajectoryFrameDataGenerator());
 
     {
         SCOPED_TRACE("Create a new file and write the frames into it");
@@ -144,7 +137,8 @@ TEST_F(XtcTest, WriteAndRead)
             // if the read precision is -1, compression was not activated (see note about natoms)
             EXPECT_REAL_EQ(precisions[frame], precision);
             EXPECT_THAT(arrayRefFromArray(box, DIM),
-                        Pointwise(RVecEq(defaultRealTolerance()), arrayRefFromArray(boxes[frame], DIM)));
+                        Pointwise(RVecEq(relativeToleranceAsFloatingPoint(1.0, 1e-7)),
+                                  arrayRefFromArray(boxes[frame], DIM)));
             EXPECT_THAT(arrayRefFromArray(x, natoms),
                         Pointwise(RVecEq(absoluteTolerance(1.0 / precision)), positions[frame]));
         }

@@ -33,6 +33,7 @@
 
 gmx_add_unit_test(TestUtilsUnitTests testutils-test
     CPP_SOURCE_FILES
+        generate_frame_data_tests.cpp
         interactivetest.cpp
         naming.cpp
         posixmemstream.cpp
