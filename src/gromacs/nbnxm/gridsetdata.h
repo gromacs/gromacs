@@ -72,8 +72,8 @@ struct GridSetData
  */
 struct GridWork
 {
-    //! Number of atoms for each grid cell
-    std::vector<int> numAtomsPerCell;
+    //! Number of atoms for each grid cell on a 3D grid, this adds a dimension to the search grid to be able to compute the effective atom density
+    std::vector<int> numAtomsPerCell3D;
     //! Buffer for sorting integers
     std::vector<int> sortBuffer;
 };

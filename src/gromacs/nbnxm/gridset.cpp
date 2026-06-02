@@ -245,7 +245,7 @@ void GridSet::putOnGrid(const matrix            box,
      * We first generate a grid that is optimal for a homogeneous particle
      * density. We then compute the effective grid density. If this is more
      * than a factor 1.5 higher than the homogeneous density, we use a finer grid
-     * based on the newly computed density.
+     * based on the newly computed effective density.
      */
     const real c_gridDensityRatioThreshold = 1.5_real;
     const bool optimizeDensity             = (ddZone == 0 && numAtomsWithoutFillers > 0);
@@ -258,14 +258,7 @@ void GridSet::putOnGrid(const matrix            box,
     {
         if (iteration == 1)
         {
-            /* The effective 2D grid density is higher than the uniform density.
-             * So we need to increase the 3D density, but we only know about
-             * the density in 2D. If the inhomogeneity is 2D only (unlikely),
-             * we need to correct with the ratio between the densities. If we have
-             * a sphere-like concentration of particles, the correction factor
-             * should be gridDensityRatio^3/2. We use the average exponent.
-             */
-            atomDensity *= std::pow(effectiveAtomDensity / atomDensity, 1.25_real);
+            atomDensity = effectiveAtomDensity;
         }
 
         const bool computeEffectiveAtomDensity = (iteration == 0 && optimizeDensity);

@@ -293,14 +293,16 @@ private:
      * \param[in] upperCorner      The maximum Cartesian coordinates of the grid
      * \param[in,out] atomDensity  The atom density, will be computed when <= 0
      * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
+     *
+     * \returns the number of cells along z for the grid for density estimation
      */
-    void setDimensions(int         ddZone,
-                       int         numAtomsTotal,
-                       int         numAtomsWithoutFillers,
-                       const RVec& lowerCorner,
-                       const RVec& upperCorner,
-                       real*       atomDensity,
-                       real        maxAtomGroupRadius);
+    int setDimensions(int         ddZone,
+                      int         numAtomsTotal,
+                      int         numAtomsWithoutFillers,
+                      const RVec& lowerCorner,
+                      const RVec& upperCorner,
+                      real*       atomDensity,
+                      real        maxAtomGroupRadius);
 
 public:
     /*! \brief Sets the 2D search grid dimensions puts the atoms on the 2D grid
@@ -389,6 +391,7 @@ public:
                                 int                    thread,
                                 int                    nthread,
                                 ArrayRef<int>          bins,
+                                int                    numCellsZ,
                                 ArrayRef<int>          numAtomsPerCell);
 
 private:

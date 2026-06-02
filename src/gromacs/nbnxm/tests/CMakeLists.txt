@@ -36,6 +36,7 @@ gmx_add_unit_test(NbnxmTests nbnxm-test
         2
     CPP_SOURCE_FILES
         exclusions.cpp
+        grid.cpp
         kernel_test.cpp
         kernelsetup.cpp
         plainpairlist.cpp
