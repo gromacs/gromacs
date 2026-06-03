@@ -3146,8 +3146,15 @@ bool change_dd_cutoff(gmx_domdec_t*                  dd,
 void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
                                       const gmx::DeviceStreamManager& deviceStreamManager,
                                       const bool                      useNvshmem,
-                                      const std::optional<int>        rankOfControlledPmeRank)
+                                      const std::optional<int>        rankOfControlledPmeRank,
+                                      const DeviceBuffer<gmx::RVec>   d_coordinatesBuffer,
+                                      const DeviceBuffer<gmx::RVec>   d_forcesBuffer,
+                                      gmx_wallcycle*                  wcycle)
 {
+    // The construction and reinit behaviours could be separated
+    // better if we had an umbrella object that had overall
+    // responsibility for GPU halo exchange, because it could cache
+    // things only needed when the number of pulses increases.
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be valid when using"
                        "GPU halo exchange.");
@@ -3160,8 +3167,7 @@ void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
     if (useNvshmem)
     {
         /* The gpuHaloExchangeNvshmemHelper is created on first use, or after it was explicitly
-         * destroyed and reset to nullptr (e.g., during teardown or mode switches).
-         * When useNvshmem is true at this point, we must ensure the it exists. */
+         * destroyed and reset to nullptr (e.g., during teardown or mode switches). */
         if (dd->gpuHaloExchangeNvshmemHelper == nullptr)
         {
             dd->useGpuHaloExchangeNvshmem    = true;
@@ -3175,13 +3181,10 @@ void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
                     dd->mpiComm().comm(),
                     dd->mpiCommMySim().comm());
         }
-        for (auto& cdDim : dd->comm->cd)
-        {
-            for (auto& indices : cdDim.ind)
-            {
-                gmx::changePinningPolicy(&indices.index, gmx::PinningPolicy::PinnedIfSupported);
-            }
-        }
+        // Does global communication and symmetric reallocation
+        dd->gpuHaloExchangeNvshmemHelper->reinit();
+        // Might change pinning of index vectors
+        dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(dd, d_coordinatesBuffer, d_forcesBuffer);
     }
     else
     {
@@ -3204,29 +3207,16 @@ void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
                         deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
                         deviceStreamManager.context(),
                         pulse));
+                // During initial construction, wcycle is nullptr and
+                // this call does nothing - a separate call to
+                // addWallcycleCountersToGpuHaloExchange takes care of
+                // it. During updates when pulse count increases,
+                // wcycle is valid and gets added to the new objects
+                // here.
+                dd->gpuHaloExchange[d][pulse]->addWallcycleCounters(wcycle);
             }
-        }
-    }
-}
-
-void reinitGpuHaloExchange(gmx_domdec_t*                   dd,
-                           const gmx::DeviceStreamManager& deviceStreamManager,
-                           const DeviceBuffer<gmx::RVec>   d_coordinatesBuffer,
-                           const DeviceBuffer<gmx::RVec>   d_forcesBuffer)
-{
-    if (dd->useGpuHaloExchangeNvshmem)
-    {
-        dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(dd, d_coordinatesBuffer, d_forcesBuffer);
-    }
-    else
-    {
-        for (int d = 0; d < dd->ndim; d++)
-        {
-            // Initially no pulses have been added and are constructed
-            // here after the first DD partitioning. However both
-            // dynamic load balancing and dynamic box size can change
-            // the number of pulses used, and if that is an increase
-            // then new pulses are added here.
+            // Now that the exchange objects are definitely
+            // constructed, update them for this partitioning.
             for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
             {
                 dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
@@ -3252,12 +3242,6 @@ void addWallcycleCountersToGpuHaloExchange(gmx_domdec_t* dd, gmx_wallcycle* wcyc
             }
         }
     }
-}
-
-void reinitGpuHaloExchangeNvshmem(const gmx_domdec_t& dd)
-{
-    // Does global communication and symmetric reallocation
-    dd.gpuHaloExchangeNvshmemHelper->reinit();
 }
 
 void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)

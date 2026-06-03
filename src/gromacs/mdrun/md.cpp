@@ -405,6 +405,12 @@ void gmx::LegacySimulator::do_md()
                             FALSE);
         upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*md);
+        if (simulationWork.useGpuHaloExchange)
+        {
+            // Fix up GPU halo exchange, which was constructed with
+            // nullptr for wcycle during the above dd_partition_system.
+            addWallcycleCountersToGpuHaloExchange(cr_->dd, wallCycleCounters_);
+        }
     }
     else
     {
@@ -1026,28 +1032,6 @@ void gmx::LegacySimulator::do_md()
                 upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
                 fr_->longRangeNonbondeds->updateAfterPartition(*md);
             }
-        }
-
-        // Allocate or re-size GPU halo exchange object, if necessary
-        if (bNS && simulationWork.havePpDomainDecomposition && simulationWork.useGpuHaloExchange)
-        {
-            GMX_RELEASE_ASSERT(fr_->deviceStreamManager != nullptr,
-                               "GPU device manager has to be initialized to use GPU "
-                               "version of halo exchange.");
-            // When using NVSHMEM, we use the PP rank which receives
-            // virial and energy from PME rank to send the data about
-            // the number of halo-exchange pulses to the PME rank.
-            std::optional<int> rankOfControlledPmeRank;
-            if (simulationWork.haveSeparatePmeRank)
-            {
-                // When there is a separate PME rank, only one PP rank
-                // controls it, and that PP rank returns a valid value
-                // here.
-                rankOfControlledPmeRank = fr_->pmePpComm->rankOfControlledPmeRank();
-            }
-            constructOrUpdateGpuHaloExchange(
-                    cr_->dd, *fr_->deviceStreamManager, simulationWork.useNvshmem, rankOfControlledPmeRank);
-            addWallcycleCountersToGpuHaloExchange(cr_->dd, wallCycleCounters_);
         }
 
         if (isMainRank && do_log)

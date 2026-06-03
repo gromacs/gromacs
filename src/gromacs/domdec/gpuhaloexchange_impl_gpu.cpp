@@ -155,7 +155,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     GMX_RELEASE_ASSERT(supportedLibMpiBuild || supportedThreadMpiBuild,
                        "Gpu Halo Exchange not supported in this build");
 
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::Domdec);
+    // Note should be already within WallCycleCounter::Domdec
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::DDGpu);
 
     d_x_ = d_coordinatesBuffer;
@@ -255,7 +255,6 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
 #endif
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::DDGpu);
-    wallcycle_stop(wcycle_, WallCycleCounter::Domdec);
 }
 
 void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)

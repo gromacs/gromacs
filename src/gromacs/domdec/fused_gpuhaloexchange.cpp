@@ -302,8 +302,10 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
             const int               xSendSize  = plan.xSendSize;
             const int               xRecvSize  = plan.xRecvSize;
             const gmx_domdec_ind_t* ind        = plan.ind;
-            GMX_RELEASE_ASSERT(ind->index.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported,
-                               "Array of communication indices must have been pinned");
+            // Prepare for async H2D transfers, if needed. Note that the pulse count
+            // can have increased since last DD partitioning.
+            gmx::changePinningPolicy(&dd->comm->cd[dimIndex].ind[pulse].index,
+                                     gmx::PinningPolicy::PinnedIfSupported);
 
             auto& data             = haloExchangeData_[idxEntry];
             data.xSendSize         = xSendSize;

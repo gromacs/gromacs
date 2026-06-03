@@ -43,10 +43,12 @@
 #include "domdechelper.h"
 
 #include "gromacs/domdec/collect.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 
@@ -113,6 +115,12 @@ void DomDecHelper::setup()
                     wcycle,
                     statePropagatorData_->localState(),
                     statePropagatorData_->globalState());
+    if (simulationWork_.useGpuHaloExchange)
+    {
+        // Fix up GPU halo exchange, which was constructed with
+        // nullptr for wcycle during the above dd_partition_system.
+        addWallcycleCountersToGpuHaloExchange(cr_->dd, wcycle_);
+    }
 }
 
 void DomDecHelper::run(Step step, Time gmx_unused time)

@@ -1492,17 +1492,6 @@ static void doPairSearch(const t_commrec*             cr,
         nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::NonLocal);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchNonLocal);
         wallcycle_stop(wcycle, WallCycleCounter::NS);
-        // TODO refactor this GPU halo exchange re-initialisation
-        // to location in do_md where GPU halo exchange is
-        // constructed at partitioning, after above stateGpu
-        // re-initialization has similarly been refactored
-        // because with NVSHMEM the ordering of synchronous
-        // global operations must be preserved.
-        if (simulationWork.useGpuHaloExchange)
-        {
-            reinitGpuHaloExchange(
-                    cr->dd, *fr->deviceStreamManager, stateGpu->getCoordinates(), stateGpu->getForces());
-        }
     }
 
     // With FEP we set up the reduction over threads for local+non-local simultaneously,

@@ -184,14 +184,37 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
         // Does global communication and symmetric reallocation with NVSHMEM
         stateGpu->reinit(mdatoms->homenr,
                          simulationWork.havePpDomainDecomposition ? dd_numAtomsZones(*dd) : mdatoms->homenr);
-        if (simulationWork.useGpuHaloExchange && simulationWork.useNvshmem)
-        {
-            // Does global communication and symmetric reallocation
-            reinitGpuHaloExchangeNvshmem(*dd);
-        }
     }
-    // Will be used in follow-up work to !6041
-    GMX_UNUSED_VALUE(wcycle);
+
+    // Now that the number of halo-exchange pulses is determined and
+    // stateGpu is updated, the halo exchange objects can
+    // be constructed and/or updated.
+    if (simulationWork.useGpuHaloExchange)
+    {
+        GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
+                           "GPU device manager has to be initialized to use GPU "
+                           "halo exchange.");
+        // When using NVSHMEM, we use the PP rank which receives
+        // virial and energy from PME rank to send the data about
+        // the number of halo-exchange pulses to the PME rank.
+        std::optional<int> rankOfControlledPmeRank;
+        if (simulationWork.useNvshmem && simulationWork.haveSeparatePmeRank)
+        {
+            // When there is a separate PME rank, only one PP rank
+            // controls it, and that PP rank returns a valid value
+            // here.
+            rankOfControlledPmeRank = fr->pmePpComm->rankOfControlledPmeRank();
+        }
+        // Does global communication and symmetric reallocation.
+        // Might be doing the initial construction.
+        constructOrUpdateGpuHaloExchange(dd,
+                                         *fr->deviceStreamManager,
+                                         simulationWork.useNvshmem,
+                                         rankOfControlledPmeRank,
+                                         stateGpu->getCoordinates(),
+                                         stateGpu->getForces(),
+                                         wcycle);
+    }
 
     if (constr)
     {

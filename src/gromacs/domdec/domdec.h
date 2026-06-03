@@ -287,11 +287,17 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
  * \param[in] deviceStreamManager      Manager of the GPU context and streams.
  * \param[in] useNvshmem               Whether NVSHMEM is in use for GPU halo exchange
  * \param[in] rankOfControlledPmeRank  The rank of the PME rank controlled by this PP rank, if any
+ * \param[in] d_coordinatesBuffer      Coordinates buffer in GPU memory
+ * \param[in] d_forcesBuffer           Forces buffer in GPU memory
+ * \param[in] wcycle                   The wallclock counter.
  */
 void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
                                       const gmx::DeviceStreamManager& deviceStreamManager,
                                       bool                            useNvshmem,
-                                      std::optional<int>              rankOfControlledPmeRank);
+                                      std::optional<int>              rankOfControlledPmeRank,
+                                      DeviceBuffer<gmx::RVec>         d_coordinatesBuffer,
+                                      DeviceBuffer<gmx::RVec>         d_forcesBuffer,
+                                      gmx_wallcycle*                  wcycle);
 
 /*! \brief Complete the construction of the GPU halo exchange object(s).
  *
@@ -301,27 +307,6 @@ void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
  * \param[in] wcycle  The wallclock counter.
  */
 void addWallcycleCountersToGpuHaloExchange(gmx_domdec_t* dd, gmx_wallcycle* wcycle);
-
-/*! \brief
- * (Re-) Initialization for GPU halo exchange
- * \param [in] dd                   Domain-decomposition structure
- * \param [in] deviceStreamManager  Manager of the GPU context and streams.
- * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
- * \param [in] d_forcesBuffer       pointer to forces buffer in GPU memory
- */
-void reinitGpuHaloExchange(gmx_domdec_t*                   dd,
-                           const gmx::DeviceStreamManager& deviceStreamManager,
-                           DeviceBuffer<gmx::RVec>         d_coordinatesBuffer,
-                           DeviceBuffer<gmx::RVec>         d_forcesBuffer);
-
-/*! \brief
- * (Re-) Initialization for GPU halo exchange with NVSHMEM
- *
- * Does global communication and symmetric reallocation
- *
- * \param [in] dd                   Domain-decomposition structure
- */
-void reinitGpuHaloExchangeNvshmem(const gmx_domdec_t& dd);
 
 /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
  * \param [in] cr                The commrec object
