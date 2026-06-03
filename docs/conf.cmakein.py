@@ -139,6 +139,7 @@ extensions = [
     "sphinxcontrib.autoprogram",
     "gmxsphinx",
     "gmxcitations",
+    "gmxstyles",
 ]
 extlinks = {"issue": ("https://gitlab.com/gromacs/gromacs/-/issues/%s", "Issue %s")}
 
