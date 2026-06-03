@@ -700,7 +700,7 @@ static gmx_bool gmx_next_frame(t_trxstatus* status, t_trxframe* fr)
         fr->bStep     = TRUE;
         fr->step      = sh.step;
         fr->bTime     = TRUE;
-        fr->time      = sh.t;
+        fr->time      = static_cast<double>(sh.t);
         fr->bLambda   = TRUE;
         fr->bFepState = TRUE;
         fr->lambda    = sh.lambda;
@@ -829,7 +829,7 @@ static int pdb_first_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
 
 bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxframe* fr)
 {
-    real     pt;
+    real     pt, timeAsReal;
     int      ct;
     gmx_bool bOK, bMissingData = FALSE, bSkip = FALSE;
     bool     bRet = false;
@@ -867,13 +867,14 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                     initcount(status);
                 }
                 bRet      = (read_next_xtc(
-                                status->fio, fr->natoms, &fr->step, &fr->time, fr->box, fr->x, &fr->prec, &bOK)
+                                status->fio, fr->natoms, &fr->step, &timeAsReal, fr->box, fr->x, &fr->prec, &bOK)
                         != 0);
                 fr->bPrec = (bRet && fr->prec > 0);
                 fr->bStep = bRet;
                 fr->bTime = bRet;
                 fr->bX    = bRet;
                 fr->bBox  = bRet;
+                fr->time  = static_cast<double>(timeAsReal);
                 if (!bOK)
                 {
                     /* Actually the header could also be not ok,
@@ -944,6 +945,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
 {
     t_fileio* fio = nullptr;
     gmx_bool  bFirst, bOK;
+    real      timeAsReal;
 
     clear_trxframe(fr, TRUE);
 
@@ -1003,7 +1005,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             break;
         }
         case efXTC:
-            if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x, &fr->prec, &bOK) == 0)
+            if (read_first_xtc(fio, &fr->natoms, &fr->step, &timeAsReal, fr->box, &fr->x, &fr->prec, &bOK) == 0)
             {
                 GMX_RELEASE_ASSERT(!bOK,
                                    "Inconsistent results - OK status from read_first_xtc, but 0 "
@@ -1022,6 +1024,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 fr->bTime = TRUE;
                 fr->bX    = TRUE;
                 fr->bBox  = TRUE;
+                fr->time  = static_cast<double>(timeAsReal);
                 printcount(*status, oenv, fr->time, FALSE);
             }
             bFirst = FALSE;

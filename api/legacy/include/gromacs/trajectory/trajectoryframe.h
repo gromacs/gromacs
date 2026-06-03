@@ -58,7 +58,7 @@ typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool bStep;
     int64_t  step; /* MD step number                   */
     gmx_bool bTime;
-    real     time; /* time of the frame                */
+    double   time; /* time of the frame                */
     gmx_bool bLambda;
     gmx_bool bFepState; /* does it contain fep_state?       */
     real     lambda;    /* free energy perturbation lambda  */

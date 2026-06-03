@@ -633,14 +633,8 @@ bool H5md::readNextFrame(t_trxframe* frame, const std::string& selectionName)
             forces = arrayRefFromArray(reinterpret_cast<RVec*>(frame->f), frame->natoms);
         }
 
-        double timeAsDouble;
         frameWasRead = readCursor.readNextFrame(
-                positions, velocities, forces, frame->box, &frame->step, &timeAsDouble);
-
-        if (frame->bTime)
-        {
-            frame->time = timeAsDouble;
-        }
+                positions, velocities, forces, frame->box, &frame->step, &frame->time);
     }
 
     return frameWasRead;

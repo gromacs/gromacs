@@ -249,10 +249,11 @@ static void compareForces(const TrajectoryFrame&              reference,
 
 
 const TrajectoryTolerances TrajectoryComparison::s_defaultTrajectoryTolerances{
-    defaultRealTolerance(),                                               // box
-    relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                        // positions
-    defaultRealTolerance(),                                               // velocities
-    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 5.0e-5) // forces
+    defaultRealTolerance(),                                                // box
+    relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                         // positions
+    defaultRealTolerance(),                                                // velocities
+    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 5.0e-5), // forces
+    defaultRealTolerance()                                                 // time
 };
 
 
@@ -272,7 +273,7 @@ void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const Tr
     SCOPED_TRACE("Comparing trajectory reference frame " + reference.frameName()
                  + " and test frame " + test.frameName());
     EXPECT_EQ(reference.step(), test.step());
-    EXPECT_EQ(reference.time(), test.time());
+    EXPECT_REAL_EQ_TOL(reference.time(), test.time(), tolerances_.time);
     compareBox(reference, test, matchSettings_, tolerances_.box);
     compareCoordinates(reference, test, matchSettings_, tolerances_.coordinates);
     compareVelocities(reference, test, matchSettings_, tolerances_.velocities);
