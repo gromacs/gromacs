@@ -186,4 +186,9 @@ const Matrix3x3& TrajectoryFrame::box() const
     return box_;
 }
 
+std::optional<real> TrajectoryFrame::positionPrecision() const
+{
+    return frame_.bPrec ? std::make_optional(frame_.prec) : std::nullopt;
+}
+
 } // namespace gmx

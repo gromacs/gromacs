@@ -47,6 +47,7 @@ gmx_add_unit_test(FileIOTests fileio-test
         readinp.cpp
         timecontrol.cpp
         ${tng_sources}
+        trxio.cpp
         xdr_serializer.cpp
         xtcio.cpp
         xvgio.cpp

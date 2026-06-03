@@ -39,6 +39,8 @@
 #ifndef GMX_TRAJECTORY_TRX_H
 #define GMX_TRAJECTORY_TRX_H
 
+#include <optional>
+
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/matrix.h"
@@ -113,6 +115,8 @@ public:
     std::int64_t step() const;
     //! Time read from the trajectory file frame.
     double time() const;
+    //! Precision of position coordinates read from the trajectory file frame, if available.
+    std::optional<real> positionPrecision() const;
     //! The PBC characteristics of the box.
     PbcType pbc() const;
     //! Get a view of position coordinates of the frame (which could be empty).

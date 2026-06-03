@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="natoms">6</Int>
+  <Bool Name="bDouble (frame 0)">false</Bool>
+  <Bool Name="bAtoms (frame 0)">false</Bool>
+  <Int Name="step (frame 0)">0</Int>
+  <Real Name="time (frame 0)">0</Real>
+  <Real Name="prec (frame 0)">1000</Real>
+  <Sequence Name="x (frame 0)">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0.56899999999999995</Real>
+      <Real Name="Y">1.2749999999999999</Real>
+      <Real Name="Z">1.165</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.47599999999999998</Real>
+      <Real Name="Y">1.268</Real>
+      <Real Name="Z">1.1279999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.57999999999999996</Real>
+      <Real Name="Y">1.3640000000000001</Real>
+      <Real Name="Z">1.2090000000000001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5549999999999999</Real>
+      <Real Name="Y">1.5109999999999999</Real>
+      <Real Name="Z">0.70299999999999996</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.498</Real>
+      <Real Name="Y">1.4950000000000001</Real>
+      <Real Name="Z">0.78400000000000003</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.496</Real>
+      <Real Name="Y">1.5209999999999999</Real>
+      <Real Name="Z">0.623</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="v (frame 0)">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0.56899999999999995</Real>
+      <Real Name="Y">1.2150000000000001</Real>
+      <Real Name="Z">1.9650000000000001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.66900000000000004</Real>
+      <Real Name="Y">1.2250000000000001</Real>
+      <Real Name="Z">1.865</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.76900000000000002</Real>
+      <Real Name="Y">1.2350000000000001</Real>
+      <Real Name="Z">1.7649999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.86899999999999999</Real>
+      <Real Name="Y">1.2450000000000001</Real>
+      <Real Name="Z">1.665</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.16900000000000001</Real>
+      <Real Name="Y">0.27500000000000002</Real>
+      <Real Name="Z">1.5649999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.26900000000000002</Real>
+      <Real Name="Y">2.2749999999999999</Real>
+      <Real Name="Z">1.4650000000000001</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="box (frame 0)">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">3.0099999999999998</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">3.0099999999999998</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">3.0099999999999998</Real>
+    </Vector>
+  </Sequence>
+  <Bool Name="bDouble (frame 1)">false</Bool>
+  <Bool Name="bAtoms (frame 1)">false</Bool>
+  <Int Name="step (frame 1)">1</Int>
+  <Real Name="time (frame 1)">1</Real>
+  <Real Name="prec (frame 1)">1000</Real>
+  <Sequence Name="x (frame 1)">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0.56899999999999995</Real>
+      <Real Name="Y">9.2750000000000004</Real>
+      <Real Name="Z">1.165</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.47599999999999998</Real>
+      <Real Name="Y">1.268</Real>
+      <Real Name="Z">1.1279999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.57999999999999996</Real>
+      <Real Name="Y">1.3640000000000001</Real>
+      <Real Name="Z">4.2089999999999996</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5549999999999999</Real>
+      <Real Name="Y">1.5109999999999999</Real>
+      <Real Name="Z">0.70299999999999996</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.498</Real>
+      <Real Name="Y">1.4950000000000001</Real>
+      <Real Name="Z">0.78400000000000003</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.496</Real>
+      <Real Name="Y">1.5209999999999999</Real>
+      <Real Name="Z">2.6230000000000002</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="v (frame 1)">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0.56899999999999995</Real>
+      <Real Name="Y">1.2150000000000001</Real>
+      <Real Name="Z">1.9650000000000001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.66900000000000004</Real>
+      <Real Name="Y">2.2250000000000001</Real>
+      <Real Name="Z">1.865</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.76900000000000002</Real>
+      <Real Name="Y">1.2350000000000001</Real>
+      <Real Name="Z">1.7649999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.86899999999999999</Real>
+      <Real Name="Y">1.2450000000000001</Real>
+      <Real Name="Z">1.665</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.16900000000000001</Real>
+      <Real Name="Y">0.27500000000000002</Real>
+      <Real Name="Z">1.5649999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.26900000000000002</Real>
+      <Real Name="Y">2.2749999999999999</Real>
+      <Real Name="Z">8.4649999999999999</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="box (frame 1)">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">4.0099999999999998</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">3.0299999999999998</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">9.0099999999999998</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
