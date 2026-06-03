@@ -88,7 +88,6 @@ public:
      * \param [in]    haloStream               GPU device stream to perform haloexchange in
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
-     * \param [in]    wcycle                   The wallclock counter
      */
     Impl(gmx_domdec_t*        dd,
          int                  dimIndex,
@@ -96,10 +95,11 @@ public:
          MPI_Comm             mpi_comm_mysim_world,
          const DeviceStream&  haloStream,
          const DeviceContext& deviceContext,
-         int                  pulse,
-         gmx_wallcycle*       wcycle);
+         int                  pulse);
     ~Impl();
 
+    //! Finish the construction once \c wcycle is available
+    void addWallcycleCounters(gmx_wallcycle* wcycle);
     /*! \brief
      * (Re-) Initialization for GPU halo exchange
      * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory

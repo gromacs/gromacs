@@ -210,7 +210,7 @@ gpuHalo(const TestDevice* testDevice, gmx_domdec_t* dd, matrix box, HostVector<R
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
             gpuHaloExchange[d].push_back(GpuHaloExchange(
-                    dd, d, mpiComm.comm(), mpiComm.comm(), haloStream, deviceContext, pulse, nullptr));
+                    dd, d, mpiComm.comm(), mpiComm.comm(), haloStream, deviceContext, pulse));
         }
     }
 

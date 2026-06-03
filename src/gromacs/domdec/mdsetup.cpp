@@ -72,7 +72,7 @@ namespace gmx
  * for initialization and atom-data setup.
  */
 void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
-                               const gmx_domdec_t*       dd,
+                               gmx_domdec_t*             dd,
                                const t_inputrec&         inputrec,
                                const gmx_mtop_t&         top_global,
                                gmx_localtop_t*           top,
@@ -82,7 +82,8 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                Constraints*              constr,
                                VirtualSitesHandler*      vsite,
                                gmx_shellfc_t*            shellfc,
-                               StatePropagatorDataGpu*   stateGpu)
+                               StatePropagatorDataGpu*   stateGpu,
+                               gmx_wallcycle*            wcycle)
 {
     int numAtomIndex;
     int numHomeAtoms;
@@ -189,6 +190,8 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
             reinitGpuHaloExchangeNvshmem(*dd);
         }
     }
+    // Will be used in follow-up work to !6041
+    GMX_UNUSED_VALUE(wcycle);
 
     if (constr)
     {

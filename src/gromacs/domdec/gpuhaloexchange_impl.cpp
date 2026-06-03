@@ -79,8 +79,7 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  MPI_Comm /* mpi_comm_mysim_world */,
                                  const DeviceStream& /* haloStream */,
                                  const DeviceContext& /* deviceContext */,
-                                 int /*pulse */,
-                                 gmx_wallcycle* /*wcycle*/) :
+                                 int /*pulse */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,
@@ -95,6 +94,12 @@ GpuHaloExchange& GpuHaloExchange::operator=(GpuHaloExchange&& other) noexcept
 {
     std::swap(impl_, other.impl_);
     return *this;
+}
+
+void GpuHaloExchange::addWallcycleCounters(gmx_wallcycle* /* wcycle */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
 /*!\brief init halo exhange stub. */
@@ -137,7 +142,6 @@ GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  
                                                            const DeviceStream& /* haloStream */,
                                                            const std::optional<int>& /* rankOfControlledPmeRank */,
                                                            const std::optional<int>& /* peerRank */,
-                                                           gmx_wallcycle* /*wcycle*/,
                                                            MPI_Comm /*mpi_comm_mygroup*/,
                                                            MPI_Comm /*mpi_comm_mysim_world*/) :
     dd_(dd), stream_(stream), context_(context)
@@ -172,6 +176,13 @@ void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int /* totalDimsAnd
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::addWallcycleCounters(gmx_wallcycle* /* wcycle */)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuHaloExchangeNvshmemHelper::reinit()
 {
     GMX_ASSERT(false,
@@ -179,7 +190,8 @@ void GpuHaloExchangeNvshmemHelper::reinit()
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(DeviceBuffer<RVec> /*d_coordinatesBuffer*/,
+void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(gmx_domdec_t* /*dd*/,
+                                                          DeviceBuffer<RVec> /*d_coordinatesBuffer*/,
                                                           DeviceBuffer<RVec> /*d_forcesBuffer*/)
 {
     GMX_ASSERT(false,

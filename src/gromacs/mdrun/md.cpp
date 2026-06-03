@@ -410,7 +410,7 @@ void gmx::LegacySimulator::do_md()
     {
         /* Generate and initialize new topology */
         mdAlgorithmsSetupAtomData(
-                simulationWork, cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc, stateGpu);
+                simulationWork, cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc, stateGpu, wallCycleCounters_);
 
         upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*md);
@@ -1045,11 +1045,9 @@ void gmx::LegacySimulator::do_md()
                 // here.
                 rankOfControlledPmeRank = fr_->pmePpComm->rankOfControlledPmeRank();
             }
-            constructGpuHaloExchange(*cr_,
-                                     *fr_->deviceStreamManager,
-                                     wallCycleCounters_,
-                                     simulationWork.useNvshmem,
-                                     rankOfControlledPmeRank);
+            constructOrUpdateGpuHaloExchange(
+                    cr_->dd, *fr_->deviceStreamManager, simulationWork.useNvshmem, rankOfControlledPmeRank);
+            addWallcycleCountersToGpuHaloExchange(cr_->dd, wallCycleCounters_);
         }
 
         if (isMainRank && do_log)

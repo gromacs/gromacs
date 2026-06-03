@@ -416,7 +416,8 @@ static void init_em(FILE*                        fplog,
                     VirtualSitesHandler*         vsite,
                     gmx::Constraints*            constr,
                     const MdrunScheduleWorkload& runScheduleWork,
-                    gmx_shellfc_t**              shellfc)
+                    gmx_shellfc_t**              shellfc,
+                    gmx_wallcycle*               wcycle)
 {
     const bool isMainRank = cr->commMyGroup.isMainRank();
 
@@ -509,7 +510,8 @@ static void init_em(FILE*                        fplog,
                                   constr,
                                   vsite,
                                   shellfc ? *shellfc : nullptr,
-                                  fr->stateGpu);
+                                  fr->stateGpu,
+                                  wcycle);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
@@ -1400,7 +1402,8 @@ void LegacySimulator::do_cg()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            nullptr);
+            nullptr,
+            wallCycleCounters_);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -2139,7 +2142,8 @@ void LegacySimulator::do_lbfgs()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            nullptr);
+            nullptr,
+            wallCycleCounters_);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -2936,7 +2940,8 @@ void LegacySimulator::do_steep()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            nullptr);
+            nullptr,
+            wallCycleCounters_);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -3289,7 +3294,8 @@ void LegacySimulator::do_nm()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            &shellfc);
+            &shellfc,
+            wallCycleCounters_);
     const bool  simulationsShareState = false;
     gmx_mdoutf* outf                  = init_mdoutf(fpLog_,
                                    nFile_,

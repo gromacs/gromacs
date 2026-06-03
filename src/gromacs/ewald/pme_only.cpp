@@ -816,9 +816,9 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                             deviceStreamManager->stream(gmx::DeviceStreamType::HaloExchange),
                             std::nullopt,
                             pme_pp->peerRankId,
-                            wcycle,
                             pme_pp->mpi_comm_mysim,
                             pme_pp->mpi_comm_mysim);
+                    gpuHaloExchangeNvshmemHelper->addWallcycleCounters(wcycle);
                 }
                 pme_gpu_use_nvshmem(pme->gpu.get(), useNvshmem);
                 pme->gpu->nvshmemParams->ppRanksRef   = pme_pp->ppRanks;

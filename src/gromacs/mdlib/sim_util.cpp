@@ -1500,7 +1500,8 @@ static void doPairSearch(const t_commrec*             cr,
         // global operations must be preserved.
         if (simulationWork.useGpuHaloExchange)
         {
-            reinitGpuHaloExchange(*cr->dd, stateGpu->getCoordinates(), stateGpu->getForces());
+            reinitGpuHaloExchange(
+                    cr->dd, *fr->deviceStreamManager, stateGpu->getCoordinates(), stateGpu->getForces());
         }
     }
 

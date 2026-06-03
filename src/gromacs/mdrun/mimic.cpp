@@ -340,7 +340,8 @@ void gmx::LegacySimulator::do_mimic()
                                   constr_,
                                   virtualSites_,
                                   shellfc,
-                                  fr_->stateGpu);
+                                  fr_->stateGpu,
+                                  wallCycleCounters_);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();

@@ -71,6 +71,7 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
         // Note: Legacy mdrun resizes the force buffer in mdAlgorithmsSetupAtomData()
         //       TopologyHolder has no access to the forces, so we are passing a nullptr
         //       TODO: Find a unique approach to resizing the forces in modular simulator (#3461)
+        gmx_wallcycle* wcycle = nullptr;
         mdAlgorithmsSetupAtomData(simulationWork,
                                   cr->dd,
                                   *inputrec,
@@ -82,7 +83,8 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
                                   constr,
                                   vsite,
                                   nullptr,
-                                  fr->stateGpu);
+                                  fr->stateGpu,
+                                  wcycle);
     }
     // Send copy of initial topology to clients
     updateLocalTopology();

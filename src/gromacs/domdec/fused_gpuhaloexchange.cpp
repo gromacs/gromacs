@@ -82,12 +82,11 @@ inline bool is_sufficiently_aligned(const void* ptr)
 
 FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceStream&  haloStream,
                                            const DeviceContext& deviceContext,
-                                           gmx_wallcycle*       wcycle,
                                            MPI_Comm             mpi_comm_mysim,
                                            MPI_Comm             mpi_comm_mysim_world) :
     haloStream_(haloStream),
     deviceContext_(deviceContext),
-    wcycle_(wcycle),
+    wcycle_(nullptr),
     signalReceiverRankXCounter_(0),
     signalReceiverRankFCounter_(0),
     enableFusedForceKernelSync_(false),
@@ -251,7 +250,12 @@ GpuEventSynchronizer* FusedGpuHaloExchange::getForcesReadyOnDeviceEvent()
     return &forceHaloLaunched_;
 }
 
-void FusedGpuHaloExchange::reinitAllHaloExchanges(const gmx_domdec_t&    dd,
+void FusedGpuHaloExchange::addWallcycleCounters(gmx_wallcycle* wcycle)
+{
+    wcycle_ = wcycle;
+}
+
+void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
                                                   DeviceBuffer<RVec>     d_coordinatesBuffer,
                                                   DeviceBuffer<RVec>     d_forcesBuffer,
                                                   DeviceBuffer<uint64_t> d_syncBase,
@@ -274,16 +278,16 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const gmx_domdec_t&    dd,
     changePinningPolicy(&haloExchangeData_, PinningPolicy::PinnedIfSupported);
     haloExchangeData_.resize(totalNumPulses_);
 
-    const gmx_domdec_comm_t& comm     = *dd.comm;
+    const gmx_domdec_comm_t& comm     = *dd->comm;
     int                      idxEntry = 0;
-    for (int d = 0; d < dd.ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
         const int  dimIndex  = d;
-        const int  sendRankX = dd.neighbor[dimIndex][1];
-        const int  recvRankX = dd.neighbor[dimIndex][0];
-        const bool usePBC    = (dd.ci[dd.dim[dimIndex]] == 0);
+        const int  sendRankX = dd->neighbor[dimIndex][1];
+        const int  recvRankX = dd->neighbor[dimIndex][0];
+        const bool usePBC    = (dd->ci[dd->dim[dimIndex]] == 0);
 
-        if (usePBC && dd.unitCellInfo.haveScrewPBC)
+        if (usePBC && dd->unitCellInfo.haveScrewPBC)
         {
             gmx_fatal(FARGS, "Error: screw is not yet supported in GPU halo exchange\n");
         }
@@ -307,9 +311,9 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const gmx_domdec_t&    dd,
             data.atomOffset        = atomOffset;
             data.sendRankX         = sendRankX;
             data.recvRankX         = recvRankX;
-            data.boxDimensionIndex = dd.dim[dimIndex];
+            data.boxDimensionIndex = dd->dim[dimIndex];
             data.usePBC            = usePBC;
-            data.accumulateForces  = (pulse > 0 || dd.ndim > 1);
+            data.accumulateForces  = (pulse > 0 || dd->ndim > 1);
 
             // Copy index map to device; set pinning policy on the original allocation
             const int mapSize = xSendSize;

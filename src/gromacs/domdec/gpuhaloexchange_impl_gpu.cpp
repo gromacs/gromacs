@@ -144,6 +144,11 @@ HaloPlan computeHaloPlan(const gmx_domdec_comm_t& comm,
     return plan;
 }
 
+void GpuHaloExchange::Impl::addWallcycleCounters(gmx_wallcycle* wcycle)
+{
+    wcycle_ = wcycle;
+}
+
 void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
                                        DeviceBuffer<Float3> d_forcesBuffer)
 {
@@ -614,8 +619,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
                             MPI_Comm             mpi_comm_mysim_world,
                             const DeviceStream&  haloStream,
                             const DeviceContext& deviceContext,
-                            int                  pulse,
-                            gmx_wallcycle*       wcycle) :
+                            int                  pulse) :
     dd_(dd),
     sendRankX_(dd->neighbor[dimIndex][1]),
     recvRankX_(dd->neighbor[dimIndex][0]),
@@ -630,7 +634,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
     haloStream_(haloStream),
     dimIndex_(dimIndex),
     pulse_(pulse),
-    wcycle_(wcycle)
+    wcycle_(nullptr)
 {
     if (usePBC_ && dd->unitCellInfo.haveScrewPBC)
     {
@@ -663,9 +667,8 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t*        dd,
                                  MPI_Comm             mpi_comm_mysim_world_,
                                  const DeviceStream&  haloStream,
                                  const DeviceContext& deviceContext,
-                                 int                  pulse,
-                                 gmx_wallcycle*       wcycle) :
-    impl_(new Impl(dd, dimIndex, mpi_comm_mysim, mpi_comm_mysim_world_, haloStream, deviceContext, pulse, wcycle))
+                                 int                  pulse) :
+    impl_(new Impl(dd, dimIndex, mpi_comm_mysim, mpi_comm_mysim_world_, haloStream, deviceContext, pulse))
 {
 }
 
@@ -678,6 +681,11 @@ GpuHaloExchange& GpuHaloExchange::operator=(GpuHaloExchange&& other) noexcept
 }
 
 GpuHaloExchange::~GpuHaloExchange() = default;
+
+void GpuHaloExchange::addWallcycleCounters(gmx_wallcycle* wcycle)
+{
+    impl_->addWallcycleCounters(wcycle);
+}
 
 void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> d_coordinatesBuffer, DeviceBuffer<RVec> d_forcesBuffer)
 {
@@ -707,7 +715,6 @@ GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  
                                                            const DeviceStream&  haloStream,
                                                            const std::optional<int>& rankOfControlledPmeRank,
                                                            const std::optional<int>& peerRank,
-                                                           gmx_wallcycle*            wcycle,
                                                            MPI_Comm mpi_comm_mygroup,
                                                            MPI_Comm mpi_comm_mysim_world) :
     dd_(dd),
@@ -715,11 +722,11 @@ GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  
     rankOfControlledPmeRank_(rankOfControlledPmeRank),
     peerRank_(peerRank),
     context_(context),
-    wcycle_(wcycle)
+    wcycle_(nullptr)
 {
 #if GMX_NVSHMEM
     fusedPpHaloExchange_ = std::make_unique<gmx::FusedGpuHaloExchange>(
-            haloStream, context_, wcycle, mpi_comm_mygroup, mpi_comm_mysim_world);
+            haloStream, context_, mpi_comm_mygroup, mpi_comm_mysim_world);
 #else
     GMX_UNUSED_VALUE(haloStream);
     GMX_UNUSED_VALUE(mpi_comm_mygroup);
@@ -734,15 +741,29 @@ GpuHaloExchangeNvshmemHelper::~GpuHaloExchangeNvshmemHelper()
         freeDeviceBuffer(&d_ppHaloExSyncBase_);
     }
 }
+
+void GpuHaloExchangeNvshmemHelper::addWallcycleCounters(gmx_wallcycle* wcycle)
+{
+#if GMX_NVSHMEM
+    fusedPpHaloExchange_->addWallcycleCounters(wcycle);
+#else
+    GMX_UNUSED_VALUE(wcycle);
+#endif
+}
+
 // Fused pass-through API definitions to avoid incomplete-type usage in header
-void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(DeviceBuffer<RVec> d_coordinatesBuffer,
+void GpuHaloExchangeNvshmemHelper::reinitAllHaloExchanges(gmx_domdec_t*      dd,
+                                                          DeviceBuffer<RVec> d_coordinatesBuffer,
                                                           DeviceBuffer<RVec> d_forcesBuffer)
 {
 #if GMX_NVSHMEM
+    GMX_ASSERT(dd == &dd_,
+               "The mutable handler should point to the same object as the stored const ref");
     fusedPpHaloExchange_->reinitAllHaloExchanges(
-            dd_, d_coordinatesBuffer, d_forcesBuffer, d_ppHaloExSyncBase_, totalNumPulses_);
+            dd, d_coordinatesBuffer, d_forcesBuffer, d_ppHaloExSyncBase_, totalNumPulses_);
 #else
     GMX_UNUSED_VALUE(dd_);
+    GMX_UNUSED_VALUE(dd);
     GMX_UNUSED_VALUE(d_coordinatesBuffer);
     GMX_UNUSED_VALUE(d_forcesBuffer);
 #endif

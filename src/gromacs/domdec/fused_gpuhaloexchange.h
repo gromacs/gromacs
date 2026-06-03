@@ -90,13 +90,11 @@ public:
      *
      * \param [in] haloStream           GPU device stream for halo exchange
      * \param [in] deviceContext        GPU device context
-     * \param [in] wcycle               Wallclock cycle accounting
      * \param [in] mpi_comm_mysim       MPI communicator used for simulation
      * \param [in] mpi_comm_mysim_world MPI communicator involving PP + PME
      */
     FusedGpuHaloExchange(const DeviceStream&  haloStream,
                          const DeviceContext& deviceContext,
-                         gmx_wallcycle*       wcycle,
                          MPI_Comm             mpi_comm_mysim,
                          MPI_Comm             mpi_comm_mysim_world);
     /*! \brief Destructor. */
@@ -117,15 +115,18 @@ public:
     GpuEventSynchronizer* launchAllForceExchanges(bool accumulateForces,
                                                   FixedCapacityVector<GpuEventSynchronizer*, 2>* dependencyEvents);
 
+    //! Finish the construction once \c wcycle is available
+    void addWallcycleCounters(gmx_wallcycle* wcycle);
+
     /*! \brief (Re-)initialize fused halo exchanges for all dimensions and pulses.
      * Builds per-pulse entries, sets shared buffers, NVSHMEM signals, and prepares metadata.
-     * \param [in] dd                  Domain-decomposition structure
+     * \param [in,out] dd              Domain-decomposition structure
      * \param [in] d_coordinatesBuffer Pointer to coordinates buffer in GPU memory
      * \param [in] d_forcesBuffer      Pointer to forces buffer in GPU memory
      * \param [in] d_syncBase          Base device pointer for NVSHMEM signal buffer
      * \param [in] totalNumPulses      Total number of pulses across all dimensions
      */
-    void reinitAllHaloExchanges(const gmx_domdec_t&    dd,
+    void reinitAllHaloExchanges(gmx_domdec_t*          dd,
                                 DeviceBuffer<RVec>     d_coordinatesBuffer,
                                 DeviceBuffer<RVec>     d_forcesBuffer,
                                 DeviceBuffer<uint64_t> d_syncBase,

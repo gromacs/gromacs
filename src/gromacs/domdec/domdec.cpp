@@ -3143,11 +3143,10 @@ bool change_dd_cutoff(gmx_domdec_t*                  dd,
     return bCutoffAllowed;
 }
 
-void constructGpuHaloExchange(const t_commrec&                cr,
-                              const gmx::DeviceStreamManager& deviceStreamManager,
-                              gmx_wallcycle*                  wcycle,
-                              const bool                      useNvshmem,
-                              const std::optional<int>        rankOfControlledPmeRank)
+void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
+                                      const gmx::DeviceStreamManager& deviceStreamManager,
+                                      const bool                      useNvshmem,
+                                      const std::optional<int>        rankOfControlledPmeRank)
 {
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be valid when using"
@@ -3163,67 +3162,93 @@ void constructGpuHaloExchange(const t_commrec&                cr,
         /* The gpuHaloExchangeNvshmemHelper is created on first use, or after it was explicitly
          * destroyed and reset to nullptr (e.g., during teardown or mode switches).
          * When useNvshmem is true at this point, we must ensure the it exists. */
-        if (cr.dd->gpuHaloExchangeNvshmemHelper == nullptr)
+        if (dd->gpuHaloExchangeNvshmemHelper == nullptr)
         {
-            cr.dd->useGpuHaloExchangeNvshmem = true;
-            cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
-                    *cr.dd,
+            dd->useGpuHaloExchangeNvshmem    = true;
+            dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
+                    *dd,
                     deviceStreamManager.context(),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
                     deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
                     rankOfControlledPmeRank,
                     std::nullopt,
-                    wcycle,
-                    cr.commMyGroup.comm(),
-                    cr.commMySim.comm());
+                    dd->mpiComm().comm(),
+                    dd->mpiCommMySim().comm());
         }
-        for (auto& cdDim : cr.dd->comm->cd)
+        for (auto& cdDim : dd->comm->cd)
         {
             for (auto& indices : cdDim.ind)
             {
                 gmx::changePinningPolicy(&indices.index, gmx::PinningPolicy::PinnedIfSupported);
             }
         }
-        GMX_RELEASE_ASSERT(
-                cr.dd->gpuHaloExchangeNvshmemHelper != nullptr,
-                "GpuHaloExchangeNvshmemHelper must be constructed when useNvshmem is true");
     }
     else
     {
-        for (int d = 0; d < cr.dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
-            for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses();
-                 pulse++)
+            // Initially no pulses have been added and are constructed
+            // here after the first DD partitioning. However both
+            // dynamic load balancing and dynamic box size can change
+            // the number of pulses used, and if that is an increase
+            // then new pulses are added here. (Extra pulse objects
+            // are not a problem because numPulses() is used elsewhere
+            // when doing halo exchanges.)
+            for (int pulse = dd->gpuHaloExchange[d].size(); pulse < dd->comm->cd[d].numPulses(); pulse++)
             {
-                cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                        cr.dd,
+                dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
+                        dd,
                         d,
-                        cr.commMyGroup.comm(),
-                        cr.commMySim.comm(),
+                        dd->mpiComm().comm(),
+                        dd->mpiCommMySim().comm(),
                         deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
                         deviceStreamManager.context(),
-                        pulse,
-                        wcycle));
+                        pulse));
             }
         }
     }
 }
 
-void reinitGpuHaloExchange(const gmx_domdec_t&           dd,
-                           const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
-                           const DeviceBuffer<gmx::RVec> d_forcesBuffer)
+void reinitGpuHaloExchange(gmx_domdec_t*                   dd,
+                           const gmx::DeviceStreamManager& deviceStreamManager,
+                           const DeviceBuffer<gmx::RVec>   d_coordinatesBuffer,
+                           const DeviceBuffer<gmx::RVec>   d_forcesBuffer)
 {
-    if (dd.useGpuHaloExchangeNvshmem)
+    if (dd->useGpuHaloExchangeNvshmem)
     {
-        dd.gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(d_coordinatesBuffer, d_forcesBuffer);
+        dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(dd, d_coordinatesBuffer, d_forcesBuffer);
     }
     else
     {
-        for (int d = 0; d < dd.ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
-            for (int pulse = 0; pulse < dd.comm->cd[d].numPulses(); pulse++)
+            // Initially no pulses have been added and are constructed
+            // here after the first DD partitioning. However both
+            // dynamic load balancing and dynamic box size can change
+            // the number of pulses used, and if that is an increase
+            // then new pulses are added here.
+            for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
             {
-                dd.gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+                dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+            }
+        }
+    }
+    GMX_UNUSED_VALUE(deviceStreamManager);
+}
+
+void addWallcycleCountersToGpuHaloExchange(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
+{
+    if (dd->useGpuHaloExchangeNvshmem)
+    {
+        dd->gpuHaloExchangeNvshmemHelper->addWallcycleCounters(wcycle);
+    }
+    else
+    {
+        for (int d = 0; d < dd->ndim; d++)
+        {
+            for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
+            {
+                dd->gpuHaloExchange[d][pulse]->addWallcycleCounters(wcycle);
             }
         }
     }

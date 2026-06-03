@@ -3197,7 +3197,7 @@ void dd_partition_system(FILE*                     fplog,
     /* Update atom data for mdatoms and several algorithms */
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
     mdAlgorithmsSetupAtomData(
-            simulationWork, dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr, stateGpu);
+            simulationWork, dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr, stateGpu, wcycle);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     if (dd->atomSets != nullptr)
