@@ -515,7 +515,7 @@ int gmx_trjconv(int argc, char* argv[])
     gmx_bool bSeparate = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
     gmx_bool bCenter = FALSE;
     int      skip_nr = 1, ndec = 3, nzero = 0;
-    real     tzero = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
+    double   tzero = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
     rvec     newbox = { 0, 0, 0 }, shift = { 0, 0, 0 }, trans = { 0, 0, 0 };
     char*    exec_command = nullptr;
     real     dropunder = 0, dropover = 0;

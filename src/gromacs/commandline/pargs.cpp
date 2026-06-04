@@ -362,9 +362,13 @@ void OptionsAdapter::pargsToOptions(Options* options, t_pargs* pa)
             data.optionInfo =
                     options->addOption(RealOption(name).store(pa->u.r).description(desc).hidden(bHidden));
             return;
+        case etDOUBLE:
+            data.optionInfo = options->addOption(
+                    DoubleOption(name).store(pa->u.d).description(desc).hidden(bHidden));
+            return;
         case etTIME:
             data.optionInfo = options->addOption(
-                    RealOption(name).store(pa->u.r).timeValue().description(desc).hidden(bHidden));
+                    DoubleOption(name).store(pa->u.d).timeValue().description(desc).hidden(bHidden));
             return;
         case etSTR:
         {

@@ -179,6 +179,23 @@ TEST_F(ParseCommonArgsTest, ParsesRealArgs)
     EXPECT_EQ(2.5, value3);
 }
 
+TEST_F(ParseCommonArgsTest, ParsesDoubleArgs)
+{
+    double            value1 = 0.0, value2 = 0.0, value3 = M_1_PI;
+    t_pargs           pa[]      = { { "-r1", FALSE, etDOUBLE, { &value1 }, "Description" },
+                                    { "-r2", FALSE, etDOUBLE, { &value2 }, "Description" },
+                                    { "-r3", FALSE, etDOUBLE, { &value3 }, "Description" } };
+    const char* const cmdline[] = { "test",
+                                    "-r1",
+                                    "1.41421356237309504880168872420969808",
+                                    "-r2",
+                                    "-3.1415926535897932384626433832795" };
+    parseFromArray(cmdline, 0, {}, pa);
+    EXPECT_DOUBLE_EQ(M_SQRT2, value1);
+    EXPECT_DOUBLE_EQ(-M_PI, value2);
+    EXPECT_DOUBLE_EQ(M_1_PI, value3);
+}
+
 TEST_F(ParseCommonArgsTest, ParsesStringArgs)
 {
     const char *      value1 = "def", *value2 = "", *value3 = "default";
@@ -260,7 +277,7 @@ TEST_F(ParseCommonArgsTest, ParsesVectorArgs)
 
 TEST_F(ParseCommonArgsTest, ParsesTimeArgs)
 {
-    real              value1 = 1.0, value2 = 2.0, value3 = 2.5;
+    double            value1 = 1.0, value2 = 2.0, value3 = 2.5;
     t_pargs           pa[]      = { { "-t1", FALSE, etTIME, { &value1 }, "Description" },
                                     { "-t2", FALSE, etTIME, { &value2 }, "Description" },
                                     { "-t3", FALSE, etTIME, { &value3 }, "Description" } };
@@ -273,7 +290,7 @@ TEST_F(ParseCommonArgsTest, ParsesTimeArgs)
 
 TEST_F(ParseCommonArgsTest, ParsesTimeArgsWithTimeUnit)
 {
-    real              value1 = 1.0, value2 = 2.0, value3 = 2.5;
+    double            value1 = 1.0, value2 = 2.0, value3 = 2.5;
     t_pargs           pa[]      = { { "-t1", FALSE, etTIME, { &value1 }, "Description" },
                                     { "-t2", FALSE, etTIME, { &value2 }, "Description" },
                                     { "-t3", FALSE, etTIME, { &value3 }, "Description" } };

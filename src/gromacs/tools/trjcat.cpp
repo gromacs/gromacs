@@ -471,9 +471,9 @@ int gmx_trjcat(int argc, char* argv[])
     static gmx_bool bOverwrite      = FALSE;
     static gmx_bool bSetTime        = FALSE;
     static gmx_bool bDeMux;
-    static real     begin = -1;
-    static real     end   = -1;
-    static real     dt    = 0;
+    static double   begin = -1;
+    static double   end   = -1;
+    static double   dt    = 0;
 
     t_pargs pa[] = {
         { "-b", FALSE, etTIME, { &begin }, "First time to use (%t)" },
