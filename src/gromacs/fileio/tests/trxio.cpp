@@ -304,6 +304,7 @@ TEST_P(TrxReadFrameTest, ReadTrajectoryFromSimulationDataBase)
 const char* g_trajectoryFilesToTest[] = {
     "spc2-traj.pdb",
     "spc2-traj.trr",
+    "spc2-traj-double.trr",
     "spc2-traj.xtc",
     "spc2-traj.gro",
     "spc2-traj.g96",
