@@ -51,6 +51,8 @@ namespace gmx
 {
 
 template<typename ValueType>
+class ArrayRef;
+template<typename ValueType>
 class BasicVector;
 template<typename ValueType>
 class H5mdDataSetBuilder;
@@ -119,6 +121,32 @@ public:
      *  \throws H5mdError if the dimensions cannot be read.
      */
     DataSetDims dims() const;
+
+    /*! \brief Perform a low-level operation to read data into \p values.
+     *
+     * \note Assumes that the caller has validated the given handles
+     * and that \p values is of the correct size.
+     *
+     * \param[out] values          Container to read data into.
+     * \param[in]  memoryDataSpace Data space for the memory buffer (called `mem_space_id` in hdf5 documentation).
+     * \param[in]  fileDataSpace   Data space for the file buffer (called `file_space_id` in hdf5 documentation).
+     *
+     * \returns True if the read operation was successful, otherwise false.
+     */
+    bool read(ArrayRef<ValueType> values, hid_t memoryDataSpace, hid_t fileDataSpace) const;
+
+    /*! \brief Perform a low-level operation to write \p values into data set.
+     *
+     * \note Assumes that the caller has validated the given handles
+     * and that \p values is of the correct size.
+     *
+     * \param[in] values          Values to write into the data set.
+     * \param[in] memoryDataSpace Data space for the memory buffer (called `mem_space_id` in hdf5 documentation).
+     * \param[in] fileDataSpace   Data space for the file buffer (called `file_space_id` in hdf5 documentation).
+     *
+     * \returns True if the write operation was successful, otherwise false.
+     */
+    bool write(ArrayRef<const ValueType> values, hid_t memoryDataSpace, hid_t fileDataSpace) const;
 
 private:
     /*! \brief Constructor to manage a data set with given \p dataSetHandle.

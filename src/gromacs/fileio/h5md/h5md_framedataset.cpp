@@ -186,13 +186,7 @@ void H5mdFrameDataSet<ValueType>::readFrame(hsize_t index, ArrayRef<ValueType> v
     const auto [fileDataSpace, fileDataSpaceGuard] =
             makeH5mdDataSpaceGuard(frameDescription_.fileDataSpaceForFrame(index, Base::id()));
 
-    GMX_H5MD_THROW_UPON_ERROR(H5Dread(Base::id(),
-                                      Base::nativeDataType(),
-                                      frameDescription_.memoryDataSpace(),
-                                      fileDataSpace,
-                                      H5P_DEFAULT,
-                                      values.data())
-                                      < 0,
+    GMX_H5MD_THROW_UPON_ERROR(!Base::read(values, frameDescription_.memoryDataSpace(), fileDataSpace),
                               "Error reading frame data.");
 }
 
@@ -226,8 +220,7 @@ void H5mdFrameDataSet<ValueType>::writeNextFrame(ArrayRef<const ValueType> value
     const auto [fileDataSpace, fileDataSpaceGuard] =
             makeH5mdDataSpaceGuard(frameDescription_.fileDataSpaceForFrame(numFrames_, Base::id()));
 
-    if (H5Dwrite(Base::id(), Base::dataType(), frameDescription_.memoryDataSpace(), fileDataSpace, H5P_DEFAULT, values.data())
-        < 0)
+    if (!Base::write(values, frameDescription_.memoryDataSpace(), fileDataSpace))
     {
         // If our write failed we shrink the data set back to its original number of frames before
         // throwing. Ignore any error here, as we are already handling a bigger problem.

@@ -44,6 +44,7 @@
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -54,6 +55,9 @@
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
 namespace gmx
+{
+
+namespace
 {
 
 //! \brief Return the number of dimensions of data set with \p dataSetHandle or 0 if it is invalid.
@@ -111,6 +115,50 @@ static void verifyDataSetConsistency(const hid_t nativeDataType, const DataSetDi
     }
 }
 
+//! \brief Return whether the number of data points in \p values matches the selections.
+//
+// Gets the number of points in the hyperslab selection of \p memoryDataSpace
+// and \p fileDataSpace, then checks this against the number of \p values.
+//
+// \tparam ValueType Compiled type for values.
+// \param[in] values Buffer to check the size of
+// \param[in] memoryDataSpace Selection of space in memory to check against
+// \param[in] fileDataSpace   Selection of space in HDF5 file to check against.
+// \param[in] dataSet         Data set for the operation.
+//
+// If \p memoryDataSpace or \p fileDataSpace is `H5S_ALL` (or any other
+// invalid handle) the data space is obtained from the supplied \p dataSet.
+template<typename ValueType>
+static bool checkBufferSize(const ArrayRef<const ValueType> values,
+                            const hid_t                     memoryDataSpace,
+                            const hid_t                     fileDataSpace,
+                            const hid_t                     dataSet)
+{
+    hssize_t numValues = gmx::ssize(values);
+    if constexpr (std::is_same_v<ValueType, BasicVector<float>>
+                  || std::is_same_v<ValueType, BasicVector<double>>)
+    {
+        numValues *= DIM;
+    }
+
+    const auto numPointsIn = [&](const hid_t selectionDataSpace)
+    {
+        if (handleIsValid(selectionDataSpace))
+        {
+            return H5Sget_select_npoints(selectionDataSpace);
+        }
+        else
+        {
+            const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+            return H5Sget_select_npoints(dataSpace);
+        }
+    };
+
+    return numValues == numPointsIn(memoryDataSpace) && numValues == numPointsIn(fileDataSpace);
+}
+
+} // namespace
+
 template<typename ValueType>
 H5mdDataSetBase<ValueType>::H5mdDataSetBase(const hid_t dataSetHandle) :
     dataSet_{ dataSetHandle },
@@ -162,6 +210,50 @@ DataSetDims H5mdDataSetBase<ValueType>::dims() const
     GMX_H5MD_THROW_UPON_ERROR(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
                               "Could not read dimensions of data set");
     return dataSetDims;
+}
+
+template<typename ValueType>
+bool H5mdDataSetBase<ValueType>::read(const ArrayRef<ValueType> values,
+                                      const hid_t               memoryDataSpace,
+                                      const hid_t               fileDataSpace) const
+{
+    if constexpr (std::is_same_v<ValueType, std::string>)
+    {
+        // TODO: Fixed- and variable-string i/o is currently implemented
+        // specifically for H5mdFixedDataSet. This should be unified within
+        // this class once more testing is in place.
+        GMX_THROW(NotImplementedError("std::string I/O not implemented for H5mdDataSetBase"));
+    }
+    else
+    {
+        GMX_ASSERT(checkBufferSize(makeConstArrayRef(values), memoryDataSpace, fileDataSpace, dataSet_),
+                   "Number of points in container of values to read into must "
+                   "be equal to used hyperslab selection in memory and file");
+        return H5Dread(dataSet_, nativeDataType_, memoryDataSpace, fileDataSpace, H5P_DEFAULT, values.data())
+               >= 0;
+    }
+}
+
+template<typename ValueType>
+bool H5mdDataSetBase<ValueType>::write(const ArrayRef<const ValueType> values,
+                                       const hid_t                     memoryDataSpace,
+                                       const hid_t                     fileDataSpace) const
+{
+    if constexpr (std::is_same_v<ValueType, std::string>)
+    {
+        // TODO: Fixed- and variable-string i/o is currently implemented
+        // specifically for H5mdFixedDataSet. This should be unified within
+        // this class once more testing is in place.
+        GMX_THROW(NotImplementedError("std::string I/O not implemented for H5mdDataSetBase"));
+    }
+    else
+    {
+        GMX_ASSERT(checkBufferSize(values, memoryDataSpace, fileDataSpace, dataSet_),
+                   "Number of points in container of values to read into must "
+                   "be equal to used hyperslab selection in memory and file");
+        return H5Dwrite(dataSet_, dataType_, memoryDataSpace, fileDataSpace, H5P_DEFAULT, values.data())
+               >= 0;
+    }
 }
 
 template class H5mdDataSetBase<int32_t>;

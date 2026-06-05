@@ -227,9 +227,7 @@ void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
     }
     else
     {
-        GMX_H5MD_THROW_UPON_ERROR(
-                H5Dread(this->id(), this->nativeDataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data.data()) < 0,
-                "Error reading data.");
+        GMX_H5MD_THROW_UPON_ERROR(!Base::read(data, H5S_ALL, H5S_ALL), "Error reading data.");
     }
 }
 
@@ -256,9 +254,7 @@ void H5mdFixedDataSet<ValueType>::writeData(ArrayRef<const ValueType> data) cons
     }
     else
     {
-        GMX_H5MD_THROW_UPON_ERROR(
-                H5Dwrite(this->id(), this->dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data.data()) < 0,
-                "Error writing data.");
+        GMX_H5MD_THROW_UPON_ERROR(!Base::write(data, H5S_ALL, H5S_ALL), "Error writing data.");
     }
 }
 
