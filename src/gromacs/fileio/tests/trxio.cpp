@@ -128,7 +128,7 @@ TEST_P(TrxWriteFrameTest, WriteTrxFrame_TrajectoryDataOnly)
         fr.bV     = true;
         fr.bF     = true;
 
-        auto writer = createTrajectoryFrameWriter(nullptr, {}, trajectoryFileName, nullptr, {});
+        auto writer = createTrajectoryFrameWriter(nullptr, {}, trajectoryFileName.string(), nullptr, {});
         for (int i = 0; i < nframes; ++i)
         {
             SCOPED_TRACE(formatString("write_trxframe for frame %d", i));
