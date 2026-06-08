@@ -239,7 +239,6 @@ TEST_P(TrxReadFrameTest, ReadTrajectoryFromSimulationDataBase)
     int frame = 0;
     do
     {
-        checker.checkBoolean(fr->bDouble, formatString("bDouble (frame %d)", frame).c_str());
         // Checking the t_atoms structure is beyond this test, only check for its (non)presence
         checker.checkBoolean(fr->bAtoms, formatString("bAtoms (frame %d)", frame).c_str());
         if (fr->bStep)

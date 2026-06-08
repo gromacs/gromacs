@@ -2,7 +2,6 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Int Name="natoms">6</Int>
-  <Bool Name="bDouble (frame 0)">false</Bool>
   <Bool Name="bAtoms (frame 0)">false</Bool>
   <Int Name="step (frame 0)">0</Int>
   <Real Name="time (frame 0)">0</Real>
@@ -58,7 +57,6 @@
       <Real Name="Z">3.0100000000000002</Real>
     </Vector>
   </Sequence>
-  <Bool Name="bDouble (frame 1)">false</Bool>
   <Bool Name="bAtoms (frame 1)">false</Bool>
   <Int Name="step (frame 1)">1</Int>
   <Real Name="time (frame 1)">1</Real>

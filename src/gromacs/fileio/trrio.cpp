@@ -146,12 +146,12 @@ static gmx_bool do_trr_frame_header(t_fileio* fio, bool bRead, gmx_trr_header_t*
     {
         return *bOK;
     }
-    sh->bDouble = (nFloatSize(sh) == sizeof(double));
-    gmx_fio_setprecision(fio, sh->bDouble);
+    const bool fileRealIsDouble = (nFloatSize(sh) == sizeof(double));
+    gmx_fio_setprecision(fio, fileRealIsDouble);
 
     if (bRead && bFirst)
     {
-        fprintf(stderr, "(%s precision)\n", sh->bDouble ? "double" : "single");
+        fprintf(stderr, "(%s precision)\n", fileRealIsDouble ? "double" : "single");
         bFirst = FALSE;
     }
 

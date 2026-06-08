@@ -77,7 +77,6 @@ static constexpr int64_t sc_trrMaxAtomCount = std::numeric_limits<unsigned int>:
 /* sizes of the structs in a trr file, sizes are given in bytes. */
 typedef struct gmx_trr_header_t
 {
-    gmx_bool     bDouble;   /* Double precision?                   */
     int          ir_size;   /* Backward compatibility              */
     int          e_size;    /* Backward compatibility              */
     int          box_size;  /* Non zero if a box is present        */

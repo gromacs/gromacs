@@ -1458,11 +1458,6 @@ TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
     EXPECT_FALSE(frame->bIndex);
     EXPECT_FALSE(frame->bPBC);
     EXPECT_FALSE(frame->bPrec); // check this for reduced-precision trajectories separately
-#if GMX_DOUBLE
-    EXPECT_TRUE(frame->bDouble);
-#else
-    EXPECT_FALSE(frame->bDouble);
-#endif
 
     done_frame(frame);
     sfree(frame);

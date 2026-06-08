@@ -286,7 +286,6 @@ deepCopy_t_trxframe(const t_trxframe& input, t_trxframe* copy, RVec* xvec, RVec*
     copy->bV        = input.bV;
     copy->bF        = input.bF;
     copy->bBox      = input.bBox;
-    copy->bDouble   = input.bDouble;
     copy->natoms    = input.natoms;
     copy->step      = input.step;
     copy->time      = input.time;

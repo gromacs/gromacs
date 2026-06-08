@@ -588,21 +588,6 @@ bool H5md::readNextFrame(t_trxframe* frame, const std::string& selectionName)
 #if GMX_USE_HDF5
     bool frameWasRead = false;
 
-    // TODO: We should check this in the file (and use appropriate conversion when reading)
-    //
-    // The current data set opening framework does not support opening double-precision `real`
-    // data as single-precision (this results in a throw during setup). So for now bDouble
-    // always matches the build precision.
-    //
-    // Since reading trajectory data from any-precision builds is wanted we need to expand
-    // this and then set bDouble from the actual precision stored in the data sets.
-    //
-    // See issue #5474
-#    if GMX_DOUBLE
-    frame->bDouble = true;
-#    else
-    frame->bDouble = false;
-#    endif
     frame->bLambda = false;
     // TODO: This should be read from the file
     frame->bPrec = false;

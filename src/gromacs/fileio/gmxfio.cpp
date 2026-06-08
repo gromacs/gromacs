@@ -281,9 +281,9 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
         gmx_fatal(FARGS, "Cannot open file with empty filename");
     }
 
-    fio->bRead      = bRead;
-    fio->bReadWrite = bReadWrite;
-    fio->bDouble    = (sizeof(real) == sizeof(double));
+    fio->bRead            = bRead;
+    fio->bReadWrite       = bReadWrite;
+    fio->fileRealIsDouble = (sizeof(real) == sizeof(double));
 
     /* and now insert this file into the list of open files. */
     gmx_fio_insert(fio);

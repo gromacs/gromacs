@@ -235,7 +235,6 @@ static std::unique_ptr<gmx_mtop_t> read_mtop_for_tng(const char* tps_file,
 static void copyTrxframeDeeply(const t_trxframe& input, t_trxframe* copy)
 {
     copy->not_ok    = input.not_ok;
-    copy->bDouble   = input.bDouble;
     copy->natoms    = input.natoms;
     copy->bStep     = input.bStep;
     copy->step      = input.step;
@@ -291,7 +290,6 @@ static void copyTrxframeDeeply(const t_trxframe& input, t_trxframe* copy)
 static void swapFrames(t_trxframe* a, t_trxframe* b)
 {
     std::swap(a->not_ok, b->not_ok);
-    std::swap(a->bDouble, b->bDouble);
     std::swap(a->natoms, b->natoms);
     std::swap(a->bStep, b->bStep);
     std::swap(a->step, b->step);

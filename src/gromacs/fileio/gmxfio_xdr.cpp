@@ -85,15 +85,15 @@ static const char* enumValueToString(InputOutputType enumValue)
     return ioTypeNames[enumValue];
 }
 
-void gmx_fio_setprecision(t_fileio* fio, gmx_bool bDouble)
+void gmx_fio_setprecision(t_fileio* fio, gmx_bool fileRealIsDouble)
 {
-    fio->bDouble = bDouble;
+    fio->fileRealIsDouble = fileRealIsDouble;
 }
 
 bool gmx_fio_is_double(t_fileio* fio)
 {
     bool isDouble = false;
-    isDouble      = fio->bDouble;
+    isDouble      = fio->fileRealIsDouble;
     return isDouble;
 }
 
@@ -167,7 +167,7 @@ static gmx_bool do_xdr(t_fileio*       fio,
     switch (eio)
     {
         case InputOutputType::Real:
-            if (fio->bDouble)
+            if (fio->fileRealIsDouble)
             {
                 if (item && !fio->bRead)
                 {
@@ -301,7 +301,7 @@ static gmx_bool do_xdr(t_fileio*       fio,
             }
             break;
         case InputOutputType::RVec:
-            if (fio->bDouble)
+            if (fio->fileRealIsDouble)
             {
                 if (item && !fio->bRead)
                 {

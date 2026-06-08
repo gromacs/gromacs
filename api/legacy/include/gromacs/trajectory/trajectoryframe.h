@@ -52,9 +52,8 @@ enum class PbcType : int;
 
 typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
 {
-    int      not_ok;  /* integrity flags                  */
-    gmx_bool bDouble; /* Double precision?                */
-    int      natoms;  /* number of atoms (atoms, x, v, f, index) */
+    int      not_ok; /* integrity flags                  */
+    int      natoms; /* number of atoms (atoms, x, v, f, index) */
     gmx_bool bStep;
     int64_t  step; /* MD step number                   */
     gmx_bool bTime;

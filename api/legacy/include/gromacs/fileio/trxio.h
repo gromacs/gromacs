@@ -181,7 +181,7 @@ struct t_fileio* trx_get_fileio(t_trxstatus* status);
 float trx_get_time_of_final_frame(t_trxstatus* status);
 /* get time of final frame. Only supported for TNG and XTC */
 
-gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
+gmx_bool bRmod_fd(double a, double b, double c, gmx_bool compareTimesAsDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
  */
@@ -191,17 +191,6 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 #else
 #    define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)
 #endif
-
-int check_times2(real t, real t0, gmx_bool bDouble);
-/* This routine checkes if the read-in time is correct or not;
- * returns -1 if t<tbegin or t MOD dt = t0,
- *          0 if tbegin <= t <=tend+margin,
- *          1 if t>tend
- * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
- * tp and tpp should be the time of the previous frame and the one before.
- * The mod is done with single or double precision accuracy depending
- * on the value of bDouble.
- */
 
 int check_times(real t);
 /* This routine checkes if the read-in time is correct or not;
