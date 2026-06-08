@@ -46,6 +46,9 @@
 
 #include "config.h"
 
+#include <climits>
+
+#include <algorithm>
 #include <memory>
 #include <type_traits>
 
@@ -79,8 +82,10 @@
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
+#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -1547,6 +1552,51 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 }
 
 
+/*! \brief Compute all kernel launch parameters for a given set of grids.
+ *
+ * Called once per pair-list setup; results are stored in NbnxmGpu.
+ *
+ * \param[in] grids        Grids for one interaction locality.
+ * \param[in] gridBegin    Index of the first grid in the gridset (0 = local, 1 = non-local).
+ * \param[in] numColumnsMax  Max. columns per grid; stride for per-grid device arrays.
+ */
+static FusedXToXqLaunchParams setupFusedXToXqLaunchParams(ArrayRef<const Grid> grids, int gridBegin, int numColumnsMax)
+{
+    FusedXToXqLaunchParams params;
+    params.gridBegin     = gridBegin;
+    params.numColumnsMax = numColumnsMax;
+
+    const int numGrids = grids.ssize();
+    GMX_ASSERT(numGrids <= c_maxGridsPerKernelLaunch,
+               "Number of grids exceeds the maximum supported in a fused kernel launch");
+    if (numGrids == 0)
+    {
+        // totalNumColumns stays 0; will skip the kernel launch
+        return params;
+    }
+
+    params.numAtomsPerBin = grids[0].numAtomsPerBin();
+    int totalColumns      = 0;
+    for (int g = 0; g < numGrids; g++)
+    {
+        params.gridParams.columnsPrefix[g] = totalColumns;
+        totalColumns += grids[g].numCells();
+        params.gridParams.binOffset[g] = grids[g].binOffset();
+        params.maxNumAtomsPerColumn    = std::max(
+                params.maxNumAtomsPerColumn, grids[g].maxNumBinsPerCell() * params.numAtomsPerBin);
+    }
+    params.totalNumColumns = totalColumns;
+
+    // Fill unused slots with sentinels so the fully-unrolled kernel loop
+    // never matches columns beyond numGrids.
+    for (int g = numGrids; g < c_maxGridsPerKernelLaunch; g++)
+    {
+        params.gridParams.columnsPrefix[g] = INT_MAX;
+        params.gridParams.binOffset[g]     = 0;
+    }
+    return params;
+}
+
 /* Initialization for X buffer operations on GPU. */
 void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
 {
@@ -1652,6 +1702,18 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, InteractionLocality::Local);
     // ...and this call instructs the nonlocal stream to wait on that event:
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, InteractionLocality::NonLocal);
+
+    // Pre-compute kernel launch parameters for each interaction locality.
+    // These are constant for the lifetime of the pair list.
+    const int numAllGrids   = static_cast<int>(gridSet.grids().size());
+    const int numLocalGrids = std::min(1, numAllGrids);
+    gpu_nbv->xToXqLaunchParams[InteractionLocality::Local] =
+            setupFusedXToXqLaunchParams(gridSet.grids().subArray(0, numLocalGrids), 0, maxNumCells);
+    if (numAllGrids > 1)
+    {
+        gpu_nbv->xToXqLaunchParams[InteractionLocality::NonLocal] = setupFusedXToXqLaunchParams(
+                gridSet.grids().subArray(1, numAllGrids - 1), 1, maxNumCells);
+    }
 }
 
 //! This function is documented in the header file

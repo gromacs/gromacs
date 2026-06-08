@@ -248,26 +248,20 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet gmx_unused& gridSet, NbnxmGpu gmx_
 
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  *
- * \param[in]     grid             Grid to be converted.
+ * Processes all grids in a single fused kernel launch, using pre-stored launch
+ * parameters from \p gpu_nbv.
+ *
  * \param[in,out] gpu_nbv          The nonbonded data GPU structure.
  * \param[in]     d_x              Device-side coordinates in plain rvec format.
  * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in
  * the device memory.
  * \param[in]     locality         Copy coordinates for local or non-local atoms.
- * \param[in]     gridId           Index of the grid being converted.
- * \param[in]     numCellsMax      Maximum number of cells in the grid.
- * \param[in]     mustInsertNonLocalDependency Whether synchronization between local and non-local
- * streams should be added. Typically, true if and only if that is the last grid in gridset.
  */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_x_to_nbat_x(const Grid gmx_unused&           grid,
-                           NbnxmGpu gmx_unused*             gpu_nbv,
+void nbnxn_gpu_x_to_nbat_x(NbnxmGpu gmx_unused*             gpu_nbv,
                            DeviceBuffer<RVec> gmx_unused    d_x,
                            GpuEventSynchronizer gmx_unused* xReadyOnDevice,
-                           AtomLocality gmx_unused          locality,
-                           int gmx_unused                   gridId,
-                           int gmx_unused                   numCellsMax,
-                           bool gmx_unused mustInsertNonLocalDependency) GPU_FUNC_TERM;
+                           AtomLocality gmx_unused          locality) GPU_FUNC_TERM;
 
 /*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
  *

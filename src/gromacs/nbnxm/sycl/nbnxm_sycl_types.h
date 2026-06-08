@@ -51,6 +51,7 @@
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -142,6 +143,8 @@ struct NbnxmGpu
      * local/nonlocal, if there is bonded GPU work, both flags
      * will be true. */
     EnumerationArray<InteractionLocality, bool> haveWork = { { false } };
+    /*! \brief Kernel launch parameters per interaction locality, computed once at pair-list setup. */
+    EnumerationArray<InteractionLocality, FusedXToXqLaunchParams> xToXqLaunchParams;
 };
 #endif
 

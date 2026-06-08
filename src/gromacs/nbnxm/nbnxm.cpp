@@ -171,7 +171,7 @@ void nonbonded_verlet_t::convertCoordinatesGpu(const AtomLocality    locality,
     wallcycle_start(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
 
-    nbnxn_atomdata_x_to_nbat_x_gpu(pairSearch_->gridSet(), locality, gpuNbv_, d_x, xReadyOnDevice);
+    nbnxn_gpu_x_to_nbat_x(gpuNbv_, d_x, xReadyOnDevice, locality);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);

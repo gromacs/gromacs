@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
@@ -137,6 +138,8 @@ struct NbnxmGpu
     GpuTimers* timers = nullptr;
     /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
     std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
+    /*! \brief Kernel launch parameters per interaction locality, computed once at pair-list setup. */
+    EnumerationArray<InteractionLocality, FusedXToXqLaunchParams> xToXqLaunchParams;
 };
 
 } // namespace gmx

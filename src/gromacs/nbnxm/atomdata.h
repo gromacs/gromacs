@@ -427,25 +427,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&    gridSet,
                                      const rvec*       coordinates,
                                      nbnxn_atomdata_t* nbat);
 
-/*! \brief Transform coordinates to xbat layout on GPU
- *
- * Creates a GPU copy of the coordinates buffer using short-range ordering.
- * As input, uses coordinates in plain rvec format in GPU memory.
- *
- * \param[in]     gridSet    The grids data.
- * \param[in]     locality   If the transformation should be applied to local or non local coordinates.
- * \param[in,out] gpu_nbv    The NBNXM GPU data structure.
- * \param[in]     d_x        Coordinates to be copied (in plain rvec format).
- * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in the device memory.
- *                                 If there is no need to wait for any event (e.g., the wait has already been
- *                                 enqueued into the appropriate stream), it can be \c nullptr.
- */
-void nbnxn_atomdata_x_to_nbat_x_gpu(const GridSet&        gridSet,
-                                    AtomLocality          locality,
-                                    NbnxmGpu*             gpu_nbv,
-                                    DeviceBuffer<RVec>    d_x,
-                                    GpuEventSynchronizer* xReadyOnDevice);
-
 //! Add the fshift force stored in nbat to fshift
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, ArrayRef<RVec> fshift);
 

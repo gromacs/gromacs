@@ -1271,29 +1271,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&     gridSet,
     }
 }
 
-/* Copies (and reorders) the coordinates to nbnxn_atomdata_t on the GPU*/
-void nbnxn_atomdata_x_to_nbat_x_gpu(const GridSet&        gridSet,
-                                    const AtomLocality    locality,
-                                    NbnxmGpu*             gpu_nbv,
-                                    DeviceBuffer<RVec>    d_x,
-                                    GpuEventSynchronizer* xReadyOnDevice)
-{
-    const auto gridRange = getGridRange(gridSet, locality);
-
-    for (int g : gridRange)
-    {
-        nbnxn_gpu_x_to_nbat_x(gridSet.grids()[g],
-                              gpu_nbv,
-                              d_x,
-                              (g == *gridRange.begin()) ? xReadyOnDevice
-                                                        : nullptr, // Sync on first iteration only
-                              locality,
-                              g,
-                              gridSet.numCellsMax(),
-                              (g == *gridRange.end() - 1));
-    }
-}
-
 static void nbnxn_atomdata_clear_reals(ArrayRef<real> dest, int i0, int i1)
 {
     for (int i = i0; i < i1; i++)

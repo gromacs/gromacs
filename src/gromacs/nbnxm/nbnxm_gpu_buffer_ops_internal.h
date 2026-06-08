@@ -32,6 +32,9 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+#ifndef GMX_NBNXM_NBNXM_GPU_BUFFER_OPS_INTERNAL_H
+#define GMX_NBNXM_NBNXM_GPU_BUFFER_OPS_INTERNAL_H
+
 /*! \internal \file
  *  \brief
  *  Wrapper for the backend-specific coordinate layout conversion functionality
@@ -48,20 +51,60 @@ namespace gmx
 struct NbnxmGpu;
 class Grid;
 
-/*! \brief Launch coordinate layout conversion kernel
+/*! \brief Maximum number of grids supported in a single fused kernel launch */
+static constexpr int c_maxGridsPerKernelLaunch = 8;
+
+/*! \brief Per-grid parameters passed to the fused X-to-Xq kernel.
  *
- * \param[in]     grid          Pair-search grid.
+ * This struct is passed by value as a kernel argument.
+ */
+struct FusedXToXqGridParams
+{
+    //! Prefix-sum start offsets: columnsPrefix[g] = total columns in grids before g.
+    //! Indices [numGrids..c_maxGridsPerKernelLaunch-1] are INT_MAX sentinels (never matched).
+    int columnsPrefix[c_maxGridsPerKernelLaunch];
+    //! Bin offset for each grid.
+    int binOffset[c_maxGridsPerKernelLaunch];
+};
+
+/*! \brief All parameters needed to launch the fused X-to-Xq kernel, computed
+ *  once at pair-list setup and stored per interaction locality in NbnxmGpu.
+ */
+struct FusedXToXqLaunchParams
+{
+    //! Per-grid topology parameters passed to the kernel.
+    FusedXToXqGridParams gridParams;
+    //! Total number of columns across all grids (= grid dimension Y).
+    int totalNumColumns = 0;
+    //! Maximum atoms-per-column across all grids (determines grid dimension X).
+    int maxNumAtomsPerColumn = 0;
+    //! Atoms per bin, identical for all grids.
+    int numAtomsPerBin = 0;
+    //! Index of the first grid in the gridset (0 = local, 1 = non-local).
+    int gridBegin = 0;
+    //! Maximum columns per grid; used as stride for per-grid device arrays.
+    int numColumnsMax = 0;
+};
+
+/*! \brief Launch the fused coordinate layout conversion kernel.
+ *
+ * Processes all grids in a single kernel launch by mapping columns from
+ * all grids into a flat set of GPU blocks. Uses blockIdx.y for global
+ * column indexing across grids, and a prefix-sum lookup to determine
+ * which grid each column belongs to. All parameters are pre-computed at
+ * pair-list setup and stored per interaction locality in
+ * NbnxmGpu::xToXqLaunchParams.
+ *
+ * \param[in]     launchParams  Pre-computed kernel launch parameters.
  * \param[in,out] nb            Nbnxm main structure.
  * \param[in]     d_x           Source atom coordinates.
  * \param[in]     deviceStream  Device stream for kernel submission.
- * \param[in]     numCellsMax   Max. number of cells per grid for offset calculation in \p nb.
- * \param[in]     gridId        Grid index for offset calculation in \p nb.
  */
-void launchNbnxmKernelTransformXToXq(const Grid&          grid,
-                                     NbnxmGpu*            nb,
-                                     DeviceBuffer<Float3> d_x,
-                                     const DeviceStream&  deviceStream,
-                                     unsigned int         numCellsMax,
-                                     int                  gridId);
+void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& launchParams,
+                                     NbnxmGpu*                     nb,
+                                     DeviceBuffer<Float3>          d_x,
+                                     const DeviceStream&           deviceStream);
 
 } // namespace gmx
+
+#endif // GMX_NBNXM_NBNXM_GPU_BUFFER_OPS_INTERNAL_H

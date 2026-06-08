@@ -54,29 +54,58 @@ namespace gmx
 
 /*! \brief SYCL kernel for transforming position coordinates from rvec to nbnxm layout.
  *
+ * Processes columns from multiple grids in a single kernel launch.
+ * itemIdx.get(0) covers atoms within a column, itemIdx.get(1) maps to a
+ * global column index across all grids. The grid membership of each column
+ * is determined using \p gridParams: columnsPrefix[] holds the prefix sum
+ * of per-grid column counts and binOffset[] the starting bin for each
+ * grid.
+ *
  * \param[out]    gm_xq                Coordinates buffer in nbnxm layout.
  * \param[in]     gm_x                 Coordinates buffer.
  * \param[in]     gm_atomIndex         Atom index mapping.
- * \param[in]     gm_numAtoms          Array of number of atoms.
- * \param[in]     gm_binIndex          Array of bin indices.
- * \param[in]     binOffset            First bin.
+ * \param[in]     gm_numAtoms          Array of number of atoms per column (all grids, stride numColumnsMax).
+ * \param[in]     gm_binIndex          Array of bin indices per column (all grids, stride numColumnsMax).
  * \param[in]     numAtomsPerBin       Number of atoms per bin.
- * \param[in]     cellsOffset          Index if the first cell in the bin.
+ * \param[in]     gridBegin            Index of first grid in gridset.
+ * \param[in]     numColumnsMax        Max columns per grid (stride for per-grid arrays).
+ * \param[in]     gridParams           Per-grid parameters (prefix sums and bin offsets).
  */
 static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
                                       const Float3* __restrict__ gm_x,
                                       const int* __restrict__ gm_atomIndex,
                                       const int* __restrict__ gm_numAtoms,
                                       const int* __restrict__ gm_binIndex,
-                                      int binOffset,
-                                      int numAtomsPerBin,
-                                      int cellsOffset)
+                                      int                  numAtomsPerBin,
+                                      int                  gridBegin,
+                                      int                  numColumnsMax,
+                                      FusedXToXqGridParams gridParams)
 {
     return [=](sycl::id<2> itemIdx)
     {
-        // Map bin-level parallelism to y component of block index.
-        const int cxy = itemIdx.get(1) + cellsOffset;
+        const int globalCol = itemIdx.get(1);
 
+        // Start assuming the column belongs to grid 0, using constant [0] indices.
+        int localCol  = globalCol;
+        int gridIdx   = gridBegin;
+        int binOffset = gridParams.binOffset[0];
+
+        // Last-write-wins scan over strictly increasing columnsPrefix[]: the highest matching g is
+        // the correct grid. Full unrolling with constant indices is required to avoid local memory
+        // spills; unused entries use INT_MAX sentinels so they never match.
+#pragma unroll
+        for (int g = 1; g < c_maxGridsPerKernelLaunch; g++)
+        {
+            if (globalCol >= gridParams.columnsPrefix[g])
+            {
+                localCol  = globalCol - gridParams.columnsPrefix[g];
+                gridIdx   = g + gridBegin;
+                binOffset = gridParams.binOffset[g];
+            }
+        }
+
+        // Access per-grid device arrays using numColumnsMax stride
+        const int cxy      = numColumnsMax * gridIdx + localCol;
         const int numAtoms = gm_numAtoms[cxy];
         const int offset   = (binOffset + gm_binIndex[cxy]) * numAtomsPerBin;
 
@@ -95,18 +124,13 @@ static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
 // SYCL 1.2.1 requires providing a unique type for a kernel. Should not be needed for SYCL2020.
 class NbnxmKernelTransformXToXqName;
 
-void launchNbnxmKernelTransformXToXq(const Grid&          grid,
-                                     NbnxmGpu*            nb,
-                                     DeviceBuffer<Float3> d_x,
-                                     const DeviceStream&  deviceStream,
-                                     unsigned int         numCellsMax,
-                                     int                  gridId)
+void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& launchParams,
+                                     NbnxmGpu*                     nb,
+                                     DeviceBuffer<Float3>          d_x,
+                                     const DeviceStream&           deviceStream)
 {
-    const unsigned int numCells    = grid.numCells();
-    const unsigned int numAtomsMax = grid.maxNumBinsPerCell() * grid.numAtomsPerBin();
-    GMX_ASSERT(numCells <= numCellsMax, "Grid has more cells than allowed");
-
-    const sycl::range<2> globalSize{ numAtomsMax, numCells };
+    const sycl::range<2> globalSize{ static_cast<size_t>(launchParams.maxNumAtomsPerColumn),
+                                     static_cast<size_t>(launchParams.totalNumColumns) };
     sycl::queue          q = deviceStream.stream();
 
     auto kernelFunctionBuilder = nbnxmKernelTransformXToXq;
@@ -118,9 +142,10 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
                                                                nb->atomIndices.get_pointer(),
                                                                nb->numAtomsPerCell.get_pointer(),
                                                                nb->cellToBin.get_pointer(),
-                                                               grid.binOffset(),
-                                                               grid.numAtomsPerBin(),
-                                                               numCellsMax * gridId);
+                                                               launchParams.numAtomsPerBin,
+                                                               launchParams.gridBegin,
+                                                               launchParams.numColumnsMax,
+                                                               launchParams.gridParams);
 }
 
 } // namespace gmx

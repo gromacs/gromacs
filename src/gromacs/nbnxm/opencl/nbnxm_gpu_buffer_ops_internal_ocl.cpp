@@ -49,12 +49,10 @@
 namespace gmx
 {
 
-void launchNbnxmKernelTransformXToXq(const Grid& /* grid */,
+void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& /* launchParams */,
                                      NbnxmGpu* /* nb */,
                                      DeviceBuffer<Float3> /* d_x */,
-                                     const DeviceStream& /* deviceStream */,
-                                     unsigned int /* numColumnsMax */,
-                                     int /* gridId */)
+                                     const DeviceStream& /* deviceStream */)
 {
     GMX_RELEASE_ASSERT(false, "NBNXM buffer ops are not supported with OpenCL");
 }
