@@ -79,12 +79,12 @@ namespace gmx
  *  \throws InvalidInputError When unable to work on an emoty file name.
  *  \returns integer value of file type.
  */
-static int getFileType(const std::string& filename)
+static int getFileType(const std::filesystem::path& filename)
 {
     int filetype = efNR;
     if (!filename.empty())
     {
-        filetype = fn2ftp(filename.c_str());
+        filetype = fn2ftp(filename);
     }
     else
     {
@@ -213,9 +213,9 @@ static OutputAdapterContainer addOutputAdapters(const OutputRequirements& requir
     return output;
 }
 
-std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t*  top,
-                                                                   const Selection&   sel,
-                                                                   const std::string& filename,
+std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t* top,
+                                                                   const Selection&  sel,
+                                                                   const std::filesystem::path& filename,
                                                                    AtomsDataPtr       atoms,
                                                                    OutputRequirements requirements)
 {
@@ -352,7 +352,7 @@ deepCopy_t_trxframe(const t_trxframe& input, t_trxframe* copy, RVec* xvec, RVec*
  * \param[in] mtop Pointer to topology, tested before that it is valid.
  * \todo Those should be methods in a replacement for t_trxstatus instead.
  */
-static t_trxstatus* openTNG(const std::string& name, const Selection& sel, const gmx_mtop_t* mtop)
+static t_trxstatus* openTNG(const std::filesystem::path& name, const Selection& sel, const gmx_mtop_t* mtop)
 {
     const char* filemode = "w";
     if (sel.isValid())
@@ -397,7 +397,7 @@ t_trxstatus* TrajectoryFileOpener::outputFile()
             case (efGRO):
             case (efTRR):
             case (efXTC):
-            case (efG96): outputFile_ = open_trx(outputFileName_.c_str(), filemode); break;
+            case (efG96): outputFile_ = open_trx(outputFileName_, filemode); break;
             default: GMX_THROW(InvalidInputError("Invalid file type"));
         }
     }
