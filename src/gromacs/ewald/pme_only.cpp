@@ -651,12 +651,9 @@ static void gmx_pme_send_cyclecounters(gmx_pme_pp* pme_pp)
 static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
                                         gmx_pme_pp*      pme_pp,
                                         const PmeOutput& output,
-                                        const bool       computeVirial)
+                                        const bool       computeEnergyAndVirial)
 {
 #if GMX_MPI
-    gmx_pme_comm_vir_ene_t cve;
-    int                    messages, ind_start, ind_end;
-
     if (pme_pp->useGpuPmePpCommunication)
     {
         GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
@@ -664,8 +661,8 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
                    "but the PME GPU force receiver object does not exist");
     }
 
-    messages = 0;
-    ind_end  = 0;
+    int messages = 0;
+    int ind_end  = 0;
 
     // Now the evaluated forces have to be transferred to the PP
     // ranks. With all kinds of PME-PP communication, forces are
@@ -683,7 +680,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     }
     else
     {
-        if (!computeVirial && pme_pp->useNvshmem)
+        if (!computeEnergyAndVirial && pme_pp->useNvshmem)
         {
             pme_pp->pmeForceSenderGpu->waitForEvents();
         }
@@ -691,8 +688,8 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
         {
             for (const auto& receiver : pme_pp->ppRanks)
             {
-                ind_start = ind_end;
-                ind_end   = ind_start + receiver.numAtoms;
+                int ind_start = ind_end;
+                ind_end       = ind_start + receiver.numAtoms;
                 if (pme_pp->useGpuPmePpCommunication)
                 {
                     pme_pp->pmeForceSenderGpu->sendFToPpGpuAwareMpi(pme_gpu_get_device_f(&pme),
@@ -718,25 +715,29 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
         }
     }
 
-    /* send virial and energy to our last PP node */
-    copy_mat(output.coulombVirial_, cve.vir_q);
-    copy_mat(output.lennardJonesVirial_, cve.vir_lj);
-    cve.energy_q     = output.coulombEnergy_;
-    cve.energy_lj    = output.lennardJonesEnergy_;
-    cve.dvdlambda_q  = output.coulombDvdl_;
-    cve.dvdlambda_lj = output.lennardJonesDvdl_;
-
-    if (debug)
+    gmx_pme_comm_vir_ene_t cve;
+    if (computeEnergyAndVirial)
     {
-        fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n", pme_pp->peerRankId);
+        /* send virial and energy to our last PP node */
+        copy_mat(output.coulombVirial_, cve.vir_q);
+        copy_mat(output.lennardJonesVirial_, cve.vir_lj);
+        cve.energy_q     = output.coulombEnergy_;
+        cve.energy_lj    = output.lennardJonesEnergy_;
+        cve.dvdlambda_q  = output.coulombDvdl_;
+        cve.dvdlambda_lj = output.lennardJonesDvdl_;
+
+        if (debug)
+        {
+            fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n", pme_pp->peerRankId);
+        }
+        MPI_Isend(&cve,
+                  sizeof(cve),
+                  MPI_BYTE,
+                  pme_pp->peerRankId,
+                  eCommType_ENERGY_VIRIAL_DVDL,
+                  pme_pp->mpi_comm_mysim,
+                  &pme_pp->req[messages++]);
     }
-    MPI_Isend(&cve,
-              sizeof(cve),
-              MPI_BYTE,
-              pme_pp->peerRankId,
-              eCommType_ENERGY_VIRIAL_DVDL,
-              pme_pp->mpi_comm_mysim,
-              &pme_pp->req[messages++]);
 
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
@@ -745,7 +746,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
-    GMX_UNUSED_VALUE(computeVirial);
+    GMX_UNUSED_VALUE(computeEnergyAndVirial);
 #endif
 }
 
@@ -991,7 +992,8 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
             pme_gpu_finish_step(pme->gpu.get(), pme_pp->useMdGpuGraph, wcycle);
         }
 
-        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, stepWork.computeVirial);
+        gmx_pme_send_force_vir_ener(
+                *pme, pme_pp.get(), output, stepWork.computeEnergy || stepWork.computeVirial);
 
         // Reinit after PME->PP force send so it is removed from the critical path
         if (useGpuForPme && !pme_pp->useMdGpuGraph)

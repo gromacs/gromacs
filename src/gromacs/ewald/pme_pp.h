@@ -129,7 +129,8 @@ public:
                         real*            energy_lj,
                         real*            dvdlambda_q,
                         real*            dvdlambda_lj,
-                        bool             receivePmeForceToGpu);
+                        bool             receivePmeForceToGpu,
+                        bool             isVirialOrEnergyStep);
     /*! \brief Send a request for PME cycle counters and stop signalling before DD/NS work
      *
      * This method must only be called when the PME rank is known to be in its
@@ -166,7 +167,8 @@ private:
                                 real*            energy_q,
                                 real*            energy_lj,
                                 real*            dvdlambda_q,
-                                real*            dvdlambda_lj);
+                                real*            dvdlambda_lj,
+                                bool             isVirialOrEnergyStep);
     //! Receive force data from PME ranks
     void receiveForces(bool receivePmeForceToGpu);
 

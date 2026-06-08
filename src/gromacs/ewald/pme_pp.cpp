@@ -542,11 +542,12 @@ void PmePpComm::receiveVirialAndEnergy(ForceWithVirial* forceWithVirial,
                                        real*            energy_q,
                                        real*            energy_lj,
                                        real*            dvdlambda_q,
-                                       real*            dvdlambda_lj)
+                                       real*            dvdlambda_lj,
+                                       bool             isVirialOrEnergyStep)
 {
     gmx_pme_comm_vir_ene_t cve;
 
-    if (thisRankReceivesVirialAndEnergy_)
+    if (thisRankReceivesVirialAndEnergy_ && isVirialOrEnergyStep)
     {
         if (debug)
         {
@@ -615,7 +616,8 @@ void PmePpComm::receiveResults(ForceWithVirial* forceWithVirial,
                                real*            energy_lj,
                                real*            dvdlambda_q,
                                real*            dvdlambda_lj,
-                               const bool       receivePmeForceToGpu)
+                               const bool       receivePmeForceToGpu,
+                               const bool       isVirialOrEnergyStep)
 {
     if (c_useDelayedWait)
     {
@@ -656,7 +658,8 @@ void PmePpComm::receiveResults(ForceWithVirial* forceWithVirial,
         }
     }
 
-    receiveVirialAndEnergy(forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj);
+    receiveVirialAndEnergy(
+            forceWithVirial, energy_q, energy_lj, dvdlambda_q, dvdlambda_lj, isVirialOrEnergyStep);
 }
 
 std::optional<int> PmePpComm::rankOfControlledPmeRank() const

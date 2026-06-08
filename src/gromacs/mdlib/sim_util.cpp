@@ -239,6 +239,7 @@ static void pme_receive_force_ener(t_forcerec*      fr,
                                    ForceWithVirial* forceWithVirial,
                                    gmx_enerdata_t*  enerd,
                                    bool             receivePmeForceToGpu,
+                                   bool             isVirialOrEnergyStep,
                                    gmx_wallcycle*   wcycle)
 {
     real  e_q, e_lj, dvdl_q, dvdl_lj;
@@ -253,7 +254,8 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     wallcycle_start(wcycle, WallCycleCounter::PpPmeWaitRecvF);
     dvdl_q  = 0;
     dvdl_lj = 0;
-    fr->pmePpComm->receiveResults(forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj, receivePmeForceToGpu);
+    fr->pmePpComm->receiveResults(
+            forceWithVirial, &e_q, &e_lj, &dvdl_q, &dvdl_lj, receivePmeForceToGpu, isVirialOrEnergyStep);
     enerd->term[InteractionFunction::CoulombReciprocalSpace] += e_q;
     enerd->term[InteractionFunction::LennardJonesReciprocalSpace] += e_lj;
     enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Coul] += dvdl_q;
@@ -2242,8 +2244,13 @@ void do_force(FILE*                         fplog,
             /* In case of node-splitting, the PP nodes receive the long-range
              * forces, virial and energy from the PME nodes here.
              */
-            pme_receive_force_ener(
-                    fr, cr->dd, &forceOutMtsLevel1->forceWithVirial(), enerd, stepWork.useGpuPmeFReduction, wcycle);
+            pme_receive_force_ener(fr,
+                                   cr->dd,
+                                   &forceOutMtsLevel1->forceWithVirial(),
+                                   enerd,
+                                   stepWork.useGpuPmeFReduction,
+                                   stepWork.computeVirial || stepWork.computeEnergy,
+                                   wcycle);
         }
     }
 
@@ -2514,8 +2521,13 @@ void do_force(FILE*                         fplog,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(
-                fr, cr->dd, &forceOutMtsLevel1->forceWithVirial(), enerd, stepWork.useGpuPmeFReduction, wcycle);
+        pme_receive_force_ener(fr,
+                               cr->dd,
+                               &forceOutMtsLevel1->forceWithVirial(),
+                               enerd,
+                               stepWork.useGpuPmeFReduction,
+                               stepWork.computeVirial || stepWork.computeEnergy,
+                               wcycle);
     }
 
 
@@ -2611,7 +2623,13 @@ void do_force(FILE*                         fplog,
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(fr, cr->dd, &forceOutMtsLevel1->forceWithVirial(), enerd, false, wcycle);
+        pme_receive_force_ener(fr,
+                               cr->dd,
+                               &forceOutMtsLevel1->forceWithVirial(),
+                               enerd,
+                               false,
+                               stepWork.computeVirial || stepWork.computeEnergy,
+                               wcycle);
     }
 
     if (stepWork.computeForces)
