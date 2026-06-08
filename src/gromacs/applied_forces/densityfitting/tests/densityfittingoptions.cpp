@@ -68,7 +68,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -262,5 +263,5 @@ TEST_F(DensityFittingOptionsTest, RoundTripForInternalsIsIdempotent)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

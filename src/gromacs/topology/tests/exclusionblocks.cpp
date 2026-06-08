@@ -59,7 +59,7 @@
 
 namespace gmx
 {
-namespace testing
+namespace test
 {
 namespace
 {
@@ -188,6 +188,6 @@ TEST_F(ExclusionBlockTest, MergeExclusions)
 
 } // namespace
 
-} // namespace testing
+} // namespace test
 
 } // namespace gmx

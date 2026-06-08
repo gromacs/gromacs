@@ -73,6 +73,10 @@ static void PrintTo(const GromacsFileType& ftp, std::ostream* os)
     *os << "'" << ftp2ext(ftp) << "'";
 }
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -234,3 +238,5 @@ TEST(StructureIOTest, ReadTpsConfRetainsChainids)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

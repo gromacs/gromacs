@@ -60,6 +60,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 //! Base fixture providing common setup for QMMM input generator tests
 class QMMMInputGeneratorTestBase
@@ -177,4 +181,6 @@ INSTANTIATE_TEST_SUITE_P(
         [](const ::testing::TestParamInfo<QMMethodTestParam>& TestInfo)
         { return TestInfo.param.name; });
 
+} // namespace
+} // namespace test
 } // namespace gmx

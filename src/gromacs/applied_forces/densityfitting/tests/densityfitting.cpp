@@ -74,7 +74,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -137,5 +138,5 @@ TEST_F(DensityFittingTest, SingleAtom)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

@@ -75,6 +75,10 @@ enum class PbcType : int;
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class ColvarsPreProcessorTest : public ::testing::Test
 {
@@ -250,4 +254,6 @@ TEST_F(ColvarsPreProcessorTest, WrongColvarsInput)
 #    endif
 #endif
 
+} // namespace
+} // namespace test
 } // namespace gmx

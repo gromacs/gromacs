@@ -53,7 +53,7 @@
 
 namespace gmx
 {
-namespace testing
+namespace test
 {
 
 class ReadTest : public ::testing::Test
@@ -301,5 +301,5 @@ TEST_F(ReadTest, create_estring_output_placeholder_PreservesExistingValue)
     EXPECT_TRUE(inputField_[idx].preserveOutputOrdering_);
 }
 
-} // namespace testing
+} // namespace test
 } // namespace gmx

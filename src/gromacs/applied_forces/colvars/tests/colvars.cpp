@@ -74,7 +74,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -149,5 +150,5 @@ TEST_F(ColvarsTest, PreProcessingWithoutColvars)
 #endif // GMX_HAVE_COLVARS
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

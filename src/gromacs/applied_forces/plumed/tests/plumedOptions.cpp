@@ -62,6 +62,8 @@
 #include "testutils/testfilemanager.h"
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 TEST(PlumedOptionsTest, defaultConstructor)
@@ -240,4 +242,5 @@ TEST(PlumedOptionsTest, setTopology)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

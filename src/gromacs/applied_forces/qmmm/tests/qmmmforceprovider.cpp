@@ -74,6 +74,10 @@ enum class PbcType : int;
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class QMMMForceProviderTest : public ::testing::Test
 {
@@ -168,4 +172,6 @@ TEST_F(QMMMForceProviderTest, CanConstructOrNot)
     }
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

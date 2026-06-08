@@ -78,6 +78,10 @@
 #include "testutils/testasserts.h"
 
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -1141,3 +1145,5 @@ TEST_F(NeighborhoodSearchTest, GridSearchExclusions)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -49,6 +49,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class QMMMForceProviderStateTest : public ::testing::Test
 {
@@ -117,4 +121,6 @@ TEST_F(QMMMForceProviderStateTest, MissingStateWhenNoData)
     }
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

@@ -59,6 +59,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -197,3 +201,5 @@ TEST_F(H5mdTrajectoryWritingTest, Works)
 #endif // GMX_USE_HDF5
 
 } // namespace
+} // namespace test
+} // namespace gmx

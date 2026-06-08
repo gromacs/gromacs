@@ -49,6 +49,10 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -271,3 +275,5 @@ TEST(FloatingPointToleranceTest, DefaultFloatTolerance)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

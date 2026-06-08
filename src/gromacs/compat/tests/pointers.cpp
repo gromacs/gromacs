@@ -53,10 +53,13 @@
 
 namespace gmx
 {
-namespace compat
+namespace test
 {
 namespace
 {
+
+using compat::make_not_null;
+using compat::not_null;
 
 TEST(NotNullConstruction, Works)
 {
@@ -180,5 +183,5 @@ TEST(NotNull, WorksInContainers)
 // here.
 
 } // anonymous namespace
-} // namespace compat
+} // namespace test
 } // namespace gmx
