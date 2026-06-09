@@ -582,7 +582,6 @@ void compute_globals(gmx_global_stat*               gstat,
     }
 
     /* ########## Now pressure ############## */
-    // TODO: For the VV integrator bConstrain is needed in the conditional. This is confusing, so get rid of this.
     if (bPres || bConstrain)
     {
         m_add(force_vir, shake_vir, total_vir);

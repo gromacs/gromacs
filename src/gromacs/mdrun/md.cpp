@@ -638,7 +638,7 @@ void gmx::LegacySimulator::do_md()
                 cr_->commMyGroup, ekind_, isMainRank ? &stateGlobal_->ekinstate : nullptr);
     }
 
-    unsigned int cglo_flags =
+    const unsigned int cglo_flags =
             (CGLO_TEMPERATURE | CGLO_GSTAT | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
              | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0) | (hasReadEkinState ? CGLO_READEKIN : 0));
 
@@ -1785,6 +1785,17 @@ void gmx::LegacySimulator::do_md()
                 bool doIntraSimSignal = true;
                 SimulationSignaller signaller(&signals, cr_, ms_, doInterSimSignal, doIntraSimSignal);
 
+                int flags = (bGStat ? CGLO_GSTAT : 0);
+                if (!EI_VV(ir->eI))
+                {
+                    flags |= (bCalcEner ? CGLO_ENERGY : 0) | (bStopCM ? CGLO_STOPCM : 0)
+                             | CGLO_TEMPERATURE | (bCalcVir ? (CGLO_PRESSURE | CGLO_CONSTRAINT) : 0);
+                }
+                else
+                {
+                    flags |= CGLO_CONSTRAINT;
+                }
+
                 compute_globals(gstat,
                                 cr_->commMyGroup,
                                 ir,
@@ -1804,10 +1815,7 @@ void gmx::LegacySimulator::do_md()
                                 pres,
                                 &signaller,
                                 lastbox,
-                                (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
-                                        | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
-                                        | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
-                                        | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT,
+                                flags,
                                 step,
                                 &observablesReducer);
                 if (!EI_VV(ir->eI) && bStopCM)

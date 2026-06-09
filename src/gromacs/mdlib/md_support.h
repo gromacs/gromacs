@@ -82,7 +82,7 @@ class SimulationSignaller;
 #define CGLO_TEMPERATURE (1u << 7u)
 /* Sum the kinetic energy terms in global computation */
 #define CGLO_PRESSURE (1u << 8u)
-/* Sum the constraint term in global computation */
+/* Sum the constraint virial in global computation */
 #define CGLO_CONSTRAINT (1u << 9u)
 /* Reading ekin from the trajectory */
 #define CGLO_READEKIN (1u << 10u)

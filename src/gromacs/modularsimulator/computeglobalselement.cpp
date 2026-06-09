@@ -211,9 +211,10 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
         }
 
         const bool doEnergy = step == energyReductionStep_;
+        const bool doVirial = step == virialReductionStep_;
         int        flags    = (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
-                    | (needComReduction ? CGLO_STOPCM : 0) | CGLO_TEMPERATURE | CGLO_PRESSURE
-                    | CGLO_CONSTRAINT;
+                    | (needComReduction ? CGLO_STOPCM : 0) | CGLO_TEMPERATURE
+                    | (doVirial ? (CGLO_PRESSURE | CGLO_CONSTRAINT) : 0);
 
         // Since we're already communicating at this step, we
         // can propagate intra-simulation signals. Note that
