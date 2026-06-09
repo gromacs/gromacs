@@ -59,20 +59,14 @@ __device__ __forceinline__ T LDG(const T* ptr)
  *
  * \tparam T            Raw data type
  * \param[in] d_ptr     Device pointer to the raw table memory
- * \param[in] texObj    Table texture object
  * \param[in] index     Non-negative element index
  * \returns             The value from the table at \p index
  */
 template<typename T>
-static __forceinline__ __device__ T fetchFromParamLookupTable(const T*                 d_ptr,
-                                                              const hipTextureObject_t texObj,
-                                                              int                      index)
+static __forceinline__ __device__ T fetchFromParamLookupTable(const T* d_ptr, int index)
 {
     assert(index >= 0);
-    T result;
-    GMX_UNUSED_VALUE(texObj);
-    result = LDG(d_ptr + index);
-    return result;
+    return LDG(d_ptr + index);
 }
 
 #define LAUNCH_BOUNDS_EXACT(WORK_GROUP_SIZE, WAVES_PER_EU)                        \

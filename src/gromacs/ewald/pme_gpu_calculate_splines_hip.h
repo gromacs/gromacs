@@ -285,12 +285,10 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
 
             // TODO have shared table for both parameters to share the fetch, as index is always same?
             // TODO compare texture/LDG performance
-            sm_fractCoords[sharedMemoryIndex] += fetchFromParamLookupTable(
-                    kernelParams.grid.d_fractShiftsTable, kernelParams.fractShiftsTableTexture, tableIndex);
+            sm_fractCoords[sharedMemoryIndex] +=
+                    fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable, tableIndex);
             sm_gridlineIndices[sharedMemoryIndex] =
-                    fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable,
-                                              kernelParams.gridlineIndicesTableTexture,
-                                              tableIndex);
+                    fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable, tableIndex);
             if constexpr (writeGlobal)
             {
                 gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] =
