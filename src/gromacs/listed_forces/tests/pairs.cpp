@@ -398,7 +398,7 @@ protected:
                      makeArrayRef(mdatoms.bPerturbed),
                      mdatoms.cENER,
                      mdatoms.nPerturbed,
-                     fr,
+                     *fr,
                      havePerturbedInteractions,
                      stepWork,
                      &output.energy,

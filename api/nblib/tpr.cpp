@@ -94,6 +94,8 @@ TprReader::TprReader(std::string filename)
 
     // init forcerec
     t_forcerec          forceRecord{ false };
+    gmx_wallcycle*      wcycle  = nullptr;
+    t_nrnb*             nrnb    = nullptr;
     gmx::MpiComm        mpiComm = gmx::MpiComm(gmx::MpiComm::SingleRank{});
     t_commrec           commrec(mpiComm, mpiComm, nullptr);
     gmx::ForceProviders forceProviders;
@@ -108,6 +110,8 @@ TprReader::TprReader(std::string filename)
                   molecularTopology,
                   &commrec,
                   nullptr,
+                  wcycle,
+                  nrnb,
                   globalState.box,
                   nullptr,
                   nullptr,

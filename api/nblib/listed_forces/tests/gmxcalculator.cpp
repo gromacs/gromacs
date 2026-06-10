@@ -95,8 +95,9 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     disres_.nres   = 0;
     fcdata_.disres = &disres_;
 
-    gmxListedForces_ = std::make_unique<ListedForces>(
-            *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, nullptr);
+    gmx_wallcycle* wcycle = nullptr;
+    gmxListedForces_      = std::make_unique<ListedForces>(
+            *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, nullptr, wcycle, fr, &nrnb);
     gmxListedForces_->setup(*idef, nP, false, mdatoms_.cVCM);
 
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());
@@ -143,17 +144,14 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
     std::fill(forceBuffer.begin(), forceBuffer.end(), gmx::RVec{ 0, 0, 0 });
     std::fill(shiftBuffer.begin(), shiftBuffer.end(), gmx::RVec{ 0, 0, 0 });
 
-    gmxListedForces_->calculate(nullptr,
-                                box_.legacyMatrix(),
+    gmxListedForces_->calculate(box_.legacyMatrix(),
                                 { x.data(), x.data() + x.size(), x.data() + x.size() },
                                 gmx::ArrayRef<const gmx::RVec>{},
                                 &fcdata_,
                                 nullptr,
                                 &forceOutputs,
-                                &fr,
                                 &pbc,
                                 &enerd,
-                                &nrnb,
                                 lambdaBuffer,
                                 mdatoms_.chargeA,
                                 mdatoms_.chargeB,

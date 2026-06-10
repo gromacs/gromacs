@@ -67,44 +67,44 @@ class ForceWithVirial;
  *
  * \returns the potential
  */
-real posres_wrapper(gmx::ArrayRef<const int>                  iatoms,
-                    gmx::ArrayRef<const t_iparams>            iparamsPosres,
-                    const t_pbc&                              pbc,
-                    const rvec*                               x,
-                    gmx::ArrayRef<const real>                 lambda,
-                    const t_forcerec*                         fr,
-                    const gmx::ArrayRef<const unsigned short> refScaleComIndices,
-                    gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
-                    gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer,
-                    gmx::ArrayRef<rvec4>                      forces,
-                    gmx::RVec*                                virial,
-                    real*                                     dvdl);
+real posres_wrapper(gmx::ArrayRef<const int>            iatoms,
+                    gmx::ArrayRef<const t_iparams>      iparamsPosres,
+                    const t_pbc&                        pbc,
+                    const rvec*                         x,
+                    gmx::ArrayRef<const real>           lambda,
+                    const t_forcerec&                   fr,
+                    gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                    gmx::ArrayRef<gmx::RVec>            centersOfMassScaledBuffer,
+                    gmx::ArrayRef<gmx::RVec>            centersOfMassBScaledBuffer,
+                    gmx::ArrayRef<rvec4>                forces,
+                    gmx::RVec*                          virial,
+                    real*                               dvdl);
 
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
-void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
-                           const InteractionDefinitions&             idef,
-                           const t_pbc&                              pbc,
-                           const rvec                                x[],
-                           gmx_enerdata_t*                           enerd,
-                           gmx::ArrayRef<const real>                 lambda,
-                           const t_forcerec*                         fr,
-                           const gmx::ArrayRef<const unsigned short> refScaleComIndices,
-                           gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
-                           gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer);
+void posres_wrapper_lambda(struct gmx_wallcycle*               wcycle,
+                           const InteractionDefinitions&       idef,
+                           const t_pbc&                        pbc,
+                           const rvec                          x[],
+                           gmx_enerdata_t*                     enerd,
+                           gmx::ArrayRef<const real>           lambda,
+                           const t_forcerec&                   fr,
+                           gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                           gmx::ArrayRef<gmx::RVec>            centersOfMassScaledBuffer,
+                           gmx::ArrayRef<gmx::RVec>            centersOfMassBScaledBuffer);
 
 /*! \brief Helper function that wraps calls to fbposres for free-energy perturbation
  *
  * \returns the potential
  */
-real fbposres_wrapper(gmx::ArrayRef<const int>                  iatoms,
-                      gmx::ArrayRef<const t_iparams>            iparamsFBPosres,
-                      const t_pbc&                              pbc,
-                      const rvec*                               x,
-                      const t_forcerec*                         fr,
-                      const gmx::ArrayRef<const unsigned short> refScaleComIndices,
-                      gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
-                      gmx::ArrayRef<rvec4>                      forces,
-                      gmx::RVec*                                virial);
+real fbposres_wrapper(gmx::ArrayRef<const int>            iatoms,
+                      gmx::ArrayRef<const t_iparams>      iparamsFBPosres,
+                      const t_pbc&                        pbc,
+                      const rvec*                         x,
+                      const t_forcerec&                   fr,
+                      gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                      gmx::ArrayRef<gmx::RVec>            centersOfMassScaledBuffer,
+                      gmx::ArrayRef<rvec4>                forces,
+                      gmx::RVec*                          virial);
 
 #endif

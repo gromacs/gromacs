@@ -188,7 +188,7 @@ TEST_P(PositionRestraintsTest, BasicPosResNoFreeEnergy)
                                   pbc_,
                                   as_rvec_array(x_.data()),
                                   c_emptyLambdas,
-                                  &fr_,
+                                  fr_,
                                   {},
                                   centersOfMassScaledBuffer,
                                   centersOfMassBScaledBuffer,

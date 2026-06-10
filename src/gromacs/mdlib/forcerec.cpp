@@ -681,6 +681,8 @@ void init_forcerec(FILE*                            fplog,
                    const gmx_mtop_t&                mtop,
                    const t_commrec*                 commrec,
                    const gmx_multisim_t*            commMultiSim,
+                   gmx_wallcycle*                   wcycle,
+                   t_nrnb*                          nrnb,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,
@@ -1082,7 +1084,10 @@ void init_forcerec(FILE*                            fplog,
                     interactionSelection,
                     commrec->dd,
                     commMultiSim,
-                    fplog);
+                    fplog,
+                    wcycle,
+                    *forcerec,
+                    nrnb);
         }
     }
     else
@@ -1096,7 +1101,10 @@ void init_forcerec(FILE*                            fplog,
                 ListedForces::interactionSelectionAll(),
                 commrec->dd,
                 commMultiSim,
-                fplog);
+                fplog,
+                wcycle,
+                *forcerec,
+                nrnb);
     }
 
     // QM/MM initialization if requested

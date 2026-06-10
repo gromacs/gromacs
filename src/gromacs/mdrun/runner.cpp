@@ -1840,6 +1840,8 @@ int Mdrunner::mdrunner()
                       mtop,
                       cr,
                       ms,
+                      wcycle.get(),
+                      &nrnb,
                       box,
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),

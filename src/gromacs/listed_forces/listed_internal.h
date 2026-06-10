@@ -74,7 +74,7 @@ public:
         packedBounds_[static_cast<int>(functionType) * stride_ + boundIndex] = count;
     }
 
-    inline int bound(InteractionFunction functionType, int boundIndex) const
+    int bound(InteractionFunction functionType, int boundIndex) const
     {
         return bound(static_cast<int>(functionType), boundIndex);
     }

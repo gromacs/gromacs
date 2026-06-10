@@ -2160,17 +2160,14 @@ void do_force(FILE*                         fplog,
         {
             ListedForces& listedForces = fr->listedForces[mtsIndex];
             ForceOutputs& forceOut     = (mtsIndex == 0 ? forceOutMtsLevel0 : *forceOutMtsLevel1);
-            listedForces.calculate(wcycle,
-                                   box,
+            listedForces.calculate(box,
                                    x,
                                    xWholeMolecules,
                                    fr->fcdata.get(),
                                    hist,
                                    &forceOut,
-                                   fr,
                                    &pbc,
                                    enerd,
-                                   nrnb,
                                    lambda,
                                    mdatoms->chargeA,
                                    mdatoms->chargeB,

@@ -86,17 +86,17 @@ struct gmx_enerdata_t;
 struct gmx_ffparams_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
+struct gmx_wallcycle;
 class history_t;
 struct t_fcdata;
 struct t_forcerec;
 struct t_nrnb;
+class WorkDivision;
 
 namespace gmx
 {
 class ForceOutputs;
 class StepWorkload;
-template<typename>
-class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
 } // namespace gmx
@@ -141,6 +141,9 @@ public:
      * \param[in] domDec           Domain decomposition data, pass nulltpr without DD
      * \param[in] commMultiSim     Multi-simulation communication, can be nullptr
      * \param[in] fplog            Log file for printing env.var. override, can be nullptr
+     * \param[in] wcycle           Manages wallcycle counting
+     * \param[in] fr               Manages PP-rank force computations
+     * \param[in] nrnb             Manages FLOPs accounting
      */
     ListedForces(const gmx_ffparams_t& ffparams,
                  int                   numEnergyGroups,
@@ -149,7 +152,10 @@ public:
                  InteractionSelection  interactionSelection,
                  const gmx_domdec_t*   domDec,
                  const gmx_multisim_t* commMultiSim,
-                 FILE*                 fplog);
+                 FILE*                 fplog,
+                 gmx_wallcycle*        wcycle,
+                 const t_forcerec&     fr,
+                 t_nrnb*               nrnb);
 
     //! Move constructor, default, but in the source file to hide implementation classes
     ListedForces(ListedForces&& o) noexcept;
@@ -175,17 +181,14 @@ public:
      * xWholeMolecules only needs to contain whole molecules when orientation
      * restraints need to be computed and can be empty otherwise.
      */
-    void calculate(struct gmx_wallcycle*                     wcycle,
-                   const matrix                              box,
+    void calculate(const matrix                              box,
                    gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
                    gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
                    t_fcdata*                                 fcdata,
                    const history_t*                          hist,
                    gmx::ForceOutputs*                        forceOutputs,
-                   const t_forcerec*                         fr,
                    const struct t_pbc*                       pbc,
                    gmx_enerdata_t*                           enerd,
-                   t_nrnb*                                   nrnb,
                    gmx::ArrayRef<const real>                 lambda,
                    gmx::ArrayRef<const real>                 chargeA,
                    gmx::ArrayRef<const real>                 chargeB,
@@ -209,6 +212,93 @@ public:
     bool haveRestraints(const t_fcdata& fcdata) const;
 
 private:
+    /*! \brief Internal function that calculates listed force interactions. */
+    void calcListed(const InteractionDefinitions&       idef,
+                    bool                                needToClearThreadForceBuffers,
+                    const rvec                          x[],
+                    gmx::ForceOutputs*                  forceOutputs,
+                    const t_pbc*                        pbc,
+                    gmx_enerdata_t*                     enerd,
+                    gmx::ArrayRef<const real>           lambda,
+                    gmx::ArrayRef<const real>           chargeA,
+                    gmx::ArrayRef<const real>           chargeB,
+                    gmx::ArrayRef<const bool>           atomIsPerturbed,
+                    gmx::ArrayRef<const unsigned short> cENER,
+                    int                                 numEnergyGroups,
+                    t_fcdata*                           fcd,
+                    int*                                global_atom_index,
+                    const gmx::StepWorkload&            stepWork);
+    /*! \brief As calcListed(), but only determines the potential energy
+     * for the perturbed interactions.
+     *
+     * The shift forces in fr are not affected.
+     */
+    void calcListedLambda(const InteractionDefinitions&                     idef,
+                          const rvec                                        x[],
+                          const struct t_pbc*                               pbc,
+                          gmx::ArrayRef<real>                               forceBufferLambda,
+                          gmx::ArrayRef<gmx::RVec>                          shiftForceBufferLambda,
+                          gmx_grppairener_t*                                grpp,
+                          gmx::EnumerationArray<InteractionFunction, real>& epot,
+                          gmx::ArrayRef<real>                               dvdl,
+                          gmx::ArrayRef<const real>                         lambda,
+                          gmx::ArrayRef<const real>                         chargeA,
+                          gmx::ArrayRef<const real>                         chargeB,
+                          gmx::ArrayRef<const bool>                         atomIsPerturbed,
+                          gmx::ArrayRef<const unsigned short>               cENER,
+                          int                                               nPerturbed,
+                          t_fcdata*                                         fcd,
+                          int*                                              global_atom_index);
+    /*! \brief Internal function that calculates listed force interactions over threads. */
+    void calcBondedForces(const InteractionDefinitions&       idef,
+                          bool                                needToClearThreadForceBuffers,
+                          const rvec                          x[],
+                          const t_pbc*                        pbc_null,
+                          rvec*                               fshiftMainBuffer,
+                          gmx_enerdata_t*                     enerd,
+                          gmx::ArrayRef<const real>           lambda,
+                          gmx::ArrayRef<real>                 dvdl,
+                          gmx::ArrayRef<const real>           chargeA,
+                          gmx::ArrayRef<const real>           chargeB,
+                          gmx::ArrayRef<const bool>           atomIsPerturbed,
+                          gmx::ArrayRef<const unsigned short> cENER,
+                          int                                 numEnergyGroups,
+                          t_fcdata*                           fcd,
+                          const gmx::StepWorkload&            stepWork,
+                          int*                                global_atom_index);
+    /*! \brief Computes the position restraint forces, uses OpenMP parallelization */
+    void calcPositionRestraintForces(const InteractionDefinitions& idef,
+                                     bool                          needToClearThreadForceBuffers,
+                                     const rvec                    x[],
+                                     const t_pbc&                  pbc,
+                                     gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                                     gmx::RVec*                          virial,
+                                     gmx_enerdata_t*                     enerd,
+                                     gmx::ArrayRef<const real>           lambda,
+                                     gmx::ArrayRef<real>                 dvdl);
+    /*! \brief Calculate all of one kind of bonded interactions for this thread */
+    real calcOneBond(int                                 thread,
+                     InteractionFunction                 ftype,
+                     const InteractionDefinitions&       idef,
+                     gmx::ArrayRef<const int>            iatoms,
+                     bool                                havePerturbedInteractions,
+                     const WorkDivision&                 workDivision,
+                     const rvec                          x[],
+                     rvec4                               f[],
+                     rvec                                fshift[],
+                     const t_pbc*                        pbc,
+                     gmx_grppairener_t*                  grpp,
+                     gmx::ArrayRef<const real>           lambda,
+                     gmx::ArrayRef<real>                 dvdl,
+                     gmx::ArrayRef<const real>           chargeA,
+                     gmx::ArrayRef<const real>           chargeB,
+                     gmx::ArrayRef<const bool>           atomIsPerturbed,
+                     gmx::ArrayRef<const unsigned short> cENER,
+                     int                                 numEnergyGroups,
+                     t_fcdata*                           fcd,
+                     const gmx::StepWorkload&            stepWork,
+                     int*                                global_atom_index);
+
     //! Pointer to the interaction definitions
     InteractionDefinitions const* idef_ = nullptr;
     //! The number of energy groups
@@ -231,6 +321,12 @@ private:
     const gmx_domdec_t* domDec_;
     //! Pointer to multi-sim communicator, can be nullptr
     const gmx_multisim_t* commMultiSim_;
+    //! Manages wallcycle counting
+    gmx_wallcycle* wcycle_;
+    //! Manages PP-rank force computations
+    const t_forcerec& fr_;
+    //! Manages FLOPs accounting
+    t_nrnb* nrnb_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(ListedForces);
 };
