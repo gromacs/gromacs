@@ -56,8 +56,13 @@ function(gmx_add_hipcc_flag_if_supported _output_variable_name_to_append_to _fla
     # If the check has already been run, do not re-run it
     if (NOT DEFINED ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if hipcc accepts flags ${ARGN}")
+        # Compile and link to /dev/null rather than letting hipcc create the
+        # default a.out file in the directory cmakec command was invoked from
+        # (typically the source tree root). We only care whether the flags
+        # are accepted, not about the contents of the resulting executable.
+        # if(NOT WIN32) above allows using /dev/null without reservation.
         execute_process(
-                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} -x hip --offload-arch=gfx90a -Werror "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
+                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} -x hip --offload-arch=gfx90a -Werror "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp" -o /dev/null
             RESULT_VARIABLE _hip_success
             OUTPUT_QUIET
             ERROR_QUIET
