@@ -168,21 +168,7 @@ public:
 
             size = rvecArray.size();
             serializer->doInt(&size); // 4 bytes serialized
-            if (GMX_DOUBLE && serializer->reading())
-            {
-                // Note that default-initialization of real[DIM] is
-                // not zero initialization, which might cause overflow
-                // when reading and changing precision in the
-                // implementation of doRvec. This scenario only
-                // happens in these unit tests, as normal GROMACS
-                // always writes double-precision files when compiled
-                // in double precision.
-                rvecArray.resize(size, { 0, 0, 0 });
-            }
-            else
-            {
-                rvecArray.resize(size);
-            }
+            rvecArray.resize(size);
             serializer->doRvecArray(rvecArray); // 24 or 48 bytes serialized
 
             // 8 bytes serialized, 4 for the size, 1 for the null char
@@ -270,21 +256,6 @@ TEST_P(XdrSerializerTest, Works)
         // Now real and rvec will read correctly
 
         SerializerValues valuesToRead;
-        if (GMX_DOUBLE && !writtenAsDouble)
-        {
-            // Double-precision GROMACS never normally writes a
-            // non-double-precision file, but we do so in these tests
-            // for better test coverage within a single build
-            // configuration. Because of those, we need to prevent
-            // arithmetic exceptions from overflow from uninitialized
-            // values being converted from double precision to float
-            // by initializing the otherwise unused values.
-            valuesToRead.realValue           = 0._real;
-            valuesToRead.legacyRVecValue[XX] = 0._real;
-            valuesToRead.legacyRVecValue[YY] = 0._real;
-            valuesToRead.legacyRVecValue[ZZ] = 0._real;
-            valuesToRead.rvecValue           = { 0._real, 0._real, 0._real };
-        }
         valuesToRead.serialize(&serializer);
         EXPECT_EQ(valuesToRead.boolValue, valuesToWrite.boolValue);
         EXPECT_EQ(valuesToRead.unsignedCharValue, valuesToWrite.unsignedCharValue);

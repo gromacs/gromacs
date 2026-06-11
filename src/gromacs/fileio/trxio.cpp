@@ -835,7 +835,7 @@ static int pdb_first_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
 
 bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxframe* fr)
 {
-    real     pt, timeAsReal;
+    real     pt;
     int      ct;
     gmx_bool bOK, bMissingData = FALSE, bSkip = FALSE;
     bool     bRet = false;
@@ -864,6 +864,8 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 break;
             }
             case efXTC:
+            {
+                real timeAsReal;
                 if (startTime.has_value() && (status->tf < startTime.value()))
                 {
                     if (xtc_seek_time(status->fio, startTime.value(), fr->natoms, TRUE))
@@ -883,7 +885,10 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 fr->bTime = bRet;
                 fr->bX    = bRet;
                 fr->bBox  = bRet;
-                fr->time  = static_cast<double>(timeAsReal);
+                if (bRet)
+                {
+                    fr->time = static_cast<double>(timeAsReal);
+                }
                 if (!bOK)
                 {
                     /* Actually the header could also be not ok,
@@ -891,6 +896,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                     fr->not_ok = DATA_NOT_OK;
                 }
                 break;
+            }
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
             case efH5MD: bRet = status->h5md->readNextFrame(fr); break;
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
