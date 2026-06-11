@@ -74,7 +74,6 @@ Authors:
 
 import argparse
 
-
 parser = argparse.ArgumentParser(
     description="GROMACS CI image slug options.", add_help=False
 )
@@ -247,6 +246,14 @@ parser.add_argument(
     default=False,
     help="Install rocfftMp for current ROCm version",
 )
+
+parser.add_argument(
+    "--rocshmem",
+    action="store_true",
+    default=False,
+    help="Install rocshmem for current ROCm version",
+)
+
 
 parser.add_argument(
     "--doxygen",

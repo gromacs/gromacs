@@ -716,9 +716,12 @@ def get_rocfftmp(args):
         if rocm_version_parsed[0] < 7:
             raise RuntimeError("Need at least ROCm 7 to build rocfftMp")
 
-        if len(rocm_version_parsed) < 3:
-            rocm_version = rocm_version + ".0"
-        rocm_branch = "rocm-" + str(rocm_version)
+        # if len(rocm_version_parsed) < 3:
+        #    rocm_version = rocm_version + ".0"
+        # use commit from branch under review that includes multi GPU fixes
+        # TODO Change to develop or release version once it is there
+        # rocm_branch = "users/regan-amd/real_320_cubed_mgpu"
+        rocm_commit = "1cc45df1a2cea3ce363f016845b5429c03f6db25"
 
         cmake_opts = [
             "-DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang",
@@ -730,9 +733,59 @@ def get_rocfftmp(args):
 
         return hpccm.building_blocks.generic_cmake(
             repository="https://github.com/ROCm/rocm-libraries.git",
-            branch=rocm_branch,
+            commit=rocm_commit,
             directory="/var/tmp/rocm-libraries/projects/rocfft",
             prefix="/opt/rocm/rocfftmp",
+            recursive=True,
+            cmake_opts=["-DCMAKE_BUILD_TYPE=Release ", *cmake_opts],
+        )
+    else:
+        return None
+
+
+def get_rocshmem(args):
+    if args.rocshmem is not None and args.rocshmem is True:
+        if args.mpi is None:
+            raise RuntimeError("rocSHMEM needs MPI installed")
+        if args.rocm is None:
+            raise RuntimeError("Need ROCm to install rocSHMEM")
+        if args.mpi != "openmpi":
+            raise RuntimeError("rocSHMEM with other MPI not implemented yet")
+        rocm_version = args.rocm
+        rocm_version_parsed = [int(i) for i in rocm_version.split(".")]
+        if rocm_version_parsed[0] < 7:
+            raise RuntimeError("Need at least ROCm 7 to build rocSHMEM")
+
+        # if len(rocm_version_parsed) < 3:
+        #    rocm_version = rocm_version + ".0"
+        # use current head develop branch to get latest APIs
+        # TODO Change to release version once it is there
+        # Status as of June 8th, 2026
+        # rocm_branch = "develop"
+        rocm_commit = "44e786f17900dd9109e5daac4c4bd6245ed9f374"
+
+        cmake_opts = [
+            "-DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang",
+            "-DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++",
+            "-DGPU_TARGETS=gfx906,gfx1034",
+            "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+            "-DUSE_GDA=ON",
+            "-DGDA_MLX5=ON",
+            "-DGDA_BNXT=ON",
+            "-DGDA_IONIC=ON",
+            "-DUSE_RO=ON",
+            "-DUSE_IPC=ON",
+            "-DUSE_THREADS=OFF",
+            "-DUSE_WF_COAL=OFF",
+            "-DUSE_HDP_FLUSH=OFF",
+            "-DUSE_HDP_FLUSH_HOST_SIDE=OFF",
+        ]
+
+        return hpccm.building_blocks.generic_cmake(
+            repository="https://github.com/ROCm/rocm-systems.git",
+            commit=rocm_commit,
+            directory="/var/tmp/rocm-systems/projects/rocshmem",
+            prefix="/opt/rocm/rocshmem",
             recursive=True,
             cmake_opts=["-DCMAKE_BUILD_TYPE=Release ", *cmake_opts],
         )
@@ -1542,6 +1595,13 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
         rocfftmp_lib_path = "/opt/rocm/rocfftmp/lib/:$LD_LIBRARY_PATH"
         building_blocks["rocfftmp_path"] = hpccm.primitives.environment(
             variables={"LD_LIBRARY_PATH": rocfftmp_lib_path}
+        )
+
+    building_blocks["rocshmem"] = get_rocshmem(args)
+    if building_blocks["rocshmem"] is not None:
+        rocshmem_lib_path = "/opt/rocm/rocshmem/lib/:$LD_LIBRARY_PATH"
+        building_blocks["rocshmem_path"] = hpccm.primitives.environment(
+            variables={"LD_LIBRARY_PATH": rocshmem_lib_path}
         )
 
     # Add Python environments to MPI images, only, so we don't have to worry
