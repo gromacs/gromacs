@@ -167,7 +167,7 @@ H5mdDataSetBase<ValueType>::H5mdDataSetBase(const hid_t dataSetHandle) :
     numDims_{ getNumDims(dataSet_) }
 {
     GMX_H5MD_THROW_UPON_INVALID_HID(dataSet_, "Invalid handle to data set.");
-    verifyDataSetConsistency<ValueType>(nativeDataType_, dims());
+    verifyDataSetConsistency<ValueType>(dataType_, dims());
 }
 
 template<typename ValueType>
@@ -251,7 +251,7 @@ bool H5mdDataSetBase<ValueType>::write(const ArrayRef<const ValueType> values,
         GMX_ASSERT(checkBufferSize(values, memoryDataSpace, fileDataSpace, dataSet_),
                    "Number of points in container of values to read into must "
                    "be equal to used hyperslab selection in memory and file");
-        return H5Dwrite(dataSet_, dataType_, memoryDataSpace, fileDataSpace, H5P_DEFAULT, values.data())
+        return H5Dwrite(dataSet_, nativeDataType_, memoryDataSpace, fileDataSpace, H5P_DEFAULT, values.data())
                >= 0;
     }
 }
