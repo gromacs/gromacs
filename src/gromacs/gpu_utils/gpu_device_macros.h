@@ -42,7 +42,7 @@
  * are defined in this header so they can be used without pulling in the
  * heavy GPU toolkit headers.
  */
-#if (GMX_GPU_CUDA || GMX_GPU_HIP) && (defined(__NVCC__) || defined(__HIPCC__))
+#if (GMX_GPU_CUDA || GMX_GPU_HIP) && (defined(__CUDACC__) || defined(__HIPCC__))
 #    define GMX_HOST_ATTRIBUTE __host__
 #    define GMX_DEVICE_ATTRIBUTE __device__
 #    define GMX_KERNEL_ATTRIBUTE __global__
