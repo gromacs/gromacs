@@ -94,7 +94,7 @@ using LeapFrogParametersTuple = std::tuple<int,         // numAtoms
 //! Format timestep as integer for test names
 std::string formatTimestep(real timestep)
 {
-    int timestepInt = static_cast<int>(timestep * 1000000 + 0.5);
+    int timestepInt = std::lround(timestep * 1000000);
     return formatString("dt%d", timestepInt);
 }
 
