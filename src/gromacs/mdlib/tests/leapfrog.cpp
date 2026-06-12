@@ -67,6 +67,7 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
@@ -82,67 +83,105 @@ namespace test
 namespace
 {
 
-/*! \brief The parameters for the test.
- *
- * The test will run for combinations of:
- *
- * 1. Number of atoms
- * 2. Timestep
- * 3. Number of steps
- * 4. Velocity components
- * 5. Force components
- * 6. Number of temperature coupling groups
- */
-struct LeapFrogTestParameters
+//! Parameter tuple type for LeapFrog tests (with vfName for naming infrastructure)
+using LeapFrogParametersTuple = std::tuple<int,         // numAtoms
+                                           real,        // timestep
+                                           int,         // numSteps
+                                           std::string, // vfName (velocity/force pair name)
+                                           int,         // numTCoupleGroups
+                                           int>;        // nstpcouple
+
+//! Format timestep as integer for test names
+std::string formatTimestep(real timestep)
 {
-    //! Total number of atoms
-    int numAtoms;
-    //! Timestep
-    real timestep;
-    //! Number of integration steps
-    int numSteps;
-    //! Initial velocity
-    rvec v;
-    //! Constant force
-    rvec f;
-    //! Number of temperature coupling group (zero for no temperature coupling)
-    int numTCoupleGroups;
-    //! Number of steps between pressure coupling steps (zero for no pressure coupling).
-    int nstpcouple;
+    int timestepInt = static_cast<int>(timestep * 1000000 + 0.5);
+    return formatString("dt%d", timestepInt);
+}
+
+//! Test naming functor
+const NameOfTestFromTuple<LeapFrogParametersTuple> sc_testNamer{ std::make_tuple(
+        [](int n) { return formatString("%datoms", n); },
+        formatTimestep,
+        [](int n) { return formatString("%dsteps", n); },
+        useString, // Velocity/force pair name
+        [](int n) { return formatString("tcg%d", n); },
+        [](int n) { return formatString("nstpc%d", n); }) };
+
+//! Reference data filename maker (same as test namer for now)
+const RefDataFilenameMaker<LeapFrogParametersTuple> sc_refDataFilenameMaker{ std::make_tuple(
+        [](int n) { return formatString("%datoms", n); },
+        formatTimestep,
+        [](int n) { return formatString("%dsteps", n); },
+        useString, // Velocity/force pair name distinguishes different initial conditions
+        [](int n) { return formatString("tcg%d", n); },
+        [](int n) { return formatString("nstpc%d", n); }) };
+
+//! Named velocity/force combination
+struct VelocityForcePair
+{
+    std::string name;
+    RVec        velocity;
+    RVec        force;
 };
 
-//! The set of parameters combinations to run the test on
-const LeapFrogTestParameters parametersSets[] = {
-    { 1, 0.001, 1, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, 0, 0 },      // Zero velocity and force
-    { 1, 0.001, 1, { 0.0, 0.0, 0.0 }, { -3.0, 2.0, -1.0 }, 0, 0 },    // Zero velocity
-    { 1, 0.001, 1, { 1.0, -2.0, 3.0 }, { 0.0, 0.0, 0.0 }, 0, 0 },     // Zero force
-    { 1, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 },   // 1 particle
-    { 10, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 },  // 10 particles
-    { 100, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 }, // 100 particles
-    { 300, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 }, // 300 particles
-    { 1, 0.0005, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 },  // 0.0005 ps timestep
-    { 1, 0.001, 10, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 },  // 10 step
-    { 1, 0.001, 100, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 0 }, // 100 steps
-    { 100, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 0 }, // 1 temperature couple group
-    { 100, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 2, 0 }, // 2 temperature couple groups
-    { 100, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 10, 0 }, // 10 temperature couple groups
-    { 100, 0.001, 10, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 1 }, // With pressure coupling
-    { 100, 0.001, 10, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 2, 1 }, // With both temperature and pressure coupling
-    { 100, 0.001, 10, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 0, 3 }
-}; // Do pressure coupling not on every step
+//! Lookup table for velocity/force combinations
+static const VelocityForcePair sc_velocityForceTable[] = {
+    { "zero", RVec(0.0, 0.0, 0.0), RVec(0.0, 0.0, 0.0) },       // Zero velocity and force
+    { "zeroV", RVec(0.0, 0.0, 0.0), RVec(-3.0, 2.0, -1.0) },    // Zero velocity
+    { "zeroF", RVec(1.0, -2.0, 3.0), RVec(0.0, 0.0, 0.0) },     // Zero force
+    { "standard", RVec(1.0, -2.0, 3.0), RVec(-3.0, 2.0, -1.0) } // Standard test values
+};
+
+//! Lookup velocity/force pair by name
+const VelocityForcePair& getVelocityForcePair(const std::string& name)
+{
+    for (const auto& pair : sc_velocityForceTable)
+    {
+        if (pair.name == name)
+        {
+            return pair;
+        }
+    }
+    GMX_THROW(gmx::InternalError(gmx::formatString("Unknown velocity/force pair name: %s", name.c_str())));
+}
+
+/*! \brief The set of parameters combinations to run the test on
+ *
+ * Each entry is a tuple of (numAtoms, timestep, numSteps, vfName, numTCoupleGroups, nstpcouple).
+ */
+const LeapFrogParametersTuple parametersSets[] = {
+    { 1, 0.001, 1, "zero", 0, 0 },        // Zero velocity and force
+    { 1, 0.001, 1, "zeroV", 0, 0 },       // Zero velocity
+    { 1, 0.001, 1, "zeroF", 0, 0 },       // Zero force
+    { 1, 0.001, 1, "standard", 0, 0 },    // 1 particle
+    { 10, 0.001, 1, "standard", 0, 0 },   // 10 particles
+    { 100, 0.001, 1, "standard", 0, 0 },  // 100 particles
+    { 300, 0.001, 1, "standard", 0, 0 },  // 300 particles
+    { 1, 0.0005, 1, "standard", 0, 0 },   // 0.0005 ps timestep
+    { 1, 0.001, 10, "standard", 0, 0 },   // 10 step
+    { 1, 0.001, 100, "standard", 0, 0 },  // 100 steps
+    { 100, 0.001, 1, "standard", 1, 0 },  // 1 temperature couple group
+    { 100, 0.001, 1, "standard", 2, 0 },  // 2 temperature couple groups
+    { 100, 0.001, 1, "standard", 10, 0 }, // 10 temperature couple groups
+    { 100, 0.001, 10, "standard", 0, 1 }, // With pressure coupling
+    { 100, 0.001, 10, "standard", 2, 1 }, // With both temperature and pressure coupling
+    { 100, 0.001, 10, "standard", 0, 3 }  // Do pressure coupling not on every step
+};
 
 
 /*! \brief Test fixture for LeapFrog integrator.
  */
-class LeapFrogTest : public ::testing::TestWithParam<LeapFrogTestParameters>
+class LeapFrogTest : public ::testing::TestWithParam<LeapFrogParametersTuple>
 {
 public:
-    //! Reference data
+    //! Reference data (CPU/GPU share same data)
     TestReferenceData refData_;
     //! Checker for reference data
     TestReferenceChecker checker_;
 
-    LeapFrogTest() : checker_(refData_.rootChecker()) {}
+    LeapFrogTest() : refData_(sc_refDataFilenameMaker(GetParam())), checker_(refData_.rootChecker())
+    {
+    }
 
     /*! \brief Test the numerical integrator against analytical solution for simple constant force case.
      *
@@ -210,6 +249,12 @@ public:
 
 TEST_P(LeapFrogTest, SimpleIntegration)
 {
+    // Extract parameters using structured bindings
+    auto [numAtoms, timestep, numSteps, vfName, numTCoupleGroups, nstpcouple] = GetParam();
+
+    // Look up velocity and force from table
+    const VelocityForcePair& vfPair = getVelocityForcePair(vfName);
+
     // Construct the list of runners
     std::vector<std::unique_ptr<ILeapFrogTestRunner>> runners;
     // Add runners for CPU version
@@ -225,46 +270,39 @@ TEST_P(LeapFrogTest, SimpleIntegration)
 
     for (const auto& runner : runners)
     {
-        LeapFrogTestParameters parameters = GetParam();
-
         std::string testDescription = formatString(
                 "Testing on %s with %d atoms for %d timesteps with %d temperature coupling "
                 "groups and "
                 "%s pressure coupling (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f), nstpcouple = "
                 "%d)",
                 runner->hardwareDescription().c_str(),
-                parameters.numAtoms,
-                parameters.numSteps,
-                parameters.numTCoupleGroups,
-                parameters.nstpcouple == 0 ? "without" : "with",
-                parameters.timestep,
-                parameters.v[XX],
-                parameters.v[YY],
-                parameters.v[ZZ],
-                parameters.f[XX],
-                parameters.f[YY],
-                parameters.f[ZZ],
-                parameters.nstpcouple);
+                numAtoms,
+                numSteps,
+                numTCoupleGroups,
+                nstpcouple == 0 ? "without" : "with",
+                timestep,
+                vfPair.velocity[XX],
+                vfPair.velocity[YY],
+                vfPair.velocity[ZZ],
+                vfPair.force[XX],
+                vfPair.force[YY],
+                vfPair.force[ZZ],
+                nstpcouple);
         SCOPED_TRACE(testDescription);
 
-        std::unique_ptr<LeapFrogTestData> testData =
-                std::make_unique<LeapFrogTestData>(parameters.numAtoms,
-                                                   parameters.timestep,
-                                                   parameters.v,
-                                                   parameters.f,
-                                                   parameters.numTCoupleGroups,
-                                                   parameters.nstpcouple);
+        std::unique_ptr<LeapFrogTestData> testData = std::make_unique<LeapFrogTestData>(
+                numAtoms, timestep, vfPair.velocity, vfPair.force, numTCoupleGroups, nstpcouple);
 
-        runner->integrate(testData.get(), parameters.numSteps);
+        runner->integrate(testData.get(), numSteps);
 
-        real totalTime = parameters.numSteps * parameters.timestep;
+        real totalTime = numSteps * timestep;
         // TODO For the case of constant force, the numerical scheme is exact and
         //      the only source of errors is floating point arithmetic. Hence,
         //      the tolerance can be calculated.
-        FloatingPointTolerance tolerance = absoluteTolerance(parameters.numSteps * 0.000005);
+        FloatingPointTolerance tolerance = absoluteTolerance(numSteps * 0.000005);
 
         // Test against the analytical solution (without temperature coupling)
-        if (parameters.numTCoupleGroups == 0 && parameters.nstpcouple == 0)
+        if (numTCoupleGroups == 0 && nstpcouple == 0)
         {
             testAgainstAnalyticalSolution(tolerance, *testData, totalTime);
         }
@@ -274,7 +312,7 @@ TEST_P(LeapFrogTest, SimpleIntegration)
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(WithParameters, LeapFrogTest, ::testing::ValuesIn(parametersSets));
+INSTANTIATE_TEST_SUITE_P(AllHardware, LeapFrogTest, ::testing::ValuesIn(parametersSets), sc_testNamer);
 
 } // namespace
 } // namespace test

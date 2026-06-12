@@ -72,6 +72,7 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
@@ -94,6 +95,9 @@ namespace test
 {
 namespace
 {
+
+// Forward declaration for the test system structure
+struct ConstraintsTestSystem;
 
 // Define the set of PBCs to run the test for
 const std::vector<t_pbc> c_pbcs = []
@@ -386,10 +390,55 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = []
     return constraintsTestSystemList;
 }();
 
+//! Parameter tuple type for Constraints tests
+using ConstraintsParametersTuple = std::tuple<ConstraintsTestSystem, t_pbc>;
+
+//! Format PBC type for test names
+std::string formatPbcType(const t_pbc& pbc)
+{
+    return c_pbcTypeNames[pbc.pbcType];
+}
+
+//! Format ConstraintsTestSystem for test names
+std::string formatConstraintSystem(const ConstraintsTestSystem& system)
+{
+    // Use a sanitized version of the title
+    std::string name = system.title;
+    // Replace spaces with underscores and remove special characters
+    std::replace(name.begin(), name.end(), ' ', '_');
+    std::replace(name.begin(), name.end(), '(', '_');
+    std::replace(name.begin(), name.end(), ')', '_');
+    std::replace(name.begin(), name.end(), '.', '_');
+    std::replace(name.begin(), name.end(), ',', '_');
+    // Remove consecutive underscores
+    name.erase(
+            std::unique(name.begin(), name.end(), [](char a, char b) { return a == '_' && b == '_'; }),
+            name.end());
+    // Remove trailing underscores
+    while (!name.empty() && name.back() == '_')
+    {
+        name.pop_back();
+    }
+    return formatString("%datoms_%s", system.numAtoms, name.c_str());
+}
+
+//! Test naming functor
+const NameOfTestFromTuple<ConstraintsParametersTuple> sc_testNamer{ std::make_tuple(formatConstraintSystem,
+                                                                                    formatPbcType) };
+
+//! Reference data filename maker (same as test namer)
+const RefDataFilenameMaker<ConstraintsParametersTuple> sc_refDataFilenameMaker{
+    std::make_tuple(formatConstraintSystem, formatPbcType)
+};
+
 //! Helper class for checking constraints against reference data
 class ConstraintsVerifier
 {
 public:
+    ConstraintsVerifier(const std::filesystem::path& refDataFilename) :
+        refData_(refDataFilename), checker_(refData_.rootChecker())
+    {
+    }
     ConstraintsVerifier() : checker_(refData_.rootChecker()) {}
 
 private:
@@ -687,9 +736,7 @@ public:
 
 TEST_P(ConstraintsTest, SatisfiesConstraints)
 {
-    auto                  params                = GetParam();
-    ConstraintsTestSystem constraintsTestSystem = std::get<0>(params);
-    t_pbc                 pbc                   = std::get<1>(params);
+    auto [constraintsTestSystem, pbc] = GetParam();
 
     ConstraintsTestData testData(constraintsTestSystem.title,
                                  constraintsTestSystem.numAtoms,
@@ -709,7 +756,7 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
                                  constraintsTestSystem.lincslincsExpansionOrder,
                                  constraintsTestSystem.lincsWarnAngle);
 
-    ConstraintsVerifier verifier;
+    ConstraintsVerifier verifier(sc_refDataFilenameMaker(GetParam()));
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
@@ -752,10 +799,11 @@ TEST_P(ConstraintsTest, TriangleDetectionWorks)
               hasTriangleConstraints(testData.mtop_, FlexibleConstraintTreatment::Include));
 }
 
-INSTANTIATE_TEST_SUITE_P(WithParameters,
+INSTANTIATE_TEST_SUITE_P(AllHardware,
                          ConstraintsTest,
                          ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
-                                            ::testing::ValuesIn(c_pbcs)));
+                                            ::testing::ValuesIn(c_pbcs)),
+                         sc_testNamer);
 
 } // namespace
 } // namespace test

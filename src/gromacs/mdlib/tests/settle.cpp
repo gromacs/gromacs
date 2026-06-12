@@ -98,6 +98,7 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
@@ -171,23 +172,31 @@ TEST(Settle, MultipleDifferentSettlesThrow)
     EXPECT_THROW(getSettleTopologyData(*mtop), InvalidInputError);
 }
 
-/*! \brief Parameters that will vary from test to test.
- */
-struct SettleTestParameters
-{
-    //! Number of water molecules (SETTLEs) [1, 2, 4, 5, 7, 10, 12, 15, 17]
-    int numSettles;
-    //! If the velocities should be updated while constraining [true/false]
-    bool updateVelocities;
-    //! If the virial should be computed [true/false]
-    bool calcVirial;
-    //! Periodic boundary conditions [PBCXYZ/PBCNone]
-    std::string pbcName;
-};
+//! Parameter tuple type for SETTLE tests
+using SettleParametersTuple = std::tuple<int,          // numSettles
+                                         bool,         // updateVelocities
+                                         bool,         // calcVirial
+                                         std::string>; // pbcName
+
+//! Test naming functor
+const NameOfTestFromTuple<SettleParametersTuple> sc_testNamer{ std::make_tuple(
+        [](int n) { return formatString("%dsettles", n); },
+        [](bool b) { return b ? "velocities" : "novelocities"; },
+        [](bool b) { return b ? "virial" : "novirial"; },
+        useString) }; // PBC name
+
+//! Reference data filename maker (same as test namer)
+const RefDataFilenameMaker<SettleParametersTuple> sc_refDataFilenameMaker{ std::make_tuple(
+        [](int n) { return formatString("%dsettles", n); },
+        [](bool b) { return b ? "velocities" : "novelocities"; },
+        [](bool b) { return b ? "virial" : "novirial"; },
+        useString) };
 
 /*! \brief Sets of parameters on which to run the tests.
+ *
+ * Each entry is a tuple of (numSettles, updateVelocities, calcVirial, pbcName).
  */
-const SettleTestParameters parametersSets[] = {
+const SettleParametersTuple parametersSets[] = {
     { 1, false, false, "PBCXYZ" },   // 1 water molecule
     { 2, false, false, "PBCXYZ" },   // 2 water molecules
     { 4, false, false, "PBCXYZ" },   // 4 water molecules
@@ -200,12 +209,12 @@ const SettleTestParameters parametersSets[] = {
     { 17, false, true, "PBCXYZ" },   // Compute virial
     { 17, false, false, "PBCNone" }, // No periodic boundary
     { 17, true, true, "PBCNone" },   // Update velocities, compute virial, without PBC
-    { 17, true, true, "PBCXYZ" }
-}; // Update velocities, compute virial, with PBC
+    { 17, true, true, "PBCXYZ" }     // Update velocities, compute virial, with PBC
+};
 
 /*! \brief Test fixture for testing SETTLE.
  */
-class SettleTest : public ::testing::TestWithParam<SettleTestParameters>
+class SettleTest : public ::testing::TestWithParam<SettleParametersTuple>
 {
 public:
     //! PBC setups
@@ -221,7 +230,7 @@ public:
      * have to be explicitly specified when parameters are initialized.
      *
      */
-    SettleTest() : checker_(refData_.rootChecker())
+    SettleTest() : refData_(sc_refDataFilenameMaker(GetParam())), checker_(refData_.rootChecker())
     {
 
         //
@@ -373,6 +382,9 @@ public:
 
 TEST_P(SettleTest, SatisfiesConstraints)
 {
+    // Extract parameters using structured bindings
+    auto [numSettles, updateVelocities, calcVirial, pbcName] = GetParam();
+
     // Construct the list of runners
     std::vector<std::unique_ptr<ISettleTestRunner>> runners;
     // Add runners for CPU version
@@ -387,13 +399,6 @@ TEST_P(SettleTest, SatisfiesConstraints)
     }
     for (const auto& runner : runners)
     {
-        // Make some symbolic names for the parameter combination.
-        SettleTestParameters params = GetParam();
-
-        int         numSettles       = params.numSettles;
-        bool        updateVelocities = params.updateVelocities;
-        bool        calcVirial       = params.calcVirial;
-        std::string pbcName          = params.pbcName;
 
 
         // Make a string that describes which parameter combination is
@@ -453,7 +458,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
 // Run test on pre-determined set of combinations for test parameters, which include the numbers of SETTLEs (water
 // molecules), whether or not velocities are updated and virial contribution is computed, was the PBC enabled.
 // The test will cycle through all available runners, including CPU and, if applicable, GPU implementations of SETTLE.
-INSTANTIATE_TEST_SUITE_P(WithParameters, SettleTest, ::testing::ValuesIn(parametersSets));
+INSTANTIATE_TEST_SUITE_P(AllHardware, SettleTest, ::testing::ValuesIn(parametersSets), sc_testNamer);
 
 } // namespace
 } // namespace test
