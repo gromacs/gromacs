@@ -42,6 +42,7 @@
 struct t_atoms;
 struct t_symtab;
 struct MoleculePatchDatabase;
+struct PreprocessResidue;
 
 namespace gmx
 {
@@ -56,6 +57,7 @@ class ArrayRef;
  * \param[inout] localAtoms The extra atoms for reassigning the new entries.
  * \param[inout] xptr Coordinates to be updated with those for new atoms.
  * \param[in] globalPatches The atom modifications to use.
+ * \param[in] residueTopology The residue topology entries corresponding to the atoms.
  * \param[inout] symtab Global symbol table for atom names.
  * \param[in] nterpairs Number of termini pairs in the molecule.
  * \param[in] ntdb Entries for N-terminus in each chain, each entry can be valid or nullptr.
@@ -70,6 +72,7 @@ int add_h(t_atoms**                                   initialAtoms,
           t_atoms**                                   localAtoms,
           std::vector<gmx::RVec>*                     xptr,
           gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
+          gmx::ArrayRef<const PreprocessResidue>      residueTopology,
           t_symtab*                                   symtab,
           int                                         nterpairs,
           gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,

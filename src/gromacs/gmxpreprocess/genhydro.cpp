@@ -35,6 +35,7 @@
 
 #include "genhydro.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -85,6 +86,165 @@ static std::optional<int> pdbasearch_atom(const char*              name,
     for (i = 0; (i < pdba->nr) && (pdba->atom[i].resind != resind); i++) {}
 
     return search_atom(name, i, pdba, searchtype, bAllowMissing, cyclicBondsIndex);
+}
+
+static bool hasNumericSuffixAfterStem(const std::string& atomName, const std::string& stem)
+{
+    // A numbered hydrogen name must extend the stem, e.g. HB2 is longer than HB.
+    if (atomName.size() <= stem.size())
+    {
+        return false;
+    }
+
+    // Match the stem case-insensitively so HB matches hb2/HB2 if needed.
+    if (gmx_strncasecmp(atomName.c_str(), stem.c_str(), stem.size()) != 0)
+    {
+        return false;
+    }
+
+    // Everything after the stem must be numeric, e.g. HB2/HB3 but not HBA.
+    const auto suffixBegin = atomName.begin() + stem.size();
+    return std::all_of(suffixBegin,
+                       atomName.end(),
+                       [](char c) { return std::isdigit(static_cast<unsigned char>(c)) != 0; });
+}
+
+static int numericSuffixAfterStem(const std::string& atomName, const std::string& stem)
+{
+    if (!hasNumericSuffixAfterStem(atomName, stem))
+    {
+        gmx_fatal(FARGS,
+                  "Expected atom name '%s' to have a numeric suffix after stem '%s'",
+                  atomName.c_str(),
+                  stem.c_str());
+    }
+    return std::stoi(atomName.substr(stem.size()));
+}
+
+static bool shouldLookupHydrogenNameFromResidueTopology(const MoleculePatch& patch)
+{
+    // Only Add patches create new atoms whose names might need to be resolved.
+    if (patch.type() != MoleculePatchType::Add)
+    {
+        return false;
+    }
+    // Terminal-database edits carry an explicit atom record and already know the target name.
+    if (!patch.atom.empty())
+    {
+        return false;
+    }
+    // Hydrogen-database entries provide a name stem such as HB or HG1 that we match to .rtp atoms.
+    if (patch.nname.empty())
+    {
+        return false;
+    }
+    // Water tp=10 and tp=11 entries create a virtual site or lone pairs, not ordinary hydrogens.
+    if (patch.tp == 10 || patch.tp == 11)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+static std::optional<const char*> bondedAtomNameIfBondedToAttachmentAtom(const BondedInteraction& bond,
+                                                                         const MoleculePatch& patch)
+{
+    const bool firstAtomIsAttachment = bond.ai() == patch.a[0];
+    if (firstAtomIsAttachment)
+    {
+        return bond.aj().c_str();
+    }
+
+    const bool secondAtomIsAttachment = bond.aj() == patch.a[0];
+    if (secondAtomIsAttachment)
+    {
+        return bond.ai().c_str();
+    }
+
+    return std::nullopt;
+}
+
+static bool matchesHydrogenNameFromResidueTopology(const char* bondedAtomName, const MoleculePatch& patch)
+{
+    // Single-hydrogen HDB entries specify the full atom name, e.g. HG.
+    if (patch.nr == 1)
+    {
+        return gmx::equalCaseInsensitive(bondedAtomName, patch.nname);
+    }
+
+    // Multi-hydrogen HDB entries specify a shared stem, e.g. HB, which should
+    // match numbered names such as HB2/HB3 from the .rtp entry.
+    return hasNumericSuffixAfterStem(bondedAtomName, patch.nname);
+}
+
+static void sortHydrogenNamesByNumericSuffix(std::vector<std::string>* names, const MoleculePatch& patch)
+{
+    if (patch.nr <= 1)
+    {
+        return;
+    }
+
+    std::sort(names->begin(),
+              names->end(),
+              [&patch](const std::string& left, const std::string& right) {
+                  return numericSuffixAfterStem(left, patch.nname)
+                         < numericSuffixAfterStem(right, patch.nname);
+              });
+}
+
+static std::vector<std::string> findHydrogenAtomNamesInResidue(const PreprocessResidue& residueTopology,
+                                                               const MoleculePatch& patch)
+{
+    std::vector<std::string> names;
+    names.reserve(patch.nr);
+
+    // Scan the residue bond list so that we only consider atoms that are
+    // actually bonded to the attachment atom from the HDB entry.
+    for (const auto& bond : residueTopology.rb[BondedTypes::Bonds].b)
+    {
+        const auto bondedAtomName = bondedAtomNameIfBondedToAttachmentAtom(bond, patch);
+        if (!bondedAtomName)
+        {
+            continue;
+        }
+
+        if (matchesHydrogenNameFromResidueTopology(*bondedAtomName, patch))
+        {
+            names.emplace_back(*bondedAtomName);
+        }
+    }
+
+    // Keep multi-hydrogen names in numeric order, e.g. HB2 before HB3.
+    sortHydrogenNamesByNumericSuffix(&names, patch);
+
+    if (names.size() != static_cast<size_t>(patch.nr))
+    {
+        gmx_fatal(FARGS,
+                  "Could not match %d atom names for hydrogen database entry '%s' attached to "
+                  "atom '%s' in residue building block '%s'; found %zu matching names in the .rtp "
+                  "entry",
+                  patch.nr,
+                  patch.nname.c_str(),
+                  patch.a[0].c_str(),
+                  residueTopology.resname.c_str(),
+                  names.size());
+    }
+
+    return names;
+}
+
+static bool patchAppliesToLocalAtom(const MoleculePatch& patch, const std::string& localAtomName)
+{
+    // HDB entries and Add patches are anchored by the first control atom.
+    const bool isGeneratedHydrogenOrAddPatch = patch.tp > 0 || patch.oname.empty();
+    if (isGeneratedHydrogenOrAddPatch && patch.a[0] == localAtomName)
+    {
+        return true;
+    }
+
+    // Replace/Delete-style patches target an already existing atom by name.
+    return patch.oname == localAtomName;
 }
 
 /*! \brief Return the index of the first atom whose residue index
@@ -178,6 +338,7 @@ getMoleculePatchDatabases(const t_atoms*                              pdba,
 
 static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                                   const std::string localAtomName, //NOLINT(performance-unnecessary-value-param)
+                                  const PreprocessResidue&    residueTopology,
                                   std::vector<MoleculePatch>* globalPatches,
                                   bool                        bN,
                                   bool                        bC)
@@ -208,10 +369,15 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
            and first control aton (AI) matches this atom or
            delete/replace from tdb (oname!=NULL) and oname matches this atom */
 
-        if (!bIgnore
-            && (((singlePatch.tp > 0 || singlePatch.oname.empty()) && singlePatch.a[0] == localAtomName)
-                || (singlePatch.oname == localAtomName)))
+        if (!bIgnore && patchAppliesToLocalAtom(singlePatch, localAtomName))
         {
+            const bool useRtpHydrogenNames = shouldLookupHydrogenNameFromResidueTopology(singlePatch);
+            std::vector<std::string> rtpHydrogenNames;
+            if (useRtpHydrogenNames)
+            {
+                rtpHydrogenNames = findHydrogenAtomNamesInResidue(residueTopology, singlePatch);
+            }
+
             /* now expand all hacks for this atom */
             for (int k = 0; k < singlePatch.nr; k++)
             {
@@ -258,6 +424,10 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                     /* Ugly hardcoded name hack */
                     patch->nname.assign(gmx::formatString("LP%d", 1 + k - 2));
                 }
+                else if (useRtpHydrogenNames)
+                {
+                    patch->nname = rtpHydrogenNames[k];
+                }
                 else if (singlePatch.nr > 1)
                 {
                     /* adding more than one atom, number them */
@@ -273,6 +443,7 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                     expand_hackblocks_one(
                             newPatch,
                             globalPatches->at(globalPatches->size() - singlePatch.nr + k).nname,
+                            residueTopology,
                             globalPatches,
                             bN,
                             bC);
@@ -285,6 +456,7 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
 
 static void expand_hackblocks(const t_atoms*                             pdba,
                               gmx::ArrayRef<const MoleculePatchDatabase> hb,
+                              gmx::ArrayRef<const PreprocessResidue>     residueTopology,
                               gmx::ArrayRef<std::vector<MoleculePatch>>  patches,
                               int                                        nterpairs,
                               gmx::ArrayRef<const int>                   rN,
@@ -304,7 +476,12 @@ static void expand_hackblocks(const t_atoms*                             pdba,
         }
 
         /* add hacks to this atom */
-        expand_hackblocks_one(hb[pdba->atom[i].resind], *pdba->atomname[i], &patches[i], bN, bC);
+        expand_hackblocks_one(hb[pdba->atom[i].resind],
+                              *pdba->atomname[i],
+                              residueTopology[pdba->atom[i].resind],
+                              &patches[i],
+                              bN,
+                              bC);
     }
 }
 
@@ -450,6 +627,7 @@ static int add_h_low(t_atoms**                                   initialAtoms,
                      t_atoms**                                   modifiedAtoms,
                      std::vector<gmx::RVec>*                     xptr,
                      gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
+                     gmx::ArrayRef<const PreprocessResidue>      residueTopology,
                      t_symtab*                                   symtab,
                      const int                                   nterpairs,
                      gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
@@ -477,7 +655,7 @@ static int add_h_low(t_atoms**                                   initialAtoms,
 
         /* expand the hackblocks to atom level */
         patches.resize(natoms);
-        expand_hackblocks(pdba, hb, patches, nterpairs, rN, rC);
+        expand_hackblocks(pdba, hb, residueTopology, patches, nterpairs, rN, rC);
     }
 
     /* Now calc the positions */
@@ -593,6 +771,7 @@ int add_h(t_atoms**                                   initialAtoms,
           t_atoms**                                   localAtoms,
           std::vector<gmx::RVec>*                     xptr,
           gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
+          gmx::ArrayRef<const PreprocessResidue>      residueTopology,
           t_symtab*                                   symtab,
           const int                                   nterpairs,
           gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
@@ -612,8 +791,19 @@ int add_h(t_atoms**                                   initialAtoms,
     do
     {
         nold = nnew;
-        nnew = add_h_low(
-                initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, FALSE, cyclicBondsIndex);
+        nnew = add_h_low(initialAtoms,
+                         localAtoms,
+                         xptr,
+                         globalPatches,
+                         residueTopology,
+                         symtab,
+                         nterpairs,
+                         ntdb,
+                         ctdb,
+                         rN,
+                         rC,
+                         FALSE,
+                         cyclicBondsIndex);
         niter++;
         if (niter > 100)
         {
@@ -626,7 +816,19 @@ int add_h(t_atoms**                                   initialAtoms,
     if (!bAllowMissing)
     {
         /* Call add_h_low once more, now only for the missing atoms check */
-        add_h_low(initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, TRUE, cyclicBondsIndex);
+        add_h_low(initialAtoms,
+                  localAtoms,
+                  xptr,
+                  globalPatches,
+                  residueTopology,
+                  symtab,
+                  nterpairs,
+                  ntdb,
+                  ctdb,
+                  rN,
+                  rC,
+                  TRUE,
+                  cyclicBondsIndex);
     }
 
     return nnew;
