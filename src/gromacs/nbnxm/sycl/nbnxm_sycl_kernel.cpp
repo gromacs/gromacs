@@ -87,6 +87,12 @@ extern template void launchNbnxmKernelHelper<8, false, true>(NbnxmGpu* nb, const
 extern template void launchNbnxmKernelHelper<8, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 extern template void launchNbnxmKernelHelper<8, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 #endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_16
+extern template void launchNbnxmKernelHelper<16, false, false>(NbnxmGpu* nb,const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<16, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<16, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<16, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+#endif
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
 extern template void launchNbnxmKernelHelper<32, false, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 extern template void launchNbnxmKernelHelper<32, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
@@ -122,6 +128,9 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
         // Ensure any changes are in sync with device_management_sycl.cpp, nbnxm_sycl_kernel_body.h, and the #if above
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
         case 8: launchNbnxmKernel<8>(nb, stepWork, iloc, doPrune); break;
+#endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_16
+        case 16: launchNbnxmKernel<16>(nb, stepWork, iloc, doPrune); break;
 #endif
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
         case 32: launchNbnxmKernel<32>(nb, stepWork, iloc, doPrune); break;

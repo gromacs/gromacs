@@ -49,6 +49,11 @@ template void launchNbnxmKernelHelper<8, true, true>(NbnxmGpu*                 n
                                                      const gmx::StepWorkload&  stepWork,
                                                      const InteractionLocality iloc);
 #endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_16
+template void launchNbnxmKernelHelper<16, true, true>(NbnxmGpu*                 nb,
+                                                      const gmx::StepWorkload&  stepWork,
+                                                      const InteractionLocality iloc);
+#endif
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
 template void launchNbnxmKernelHelper<32, true, true>(NbnxmGpu*                 nb,
                                                       const gmx::StepWorkload&  stepWork,
