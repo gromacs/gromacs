@@ -55,6 +55,7 @@ struct gmx_wallcycle;
 
 namespace gmx
 {
+class DeviceStreamManager;
 class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
@@ -180,6 +181,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param propagatorTag  The name of the propagator to simplify connection
      * \param timestep  The time step the propagator uses
      *
@@ -191,9 +193,10 @@ public:
                                                     EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*  observablesReducer,
-                                                    const PropagatorTag& propagatorTag,
-                                                    TimeStep             timestep);
+                                                    ObservablesReducer*        observablesReducer,
+                                                    const DeviceStreamManager* deviceStreamManager,
+                                                    const PropagatorTag&       propagatorTag,
+                                                    TimeStep                   timestep);
 
     /*! \brief Factory method implementation
      *
@@ -206,6 +209,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param propagatorTag  The name of the propagator to simplify connection
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
@@ -216,8 +220,9 @@ public:
                                                     EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*  observablesReducer,
-                                                    const PropagatorTag& propagatorTag);
+                                                    ObservablesReducer*        observablesReducer,
+                                                    const DeviceStreamManager* deviceStreamManager,
+                                                    const PropagatorTag&       propagatorTag);
 
 private:
     //! The actual propagation

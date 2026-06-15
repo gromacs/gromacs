@@ -216,6 +216,9 @@ struct PmeGpu
     ~PmeGpu();
 #endif
 
+    /*! \brief The allocation policy for pinned host memory */
+    const gmx::HostAllocationPolicy hostAllocationPolicy_;
+
     /*! \brief The information copied once per reinit from the CPU structure. */
     std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
 

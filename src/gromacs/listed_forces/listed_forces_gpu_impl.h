@@ -76,7 +76,7 @@ struct HostInteractionList
     int size() const { return iatoms.size(); }
 
     //! List of interactions, see \c HostInteractionLists
-    HostVector<int> iatoms = { {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported) };
+    HostVector<int> iatoms;
 };
 
 /* \brief Bonded parameters and GPU pointers
@@ -173,6 +173,11 @@ public:
     void clearEnergies();
 
 private:
+    //! GPU context object
+    const DeviceContext& deviceContext_;
+    //! \brief Bonded GPU stream, not owned by this module
+    const DeviceStream& deviceStream_;
+
     /*! \brief The interaction lists
      *
      * \todo This is potentially several pinned allocations, which
@@ -193,14 +198,9 @@ private:
     //! Shift force vector on the device.
     DeviceBuffer<Float3> d_fShift_ = nullptr;
     //! \brief Host-side virial buffer
-    HostVector<float> vTot_ = { {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported) };
+    HostVector<float> vTot_;
     //! \brief Device-side total virial
     DeviceBuffer<float> d_vTot_ = nullptr;
-
-    //! GPU context object
-    const DeviceContext& deviceContext_;
-    //! \brief Bonded GPU stream, not owned by this module
-    const DeviceStream& deviceStream_;
 
     //! Parameters, passed to the GPU kernel
     BondedGpuKernelParameters kernelParams_;

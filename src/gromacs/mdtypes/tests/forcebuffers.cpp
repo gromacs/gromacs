@@ -48,12 +48,14 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 
 namespace gmx
@@ -74,9 +76,21 @@ TEST(ForceBuffers, ConstructsUnpinned)
 
 TEST(ForceBuffers, ConstructsPinned)
 {
-    ForceBuffers forceBuffers(false, PinningPolicy::PinnedIfSupported);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        testDevice->deviceContext().activate();
+        HostAllocationPolicy hostAllocationPolicy(testDevice->deviceContext(),
+                                                  PinningPolicy::PinnedIfSupported);
+        ForceBuffers         forceBuffers(false, hostAllocationPolicy);
 
-    EXPECT_EQ(forceBuffers.pinningPolicy(), PinningPolicy::PinnedIfSupported);
+        EXPECT_EQ(forceBuffers.pinningPolicy(), PinningPolicy::PinnedIfSupported);
+
+        SCOPED_TRACE("Copy of pinned host vector is not pinned");
+
+        ForceBuffers forceBuffersCopy;
+        forceBuffersCopy = forceBuffers;
+        EXPECT_EQ(forceBuffersCopy.pinningPolicy(), PinningPolicy::CannotBePinned);
+    }
 }
 
 TEST(ForceBuffers, ConstructsEmpty)
@@ -131,9 +145,10 @@ TEST(ForceBuffers, CopyWorks)
     }
 }
 
-TEST(ForceBuffers, CopyDoesNotPin)
+TEST(ForceBuffers, CopyOfUnpinnedBuffersAreNotPinned)
 {
-    ForceBuffers forceBuffers(false, PinningPolicy::PinnedIfSupported);
+    HostAllocationPolicy hostAllocationPolicy{};
+    ForceBuffers         forceBuffers(false, hostAllocationPolicy);
 
     ForceBuffers forceBuffersCopy;
     forceBuffersCopy = forceBuffers;

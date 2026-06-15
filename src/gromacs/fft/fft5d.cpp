@@ -136,26 +136,23 @@ static int vmax(const int* a, int s)
     return max;
 }
 
-static constexpr bool allocatePmeGpuMixedMode = (GMX_GPU && !GMX_GPU_OPENCL);
-
-
 /* NxMxK the size of the data
  * comm communicator to use for fft5d
  * P0 number of processor in 1st axes (can be null for automatic)
  * lin is allocated by fft5d because size of array is only known after planning phase
  * rlout2 is only used as intermediate buffer - only returned after allocation to reuse for back transform - should not be used by caller
  */
-fft5d_plan fft5d_plan_3d(int                NG,
-                         int                MG,
-                         int                KG,
-                         MPI_Comm           comm[2],
-                         int                flags,
-                         t_complex**        rlin,
-                         t_complex**        rlout,
-                         t_complex**        rlout2,
-                         t_complex**        rlout3,
-                         int                nthreads,
-                         gmx::PinningPolicy realGridAllocationPinningPolicy)
+fft5d_plan fft5d_plan_3d(int                              NG,
+                         int                              MG,
+                         int                              KG,
+                         MPI_Comm                         comm[2],
+                         int                              flags,
+                         t_complex**                      rlin,
+                         t_complex**                      rlout,
+                         t_complex**                      rlout2,
+                         t_complex**                      rlout3,
+                         int                              nthreads,
+                         const gmx::HostAllocationPolicy* hostAllocationPolicy)
 {
 
     int  P[2], prank[2], i;
@@ -426,12 +423,11 @@ fft5d_plan fft5d_plan_3d(int                NG,
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags & FFT5D_NOMALLOC))
     {
-        // only needed for PME GPU mixed mode
-        if (allocatePmeGpuMixedMode && realGridAllocationPinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
+        if (hostAllocationPolicy)
         {
-            gmx::HostAllocationPolicy policy(realGridAllocationPinningPolicy);
-            const std::size_t         numBytes = lsize * sizeof(t_complex);
-            lin = reinterpret_cast<t_complex*>(policy.malloc(numBytes));
+            // only needed for PME GPU mixed mode
+            const std::size_t numBytes = lsize * sizeof(t_complex);
+            lin = reinterpret_cast<t_complex*>(hostAllocationPolicy->malloc(numBytes));
         }
         else
         {
@@ -711,13 +707,13 @@ fft5d_plan fft5d_plan_3d(int                NG,
         plan->direction=direction;
         plan->realcomplex=realcomplex;
      */
-    plan->flags         = flags;
-    plan->nthreads      = nthreads;
-    plan->pinningPolicy = realGridAllocationPinningPolicy;
-    *rlin               = lin;
-    *rlout              = lout;
-    *rlout2             = lout2;
-    *rlout3             = lout3;
+    plan->flags                = flags;
+    plan->nthreads             = nthreads;
+    plan->hostAllocationPolicy = hostAllocationPolicy;
+    *rlin                      = lin;
+    *rlout                     = lout;
+    *rlout2                    = lout2;
+    *rlout3                    = lout3;
     return plan;
 }
 
@@ -1467,11 +1463,9 @@ void fft5d_destroy(fft5d_plan plan)
     if (!(plan->flags & FFT5D_NOMALLOC))
     {
         // only needed for PME GPU mixed mode
-        if (allocatePmeGpuMixedMode && plan->pinningPolicy == gmx::PinningPolicy::PinnedIfSupported)
+        if (plan->hostAllocationPolicy)
         {
-            GMX_ASSERT(isHostMemoryPinned(plan->lin), "Memory should have been pinned");
-            gmx::HostAllocationPolicy policy(plan->pinningPolicy);
-            policy.free(plan->lin);
+            plan->hostAllocationPolicy->free(plan->lin);
         }
         else
         {

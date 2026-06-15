@@ -172,13 +172,15 @@ const std::string& PullElement::clientID()
     return identifier_;
 }
 
-ISimulatorElement* PullElement::getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
-                                                      ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                      StatePropagatorData* statePropagatorData,
-                                                      EnergyData* /*energyData*/,
-                                                      FreeEnergyPerturbationData* /*freeEnergyPerturbationData*/,
-                                                      GlobalCommunicationHelper* /*globalCommunicationHelper*/,
-                                                      ObservablesReducer* /*observablesReducer*/)
+ISimulatorElement*
+PullElement::getElementPointerImpl(LegacySimulatorData*                    legacySimulatorData,
+                                   ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                                   StatePropagatorData*                    statePropagatorData,
+                                   EnergyData* /*energyData*/,
+                                   FreeEnergyPerturbationData* /*freeEnergyPerturbationData*/,
+                                   GlobalCommunicationHelper* /*globalCommunicationHelper*/,
+                                   ObservablesReducer* /*observablesReducer*/,
+                                   const DeviceStreamManager* /*deviceStreamManager*/)
 {
     auto* pullElement = builderHelper->storeElement(std::make_unique<PullElement>(
             legacySimulatorData->inputRec_->pull->bSetPbcRefToPrevStepCOM,

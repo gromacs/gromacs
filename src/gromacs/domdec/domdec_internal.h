@@ -88,7 +88,10 @@ struct gmx_domdec_ind_t
     int cell2at0[gmx::sc_maxNumIZones] = {};
     int cell2at1[gmx::sc_maxNumIZones] = {};
     //! @}
-    gmx_domdec_ind_t() {}
+    gmx_domdec_ind_t(const gmx::HostAllocationPolicy& hostAllocationPolicy) :
+        index{ hostAllocationPolicy }
+    {
+    }
 };
 
 //! Things relating to index communication

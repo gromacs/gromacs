@@ -79,17 +79,12 @@ struct HostBuffers
     HostVector<int>               h_rollingPrunePart;
 
     //! We only build this with our test data size and with pinning when possible
-    HostBuffers(int dataSize)
+    HostBuffers(size_t dataSize, const HostAllocationPolicy& hostAllocationPolicy) :
+        h_sci{ dataSize, { hostAllocationPolicy } },
+        h_cjPacked{ dataSize, { hostAllocationPolicy } },
+        h_excl{ dataSize, { hostAllocationPolicy } },
+        h_rollingPrunePart{ dataSize, { hostAllocationPolicy } }
     {
-        changePinningPolicy(&h_sci, gmx::PinningPolicy::PinnedIfSupported);
-        changePinningPolicy(&h_cjPacked, gmx::PinningPolicy::PinnedIfSupported);
-        changePinningPolicy(&h_excl, gmx::PinningPolicy::PinnedIfSupported);
-        changePinningPolicy(&h_rollingPrunePart, gmx::PinningPolicy::PinnedIfSupported);
-
-        h_sci.resize(dataSize);
-        h_cjPacked.resize(dataSize);
-        h_excl.resize(dataSize);
-        h_rollingPrunePart.resize(dataSize);
     }
 };
 
@@ -108,9 +103,9 @@ void allocateDeviceBuffers(GpuPairlist* pairlist, int allocationSize, const Devi
 }
 
 //! Set up host resident data structures with junk test data.
-HostBuffers prepareHostBuffers(int dataSize)
+HostBuffers prepareHostBuffers(size_t dataSize, const HostAllocationPolicy& hostAllocationPolicy)
 {
-    HostBuffers hostbuffers(dataSize);
+    HostBuffers hostbuffers(dataSize, hostAllocationPolicy);
 
     int counter = 0;
     for (auto& value : hostbuffers.h_sci)
@@ -223,12 +218,13 @@ void checkPairlistConsistency(const GpuPairlist& pairlist, int allocationSize)
 }
 
 //! Check that device buffer data is valid after transfer to back and forth
-void checkValuesFromPairlist(GpuPairlist*        pairlist,
-                             const HostBuffers&  inputBuffers,
-                             int                 dataSize,
-                             const DeviceStream& deviceStream)
+void checkValuesFromPairlist(GpuPairlist*                pairlist,
+                             const HostBuffers&          inputBuffers,
+                             int                         dataSize,
+                             const HostAllocationPolicy& hostAllocationPolicy,
+                             const DeviceStream&         deviceStream)
 {
-    HostBuffers fromDevice(dataSize);
+    HostBuffers fromDevice(dataSize, hostAllocationPolicy);
 
     transferDeviceToHost(pairlist, &fromDevice, dataSize, deviceStream);
 
@@ -244,10 +240,12 @@ TEST(GpuPairlistTest, PairlistInitWorks)
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
-        constexpr int dataSize       = 23;
-        constexpr int allocationSize = 42;
-        GpuPairlist   pairlist{};
-        auto          hostbuffers = prepareHostBuffers(dataSize);
+        constexpr int        dataSize       = 23;
+        constexpr int        allocationSize = 42;
+        GpuPairlist          pairlist{};
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+        HostBuffers          hostbuffers = prepareHostBuffers(dataSize, hostAllocationPolicy);
         initPairlistWithData(dataSize,
                              allocationSize,
                              &pairlist,
@@ -255,7 +253,8 @@ TEST(GpuPairlistTest, PairlistInitWorks)
                              testDevice->deviceContext(),
                              testDevice->deviceStream());
         checkPairlistConsistency(pairlist, allocationSize);
-        checkValuesFromPairlist(&pairlist, hostbuffers, dataSize, testDevice->deviceStream());
+        checkValuesFromPairlist(
+                &pairlist, hostbuffers, dataSize, hostAllocationPolicy, testDevice->deviceStream());
     }
 }
 

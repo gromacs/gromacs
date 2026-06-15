@@ -62,10 +62,11 @@ NbnxmPairlistGpuWork::ISuperClusterData::ISuperClusterData(const PairlistType la
     xSimd(sc_gpuNumClusterPerBin(layoutType) * sc_gpuClusterSize(layoutType) * DIM)
 {
 }
-NbnxmPairlistGpuWork::NbnxmPairlistGpuWork(const PairlistType layoutType) :
+NbnxmPairlistGpuWork::NbnxmPairlistGpuWork(const PairlistType          layoutType,
+                                           const HostAllocationPolicy& hostAllocationPolicy) :
     iSuperClusterData(layoutType),
     distanceBuffer(sc_gpuNumClusterPerBin(layoutType)),
-    sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
+    sci_sort({}, hostAllocationPolicy)
 {
 }
 

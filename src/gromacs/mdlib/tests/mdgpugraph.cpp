@@ -125,13 +125,12 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
         for (bool useGraph : { false, true })
         {
 
-            HostVector<int> h_one;
-            changePinningPolicy(&h_one, PinningPolicy::PinnedIfSupported);
+            HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+            HostVector<int> h_one(hostAllocationPolicy);
             h_one.resize(1);
             h_one[0] = 1;
 
-            HostVector<int> h_output;
-            changePinningPolicy(&h_output, PinningPolicy::PinnedIfSupported);
+            HostVector<int> h_output(hostAllocationPolicy);
             h_output.resize(1);
 
             // Set output to 1 on GPU

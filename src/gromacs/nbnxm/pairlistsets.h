@@ -58,22 +58,22 @@ struct t_nrnb;
 
 namespace gmx
 {
+class HostAllocationPolicy;
+template<typename>
+class ListOfLists;
 class PairlistSet;
 enum class PairlistType;
 class PairSearch;
-enum class PinningPolicy;
-template<typename>
-class ListOfLists;
 
 //! Contains sets of pairlists \internal
 class PairlistSets
 {
 public:
     //! Constructor
-    PairlistSets(const PairlistParams& pairlistParams,
-                 bool                  haveMultipleDomains,
-                 int                   minimumIlistCountForGpuBalancing,
-                 PinningPolicy         pinPolicy);
+    PairlistSets(const PairlistParams&       pairlistParams,
+                 bool                        haveMultipleDomains,
+                 int                         minimumIlistCountForGpuBalancing,
+                 const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Construct the pairlist set for the given locality
     void construct(InteractionLocality     iLocality,

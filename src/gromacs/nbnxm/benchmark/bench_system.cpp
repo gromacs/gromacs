@@ -159,7 +159,7 @@ static void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>
 }
 
 BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor, const std::string& outputFile) :
-    forceRec{ false }
+    forceRec{ HostAllocationPolicy{} }
 {
     numAtomTypes = 2;
     nonbondedParameters.resize(numAtomTypes * numAtomTypes * 2, 0);

@@ -36,7 +36,6 @@
 #define GMX_FFT_PARALLEL_3DFFT_H
 
 #include "gromacs/fft/fft.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -46,6 +45,10 @@
 
 typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
 
+namespace gmx
+{
+class HostAllocationPolicy;
+} // namespace gmx
 
 /*! \brief Initialize parallel MPI-based 3D-FFT.
  *
@@ -68,19 +71,19 @@ typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
  *  \param nthreads       Run in parallel using n threads
- *  \param realGridAllocation  Whether to make real grid use allocation pinned for GPU transfers.
- *                             Only used in PME mixed CPU+GPU mode.
+ *  \param hostAllocationPolicy  How host memory should be allocated so it can work
+ *                               as needed with GPUs. Only used in PME mixed CPU+GPU mode.
  *
  *  \return 0 or a standard error code.
  */
-int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t* pfft_setup,
-                            const ivec            ndata,
-                            real**                real_data,
-                            t_complex**           complex_data,
-                            MPI_Comm              comm[2],
-                            gmx_bool              bReproducible,
-                            int                   nthreads,
-                            gmx::PinningPolicy realGridAllocation = gmx::PinningPolicy::CannotBePinned);
+int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t*            pfft_setup,
+                            const ivec                       ndata,
+                            real**                           real_data,
+                            t_complex**                      complex_data,
+                            MPI_Comm                         comm[2],
+                            gmx_bool                         bReproducible,
+                            int                              nthreads,
+                            const gmx::HostAllocationPolicy* hostAllocationPolicy);
 
 
 /*! \brief Get direct space grid index limits

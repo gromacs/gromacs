@@ -300,15 +300,17 @@ void define2dRankTopology(const int rank, const int /* size */, gmx_domdec_t* dd
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define1dHaloWith1Pulse(const int rank,
                             const int /* size */,
                             gmx_domdec_t*                  dd,
+                            const HostAllocationPolicy&    hostAllocationPolicy,
                             std::vector<gmx_domdec_ind_t>* indvec)
 {
     gmx::HostVector<int> indexvec;
-    gmx_domdec_ind_t     ind;
+    gmx_domdec_ind_t     ind(hostAllocationPolicy);
 
     dd->ndim     = 1;
     int nzone    = 1;
@@ -338,15 +340,17 @@ void define1dHaloWith1Pulse(const int rank,
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define1dHaloWith2Pulses(const int rank,
                              const int /* size */,
                              gmx_domdec_t*                  dd,
+                             const HostAllocationPolicy&    hostAllocationPolicy,
                              std::vector<gmx_domdec_ind_t>* indvec)
 {
     gmx::HostVector<int> indexvec;
-    gmx_domdec_ind_t     ind;
+    gmx_domdec_ind_t     ind(hostAllocationPolicy);
 
     dd->ndim     = 1;
     int nzone    = 1;
@@ -388,15 +392,17 @@ void define1dHaloWith2Pulses(const int rank,
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define2dHaloWith1PulseInEachDim(const int rank,
                                      const int /*size*/,
                                      gmx_domdec_t*                  dd,
+                                     const HostAllocationPolicy&    hostAllocationPolicy,
                                      std::vector<gmx_domdec_ind_t>* indvec)
 {
     gmx::HostVector<int> indexvec;
-    gmx_domdec_ind_t     ind;
+    gmx_domdec_ind_t     ind(hostAllocationPolicy);
 
     dd->ndim  = 2;
     int nzone = 1;
@@ -430,15 +436,17 @@ void define2dHaloWith1PulseInEachDim(const int rank,
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define2dHaloWith2PulsesInDim1(const int rank,
                                    const int /* size */,
                                    gmx_domdec_t*                  dd,
+                                   const HostAllocationPolicy&    hostAllocationPolicy,
                                    std::vector<gmx_domdec_ind_t>* indvec)
 {
     HostVector<int>  indexvec;
-    gmx_domdec_ind_t ind;
+    gmx_domdec_ind_t ind(hostAllocationPolicy);
 
     dd->ndim  = 2;
     int nzone = 1;
@@ -578,7 +586,7 @@ struct HaloExchangeTestParameters
     //! The DD topology setup function to use
     void (*domainTopologySetupFunction)(int, int, gmx_domdec_t*);
     //! The DD pulse-structure setup function to use
-    void (*pulseSetupFunction)(int, int, gmx_domdec_t*, std::vector<gmx_domdec_ind_t>*);
+    void (*pulseSetupFunction)(int, int, gmx_domdec_t*, const HostAllocationPolicy&, std::vector<gmx_domdec_ind_t>*);
     //! The results-checking funciton to use
     void (*checkResults)(const RVec*, const gmx_domdec_t*, const int);
 };
@@ -591,10 +599,11 @@ struct HaloExchangeTestParameters
 class HaloExchangeTestData
 {
 public:
-    HaloExchangeTestData(const HaloExchangeTestParameters& parameters, PinningPolicy pinningPolicy) :
+    HaloExchangeTestData(const HaloExchangeTestParameters& parameters,
+                         const HostAllocationPolicy&       hostAllocationPolicy) :
         dd_{ mpiComm_, ir_, parameters.ddDims },
         numAtomsTotal_{ parameters.numHomeAtoms + parameters.numHaloAtoms },
-        h_x_(numAtomsTotal_, { pinningPolicy })
+        h_x_(numAtomsTotal_, hostAllocationPolicy)
     {
         dd_.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm_);
         dd_.unitCellInfo.haveScrewPBC = false;
@@ -604,7 +613,12 @@ public:
         dd_.comm->atomRanges = atomRanges;
 
         parameters.domainTopologySetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_);
-        parameters.pulseSetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_, &indvec_);
+        // Note that with NVSHMEM and GPU halo exchange (only), the
+        // transfer of per-pulse particle-index parameters requires a
+        // suitable HostAllocationPolicy.  That code path is not
+        // actually tested here, but the necessary setup is done in
+        // all build configurations as bonus test coverage.
+        parameters.pulseSetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_, hostAllocationPolicy, &indvec_);
     }
     //! MPI communicator
     MpiComm mpiComm_{ MPI_COMM_WORLD };
@@ -632,8 +646,8 @@ TEST_P(HaloExchangeTest, WithParametersOnCpu)
 {
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    PinningPolicy        pinningPolicy = PinningPolicy::CannotBePinned;
-    HaloExchangeTestData data(GetParam(), pinningPolicy);
+    HostAllocationPolicy hostAllocationPolicy;
+    HaloExchangeTestData data(GetParam(), hostAllocationPolicy);
     const int            numHomeAtoms = GetParam().numHomeAtoms;
     initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
     dd_move_x(&data.dd_, box_, static_cast<ArrayRef<RVec>>(data.h_x_), nullptr);
@@ -686,8 +700,8 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
     const DeviceContext& deviceContext = testDevice->deviceContext();
     deviceContext.activate();
 
-    PinningPolicy        pinningPolicy = PinningPolicy::PinnedIfSupported;
-    HaloExchangeTestData data(GetParam(), pinningPolicy);
+    HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+    HaloExchangeTestData data(GetParam(), hostAllocationPolicy);
     const int            numHomeAtoms = GetParam().numHomeAtoms;
     initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
     MessageStringCollector skipReasons =

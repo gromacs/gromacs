@@ -69,7 +69,8 @@ SimulatorBuilder::SimulatorBuilder() = default;
 SimulatorBuilder::~SimulatorBuilder() = default;
 
 //! \brief Build a Simulator object
-std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
+std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                       useModularSimulator,
+                                                    const DeviceStreamManager* deviceStreamManager)
 {
     // TODO: Reduce protocol complexity.
     //     Investigate individual parameters. Identify default-constructable parameters and clarify
@@ -135,6 +136,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
+                deviceStreamManager,
                 std::make_unique<LegacySimulatorData>(simulatorEnv_->fplog_,
                                                       simulatorEnv_->commRec_,
                                                       simulatorEnv_->multisimCommRec_,

@@ -337,6 +337,7 @@ void gmx::LegacySimulator::do_rerun()
                                  constr_ ? constr_->numFlexibleConstraints() : 0,
                                  ir->outputControl.nstcalcenergy,
                                  haveDDAtomOrdering(*cr_),
+                                 fr_->deviceStreamManager,
                                  runScheduleWork_->simulationWork);
 
     if (haveDDAtomOrdering(*cr_))

@@ -51,6 +51,7 @@
 
 #include "listed_forces/conversionscommon.h"
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -82,7 +83,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
                shiftBuffer),
     virialProxy(forceBuffer, true),
     forceOutputs(shiftProxy, true, virialProxy),
-    fr{ false },
+    fr(gmx::HostAllocationPolicy{}),
     enerd(1, nullptr),
     lambdaBuffer(42) // values unused; just initialized with something larger than the number of enum types in FreeEnergyPerturbationCouplingType
 {

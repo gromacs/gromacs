@@ -75,7 +75,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
+#include "gromacs/taskassignment/decidesimulationworkload.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -241,12 +241,13 @@ static void predict_shells(FILE*                     fplog,
     }
 }
 
-gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
-                                  const gmx_mtop_t&              mtop,
-                                  const int                      nflexcon,
-                                  const int                      nstcalcenergy,
-                                  const bool                     usingDomainDecomposition,
-                                  const gmx::SimulationWorkload& simulationWork)
+gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
+                                  const gmx_mtop_t&               mtop,
+                                  const int                       nflexcon,
+                                  const int                       nstcalcenergy,
+                                  const bool                      usingDomainDecomposition,
+                                  const gmx::DeviceStreamManager* deviceStreamManager,
+                                  const gmx::SimulationWorkload&  simulationWork)
 {
     gmx_shellfc_t* shfc;
 
@@ -543,14 +544,15 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
 
     /* shfc->x is used as a coordinate buffer for the sim_util's `do_force` function, and
      * must be pinned if coordinates are on the GPU (e.g. for PME or GPU buffer ops). */
-    const bool useGpuForBufferOps =
-            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
-    if (simulationWork.useGpuPme || useGpuForBufferOps)
+    // NB this logic is more complicated and overly specific than it
+    // should be, probably simulationWork.useGpuNonbonded is sufficient.
+    gmx::HostAllocationPolicy hostAllocationPolicy = gmx::makeHostAllocationPolicy(
+            simulationWork.useGpuPme || simulationWork.useGpuXBufferOpsWhenAllowed
+                    || simulationWork.useGpuFBufferOpsWhenAllowed,
+            deviceStreamManager);
+    for (i = 0; i < 2; i++)
     {
-        for (i = 0; i < 2; i++)
-        {
-            changePinningPolicy(&shfc->x[i], gmx::PinningPolicy::PinnedIfSupported);
-        }
+        shfc->x[i] = gmx::PaddedHostVector<gmx::RVec>(hostAllocationPolicy);
     }
 
     return shfc;

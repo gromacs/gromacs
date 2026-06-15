@@ -194,8 +194,6 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     if (!receiveInPlace_)
     {
         // Same buffers will be used for both coordinates and forces
-        changePinningPolicy(&h_outOfPlaceRecvBuffer_, PinningPolicy::PinnedIfSupported);
-        changePinningPolicy(&h_outOfPlaceSendBuffer_, PinningPolicy::PinnedIfSupported);
         h_outOfPlaceSendBuffer_.resize(std::max(xSendSize_, fSendSize_));
         h_outOfPlaceRecvBuffer_.resize(std::max(xRecvSize_, fRecvSize_));
     }
@@ -620,6 +618,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
                             const DeviceContext& deviceContext,
                             int                  pulse) :
     dd_(dd),
+    h_indexMap_{ HostAllocationPolicy{ deviceContext, gmx::PinningPolicy::PinnedIfSupported } },
     sendRankX_(dd->neighbor[dimIndex][1]),
     recvRankX_(dd->neighbor[dimIndex][0]),
     sendRankF_(dd->neighbor[dimIndex][0]),
@@ -633,14 +632,14 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
     haloStream_(haloStream),
     dimIndex_(dimIndex),
     pulse_(pulse),
-    wcycle_(nullptr)
+    wcycle_(nullptr),
+    h_outOfPlaceSendBuffer_{ HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported } },
+    h_outOfPlaceRecvBuffer_{ HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported } }
 {
     if (usePBC_ && dd->unitCellInfo.haveScrewPBC)
     {
         gmx_fatal(FARGS, "Error: screw is not yet supported in GPU halo exchange\n");
     }
-
-    changePinningPolicy(&h_indexMap_, gmx::PinningPolicy::PinnedIfSupported);
 
     allocateDeviceBuffer(&d_fShift_, 1, deviceContext_);
 }
@@ -832,9 +831,8 @@ void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int totalNumPulses)
 
         // TODO host allocation should be minimized by making this a
         // member variable
-        gmx::HostVector<uint64_t> hostBuffer = {
-            {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)
-        };
+        gmx::HostVector<uint64_t> hostBuffer(
+                {}, gmx::HostAllocationPolicy(context_, gmx::PinningPolicy::PinnedIfSupported));
         hostBuffer.resize(totalSyncBufSize, ~0);
         // TODO replace this D2H with cudaMemsetAsync
         copyToDeviceBuffer<uint64_t>(&d_ppHaloExSyncBase_,

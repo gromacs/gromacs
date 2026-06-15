@@ -53,14 +53,14 @@ struct gmx_parallel_3dfft
     fft5d_plan p1, p2;
 };
 
-int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t* pfft_setup,
-                            const ivec            ndata,
-                            real**                real_data,
-                            t_complex**           complex_data,
-                            MPI_Comm              comm[2],
-                            gmx_bool              bReproducible,
-                            int                   nthreads,
-                            gmx::PinningPolicy    realGridAllocation)
+int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t*            pfft_setup,
+                            const ivec                       ndata,
+                            real**                           real_data,
+                            t_complex**                      complex_data,
+                            MPI_Comm                         comm[2],
+                            gmx_bool                         bReproducible,
+                            int                              nthreads,
+                            const gmx::HostAllocationPolicy* hostAllocationPolicy)
 {
     int        rN = ndata[2], M = ndata[1], K = ndata[0];
     int        flags   = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */
@@ -87,9 +87,12 @@ int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t* pfft_setup,
         Kb = M; /* currently always true because ORDER_YZ always set */
     }
 
+    // Potentially pin the allocation for the forward grid to cater
+    // for PME-on-GPU mixed mode.
     (*pfft_setup)->p1 = fft5d_plan_3d(
-            rN, M, K, rcomm, flags, reinterpret_cast<t_complex**>(real_data), complex_data, &buf1, &buf2, nthreads, realGridAllocation);
+            rN, M, K, rcomm, flags, reinterpret_cast<t_complex**>(real_data), complex_data, &buf1, &buf2, nthreads, hostAllocationPolicy);
 
+    // No need to pin the allocation for the backward grid
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb,
                                       Mb,
                                       Kb,
@@ -99,7 +102,8 @@ int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t* pfft_setup,
                                       reinterpret_cast<t_complex**>(real_data),
                                       &buf1,
                                       &buf2,
-                                      nthreads);
+                                      nthreads,
+                                      nullptr);
 
     return static_cast<int>((*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr);
 }

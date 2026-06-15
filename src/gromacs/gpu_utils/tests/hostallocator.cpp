@@ -231,55 +231,107 @@ TYPED_TEST(HostAllocatorTestCopyable, FillInputAlsoWorksAfterCallingReserve)
 
 TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
 {
-    typename TestFixture::VectorType input1;
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    typename TestFixture::VectorType input2({ PinningPolicy::PinnedIfSupported });
-    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    {
+        SCOPED_TRACE("Default construction uses unpinned memory");
+        typename TestFixture::VectorType input1;
+        EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
+
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        SCOPED_TRACE("Construction can produce pinned memory");
+        HostAllocationPolicy             hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+        typename TestFixture::VectorType input2(hostAllocationPolicy);
+        EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, MoveAssignment)
 {
-    typename TestFixture::VectorType input1({ PinningPolicy::PinnedIfSupported });
-    input1 = typename TestFixture::VectorType();
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
 
-    typename TestFixture::VectorType input2;
-    input2 = typename TestFixture::VectorType({ PinningPolicy::PinnedIfSupported });
-    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+        {
+            SCOPED_TRACE("Move assignment into pinned host vector is to unpinned memory");
+            typename TestFixture::VectorType input1(hostAllocationPolicy);
+            input1 = typename TestFixture::VectorType();
+            EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+        }
+
+        {
+            SCOPED_TRACE("Move assignment into unpinned host vector is to unpinned memory");
+            typename TestFixture::VectorType input2;
+            input2 = typename TestFixture::VectorType(hostAllocationPolicy);
+            EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+        }
+    }
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
 {
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2(std::move(input1));
-    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    {
+        SCOPED_TRACE("Move construction into unpinned HostVector uses unpinned memory");
+        typename TestFixture::VectorType input1;
+        typename TestFixture::VectorType input2(std::move(input1));
+        EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
 
-    typename TestFixture::VectorType input3({ PinningPolicy::PinnedIfSupported });
-    typename TestFixture::VectorType input4(std::move(input3));
-    EXPECT_TRUE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+
+        SCOPED_TRACE("Move construction into pinned HostVector produces pinned memory");
+        typename TestFixture::VectorType input3(hostAllocationPolicy);
+        typename TestFixture::VectorType input4(std::move(input3));
+        EXPECT_TRUE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
 }
 
 TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyAssignment)
 {
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2({ PinningPolicy::PinnedIfSupported });
-    input1 = input2;
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    input2 = input1;
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+
+        typename TestFixture::VectorType input1;
+        typename TestFixture::VectorType input2(hostAllocationPolicy);
+        input1 = input2;
+        EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported)
+                << "copy assignment into unpinned memory produces unpinned memory";
+        EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported)
+                << "copy assignment from pinned memory does not change that pinning status";
+        input2 = input1;
+        EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported)
+                << "copy assignment from unpinned memory does not change that pinning status";
+        EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported)
+                << "copy assignment into pinned memory produces pinned memory";
+    }
 }
 
 TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
 {
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2(input1); //NOLINT(performance-unnecessary-copy-initialization)
-    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    {
+        SCOPED_TRACE("Copy construction into unpinned HostVector uses unpinned memory");
+        typename TestFixture::VectorType input1;
+        typename TestFixture::VectorType input2(input1); //NOLINT(performance-unnecessary-copy-initialization)
+        EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
 
-    typename TestFixture::VectorType input3({ PinningPolicy::PinnedIfSupported });
-    typename TestFixture::VectorType input4(input3); //NOLINT(performance-unnecessary-copy-initialization)
-    EXPECT_FALSE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+
+        SCOPED_TRACE("Copy construction into pinned HostVector uses unpinned memory");
+        typename TestFixture::VectorType input3(hostAllocationPolicy);
+        typename TestFixture::VectorType input4(input3); //NOLINT(performance-unnecessary-copy-initialization)
+        EXPECT_FALSE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
 }
 
 template<typename T>
@@ -297,7 +349,9 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstructionOfStructHoldingAHostV
         testDevice->deviceContext().activate();
         SCOPED_TRACE("By default allocator does not propagate");
         {
-            Holder c{ { PinningPolicy::PinnedIfSupported } };
+            HostAllocationPolicy allocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+            Holder               c{ allocationPolicy };
             EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
             std::vector<Holder> v(2, c);
             const auto          defaultPolicy = PinningPolicy::CannotBePinned;
@@ -306,7 +360,10 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstructionOfStructHoldingAHostV
         }
         SCOPED_TRACE("Allocator can propagate");
         {
-            Holder c{ { PinningPolicy::PinnedIfSupported, true } };
+            HostAllocationPolicy allocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported,
+                                                   true };
+            Holder               c{ allocationPolicy };
             EXPECT_EQ(c.v.get_allocator().pinningPolicy(), PinningPolicy::PinnedIfSupported);
             std::vector<Holder> v(2, c);
             EXPECT_EQ(v[0].v.get_allocator().pinningPolicy(), c.v.get_allocator().pinningPolicy());
@@ -317,28 +374,39 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstructionOfStructHoldingAHostV
 
 TYPED_TEST(HostAllocatorTestNoMem, Swap)
 {
-    typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2({ PinningPolicy::PinnedIfSupported });
-    std::swap(input1, input2);
-    EXPECT_TRUE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    std::swap(input2, input1);
-    EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+
+        SCOPED_TRACE("swap between pinned and unpinned memory swaps pinning status");
+        typename TestFixture::VectorType input1;
+        typename TestFixture::VectorType input2(hostAllocationPolicy);
+        std::swap(input1, input2);
+        EXPECT_TRUE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+        EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+        std::swap(input2, input1);
+        EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+        EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    }
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, Comparison)
 {
     using AllocatorType = typename TestFixture::VectorType::allocator_type;
     {
-        SCOPED_TRACE("Allocators with identical policy objects compare equal");
+        SCOPED_TRACE("Unpinned allocators with identical policy objects compare equal");
         EXPECT_EQ(AllocatorType{}, AllocatorType{});
     }
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        SCOPED_TRACE("Allocators with different policy objects may or may not compare equal");
-        EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
-        EXPECT_EQ(AllocatorType{ PinningPolicy::PinnedIfSupported },
-                  AllocatorType{ PinningPolicy::PinnedIfSupported });
+        HostAllocationPolicy hostAllocationPolicy{ testDevice->deviceContext(),
+                                                   PinningPolicy::PinnedIfSupported };
+
+        EXPECT_NE(AllocatorType{}, AllocatorType{ hostAllocationPolicy })
+                << "Differently pinned allocators do not compare equal";
+        EXPECT_EQ(AllocatorType{ hostAllocationPolicy }, AllocatorType{ hostAllocationPolicy })
+                << "Pinned Allocators with identical policy objects compare equal";
     }
 }
 
@@ -350,12 +418,11 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        testDevice->deviceContext().activate();
-        typename TestFixture::VectorType input;
-        changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
+        HostAllocationPolicy             allocationPolicy{ testDevice->deviceContext(),
+                                               PinningPolicy::PinnedIfSupported };
+        typename TestFixture::VectorType input{ allocationPolicy };
         resizeAndFillInput(&input, 3, 1);
-        typename TestFixture::VectorType output;
-        changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
+        typename TestFixture::VectorType output{ allocationPolicy };
         output.resizeWithPadding(input.size());
 
         runTest(testDevice->deviceContext(), makeArrayRef(input), makeArrayRef(output));
@@ -380,12 +447,14 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWork)
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
-        typename TestFixture::VectorType input;
+        HostAllocationPolicy allocationPolicy{ testDevice->deviceContext(), PinningPolicy::CannotBePinned };
+
+        typename TestFixture::VectorType input{ allocationPolicy };
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
         EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
         EXPECT_TRUE(input.empty());
         resizeAndFillInput(&input, 3, 1);
-        // realloc and copy).
+        // realloc and copy
         auto* oldInputData = input.data();
         changePinningPolicy(&input, PinningPolicy::CannotBePinned);
         EXPECT_FALSE(isPinned(input));

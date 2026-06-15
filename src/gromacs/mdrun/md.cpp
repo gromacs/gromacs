@@ -358,20 +358,20 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
-    /* Check for polarizable models and flexible constraints */
+    // Set up polarizable models and flexible constraints if appropriate
     gmx_shellfc_t* shellfc = init_shell_flexcon(fpLog_,
                                                 topGlobal_,
                                                 constr_ ? constr_->numFlexibleConstraints() : 0,
                                                 ir->outputControl.nstcalcenergy,
                                                 haveDDAtomOrdering(*cr_),
+                                                fr_->deviceStreamManager,
                                                 simulationWork);
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
     ForceBuffers            f(simulationWork.useMts,
-                   (simulationWork.useGpuFBufferOpsWhenAllowed || useGpuForUpdate)
-                                      ? PinningPolicy::PinnedIfSupported
-                                      : PinningPolicy::CannotBePinned);
+                   makeHostAllocationPolicy(simulationWork.useGpuFBufferOpsWhenAllowed || useGpuForUpdate,
+                                            fr_->deviceStreamManager));
     const t_mdatoms*        md       = mdAtoms_->mdatoms();
     StatePropagatorDataGpu* stateGpu = fr_->stateGpu;
     if (haveDDAtomOrdering(*cr_))
@@ -501,15 +501,6 @@ void gmx::LegacySimulator::do_md()
         stateGpu->setXUpdatedOnDeviceEvent(integrator->xUpdatedOnDeviceEvent());
 
         integrator->setPbc(PbcType::Xyz, state_->box);
-    }
-
-    if (useGpuForPme || simulationWork.useGpuXBufferOpsWhenAllowed || useGpuForUpdate)
-    {
-        changePinningPolicy(&state_->x, PinningPolicy::PinnedIfSupported);
-    }
-    if (useGpuForUpdate)
-    {
-        changePinningPolicy(&state_->v, PinningPolicy::PinnedIfSupported);
     }
 
     // NOTE: The global state is no longer used at this point.

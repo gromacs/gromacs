@@ -64,6 +64,7 @@ enum class TemperatureCoupling : int;
 
 namespace gmx
 {
+class DeviceStreamManager;
 class ITemperatureCouplingImpl;
 class LegacySimulatorData;
 class ObservablesReducer;
@@ -152,6 +153,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param propagatorTag  Tag of the propagator to connect to
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
@@ -167,6 +169,7 @@ public:
                           FreeEnergyPerturbationData*             freeEnergyPerturbationData,
                           GlobalCommunicationHelper*              globalCommunicationHelper,
                           ObservablesReducer*                     observablesReducer,
+                          const DeviceStreamManager*              deviceStreamManager,
                           Offset                                  offset,
                           UseFullStepKE                           useFullStepKE,
                           ReportPreviousStepConservedEnergy       reportPreviousStepConservedEnergy,

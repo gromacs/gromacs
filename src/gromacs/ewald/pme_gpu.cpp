@@ -433,5 +433,7 @@ void pme_gpu_use_nvshmem(PmeGpu* pmeGpu, bool useNvshmem)
     if (useNvshmem)
     {
         pmeGpu->nvshmemParams = std::make_unique<PmeNvshmemHost>();
+        pmeGpu->nvshmemParams->ppRanksFInfo =
+                gmx::HostVector<PpRanksSendFInfo>(pmeGpu->hostAllocationPolicy_);
     }
 }

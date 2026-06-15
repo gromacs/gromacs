@@ -32,13 +32,15 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 gmx_add_unit_test(MdtypesUnitTest mdtypes-test
+    HARDWARE_DETECTION
     CPP_SOURCE_FILES
         enerdata.cpp
         observablesreducer.cpp
         checkpointdata.cpp
-        forcebuffers.cpp
         multipletimestepping.cpp
         output_control.cpp
+    GPU_CPP_SOURCE_FILES
+        forcebuffers.cpp
         )
 target_link_libraries(mdtypes-test PRIVATE
                       mdtypes

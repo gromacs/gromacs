@@ -546,7 +546,8 @@ ISimulatorElement* EnergyData::Element::getElementPointerImpl(
         EnergyData*                                        energyData,
         FreeEnergyPerturbationData gmx_unused*             freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*              globalCommunicationHelper,
-        ObservablesReducer* /*observablesReducer*/)
+        ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     return energyData->element();
 }

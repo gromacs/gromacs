@@ -133,21 +133,21 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, options.numThreads);
 
     // Don't try pinning buffers; we don't need that in this test
-    const auto pinPolicy  = PinningPolicy::CannotBePinned;
-    const int  numThreads = options.numThreads;
+    const HostAllocationPolicy hostAllocationPolicy{};
+    const int                  numThreads = options.numThreads;
 
     PairlistParams pairlistParams(
             options.kernelSetup.kernelType, sc_layoutType, false, options.rlist, false);
 
     GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, pinPolicy);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, hostAllocationPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(hostAllocationPolicy,
                                                        MDLogger(),
                                                        options.kernelSetup.kernelType,
                                                        LJCombinationRule::None,

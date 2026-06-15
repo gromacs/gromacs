@@ -102,30 +102,29 @@ GridSet::DomainSetup::DomainSetup(const PbcType      pbcType,
     }
 }
 
-GridSet::GridSet(const PbcType      pbcType,
-                 const bool         doTestParticleInsertion,
-                 const IVec*        numDDCells,
-                 const DomdecZones* ddZones,
-                 const PairlistType pairlistType,
-                 const bool         haveFep,
-                 const bool         localAtomOrderMatchesNbnxmOrder,
-                 const int          numThreads,
-                 PinningPolicy      pinningPolicy) :
+GridSet::GridSet(const PbcType               pbcType,
+                 const bool                  doTestParticleInsertion,
+                 const IVec*                 numDDCells,
+                 const DomdecZones*          ddZones,
+                 const PairlistType          pairlistType,
+                 const bool                  haveFep,
+                 const bool                  localAtomOrderMatchesNbnxmOrder,
+                 const int                   numThreads,
+                 const HostAllocationPolicy& hostAllocationPolicyArg) :
     domainSetup_(pbcType, doTestParticleInsertion, numDDCells, ddZones),
+    gridSetData_{ HostVector<int>(hostAllocationPolicyArg), HostVector<int>(hostAllocationPolicyArg) },
     pairlistType_(pairlistType),
     haveFep_(haveFep),
     localAtomOrderMatchesNbnxmOrder_(localAtomOrderMatchesNbnxmOrder),
-    pinningPolicy_(pinningPolicy),
+    hostAllocationPolicy(hostAllocationPolicyArg),
     gridWork_(numThreads)
 {
     clear_mat(box_);
-    changePinningPolicy(&gridSetData_.bins, pinningPolicy);
-    changePinningPolicy(&gridSetData_.atomIndices, pinningPolicy);
 
     grids_.reserve(numGrids(domainSetup_));
     for (int i = 0; i < numGrids(domainSetup_); i++)
     {
-        grids_.emplace_back(pairlistType, i, haveFep_, pinningPolicy);
+        grids_.emplace_back(pairlistType, i, haveFep_, hostAllocationPolicy);
     }
 
     // For normal MD we add non-local grids during (re)partitioning, so only count the local grid here

@@ -396,7 +396,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper*              globalCommunicationHelper,
-        ObservablesReducer*                     observablesReducer)
+        ObservablesReducer*                     observablesReducer,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     ComputeGlobalsElement* element = builderHelper->storeElement(
             std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
@@ -430,7 +431,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper*              globalCommunicationHelper,
-        ObservablesReducer*                     observablesReducer)
+        ObservablesReducer*                     observablesReducer,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     // We allow this element to be added multiple times to the call list, but we only want one
     // actual element built

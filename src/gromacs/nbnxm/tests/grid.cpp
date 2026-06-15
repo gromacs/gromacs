@@ -150,7 +150,7 @@ class GridTest : public ::testing::TestWithParam<CoordDistribution>
 
 public:
     GridTest() :
-        grid_(PairlistType::Simple4x4, 0, sc_haveFep, PinningPolicy::CannotBePinned),
+        grid_(PairlistType::Simple4x4, 0, sc_haveFep, HostAllocationPolicy{}),
         gridWork_(sc_numThreads),
         x_(generateCoords(GetParam()))
     {

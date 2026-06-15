@@ -92,7 +92,10 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
                             const DeviceContext&  deviceContext,
                             const DeviceStream&   deviceStream,
                             gmx_wallcycle*        wcycle) :
-    deviceContext_(deviceContext), deviceStream_(deviceStream)
+    deviceContext_(deviceContext),
+    deviceStream_(deviceStream),
+    vTot_{ static_cast<int>(InteractionFunction::Count),
+           HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported } }
 {
     GMX_RELEASE_ASSERT(numEnergyGroupsForListedForces == 1,
                        "Only a single energy group is supported with listed forces on GPU");
@@ -107,6 +110,13 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
 
     wcycle_ = wcycle;
 
+    // Fill the array with host memory than can be pinned when allocated
+    const HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+    for (HostInteractionList& list : iLists_)
+    {
+        list.iatoms = HostVector<int>(0, hostAllocationPolicy);
+    }
+
     allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), deviceContext_);
     // This could be an async transfer (if the source is pinned), so
     // long as it uses the same stream as the kernels and we are happy
@@ -118,7 +128,6 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
                        deviceStream_,
                        GpuApiCallBehavior::Sync,
                        nullptr);
-    vTot_.resize(static_cast<int>(InteractionFunction::Count));
     allocateDeviceBuffer(&d_vTot_, static_cast<int>(InteractionFunction::Count), deviceContext_);
     clearDeviceBufferAsync(&d_vTot_, 0, static_cast<int>(InteractionFunction::Count), deviceStream_);
 

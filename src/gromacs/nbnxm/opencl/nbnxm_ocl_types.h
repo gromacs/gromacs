@@ -141,6 +141,8 @@ struct NbnxmGpu
     NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional<size_t> nLambda);
     //! GPU device context.
     const DeviceContext& deviceContext;
+    //! Host allocation policy for buffers for possible GPU transfers
+    const HostAllocationPolicy hostAllocationPolicy;
     //! OpenCL runtime data (context, kernels)
     struct gmx_device_runtime_data_t* dev_rundata = nullptr;
 

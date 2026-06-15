@@ -90,6 +90,7 @@ FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceStream&  haloStream,
     signalReceiverRankXCounter_(0),
     signalReceiverRankFCounter_(0),
     enableFusedForceKernelSync_(false),
+    haloExchangeData_{ HostAllocationPolicy{ deviceContext_, PinningPolicy::PinnedIfSupported } },
     mpi_comm_mysim_(mpi_comm_mysim),
     mpi_comm_mysim_world_(mpi_comm_mysim_world)
 {
@@ -275,7 +276,6 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
     maxGridXSize_ = 0;
     maxGridFSize_ = 0;
     // Build per-dimension/pulse entries mirroring Impl::reinitHalo
-    changePinningPolicy(&haloExchangeData_, PinningPolicy::PinnedIfSupported);
     haloExchangeData_.resize(totalNumPulses_);
 
     const gmx_domdec_comm_t& comm     = *dd->comm;
@@ -302,10 +302,7 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
             const int               xSendSize  = plan.xSendSize;
             const int               xRecvSize  = plan.xRecvSize;
             const gmx_domdec_ind_t* ind        = plan.ind;
-            // Prepare for async H2D transfers, if needed. Note that the pulse count
-            // can have increased since last DD partitioning.
-            gmx::changePinningPolicy(&dd->comm->cd[dimIndex].ind[pulse].index,
-                                     gmx::PinningPolicy::PinnedIfSupported);
+            // Preparations for async H2D transfers were done when ind was resized.
 
             auto& data             = haloExchangeData_[idxEntry];
             data.xSendSize         = xSendSize;

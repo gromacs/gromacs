@@ -69,6 +69,7 @@ namespace gmx
 {
 class BoxDeformation;
 class Constraints;
+class DeviceStreamManager;
 class IMDOutputProvider;
 class ImdSession;
 class ISimulator;
@@ -443,7 +444,8 @@ public:
      *
      * \return  Unique pointer to a Simulator object
      */
-    std::unique_ptr<ISimulator> build(bool useModularSimulator);
+    std::unique_ptr<ISimulator> build(bool                       useModularSimulator,
+                                      const DeviceStreamManager* deviceStreamManager);
 
 private:
     // Note: we use std::unique_ptr instead of std::optional because we want to

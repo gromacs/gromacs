@@ -53,6 +53,7 @@
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
@@ -164,12 +165,13 @@ private:
     const t_mdatoms* mdatoms_;
 };
 
-StatePropagatorData::StatePropagatorData(int                numAtoms,
-                                         FILE*              fplog,
-                                         const t_commrec*   cr,
-                                         t_state*           globalState,
-                                         t_state*           localState,
-                                         bool               useGPU,
+StatePropagatorData::StatePropagatorData(int                        numAtoms,
+                                         FILE*                      fplog,
+                                         const t_commrec*           cr,
+                                         t_state*                   globalState,
+                                         t_state*                   localState,
+                                         const DeviceStreamManager* deviceStreamManager,
+                                         bool                       useGPU,
                                          bool               canMoleculesBeDistributedOverPBC,
                                          bool               writeFinalConfiguration,
                                          const std::string& finalConfigurationFilename,
@@ -178,6 +180,8 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
                                          const gmx_mtop_t&  globalTop) :
     totalNumAtoms_(numAtoms),
     localNAtoms_(0),
+    x_{ 0, makeHostAllocationPolicy(useGPU, deviceStreamManager) },
+    f_{ false, makeHostAllocationPolicy(useGPU, deviceStreamManager) },
     box_{ { 0 } },
     previousBox_{ { 0 } },
     ddpCount_(0),
@@ -221,7 +225,8 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
     }
     if (useGPU)
     {
-        changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
+        GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
+                           "GPU support requires a valid DeviceStreamMananger");
     }
 
     if (cr->dd && cr->commMyGroup.isMainRank())
@@ -847,7 +852,8 @@ ISimulatorElement* StatePropagatorData::Element::getElementPointerImpl(
         EnergyData gmx_unused*                             energyData,
         FreeEnergyPerturbationData*                        freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*              globalCommunicationHelper,
-        ObservablesReducer* /*observablesReducer*/)
+        ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     statePropagatorData->element()->setFreeEnergyPerturbationData(freeEnergyPerturbationData);
     return statePropagatorData->element();

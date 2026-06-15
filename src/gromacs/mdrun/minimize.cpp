@@ -446,6 +446,7 @@ static void init_em(FILE*                        fplog,
                                       constr ? constr->numFlexibleConstraints() : 0,
                                       ir->outputControl.nstcalcenergy,
                                       haveDDAtomOrdering(*cr),
+                                      fr->deviceStreamManager,
                                       runScheduleWork.simulationWork);
     }
     else

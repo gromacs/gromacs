@@ -56,8 +56,8 @@ ForceBuffers::ForceBuffers() :
 {
 }
 
-ForceBuffers::ForceBuffers(const bool useForceMtsCombined, const PinningPolicy pinningPolicy) :
-    force_({}, { pinningPolicy }),
+ForceBuffers::ForceBuffers(const bool useForceMtsCombined, const HostAllocationPolicy hostAllocationPolicy) :
+    force_({}, { hostAllocationPolicy }),
     forceMtsCombined_({}),
     view_({}, {}, useForceMtsCombined),
     useForceMtsCombined_(useForceMtsCombined)

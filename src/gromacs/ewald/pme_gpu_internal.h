@@ -596,4 +596,13 @@ GPU_FUNC_QUALIFIER PmeOutput pme_gpu_wait_finish_task(gmx_pme_t* GPU_FUNC_ARGUME
                                                       gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle))
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
 
+/*! \libinternal
+ * \brief Returns the current host allocation policy, so other parts
+ * of the code can pin buffers appropriately.
+ *
+ * \param[in] pmeGpu            The PME GPU structure.
+ */
+GPU_FUNC_QUALIFIER const gmx::HostAllocationPolicy* pme_gpu_host_allocation_policy(
+        const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+
 #endif

@@ -355,6 +355,7 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/,
         Offset               offset,
         const PropagatorTag& propagatorTag)
 {

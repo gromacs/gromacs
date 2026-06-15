@@ -97,19 +97,31 @@ Grid::Geometry::Geometry(const PairlistType pairlistType) :
 
 namespace
 {
-/*! \brief Named constant
- *
- * We want the allocator for these two HostVectors to be propagated on
- * copy construction of Grid during the construction of the vector of
- * Grids in GridSet. */
-constexpr bool allocatorShouldPropagateDuringCopyConstruction = true;
+
+HostAllocationPolicy makeGridHostAllocationPolicy(const HostAllocationPolicy& original)
+{
+    // We want the allocator for these two HostVectors to be
+    // propagated on copy construction of Grid during the construction
+    // of the vector of Grids in GridSet.
+    constexpr bool allocatorShouldPropagateDuringCopyConstruction = true;
+
+    return original.pinningPolicy() == PinningPolicy::PinnedIfSupported
+                   ? HostAllocationPolicy{ original.context(),
+                                           PinningPolicy::PinnedIfSupported,
+                                           allocatorShouldPropagateDuringCopyConstruction }
+                   : HostAllocationPolicy{ allocatorShouldPropagateDuringCopyConstruction };
+}
+
 } // namespace
 
-Grid::Grid(const PairlistType pairlistType, const int ddZone, const bool& haveFep, PinningPolicy pinningPolicy) :
+Grid::Grid(const PairlistType          pairlistType,
+           const int                   ddZone,
+           const bool&                 haveFep,
+           const HostAllocationPolicy& hostAllocationPolicy) :
     geometry_(pairlistType),
     ddZone_(ddZone),
-    numAtomsPerCell_(gmx::HostAllocationPolicy(pinningPolicy, allocatorShouldPropagateDuringCopyConstruction)),
-    cellToBin_(gmx::HostAllocationPolicy(pinningPolicy, allocatorShouldPropagateDuringCopyConstruction)),
+    numAtomsPerCell_(makeGridHostAllocationPolicy(hostAllocationPolicy)),
+    cellToBin_(makeGridHostAllocationPolicy(hostAllocationPolicy)),
     haveFep_(haveFep)
 {
 }

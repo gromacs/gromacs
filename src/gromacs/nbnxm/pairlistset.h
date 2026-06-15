@@ -65,6 +65,7 @@ namespace gmx
 {
 class AtomPairlist;
 class GridSet;
+class HostAllocationPolicy;
 template<typename>
 class ListOfLists;
 struct nbnxn_atomdata_t;
@@ -80,7 +81,7 @@ class PairlistSet
 {
 public:
     //! Constructor: initializes the pairlist set as empty
-    PairlistSet(const PairlistParams& listParams, PinningPolicy pinPolicy);
+    PairlistSet(const PairlistParams& listParams, const HostAllocationPolicy& hostAllocationPolicy);
 
     ~PairlistSet();
 

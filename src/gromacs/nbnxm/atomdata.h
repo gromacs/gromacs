@@ -109,11 +109,14 @@ struct nbnxn_atomdata_output_t
 {
     /*! \brief Constructor
      *
-     * \param[in] kernelType       Type of non-bonded kernel
-     * \param[in] numEnergyGroups  The number of energy groups
-     * \param[in] pinningPolicy    Sets the pinning policy for all buffers used on the GPU
+     * \param[in] kernelType            Type of non-bonded kernel
+     * \param[in] numEnergyGroups       The number of energy groups
+     * \param[in] hostAllocationPolicy  Sets the host allocation policy
+     *                                  for all buffers used on the GPU
      */
-    nbnxn_atomdata_output_t(NbnxmKernelType kernelType, int numEnergyGroups, PinningPolicy pinningPolicy);
+    nbnxn_atomdata_output_t(NbnxmKernelType             kernelType,
+                            int                         numEnergyGroups,
+                            const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Move constructor
     nbnxn_atomdata_output_t(nbnxn_atomdata_output_t&&) noexcept;
@@ -181,7 +184,7 @@ const char* enumValueToString(LJCombinationRule enumValue);
 struct nbnxn_atomdata_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
 
-    nbnxn_atomdata_t(PinningPolicy pinningPolicy);
+    nbnxn_atomdata_t(const HostAllocationPolicy& hostAllocationPolicy);
 
     ~nbnxn_atomdata_t();
 
@@ -191,9 +194,10 @@ struct nbnxn_atomdata_t
     {
         /*! \brief Constructor
          *
-         * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
+         * \param[in] hostAllocationPolicy  Sets the host allocation policy for all
+         *                                  data that might be transfered to a GPU
          */
-        Params(PinningPolicy pinningPolicy);
+        Params(const HostAllocationPolicy& hostAllocationPolicy);
 
         //! The number of different atom types
         int numTypes;
@@ -262,21 +266,21 @@ struct nbnxn_atomdata_t
      * of a square parameter matrix with a pair of parameters 6*C6, 12*C12 for every
      * atom type pair.
      *
-     * \param[in] pinningPolicy      Sets the pinning policy for all data that might be transferred
-     *                               to a GPU
-     * \param[in] mdlog              The logger
-     * \param[in] kernelType         Nonbonded NxN kernel type
-     * \param[in] ljCombinationRule  The LJ combination rule parameters to generate,
-                                     empty is detect from the LJ parameters
+     * \param[in] hostAllocationPolicy  Sets the host allocation policy for all data
+     *                                  that might be transferred to a GPU
+     * \param[in] mdlog                 The logger
+     * \param[in] kernelType            Nonbonded NxN kernel type
+     * \param[in] ljCombinationRule     The LJ combination rule parameters to generate,
+                                        empty is detect from the LJ parameters
      * \param[in] pmeLJCombinationRule  The LJ combination rule parameters to generate for the LJ PME-grid part
-     * \param[in] nbfp               Non-bonded force parameter matrix
-     * \param[in] addFillerAtomType  When true, add a filler atom type, when false, \p nbfp should
-     *                               have atom-type with index numTypes-1 with all parameters zero
-     *                               so that that row and cell have only zero values.
-     * \param[in] numEnergyGroups    Number of energy groups
-     * \param[in] numOutputBuffers   Number of output data structures
+     * \param[in] nbfp                  Non-bonded force parameter matrix
+     * \param[in] addFillerAtomType     When true, add a filler atom type, when false, \p nbfp should
+     *                                  have atom-type with index numTypes-1 with all parameters zero
+     *                                  so that that row and column have only zero values.
+     * \param[in] numEnergyGroups       Number of energy groups
+     * \param[in] numOutputBuffers      Number of output data structures
      */
-    nbnxn_atomdata_t(PinningPolicy                           pinningPolicy,
+    nbnxn_atomdata_t(const HostAllocationPolicy&             hostAllocationPolicy,
                      const MDLogger&                         mdlog,
                      NbnxmKernelType                         kernelType,
                      const std::optional<LJCombinationRule>& ljCombinationRule,

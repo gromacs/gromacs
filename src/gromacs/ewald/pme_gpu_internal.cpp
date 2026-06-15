@@ -154,8 +154,6 @@ void pme_gpu_alloc_energy_virial(PmeGpu* pmeGpu)
         allocateDeviceBuffer(&pmeGpu->kernelParams->constants.d_virialAndEnergy[gridIndex],
                              c_virialAndEnergyCount,
                              pmeGpu->archSpecific->deviceContext_);
-        gmx::changePinningPolicy(&pmeGpu->staging.h_virialAndEnergy[gridIndex],
-                                 gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_virialAndEnergy[gridIndex].resize(c_virialAndEnergyCount);
     }
 }
@@ -211,8 +209,6 @@ void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu, const int gridIndex
     if (shouldRealloc)
     {
         /* Reallocate the host buffer */
-        changePinningPolicy(&pmeGpu->staging.h_splineModuli[gridIndex],
-                            gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_splineModuli[gridIndex].resize(newSplineValuesSize);
     }
     for (int i = 0; i < DIM; i++)
@@ -350,9 +346,7 @@ void pme_gpu_realloc_spline_data(PmeGpu* pmeGpu)
     // the host side reallocation
     if (shouldRealloc)
     {
-        changePinningPolicy(&pmeGpu->staging.h_theta, gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_theta.resize(newSplineDataSize);
-        changePinningPolicy(&pmeGpu->staging.h_dtheta, gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_dtheta.resize(newSplineDataSize);
     }
 }
@@ -375,7 +369,6 @@ void pme_gpu_realloc_grid_indices(PmeGpu* pmeGpu)
                            &pmeGpu->archSpecific->gridlineIndicesSize,
                            &pmeGpu->archSpecific->gridlineIndicesSizeAlloc,
                            pmeGpu->archSpecific->deviceContext_);
-    changePinningPolicy(&pmeGpu->staging.h_gridlineIndices, gmx::PinningPolicy::PinnedIfSupported);
     pmeGpu->staging.h_gridlineIndices.resize(newIndicesSize);
 }
 
@@ -1358,9 +1351,9 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
 PmeGpu::PmeGpu(const gmx_pme_t&     pme,
                const DeviceContext& deviceContext,
                const DeviceStream&  deviceStream,
-               const PmeGpuProgram* pmeGpuProgram)
+               const PmeGpuProgram* pmeGpuProgram) :
+    hostAllocationPolicy_{ deviceContext, gmx::PinningPolicy::PinnedIfSupported }
 {
-    changePinningPolicy(&staging.h_forces, pme_get_pinning_policy());
     common = std::make_shared<PmeShared>();
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
@@ -1381,6 +1374,17 @@ PmeGpu::PmeGpu(const gmx_pme_t&     pme,
     pme_gpu_init_internal(this, deviceContext, deviceStream);
 
     pme_gpu_copy_common_data_from(this, &pme);
+
+    staging.h_forces = gmx::PaddedHostVector<gmx::RVec>(hostAllocationPolicy_);
+    for (int gridIndex = 0; gridIndex < common->ngrids; gridIndex++)
+    {
+        staging.h_splineModuli[gridIndex]    = gmx::HostVector<float>(hostAllocationPolicy_);
+        staging.h_virialAndEnergy[gridIndex] = gmx::HostVector<float>(hostAllocationPolicy_);
+    }
+    staging.h_theta           = gmx::HostVector<float>(hostAllocationPolicy_);
+    staging.h_dtheta          = gmx::HostVector<float>(hostAllocationPolicy_);
+    staging.h_gridlineIndices = gmx::HostVector<int>(hostAllocationPolicy_);
+
     pme_gpu_alloc_energy_virial(this);
 
     GMX_ASSERT(common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
@@ -1483,7 +1487,6 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 
         if (pmeGpu->nvshmemParams->ppRanksFInfo.empty())
         {
-            changePinningPolicy(&pmeGpu->nvshmemParams->ppRanksFInfo, gmx::PinningPolicy::PinnedIfSupported);
             pmeGpu->nvshmemParams->ppRanksFInfo.resize(kernelParamsPtr->ppRanksInfoSize);
         }
 
@@ -2631,4 +2634,9 @@ GpuEventSynchronizer* pme_gpu_get_forces_ready_synchronizer(const PmeGpu* pmeGpu
     {
         return nullptr;
     }
+}
+
+const gmx::HostAllocationPolicy* pme_gpu_host_allocation_policy(const PmeGpu* pmeGpu)
+{
+    return &pmeGpu->hostAllocationPolicy_;
 }

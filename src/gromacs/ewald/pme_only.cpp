@@ -108,7 +108,10 @@
 /*! \brief Main PP-PME communication data structure */
 struct gmx_pme_pp
 {
-    gmx_pme_pp(MPI_Comm simulationCommunicator, std::vector<PpRanks>&& ppRanks);
+    gmx_pme_pp(MPI_Comm                        simulationCommunicator,
+               std::vector<PpRanks>&&          ppRanks,
+               bool                            usePmeGpu,
+               const gmx::DeviceStreamManager* deviceStreamManager);
     MPI_Comm             mpi_comm_mysim; /**< MPI communicator for this simulation */
     std::vector<PpRanks> ppRanks;        /**< The PP partner ranks                 */
     int                  peerRankId;     /**< The peer PP rank id (the last one)   */
@@ -171,10 +174,16 @@ static std::vector<PpRanks> makePpRanks(const gmx_domdec_t& dd)
     return ppRanks;
 }
 
-gmx_pme_pp::gmx_pme_pp(MPI_Comm simulationCommunicator, std::vector<PpRanks>&& ppRanksArg) :
+gmx_pme_pp::gmx_pme_pp(MPI_Comm                        simulationCommunicator,
+                       std::vector<PpRanks>&&          ppRanksArg,
+                       const bool                      usePmeGpu,
+                       const gmx::DeviceStreamManager* deviceStreamManager) :
     mpi_comm_mysim(simulationCommunicator),
     ppRanks(std::move(ppRanksArg)),
     peerRankId(ppRanks.back().rankId),
+    chargeA{ makeHostAllocationPolicy(usePmeGpu, deviceStreamManager) },
+    chargeB{ makeHostAllocationPolicy(usePmeGpu, deviceStreamManager) },
+    x{ makeHostAllocationPolicy(usePmeGpu, deviceStreamManager) },
     req(eCommType_NR * ppRanks.size()),
     stat(eCommType_NR * ppRanks.size())
 {
@@ -778,13 +787,6 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
     // Add an empty spot for the current PME data
     pmedataList.emplace_back();
 
-    auto pme_pp = std::make_unique<gmx_pme_pp>(dd.mpiCommMySim().comm(), makePpRanks(dd));
-    pme_pp->useGpuPmePpCommunication = useGpuPmePpCommunication;
-    pme_pp->useNvshmem               = useNvshmem;
-    pme_pp->useGpuHaloExchange       = useGpuHaloExchange;
-
-    std::unique_ptr<gmx::StatePropagatorDataGpu>       stateGpu;
-    std::unique_ptr<gmx::GpuHaloExchangeNvshmemHelper> gpuHaloExchangeNvshmemHelper;
     // TODO the variable below should be queried from the task assignment info
     const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
@@ -794,9 +796,18 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                 "Device stream manager can not be nullptr when using GPU in PME-only rank.");
         GMX_RELEASE_ASSERT(deviceStreamManager->streamIsValid(gmx::DeviceStreamType::Pme),
                            "Device stream can not be nullptr when using GPU in PME-only rank");
-        changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
-        changePinningPolicy(&pme_pp->chargeB, pme_get_pinning_policy());
-        changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
+    }
+    auto pme_pp = std::make_unique<gmx_pme_pp>(
+            dd.mpiCommMySim().comm(), makePpRanks(dd), useGpuForPme, deviceStreamManager);
+    pme_pp->useGpuPmePpCommunication = useGpuPmePpCommunication;
+    pme_pp->useNvshmem               = useNvshmem;
+    pme_pp->useGpuHaloExchange       = useGpuHaloExchange;
+
+    std::unique_ptr<gmx::StatePropagatorDataGpu>       stateGpu;
+    std::unique_ptr<gmx::GpuHaloExchangeNvshmemHelper> gpuHaloExchangeNvshmemHelper;
+
+    if (useGpuForPme)
+    {
         if (pme_pp->useGpuPmePpCommunication)
         {
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(

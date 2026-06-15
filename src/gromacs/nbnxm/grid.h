@@ -169,7 +169,7 @@ public:
     };
 
     //! Constructs a grid given the type of pairlist
-    Grid(PairlistType pairlistType, int ddZone, const bool& haveFep, PinningPolicy pinningPolicy);
+    Grid(PairlistType pairlistType, int ddZone, const bool& haveFep, const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Returns the geometry of the grid bins
     const Geometry& geometry() const { return geometry_; }

@@ -98,7 +98,8 @@ namespace
 std::pair<std::unique_ptr<nbnxn_atomdata_t>, std::unique_ptr<PairlistSet>>
 diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 {
-    const gmx::MDLogger emptyLogger;
+    const HostAllocationPolicy hostAllocationPolicy{};
+    const MDLogger             emptyLogger;
 
     // Force single-thread execution
     static constexpr int sc_numThreads = 1;
@@ -107,28 +108,13 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 
     const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
-    GridSet gridSet(PbcType::Xyz,
-                    false,
-                    nullptr,
-                    nullptr,
-                    pairlistParams.pairlistType,
-                    false,
-                    false,
-                    sc_numThreads,
-                    PinningPolicy::CannotBePinned);
+    GridSet gridSet(
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, sc_numThreads, hostAllocationPolicy);
 
     std::vector<real> nbfp{ 0.0_real, 0.0_real };
 
-    std::unique_ptr<nbnxn_atomdata_t> nbat =
-            std::make_unique<nbnxn_atomdata_t>(gmx::PinningPolicy::CannotBePinned,
-                                               emptyLogger,
-                                               kernelType,
-                                               std::nullopt,
-                                               LJCombinationRule::None,
-                                               nbfp,
-                                               false,
-                                               1,
-                                               1);
+    std::unique_ptr<nbnxn_atomdata_t> nbat = std::make_unique<nbnxn_atomdata_t>(
+            hostAllocationPolicy, emptyLogger, kernelType, std::nullopt, LJCombinationRule::None, nbfp, false, 1, 1);
 
     std::vector<gmx::RVec> coords(numAtoms, { 1.0_real, 1.0_real, 1.0_real });
 
@@ -154,7 +140,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
                       nbat.get());
 
     std::unique_ptr<PairlistSet> pairlistSet =
-            std::make_unique<PairlistSet>(pairlistParams, PinningPolicy::CannotBePinned);
+            std::make_unique<PairlistSet>(pairlistParams, hostAllocationPolicy);
 
     std::vector<PairsearchWork> searchWork(1);
 

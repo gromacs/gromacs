@@ -228,11 +228,6 @@ PmeRunMode pme_run_mode(const gmx_pme_t* pme)
     return pme->runMode;
 }
 
-gmx::PinningPolicy pme_get_pinning_policy()
-{
-    return gmx::PinningPolicy::PinnedIfSupported;
-}
-
 /*! \brief Number of bytes in a cache line.
  *
  * Must also be a multiple of the SIMD and SIMD4 register size, to
@@ -607,7 +602,8 @@ bool gmx_pme_check_restrictions(int  pme_order,
 static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
                       const gmx_pme_t&                                pme,
                       const bool                                      requestReproducibility,
-                      gmx::ArrayRef<std::vector<AlignedVector<real>>> gridsStorage)
+                      gmx::ArrayRef<std::vector<AlignedVector<real>>> gridsStorage,
+                      const gmx::HostAllocationPolicy*                hostAllocationPolicy)
 {
     GMX_RELEASE_ASSERT(gridsStorage.size() == gridsSet.size(),
                        "size of storage should match the grids");
@@ -637,11 +633,8 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
                       pme.overlap[1].s2g1[pme.nodeid_minor] - pme.overlap[1].s2g0[pme.nodeid_minor + 1],
                       *gridsStorageIt);
         /* This routine will allocate the grid data to fit the FFTs */
-        const auto  allocateRealGridForGpu = (pme.runMode == PmeRunMode::Mixed)
-                                                     ? gmx::PinningPolicy::PinnedIfSupported
-                                                     : gmx::PinningPolicy::CannotBePinned;
-        real*&      fftgrid                = grids.fftgrid;
-        t_complex*& cfftgrid               = grids.cfftgrid;
+        real*&      fftgrid  = grids.fftgrid;
+        t_complex*& cfftgrid = grids.cfftgrid;
 
         gmx_parallel_3dfft* pfftSetupPtr;
         gmx_parallel_3dfft_init(&pfftSetupPtr,
@@ -651,7 +644,7 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
                                 const_cast<MPI_Comm*>(&pme.mpi_comm_d[0]),
                                 requestReproducibility,
                                 pme.nthread,
-                                allocateRealGridForGpu);
+                                hostAllocationPolicy);
 
         grids.pfft_setup.reset(pfftSetupPtr);
     }
@@ -1053,6 +1046,10 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
         GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object when PME is on a CPU.");
     }
 
+    const gmx::HostAllocationPolicy* hostAllocationPolicy =
+            (pme->doCoulomb && pme->runMode == PmeRunMode::Mixed)
+                    ? pme_gpu_host_allocation_policy(pme->gpu.get())
+                    : nullptr;
     if (pme->doCoulomb)
     {
         pme->gridsCoulomb.resize(bFreeEnergy_q ? 2 : 1);
@@ -1069,7 +1066,7 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
 
         if (pme->runMode != PmeRunMode::GPU)
         {
-            initGrids(pme->gridsCoulomb, *pme, bReproducible, pmeGridsStorage.coulomb);
+            initGrids(pme->gridsCoulomb, *pme, bReproducible, pmeGridsStorage.coulomb, hostAllocationPolicy);
 
             int i = 0;
             for (auto& grids : pme->gridsCoulomb)
@@ -1096,7 +1093,7 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
 
         if (pme->runMode != PmeRunMode::GPU)
         {
-            initGrids(pme->gridsLJ, *pme, bReproducible, pmeGridsStorage.lj);
+            initGrids(pme->gridsLJ, *pme, bReproducible, pmeGridsStorage.lj, hostAllocationPolicy);
 
             if (!combRuleIsLB)
             {

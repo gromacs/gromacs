@@ -47,19 +47,18 @@
 #ifndef GMX_GPU_UTILS_HOSTALLOCATOR_H
 #define GMX_GPU_UTILS_HOSTALLOCATOR_H
 
-#include <cstddef>
-
-#include <memory>
 #include <type_traits>
 #include <vector>
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/allocator.h"
-#include "gromacs/utility/exceptions.h"
+
+class DeviceContext;
 
 namespace gmx
 {
+class DeviceStreamManager;
 
 /*! \brief Helper enum for pinning policy of the allocation of
  * HostAllocationPolicy.
@@ -140,15 +139,38 @@ using PaddedHostVector = PaddedVector<T, HostAllocator<T>>;
 class HostAllocationPolicy
 {
 public:
-    /*! \brief Constructor
+    /*! \brief Constructor for a no-GPU-transfers policy
      *
+     * A policy made with this constructor will assert if an attempt is
+     * made to change its pinning policy, because that requires a
+     * DeviceContext.
+     *
+     * The allocator will not propagate along with container copy
+     * construction. */
+    HostAllocationPolicy();
+    /*! \brief Constructor for a no-GPU-transfers policy
+     *
+     * \param[in] propagateDuringContainerCopyConstruction
+     *                False is consistent with copy assignment
+     *
+     * A policy made with this constructor will assert if an attempt is
+     * made to change its pinning policy, because that requires a
+     * DeviceContext. */
+    explicit HostAllocationPolicy(bool propagateDuringContainerCopyConstruction);
+    /*! \brief Constructor for a maybe-GPU-transfers policy
+     *
+     * \param[in] deviceContext
+     *                The context for the device
      * \param[in] policy
      *                Whether to pin the allocation
      * \param[in] propagateDuringContainerCopyConstruction
      *                Default is chosen to be consistent with copy assignment
-     */
-    HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned,
-                         bool          propagateDuringContainerCopyConstruction = false);
+     *
+     * A policy made with this constructor may change its pinning
+     * policy. */
+    HostAllocationPolicy(const DeviceContext& deviceContext,
+                         PinningPolicy        policy = PinningPolicy::CannotBePinned,
+                         bool                 propagateDuringContainerCopyConstruction = false);
     /*! \brief Return the alignment size currently used by the active pinning policy. */
     std::size_t alignment() const noexcept;
     /*! \brief Allocate and perhaps pin page-aligned memory suitable for
@@ -208,9 +230,13 @@ public:
         {
             return *this;
         }
+        else if (context_ != nullptr)
+        {
+            return HostAllocationPolicy{ *context_ };
+        }
         else
         {
-            return {};
+            return HostAllocationPolicy{};
         }
     }
     //! This allocation policy has state and might not compare equal
@@ -219,17 +245,34 @@ public:
      *
      * This is a member function of the left-hand-side policy in
      * an equality comparison. */
-    bool operator==(const HostAllocationPolicy& b) const
-    {
-        return this->pinningPolicy() == b.pinningPolicy();
-    }
+    bool operator==(const HostAllocationPolicy& b) const;
+    //! Getter for the context
+    const DeviceContext& context() const;
 
 private:
+    /*! \brief Optional device context
+     *
+     * Does not use std::optional because that would require the
+     * definition of DeviceContext be available here, which would
+     * require GPU compilation for any part of mdrun that uses a
+     * HostVector, etc. */
+    const DeviceContext* context_ = nullptr;
     //! Pinning policy
-    PinningPolicy pinningPolicy_;
+    PinningPolicy pinningPolicy_ = PinningPolicy::CannotBePinned;
     //! Whether to propagate the allocator during copy construction by a container.
-    bool propagateDuringContainerCopyConstruction_;
+    bool propagateDuringContainerCopyConstruction_ = false;
 };
+
+/*! \brief Helper function to make a suitable HostAllocationPolicy
+ *
+ * \param[in]  pinBuffers           Whether to pin buffers (for GPU transfers)
+ * \param[in]  deviceStreamManager  Manager of device streams (must be valid when GPU will be used)
+ * \param[in]  propagateDuringContainerCopyConstruction
+ *                Default is chosen to be consistent with copy assignment
+ */
+HostAllocationPolicy makeHostAllocationPolicy(bool                       pinBuffers,
+                                              const DeviceStreamManager* deviceStreamManager,
+                                              bool propagateDuringContainerCopyConstruction = false);
 
 /*! \brief Helper function for changing the pinning policy of a pinnable vector.
  *
@@ -238,14 +281,17 @@ private:
  * and desirable even if the policy change requires looser
  * restrictions. That cost is OK, because GROMACS will do this
  * operation very rarely (e.g. when auto-tuning and deciding to switch
- * whether a task will run on a GPU, or not). */
+ * whether a task will run on a GPU, or not).
+ *
+ * Asserts from v->get_allocator().context() when the allocator of \c v
+ * was not constructed to be potentially suited for GPU transfers. */
 template<typename PinnableVector>
 void changePinningPolicy(PinnableVector* v, PinningPolicy pinningPolicy)
 {
     // Force reallocation by element-wise move (because policy is
     // different container is forced to realloc). Does nothing if
     // policy is the same.
-    *v = PinnableVector(std::move(*v), { pinningPolicy });
+    *v = PinnableVector(std::move(*v), HostAllocationPolicy{ v->get_allocator().context(), pinningPolicy });
 }
 
 //! Convenience type for vector with aligned memory

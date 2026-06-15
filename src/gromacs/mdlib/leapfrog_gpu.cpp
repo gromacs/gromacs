@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/vec.h"
 
 namespace gmx
@@ -132,16 +133,15 @@ LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
     deviceContext_(deviceContext),
     deviceStream_(deviceStream),
     numTempScaleValues_(numTempScaleValues),
+    h_lambdas_(numTempScaleValues_,
+               HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported }),
     d_lambdas_(nullptr)
 {
     numAtoms_ = 0;
 
-    changePinningPolicy(&h_lambdas_, gmx::PinningPolicy::PinnedIfSupported);
-
     // If the temperature coupling is enabled, we need to make space for scaling factors
     if (numTempScaleValues_ > 0)
     {
-        h_lambdas_.resize(numTempScaleValues_);
         reallocateDeviceBuffer(
                 &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
     }

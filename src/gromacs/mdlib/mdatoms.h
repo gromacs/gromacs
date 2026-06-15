@@ -51,6 +51,7 @@ namespace gmx
 {
 template<typename T>
 class ArrayRef;
+class DeviceStreamManager;
 
 /*! \libinternal
  * \brief Contains a C-style t_mdatoms while managing some of its
@@ -71,7 +72,7 @@ class MDAtoms
 
 public:
     // TODO make this private
-    MDAtoms();
+    MDAtoms(bool rankHasPmeGpuTask, const DeviceStreamManager* deviceStreamManager);
     //! Getter.
     t_mdatoms* mdatoms() { return mdatoms_.get(); }
     //! Const getter.
@@ -87,12 +88,19 @@ public:
      */
     void resizeChargeB(int newSize);
     //! Builder function.
-    friend std::unique_ptr<MDAtoms>
-    makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, bool rankHasPmeGpuTask);
+    friend std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
+                                                const gmx_mtop_t&          mtop,
+                                                const t_inputrec&          ir,
+                                                bool                       rankHasPmeGpuTask,
+                                                const DeviceStreamManager* deviceStreamManager);
 };
 
 //! Builder function for MdAtomsWrapper.
-std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, bool useGpuForPme);
+std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
+                                     const gmx_mtop_t&          mtop,
+                                     const t_inputrec&          ir,
+                                     bool                       useGpuForPme,
+                                     const DeviceStreamManager* deviceStreamManager);
 
 } // namespace gmx
 

@@ -50,8 +50,10 @@
 
 namespace gmx
 {
+class DeviceStreamManager;
 class EnergyData;
 class MttkPropagatorConnection;
+class ObservablesReducer;
 enum class ScheduleOnInitStep;
 
 /*! \internal
@@ -323,6 +325,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer  Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param offset  The step offset at which the thermostat is applied
      * \param scheduleOnInitStep  Whether the element is scheduled on the initial step
      * \param mttkPropagatorConnectionDetails  Reference to the \c MttkPropagatorConnectionDetails object containing propagator tags and offsets
@@ -337,6 +340,7 @@ public:
                           FreeEnergyPerturbationData*             freeEnergyPerturbationData,
                           GlobalCommunicationHelper*              globalCommunicationHelper,
                           ObservablesReducer*                     observablesReducer,
+                          const DeviceStreamManager*              deviceStreamManager,
                           Offset                                  offset,
                           ScheduleOnInitStep                      scheduleOnInitStep,
                           const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails);
@@ -403,6 +407,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param mttkPropagatorConnectionDetails  Reference to the \c MttkPropagatorConnectionDetails object containing propagator tags and offsets
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
@@ -415,6 +420,7 @@ public:
                           FreeEnergyPerturbationData*             freeEnergyPerturbationData,
                           GlobalCommunicationHelper*              globalCommunicationHelper,
                           ObservablesReducer*                     observablesReducer,
+                          const DeviceStreamManager*              deviceStreamManager,
                           const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails);
 
 private:

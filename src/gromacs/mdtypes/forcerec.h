@@ -133,7 +133,7 @@ struct t_forcerec
     // implemented in a single source file, so that not every source
     // file that includes this one needs to understand how to find the
     // destructors of the objects pointed to by unique_ptr members.
-    t_forcerec(bool useGpuPmePpCommunication);
+    t_forcerec(const gmx::HostAllocationPolicy& hostAllocationPolicy);
     ~t_forcerec();
 
     std::unique_ptr<interaction_const_t> ic;

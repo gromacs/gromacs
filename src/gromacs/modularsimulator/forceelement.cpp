@@ -82,6 +82,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                            bool                        isVerbose,
                            FILE*                       fplog,
                            const t_commrec*            cr,
+                           const DeviceStreamManager*  deviceStreamManager,
                            const t_inputrec*           inputrec,
                            const MDModulesNotifiers&   mdModulesNotifiers,
                            const MDAtoms*              mdAtoms,
@@ -100,6 +101,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                                 constr ? constr->numFlexibleConstraints() : 0,
                                 inputrec->outputControl.nstcalcenergy,
                                 haveDDAtomOrdering(*cr),
+                                deviceStreamManager,
                                 runScheduleWork->simulationWork)),
     doShellFC_(shellfc_ != nullptr),
     nextNSStep_(-1),
@@ -352,7 +354,8 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                     EnergyData*                             energyData,
                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                     GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-                                    ObservablesReducer* /*observablesReducer*/)
+                                    ObservablesReducer* /*observablesReducer*/,
+                                    const DeviceStreamManager* deviceStreamManager)
 {
     const bool isVerbose = legacySimulatorData->mdrunOptions_.verbose;
     return builderHelper->storeElement(
@@ -362,6 +365,7 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                            isVerbose,
                                            legacySimulatorData->fpLog_,
                                            legacySimulatorData->cr_,
+                                           deviceStreamManager,
                                            legacySimulatorData->inputRec_,
                                            legacySimulatorData->mdModulesNotifiers_,
                                            legacySimulatorData->mdAtoms_,

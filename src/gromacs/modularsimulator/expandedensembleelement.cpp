@@ -212,7 +212,8 @@ ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
-        ObservablesReducer* /*observablesReducer*/)
+        ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     return builderHelper->storeElement(std::make_unique<ExpandedEnsembleElement>(
             legacySimulatorData->cr_->commMyGroup.isMainRank(),

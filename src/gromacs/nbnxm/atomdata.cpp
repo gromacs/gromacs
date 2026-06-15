@@ -113,18 +113,14 @@ void nbnxn_atomdata_t::resizeForceBuffers()
 }
 
 /* Initializes an nbnxn_atomdata_output_t data structure */
-nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(NbnxmKernelType kernelType,
-                                                 int             numEnergyGroups,
-                                                 PinningPolicy   pinningPolicy) :
-    f({}, { pinningPolicy }),
-    fshift({}, { pinningPolicy }),
-    Vvdw({}, { pinningPolicy }),
-    Vc({}, { pinningPolicy })
+nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(NbnxmKernelType             kernelType,
+                                                 int                         numEnergyGroups,
+                                                 const HostAllocationPolicy& hostAllocationPolicy) :
+    f({}, { hostAllocationPolicy }),
+    fshift(c_numShiftVectors * DIM, { hostAllocationPolicy }),
+    Vvdw(numEnergyGroups * numEnergyGroups, { hostAllocationPolicy }),
+    Vc(numEnergyGroups * numEnergyGroups, { hostAllocationPolicy })
 {
-    fshift.resize(c_numShiftVectors * DIM);
-    Vvdw.resize(numEnergyGroups * numEnergyGroups);
-    Vc.resize(numEnergyGroups * numEnergyGroups);
-
     if (kernelTypeIsSimd(kernelType))
     {
         if (numEnergyGroups == 1)
@@ -471,19 +467,19 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks(const NbnxmKernelType kernelType)
 #endif // GMX_SIMD
 }
 
-nbnxn_atomdata_t::Params::Params(PinningPolicy pinningPolicy) :
+nbnxn_atomdata_t::Params::Params(const HostAllocationPolicy& hostAllocationPolicy) :
     numTypes(0),
-    nbfp({}, { pinningPolicy }),
-    nbfp_comb({}, { pinningPolicy }),
-    type({}, { pinningPolicy }),
-    lj_comb({}, { pinningPolicy }),
-    q({}, { pinningPolicy }),
-    typeA({}, { pinningPolicy }),
-    ljCombA({}, { pinningPolicy }),
-    qA({}, { pinningPolicy }),
-    typeB({}, { pinningPolicy }),
-    ljCombB({}, { pinningPolicy }),
-    qB({}, { pinningPolicy }),
+    nbfp({}, { hostAllocationPolicy }),
+    nbfp_comb({}, { hostAllocationPolicy }),
+    type({}, { hostAllocationPolicy }),
+    lj_comb({}, { hostAllocationPolicy }),
+    q({}, { hostAllocationPolicy }),
+    typeA({}, { hostAllocationPolicy }),
+    ljCombA({}, { hostAllocationPolicy }),
+    qA({}, { hostAllocationPolicy }),
+    typeB({}, { hostAllocationPolicy }),
+    ljCombB({}, { hostAllocationPolicy }),
+    qB({}, { hostAllocationPolicy }),
     numEnergyGroups(0)
 {
 }
@@ -694,7 +690,7 @@ static void nbnxn_atomdata_params_init(const MDLogger&                         m
 }
 
 /* Initializes an nbnxn_atomdata_t data structure */
-nbnxn_atomdata_t::nbnxn_atomdata_t(PinningPolicy                           pinningPolicy,
+nbnxn_atomdata_t::nbnxn_atomdata_t(const HostAllocationPolicy&             hostAllocationPolicy,
                                    const MDLogger&                         mdlog,
                                    const NbnxmKernelType                   kernelType,
                                    const std::optional<LJCombinationRule>& ljCombinationRule,
@@ -703,11 +699,11 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(PinningPolicy                           pinni
                                    const bool                              addFillerAtomType,
                                    const int                               numEnergyGroups,
                                    const int                               numOutputBuffers) :
-    params_(pinningPolicy),
+    params_(hostAllocationPolicy),
     numAtoms_(0),
     numLocalAtoms_(0),
-    shift_vec({}, { pinningPolicy }),
-    x_({}, { pinningPolicy }),
+    shift_vec({}, { hostAllocationPolicy }),
+    x_({}, { hostAllocationPolicy }),
     simdMasks_(kernelType),
     useBufferFlags_(numOutputBuffers > 1)
 {
@@ -756,8 +752,7 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(PinningPolicy                           pinni
     /* Initialize the output data structures */
     for (int i = 0; i < numOutputBuffers; i++)
     {
-        const auto& outputPinningPolicy = params().type.get_allocator().pinningPolicy();
-        outputBuffers_.emplace_back(kernelType, params().numEnergyGroups, outputPinningPolicy);
+        outputBuffers_.emplace_back(kernelType, params().numEnergyGroups, hostAllocationPolicy);
     }
 
     bufferFlags_.clear();

@@ -67,6 +67,7 @@ class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
 class Constraints;
+class DeviceStreamManager;
 class ForceBuffersView;
 class ImdSession;
 struct MDModulesNotifiers;
@@ -83,16 +84,18 @@ class VirtualSitesHandler;
  * \param nstcalcenergy How often are energies calculated. Must be provided for sanity check.
  * \param usingDomainDecomposition Whether domain decomposition is used.
  *                                 Must be provided for sanity check.
+ * \param deviceStreamManager      Pointer to the device stream manager
  * \param simulationWork The simulation workload.
  *
  * \returns a pointer to an initialized \c shellfc object.
  */
-gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
-                                  const gmx_mtop_t&              mtop,
-                                  int                            nflexcon,
-                                  int                            nstcalcenergy,
-                                  bool                           usingDomainDecomposition,
-                                  const gmx::SimulationWorkload& simulationWork);
+gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
+                                  const gmx_mtop_t&               mtop,
+                                  int                             nflexcon,
+                                  int                             nstcalcenergy,
+                                  bool                            usingDomainDecomposition,
+                                  const gmx::DeviceStreamManager* deviceStreamManager,
+                                  const gmx::SimulationWorkload&  simulationWork);
 
 /* Optimize shell positions */
 void relax_shell_flexcon(FILE*                               log,

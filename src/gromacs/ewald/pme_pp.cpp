@@ -86,8 +86,7 @@ PmePpComm::PmePpComm(const MpiComm&               comm,
     thisRankReceivesVirialAndEnergy_(thisRankReceivesVirialAndEnergy),
     useGpuPmePpCommunication_(useGpuPmePpCommunication),
     cnb_{ thisRankReceivesVirialAndEnergy_ ? std::make_optional<gmx_pme_comm_n_box_t>() : std::nullopt },
-    cpuPmeForceReceiveBuffer_{ HostAllocationPolicy{
-            useGpuPmePpCommunication ? PinningPolicy::PinnedIfSupported : PinningPolicy::CannotBePinned } }
+    cpuPmeForceReceiveBuffer_{ makeHostAllocationPolicy(useGpuPmePpCommunication, deviceStreamManager) }
 {
     if (useGpuPmePpCommunication_)
     {

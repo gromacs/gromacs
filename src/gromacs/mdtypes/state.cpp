@@ -292,6 +292,10 @@ t_state::t_state() :
     veta(0),
     vol0(0),
 
+    x(),
+    v(),
+    cg_p(),
+
     ekinstate(),
     hist(),
     dfhist(),

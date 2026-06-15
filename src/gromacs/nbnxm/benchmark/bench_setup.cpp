@@ -224,9 +224,9 @@ static LJCombinationRule convertLJCombinationRule(const NbnxmBenchMarkCombRule c
 static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const NbnxmKernelBenchOptions& options,
                                                                       const BenchmarkSystem& system)
 {
-    const auto pinPolicy =
-            (options.useGpu ? PinningPolicy::PinnedIfSupported : PinningPolicy::CannotBePinned);
-    const int numThreads = options.numThreads;
+    // Later, this will depend on options.useGpu
+    const gmx::HostAllocationPolicy hostAllocationPolicy{};
+    const int                       numThreads = options.numThreads;
 
     auto messageWhenInvalid = checkKernelSetup(options);
     if (messageWhenInvalid)
@@ -237,12 +237,12 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
 
     PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, pinPolicy);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, hostAllocationPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(hostAllocationPolicy,
                                                        MDLogger(),
                                                        kernelSetup.kernelType,
                                                        convertLJCombinationRule(options.ljCombinationRule),

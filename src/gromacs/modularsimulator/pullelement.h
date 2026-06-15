@@ -53,6 +53,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+class DeviceStreamManager;
 class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
@@ -103,6 +104,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
@@ -112,7 +114,8 @@ public:
                                                     EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer* observablesReducer);
+                                                    ObservablesReducer*        observablesReducer,
+                                                    const DeviceStreamManager* deviceStreamManager);
 
 private:
     //! Schedule post step functionality

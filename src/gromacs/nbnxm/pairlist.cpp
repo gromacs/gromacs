@@ -376,16 +376,16 @@ NbnxnPairlistCpu::NbnxnPairlistCpu(const int iClusterSize) :
 {
 }
 
-NbnxnPairlistGpu::NbnxnPairlistGpu(PinningPolicy pinningPolicy) :
+NbnxnPairlistGpu::NbnxnPairlistGpu(const HostAllocationPolicy& hostAllocationPolicy) :
     na_ci(sc_gpuClusterSize(sc_layoutType)),
     na_cj(sc_gpuClusterSize(sc_layoutType)),
     na_sc(sc_gpuNumClusterPerBin(sc_layoutType) * sc_gpuClusterSize(sc_layoutType)),
     rlist(0),
-    sci({}, { pinningPolicy }),
-    cjPacked(pinningPolicy),
-    excl({}, { pinningPolicy }),
+    sci({}, { hostAllocationPolicy }),
+    cjPacked(hostAllocationPolicy),
+    excl({}, { hostAllocationPolicy }),
     nci_tot(0),
-    work(std::make_unique<NbnxmPairlistGpuWork>(sc_layoutType))
+    work(std::make_unique<NbnxmPairlistGpuWork>(sc_layoutType, hostAllocationPolicy))
 {
 
     static_assert(sc_gpuClusterPerSuperCluster(sc_layoutType) == sc_gpuNumClusterPerBin(sc_layoutType),
@@ -405,24 +405,26 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(PinningPolicy pinningPolicy) :
     excl.resize(1);
 }
 
-static std::vector<NbnxnPairlistGpu> createGpuPairlists(int numLists, PinningPolicy pinPolicy)
+static std::vector<NbnxnPairlistGpu> createGpuPairlists(int numLists, const HostAllocationPolicy& hostAllocationPolicy)
 {
     auto lists = std::vector<NbnxnPairlistGpu>();
     /* Only list 0 is used on the GPU, use normal allocation for i>0 */
-    lists.emplace_back(NbnxnPairlistGpu{ pinPolicy });
+    lists.emplace_back(NbnxnPairlistGpu{ hostAllocationPolicy });
     /* Lists 0 to numLists are use for constructing lists in parallel
      * on the CPU using numLists threads (and then merged into list 0).
      */
+    const HostAllocationPolicy cpuListPolicy; // i.e. PinningPolicy::CannotBePinned
     for (int list = 1; list < numLists; ++list)
     {
-        lists.emplace_back(NbnxnPairlistGpu{ PinningPolicy::CannotBePinned });
+        lists.emplace_back(NbnxnPairlistGpu{ cpuListPolicy });
     }
     return lists;
 }
 
 
 // TODO: Move to pairlistset.cpp
-PairlistSet::PairlistSet(const PairlistParams& pairlistParams, PinningPolicy pinPolicy) :
+PairlistSet::PairlistSet(const PairlistParams&       pairlistParams,
+                         const HostAllocationPolicy& hostAllocationPolicy) :
     params_(pairlistParams),
     combineLists_(sc_isGpuSpecificPairlist(pairlistParams.pairlistType)), // Currently GPU lists are always combined
     isCpuType_(!sc_isGpuSpecificPairlist(pairlistParams.pairlistType))
@@ -459,7 +461,7 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams, PinningPolicy pin
     }
     else
     {
-        gpuLists_ = createGpuPairlists(numLists, pinPolicy);
+        gpuLists_ = createGpuPairlists(numLists, hostAllocationPolicy);
     }
     if (params_.haveFep_)
     {

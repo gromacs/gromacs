@@ -71,6 +71,8 @@ struct NbnxmGpu
     NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional<size_t> nLambda);
     //! GPU device context.
     const DeviceContext& deviceContext;
+    //! Host allocation policy for buffers for possible GPU transfers
+    const HostAllocationPolicy hostAllocationPolicy;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
     /*! \brief true indicates that the nonlocal_done event was marked */

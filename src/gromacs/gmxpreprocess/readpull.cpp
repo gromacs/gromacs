@@ -697,7 +697,7 @@ pull_t* set_pull_init(t_inputrec*               ir,
     const gmx::MpiComm       mpiComm(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
     gmx::LocalAtomSetManager atomSets;
     pull_work     = init_pull(nullptr, pull, ir, mtop, mpiComm, nullptr, &atomSets, lambda);
-    auto  mdAtoms = gmx::makeMDAtoms(nullptr, mtop, *ir, false);
+    auto  mdAtoms = gmx::makeMDAtoms(nullptr, mtop, *ir, false, nullptr);
     auto* md      = mdAtoms->mdatoms();
     atoms2md(mtop, *ir, -1, {}, mtop.natoms, mdAtoms.get());
     if (ir->efep != FreeEnergyPerturbationType::No)

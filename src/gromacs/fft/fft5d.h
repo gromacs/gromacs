@@ -44,7 +44,6 @@ FILE* debug;
 #endif
 
 #include "gromacs/fft/fft.h"
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -76,7 +75,7 @@ typedef gmx_wallcycle* fft5d_time;
 
 namespace gmx
 {
-enum class PinningPolicy : int;
+class HostAllocationPolicy;
 } // namespace gmx
 
 typedef enum fft5d_flags_t
@@ -116,25 +115,25 @@ struct fft5d_plan_t
     /*int N0,N1,M0,M1,K0,K1;*/
     int NG, MG, KG;
     /*int P[2];*/
-    int                coor[2];
-    int                nthreads;
-    gmx::PinningPolicy pinningPolicy;
+    int                              coor[2];
+    int                              nthreads;
+    const gmx::HostAllocationPolicy* hostAllocationPolicy;
 };
 
 typedef struct fft5d_plan_t* fft5d_plan;
 
 void       fft5d_execute(fft5d_plan plan, int thread, fft5d_time times);
-fft5d_plan fft5d_plan_3d(int         N,
-                         int         M,
-                         int         K,
-                         MPI_Comm    comm[2],
-                         int         flags,
-                         t_complex** lin,
-                         t_complex** lin2,
-                         t_complex** lout2,
-                         t_complex** lout3,
-                         int         nthreads,
-                         gmx::PinningPolicy realGridAllocationPinningPolicy = gmx::PinningPolicy::CannotBePinned);
+fft5d_plan fft5d_plan_3d(int                              N,
+                         int                              M,
+                         int                              K,
+                         MPI_Comm                         comm[2],
+                         int                              flags,
+                         t_complex**                      lin,
+                         t_complex**                      lin2,
+                         t_complex**                      lout2,
+                         t_complex**                      lout3,
+                         int                              nthreads,
+                         const gmx::HostAllocationPolicy* hostAllocationPolicy);
 void       fft5d_destroy(fft5d_plan plan);
 
 #endif

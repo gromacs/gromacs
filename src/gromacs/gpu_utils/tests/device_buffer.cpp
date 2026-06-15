@@ -155,8 +155,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDevice)
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
             allocateDeviceBuffer(&buffer, numValues, deviceContext);
-            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
-            HostVector<TypeParam> valuesOut(numValues, { pinningPolicy });
+            HostAllocationPolicy  allocationPolicy{ testDevice->deviceContext(), pinningPolicy };
+            HostVector<TypeParam> valuesIn(numValues, allocationPolicy);
+            HostVector<TypeParam> valuesOut(numValues, allocationPolicy);
 
             std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
@@ -190,8 +191,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
             allocateDeviceBuffer(&buffer, 2 * numValues, deviceContext);
-            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
-            HostVector<TypeParam> valuesOut(2 * numValues, { pinningPolicy });
+            HostAllocationPolicy  allocationPolicy{ testDevice->deviceContext(), pinningPolicy };
+            HostVector<TypeParam> valuesIn(numValues, allocationPolicy);
+            HostVector<TypeParam> valuesOut(2 * numValues, allocationPolicy);
 
             std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
@@ -266,8 +268,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceFromPointerToValue)
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
             allocateDeviceBuffer(&buffer, 2 * numValues, deviceContext);
-            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
-            HostVector<TypeParam> valuesOut(2 * numValues, { pinningPolicy });
+            HostAllocationPolicy  allocationPolicy{ testDevice->deviceContext(), pinningPolicy };
+            HostVector<TypeParam> valuesIn(numValues, allocationPolicy);
+            HostVector<TypeParam> valuesOut(2 * numValues, allocationPolicy);
 
             std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
@@ -329,8 +332,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffersOnSameDevice)
             deviceContext.activate();
 
             int                   numValues = 321;
-            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
-            HostVector<TypeParam> valuesOut(numValues, { pinningPolicy });
+            HostAllocationPolicy  allocationPolicy{ testDevice->deviceContext(), pinningPolicy };
+            HostVector<TypeParam> valuesIn(numValues, allocationPolicy);
+            HostVector<TypeParam> valuesOut(numValues, allocationPolicy);
 
             std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 

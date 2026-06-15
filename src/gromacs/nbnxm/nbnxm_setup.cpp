@@ -52,6 +52,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/architecture.h"
 #include "gromacs/hardware/hw_info.h"
@@ -371,17 +372,17 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
     return kernelSetup;
 }
 
-PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
-                           const bool            haveMultipleDomains,
-                           const int             minimumIlistCountForGpuBalancing,
-                           PinningPolicy         pinPolicy) :
+PairlistSets::PairlistSets(const PairlistParams&       pairlistParams,
+                           const bool                  haveMultipleDomains,
+                           const int                   minimumIlistCountForGpuBalancing,
+                           const HostAllocationPolicy& hostAllocationPolicy) :
     params_(pairlistParams), minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    localSet_ = std::make_unique<PairlistSet>(params_, pinPolicy);
+    localSet_ = std::make_unique<PairlistSet>(params_, hostAllocationPolicy);
 
     if (haveMultipleDomains)
     {
-        nonlocalSet_ = std::make_unique<PairlistSet>(params_, pinPolicy);
+        nonlocalSet_ = std::make_unique<PairlistSet>(params_, hostAllocationPolicy);
     }
 }
 
@@ -527,8 +528,11 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         printNbnxmPressureError(mdlog, inputrec, mtop, effectiveAtomDensity, pairlistParams);
     }
 
-    auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
-                                         : gmx::PinningPolicy::CannotBePinned);
+    GMX_RELEASE_ASSERT(
+            (!useGpuForNonbonded || deviceStreamManager != nullptr),
+            "Device stream manager should be initialized in order to use GPU for non-bonded.");
+    HostAllocationPolicy hostAllocationPolicy =
+            makeHostAllocationPolicy(useGpuForNonbonded, deviceStreamManager);
 
     int minimumNumEnergyGroupNonbonded = inputrec.opts.ngener;
     if (inputrec.opts.ngener - inputrec.nwall == 1)
@@ -541,7 +545,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     }
 
     auto nbat = std::make_unique<nbnxn_atomdata_t>(
-            pinPolicy,
+            hostAllocationPolicy,
             mdlog,
             kernelSetup.kernelType,
             chooseLJCombinationRule(forcerec),
@@ -567,10 +571,6 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        GMX_RELEASE_ASSERT(
-                (deviceStreamManager != nullptr),
-                "Device stream manager should be initialized in order to use GPU for non-bonded.");
-
         gpu_nbv = gpu_init(*deviceStreamManager,
                            forcerec.ic.get(),
                            pairlistParams,
@@ -596,7 +596,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                 lambdaCoul = inputrec.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Coul);
                 lambdaVdw = inputrec.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Vdw);
             }
-            // Cpoy FEP parameters to GPU
+            // Copy FEP parameters to GPU
             copy_gpu_fepparams(gpu_nbv,
                                pairlistParams.haveNonbondedFEGpu_,
                                forcerec.ic->softCoreParameters->alphaCoulomb,
@@ -613,7 +613,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     }
 
     auto pairlistSets = std::make_unique<PairlistSets>(
-            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing, pinPolicy);
+            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing, hostAllocationPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(inputrec.pbcType,
                                                    EI_TPI(inputrec.eI),
@@ -623,7 +623,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    bFEP_NonBonded,
                                                    localAtomOrderMatchesNbnxmOrder,
                                                    gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch),
-                                                   pinPolicy);
+                                                   hostAllocationPolicy);
 
     std::unique_ptr<ExclusionChecker> exclusionChecker;
     if (inputrec.efep != FreeEnergyPerturbationType::No

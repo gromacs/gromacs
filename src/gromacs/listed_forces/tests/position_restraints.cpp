@@ -54,6 +54,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -101,7 +102,7 @@ protected:
     t_pbc   pbc_;
     PbcType pbcType_;
 
-    t_forcerec                       fr_{ false };
+    t_forcerec                       fr_{ HostAllocationPolicy{} };
     InteractionDefinitions           idef_;
     gmx_enerdata_t                   enerd_;
     std::unique_ptr<ForceWithVirial> forceWithVirial_;

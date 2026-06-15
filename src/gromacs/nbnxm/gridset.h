@@ -54,7 +54,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
@@ -69,9 +68,9 @@ enum class PbcType : int;
 namespace gmx
 {
 class DomdecZones;
+class HostAllocationPolicy;
 enum class PairlistType;
 class UpdateGroupsCog;
-enum class PinningPolicy : int;
 struct nbnxn_atomdata_t;
 
 /*! \internal
@@ -110,15 +109,15 @@ public:
     };
 
     //! Constructs a grid set for 1 or multiple DD zones, when numDDCells!=nullptr
-    GridSet(PbcType            pbcType,
-            bool               doTestParticleInsertion,
-            const IVec*        numDDCells,
-            const DomdecZones* ddZones,
-            PairlistType       pairlistType,
-            bool               haveFep,
-            bool               localAtomOrderMatchesNbnxmOrder,
-            int                numThreads,
-            PinningPolicy      pinningPolicy);
+    GridSet(PbcType                     pbcType,
+            bool                        doTestParticleInsertion,
+            const IVec*                 numDDCells,
+            const DomdecZones*          ddZones,
+            PairlistType                pairlistType,
+            bool                        haveFep,
+            bool                        localAtomOrderMatchesNbnxmOrder,
+            int                         numThreads,
+            const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Puts the atoms on the grid with index \p gridIndex and copies the coordinates to \p nbat
     void putOnGrid(const matrix            box,
@@ -153,7 +152,7 @@ public:
         if (numGridsInUse_ > gmx::ssize(grids_))
         {
             // We, temporarily, set the DD zone to -1, will be set in setNonLocalGrid()
-            grids_.emplace_back(pairlistType_, -1, haveFep_, pinningPolicy_);
+            grids_.emplace_back(pairlistType_, -1, haveFep_, hostAllocationPolicy);
         }
 
         const Grid& previousGrid = grids_[gridIndex - 1];
@@ -248,8 +247,8 @@ private:
     bool haveFep_;
     //! Tells whether the local atom order matches the NBNxM atom order
     bool localAtomOrderMatchesNbnxmOrder_;
-    //! The pinning policy for Grid data that might be accessed on GPUs
-    PinningPolicy pinningPolicy_;
+    //! The host allocation policy for Grid data that might be accessed on GPUs
+    const HostAllocationPolicy hostAllocationPolicy;
     //! The periodic unit-cell
     matrix box_;
     //! The number of local real atoms, i.e. without padded atoms, local atoms: 0 to numAtomsLocal_

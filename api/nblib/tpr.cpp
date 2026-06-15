@@ -49,6 +49,7 @@
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -93,7 +94,7 @@ TprReader::TprReader(std::string filename)
             read_tpx_state(filename, &inputRecord, &globalState, &molecularTopology);
 
     // init forcerec
-    t_forcerec          forceRecord{ false };
+    t_forcerec          forceRecord{ gmx::HostAllocationPolicy{} };
     gmx_wallcycle*      wcycle  = nullptr;
     t_nrnb*             nrnb    = nullptr;
     gmx::MpiComm        mpiComm = gmx::MpiComm(gmx::MpiComm::SingleRank{});
@@ -133,7 +134,7 @@ TprReader::TprReader(std::string filename)
 
     int                           ntopatoms = molecularTopology.natoms;
     std::unique_ptr<gmx::MDAtoms> mdAtoms =
-            gmx::makeMDAtoms(nullptr, molecularTopology, inputRecord, false);
+            gmx::makeMDAtoms(nullptr, molecularTopology, inputRecord, false, nullptr);
     atoms2md(molecularTopology, inputRecord, -1, {}, ntopatoms, mdAtoms.get());
     const double initMassLambda =
             (inputRecord.efep == FreeEnergyPerturbationType::No

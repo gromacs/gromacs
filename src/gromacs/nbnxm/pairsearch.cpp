@@ -53,7 +53,6 @@ enum class PbcType : int;
 namespace gmx
 {
 enum class PairlistType;
-enum class PinningPolicy : int;
 
 void SearchCycleCounting::printCycles(FILE* fp, ArrayRef<const PairsearchWork> work) const
 {
@@ -90,15 +89,15 @@ PairsearchWork::PairsearchWork() :
 
 PairsearchWork::~PairsearchWork() = default;
 
-PairSearch::PairSearch(const PbcType      pbcType,
-                       const bool         doTestParticleInsertion,
-                       const IVec*        numDDCells,
-                       const DomdecZones* ddZones,
-                       const PairlistType pairlistType,
-                       const bool         haveFep,
-                       const bool         localAtomOrderMatchesNbnxmOrder,
-                       const int          maxNumThreads,
-                       PinningPolicy      pinningPolicy) :
+PairSearch::PairSearch(const PbcType               pbcType,
+                       const bool                  doTestParticleInsertion,
+                       const IVec*                 numDDCells,
+                       const DomdecZones*          ddZones,
+                       const PairlistType          pairlistType,
+                       const bool                  haveFep,
+                       const bool                  localAtomOrderMatchesNbnxmOrder,
+                       const int                   maxNumThreads,
+                       const HostAllocationPolicy& hostAllocationPolicy) :
     gridSet_(pbcType,
              doTestParticleInsertion,
              numDDCells,
@@ -107,7 +106,7 @@ PairSearch::PairSearch(const PbcType      pbcType,
              haveFep,
              localAtomOrderMatchesNbnxmOrder,
              maxNumThreads,
-             pinningPolicy),
+             hostAllocationPolicy),
     work_(maxNumThreads)
 {
     cycleCounting_.recordCycles_ = (std::getenv("GMX_NBNXN_CYCLE") != nullptr);

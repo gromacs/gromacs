@@ -605,16 +605,17 @@ void copy_gpu_fepparams(NbnxmGpu*   nb,
     }
 }
 
-NBStagingData::NBStagingData(const std::optional<size_t> nLambda) :
-    eLJ{ 1, { PinningPolicy::PinnedIfSupported } },
-    eElec{ 1, { PinningPolicy::PinnedIfSupported } },
-    dvdlLJ{ 1, { PinningPolicy::PinnedIfSupported } },
-    dvdlElec{ 1, { PinningPolicy::PinnedIfSupported } },
-    fShift{ c_numShiftVectors, { PinningPolicy::PinnedIfSupported } },
-    eLJForeign{ { PinningPolicy::PinnedIfSupported } },
-    eElecForeign{ { PinningPolicy::PinnedIfSupported } },
-    dvdlLJForeign{ { PinningPolicy::PinnedIfSupported } },
-    dvdlElecForeign{ { PinningPolicy::PinnedIfSupported } }
+NBStagingData::NBStagingData(const HostAllocationPolicy& hostAllocationPolicy,
+                             const std::optional<size_t> nLambda) :
+    eLJ{ 1, { hostAllocationPolicy } },
+    eElec{ 1, { hostAllocationPolicy } },
+    dvdlLJ{ 1, { hostAllocationPolicy } },
+    dvdlElec{ 1, { hostAllocationPolicy } },
+    fShift{ c_numShiftVectors, { hostAllocationPolicy } },
+    eLJForeign{ hostAllocationPolicy },
+    eElecForeign{ hostAllocationPolicy },
+    dvdlLJForeign{ hostAllocationPolicy },
+    dvdlElecForeign{ hostAllocationPolicy }
 {
     if (nLambda.has_value())
     {
@@ -627,7 +628,9 @@ NBStagingData::NBStagingData(const std::optional<size_t> nLambda) :
 }
 
 NbnxmGpu::NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional<size_t> nLambda) :
-    deviceContext{ deviceStreamManager.context() }, nbst(nLambda)
+    deviceContext{ deviceStreamManager.context() },
+    hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported },
+    nbst(hostAllocationPolicy, nLambda)
 {
 }
 
@@ -641,7 +644,7 @@ NbnxmGpu* gpu_init(const DeviceStreamManager&  deviceStreamManager,
     auto* nb        = new NbnxmGpu(deviceStreamManager, nLambda);
     nb->atdat       = new NBAtomDataGpu;
     nb->nbparam     = new NBParamGpu;
-    nb->fephostdata = new GpuFepHostData;
+    nb->fephostdata = new GpuFepHostData(nb->hostAllocationPolicy);
 
     nb->plist = initializeGpuLists(bLocalAndNonlocal);
 

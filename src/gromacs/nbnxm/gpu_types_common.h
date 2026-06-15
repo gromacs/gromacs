@@ -141,7 +141,7 @@ static constexpr float c_oneTwelfth = 0.08333333F;
  */
 struct NBStagingData
 {
-    NBStagingData(std::optional<size_t> nLambda);
+    NBStagingData(const HostAllocationPolicy& hostAllocationPolicy, std::optional<size_t> nLambda);
     //! LJ energy
     HostVector<float> eLJ;
     //! electrostatic energy
@@ -511,29 +511,42 @@ public:
  * \brief GPU FEP Host Buffers */
 struct GpuFepHostData
 {
+    GpuFepHostData(const HostAllocationPolicy& hostAllocationPolicy) :
+        allLambdaCoul{ hostAllocationPolicy },
+        allLambdaVdw{ hostAllocationPolicy },
+        iinrHost{ hostAllocationPolicy },
+        jjnrHost{ hostAllocationPolicy },
+        jIndexHost{ hostAllocationPolicy },
+        shiftHost{ hostAllocationPolicy },
+        exclFepHost{ hostAllocationPolicy },
+        atomTypes4Host{ hostAllocationPolicy },
+        ljComb4Host{ hostAllocationPolicy },
+        q4Host{ hostAllocationPolicy }
+    {
+    }
     // Arrays of all lambda values
-    HostVector<float> allLambdaCoul{ { PinningPolicy::PinnedIfSupported } };
-    HostVector<float> allLambdaVdw{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> allLambdaCoul;
+    HostVector<float> allLambdaVdw;
 
     // The inverse of atom indices, used to find the correct atom indices
     std::vector<int> atomIndicesInv;
     // The i-atom list on host
-    HostVector<int> iinrHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> iinrHost;
     // The j-atom list on host
-    HostVector<int> jjnrHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> jjnrHost;
     // The Indices in jjnr on host
-    HostVector<int> jIndexHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> jIndexHost;
     // The shift vector index on host
-    HostVector<int> shiftHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> shiftHost;
     // The FEP exclusions on host
-    HostVector<int> exclFepHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> exclFepHost;
 
     //! atom typeA&B indices, size numAtoms, only in FEP
-    HostVector<int> atomTypes4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> atomTypes4Host;
     //! sqrt(c6),sqrt(c12) for stateA&B, size numAtoms, only in FEP
-    HostVector<float> ljComb4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> ljComb4Host;
     //! atom charge(A&B), size numAtoms, only in FEP
-    HostVector<float> q4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> q4Host;
 };
 
 

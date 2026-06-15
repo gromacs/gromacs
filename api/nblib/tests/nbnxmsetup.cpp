@@ -51,6 +51,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -153,7 +154,7 @@ TEST(NbnxmSetupTest, ewaldCoeffWorks)
 
 TEST(NbnxmSetupTest, updateForcerecWorks)
 {
-    t_forcerec forcerec{ false };
+    t_forcerec forcerec{ gmx::HostAllocationPolicy{} };
     Box        box(3);
     EXPECT_NO_THROW(updateForcerec(&forcerec, box.legacyMatrix()));
 }

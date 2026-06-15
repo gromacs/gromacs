@@ -444,7 +444,8 @@ public:
 };
 
 //! Build nbnxn_atomdata_t for the 4-atom FEP test using production code path
-static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const AtomData&           atoms,
+static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const DeviceContext&      deviceContext,
+                                                            const AtomData&           atoms,
                                                             const PaddedVector<RVec>& x,
                                                             const t_forcerec&         fr,
                                                             ArrayRef<const real>      lambdas,
@@ -457,8 +458,8 @@ static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const AtomData&     
     std::optional<LJCombinationRule> ljRule = (ljCombinationRule != LJCombinationRule::None)
                                                       ? std::optional<LJCombinationRule>(ljCombinationRule)
                                                       : std::nullopt;
-
-    auto nbat = std::make_unique<nbnxn_atomdata_t>(PinningPolicy::PinnedIfSupported,
+    HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+    auto                 nbat = std::make_unique<nbnxn_atomdata_t>(hostAllocationPolicy,
                                                    MDLogger(),
                                                    NbnxmKernelType::Gpu8x8x8,
                                                    ljRule,
@@ -639,7 +640,7 @@ protected:
         input_.frHelper.setSoftcoreType(softcoreType_);
 
         // get forcerec and interaction_const
-        t_forcerec fr{ false };
+        t_forcerec fr{ HostAllocationPolicy{} };
         input_.frHelper.getForcerec(&fr);
 
         // AtomPairlist
@@ -667,7 +668,8 @@ protected:
             auto               deviceStreamManager = std::make_shared<DeviceStreamManager>(
                     testDevice->deviceInfo(), simulationWorkload, false);
 
-            auto nbat = makeNbatForFepTest(input_.atoms, x_, fr, lambdas, input_.ljCombinationRule);
+            auto nbat = makeNbatForFepTest(
+                    testDevice->deviceContext(), input_.atoms, x_, fr, lambdas, input_.ljCombinationRule);
 
             PairlistParams pairlistParams(NbnxmKernelType::Gpu8x8x8, sc_layoutType, true, fr.rlist, false);
             pairlistParams.haveNonbondedFEGpu_ = true;

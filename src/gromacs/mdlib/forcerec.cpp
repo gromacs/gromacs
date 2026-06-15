@@ -1145,6 +1145,6 @@ void init_forcerec(FILE*                            fplog,
 }
 
 // TODO clean this up as part of #5573
-t_forcerec::t_forcerec(const bool /* useGpuPmePpCommunication */) {}
+t_forcerec::t_forcerec(const gmx::HostAllocationPolicy& /* hostAllocationPolicy */) {}
 
 t_forcerec::~t_forcerec() = default;

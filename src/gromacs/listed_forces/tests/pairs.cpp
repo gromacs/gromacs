@@ -63,6 +63,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
@@ -204,7 +205,7 @@ private:
     bool                       haveMolPBC_ = false;
 
     t_lambda   fepVals_;
-    t_forcerec fr_{ false };
+    t_forcerec fr_{ HostAllocationPolicy{} };
 };
 
 ForcerecHelper frHelper;

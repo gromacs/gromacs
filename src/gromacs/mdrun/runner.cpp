@@ -1664,12 +1664,39 @@ int Mdrunner::mdrunner()
         const bool useGpuTiming = decideGpuTimingsUsage();
         deviceStreamManager     = std::make_unique<DeviceStreamManager>(
                 *deviceInfo, runScheduleWork.simulationWork, useGpuTiming);
+
+        localState->x = PaddedHostVector<RVec>(
+                localState->x,
+                makeHostAllocationPolicy(useGpuForPme || runScheduleWork.simulationWork.useGpuXBufferOpsWhenAllowed
+                                                 || useGpuForUpdate,
+                                         deviceStreamManager.get()));
+        localState->v = PaddedHostVector<RVec>(
+                localState->v, makeHostAllocationPolicy(useGpuForUpdate, deviceStreamManager.get()));
     }
 
     std::unique_ptr<NvshmemManager> nvshmemManager;
     if (runScheduleWork.simulationWork.useNvshmem)
     {
         nvshmemManager = std::make_unique<NvshmemManager>(mdlog, cr->commMySim.comm());
+    }
+
+    if (havePPDomainDecomposition(cr->dd))
+    {
+        // With GPU halo exchange and NVSHMEM, a particle-index buffer
+        // must be pinned for H2D transfers, in which case this policy
+        // carries the necessary information. It would be better to do
+        // this as an aspect of halo-exchange setup, but the DD setup
+        // must precede task and device assignment, and the former is
+        // too monolithic.
+        //
+        // See domdec/cellsizes.cpp for explanation of the need for
+        // propagation during container copy construction.
+        const bool propagateDuringContainerCopyConstruction = true;
+        cr->dd->hostAllocationPolicy =
+                makeHostAllocationPolicy(runScheduleWork.simulationWork.useGpuHaloExchange
+                                                 and runScheduleWork.simulationWork.useNvshmem,
+                                         deviceStreamManager.get(),
+                                         propagateDuringContainerCopyConstruction);
     }
 
     // If the user chose a task assignment, give them some hints
@@ -1805,7 +1832,15 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(&mdModuleCoulombDirectProvider);
 
         /* Initiate forcerecord */
-        fr = std::make_unique<t_forcerec>(runScheduleWork.simulationWork.useGpuPmePpCommunication);
+        if (deviceStreamManager != nullptr)
+        {
+            fr = std::make_unique<t_forcerec>(HostAllocationPolicy{ deviceStreamManager->context(),
+                                                                    PinningPolicy::PinnedIfSupported });
+        }
+        else
+        {
+            fr = std::make_unique<t_forcerec>(HostAllocationPolicy{});
+        }
         fr->forceProviders = mdModules_->initForceProviders(wcycle.get());
 
         std::optional<bool> anMDModuleProvidesDirectCoulomb = mdModuleCoulombDirectProvider.isDirectProvider;
@@ -1954,15 +1989,15 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, thisRankHasPmeGpuTask);
+        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, thisRankHasPmeGpuTask, deviceStreamManager.get());
         if (globalState && thisRankHasPmeGpuTask)
         {
             // The pinning of coordinates in the global state object works, because we only use
             // PME on GPU without DD or on a separate PME rank, and because the local state pointer
             // points to the global state object without DD.
-            // FIXME: MD and EM separately set up the local state - this should happen in the same
-            // function, which should also perform the pinning.
-            changePinningPolicy(&globalState->x, pme_get_pinning_policy());
+            globalState->x = PaddedHostVector<RVec>(
+                    globalState->x,
+                    makeHostAllocationPolicy(thisRankHasPmeGpuTask, deviceStreamManager.get()));
         }
 
         /* Initialize the virtual site communication */
@@ -2362,7 +2397,7 @@ int Mdrunner::mdrunner()
             simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
 
             // build and run simulator object based on user-input
-            auto simulator = simulatorBuilder.build(useModularSimulator);
+            auto simulator = simulatorBuilder.build(useModularSimulator, deviceStreamManager.get());
             simulator->run();
 
             if (inputrec->bPull)

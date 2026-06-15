@@ -169,12 +169,13 @@ public:
         const DeviceContext& deviceContext = testDevice->deviceContext();
         const DeviceStream&  deviceStream  = testDevice->deviceStream();
         deviceContext.activate();
+        HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
 
         const auto [numValuesInMessage] = GetParam();
 
         DeviceBuffer<int> receiveBuffer;
         allocateDeviceBuffer(&receiveBuffer, numValuesInMessage, deviceContext);
-        HostVector<int> valuesReceived(numValuesInMessage, -1, { PinningPolicy::PinnedIfSupported });
+        HostVector<int> valuesReceived(numValuesInMessage, -1, hostAllocationPolicy);
 
         // Post receive from partner rank
         MPI_Recv(asRawDevicePointer(receiveBuffer),
@@ -268,6 +269,7 @@ TEST_P(GpuAwareMpiTest, SendFromPinnedHostBufferToDeviceBuffer)
     const TestDevice*    testDevice    = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
     const DeviceContext& deviceContext = testDevice->deviceContext();
     deviceContext.activate();
+    HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
 
     const int partnerRank           = mpiComm_.size() - 1 - mpiComm_.rank();
     const auto [numValuesInMessage] = GetParam();
@@ -276,7 +278,7 @@ TEST_P(GpuAwareMpiTest, SendFromPinnedHostBufferToDeviceBuffer)
     if (mpiComm_.rank() == 0)
     {
         // This is used to send x from PP ranks to PME ranks after pair search
-        HostVector<int> sendBuffer(numValuesInMessage, { PinningPolicy::PinnedIfSupported });
+        HostVector<int> sendBuffer(numValuesInMessage, hostAllocationPolicy);
         std::iota(sendBuffer.begin(), sendBuffer.end(), specialValue_ + mpiComm_.rank());
 
         // Send to partner rank
@@ -342,6 +344,7 @@ TEST_P(GpuAwareMpiTest, DISABLED_SendFromDeviceBufferToPinnedHostBuffer)
     const TestDevice*    testDevice    = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
     const DeviceContext& deviceContext = testDevice->deviceContext();
     deviceContext.activate();
+    HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
 
     const int partnerRank           = mpiComm_.size() - 1 - mpiComm_.rank();
     const auto [numValuesInMessage] = GetParam();
@@ -356,7 +359,7 @@ TEST_P(GpuAwareMpiTest, DISABLED_SendFromDeviceBufferToPinnedHostBuffer)
     }
     else
     {
-        HostVector<int> receiveBuffer(numValuesInMessage, -1, { PinningPolicy::PinnedIfSupported });
+        HostVector<int> receiveBuffer(numValuesInMessage, -1, hostAllocationPolicy);
 
         // Post receive from partner rank
         MPI_Recv(receiveBuffer.data(), numValuesInMessage, MPI_INT, partnerRank, mpiTag, mpiComm_.comm(), MPI_STATUS_IGNORE);
@@ -415,11 +418,12 @@ TEST_P(GpuAwareMpiTest, IrecvSendPair)
     const DeviceContext& deviceContext = testDevice->deviceContext();
     const DeviceStream&  deviceStream  = testDevice->deviceStream();
     deviceContext.activate();
+    HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
 
     const int partnerRank           = mpiComm_.size() - 1 - mpiComm_.rank();
     const auto [numValuesInMessage] = GetParam();
-    HostVector<int> valuesToSend(numValuesInMessage, { PinningPolicy::PinnedIfSupported });
-    HostVector<int> valuesReceived(numValuesInMessage, -1, { PinningPolicy::PinnedIfSupported });
+    HostVector<int> valuesToSend(numValuesInMessage, hostAllocationPolicy);
+    HostVector<int> valuesReceived(numValuesInMessage, -1, hostAllocationPolicy);
 
     std::iota(valuesToSend.begin(), valuesToSend.end(), specialValue_ + mpiComm_.rank());
     std::vector<int> expectedValues(numValuesInMessage);

@@ -886,7 +886,7 @@ int gmx_disre(int argc, char* argv[])
         maxxv = xvgropen(opt2fn("-dm", NFILE, fnm), "Largest Violation", "Time (ps)", "nm", oenv);
     }
 
-    auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false);
+    auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false, nullptr);
     atoms2md(*topInfo.mtop(), *ir, -1, {}, ntopatoms, mdAtoms.get());
     update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Fep));
     if (ir->pbcType != PbcType::No)

@@ -145,9 +145,8 @@ public:
 
         const auto& testDevice = deviceList[rank % deviceList.size()];
 
-        const DeviceContext& deviceContext = testDevice->deviceContext();
-        const DeviceStream&  deviceStream  = testDevice->deviceStream();
-        deviceContext.activate();
+        DeviceContext deviceContext(testDevice->deviceInfo());
+        DeviceStream  deviceStream{ deviceContext, DeviceStreamPriority::Normal, false };
 
         FftBackend backend;
 

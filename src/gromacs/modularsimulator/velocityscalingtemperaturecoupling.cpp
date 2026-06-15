@@ -779,6 +779,7 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/,
         Offset                            offset,
         UseFullStepKE                     useFullStepKE,
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy,

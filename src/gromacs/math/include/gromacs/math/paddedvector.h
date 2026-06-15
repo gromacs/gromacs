@@ -259,6 +259,19 @@ public:
         storage_(std::exchange(o.storage_, {})), unpaddedEnd_(o.unpaddedEnd_)
     {
     }
+    /*! \brief Copy constructor using \c alloc for the new vector.
+     *
+     * Note that \c alloc is another instance of the same allocator
+     * type as used for \c PaddedVector. This makes sense e.g. for
+     * stateful allocators such as HostAllocator used in
+     * PaddedHostVector. */
+    PaddedVector(const PaddedVector& o, const Allocator& alloc) :
+        storage_(alloc), unpaddedEnd_(begin())
+    {
+        auto unpaddedSize = o.size();
+        resizeWithPadding(unpaddedSize);
+        std::copy(o.begin(), o.end(), storage_.begin());
+    }
     /*! \brief Move constructor using \c alloc for the new vector.
      *
      * Note that \c alloc is another instance of the same allocator

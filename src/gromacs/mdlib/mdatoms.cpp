@@ -42,6 +42,7 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
@@ -72,7 +73,18 @@
 namespace gmx
 {
 
-MDAtoms::MDAtoms() : mdatoms_(nullptr) {}
+MDAtoms::MDAtoms(const bool rankHasPmeGpuTask, const DeviceStreamManager* deviceStreamManager) :
+    mdatoms_(nullptr),
+    // GPU transfers may want to use a suitable pinning mode.
+    chargeA_(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager)),
+    chargeB_(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager))
+{
+    if (rankHasPmeGpuTask)
+    {
+        GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
+                           "Must have device stream manager when there is a PME GPU task");
+    }
+}
 
 void MDAtoms::resizeChargeA(const int newSize)
 {
@@ -86,15 +98,13 @@ void MDAtoms::resizeChargeB(const int newSize)
     mdatoms_->chargeB = chargeB_;
 }
 
-std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, const bool rankHasPmeGpuTask)
+std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
+                                     const gmx_mtop_t&          mtop,
+                                     const t_inputrec&          ir,
+                                     const bool                 rankHasPmeGpuTask,
+                                     const DeviceStreamManager* deviceStreamManager)
 {
-    auto mdAtoms = std::make_unique<MDAtoms>();
-    // GPU transfers may want to use a suitable pinning mode.
-    if (rankHasPmeGpuTask)
-    {
-        changePinningPolicy(&mdAtoms->chargeA_, pme_get_pinning_policy());
-        changePinningPolicy(&mdAtoms->chargeB_, pme_get_pinning_policy());
-    }
+    auto mdAtoms      = std::make_unique<MDAtoms>(rankHasPmeGpuTask, deviceStreamManager);
     mdAtoms->mdatoms_ = std::make_unique<t_mdatoms>();
     t_mdatoms* md     = mdAtoms->mdatoms_.get();
 

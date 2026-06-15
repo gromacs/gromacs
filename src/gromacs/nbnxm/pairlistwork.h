@@ -111,7 +111,7 @@ struct NbnxmPairlistGpuWork
         AlignedVector<real> xSimd;
     };
 
-    NbnxmPairlistGpuWork(PairlistType layoutType);
+    NbnxmPairlistGpuWork(PairlistType layoutType, const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp0;

@@ -56,6 +56,7 @@ struct t_commrec;
 namespace gmx
 {
 enum class CheckpointDataOperation;
+class DeviceStreamManager;
 class EnergyData;
 class LegacySimulatorData;
 class MDAtoms;
@@ -126,6 +127,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param propagatorTag  Tag of the propagator to connect to
      * \param offset  The step offset at which the barostat is applied
      *
@@ -139,6 +141,7 @@ public:
                           FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
                           GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
                           ObservablesReducer*                     observablesReducer,
+                          const DeviceStreamManager*              deviceStreamManager,
                           Offset                                  offset,
                           const PropagatorTag&                    propagatorTag);
 

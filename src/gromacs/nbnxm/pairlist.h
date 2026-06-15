@@ -244,7 +244,10 @@ struct nbnxn_cj_packed_t
 class PackedJClusterList
 {
 public:
-    explicit PackedJClusterList(const PinningPolicy pinningPolicy) : list_({}, { pinningPolicy }) {}
+    explicit PackedJClusterList(const HostAllocationPolicy& hostAllocationPolicy) :
+        list_({}, { hostAllocationPolicy })
+    {
+    }
     //! The list of packed j-cluster groups
     HostVector<nbnxn_cj_packed_t> list_;
     //! Return the j-cluster index for \c index from the pack list
@@ -333,9 +336,10 @@ struct NbnxnPairlistGpu
 {
     /*! \brief Constructor
      *
-     * \param[in] pinningPolicy  Sets the pinning policy for all buffers used on the GPU
+     * \param[in] hostAllocationPolicy  Sets the host allocation policy
+     *                                  for all buffers used with the GPU
      */
-    NbnxnPairlistGpu(PinningPolicy pinningPolicy);
+    NbnxnPairlistGpu(const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Cache protection
     gmx_cache_protect_t cp0;

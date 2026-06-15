@@ -75,7 +75,11 @@ TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
      */
     if (getTestHardwareEnvironment()->hasCompatibleDevices())
     {
-        HostVector<real> dummy(3, 1.5);
+        const TestDevice* testDevice = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
+        const DeviceContext& deviceContext = testDevice->deviceContext();
+        deviceContext.activate();
+
+        HostVector<real> dummy(3, 1.5, HostAllocationPolicy(deviceContext));
         changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
         EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
     }
@@ -85,7 +89,11 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
     if (getTestHardwareEnvironment()->hasCompatibleDevices())
     {
-        HostVector<real> dummy(3, 1.5);
+        const TestDevice* testDevice = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
+        const DeviceContext& deviceContext = testDevice->deviceContext();
+        deviceContext.activate();
+
+        HostVector<real> dummy(3, 1.5, HostAllocationPolicy(deviceContext));
         changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
         EXPECT_EQ(!GMX_GPU_OPENCL, isHostMemoryPinned(dummy.data()));
     }
@@ -95,7 +103,12 @@ TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
 {
     if (getTestHardwareEnvironment()->hasCompatibleDevices())
     {
-        HostVector<real> dummy(3, 1.5, { PinningPolicy::PinnedIfSupported });
+        const TestDevice* testDevice = getTestHardwareEnvironment()->getTestDeviceList()[0].get();
+        const DeviceContext& deviceContext = testDevice->deviceContext();
+        deviceContext.activate();
+
+        HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+        HostVector<real> dummy(3, 1.5, hostAllocationPolicy);
         EXPECT_EQ(!GMX_GPU_OPENCL, isHostMemoryPinned(dummy.data())) << "memory starts pinned";
         changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
         EXPECT_FALSE(isHostMemoryPinned(dummy.data())) << "memory is now unpinned";

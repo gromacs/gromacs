@@ -67,6 +67,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+class DeviceStreamManager;
 class FreeEnergyPerturbationData;
 class LegacySimulatorData;
 class MDAtoms;
@@ -161,6 +162,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      *
      * \throws std::bad_any_cast  on internal error in VelocityVerlet algorithm builder.
      * \throws std::bad_alloc  when out of memory.
@@ -173,7 +175,8 @@ public:
                                                     EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer* observablesReducer);
+                                                    ObservablesReducer*        observablesReducer,
+                                                    const DeviceStreamManager* deviceStreamManager);
 
 private:
     //! IEnergySignallerClient implementation

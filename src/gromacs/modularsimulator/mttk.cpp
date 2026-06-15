@@ -602,9 +602,10 @@ ISimulatorElement* MttkElement::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer gmx_unused*          observablesReducer,
-        Offset                                  offset,
-        ScheduleOnInitStep                      scheduleOnInitStep,
-        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
+        const DeviceStreamManager* /*deviceStreamManager*/,
+        Offset                                 offset,
+        ScheduleOnInitStep                     scheduleOnInitStep,
+        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
@@ -675,7 +676,8 @@ ISimulatorElement* MttkBoxScaling::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer gmx_unused*          observablesReducer,
-        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
+        const DeviceStreamManager* /*deviceStreamManager*/,
+        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
