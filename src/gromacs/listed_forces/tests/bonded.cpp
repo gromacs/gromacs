@@ -75,6 +75,7 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
@@ -90,6 +91,51 @@ namespace test
 namespace
 {
 
+//! Parameter tuple type for listed forces tests
+using ListedForcesParametersTuple = std::tuple<iListInput, PaddedVector<RVec>, PbcType>;
+
+//! Formatter for iListInput - use function type and FEP status
+auto formatIListInput = [](const iListInput& input)
+{
+    if (!input.ftype.has_value())
+    {
+        return std::string("NoFtype");
+    }
+    std::string name = interaction_function[input.ftype.value()].name;
+    if (input.fep)
+    {
+        name.append("_FEP");
+    }
+    return name;
+};
+
+//! Formatter for coordinates - use atom count
+auto formatCoordinates = [](const PaddedVector<RVec>& coords)
+{ return formatString("%datoms", static_cast<int>(coords.size())); };
+
+//! Formatter for PbcType
+auto formatPbcType = [](PbcType pbc) { return std::string(c_pbcTypeNames[pbc]); };
+
+//! Test naming helper
+const NameOfTestFromTuple<ListedForcesParametersTuple> sc_testNamer{
+    std::make_tuple(formatIListInput, formatCoordinates, formatPbcType)
+};
+
+/*! \brief Reference data filename maker (excludes hardware for hardware-independent naming)
+ *
+ * Reference data files are named like:
+ *   Bond_ListedForcesTest_Ifunc_Bonds_4atoms_PBCNo.xml
+ * Test names include hardware:
+ *   Bond/ListedForcesTest.Ifunc/Bonds_4atoms_PBCNo_CPU
+ */
+const RefDataFilenameMaker<ListedForcesParametersTuple> sc_refDataFilenameMaker{
+    std::make_tuple(formatIListInput, formatCoordinates, formatPbcType)
+};
+
+/*! \brief Test fixture for listed forces
+ *
+ * Uses hardware-independent reference-data naming via RefDataFilenameMaker.
+ */
 class ListedForcesTest :
     public ::testing::TestWithParam<std::tuple<iListInput, PaddedVector<RVec>, PbcType>>
 {
@@ -118,7 +164,9 @@ protected:
     TestReferenceData      refData_;
     TestReferenceChecker   checker_;
     FloatingPointTolerance shiftForcesTolerance_ = defaultRealTolerance();
-    ListedForcesTest() : checker_(refData_.rootChecker())
+    // Reference data uses RefDataFilenameMaker for hardware-independent naming
+    ListedForcesTest() :
+        refData_(sc_refDataFilenameMaker(GetParam())), checker_(refData_.rootChecker())
     {
         input_   = std::get<0>(GetParam());
         x_       = std::get<1>(GetParam());
@@ -353,43 +401,50 @@ INSTANTIATE_TEST_SUITE_P(Bond,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputBonds),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Angle,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputAngles),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Dihedral,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputDihs),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Polarize,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputPols),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Restraints,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputRestraints),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(BondZeroLength,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputBondsZeroLength),
                                             ::testing::ValuesIn(c_coordinatesForTestsZeroBondLength),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(AngleZero,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputAnglesZeroAngle),
                                             ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
-                                            ::testing::ValuesIn(c_pbcForTests)));
+                                            ::testing::ValuesIn(c_pbcForTests)),
+                         sc_testNamer);
 
 } // namespace
 
