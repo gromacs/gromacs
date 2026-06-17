@@ -275,11 +275,13 @@ static NbnxmKernelSetup pickNbnxnKernelCpu(const t_inputrec&    inputrec,
     {
         return NbnxmKernelSetup{ NbnxmKernelType::Cpu1x1_PlainC, EwaldExclusionType::Table };
     }
+    MSVC_DIAGNOSTIC_IGNORE(6237) // Without SIMD we intend to skip calling nbnxmSimdSupported
     if (GMX_SIMD && useSimd && nbnxmSimdSupported(mdlog, inputrec) && !forcePlainC4x4)
     {
         return NbnxmKernelSetup{ pickNbnxmKernelCpuSimdType(inputrec, hardwareInfo),
                                  pickNbnxmKernelCpuSimdExclusion(hardwareInfo) };
     }
+    MSVC_DIAGNOSTIC_RESET
     return NbnxmKernelSetup{ NbnxmKernelType::Cpu4x4_PlainC, EwaldExclusionType::Table };
 }
 
@@ -350,10 +352,12 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
                                      sc_gpuNumClusterPerBinZ(gpuPairlistType));
     }
 
+    MSVC_DIAGNOSTIC_IGNORE(6285) // All arch with supported SIMD are listed
     // Warn when using non-SIMD CPU kernels on architectures with (fast) SIMD support
     constexpr bool haveSimdSupportForArch =
             (c_architecture == Architecture::X86 || c_architecture == Architecture::Arm
              || c_architecture == Architecture::PowerPC);
+    MSVC_DIAGNOSTIC_RESET
     if (kernelTypeUsesSimplePairlist(kernelSetup.kernelType)
         && !kernelTypeIsSimd(kernelSetup.kernelType) && haveSimdSupportForArch)
     {

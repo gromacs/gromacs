@@ -56,6 +56,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/path.h"

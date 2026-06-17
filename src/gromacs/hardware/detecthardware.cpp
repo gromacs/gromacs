@@ -142,6 +142,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
     isMainRankOfPhysicalNode = true;
 #endif
 
+    MSVC_DIAGNOSTIC_IGNORE(6285) // We intend to always detect with OpenCL or SYCL
     /* The SYCL and OpenCL support requires us to run detection on all
      * ranks.
      *
@@ -149,8 +150,9 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
      * and send the information to the other ranks over MPI. This
      * avoids creating a start-up bottleneck with each MPI rank on a
      * node making the same GPU API calls. */
-    constexpr bool allRanksMustDetectGpus = (GMX_GPU_OPENCL != 0 || GMX_GPU_SYCL != 0);
-    bool           gpusCanBeDetected      = false;
+    constexpr bool allRanksMustDetectGpus = ((GMX_GPU_OPENCL != 0) || (GMX_GPU_SYCL != 0));
+    MSVC_DIAGNOSTIC_RESET
+    bool gpusCanBeDetected = false;
     if (isMainRankOfPhysicalNode || allRanksMustDetectGpus)
     {
         std::string errorMessage;

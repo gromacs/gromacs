@@ -316,10 +316,14 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed)
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
-    const bool pmeGpuDecompositionSupported =
-            canUseGpuAwareMpi && GpuConfigurationCapabilities::PpPmeDirectComm
-            && ((GpuConfigurationCapabilities::PmeDecomposition && pmeRunMode == PmeRunMode::GPU)
-                || (GpuConfigurationCapabilities::Pme && pmeRunMode == PmeRunMode::Mixed));
+    const bool runConfigurationCouldUsePmeDecompositionOnGpu =
+            (GpuConfigurationCapabilities::PmeDecomposition && pmeRunMode == PmeRunMode::GPU);
+    const bool runConfigurationCouldUsePmeDecompositionOnCpu =
+            (GpuConfigurationCapabilities::Pme && pmeRunMode == PmeRunMode::Mixed);
+    const bool runConfigurationCouldUsePmeDecomposition =
+            (runConfigurationCouldUsePmeDecompositionOnGpu || runConfigurationCouldUsePmeDecompositionOnCpu);
+    const bool pmeGpuDecompositionSupported = canUseGpuAwareMpi && GpuConfigurationCapabilities::PpPmeDirectComm
+                                              && runConfigurationCouldUsePmeDecomposition;
 
     const bool forcePmeGpuDecomposition = std::getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr;
 
