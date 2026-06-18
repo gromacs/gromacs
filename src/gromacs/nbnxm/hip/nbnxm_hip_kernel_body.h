@@ -142,8 +142,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         const int bidx       = blockIdx.x;
         const int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
 
-        using NbnxmExcl     = nbnxn_excl_t;
-        using NbnxmCjPacked = nbnxn_cj_packed_t;
+        using NbnxmExcl     = nbnxm_excl_t;
+        using NbnxmCjPacked = nbnxm_cj_packed_t;
 
         AmdFastBuffer<const float4> gm_xq{ atdat.xq };
         float3*                     gm_f             = asFloat3(atdat.f);
@@ -152,7 +152,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         float*                      gm_energyElec    = atdat.eElec;
         float*                      gm_energyVdw     = atdat.eLJ;
         NbnxmCjPacked*              gm_plistCJPacked = plist.cjPacked;
-        AmdFastBuffer<const nbnxn_sci_t> gm_plistSci{ doPruneNBL ? plist.sci : plist.sorting.sciSorted };
+        AmdFastBuffer<const nbnxm_sci_t> gm_plistSci{ doPruneNBL ? plist.sci : plist.sorting.sciSorted };
         int* gm_plistSciHistogram = plist.sorting.sciHistogram;
         int* gm_sciCount          = plist.sorting.sciCount;
 
@@ -228,7 +228,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
             fCiBuffer[i] = { 0.0f, 0.0f, 0.0f };
         }
 
-        const nbnxn_sci_t nbSci          = gm_plistSci[bidx];
+        const nbnxm_sci_t nbSci          = gm_plistSci[bidx];
         const int         sci            = nbSci.sci;
         const int         cijPackedBegin = nbSci.cjPackedBegin;
         const int         cijPackedEnd   = nbSci.cjPackedEnd;
@@ -334,7 +334,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                     energyElec /= epsFac * c_clSize * nthreadZ;
                     energyElec *= -ewaldBeta * c_oneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
-            } // (nbSci.shift == c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            } // (nbSci.shift == c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxmGpuNumClusterPerSupercluster)
         } // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
@@ -463,7 +463,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                             const float c12 = c6c12.y;
 
                             // Ensure distance do not become so small that r^-12 overflows
-                            r2                = fmax(r2, c_nbnxnMinDistanceSquared);
+                            r2                = fmax(r2, c_nbnxmMinDistanceSquared);
                             const float rInv  = __frsqrt_rn(r2);
                             const float r2Inv = rInv * rInv;
                             float       r6Inv, fInvR, energyLJPair;

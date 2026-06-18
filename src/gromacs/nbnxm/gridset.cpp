@@ -191,7 +191,7 @@ void GridSet::putOnGrid(const matrix            box,
                         ArrayRef<const int32_t> atomInfo,
                         ArrayRef<const RVec>    x,
                         const int*              move,
-                        nbnxn_atomdata_t*       nbat)
+                        nbnxm_atomdata_t*       nbat)
 {
     GMX_RELEASE_ASSERT(
             !localAtomOrderMatchesNbnxmOrder_ || gridIndex == 0 || domainSetup_.doTestParticleInsertion_,
@@ -213,7 +213,7 @@ void GridSet::putOnGrid(const matrix            box,
         maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
 
         numRealAtomsLocal_ = numAtomsWithoutFillers;
-        /* We assume that nbnxn_put_on_grid is called first
+        /* We assume that nbnxm_put_on_grid is called first
          * for the local atoms (gridIndex=0).
          */
         numRealAtomsTotal_ = numAtomsWithoutFillers;

@@ -67,7 +67,7 @@ namespace gmx
  *  by an MD module, such as FMM.
  *
  *  The row-order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ *  nbnxm_cuda.cu by the nb_*_kfunc_ptr function pointer table
  *  should match the order of enumerated types below.
  */
 enum class ElecType : int
@@ -92,7 +92,7 @@ constexpr int c_numElecTypes = static_cast<int>(ElecType::Count);
  * kernels.
  *
  * The column-order of pointers to different electrostatic kernels defined in
- * nbnxn_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
+ * nbnxm_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
  * should match the order of enumerated types below.
  */
 enum class VdwType : int
@@ -173,9 +173,9 @@ namespace detail
 
 //! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at configure time for OpenCL and SYCL
 #if GMX_GPU_OPENCL || GMX_GPU_SYCL
-constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
+constexpr int c_nbnxmGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
 #else
-constexpr int c_nbnxnGpuClusterSize = 8;
+constexpr int c_nbnxmGpuClusterSize = 8;
 #endif
 
 /*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
@@ -197,9 +197,9 @@ constexpr int c_gpuNumClusterPerBinX = GMX_GPU_NB_NUM_CLUSTER_PER_BIN_X;
  * (e.g. AMD GCN, CDNA and later).
  */
 #if GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-static constexpr int c_nbnxnGpuClusterpairSplit = 1;
+static constexpr int c_nbnxmGpuClusterpairSplit = 1;
 #else
-static constexpr int c_nbnxnGpuClusterpairSplit = 2;
+static constexpr int c_nbnxmGpuClusterpairSplit = 2;
 #endif
 
 } // namespace detail
@@ -210,7 +210,7 @@ static constexpr int sc_gpuClusterSize(const PairlistType pairlistType)
     // for now we return only the default type here and in the other places
     switch (pairlistType)
     {
-        default: return detail::c_nbnxnGpuClusterSize;
+        default: return detail::c_nbnxmGpuClusterSize;
     }
 }
 
@@ -268,7 +268,7 @@ static constexpr int sc_gpuClusterPairSplit(const PairlistType pairlistType)
 {
     switch (pairlistType)
     {
-        default: return detail::c_nbnxnGpuClusterpairSplit;
+        default: return detail::c_nbnxmGpuClusterpairSplit;
     }
 }
 

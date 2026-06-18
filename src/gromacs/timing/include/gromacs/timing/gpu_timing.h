@@ -77,7 +77,7 @@ struct gmx_wallclock_gpu_pme_t
 };
 
 /*! \internal \brief GPU NB timings for kernels and H2d/D2H transfers. */
-struct gmx_wallclock_gpu_nbnxn_t
+struct gmx_wallclock_gpu_nbnxm_t
 {
     gmx_kernel_timing_data_t ktime[2][2]; /**< table containing the timings of the four
                                                    versions of the nonbonded kernels: force-only,

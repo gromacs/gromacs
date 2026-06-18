@@ -36,7 +36,7 @@
  *  \brief
  *  Utility constant and function declaration for the CUDA non-bonded kernels.
  *  This header should be included once at the top level, just before the
- *  kernels are included (has to be preceded by nbnxn_cuda_types.h).
+ *  kernels are included (has to be preceded by nbnxm_cuda_types.h).
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_nbnxm
@@ -636,4 +636,4 @@ reduce_fep_force_i_warp_shfl(float3 fin, float3* fout, int tidx, int aidx, const
 
 } // namespace gmx
 
-#endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */
+#endif /* NBNXM_CUDA_KERNEL_UTILS_CUH */

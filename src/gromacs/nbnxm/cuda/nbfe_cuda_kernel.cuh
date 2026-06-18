@@ -330,7 +330,7 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
                     continue;
                 }
                 // Ensure distance do not become so small that r^-12 overflows
-                r2     = max(r2, c_nbnxnMinDistanceSquared);
+                r2     = max(r2, c_nbnxmMinDistanceSquared);
                 inv_r  = rsqrt(r2);
                 inv_r2 = inv_r * inv_r;
 

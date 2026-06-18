@@ -95,7 +95,7 @@
 
             // Ensure the distances do not fall below the limit where r^-12 overflows.
             // This should never happen for normal interactions.
-            rsq = std::max(rsq, c_nbnxnMinDistanceSquared);
+            rsq = std::max(rsq, c_nbnxmMinDistanceSquared);
 
 #ifdef COUNT_PAIRS
             npair++;

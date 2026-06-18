@@ -61,7 +61,7 @@ static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistTyp
         switch (deviceInfo.deviceVendor)
         {
             /* For Intel, choose 8 for 4x4 clusters, and 32 for 8x8 clusters.
-             * The optimal one depends on the hardware, but we cannot choose c_nbnxnGpuClusterSize
+             * The optimal one depends on the hardware, but we cannot choose c_nbnxmGpuClusterSize
              * at runtime anyway yet. */
             case DeviceVendor::Intel: return sc_gpuParallelExecutionWidth(layoutType);
             case DeviceVendor::PoclCpu: return sc_gpuParallelExecutionWidth(layoutType);

@@ -66,7 +66,7 @@ namespace gmx
 {
 
 __launch_bounds__(c_sciSortingThreadsPerBlock) static __global__
-        void nbnxnKernelBucketSciSort(GpuPairlist plist)
+        void nbnxmKernelBucketSciSort(GpuPairlist plist)
 {
     int size = plist.numSci;
 
@@ -75,7 +75,7 @@ __launch_bounds__(c_sciSortingThreadsPerBlock) static __global__
 
     if (size > (blockOffset + tid))
     {
-        nbnxn_sci_t sci      = plist.sci[blockOffset + tid];
+        nbnxm_sci_t sci      = plist.sci[blockOffset + tid];
         int         sciCount = plist.sorting.sciCount[blockOffset + tid];
 
         // Choose an order in the sorted list for sci with the same number of neighbours as each other.

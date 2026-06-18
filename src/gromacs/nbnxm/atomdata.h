@@ -41,8 +41,8 @@
  */
 
 
-#ifndef GMX_NBNXN_ATOMDATA_H
-#define GMX_NBNXN_ATOMDATA_H
+#ifndef GMX_NBNXM_ATOMDATA_H
+#define GMX_NBNXM_ATOMDATA_H
 
 #include <cstdint>
 #include <cstdio>
@@ -70,7 +70,7 @@ class EnergyAccumulator;
 class EnergyGroupsPerCluster;
 class MDLogger;
 struct NbnxmGpu;
-struct nbnxn_atomdata_t;
+struct nbnxm_atomdata_t;
 struct nonbonded_verlet_t;
 enum class NbnxmKernelType;
 class GridSet;
@@ -105,7 +105,7 @@ static inline int atom_to_x_index(int a)
 
 /*! \internal
  * \brief Struct that holds force and energy output buffers */
-struct nbnxn_atomdata_output_t
+struct nbnxm_atomdata_output_t
 {
     /*! \brief Constructor
      *
@@ -114,15 +114,15 @@ struct nbnxn_atomdata_output_t
      * \param[in] hostAllocationPolicy  Sets the host allocation policy
      *                                  for all buffers used on the GPU
      */
-    nbnxn_atomdata_output_t(NbnxmKernelType             kernelType,
+    nbnxm_atomdata_output_t(NbnxmKernelType             kernelType,
                             int                         numEnergyGroups,
                             const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Move constructor
-    nbnxn_atomdata_output_t(nbnxn_atomdata_output_t&&) noexcept;
+    nbnxm_atomdata_output_t(nbnxm_atomdata_output_t&&) noexcept;
 
     //! Destructor
-    ~nbnxn_atomdata_output_t();
+    ~nbnxm_atomdata_output_t();
 
 
     //! f, size natoms*fstride
@@ -145,18 +145,18 @@ struct nbnxn_atomdata_output_t
  * Should be a multiple of all cell and x86 SIMD sizes (i.e. 2, 4 and 8).
  * Should be small to reduce the reduction and zeroing cost,
  * but too small will result in overhead.
- * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
+ * Currently the block size is NBNXM_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
  */
 #if GMX_DOUBLE
-#    define NBNXN_BUFFERFLAG_SIZE 8
+#    define NBNXM_BUFFERFLAG_SIZE 8
 #else
-#    define NBNXN_BUFFERFLAG_SIZE 16
+#    define NBNXM_BUFFERFLAG_SIZE 16
 #endif
 
 /*! \brief We store the reduction flags as gmx_bitmask_t.
  * This limits the number of flags to BITMASK_SIZE.
  */
-#define NBNXN_BUFFERFLAG_MAX_THREADS (BITMASK_SIZE)
+#define NBNXM_BUFFERFLAG_MAX_THREADS (BITMASK_SIZE)
 
 
 //! LJ combination rules
@@ -176,17 +176,17 @@ enum class LJCombinationRule : int
 const char* enumValueToString(LJCombinationRule enumValue);
 
 /*! \internal
- * \brief Struct that stores atom related data for the nbnxn module
+ * \brief Struct that stores atom related data for the nbnxm module
  *
  * Note: performance would improve slightly when all std::vector containers
  *       in this struct would not initialize during resize().
  */
-struct nbnxn_atomdata_t
+struct nbnxm_atomdata_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
 
-    nbnxn_atomdata_t(const HostAllocationPolicy& hostAllocationPolicy);
+    nbnxm_atomdata_t(const HostAllocationPolicy& hostAllocationPolicy);
 
-    ~nbnxn_atomdata_t();
+    ~nbnxm_atomdata_t();
 
     /*! \internal
      * \brief The actual atom data parameter values */
@@ -215,7 +215,7 @@ struct nbnxn_atomdata_t
         HostVector<real> lj_comb;
         //! Charges per atom, not set with format nbatXYZQ
         HostVector<real> q;
-        /* The charges and types of the perturbed atoms are set to non-interacting by the nbnxn_atomdata_mask_fep function.
+        /* The charges and types of the perturbed atoms are set to non-interacting by the nbnxm_atomdata_mask_fep function.
          * Therefore, separate arrays are used to store the A and B state parameters in FEP calculations.
          * These arrays will have correct values for all particles in the system (perturbed and non-perturbed).
          */
@@ -280,7 +280,7 @@ struct nbnxn_atomdata_t
      * \param[in] numEnergyGroups       Number of energy groups
      * \param[in] numOutputBuffers      Number of output data structures
      */
-    nbnxn_atomdata_t(const HostAllocationPolicy&             hostAllocationPolicy,
+    nbnxm_atomdata_t(const HostAllocationPolicy&             hostAllocationPolicy,
                      const MDLogger&                         mdlog,
                      NbnxmKernelType                         kernelType,
                      const std::optional<LJCombinationRule>& ljCombinationRule,
@@ -322,13 +322,13 @@ struct nbnxn_atomdata_t
     void resizeForceBuffers();
 
     //! Returns the output buffer for the given \p thread
-    nbnxn_atomdata_output_t& outputBuffer(int thread) { return outputBuffers_[thread]; }
+    nbnxm_atomdata_output_t& outputBuffer(int thread) { return outputBuffers_[thread]; }
 
     //! Returns the output buffer for the given \p thread
-    const nbnxn_atomdata_output_t& outputBuffer(int thread) const { return outputBuffers_[thread]; }
+    const nbnxm_atomdata_output_t& outputBuffer(int thread) const { return outputBuffers_[thread]; }
 
     //! Returns the list of output buffers
-    ArrayRef<const nbnxn_atomdata_output_t> outputBuffers() const { return outputBuffers_; }
+    ArrayRef<const nbnxm_atomdata_output_t> outputBuffers() const { return outputBuffers_; }
 
     //! Returns whether buffer flags are used
     bool useBufferFlags() const { return useBufferFlags_; }
@@ -386,7 +386,7 @@ private:
     SimdMasks simdMasks_;
 
     //! Output data structures, 1 per thread
-    std::vector<nbnxn_atomdata_output_t> outputBuffers_;
+    std::vector<nbnxm_atomdata_output_t> outputBuffers_;
 
     //! Reduction related data
     //! \{
@@ -403,7 +403,7 @@ private:
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0);
 
 //! Sets the atomdata after pair search
-void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
+void nbnxm_atomdata_set(nbnxm_atomdata_t gmx_unused*       nbat,
                         const GridSet gmx_unused&          gridSet,
                         ArrayRef<const int> gmx_unused     atomTypesA,
                         ArrayRef<const int> gmx_unused     atomTypesB,
@@ -413,9 +413,9 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t gmx_unused*       nbat,
                         bool gmx_unused                    useGpuNonbondedFE);
 
 //! Copy the shift vectors to nbat
-void nbnxn_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,
+void nbnxm_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,
                                   ArrayRef<const RVec> shiftVectors,
-                                  nbnxn_atomdata_t*    nbat);
+                                  nbnxm_atomdata_t*    nbat);
 
 /*! \brief Transform coordinates to xbat layout
  *
@@ -426,16 +426,16 @@ void nbnxn_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,
  * \param[in] coordinates  Coordinates in plain rvec format.
  * \param[in,out] nbat     Data in NBNXM format, used for mapping formats and to locate the output buffer.
  */
-void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&    gridSet,
+void nbnxm_atomdata_copy_x_to_nbat_x(const GridSet&    gridSet,
                                      AtomLocality      locality,
                                      const rvec*       coordinates,
-                                     nbnxn_atomdata_t* nbat);
+                                     nbnxm_atomdata_t* nbat);
 
 //! Add the fshift force stored in nbat to fshift
-void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, ArrayRef<RVec> fshift);
+void nbnxm_atomdata_add_nbat_fshift_to_fshift(const nbnxm_atomdata_t& nbat, ArrayRef<RVec> fshift);
 
 //! Returns the coordinates of atoms \p a
-static inline RVec getCoordinate(const nbnxn_atomdata_t& nbat, const int a)
+static inline RVec getCoordinate(const nbnxm_atomdata_t& nbat, const int a)
 {
     RVec x;
 
@@ -469,7 +469,7 @@ static inline RVec getCoordinate(const nbnxn_atomdata_t& nbat, const int a)
             x[ZZ] = nbat.x()[i + ZZ * c_packX8];
             break;
         }
-        default: GMX_ASSERT(false, "Unsupported nbnxn_atomdata_t format");
+        default: GMX_ASSERT(false, "Unsupported nbnxm_atomdata_t format");
     }
 
     return x;

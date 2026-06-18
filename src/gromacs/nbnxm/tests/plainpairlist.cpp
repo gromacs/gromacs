@@ -147,7 +147,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     auto pairSearch = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(hostAllocationPolicy,
+    auto atomData = std::make_unique<nbnxm_atomdata_t>(hostAllocationPolicy,
                                                        MDLogger(),
                                                        options.kernelSetup.kernelType,
                                                        LJCombinationRule::None,

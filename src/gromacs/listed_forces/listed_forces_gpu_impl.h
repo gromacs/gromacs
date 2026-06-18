@@ -143,7 +143,7 @@ public:
      * stage. Copies the bonded interactions assigned to the GPU
      * to device data structures, and updates device buffers that
      * may have been updated after search. */
-    void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
+    void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxmAtomOrder,
                                                 const InteractionDefinitions& idef,
                                                 DeviceBuffer<Float4>          d_xqPtr,
                                                 DeviceBuffer<RVec>            d_fPtr,

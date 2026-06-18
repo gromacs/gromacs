@@ -71,13 +71,13 @@
  */
 
 /* Cost of a pair interaction in the "Verlet" cut-off scheme, QEXP is Ewald */
-static const double c_nbnxn_lj      = 2.5;
-static const double c_nbnxn_qrf_lj  = 2.9;
-static const double c_nbnxn_qrf     = 2.4;
-static const double c_nbnxn_qexp_lj = 4.2;
-static const double c_nbnxn_qexp    = 3.8;
+static const double c_nbnxm_lj      = 2.5;
+static const double c_nbnxm_qrf_lj  = 2.9;
+static const double c_nbnxm_qrf     = 2.4;
+static const double c_nbnxm_qexp_lj = 4.2;
+static const double c_nbnxm_qexp    = 3.8;
 /* Extra cost for expensive LJ interaction, e.g. pot-switch or LJ-PME */
-static const double c_nbnxn_ljexp_add = 1.0;
+static const double c_nbnxm_ljexp_add = 1.0;
 
 /* Cost of the different components of PME. */
 /* Cost of particle reordering and redistribution (no SIMD correction).
@@ -153,7 +153,7 @@ static double simd_cycle_factor(gmx_bool bUseSIMD)
 #endif
 
     /* Return speed compared to the reference (Haswell).
-     * For x86 SIMD, the nbnxn kernels are relatively much slower on
+     * For x86 SIMD, the nbnxm kernels are relatively much slower on
      * Sandy/Ivy Bridge than Haswell, but that only leads to a too high
      * PME load estimate on SB/IB, which is erring on the safe side.
      */
@@ -278,9 +278,9 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
      * The factor is about right for SSE2/4, but should be 2 higher for AVX256.
      */
 #if GMX_DOUBLE
-    const real nbnxn_refkernel_fac = 4.0;
+    const real nbnxm_refkernel_fac = 4.0;
 #else
-    const real nbnxn_refkernel_fac = 8.0;
+    const real nbnxm_refkernel_fac = 8.0;
 #endif
 
     bQRF = (usingRF(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Cut);
@@ -344,20 +344,20 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     }
 
     /* Determine the cost per pair interaction */
-    c_qlj = (bQRF ? c_nbnxn_qrf_lj : c_nbnxn_qexp_lj);
-    c_q   = (bQRF ? c_nbnxn_qrf : c_nbnxn_qexp);
-    c_lj  = c_nbnxn_lj;
+    c_qlj = (bQRF ? c_nbnxm_qrf_lj : c_nbnxm_qexp_lj);
+    c_q   = (bQRF ? c_nbnxm_qrf : c_nbnxm_qexp);
+    c_lj  = c_nbnxm_lj;
     if (ir.vdw_modifier == InteractionModifiers::PotSwitch || usingLJPme(ir.vdwtype))
     {
-        c_qlj += c_nbnxn_ljexp_add;
-        c_lj += c_nbnxn_ljexp_add;
+        c_qlj += c_nbnxm_ljexp_add;
+        c_lj += c_nbnxm_ljexp_add;
     }
     if (usingLJPme(ir.vdwtype) && ir.ljpme_combination_rule == LongRangeVdW::LB)
     {
         /* We don't have LJ-PME LB comb. rule kernels, we use slow kernels */
-        c_qlj *= nbnxn_refkernel_fac;
-        c_q *= nbnxn_refkernel_fac;
-        c_lj *= nbnxn_refkernel_fac;
+        c_qlj *= nbnxm_refkernel_fac;
+        c_q *= nbnxm_refkernel_fac;
+        c_lj *= nbnxm_refkernel_fac;
     }
 
     /* For the PP non-bonded cost it is (unrealistically) assumed

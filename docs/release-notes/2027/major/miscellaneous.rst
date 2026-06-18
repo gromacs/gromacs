@@ -7,6 +7,11 @@ Miscellaneous
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Renamed all NBNXN environment variables to NBNXM
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+All environment variables starting with ``GMX_NBNXN`` have been renamed to start with ``GMX_NBNXM`` for consistency with the algorithm's name.
+
 Replaced usage of custom Bohr radius value in gmx spatial with the common value from units
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

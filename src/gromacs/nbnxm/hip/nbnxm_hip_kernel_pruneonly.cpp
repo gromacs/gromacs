@@ -104,8 +104,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         }
 
         const float3*      shiftVec         = asFloat3(atdat.shiftVec);
-        nbnxn_cj_packed_t* gm_plistCJPacked = plist.cjPacked;
-        const nbnxn_sci_t* plistSci         = haveFreshList ? plist.sci : plist.sorting.sciSorted;
+        nbnxm_cj_packed_t* gm_plistCJPacked = plist.cjPacked;
+        const nbnxm_sci_t* plistSci         = haveFreshList ? plist.sci : plist.sorting.sciSorted;
         int*               gm_plistSciHistogram = plist.sorting.sciHistogram;
         int*               gm_sciCount          = plist.sorting.sciCount;
         unsigned int*      gm_plistIMask        = plist.imask;
@@ -120,7 +120,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         AmdFastBuffer<const float4> xq{ atdat.xq };
 
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
-        const nbnxn_sci_t nbSci          = plistSci[bidx * numParts + part];
+        const nbnxm_sci_t nbSci          = plistSci[bidx * numParts + part];
         const int         sci            = nbSci.sci;           /* super-cluster */
         const int         cijPackedBegin = nbSci.cjPackedBegin; /* first ...*/
         const int         cijPackedEnd   = nbSci.cjPackedEnd;   /* and last index of j clusters */

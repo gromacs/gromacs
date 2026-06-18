@@ -144,7 +144,7 @@ class MpiComm;
 class Grid;
 struct GridDimensions;
 struct NbnxmGpu;
-struct nbnxn_atomdata_t;
+struct nbnxm_atomdata_t;
 class PairSearch;
 class PairlistSets;
 template<typename>
@@ -213,7 +213,7 @@ public:
      */
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
                        std::unique_ptr<PairSearch>       pairSearch,
-                       std::unique_ptr<nbnxn_atomdata_t> nbat,
+                       std::unique_ptr<nbnxm_atomdata_t> nbat,
                        const NbnxmKernelSetup&           kernelSetup,
                        std::unique_ptr<ExclusionChecker> exclusionChecker,
                        NbnxmGpu*                         gpu_nbv,
@@ -230,7 +230,7 @@ public:
      */
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
                        std::unique_ptr<PairSearch>       pairSearch,
-                       std::unique_ptr<nbnxn_atomdata_t> nbat,
+                       std::unique_ptr<nbnxm_atomdata_t> nbat,
                        const NbnxmKernelSetup&           kernelSetup,
                        NbnxmGpu*                         gpu_nbv);
 
@@ -446,8 +446,8 @@ public:
 
     void setupFepThreadedForceBuffer(int numAtomsForce);
 
-    //! Returns a reference to the nbnxn_atomdata_t object
-    nbnxn_atomdata_t& nbat() { return *nbat_; }
+    //! Returns a reference to the nbnxm_atomdata_t object
+    nbnxm_atomdata_t& nbat() { return *nbat_; }
 
     //! Returns a pointer to the NbnxmGpu object, can return nullptr
     const NbnxmGpu* gpuNbv() const { return gpuNbv_; }
@@ -483,7 +483,7 @@ private:
     //! Working data for constructing the pairlists
     std::unique_ptr<PairSearch> pairSearch_;
     //! Atom data
-    std::unique_ptr<nbnxn_atomdata_t> nbat_;
+    std::unique_ptr<nbnxm_atomdata_t> nbat_;
 
     //! The non-bonded setup, also affects the pairlist construction kernel
     NbnxmKernelSetup kernelSetup_;
@@ -521,12 +521,12 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    matrix               box,
                                                    gmx_wallcycle*       wcycle);
 
-/*! \brief As nbnxn_put_on_grid, but for the non-local atoms
+/*! \brief As nbnxm_put_on_grid, but for the non-local atoms
  *
  * with domain decomposition. Should be called after calling
- * nbnxn_search_put_on_grid for the local atoms / home zone.
+ * nbnxm_search_put_on_grid for the local atoms / home zone.
  */
-void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nb_verlet,
+void nbnxm_put_on_grid_nonlocal(nonbonded_verlet_t*     nb_verlet,
                                 const gmx::DomdecZones& zones,
                                 ArrayRef<const int32_t> atomInfo,
                                 ArrayRef<const RVec>    x);

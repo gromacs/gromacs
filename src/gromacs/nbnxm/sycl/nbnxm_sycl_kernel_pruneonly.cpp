@@ -70,8 +70,8 @@ auto nbnxmKernelPruneOnly(CommandGroupHandler cgh,
                           const int           numParts,
                           const Float4* __restrict__ gm_xq,
                           const Float3* __restrict__ gm_shiftVec,
-                          nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
-                          const nbnxn_sci_t* __restrict__ gm_plistSci,
+                          nbnxm_cj_packed_t* __restrict__ gm_plistCJPacked,
+                          const nbnxm_sci_t* __restrict__ gm_plistSci,
                           unsigned int* __restrict__ gm_plistIMask,
                           int* __restrict__ gm_rollingPruningPart,
                           int* __restrict__ gm_sciHistogram,
@@ -139,7 +139,7 @@ auto nbnxmKernelPruneOnly(CommandGroupHandler cgh,
         const int             widx = tidx / warpSize;
 
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
-        const nbnxn_sci_t nbSci          = gm_plistSci[bidx * numParts + part];
+        const nbnxm_sci_t nbSci          = gm_plistSci[bidx * numParts + part];
         const int         sci            = nbSci.sci;           /* super-cluster */
         const int         cijPackedBegin = nbSci.cjPackedBegin; /* first ...*/
         const int         cijPackedEnd   = nbSci.cjPackedEnd;   /* and last index of j clusters */
@@ -183,7 +183,7 @@ auto nbnxmKernelPruneOnly(CommandGroupHandler cgh,
         {
             unsigned imaskFull, imaskCheck, imaskNew;
 
-            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            nbnxm_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
 
             if constexpr (haveFreshList)
             {
@@ -246,9 +246,9 @@ auto nbnxmKernelPruneOnly(CommandGroupHandler cgh,
                             } // (imaskCheck & mask_ji)
                             /* shift the mask bit by 1 */
                             mask_ji += mask_ji;
-                        } // (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
-                    } // (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
-                } // for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+                        } // (int i = 0; i < c_nbnxmGpuNumClusterPerSupercluster; i++)
+                    } // (imaskCheck & (superClInteractionMask << (jm * c_nbnxmGpuNumClusterPerSupercluster)))
+                } // for (int jm = 0; jm < c_nbnxmGpuJgroupSize; jm++)
 
                 if constexpr (haveFreshList)
                 {

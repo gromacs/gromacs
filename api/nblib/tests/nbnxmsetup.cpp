@@ -166,17 +166,17 @@ TEST(NbnxmSetupTest, canCheckKernelSetup)
 {
     NBKernelOptions nbKernelOptions;
     nbKernelOptions.nbnxmSimd = SimdKernels::SimdNo;
-#ifdef GMX_NBNXN_SIMD_4XN
+#ifdef GMX_NBNXM_SIMD_4XN
     nbKernelOptions.nbnxmSimd = SimdKernels::Simd4XM;
 #endif
-#ifdef GMX_NBNXN_SIMD_2XNN
+#ifdef GMX_NBNXM_SIMD_2XNN
     nbKernelOptions.nbnxmSimd = SimdKernels::Simd2XMM;
 #endif
     EXPECT_NO_THROW(checkKernelSetupSimd(nbKernelOptions.nbnxmSimd));
 }
 
 // check if the user is allowed to ask for SimdKernels::Simd2XMM when NB-LIB is not compiled with it
-#ifndef GMX_NBNXN_SIMD_2XNN
+#ifndef GMX_NBNXM_SIMD_2XNN
 TEST(NbnxmSetupTest, cannotCreateKernelSetupCPU2XM)
 {
     NBKernelOptions nbKernelOptions;
@@ -187,7 +187,7 @@ TEST(NbnxmSetupTest, cannotCreateKernelSetupCPU2XM)
 #endif
 
 // check if the user is allowed to ask for SimdKernels::Simd4XM when NB-LIB is not compiled with it
-#ifndef GMX_NBNXN_SIMD_4XN
+#ifndef GMX_NBNXM_SIMD_4XN
 TEST(NbnxmSetupTest, cannotCreateKernelSetupCPU4XM)
 {
     NBKernelOptions nbKernelOptions;

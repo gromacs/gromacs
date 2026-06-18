@@ -78,8 +78,8 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "NB Generic charge grp kernel", 1 },
     { "NB Free energy kernel", 1 },
 
-    { "Pair Search distance check", 9 }, /* nbnxn pair dist. check */
-    /* nbnxn kernel flops are based on inner-loops without exclusion checks.
+    { "Pair Search distance check", 9 }, /* nbnxm pair dist. check */
+    /* nbnxm kernel flops are based on inner-loops without exclusion checks.
      * Plain Coulomb runs through the RF kernels, except with GPUs.
      * invsqrt is counted as 6 flops: 1 for _mm_rsqt_ps + 5 for iteration.
      * The flops are equal for plain-C, x86 SIMD and GPUs, except for:
@@ -89,19 +89,19 @@ static const t_nrnb_data nbdata[eNRNB] = {
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
      *   is always counted as 6 flops, this roughly compensates.
      */
-    { "NxN RF Elec. + LJ [F]", 38 }, /* nbnxn kernel LJ+RF, no ener */
+    { "NxN RF Elec. + LJ [F]", 38 }, /* nbnxm kernel LJ+RF, no ener */
     { "NxN RF Elec. + LJ [V&F]", 54 },
-    { "NxN QSTab Elec. + LJ [F]", 41 }, /* nbnxn kernel LJ+tab, no en */
+    { "NxN QSTab Elec. + LJ [F]", 41 }, /* nbnxm kernel LJ+tab, no en */
     { "NxN QSTab Elec. + LJ [V&F]", 59 },
-    { "NxN Ewald Elec. + LJ [F]", 66 }, /* nbnxn kernel LJ+Ewald, no en */
+    { "NxN Ewald Elec. + LJ [F]", 66 }, /* nbnxm kernel LJ+Ewald, no en */
     { "NxN Ewald Elec. + LJ [V&F]", 107 },
-    { "NxN LJ [F]", 33 }, /* nbnxn kernel LJ, no ener */
+    { "NxN LJ [F]", 33 }, /* nbnxm kernel LJ, no ener */
     { "NxN LJ [V&F]", 43 },
-    { "NxN RF Electrostatics [F]", 31 }, /* nbnxn kernel RF, no ener */
+    { "NxN RF Electrostatics [F]", 31 }, /* nbnxm kernel RF, no ener */
     { "NxN RF Electrostatics [V&F]", 36 },
-    { "NxN QSTab Elec. [F]", 34 }, /* nbnxn kernel tab, no ener */
+    { "NxN QSTab Elec. [F]", 34 }, /* nbnxm kernel tab, no ener */
     { "NxN QSTab Elec. [V&F]", 41 },
-    { "NxN Ewald Elec. [F]", 61 }, /* nbnxn kernel Ewald, no ener */
+    { "NxN Ewald Elec. [F]", 61 }, /* nbnxm kernel Ewald, no ener */
     { "NxN Ewald Elec. [V&F]", 84 },
     /* The switch function flops should be added to the LJ kernels above */
     { "NxN LJ add F-switch [F]", 12 }, /* extra cost for LJ F-switch */
@@ -268,16 +268,16 @@ void print_nrnb(FILE* out, t_nrnb* nrnb)
     }
 }
 
-/* Returns in enr is the index of a full nbnxn VdW kernel */
-static bool nrnb_is_nbnxn_vdw_kernel(int enr)
+/* Returns in enr is the index of a full nbnxm VdW kernel */
+static bool nrnb_is_nbnxm_vdw_kernel(int enr)
 {
-    return (enr >= eNR_NBNXN_LJ_RF && enr <= eNR_NBNXN_LJ_E);
+    return (enr >= eNR_NBNXM_LJ_RF && enr <= eNR_NBNXM_LJ_E);
 }
 
-/* Returns in enr is the index of an nbnxn kernel addition (LJ modification) */
-static bool nrnb_is_nbnxn_kernel_addition(int enr)
+/* Returns in enr is the index of an nbnxm kernel addition (LJ modification) */
+static bool nrnb_is_nbnxm_kernel_addition(int enr)
 {
-    return (enr >= eNR_NBNXN_ADD_LJ_FSW && enr <= eNR_NBNXN_ADD_LJ_EWALD_E);
+    return (enr >= eNR_NBNXM_ADD_LJ_FSW && enr <= eNR_NBNXM_ADD_LJ_EWALD_E);
 }
 
 void atomicNrnbIncrement(t_nrnb* nrnb, int index, int increment)
@@ -347,23 +347,23 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
     for (int i = 0; (i < eNRNB); i++)
     {
         mni = 1e-6 * nrnb->n[i];
-        /* Skip empty entries and nbnxn additional flops,
+        /* Skip empty entries and nbnxm additional flops,
          * which have been added to the kernel entry.
          */
-        if (mni > 0 && !nrnb_is_nbnxn_kernel_addition(i))
+        if (mni > 0 && !nrnb_is_nbnxm_kernel_addition(i))
         {
             int flop;
 
             flop = nbdata[i].flop;
-            if (nrnb_is_nbnxn_vdw_kernel(i))
+            if (nrnb_is_nbnxm_vdw_kernel(i))
             {
                 /* Possibly add the cost of an LJ switch/Ewald function */
-                for (int j = eNR_NBNXN_ADD_LJ_FSW; j <= eNR_NBNXN_ADD_LJ_EWALD; j += 2)
+                for (int j = eNR_NBNXM_ADD_LJ_FSW; j <= eNR_NBNXM_ADD_LJ_EWALD; j += 2)
                 {
                     int e_kernel_add;
 
                     /* Select the force or energy flop count */
-                    e_kernel_add = j + ((i - eNR_NBNXN_LJ_RF) % 2);
+                    e_kernel_add = j + ((i - eNR_NBNXM_LJ_RF) % 2);
 
                     if (nrnb->n[e_kernel_add] > 0)
                     {

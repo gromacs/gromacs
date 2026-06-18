@@ -735,7 +735,7 @@ static void finish_run(FILE*                                         fplog,
 
     if (printReport)
     {
-        auto* nbnxn_gpu_timings =
+        auto* nbnxm_gpu_timings =
                 (nbv != nullptr && nbv->useGpu()) ? gpu_get_timings(nbv->gpuNbv()) : nullptr;
         wallcycle_print(fplog,
                         mdlog,
@@ -746,7 +746,7 @@ static void finish_run(FILE*                                         fplog,
                         elapsed_time_over_all_ranks,
                         wcycle,
                         cycle_sum,
-                        nbnxn_gpu_timings,
+                        nbnxm_gpu_timings,
                         pmeGpuTimings);
 
         if (EI_DYNAMICS(inputrec.eI))

@@ -376,7 +376,7 @@ endif()
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 
-# This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
+# This should be moved to a separate NBNXM cmake module when that code is cleaned up and modularized
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)

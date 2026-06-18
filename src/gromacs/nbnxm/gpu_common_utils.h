@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements common util routines for different NBNXN GPU implementations
+ * \brief Implements common util routines for different NBNXM GPU implementations
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_nbnxm

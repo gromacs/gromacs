@@ -612,7 +612,7 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
 
 /*! \brief Final i-force reduction.
  *
- * Reduce c_nbnxnGpuNumClusterPerSupercluster i-force components stored in \p fCiBuf[]
+ * Reduce c_nbnxmGpuNumClusterPerSupercluster i-force components stored in \p fCiBuf[]
  * accumulating atomically into \p a_f.
  * If \p calcFShift is true, further reduce shift forces and atomically accumulate into \p a_fShift.
  *
@@ -661,9 +661,9 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
                         Float3* __restrict__ gm_fShift,
                         float* __restrict__ gm_energyElec,
                         float* __restrict__ gm_energyVdw,
-                        nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
-                        const nbnxn_sci_t* __restrict__ gm_plistSci,
-                        const nbnxn_excl_t* __restrict__ gm_plistExcl,
+                        nbnxm_cj_packed_t* __restrict__ gm_plistCJPacked,
+                        const nbnxm_sci_t* __restrict__ gm_plistSci,
+                        const nbnxm_excl_t* __restrict__ gm_plistExcl,
                         const Float2* __restrict__ gm_ljComb /* used iff ljComb<vdwType> */,
                         const int* __restrict__ gm_atomTypes /* used iff !ljComb<vdwType> */,
                         const Float2* __restrict__ gm_nbfp /* used iff !ljComb<vdwType> */,
@@ -694,7 +694,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
     constexpr int          c_clSize               = sc_gpuClusterSize(sc_layoutType);
     constexpr int          c_clSizeSq             = c_clSize * c_clSize;
     constexpr int          c_splitClSize          = sc_gpuSplitJClusterSize(sc_layoutType);
-    constexpr int          c_nbnxnGpuJgroupSize   = sc_gpuJgroupSize(sc_layoutType);
+    constexpr int          c_nbnxmGpuJgroupSize   = sc_gpuJgroupSize(sc_layoutType);
     constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(sc_layoutType);
 
     // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask
@@ -804,7 +804,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
         auto  fCiBufZ                      = [&](auto i) -> float& { return fCiBufZ_[i]; };
 #endif
 
-        const nbnxn_sci_t nbSci          = gm_plistSci[bidx];
+        const nbnxm_sci_t nbSci          = gm_plistSci[bidx];
         const int         sci            = nbSci.sci;
         const int         cijPackedBegin = nbSci.cjPackedBegin;
         const int         cijPackedEnd   = nbSci.cjPackedEnd;
@@ -905,7 +905,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
                     energyElec /= epsFac * c_clSize;
                     energyElec *= -ewaldBeta * c_oneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
-            } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxmGpuNumClusterPerSupercluster)
         } // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
@@ -915,7 +915,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            nbnxm_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
             unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].imask);
             if (!doPruneNBL && !imask)
             {
@@ -929,7 +929,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
             // Unrolling has been verified to improve performance on AMD and Nvidia
 #if defined(__AMDGCN__)
             constexpr int unrollFactor =
-                    c_nbnxnGpuJgroupSize; // Unrolling has been verified to improve performance on AMD
+                    c_nbnxmGpuJgroupSize; // Unrolling has been verified to improve performance on AMD
 #elif defined(__SYCL_CUDA_ARCH__) && __SYCL_CUDA_ARCH__ >= 800
             // Unrolling parameters follow CUDA implementation for Ampere and later.
             constexpr int unrollFactor = [=]()
@@ -954,7 +954,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
 #endif
 
 #pragma unroll unrollFactor
-            for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+            for (int jm = 0; jm < c_nbnxmGpuJgroupSize; jm++)
             {
                 const bool maskSet = imask & (superClInteractionMask << (jm * c_superClusterSize));
                 if (!maskSet)
@@ -1060,7 +1060,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
                             const float c12 = c6c12[1];
 
                             // Ensure distance do not become so small that r^-12 overflows
-                            r2 = sycl::max(r2, c_nbnxnMinDistanceSquared);
+                            r2 = sycl::max(r2, c_nbnxmMinDistanceSquared);
 #if GMX_SYCL_ACPP
                             // No fast/native functions in some compilation passes
                             const float rInv = sycl::rsqrt(r2);
@@ -1203,11 +1203,11 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
                     } // (imask & maskJI)
                     /* shift the mask bit by 1 */
                     maskJI += maskJI;
-                } // for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+                } // for (int i = 0; i < c_nbnxmGpuNumClusterPerSupercluster; i++)
                 /* reduce j forces */
                 reduceForceJ<useShuffleReductionForceJ>(
                         sm_reductionBuffer, fCjBuf, itemIdx, tidxi, tidxj, aj, gm_f);
-            } // for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+            } // for (int jm = 0; jm < c_nbnxmGpuJgroupSize; jm++)
             if constexpr (doPruneNBL)
             {
                 /* Update the imask with the new one which does not contain the

@@ -227,7 +227,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
                                                    numThreads,
                                                    hostAllocationPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(
+    auto atomData = std::make_unique<nbnxm_atomdata_t>(
             hostAllocationPolicy,
             MDLogger(),
             options.kernelSetup.kernelType,

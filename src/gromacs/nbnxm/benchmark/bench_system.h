@@ -40,8 +40,8 @@
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_NBNXN_BENCH_SYSTEM_H
-#define GMX_NBNXN_BENCH_SYSTEM_H
+#ifndef GMX_NBNXM_BENCH_SYSTEM_H
+#define GMX_NBNXM_BENCH_SYSTEM_H
 
 #include <cstdint>
 #include <cstdio>

@@ -31,7 +31,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/* Some target architectures compile kernels for only some NBNxN
+/* Some target architectures compile kernels for only some NBNxM
  * kernel flavours, but the code is generated before the target
  * architecture is known. So compilation is conditional upon
  * {0}, so that this file reduces to a stub
@@ -49,11 +49,11 @@ namespace gmx
 
 template void
 nbnxmKernelSimd<{0}, {1}, {2}, {3}>(
-        const NbnxnPairlistCpu&    pairlist,
-        const nbnxn_atomdata_t&    nbat,
+        const NbnxmPairlistCpu&    pairlist,
+        const nbnxm_atomdata_t&    nbat,
         const interaction_const_t& ic,
         const rvec*                shift_vec,
-        nbnxn_atomdata_output_t*   out);
+        nbnxm_atomdata_output_t*   out);
 
 }} // namespace gmx
 

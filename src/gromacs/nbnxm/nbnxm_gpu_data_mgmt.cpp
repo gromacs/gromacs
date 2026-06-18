@@ -165,7 +165,7 @@ static bool useTabulatedEwaldByDefault(InteractionModifiers vdwModifier, const D
 #endif
 }
 
-static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
+static inline ElecType nbnxm_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
                                                         const DeviceInformation&   deviceInfo)
 {
     bool bTwinCut = (ic.coulomb.cutoff != ic.vdw.cutoff);
@@ -297,7 +297,7 @@ GpuFeplist::~GpuFeplist()
     }
 }
 
-static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
+static inline void init_timings(gmx_wallclock_gpu_nbnxm_t* t)
 {
     t->nb_h2d_t = 0.0;
     t->nb_d2h_t = 0.0;
@@ -446,7 +446,7 @@ static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_co
     }
     else if ((usingPme(ic.coulomb.type) || ic.coulomb.type == CoulombInteractionType::Ewald))
     {
-        return nbnxn_gpu_pick_ewald_kernel_type(ic, deviceInfo);
+        return nbnxm_gpu_pick_ewald_kernel_type(ic, deviceInfo);
     }
     else
     {
@@ -462,7 +462,7 @@ static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_co
 static inline void initNbparam(NBParamGpu*                     nbp,
                                const interaction_const_t&      ic,
                                const PairlistParams&           listParams,
-                               const nbnxn_atomdata_t::Params& nbatParams,
+                               const nbnxm_atomdata_t::Params& nbatParams,
                                const DeviceContext&            deviceContext,
                                const DeviceStream&             localStream,
                                const std::optional<size_t>     nLambda)
@@ -637,7 +637,7 @@ NbnxmGpu::NbnxmGpu(const DeviceStreamManager& deviceStreamManager, std::optional
 NbnxmGpu* gpu_init(const DeviceStreamManager&  deviceStreamManager,
                    const interaction_const_t*  ic,
                    const PairlistParams&       listParams,
-                   const nbnxn_atomdata_t*     nbat,
+                   const nbnxm_atomdata_t*     nbat,
                    const bool                  bLocalAndNonlocal,
                    const std::optional<size_t> nLambda)
 {
@@ -656,7 +656,7 @@ NbnxmGpu* gpu_init(const DeviceStreamManager&  deviceStreamManager,
 
     if (nb->bDoTime)
     {
-        nb->timings = std::make_unique<gmx_wallclock_gpu_nbnxn_t>();
+        nb->timings = std::make_unique<gmx_wallclock_gpu_nbnxm_t>();
         init_timings(nb->timings.get());
     }
 
@@ -683,7 +683,7 @@ NbnxmGpu* gpu_init(const DeviceStreamManager&  deviceStreamManager,
                 &deviceStreamManager.stream(DeviceStreamType::NonBondedNonLocal);
     }
 
-    const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
+    const nbnxm_atomdata_t::Params& nbatParams = nbat->params();
 
     initNbparam(nb->nbparam, *ic, listParams, nbatParams, nb->deviceContext, localStream, nLambda);
     initAtomdataFirst(nb->atdat, nbatParams.numTypes, nb->deviceContext, localStream, nLambda);
@@ -709,14 +709,14 @@ void gpu_pme_loadbal_update_param(nonbonded_verlet_t* nbv, const interaction_con
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
-    nbp->elecType = nbnxn_gpu_pick_ewald_kernel_type(ic, nb->deviceContext.deviceInfo());
+    nbp->elecType = nbnxm_gpu_pick_ewald_kernel_type(ic, nb->deviceContext.deviceInfo());
 
     GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
     init_ewald_coulomb_force_table(
             *ic.coulombEwaldTables, nbp, nb->deviceContext, *nb->deviceStreams[InteractionLocality::Local]);
 }
 
-void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
+void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxm_atomdata_t* nbatom)
 {
     NBAtomDataGpu*      adat        = nb->atdat;
     const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
@@ -736,7 +736,7 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 }
 
 //! This function is documented in the header file
-void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
+void gpu_init_pairlist(NbnxmGpu* nb, const NbnxmPairlistGpu* h_plist, const InteractionLocality iloc)
 {
     char sbuf[STRLEN];
     // Timing accumulation should happen only if there was work to do
@@ -1003,7 +1003,7 @@ void gpu_init_feppairlist(NbnxmGpu*                 nb,
     }
 }
 
-void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
+void gpu_init_atomdata(NbnxmGpu* nb, const nbnxm_atomdata_t* nbat)
 {
     bool                 bDoTime          = nb->bDoTime;
     bool                 bFepGpuNonBonded = nb->nbparam->bFepGpuNonBonded;
@@ -1221,7 +1221,7 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 }
 
 //! This function is documented in the header file
-gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
+gmx_wallclock_gpu_nbnxm_t* gpu_get_timings(NbnxmGpu* nb)
 {
     return (nb != nullptr && nb->bDoTime) ? nb->timings.get() : nullptr;
 }
@@ -1245,7 +1245,7 @@ void setupGpuShortRangeWorkLow(NbnxmGpu*                 nb,
                                const ListedForcesGpu*    listedForcesGpu,
                                const InteractionLocality iLocality)
 {
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
 
     // There is short-range work if the pair list for the provided
     // interaction locality contains entries or if there is any
@@ -1256,7 +1256,7 @@ void setupGpuShortRangeWorkLow(NbnxmGpu*                 nb,
 
 bool haveGpuShortRangeWork(const NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
 
     return nb->haveWork[interactionLocality];
 }
@@ -1266,11 +1266,11 @@ bool haveGpuShortRangeWork(const NbnxmGpu* nb, const InteractionLocality interac
  * (and energies/shift forces if required).
  */
 void gpu_launch_cpyback(NbnxmGpu*                nb,
-                        struct nbnxn_atomdata_t* nbatom,
+                        struct nbnxm_atomdata_t* nbatom,
                         const StepWorkload&      stepWork,
                         const AtomLocality       atomLocality)
 {
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
 
     /* determine interaction locality from atom locality */
     const InteractionLocality iloc = atomToInteractionLocality(atomLocality);
@@ -1461,7 +1461,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     }
 }
 
-void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
+void nbnxmInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
 
@@ -1486,9 +1486,9 @@ void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality in
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxm_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
 
     const InteractionLocality iloc = atomToInteractionLocality(atomLocality);
 
@@ -1501,12 +1501,12 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     /* Don't launch the non-local H2D copy if there is no dependent
        work to do: neither non-local nor other (e.g. bonded) work
-       to do that has as input the nbnxn coordaintes.
+       to do that has as input the nbnxm coordaintes.
        Doing the same for the local kernel is more complicated, since the
        local part of the force array also depends on the non-local kernel.
        So to avoid complicating the code and to reduce the risk of bugs,
        we always call the local local x+q copy (and the rest of the local
-       work in nbnxn_gpu_launch_kernel().
+       work in nbnxm_gpu_launch_kernel().
      */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(nb, iloc))
     {
@@ -1551,7 +1551,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
        This wait needs to precede any PP tasks, bonded or nonbonded, that may
        compute on interactions between local and nonlocal atoms.
      */
-    nbnxnInsertNonlocalGpuDependency(nb, iloc);
+    nbnxmInsertNonlocalGpuDependency(nb, iloc);
 }
 
 
@@ -1601,7 +1601,7 @@ static FusedXToXqLaunchParams setupFusedXToXqLaunchParams(ArrayRef<const Grid> g
 }
 
 /* Initialization for X buffer operations on GPU. */
-void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
+void nbnxm_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
 {
     const DeviceStream& localStream = *gpu_nbv->deviceStreams[InteractionLocality::Local];
     const bool          bDoTime     = gpu_nbv->bDoTime;
@@ -1702,9 +1702,9 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)
     // buf ops kernel).  We therefore set a dependency to ensure
     // that the nonlocal stream waits on the local stream here.
     // This call records an event in the local stream:
-    nbnxnInsertNonlocalGpuDependency(gpu_nbv, InteractionLocality::Local);
+    nbnxmInsertNonlocalGpuDependency(gpu_nbv, InteractionLocality::Local);
     // ...and this call instructs the nonlocal stream to wait on that event:
-    nbnxnInsertNonlocalGpuDependency(gpu_nbv, InteractionLocality::NonLocal);
+    nbnxmInsertNonlocalGpuDependency(gpu_nbv, InteractionLocality::NonLocal);
 
     // Pre-compute kernel launch parameters for each interaction locality.
     // These are constant for the lifetime of the pair list.

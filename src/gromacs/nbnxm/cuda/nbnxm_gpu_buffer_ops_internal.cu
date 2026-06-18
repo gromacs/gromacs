@@ -70,7 +70,7 @@ namespace gmx
  * \param[in]     gm_numAtoms         Array of number of atoms per column (all grids, stride numColumnsMax).
  * \param[in]     gm_binIndex         Array of bin indices per column (all grids, stride numColumnsMax).
  */
-static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                  gridBegin,
+static __global__ void nbnxm_gpu_x_to_nbat_x_kernel(int                  gridBegin,
                                                     int                  numColumnsMax,
                                                     int                  numAtomsPerBin,
                                                     FusedXToXqGridParams gridParams,
@@ -139,7 +139,7 @@ void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& launchParams,
     GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, caller should skip empty grids");
     config.sharedMemorySize = 0;
 
-    auto        kernelFn            = nbnxn_gpu_x_to_nbat_x_kernel;
+    auto        kernelFn            = nbnxm_gpu_x_to_nbat_x_kernel;
     float3*     d_xFloat3           = asFloat3(d_x);
     float4*     d_xq                = nb->atdat->xq;
     const int*  d_atomIndices       = nb->atomIndices;

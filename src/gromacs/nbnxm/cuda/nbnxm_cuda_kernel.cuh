@@ -35,7 +35,7 @@
 /*! \internal \file
  *  \brief
  *  CUDA non-bonded kernel used through preprocessor-based code generation
- *  of multiple kernel flavors, see nbnxn_cuda_kernels.cuh.
+ *  of multiple kernel flavors, see nbnxm_cuda_kernels.cuh.
  *
  *  NOTE: No include fence as it is meant to be included multiple times.
  *
@@ -92,7 +92,7 @@ namespace gmx
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
     - #threads  = NTHREAD_Z * c_clusterSize^2
-    - shmem     = see nbnxn_cuda.cu:calc_shmem_required_nonbonded()
+    - shmem     = see nbnxm_cuda.cu:calc_shmem_required_nonbonded()
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
@@ -138,15 +138,15 @@ namespace gmx
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #ifdef PRUNE_NBL
 #    ifdef CALC_ENERGIES
-        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxm_kernel, _VF_prune_cuda)
 #    else
-        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxm_kernel, _F_prune_cuda)
 #    endif /* CALC_ENERGIES */
 #else
 #    ifdef CALC_ENERGIES
-        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxm_kernel, _VF_cuda)
 #    else
-        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxm_kernel, _F_cuda)
 #    endif /* CALC_ENERGIES */
 #endif     /* PRUNE_NBL */
                 (NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, bool bCalcFshift)
@@ -158,14 +158,14 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #    ifdef PRUNE_NBL
     /* we can't use the sorted plist in this call as we need to use this kernel to perform counts
      * which will be used in the sorting */
-    const nbnxn_sci_t* pl_sci = plist.sci;
+    const nbnxm_sci_t* pl_sci = plist.sci;
 #    else
     /* the sorted list has been generated using data from a previous call to this kernel */
-    const nbnxn_sci_t* pl_sci = plist.sorting.sciSorted;
+    const nbnxm_sci_t* pl_sci = plist.sorting.sciSorted;
     const
 #    endif
-    nbnxn_cj_packed_t*  pl_cjPacked = plist.cjPacked;
-    const nbnxn_excl_t* excl        = plist.excl;
+    nbnxm_cj_packed_t*  pl_cjPacked = plist.cjPacked;
+    const nbnxm_excl_t* excl        = plist.excl;
 #    ifndef LJ_COMB
     const int* atom_types = atdat.atomTypes;
     int        ntypes     = atdat.numTypes;
@@ -252,7 +252,7 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
     float4       xqbuf;
     float3       xi, xj, rv, f_ij, fcj_buf;
     float3       fci_buf[c_superClusterSize]; /* i force buffer */
-    nbnxn_sci_t  nb_sci;
+    nbnxm_sci_t  nb_sci;
 
     /*! i-cluster interaction mask for a super-cluster with all c_superClusterSize=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_superClusterSize) - 1U);
@@ -536,7 +536,7 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 #    endif     /* LJ_COMB */
 
                                 // Ensure distance do not become so small that r^-12 overflows
-                                r2 = max(r2, c_nbnxnMinDistanceSquared);
+                                r2 = max(r2, c_nbnxmMinDistanceSquared);
 
                                 inv_r  = rsqrt(r2);
                                 inv_r2 = inv_r * inv_r;

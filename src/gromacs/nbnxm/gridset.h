@@ -71,7 +71,7 @@ class DomdecZones;
 class HostAllocationPolicy;
 enum class PairlistType;
 class UpdateGroupsCog;
-struct nbnxn_atomdata_t;
+struct nbnxm_atomdata_t;
 
 /*! \internal
  * \brief Holds a set of search grids for the local + non-local DD zones
@@ -131,7 +131,7 @@ public:
                    ArrayRef<const int32_t> atomInfo,
                    ArrayRef<const RVec>    x,
                    const int*              move,
-                   nbnxn_atomdata_t*       nbat);
+                   nbnxm_atomdata_t*       nbat);
 
     void setNonLocalGrid(const int                           gridIndex,
                          const int                           ddZone,
@@ -139,7 +139,7 @@ public:
                          ArrayRef<const std::pair<int, int>> cells,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,
-                         nbnxn_atomdata_t*                   nbat)
+                         nbnxm_atomdata_t*                   nbat)
     {
         GMX_RELEASE_ASSERT(gridIndex > 0, "The zone should be non-local");
 

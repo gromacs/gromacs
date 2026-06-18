@@ -112,10 +112,10 @@ void checkKernelSetupSimd(const SimdKernels nbnxmSimd)
     }
     // Check SIMD support
     if ((nbnxmSimd != SimdKernels::SimdNo && !GMX_SIMD)
-#ifndef GMX_NBNXN_SIMD_4XN
+#ifndef GMX_NBNXM_SIMD_4XN
         || nbnxmSimd == SimdKernels::Simd4XM
 #endif
-#ifndef GMX_NBNXN_SIMD_2XNN
+#ifndef GMX_NBNXM_SIMD_2XNN
         || nbnxmSimd == SimdKernels::Simd2XMM
 #endif
     )
@@ -130,7 +130,7 @@ gmx::NbnxmKernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bo
 
     gmx::NbnxmKernelSetup kernelSetup;
 
-    // The int enum options.nbnxnSimd is set up to match Nbnxm::KernelType + 1
+    // The int enum options.nbnxmSimd is set up to match Nbnxm::KernelType + 1
     kernelSetup.kernelType = translateBenchmarkEnum(nbnxmSimd);
 
     // The plain-C kernel does not support analytical ewald correction
@@ -322,7 +322,7 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t           n
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
     // Needs to be called with the number of unique ParticleTypes
-    auto atomData = std::make_unique<gmx::nbnxn_atomdata_t>(hostAllocationPolicy,
+    auto atomData = std::make_unique<gmx::nbnxm_atomdata_t>(hostAllocationPolicy,
                                                             gmx::MDLogger(),
                                                             kernelSetup.kernelType,
                                                             std::nullopt,
@@ -360,11 +360,11 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           n
             kernelSetup.kernelType, gmx::PairlistType::Hierarchical8x8x8, false, options.pairlistCutoff, false);
 
 
-    // nbnxn_atomdata is always initialized with 1 thread if the GPU is used
+    // nbnxm_atomdata is always initialized with 1 thread if the GPU is used
     constexpr int numThreadsInit = 1;
     // multiple energy groups are not supported on the GPU
     constexpr int numEnergyGroups = 1;
-    auto          atomData        = std::make_unique<gmx::nbnxn_atomdata_t>(hostAllocationPolicy,
+    auto          atomData        = std::make_unique<gmx::nbnxm_atomdata_t>(hostAllocationPolicy,
                                                             gmx::MDLogger(),
                                                             kernelSetup.kernelType,
                                                             std::nullopt,

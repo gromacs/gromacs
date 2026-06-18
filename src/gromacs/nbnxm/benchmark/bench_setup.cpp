@@ -143,7 +143,7 @@ static NbnxmKernelSetup getKernelSetup(const NbnxmKernelBenchOptions& options)
 
     NbnxmKernelSetup kernelSetup;
 
-    // The int enum options.nbnxnSimd is set up to match KernelType + 1
+    // The int enum options.nbnxmSimd is set up to match KernelType + 1
     kernelSetup.kernelType = translateBenchmarkEnum(options.nbnxmSimd);
     // The plain-C kernel does not support analytical ewald correction
     if (kernelTypeIsPlainC((kernelSetup.kernelType)))
@@ -242,7 +242,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
     auto pairSearch = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(hostAllocationPolicy,
+    auto atomData = std::make_unique<nbnxm_atomdata_t>(hostAllocationPolicy,
                                                        MDLogger(),
                                                        kernelSetup.kernelType,
                                                        convertLJCombinationRule(options.ljCombinationRule),

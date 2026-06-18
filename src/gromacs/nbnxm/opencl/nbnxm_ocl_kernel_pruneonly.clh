@@ -52,21 +52,21 @@
  * should be revisited.
  *
  */
-#define NTHREAD_Z GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
+#define NTHREAD_Z GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY
 
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef HAVE_FRESH_LIST
 __kernel void
-nbnxn_kernel_prune_opencl
+nbnxm_kernel_prune_opencl
 #else
 __kernel void
-nbnxn_kernel_prune_rolling_opencl
+nbnxm_kernel_prune_rolling_opencl
 #endif
         (cl_nbparam_params_t nbparam_params,
          const __global float4* restrict xq,
          const __global float* restrict shift_vec,
-         const __global nbnxn_sci_t* pl_sci,
-         __global nbnxn_cj_packed_t* pl_cjPacked,
+         const __global nbnxm_sci_t* pl_sci,
+         __global nbnxm_cj_packed_t* pl_cjPacked,
 #if !defined HAVE_FRESH_LIST
          const
 #endif
@@ -103,21 +103,21 @@ nbnxn_kernel_prune_rolling_opencl
     const int c_clSize = CL_SIZE;
 
     // TODO pass this value at compile-time as a macro
-    const int c_nbnxnGpuClusterpairSplit = 2;
+    const int c_nbnxmGpuClusterpairSplit = 2;
 
-    /*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
-    const unsigned superClInteractionMask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
+    /*! i-cluster interaction mask for a super-cluster with all c_nbnxmGpuNumClusterPerSupercluster=8 bits set */
+    const unsigned superClInteractionMask = ((1U << c_nbnxmGpuNumClusterPerSupercluster) - 1U);
 
-#define LOCAL_OFFSET (xib + c_nbnxnGpuNumClusterPerSupercluster * c_clSize)
+#define LOCAL_OFFSET (xib + c_nbnxmGpuNumClusterPerSupercluster * c_clSize)
     /* shmem buffer for i cj pre-loading */
     CjType cjs = 0;
 #if USE_CJ_PREFETCH
-    cjs = (((__local int*)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
+    cjs = (((__local int*)(LOCAL_OFFSET)) + tidxz * c_nbnxmGpuClusterpairSplit * c_nbnxmGpuJgroupSize);
 #    undef LOCAL_OFFSET
 /* Offset calculated using xib because cjs depends on on tidxz! */
 #    define LOCAL_OFFSET                                                        \
-        (((__local int*)(xib + c_nbnxnGpuNumClusterPerSupercluster * c_clSize)) \
-         + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
+        (((__local int*)(xib + c_nbnxmGpuNumClusterPerSupercluster * c_clSize)) \
+         + (NTHREAD_Z * c_nbnxmGpuClusterpairSplit * c_nbnxmGpuJgroupSize))
 #endif
 #if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
@@ -127,7 +127,7 @@ nbnxn_kernel_prune_rolling_opencl
     const int                   warpVoteSlot = NTHREAD_Z * tidxz + widx;
     /* Initialise warp vote.*/
     // if (tidx == 0 || tidx == 32)
-    if (tidx % (c_clSize * c_clSize / c_nbnxnGpuClusterpairSplit) == 0)
+    if (tidx % (c_clSize * c_clSize / c_nbnxmGpuClusterpairSplit) == 0)
     {
         warp_any[warpVoteSlot] = 0;
     }
@@ -137,7 +137,7 @@ nbnxn_kernel_prune_rolling_opencl
 #endif
 #undef LOCAL_OFFSET
 
-    const nbnxn_sci_t nb_sci =
+    const nbnxm_sci_t nb_sci =
             pl_sci[bidx * numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
     const int sci           = nb_sci.sci;           /* super-cluster */
     const int cjPackedBegin = nb_sci.cjPackedBegin; /* first ...*/
@@ -145,13 +145,13 @@ nbnxn_kernel_prune_rolling_opencl
 
     // We may need only a subset of threads active for preloading i-atoms
     // depending on the super-cluster and cluster / thread-block size.
-    const bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
-    if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster))
+    const bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxmGpuNumClusterPerSupercluster);
+    if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_nbnxmGpuNumClusterPerSupercluster))
     {
-        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += CL_SIZE)
+        for (int i = 0; i < c_nbnxmGpuNumClusterPerSupercluster; i += CL_SIZE)
         {
             /* Pre-load i-atom x and q into shared memory */
-            const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
+            const int ci = sci * c_nbnxmGpuNumClusterPerSupercluster + tidxj + i;
             const int ai = ci * c_clSize + tidxi;
 
             /* We don't need q, but using float4 in shmem avoids bank conflicts */
@@ -183,7 +183,7 @@ nbnxn_kernel_prune_rolling_opencl
         else
         {
             /* Read the mask from the "warp-pruned" by rlistOuter mask array */
-            imaskFull = prePrunedImask[jPacked * c_nbnxnGpuClusterpairSplit + widx];
+            imaskFull = prePrunedImask[jPacked * c_nbnxmGpuClusterpairSplit + widx];
             /* Read the old rolling pruned mask, use as a base for new */
             imaskNew = pl_cjPacked[jPacked].imei[widx].imask;
             /* We only need to check pairs with different mask */
@@ -194,12 +194,12 @@ nbnxn_kernel_prune_rolling_opencl
 
         if (imaskCheck)
         {
-#pragma unroll c_nbnxnGpuJgroupSize
-            for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+#pragma unroll c_nbnxmGpuJgroupSize
+            for (int jm = 0; jm < c_nbnxmGpuJgroupSize; jm++)
             {
-                if (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
+                if (imaskCheck & (superClInteractionMask << (jm * c_nbnxmGpuNumClusterPerSupercluster)))
                 {
-                    unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
+                    unsigned int mask_ji = (1U << (jm * c_nbnxmGpuNumClusterPerSupercluster));
 
                     const int cj = loadCj(cjs, pl_cjPacked[jPacked].cj, jm, tidxi, tidxj);
                     const int aj = cj * c_clSize + tidxj;
@@ -208,8 +208,8 @@ nbnxn_kernel_prune_rolling_opencl
                     const float4 tmp = xq[aj];
                     const float3 xj  = (float3)(tmp.xyz);
 
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-                    for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+#pragma unroll c_nbnxmGpuNumClusterPerSupercluster
+                    for (int i = 0; i < c_nbnxmGpuNumClusterPerSupercluster; i++)
                     {
                         if (imaskCheck & mask_ji)
                         {
@@ -247,7 +247,7 @@ nbnxn_kernel_prune_rolling_opencl
 #ifdef HAVE_FRESH_LIST
             {
                 /* copy the list pruned to rlistOuter to a separate buffer */
-                prePrunedImask[jPacked * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                prePrunedImask[jPacked * c_nbnxmGpuClusterpairSplit + widx] = imaskFull;
             }
 #endif
             /* update the imask with only the pairs up to rlistInner */

@@ -70,7 +70,7 @@
 namespace gmx
 {
 
-struct nbnxn_atomdata_t;
+struct nbnxm_atomdata_t;
 enum class PairlistType;
 class UpdateGroupsCog;
 struct GridSetData;
@@ -353,7 +353,7 @@ public:
                        Range<int>              atomRange,
                        ArrayRef<const int32_t> atomInfo,
                        ArrayRef<const RVec>    x,
-                       nbnxn_atomdata_t*       nbat);
+                       nbnxm_atomdata_t*       nbat);
 
     /*! \brief Sets a non-local grid using data communicated from a different domain
      *
@@ -379,7 +379,7 @@ public:
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,
                          GridSetData*                        gridSetData,
-                         nbnxn_atomdata_t*                   nbat);
+                         nbnxm_atomdata_t*                   nbat);
 
     //! Determine in which grid cells atoms should go, store bins and atom counts in \p bins and \p numAtomsPerCell
     static void calcCellIndices(const GridDimensions&  gridDims,
@@ -400,7 +400,7 @@ private:
      * Optionally sorts atoms and sets the interaction flags.
      */
     void fillBin(GridSetData*            gridSetData,
-                 nbnxn_atomdata_t*       nbat,
+                 nbnxm_atomdata_t*       nbat,
                  int                     atomStart,
                  int                     atomEnd,
                  ArrayRef<const int32_t> atomInfo,
@@ -411,7 +411,7 @@ private:
                               int                     dd_zone,
                               ArrayRef<const int32_t> atomInfo,
                               ArrayRef<const RVec>    x,
-                              nbnxn_atomdata_t*       nbat,
+                              nbnxm_atomdata_t*       nbat,
                               Range<int>              cellRange,
                               ArrayRef<int>           sort_work);
 
@@ -420,7 +420,7 @@ private:
                               int                     dd_zone,
                               ArrayRef<const int32_t> atomInfo,
                               ArrayRef<const RVec>    x,
-                              nbnxn_atomdata_t*       nbat,
+                              nbnxm_atomdata_t*       nbat,
                               Range<int>              cellRange,
                               ArrayRef<int>           sort_work);
 

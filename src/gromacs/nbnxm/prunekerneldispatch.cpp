@@ -65,13 +65,13 @@ namespace gmx
 {
 
 void PairlistSets::dispatchPruneKernel(const InteractionLocality iLocality,
-                                       const nbnxn_atomdata_t*   nbat,
+                                       const nbnxm_atomdata_t*   nbat,
                                        ArrayRef<const RVec>      shift_vec)
 {
     pairlistSet(iLocality).dispatchPruneKernel(nbat, shift_vec);
 }
 
-void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, ArrayRef<const RVec> shift_vec)
+void PairlistSet::dispatchPruneKernel(const nbnxm_atomdata_t* nbat, ArrayRef<const RVec> shift_vec)
 {
     const real rlistInner = params_.rlistInner;
 
@@ -84,7 +84,7 @@ void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, ArrayRef<con
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (int i = 0; i < nthreads; i++)
     {
-        NbnxnPairlistCpu* nbl = &cpuLists_[i];
+        NbnxmPairlistCpu* nbl = &cpuLists_[i];
 
         switch (getClusterDistanceKernelType(params_.pairlistType, *nbat))
         {

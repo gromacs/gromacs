@@ -34,7 +34,7 @@
 
 /*! \internal \file
  *  \brief
- *  Data types used internally in the nbnxn_cuda module.
+ *  Data types used internally in the nbnxm_cuda module.
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_nbnxm
@@ -140,11 +140,11 @@ struct NbnxmGpu
     /*! \brief CUDA event-based timers. */
     GpuTimers* timers = nullptr;
     /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
-    std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
+    std::unique_ptr<gmx_wallclock_gpu_nbnxm_t> timings;
     /*! \brief Kernel launch parameters per interaction locality, computed once at pair-list setup. */
     EnumerationArray<InteractionLocality, FusedXToXqLaunchParams> xToXqLaunchParams;
 };
 
 } // namespace gmx
 
-#endif /* NBNXN_CUDA_TYPES_H */
+#endif /* NBNXM_CUDA_TYPES_H */

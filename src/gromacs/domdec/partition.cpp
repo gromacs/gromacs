@@ -2386,8 +2386,8 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
     orderVector<T>(sort, vectorToSort, fillerValue, *workVector);
 }
 
-//! Returns the sorting order for atoms based on the nbnxn grid order in sort
-static void dd_sort_order_nbnxn(const gmx::nonbonded_verlet_t& nbv, gmx::FastVector<gmx_cgsort_t>* sort)
+//! Returns the sorting order for atoms based on the nbnxm grid order in sort
+static void dd_sort_order_nbnxm(const gmx::nonbonded_verlet_t& nbv, gmx::FastVector<gmx_cgsort_t>* sort)
 {
     gmx::ArrayRef<const int> atomOrder = nbv.getLocalAtomOrder();
 
@@ -2422,7 +2422,7 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     gmx_domdec_sort_t& sortingData = *dd->comm->sort;
 
     // Obtain the sorting order from/as the NBNxM gridding order, including fillers
-    dd_sort_order_nbnxn(*fr->nbv, &sortingData.sorted);
+    dd_sort_order_nbnxm(*fr->nbv, &sortingData.sorted);
 
     // Get the list of old order indices for the new indexing order
     gmx::ArrayRef<const gmx_cgsort_t> sortOrder = sortingData.sorted;

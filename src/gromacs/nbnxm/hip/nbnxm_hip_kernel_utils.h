@@ -36,7 +36,7 @@
  *  \brief
  *  Utility constant and function declaration for the HIP non-bonded kernels.
  *  This header should be included once at the top level, just before the
- *  kernels are included (has to be preceded by nbnxn_hip_types.h).
+ *  kernels are included (has to be preceded by nbnxm_hip_types.h).
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
@@ -612,4 +612,4 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
 
 } // namespace gmx
 
-#endif /* NBNXN_HIP_KERNEL_UTILS_HPP */
+#endif /* NBNXM_HIP_KERNEL_UTILS_HPP */

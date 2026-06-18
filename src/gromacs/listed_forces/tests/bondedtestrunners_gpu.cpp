@@ -131,10 +131,10 @@ void BondedDeviceTestRunner::run(const iListInput&           input,
     idef.numNonperturbedInteractions[ftype] = static_cast<int>(iatoms.size());
 
     // Identity atom order (same as input coordinates)
-    std::vector<int> nbnxnAtomOrder(numAtoms);
+    std::vector<int> nbnxmAtomOrder(numAtoms);
     for (int i = 0; i < numAtoms; i++)
     {
-        nbnxnAtomOrder[i] = i;
+        nbnxmAtomOrder[i] = i;
     }
 
     // Host-side xq (x, y, z, q) for upload
@@ -172,7 +172,7 @@ void BondedDeviceTestRunner::run(const iListInput&           input,
     ListedForcesGpu listedForcesGpu(ffparams, scaleFac, 1, deviceContext, deviceStream, nullptr);
 
     listedForcesGpu.updateHaveInteractions(idef);
-    listedForcesGpu.updateInteractionListsAndDeviceBuffers(nbnxnAtomOrder, idef, &nbAtomDataGpu);
+    listedForcesGpu.updateInteractionListsAndDeviceBuffers(nbnxmAtomOrder, idef, &nbAtomDataGpu);
 
     if (!listedForcesGpu.haveInteractions())
     {

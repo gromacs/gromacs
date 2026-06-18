@@ -1405,7 +1405,7 @@ static void doPairSearch(const t_commrec*             cr,
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridNonLocal);
         if (!nbv->localAtomOrderMatchesNbnxmOrder())
         {
-            nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+            nbnxm_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
         }
         nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
@@ -1623,7 +1623,7 @@ void do_force(FILE*                         fplog,
             calc_shifts(box, fr->shift_vec);
         }
     }
-    nbnxn_atomdata_copy_shiftvec(simulationWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
+    nbnxm_atomdata_copy_shiftvec(simulationWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
 
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
@@ -2107,7 +2107,7 @@ void do_force(FILE*                         fplog,
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
-            nbnxn_atomdata_add_nbat_fshift_to_fshift(
+            nbnxm_atomdata_add_nbat_fshift_to_fshift(
                     nbv->nbat(), forceOutNonbonded->forceWithShiftForces().shiftForces());
         }
     }
@@ -2348,7 +2348,7 @@ void do_force(FILE*                         fplog,
 
             if (fr->nbv->emulateGpu() && stepWork.computeVirial)
             {
-                nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->nbat(), forceWithShiftForces.shiftForces());
+                nbnxm_atomdata_add_nbat_fshift_to_fshift(nbv->nbat(), forceWithShiftForces.shiftForces());
             }
         }
     }

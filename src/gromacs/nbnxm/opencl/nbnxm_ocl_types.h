@@ -61,7 +61,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_wallclock_gpu_nbnxn_t;
+struct gmx_wallclock_gpu_nbnxm_t;
 
 /*! \brief Pruning kernel flavors.
  *
@@ -147,7 +147,7 @@ struct NbnxmGpu
     struct gmx_device_runtime_data_t* dev_rundata = nullptr;
 
     /**< Pointers to non-bonded kernel functions
-     * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
+     * organized similar with nb_kfunc_xxx arrays in nbnxm_ocl.cpp */
     ///@{
     cl_kernel kernel_noener_noprune_ptr[c_numElecTypes][c_numVdwTypes] = { { nullptr } };
     cl_kernel kernel_ener_noprune_ptr[c_numElecTypes][c_numVdwTypes]   = { { nullptr } };
@@ -232,7 +232,7 @@ struct NbnxmGpu
     //! OpenCL event-based timers.
     GpuTimers* timers = nullptr;
     //! Timing data. TODO: deprecate this and query timers for accumulated data instead
-    std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
+    std::unique_ptr<gmx_wallclock_gpu_nbnxm_t> timings;
     /*! \brief Kernel launch parameters per interaction locality, computed once at pair-list setup. */
     EnumerationArray<InteractionLocality, FusedXToXqLaunchParams> xToXqLaunchParams;
 };
@@ -240,4 +240,4 @@ struct NbnxmGpu
 
 } // namespace gmx
 
-#endif /* NBNXN_OPENCL_TYPES_H */
+#endif /* NBNXM_OPENCL_TYPES_H */

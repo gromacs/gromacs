@@ -494,7 +494,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t* GPU_FUNC_ARGUMENT(pme
  *
  * Clears the internal grid and energy/virial buffers; it is not safe to start
  * the PME computation without calling this.
- * Note that unlike in the nbnxn module, the force buffer does not need clearing.
+ * Note that unlike in the nbnxm module, the force buffer does not need clearing.
  *
  * \param[in,out] pmeGpu                     The PME GPU data structure.
  * \param[in] gpuGraphWithSeparatePmeRank    Whether MD GPU Graph with separate PME rank is in use.

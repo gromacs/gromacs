@@ -232,7 +232,7 @@ void GmxNBForceCalculatorCpu::CpuImpl::compute(gmx::ArrayRef<const gmx::RVec> co
     {
         // calculate shift forces and turn into an array ref
         std::vector<Vec3> shiftForcesVector(gmx::c_numShiftVectors, Vec3(0.0, 0.0, 0.0));
-        nbnxn_atomdata_add_nbat_fshift_to_fshift(backend_.nbv_->nbat(), shiftForcesVector);
+        nbnxm_atomdata_add_nbat_fshift_to_fshift(backend_.nbv_->nbat(), shiftForcesVector);
         auto shiftForcesRef = constArrayRefFromArray(shiftForcesVector.data(), shiftForcesVector.size());
 
         std::vector<Vec3> shiftVectorsArray(gmx::c_numShiftVectors);

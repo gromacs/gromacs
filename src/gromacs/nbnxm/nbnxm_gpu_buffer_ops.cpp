@@ -63,14 +63,14 @@
 namespace gmx
 {
 
-void nbnxn_gpu_x_to_nbat_x(NbnxmGpu*             nb,
+void nbnxm_gpu_x_to_nbat_x(NbnxmGpu*             nb,
                            DeviceBuffer<RVec>    d_x,
                            GpuEventSynchronizer* xReadyOnDevice,
                            const AtomLocality    locality)
 {
     GMX_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL) || bool(GMX_GPU_HIP),
                "NBNXM X buffer operations only supported in CUDA, SYCL and HIP");
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
     InteractionLocality interactionLoc = atomToInteractionLocality(locality);
 
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
@@ -86,7 +86,7 @@ void nbnxn_gpu_x_to_nbat_x(NbnxmGpu*             nb,
         launchNbnxmKernelTransformXToXq(nb->xToXqLaunchParams[interactionLoc], nb, d_x, deviceStream);
     }
 
-    nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
+    nbnxmInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
 } // namespace gmx

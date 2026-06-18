@@ -76,10 +76,10 @@ foreach(ELEC_DEF IN LISTS ELEC_DEFS)
                 ${CMAKE_CURRENT_SOURCE_DIR}/nbnxm_ocl_kernels.cl ${CLANG_TIDY_ARGS}
                 -Xclang -finclude-default-header  -D_${VENDOR}_SOURCE_
                 -DGMX_OCL_FASTGEN ${ELEC_DEF} ${VDW_DEF}
-                -Dc_nbnxnGpuClusterSize=${CLUSTER_SIZE}
+                -Dc_nbnxmGpuClusterSize=${CLUSTER_SIZE}
                 -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=3.82e-07
-                -Dc_nbnxnGpuNumClusterPerSupercluster=8
-                -Dc_nbnxnGpuJgroupSize=4
+                -Dc_nbnxmGpuNumClusterPerSupercluster=8
+                -Dc_nbnxmGpuJgroupSize=4
                 -Dc_centralShiftIndex=22
                 -DIATYPE_SHMEM
                 -c -I ${CMAKE_SOURCE_DIR}/src -std=cl1.2

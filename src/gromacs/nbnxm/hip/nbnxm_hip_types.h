@@ -34,7 +34,7 @@
 
 /*! \internal \file
  *  \brief
- *  Data types used internally in the nbnxn_hip module.
+ *  Data types used internally in the nbnxm_hip module.
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
@@ -140,7 +140,7 @@ struct NbnxmGpu
     /*! \brief HIP event-based timers. */
     GpuTimers* timers = nullptr;
     /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
-    std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
+    std::unique_ptr<gmx_wallclock_gpu_nbnxm_t> timings;
     /*! \brief Kernel launch parameters per interaction locality, computed once at pair-list setup. */
     EnumerationArray<InteractionLocality, FusedXToXqLaunchParams> xToXqLaunchParams;
 };
@@ -148,4 +148,4 @@ struct NbnxmGpu
 
 } // namespace gmx
 
-#endif /* NBNXN_HIP_TYPES_H */
+#endif /* NBNXM_HIP_TYPES_H */

@@ -83,8 +83,8 @@ namespace gmx
  */
 static unsigned int gpu_min_ci_balanced_factor = 50;
 
-/*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
-static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
+/*! \brief Initializes the OpenCL kernel pointers of the nbnxm_ocl_ptr_t input data structure. */
+static cl_kernel nbnxm_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
 {
     cl_kernel kernel;
     cl_int    cl_error;
@@ -102,11 +102,11 @@ static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
     return kernel;
 }
 
-/*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
-static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
+/*! \brief Initializes the OpenCL kernel pointers of the nbnxm_ocl_ptr_t input data structure. */
+static void nbnxm_gpu_init_kernels(NbnxmGpu* nb)
 {
     /* Init to 0 main kernel arrays */
-    /* They will be later on initialized in select_nbnxn_kernel */
+    /* They will be later on initialized in select_nbnxm_kernel */
     // TODO: consider always creating all variants of the kernels here so that there is no
     // need for late call to clCreateKernel -- if that gives any advantage?
     std::memset(nb->kernel_ener_noprune_ptr, 0, sizeof(nb->kernel_ener_noprune_ptr));
@@ -119,9 +119,9 @@ static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
      * TODO: we could avoid creating kernels if dynamic pruning is turned off,
      * but ATM that depends on force flags not passed into the initialization.
      */
-    nb->kernel_pruneonly[epruneFirst] = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_opencl");
+    nb->kernel_pruneonly[epruneFirst] = nbnxm_gpu_create_kernel(nb, "nbnxm_kernel_prune_opencl");
     nb->kernel_pruneonly[epruneRolling] =
-            nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
+            nbnxm_gpu_create_kernel(nb, "nbnxm_kernel_prune_rolling_opencl");
 }
 
 void gpu_init_platform_specific(NbnxmGpu* nb)
@@ -137,12 +137,12 @@ void gpu_init_platform_specific(NbnxmGpu* nb)
                                || (nb->deviceContext.deviceInfo().deviceVendor == DeviceVendor::Intel)
                                || (std::getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
-    /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
+    /* NOTE: in CUDA we pick L1 cache configuration for the nbnxm kernels here,
      * but sadly this is not supported in OpenCL (yet?). Consider adding it if
      * it becomes supported.
      */
-    nbnxn_gpu_compile_kernels(nb);
-    nbnxn_gpu_init_kernels(nb);
+    nbnxm_gpu_compile_kernels(nb);
+    nbnxm_gpu_init_kernels(nb);
 }
 
 /*! \brief Releases an OpenCL kernel pointer */

@@ -177,7 +177,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
  * \warning This kernel is inefficient for large inputs (oneDPL uses it with <= 16384 elements).
  */
 template<int workGroupSize, int nElements>
-static auto nbnxnKernelExclusivePrefixSum(const int* __restrict__ gm_input, int* __restrict__ gm_output)
+static auto nbnxmKernelExclusivePrefixSum(const int* __restrict__ gm_input, int* __restrict__ gm_output)
 {
     static_assert(nElements % workGroupSize == 0, "This simple scan kernel does not handle padding");
     return [=](sycl::nd_item<1> itemIdx)
@@ -207,17 +207,17 @@ class ExclusivePrefixSum;
  *                     positions \c gm_sciOffset[i] to \c gm_sciOffset[i+1] exclusive.
  * \param gm_sciSorted Sorted pair list.
  */
-static auto nbnxnKernelBucketSciSort(const nbnxn_sci_t* __restrict__ gm_sci,
+static auto nbnxmKernelBucketSciSort(const nbnxm_sci_t* __restrict__ gm_sci,
                                      const int* __restrict__ gm_sciCount,
                                      int* __restrict__ gm_sciOffset,
-                                     nbnxn_sci_t* __restrict__ gm_sciSorted)
+                                     nbnxm_sci_t* __restrict__ gm_sciSorted)
 {
     return [=](sycl::id<1> itemIdx)
     {
         using sycl::memory_order, sycl::memory_scope, sycl::access::address_space;
 
         const int         idx      = itemIdx[0];
-        const nbnxn_sci_t sci      = gm_sci[idx];
+        const nbnxm_sci_t sci      = gm_sci[idx];
         const int         sciCount = gm_sciCount[idx];
         // Choose an order in the sorted list for sci with the same number of neighbours as each other.
         // We want each sci with the same count to go somewhere in the list between sciOffset[count]
@@ -238,7 +238,7 @@ class BucketSciSort;
 template<int workGroupSize>
 static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
-    auto kernelFunctionBuilder = nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>;
+    auto kernelFunctionBuilder = nbnxmKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>;
     syclSubmitWithoutCghOrEvent<ExclusivePrefixSum<workGroupSize>>(
             q,
             kernelFunctionBuilder,
@@ -250,7 +250,7 @@ static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
 {
     const size_t size                  = plist->numSci;
-    auto         kernelFunctionBuilder = nbnxnKernelBucketSciSort;
+    auto         kernelFunctionBuilder = nbnxmKernelBucketSciSort;
     syclSubmitWithoutCghOrEvent<BucketSciSort>(q,
                                                kernelFunctionBuilder,
                                                sycl::range<1>{ size },

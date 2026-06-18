@@ -60,7 +60,7 @@ void clear_fshift(real* fshift)
     }
 }
 
-void reduce_energies_over_lists(const nbnxn_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc)
+void reduce_energies_over_lists(const nbnxm_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc)
 {
     const int nenergrp = nbat->params().numEnergyGroups;
 

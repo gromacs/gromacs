@@ -61,8 +61,8 @@ static constexpr auto refPairlistLayoutType = PairlistType::Hierarchical8x8x8;
 static constexpr int c_clSize = sc_gpuClusterSize(refPairlistLayoutType);
 
 
-void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
-                          const nbnxn_atomdata_t*    nbat,
+void nbnxm_kernel_gpu_ref(const NbnxmPairlistGpu*    nbl,
+                          const nbnxm_atomdata_t*    nbat,
                           const interaction_const_t& iconst,
                           ArrayRef<const RVec>       shiftvec,
                           const StepWorkload&        stepWork,
@@ -75,7 +75,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
 
     real                fscal = NAN;
     real                vcoul = 0;
-    const nbnxn_excl_t* excl[sc_gpuClusterPairSplit(refPairlistLayoutType)];
+    const nbnxm_excl_t* excl[sc_gpuClusterPairSplit(refPairlistLayoutType)];
 
     if (nbl->na_ci != c_clSize)
     {
@@ -112,7 +112,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
     int nhwu        = 0;
     int nhwu_pruned = 0;
 
-    for (const nbnxn_sci_t& nbln : nbl->sci)
+    for (const nbnxm_sci_t& nbln : nbl->sci)
     {
         const int  ish           = nbln.shift;
         const int  ish3          = DIM * ish;
@@ -233,7 +233,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                 }
 
                                 // Ensure distance do not become so small that r^-12 overflows
-                                rsq = std::max(rsq, c_nbnxnMinDistanceSquared);
+                                rsq = std::max(rsq, c_nbnxmMinDistanceSquared);
 
                                 const real rinv   = invsqrt(rsq);
                                 const real rinvsq = rinv * rinv;

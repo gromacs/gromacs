@@ -443,8 +443,8 @@ public:
     }
 };
 
-//! Build nbnxn_atomdata_t for the 4-atom FEP test using production code path
-static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const DeviceContext&      deviceContext,
+//! Build nbnxm_atomdata_t for the 4-atom FEP test using production code path
+static std::unique_ptr<nbnxm_atomdata_t> makeNbatForFepTest(const DeviceContext&      deviceContext,
                                                             const AtomData&           atoms,
                                                             const PaddedVector<RVec>& x,
                                                             const t_forcerec&         fr,
@@ -459,7 +459,7 @@ static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const DeviceContext&
                                                       ? std::optional<LJCombinationRule>(ljCombinationRule)
                                                       : std::nullopt;
     HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
-    auto                 nbat = std::make_unique<nbnxn_atomdata_t>(hostAllocationPolicy,
+    auto                 nbat = std::make_unique<nbnxm_atomdata_t>(hostAllocationPolicy,
                                                    MDLogger(),
                                                    NbnxmKernelType::Gpu8x8x8,
                                                    ljRule,
@@ -469,7 +469,7 @@ static std::unique_ptr<nbnxn_atomdata_t> makeNbatForFepTest(const DeviceContext&
                                                    1,
                                                    1);
 
-    nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
+    nbnxm_atomdata_t::Params& params = nbat->paramsDeprecated();
     params.typeA.resize(numAtoms);
     params.typeB.resize(numAtoms);
     params.qA.resize(numAtoms);

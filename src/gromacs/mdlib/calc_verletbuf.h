@@ -76,9 +76,9 @@ static const real verlet_buffer_ratio_nodynamics = 0.05;
 static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 
-/* Returns the pair-list setup for the given nbnxn kernel type.
+/* Returns the pair-list setup for the given nbnxm kernel type.
  */
-VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxnKernelType);
+VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxmKernelType);
 
 //! \brief Chance target to use in minCellSizeForAtomDisplacement()
 enum class ChanceTarget

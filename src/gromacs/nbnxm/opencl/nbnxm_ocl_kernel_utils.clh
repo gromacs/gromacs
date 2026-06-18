@@ -35,7 +35,7 @@
  *  \brief
  *  Utility constant and function declaration for the OpenCL non-bonded kernels.
  *  This header should be included once at the top level, just before the
- *  kernels are included (has to be preceded by nbnxn_ocl_types.h).
+ *  kernels are included (has to be preceded by nbnxm_ocl_types.h).
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \ingroup module_nbnxm
@@ -48,9 +48,9 @@
 
 #include "nbnxm_ocl_consts.h"
 
-#define CL_SIZE (c_nbnxnGpuClusterSize)
+#define CL_SIZE (c_nbnxmGpuClusterSize)
 
-#define WARP_SIZE (CL_SIZE * CL_SIZE / 2) // Currently only c_nbnxnGpuClusterpairSplit=2 supported
+#define WARP_SIZE (CL_SIZE * CL_SIZE / 2) // Currently only c_nbnxmGpuClusterpairSplit=2 supported
 
 #if defined _NVIDIA_SOURCE_ || defined _AMD_SOURCE_
 /* Currently we enable CJ prefetch for AMD/NVIDIA and disable it for other vendors
@@ -91,8 +91,8 @@
 
 //-------------------
 
-#ifndef NBNXN_OPENCL_KERNEL_UTILS_CLH
-#    define NBNXN_OPENCL_KERNEL_UTILS_CLH
+#ifndef NBNXM_OPENCL_KERNEL_UTILS_CLH
+#    define NBNXM_OPENCL_KERNEL_UTILS_CLH
 
 #    if CL_SIZE == 8
 #        define WARP_SIZE_LOG2 (5)
@@ -207,7 +207,7 @@ typedef struct
     int cjPackedBegin;
     //! End index into cjPacked
     int cjPackedEnd;
-} nbnxn_sci_t;
+} nbnxm_sci_t;
 
 typedef struct
 {
@@ -215,15 +215,15 @@ typedef struct
     unsigned int imask;
     //! Index into the exclusion array for 1 warp
     int excl_ind;
-} nbnxn_im_ei_t;
+} nbnxm_im_ei_t;
 
 typedef struct
 {
     //! The packed j-clusters
     int cj[4]; // This has to match the value used in pairlist.h
     //! The i-cluster mask data       for 2 warps
-    nbnxn_im_ei_t imei[2];
-} nbnxn_cj_packed_t;
+    nbnxm_im_ei_t imei[2];
+} nbnxm_cj_packed_t;
 
 
 typedef struct
@@ -231,13 +231,13 @@ typedef struct
     unsigned int pair[CL_SIZE * CL_SIZE / 2]; /* Topology exclusion interaction bits for one warp,
                                                * each unsigned has bitS for 4*8 i clusters
                                                */
-} nbnxn_excl_t;
+} nbnxm_excl_t;
 
-/*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster bits set */
-__constant const unsigned supercl_interaction_mask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
+/*! i-cluster interaction mask for a super-cluster with all c_nbnxmGpuNumClusterPerSupercluster bits set */
+__constant const unsigned supercl_interaction_mask = ((1U << c_nbnxmGpuNumClusterPerSupercluster) - 1U);
 
 /*! Minimum single precision threshold for r^2 to avoid r^-12 overflow. */
-__constant const float c_nbnxnMinDistanceSquared = NBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT;
+__constant const float c_nbnxmMinDistanceSquared = NBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT;
 
 gmx_opencl_inline void preloadCjPackedGeneric(__local int*        sm_cjPreload,
                                               const __global int* gm_cj,
@@ -246,18 +246,18 @@ gmx_opencl_inline void preloadCjPackedGeneric(__local int*        sm_cjPreload,
                                               bool gmx_unused     iMaskCond)
 {
     /* Pre-load cj into shared memory */
-#    if defined _AMD_SOURCE_ // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
-    if (tidxj == 0 & tidxi < c_nbnxnGpuJgroupSize)
+#    if defined _AMD_SOURCE_ // TODO: fix by setting c_nbnxmGpuClusterpairSplit properly
+    if (tidxj == 0 & tidxi < c_nbnxmGpuJgroupSize)
     {
         sm_cjPreload[tidxi] = gm_cj[tidxi];
     }
 #    else
     const int c_clSize                   = CL_SIZE;
-    const int c_nbnxnGpuClusterpairSplit = 2;
-    const int c_splitClSize              = c_clSize / c_nbnxnGpuClusterpairSplit;
-    if ((tidxj == 0 | tidxj == c_splitClSize) & (tidxi < c_nbnxnGpuJgroupSize))
+    const int c_nbnxmGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize / c_nbnxmGpuClusterpairSplit;
+    if ((tidxj == 0 | tidxj == c_splitClSize) & (tidxi < c_nbnxmGpuJgroupSize))
     {
-        sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize / c_splitClSize] = gm_cj[tidxi];
+        sm_cjPreload[tidxi + tidxj * c_nbnxmGpuJgroupSize / c_splitClSize] = gm_cj[tidxi];
     }
 #    endif
 }
@@ -305,12 +305,12 @@ gmx_opencl_inline void preloadCjPacked(CjType gmx_unused*             cjs,
 gmx_opencl_inline int loadCjPreload(__local int* sm_cjPreload, int jm, int gmx_unused tidxi, int gmx_unused tidxj)
 {
 #    if defined _AMD_SOURCE_
-    int warpLoadOffset = 0; // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
+    int warpLoadOffset = 0; // TODO: fix by setting c_nbnxmGpuClusterpairSplit properly
 #    else
     const int c_clSize                   = CL_SIZE;
-    const int c_nbnxnGpuClusterpairSplit = 2;
-    const int c_splitClSize              = c_clSize / c_nbnxnGpuClusterpairSplit;
-    int       warpLoadOffset = (tidxj & c_splitClSize) * c_nbnxnGpuJgroupSize / c_splitClSize;
+    const int c_nbnxmGpuClusterpairSplit = 2;
+    const int c_splitClSize              = c_clSize / c_nbnxmGpuClusterpairSplit;
+    int       warpLoadOffset = (tidxj & c_splitClSize) * c_nbnxmGpuJgroupSize / c_splitClSize;
 #    endif
     return sm_cjPreload[jm + warpLoadOffset];
 }
@@ -691,9 +691,9 @@ gmx_opencl_inline void reduce_force_i_and_shift_shfl(__private fvec  fci_buf[],
     /* Only does reduction over 4 elements in cluster (2 per warp). Needs to be changed
      * for CL_SIZE>4.*/
     float2 fshift_buf = 0;
-    for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
+    for (int ci_offset = 0; ci_offset < c_nbnxmGpuNumClusterPerSupercluster; ci_offset++)
     {
-        int    aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
+        int    aidx = (sci * c_nbnxmGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
         float3 fin  = (float3)(fci_buf[ci_offset][0], fci_buf[ci_offset][1], fci_buf[ci_offset][2]);
         fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, CL_SIZE);
         fin.y += intel_sub_group_shuffle_up(fin.y, fin.y, CL_SIZE);
@@ -747,9 +747,9 @@ gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_b
                                                      __global float*         fshift)
 {
     float fshift_buf = 0;
-    for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
+    for (int ci_offset = 0; ci_offset < c_nbnxmGpuNumClusterPerSupercluster; ci_offset++)
     {
-        int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
+        int aidx = (sci * c_nbnxmGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
         int tidx = tidxi + tidxj * CL_SIZE;
         /* store i forces in shmem */
         f_buf[tidx]                   = fci_buf[ci_offset][0];
@@ -846,7 +846,7 @@ gmx_opencl_inline void reduce_energy_shfl(float                    E_lj,
      * To make it possible to use REDUCE_SHUFFLE with single subgroup per i-j pair
      * (e.g. subgroup size 16 with CL_SIZE 4), either this "if" needs to be changed or
      * the definition of WARP_SIZE (currently CL_SIZE*CL_SIZE/2) needs to be changed
-     * (by supporting c_nbnxnGpuClusterpairSplit=1). */
+     * (by supporting c_nbnxmGpuClusterpairSplit=1). */
     if (tidx == 0 || tidx == WARP_SIZE)
     {
         atomicAdd_g_f(e_lj, E_lj);
@@ -928,4 +928,4 @@ gmx_opencl_inline bool gmx_sub_group_any(volatile __local int gmx_unused* warp_a
 #    endif
 }
 
-#endif /* NBNXN_OPENCL_KERNEL_UTILS_CLH */
+#endif /* NBNXM_OPENCL_KERNEL_UTILS_CLH */

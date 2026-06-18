@@ -93,7 +93,7 @@ static const char* kernel_VdW_family_definitions[] = {
  *
  * For example if flavour ElecType::RF with VdwType::FSwitch, the output will be such that the corresponding
  * kernel flavour is generated:
- * -DGMX_OCL_FASTGEN          (will replace flavour generator nbnxn_ocl_kernels.clh with nbnxn_ocl_kernels_fastgen.clh)
+ * -DGMX_OCL_FASTGEN          (will replace flavour generator nbnxm_ocl_kernels.clh with nbnxm_ocl_kernels_fastgen.clh)
  * -DEL_RF                    (The ElecType::RF flavour)
  * -DEELNAME=_ElecRF          (The first part of the generated kernel name )
  * -DLJ_EWALD_COMB_GEOM       (The VdwType::FSwitch flavour)
@@ -105,7 +105,7 @@ static const char* kernel_VdW_family_definitions[] = {
  * If elecType is single-range Ewald, then we need to add the
  * twin-cutoff flavour kernels to the JIT, because PME tuning might
  * need it. This path sets -DGMX_OCL_FASTGEN_ADD_TWINCUT, which
- * triggers the use of nbnxn_ocl_kernels_fastgen_add_twincut.clh. This
+ * triggers the use of nbnxm_ocl_kernels_fastgen_add_twincut.clh. This
  * hard-codes the generation of extra kernels that have the same base
  * flavour, and add the required -DVDW_CUTOFF_CHECK and "TwinCut" to
  * the kernel name.
@@ -135,7 +135,7 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, enum ElecType elecTy
         else
         {
             /* This triggers the use of
-               nbnxn_ocl_kernels_fastgen.clh. */
+               nbnxm_ocl_kernels_fastgen.clh. */
             defines_for_kernel_types += "-DGMX_OCL_FASTGEN";
         }
         defines_for_kernel_types += kernel_electrostatic_family_definitions[static_cast<int>(elecType)];
@@ -145,9 +145,9 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, enum ElecType elecTy
     return defines_for_kernel_types;
 }
 
-/*! \brief Compiles nbnxn kernels for OpenCL GPU given by \p mygpu
+/*! \brief Compiles nbnxm kernels for OpenCL GPU given by \p mygpu
  *
- * With OpenCL, a call to this function must not precede nbnxn_gpu_init() (which also calls it).
+ * With OpenCL, a call to this function must not precede nbnxm_gpu_init() (which also calls it).
  *
  * Doing bFastGen means only the requested kernels are compiled,
  * significantly reducing the total compilation time. If false, all
@@ -159,7 +159,7 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, enum ElecType elecTy
  *
  * Does not throw
  */
-void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
+void nbnxm_gpu_compile_kernels(NbnxmGpu* nb)
 {
     bool       bFastGen = TRUE;
     cl_program program  = nullptr;
@@ -184,14 +184,14 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
          * passed the to the kernel to avoid type ambiguity.
          */
         extraDefines += gmx::formatString(
-                " -Dc_nbnxnGpuClusterSize=%d"
+                " -Dc_nbnxmGpuClusterSize=%d"
                 " -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=%g"
-                " -Dc_nbnxnGpuNumClusterPerSupercluster=%d"
-                " -Dc_nbnxnGpuJgroupSize=%d"
+                " -Dc_nbnxmGpuNumClusterPerSupercluster=%d"
+                " -Dc_nbnxmGpuJgroupSize=%d"
                 " -Dc_centralShiftIndex=%d"
                 "%s",
                 sc_gpuClusterSize(sc_layoutType),
-                c_nbnxnMinDistanceSquared,
+                c_nbnxmMinDistanceSquared,
                 sc_gpuClusterPerSuperCluster(sc_layoutType),
                 sc_gpuJgroupSize(sc_layoutType),
                 gmx::c_centralShiftIndex,

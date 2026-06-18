@@ -34,7 +34,7 @@
 
 /*! \internal \file
  * \brief
- * Implements constructors for NbnxnPairlistGpuWork
+ * Implements constructors for NbnxmPairlistGpuWork
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
@@ -55,7 +55,7 @@ namespace gmx
 
 NbnxmPairlistGpuWork::ISuperClusterData::ISuperClusterData(const PairlistType layoutType) :
     bb(sc_gpuNumClusterPerBin(layoutType)),
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
     bbPacked(sc_gpuNumClusterPerBin(layoutType) / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
 #endif
     x(sc_gpuNumClusterPerBin(layoutType) * sc_gpuClusterSize(layoutType) * DIM),

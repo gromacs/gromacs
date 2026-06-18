@@ -634,7 +634,7 @@ gmx_unused static void calcBoundingBoxHalves(const int numAtoms, const real* x, 
         /* Set the "empty" bounding box to the same as the first one,
          * so we don't need to treat special cases in the rest of the code.
          */
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
         store4(bbj[1].lower.ptr(), load4(bbj[0].lower.ptr()));
         store4(bbj[1].upper.ptr(), load4(bbj[0].upper.ptr()));
 #else
@@ -642,7 +642,7 @@ gmx_unused static void calcBoundingBoxHalves(const int numAtoms, const real* x, 
 #endif
     }
 
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
     store4(bb->lower.ptr(), min(load4(bbj[0].lower.ptr()), load4(bbj[1].lower.ptr())));
     store4(bb->upper.ptr(), max(load4(bbj[0].upper.ptr()), load4(bbj[1].upper.ptr())));
 #else
@@ -683,7 +683,7 @@ static void calc_bounding_box_xxxx(int na, int stride, const real* x, float* bb)
     bb[5 * c_packedBoundingBoxesDimSize] = R2F_U(zh);
 }
 
-#if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
+#if NBNXM_SEARCH_SIMD4_FLOAT_X_BB
 
 /*! \brief Computes the bounding box for na coordinates in order xyz?, bb order xyz0 */
 static void calc_bounding_box_simd4(int na, const float* x, BoundingBox* bb)
@@ -723,7 +723,7 @@ static void calc_bounding_box_xxxx_simd4(int na, const float* x, real* bb)
     bb[5 * c_packedBoundingBoxesDimSize] = bbWorkAligned.upper.z;
 }
 
-#endif /* NBNXN_SEARCH_SIMD4_FLOAT_X_BB */
+#endif /* NBNXM_SEARCH_SIMD4_FLOAT_X_BB */
 
 
 /*! \brief Combines pairs of consecutive bounding boxes */
@@ -740,7 +740,7 @@ static void combine_bounding_box_pairs(const Grid& grid, ArrayRef<const Bounding
         const int nc2 = (grid.numAtomsInCell(i) + 3) >> (2 + 1);
         for (int c2 = sc2; c2 < sc2 + nc2; c2++)
         {
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
             Simd4Float min_S, max_S;
 
             min_S = min(load4(bb[c2 * 2 + 0].lower.ptr()), load4(bb[c2 * 2 + 1].lower.ptr()));
@@ -908,7 +908,7 @@ static void sort_cluster_on_flag(int                     numAtomsInCluster,
         /* If we don't have atoms with LJ, there's nothing to sort */
         if (n1 > 0)
         {
-            *flags |= NBNXN_CI_DO_LJ(subc);
+            *flags |= NBNXM_CI_DO_LJ(subc);
 
             if (2 * n1 <= numAtomsInCluster)
             {
@@ -928,12 +928,12 @@ static void sort_cluster_on_flag(int                     numAtomsInCluster,
                     }
                 }
 
-                *flags |= NBNXN_CI_HALF_LJ(subc);
+                *flags |= NBNXM_CI_HALF_LJ(subc);
             }
         }
         if (haveQ)
         {
-            *flags |= NBNXN_CI_DO_COUL(subc);
+            *flags |= NBNXM_CI_DO_COUL(subc);
         }
         subc++;
     }
@@ -944,7 +944,7 @@ static void sort_cluster_on_flag(int                     numAtomsInCluster,
  * Potentially sorts atoms and sets the interaction flags.
  */
 void Grid::fillBin(GridSetData*            gridSetData,
-                   nbnxn_atomdata_t*       nbat,
+                   nbnxm_atomdata_t*       nbat,
                    int                     atomStart,
                    int                     atomEnd,
                    ArrayRef<const int32_t> atomInfo,
@@ -1041,7 +1041,7 @@ void Grid::fillBin(GridSetData*            gridSetData,
         float* pbb_ptr = packedClusterBoundingBoxes_.data() + packedBoundingBoxesIndex(clusterIndex)
                          + (clusterIndex & (c_packedBoundingBoxesDimSize - 1));
 
-#if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
+#if NBNXM_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
         {
             calc_bounding_box_xxxx_simd4(numAtoms, nbat->x().data() + atomStart * nbat->xstride, pbb_ptr);
@@ -1093,7 +1093,7 @@ void Grid::sortCellsCpuGeometry(GridSetData*            gridSetData,
                                 int                     dd_zone,
                                 ArrayRef<const int32_t> atomInfo,
                                 ArrayRef<const RVec>    x,
-                                nbnxn_atomdata_t*       nbat,
+                                nbnxm_atomdata_t*       nbat,
                                 const Range<int>        cellRange,
                                 ArrayRef<int>           sort_work)
 {
@@ -1170,7 +1170,7 @@ void Grid::sortCellsGpuGeometry(GridSetData*            gridSetData,
                                 int                     dd_zone,
                                 ArrayRef<const int32_t> atomInfo,
                                 ArrayRef<const RVec>    x,
-                                nbnxn_atomdata_t*       nbat,
+                                nbnxm_atomdata_t*       nbat,
                                 const Range<int>        cellRange,
                                 ArrayRef<int>           sort_work)
 {
@@ -1425,21 +1425,21 @@ void Grid::calcCellIndices(const GridDimensions&  gridDims,
 }
 
 /*! \brief Resizes grid and atom data which depend on the number of bins */
-static void resizeForNumberOfBins(const int         numNbnxnAtoms,
+static void resizeForNumberOfBins(const int         numNbnxmAtoms,
                                   const int         numAtomsMoved,
                                   const int         ddZone,
                                   GridSetData*      gridSetData,
-                                  nbnxn_atomdata_t* nbat)
+                                  nbnxm_atomdata_t* nbat)
 {
     /* Note: gridSetData->cellIndices was already resized before */
 
     /* To avoid conditionals we store the moved particles at the end of a,
      * make sure we have enough space.
      */
-    gridSetData->atomIndices.resize(numNbnxnAtoms + numAtomsMoved);
+    gridSetData->atomIndices.resize(numNbnxmAtoms + numAtomsMoved);
 
     /* Make space in nbat for storing the atom coordinates */
-    nbat->resizeCoordinateBuffer(numNbnxnAtoms, ddZone);
+    nbat->resizeCoordinateBuffer(numNbnxmAtoms, ddZone);
 }
 
 void Grid::setBinIndices(int                  ddZone,
@@ -1449,7 +1449,7 @@ void Grid::setBinIndices(int                  ddZone,
                          const Range<int>     atomRange,
                          ArrayRef<const int>  atomInfo,
                          ArrayRef<const RVec> x,
-                         nbnxn_atomdata_t*    nbat)
+                         nbnxm_atomdata_t*    nbat)
 {
     binOffset_ = binOffset;
 
@@ -1715,7 +1715,7 @@ void Grid::setNonLocalGrid(const int                           ddZone,
                            ArrayRef<const int32_t>             atomInfo,
                            ArrayRef<const RVec>                x,
                            GridSetData*                        gridSetData,
-                           nbnxn_atomdata_t*                   nbat)
+                           nbnxm_atomdata_t*                   nbat)
 {
     ddZone_ = ddZone;
 

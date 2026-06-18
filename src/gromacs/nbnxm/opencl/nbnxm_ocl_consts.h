@@ -39,15 +39,15 @@
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
  */
-#ifndef NBNXN_OCL_CONSTS_H
-#define NBNXN_OCL_CONSTS_H
+#ifndef NBNXM_OCL_CONSTS_H
+#define NBNXM_OCL_CONSTS_H
 
 /*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *
- *  The GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
+ *  The GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
  */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
-#    define GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
+#ifndef GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY
+#    define GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
 #endif
 
 #endif

@@ -83,7 +83,7 @@ struct NbnxmPairlistCpuWork
     //! Work data for generating an IEntry in the pairlist
     IClusterData iClusterData;
     //! Temporary j-cluster list, used for sorting on exclusions
-    std::vector<nbnxn_cj_t> cj;
+    std::vector<nbnxm_cj_t> cj;
 
     //! Nr. of cluster pairs without Coulomb for flop counting
     int ncj_noq = 0;
@@ -127,7 +127,7 @@ struct NbnxmPairlistGpuWork
     std::vector<int> sortBuffer;
 
     //! Second sci array, for sorting
-    HostVector<nbnxn_sci_t> sci_sort;
+    HostVector<nbnxm_sci_t> sci_sort;
 
     //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp1;

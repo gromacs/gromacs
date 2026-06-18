@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Common functions for the different NBNXN GPU implementations.
+ * \brief Common functions for the different NBNXM GPU implementations.
  *
  * \author Szilard Pall <pall.szilard@gmail.com>
  *
@@ -95,7 +95,7 @@ class ListedForcesGpu;
  * \param[in] iloc        interaction locality
  */
 static void countPruneKernelTime(GpuTimers*                 timers,
-                                 gmx_wallclock_gpu_nbnxn_t* timings,
+                                 gmx_wallclock_gpu_nbnxm_t* timings,
                                  const InteractionLocality  iloc)
 {
     GpuTimers::Interaction& iTimers = timers->interaction[iloc];
@@ -119,7 +119,7 @@ static void countPruneKernelTime(GpuTimers*                 timers,
     }
 }
 
-/*! \brief Reduce data staged internally in the nbnxn module.
+/*! \brief Reduce data staged internally in the nbnxm module.
  *
  * Shift forces and electrostatic/LJ energies copied from the GPU into
  * a module-internal staging area are immediately reduced (CPU-side buffers passed)
@@ -220,7 +220,7 @@ static inline void gpu_reduce_staged_foreign_term(const NBStagingData&      nbst
  *
  */
 template<typename GpuPairlist>
-static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
+static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxm_t* timings,
                                           GpuTimers*                 timers,
                                           const GpuPairlist*         plist,
                                           AtomLocality               atomLocality,
@@ -298,7 +298,7 @@ bool gpu_try_finish_task(NbnxmGpu*           nb,
                          ForeignLambdaTerms* foreign_term,
                          GpuTaskCompletion   completionKind)
 {
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
 
     /* determine interaction locality from atom locality */
     const InteractionLocality iLocality = atomToInteractionLocality(aloc);
@@ -315,7 +315,7 @@ bool gpu_try_finish_task(NbnxmGpu*           nb,
              || (aloc == AtomLocality::Local && (stepWork.computeEnergy || stepWork.computeVirial)));
 
     //  We skip when during the non-local phase there was actually no work to do.
-    //  This is consistent with nbnxn_gpu_launch_kernel but it also considers possible
+    //  This is consistent with nbnxm_gpu_launch_kernel but it also considers possible
     //  bonded GPU work.
     if ((iLocality == InteractionLocality::Local) || haveGpuShortRangeWork(nb, iLocality))
     {

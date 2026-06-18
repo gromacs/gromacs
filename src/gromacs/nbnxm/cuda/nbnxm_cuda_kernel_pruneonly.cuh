@@ -85,7 +85,7 @@ namespace gmx
  *     are not split (much), but the rolling chunks are small;
  *   - with large inputs NTHREAD_Z=1 is 2-3% faster (on CC>=5.0)
  */
-#define NTHREAD_Z (GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY)
+#define NTHREAD_Z (GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY)
 #define THREADS_PER_BLOCK (c_clusterSize * c_clusterSize * NTHREAD_Z)
 // we want 100% occupancy, so max threads/block
 #define MIN_BLOCKS_PER_MP (GMX_CUDA_MAX_THREADS_PER_MP / THREADS_PER_BLOCK)
@@ -101,22 +101,22 @@ namespace gmx
  *  Kernel launch parameters:
  *   - #blocks   = #pair lists, blockId = pair list Id
  *   - #threads  = NTHREAD_Z * c_clusterSize^2
- *   - shmem     = see nbnxn_cuda.cu:calc_shmem_required_prune()
+ *   - shmem     = see nbnxm_cuda.cu:calc_shmem_required_prune()
  *
  *   Each thread calculates an i-j atom distance..
  */
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
-        void nbnxn_kernel_prune_cuda(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, int numParts)
+        void nbnxm_kernel_prune_cuda(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, int numParts)
 #ifdef FUNCTION_DECLARATION_ONLY
                 ; /* Only do function declaration, omit the function body. */
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
 extern template __global__ void
-nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
+nbnxm_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
 extern template __global__ void
-nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
+nbnxm_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
 #else
 {
 
@@ -139,8 +139,8 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuP
     }
 
     /* convenience variables */
-    const nbnxn_sci_t* pl_sci      = haveFreshList ? plist.sci : plist.sorting.sciSorted;
-    nbnxn_cj_packed_t* pl_cjPacked = plist.cjPacked;
+    const nbnxm_sci_t* pl_sci      = haveFreshList ? plist.sci : plist.sorting.sciSorted;
+    nbnxm_cj_packed_t* pl_cjPacked = plist.cjPacked;
     const float4*      xq          = atdat.xq;
     const float3*      shift_vec   = asFloat3(atdat.shiftVec);
 
@@ -188,7 +188,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuP
     /*********************************************************************/
 
 
-    nbnxn_sci_t nb_sci =
+    nbnxm_sci_t nb_sci =
             pl_sci[bidx * numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
     int sci            = nb_sci.sci;           /* super-cluster */
     int cijPackedBegin = nb_sci.cjPackedBegin; /* first ...*/

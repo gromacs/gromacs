@@ -73,9 +73,9 @@ namespace
 //! Helper wrapper for host resident data
 struct HostBuffers
 {
-    HostVector<nbnxn_sci_t>       h_sci;
-    HostVector<nbnxn_cj_packed_t> h_cjPacked;
-    HostVector<nbnxn_excl_t>      h_excl;
+    HostVector<nbnxm_sci_t>       h_sci;
+    HostVector<nbnxm_cj_packed_t> h_cjPacked;
+    HostVector<nbnxm_excl_t>      h_excl;
     HostVector<int>               h_rollingPrunePart;
 
     //! We only build this with our test data size and with pinning when possible

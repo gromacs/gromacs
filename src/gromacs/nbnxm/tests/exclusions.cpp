@@ -95,7 +95,7 @@ namespace
  * Note that this function returns a unique pointer, because parts of
  * PairlistSet currently can not be copied.
  */
-std::pair<std::unique_ptr<nbnxn_atomdata_t>, std::unique_ptr<PairlistSet>>
+std::pair<std::unique_ptr<nbnxm_atomdata_t>, std::unique_ptr<PairlistSet>>
 diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 {
     const HostAllocationPolicy hostAllocationPolicy{};
@@ -113,7 +113,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 
     std::vector<real> nbfp{ 0.0_real, 0.0_real };
 
-    std::unique_ptr<nbnxn_atomdata_t> nbat = std::make_unique<nbnxn_atomdata_t>(
+    std::unique_ptr<nbnxm_atomdata_t> nbat = std::make_unique<nbnxm_atomdata_t>(
             hostAllocationPolicy, emptyLogger, kernelType, std::nullopt, LJCombinationRule::None, nbfp, false, 1, 1);
 
     std::vector<gmx::RVec> coords(numAtoms, { 1.0_real, 1.0_real, 1.0_real });
@@ -175,14 +175,14 @@ public:
         std::tie(nbat_, pairlistSet_) = diagonalPairlist(kernelType, numAtoms_);
     }
 
-    const NbnxnPairlistCpu& pairlist() const { return pairlistSet_->cpuLists()[0]; }
+    const NbnxmPairlistCpu& pairlist() const { return pairlistSet_->cpuLists()[0]; }
 
     int iClusterSize_;
     int jClusterSize_;
     int numAtoms_;
 
 private:
-    std::unique_ptr<nbnxn_atomdata_t> nbat_;
+    std::unique_ptr<nbnxm_atomdata_t> nbat_;
     std::unique_ptr<PairlistSet>      pairlistSet_;
 };
 
