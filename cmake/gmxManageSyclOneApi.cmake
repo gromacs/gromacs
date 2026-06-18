@@ -359,6 +359,9 @@ if(GMX_GPU_FFT_BBFFT)
     # The double-batched FFT library is still called by its former
     # name bbfft in the implementation. For now, only the shared
     # libraries can link into GROMACS shared libraries.
+    if (NOT _sycl_has_valid_fft)  # Warn only once; see #5658
+        message(WARNING "Support for BBFFT is deprecated since GROMACS 2027 and can be removed in the future")
+    endif()
     if (BUILD_SHARED_LIBS)
         find_package(bbfft-sycl 0.3.1 REQUIRED shared)
     else()

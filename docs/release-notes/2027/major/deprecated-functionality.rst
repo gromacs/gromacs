@@ -13,4 +13,11 @@ Changes anticipated to |Gromacs| 2027 functionality
 Functionality deprecated in |Gromacs| 2027
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Double-batched FFT (BBFFT) backend
+""""""""""""""""""""""""""""""""""
+
+The BBFFT backend has been deprecated in |Gromacs| following Intel's abandonment of the project.
+Users on Intel GPU hardware are advised to rely on the default oneMKL backend.
+
+:issue:`5658`
 
