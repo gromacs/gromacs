@@ -150,6 +150,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
      * and send the information to the other ranks over MPI. This
      * avoids creating a start-up bottleneck with each MPI rank on a
      * node making the same GPU API calls. */
+    // NOLINTNEXTLINE(misc-redundant-expression)
     constexpr bool allRanksMustDetectGpus = ((GMX_GPU_OPENCL != 0) || (GMX_GPU_SYCL != 0));
     MSVC_DIAGNOSTIC_RESET
     bool gpusCanBeDetected = false;
