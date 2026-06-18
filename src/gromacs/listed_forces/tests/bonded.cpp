@@ -95,12 +95,15 @@ namespace
 using ListedForcesParametersTuple = std::tuple<iListInput, PaddedVector<RVec>, PbcType>;
 
 //! Formatter for iListInput - use function type and FEP status
+// NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
 auto formatIListInput = [](const iListInput& input)
 {
     if (!input.ftype.has_value())
     {
         return std::string("NoFtype");
     }
+    // Safe from global-init ordering problems because interaction_function
+    // will be defined before this lambda is called.
     std::string name = interaction_function[input.ftype.value()].name;
     if (input.fep)
     {
@@ -114,7 +117,13 @@ auto formatCoordinates = [](const PaddedVector<RVec>& coords)
 { return formatString("%datoms", static_cast<int>(coords.size())); };
 
 //! Formatter for PbcType
-auto formatPbcType = [](PbcType pbc) { return std::string(c_pbcTypeNames[pbc]); };
+// NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
+auto formatPbcType = [](PbcType pbc)
+{
+    // Safe from global-init ordering problems because c_pbcTypeNames
+    // will be defined before this lambda is called.
+    return std::string(c_pbcTypeNames[pbc]);
+};
 
 //! Test naming helper
 const NameOfTestFromTuple<ListedForcesParametersTuple> sc_testNamer{
