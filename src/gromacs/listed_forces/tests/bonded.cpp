@@ -92,7 +92,8 @@ namespace
 {
 
 //! Parameter tuple type for listed forces tests
-using ListedForcesParametersTuple = std::tuple<iListInput, PaddedVector<RVec>, PbcType>;
+using ListedForcesParametersTuple =
+        std::tuple<iListInput, PaddedVector<RVec>, PbcType, BondedKernelFlavor, real>;
 
 //! Formatter for iListInput - use function type and FEP status
 // NOLINTNEXTLINE(cppcoreguidelines-interfaces-global-init)
@@ -125,28 +126,49 @@ auto formatPbcType = [](PbcType pbc)
     return std::string(c_pbcTypeNames[pbc]);
 };
 
-//! Test naming helper
-const NameOfTestFromTuple<ListedForcesParametersTuple> sc_testNamer{
-    std::make_tuple(formatIListInput, formatCoordinates, formatPbcType)
+//! Formatter for BondedKernelFlavor - creates valid GTest parameter names
+auto formatFlavor = [](BondedKernelFlavor flavor)
+{
+    switch (flavor)
+    {
+        case BondedKernelFlavor::ForcesSimdWhenAvailable:
+            return std::string("ForcesSimdWhenAvailable");
+        case BondedKernelFlavor::ForcesNoSimd: return std::string("ForcesNoSimd");
+        case BondedKernelFlavor::ForcesAndVirialAndEnergy:
+            return std::string("ForcesAndVirialAndEnergy");
+        case BondedKernelFlavor::ForcesAndEnergy: return std::string("ForcesAndEnergy");
+        default: return std::string("UnknownFlavor");
+    }
 };
 
-/*! \brief Reference data filename maker (excludes hardware for hardware-independent naming)
+//! Formatter for lambda parameter
+auto formatLambda = [](real lambda) { return formatString("Lambda%s", toString(lambda).c_str()); };
+
+//! Test naming helper
+const NameOfTestFromTuple<ListedForcesParametersTuple> sc_testNamer{
+    std::make_tuple(formatIListInput, formatCoordinates, formatPbcType, formatFlavor, formatLambda)
+};
+
+/*! \brief Reference data filename maker (excludes hardware and flavor for hardware-independent naming)
  *
  * Reference data files are named like:
- *   Bond_ListedForcesTest_Ifunc_Bonds_4atoms_PBCNo.xml
- * Test names include hardware:
- *   Bond/ListedForcesTest.Ifunc/Bonds_4atoms_PBCNo_CPU
+ *   Bond_ListedForcesTest_Ifunc_Bonds_4atoms_PBCNo_Lambda0_5.xml
+ * Test names like:
+ *   Bond/ListedForcesTest.Ifunc/Bonds_4atoms_PBCNo_ForcesAndVirialAndEnergy_Lambda0_5
  */
-const RefDataFilenameMaker<ListedForcesParametersTuple> sc_refDataFilenameMaker{
-    std::make_tuple(formatIListInput, formatCoordinates, formatPbcType)
-};
+const RefDataFilenameMaker<ListedForcesParametersTuple> sc_refDataFilenameMaker{ std::make_tuple(
+        formatIListInput,
+        formatCoordinates,
+        formatPbcType,
+        [](BondedKernelFlavor) { return std::string(); },
+        formatLambda) };
 
 /*! \brief Test fixture for listed forces
  *
  * Uses hardware-independent reference-data naming via RefDataFilenameMaker.
  */
 class ListedForcesTest :
-    public ::testing::TestWithParam<std::tuple<iListInput, PaddedVector<RVec>, PbcType>>
+    public ::testing::TestWithParam<std::tuple<iListInput, PaddedVector<RVec>, PbcType, BondedKernelFlavor, real>>
 {
 public:
     //! Before any test is run, work out whether any compatible GPUs exist.
@@ -170,24 +192,22 @@ protected:
     PaddedVector<RVec>     x_;
     PbcType                pbcType_;
     iListInput             input_;
+    BondedKernelFlavor     flavor_;
+    real                   lambda_;
     TestReferenceData      refData_;
-    TestReferenceChecker   checker_;
     FloatingPointTolerance shiftForcesTolerance_ = defaultRealTolerance();
+
     // Reference data uses RefDataFilenameMaker for hardware-independent naming
-    ListedForcesTest() :
-        refData_(sc_refDataFilenameMaker(GetParam())), checker_(refData_.rootChecker())
+    ListedForcesTest() : refData_(sc_refDataFilenameMaker(GetParam()))
     {
         input_   = std::get<0>(GetParam());
         x_       = std::get<1>(GetParam());
         pbcType_ = std::get<2>(GetParam());
+        flavor_  = std::get<3>(GetParam());
+        lambda_  = std::get<4>(GetParam());
         clear_mat(box_);
         box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
         set_pbc(&pbc_, pbcType_, box_);
-        // We need quite specific tolerances here since angle functions
-        // etc. are not very precise and reproducible.
-        test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(
-                input_.ftoler, input_.dtoler, 1.0e-6, 1.0e-12, 10000, 100, false));
-        checker_.setDefaultTolerance(tolerance);
         // The SIMD acos() is only accurate to 2-3 ULP, so the angles
         // computed by it and the non-SIMD code paths (that use
         // std::acos) differ by enough to require quite large
@@ -214,29 +234,19 @@ protected:
     {
         SCOPED_TRACE(std::string("Testing PBC type: ") + c_pbcTypeNames[pbcType_]);
 
-        std::vector<BondedKernelFlavor> flavors = { BondedKernelFlavor::ForcesAndVirialAndEnergy };
-        if (!input_.fep || lambda == 0)
-        {
-            flavors.push_back(BondedKernelFlavor::ForcesSimdWhenAvailable);
-        }
-
         for (const auto& runner : getRunners())
         {
-            for (const auto flavor : flavors)
+            if (runner->supportsFlavor(flavor_, input_, lambda))
             {
-                if (!runner->supportsFlavor(flavor, input_, lambda))
-                {
-                    continue;
-                }
                 SCOPED_TRACE("Testing on " + runner->hardwareDescription()
-                             + " with bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor]);
+                             + " with bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor_]);
                 OutputQuantities output;
-                runner->run(input_, x_, pbc_, lambda, iatoms, flavor, &output);
+                runner->run(input_, x_, pbc_, lambda, iatoms, flavor_, &output);
                 EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0)))
                         << "dvdlambda was " << output.dvdlambda;
-                checkOutput(checker, output, flavor);
+                checkOutput(checker, output, flavor_);
                 auto shiftForcesChecker = checker->checkCompound("Shift-Forces", "Shift-forces");
-                if (computeVirial(flavor))
+                if (computeVirial(flavor_))
                 {
                     shiftForcesChecker.setDefaultTolerance(shiftForcesTolerance_);
                     shiftForcesChecker.checkVector(output.fshift[c_centralShiftIndex], "Central");
@@ -251,30 +261,55 @@ protected:
     void testIfunc()
     {
         EXPECT_TRUE(input_.ftype.has_value() && input_.ftype < InteractionFunction::Count);
+
+        TestReferenceChecker checker = refData_.rootChecker();
+
+        // SIMD flavors don't compute energies, so they won't use those fields from the
+        // reference data (which is generated by ForcesAndVirialAndEnergy flavor)
+        if (flavor_ == BondedKernelFlavor::ForcesSimdWhenAvailable)
+        {
+            checker.disableUnusedEntriesCheck();
+        }
+
+        // We need quite specific tolerances here since angle functions
+        // etc. are not very precise and reproducible.
+        test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(
+                input_.ftoler, input_.dtoler, 1.0e-6, 1.0e-12, 10000, 100, false));
+        checker.setDefaultTolerance(tolerance);
+
         TestReferenceChecker thisChecker =
-                checker_.checkCompound("FunctionType", interaction_function[input_.ftype.value()].name)
-                        .checkCompound("FEP", (input_.fep ? "Yes" : "No"));
+                checker.checkCompound("FunctionType", interaction_function[input_.ftype.value()].name);
+
         std::vector<t_iatom> iatoms;
         fillIatoms(input_.ftype, &iatoms);
-        if (input_.fep)
-        {
-            const int numLambdas = 3;
-            for (int i = 0; i < numLambdas; ++i)
-            {
-                const real lambda       = i / (numLambdas - 1.0);
-                auto       valueChecker = thisChecker.checkCompound("Lambda", toString(lambda));
-                testOneIfunc(&valueChecker, iatoms, lambda);
-            }
-        }
-        else
-        {
-            testOneIfunc(&thisChecker, iatoms, 0.0);
-        }
+
+        testOneIfunc(&thisChecker, iatoms, lambda_);
     }
 };
 
 TEST_P(ListedForcesTest, Ifunc)
 {
+    if (!input_.fep && lambda_ != 0.0)
+    {
+        GTEST_SKIP() << "Non-FEP test with non-zero lambda";
+    }
+
+    if (input_.fep && lambda_ != 0.0 && flavor_ == BondedKernelFlavor::ForcesSimdWhenAvailable)
+    {
+        GTEST_SKIP() << "SIMD flavor not supported for FEP with lambda != 0";
+    }
+
+    // When updating reference data, skip SIMD flavor tests since they don't compute
+    // energy fields. Reference data should be generated by ForcesAndVirialAndEnergy flavor.
+    if (referenceDataMode() != ReferenceDataMode::Compare
+        && flavor_ == BondedKernelFlavor::ForcesSimdWhenAvailable)
+    {
+        GTEST_SKIP() << "Skipping SIMD flavor when updating reference data (use "
+                        "ForcesAndVirialAndEnergy for canonical data)";
+    }
+
+    // testIfunc() will create the checker, which triggers refdata file loading.
+    // This happens only after skip checks pass, avoiding file-not-found errors.
     testIfunc();
 }
 
@@ -406,53 +441,74 @@ std::vector<PaddedVector<RVec>> c_coordinatesForTestsZeroAngle = {
 //! PBC values for testing
 std::vector<PbcType> c_pbcForTests = { PbcType::No, PbcType::XY, PbcType::Xyz };
 
+//! Bonded kernel flavors for testing
+std::vector<BondedKernelFlavor> c_flavorsForTests = { BondedKernelFlavor::ForcesAndVirialAndEnergy,
+                                                      BondedKernelFlavor::ForcesSimdWhenAvailable };
+
+//! Lambda values for testing
+std::vector<real> c_lambdaValuesForTests = { 0.0, 0.5, 1.0 };
+
 INSTANTIATE_TEST_SUITE_P(Bond,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputBonds),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Angle,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputAngles),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Dihedral,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputDihs),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Polarize,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputPols),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Restraints,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputRestraints),
                                             ::testing::ValuesIn(c_coordinatesForTests),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(BondZeroLength,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputBondsZeroLength),
                                             ::testing::ValuesIn(c_coordinatesForTestsZeroBondLength),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(AngleZero,
                          ListedForcesTest,
                          ::testing::Combine(::testing::ValuesIn(c_InputAnglesZeroAngle),
                                             ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
-                                            ::testing::ValuesIn(c_pbcForTests)),
+                                            ::testing::ValuesIn(c_pbcForTests),
+                                            ::testing::ValuesIn(c_flavorsForTests),
+                                            ::testing::ValuesIn(c_lambdaValuesForTests)),
                          sc_testNamer);
 
 } // namespace

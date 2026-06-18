@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="ANGLES">
+    <Real Name="Epot ">2.2444796667393527</Real>
+    <Real Name="dVdlambda ">0.58110228576821976</Real>
+    <Sequence Name="Forces">
+      <Int Name="Length">4</Int>
+      <Vector>
+        <Real Name="X">20.653737894841058</Real>
+        <Real Name="Y">-57.418618367216929</Real>
+        <Real Name="Z">11.247077809104457</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-112.73717904544873</Real>
+        <Real Name="Y">87.774272811412487</Real>
+        <Real Name="Z">65.941616392559609</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">112.96003627549626</Real>
+        <Real Name="Y">-87.442426543778907</Real>
+        <Real Name="Z">-65.63523244836243</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-20.876595124888606</Real>
+        <Real Name="Y">57.086772099583349</Real>
+        <Real Name="Z">-11.553461753301633</Real>
+      </Vector>
+    </Sequence>
+    <Shift-Forces Name="Shift-forces">
+      <Vector Name="Central">
+        <Real Name="X">-1.0658141036401503e-14</Real>
+        <Real Name="Y">-7.1054273576010019e-15</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+    </Shift-Forces>
+  </FunctionType>
+</ReferenceData>
+

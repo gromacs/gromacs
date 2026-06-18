@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="ANGRES">
+    <Real Name="Epot ">39.04767735234671</Real>
+    <Real Name="dVdlambda ">21.652453207614126</Real>
+    <Sequence Name="Forces">
+      <Int Name="Length">4</Int>
+      <Vector>
+        <Real Name="X">54.555838171988853</Real>
+        <Real Name="Y">26.78007631922253</Real>
+        <Real Name="Z">51.623339682807455</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-54.555838171988853</Real>
+        <Real Name="Y">-26.78007631922253</Real>
+        <Real Name="Z">-51.623339682807455</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-53.529689052287722</Real>
+        <Real Name="Y">-26.640303976873156</Real>
+        <Real Name="Z">-52.796094036059458</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">53.529689052287722</Real>
+        <Real Name="Y">26.640303976873156</Real>
+        <Real Name="Z">52.796094036059458</Real>
+      </Vector>
+    </Sequence>
+    <Shift-Forces Name="Shift-forces">
+      <Vector Name="Central">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+    </Shift-Forces>
+  </FunctionType>
+</ReferenceData>
+

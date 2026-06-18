@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="UREY_BRADLEY">
+    <Real Name="Epot ">6.4347498263607488</Real>
+    <Real Name="dVdlambda ">6.3558908555985836</Real>
+    <Sequence Name="Forces">
+      <Int Name="Length">4</Int>
+      <Vector>
+        <Real Name="X">37.960515004366712</Real>
+        <Real Name="Y">-104.7790828252223</Real>
+        <Real Name="Z">20.239629981917307</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-206.20554896757238</Real>
+        <Real Name="Y">160.92322850343203</Real>
+        <Real Name="Z">120.39977159637301</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">206.6606072289612</Real>
+        <Real Name="Y">-160.43167845591802</Real>
+        <Real Name="Z">-119.8121671272232</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-38.415573265755512</Real>
+        <Real Name="Y">104.28753277770829</Real>
+        <Real Name="Z">-20.827234451067117</Real>
+      </Vector>
+    </Sequence>
+    <Shift-Forces Name="Shift-forces">
+      <Vector Name="Central">
+        <Real Name="X">7.1054273576010019e-15</Real>
+        <Real Name="Y">-1.4210854715202004e-14</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+    </Shift-Forces>
+  </FunctionType>
+</ReferenceData>
+
