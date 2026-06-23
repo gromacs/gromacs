@@ -124,7 +124,7 @@ public:
     bool isMainRank() const { return rank_ == mainRank_; }
 
     //! Returns the rank id of the main rank
-    int mainRank() const { return mainRank_; }
+    static int mainRank() { return mainRank_; }
 
     /*! \brief Initializes hierarchical reductions
      *

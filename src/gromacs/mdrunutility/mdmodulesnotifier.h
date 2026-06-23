@@ -176,10 +176,10 @@ struct BuildMDModulesNotifier<>
     {
     public:
         //! Do nothing but provide MDModulesNotifier::notify to derived class
-        void notify() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
+        static void notify() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
 
         //! Do nothing but provide MDModulesNotifier::subscribe to derived class
-        void subscribe() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
+        static void subscribe() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
     };
     /*! \brief Defines a type if no notifications are managed.
      *
