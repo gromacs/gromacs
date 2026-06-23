@@ -76,7 +76,6 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -91,6 +90,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -114,10 +114,41 @@ namespace test
 namespace
 {
 
+//! PBC types for testing
+enum class PbcTestType : int
+{
+    None,
+    XYZ,
+    Count
+};
+
 static constexpr real dOHTest = 0.10;
 static constexpr real dHHTest = 0.15;
 static constexpr real mOTest  = 10;
 static constexpr real mHTest  = 2;
+
+//! Static const array of test PBCs, initialized once for all tests
+static const gmx::EnumerationArray<PbcTestType, t_pbc> sc_testPbcs = []()
+{
+    gmx::EnumerationArray<PbcTestType, t_pbc> pbcs;
+    t_pbc                                     pbc;
+
+    // Infinitely small box (no PBC)
+    matrix boxNone = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    set_pbc(&pbc, PbcType::No, boxNone);
+    pbcs[PbcTestType::None] = pbc;
+
+    // Rectangular box (XYZ PBC)
+    matrix boxXyz = { { real(1.86206), 0, 0 }, { 0, real(1.86206), 0 }, { 0, 0, real(1.86206) } };
+    set_pbc(&pbc, PbcType::Xyz, boxXyz);
+    pbcs[PbcTestType::XYZ] = pbc;
+
+    return pbcs;
+}();
+
+//! Names for PBC test types
+static const gmx::EnumerationArray<PbcTestType, const char*> sc_pbcTestTypeNames = { { "PBCNone",
+                                                                                       "PBCXYZ" } };
 
 std::unique_ptr<gmx_mtop_t> mtopTwoIdenticalMoltypes()
 {
@@ -176,40 +207,40 @@ TEST(Settle, MultipleDifferentSettlesThrow)
 using SettleParametersTuple = std::tuple<int,          // numSettles
                                          bool,         // updateVelocities
                                          bool,         // calcVirial
-                                         std::string>; // pbcName
+                                         PbcTestType>; // pbcType
 
 //! Test naming functor
 const NameOfTestFromTuple<SettleParametersTuple> sc_testNamer{ std::make_tuple(
         [](int n) { return formatString("%dsettles", n); },
         [](bool b) { return b ? "velocities" : "novelocities"; },
         [](bool b) { return b ? "virial" : "novirial"; },
-        useString) }; // PBC name
+        [](PbcTestType pbc) { return sc_pbcTestTypeNames[pbc]; }) };
 
 //! Reference data filename maker (same as test namer)
 const RefDataFilenameMaker<SettleParametersTuple> sc_refDataFilenameMaker{ std::make_tuple(
         [](int n) { return formatString("%dsettles", n); },
         [](bool b) { return b ? "velocities" : "novelocities"; },
         [](bool b) { return b ? "virial" : "novirial"; },
-        useString) };
+        [](PbcTestType pbc) { return sc_pbcTestTypeNames[pbc]; }) };
 
 /*! \brief Sets of parameters on which to run the tests.
  *
- * Each entry is a tuple of (numSettles, updateVelocities, calcVirial, pbcName).
+ * Each entry is a tuple of (numSettles, updateVelocities, calcVirial, pbcType).
  */
 const SettleParametersTuple parametersSets[] = {
-    { 1, false, false, "PBCXYZ" },   // 1 water molecule
-    { 2, false, false, "PBCXYZ" },   // 2 water molecules
-    { 4, false, false, "PBCXYZ" },   // 4 water molecules
-    { 5, false, false, "PBCXYZ" },   // 5 water molecules
-    { 6, false, false, "PBCXYZ" },   // 6 water molecules
-    { 10, false, false, "PBCXYZ" },  // 10 water molecules
-    { 12, false, false, "PBCXYZ" },  // 12 water molecules
-    { 15, false, false, "PBCXYZ" },  // 15 water molecules
-    { 17, true, false, "PBCXYZ" },   // Update velocities
-    { 17, false, true, "PBCXYZ" },   // Compute virial
-    { 17, false, false, "PBCNone" }, // No periodic boundary
-    { 17, true, true, "PBCNone" },   // Update velocities, compute virial, without PBC
-    { 17, true, true, "PBCXYZ" }     // Update velocities, compute virial, with PBC
+    { 1, false, false, PbcTestType::XYZ },   // 1 water molecule
+    { 2, false, false, PbcTestType::XYZ },   // 2 water molecules
+    { 4, false, false, PbcTestType::XYZ },   // 4 water molecules
+    { 5, false, false, PbcTestType::XYZ },   // 5 water molecules
+    { 6, false, false, PbcTestType::XYZ },   // 6 water molecules
+    { 10, false, false, PbcTestType::XYZ },  // 10 water molecules
+    { 12, false, false, PbcTestType::XYZ },  // 12 water molecules
+    { 15, false, false, PbcTestType::XYZ },  // 15 water molecules
+    { 17, true, false, PbcTestType::XYZ },   // Update velocities
+    { 17, false, true, PbcTestType::XYZ },   // Compute virial
+    { 17, false, false, PbcTestType::None }, // No periodic boundary
+    { 17, true, true, PbcTestType::None },   // Update velocities, compute virial, without PBC
+    { 17, true, true, PbcTestType::XYZ }     // Update velocities, compute virial, with PBC
 };
 
 /*! \brief Test fixture for testing SETTLE.
@@ -217,36 +248,15 @@ const SettleParametersTuple parametersSets[] = {
 class SettleTest : public ::testing::TestWithParam<SettleParametersTuple>
 {
 public:
-    //! PBC setups
-    std::unordered_map<std::string, t_pbc> pbcs_;
     //! Reference data
     TestReferenceData refData_;
     //! Checker for reference data
     TestReferenceChecker checker_;
 
     /*! \brief Test setup function.
-     *
-     * Setting up the PBCs and algorithms. Note, that corresponding string keywords
-     * have to be explicitly specified when parameters are initialized.
-     *
      */
     SettleTest() : refData_(sc_refDataFilenameMaker(GetParam())), checker_(refData_.rootChecker())
     {
-
-        //
-        // PBC initialization
-        //
-        t_pbc pbc;
-
-        // Infinitely small box
-        matrix boxNone = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-        set_pbc(&pbc, PbcType::No, boxNone);
-        pbcs_["PBCNone"] = pbc;
-
-        // Rectangular box
-        matrix boxXyz = { { real(1.86206), 0, 0 }, { 0, real(1.86206), 0 }, { 0, 0, real(1.86206) } };
-        set_pbc(&pbc, PbcType::Xyz, boxXyz);
-        pbcs_["PBCXYZ"] = pbc;
     }
 
     /*! \brief Check if the final interatomic distances are equal to target set by constraints.
@@ -383,7 +393,7 @@ public:
 TEST_P(SettleTest, SatisfiesConstraints)
 {
     // Extract parameters using structured bindings
-    auto [numSettles, updateVelocities, calcVirial, pbcName] = GetParam();
+    auto [numSettles, updateVelocities, calcVirial, pbcType] = GetParam();
 
     // Construct the list of runners
     std::vector<std::unique_ptr<ISettleTestRunner>> runners;
@@ -407,7 +417,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
                 "Testing %s with %d SETTLEs, %s, %svelocities and %scalculating the virial.",
                 runner->hardwareDescription().c_str(),
                 numSettles,
-                pbcName.c_str(),
+                sc_pbcTestTypeNames[pbcType],
                 updateVelocities ? "with " : "without ",
                 calcVirial ? "" : "not ");
 
@@ -418,7 +428,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
         ASSERT_LE(numSettles, testData->xPrime_.size() / testData->atomsPerSettle_)
                 << "cannot test that many SETTLEs. " << testDescription;
 
-        t_pbc pbc = pbcs_.at(pbcName);
+        t_pbc pbc = sc_testPbcs[pbcType];
 
         // Apply SETTLE
         runner->applySettle(testData.get(), pbc, updateVelocities, calcVirial, testDescription);
