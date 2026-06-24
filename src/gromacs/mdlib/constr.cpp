@@ -168,7 +168,7 @@ public:
     //! The number of warnings for SETTLE.
     int warncount_settle = 0;
     //! The essential dynamics data.
-    gmx_edsam* ed = nullptr;
+    edsam* ed = nullptr;
 
     //! Thread-local virial contribution.
     tensor* threadConstraintsVirial = { nullptr };
@@ -1276,7 +1276,7 @@ Constraints::Impl::~Impl()
     done_lincs(lincsd);
 }
 
-void Constraints::saveEdsamPointer(gmx_edsam* ed)
+void Constraints::saveEdsamPointer(edsam* ed)
 {
     impl_->ed = ed;
 }

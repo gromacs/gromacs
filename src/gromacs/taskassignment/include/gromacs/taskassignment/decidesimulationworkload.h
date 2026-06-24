@@ -51,7 +51,10 @@ enum class PmeRunMode;
 
 struct t_forcerec;
 struct pull_t;
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct t_mdatoms;
 
 namespace gmx
@@ -129,7 +132,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
 DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
                                                    const t_forcerec&         fr,
                                                    const pull_t*             pull_work,
-                                                   const gmx_edsam*          ed,
+                                                   const edsam*              ed,
                                                    const t_mdatoms&          mdatoms,
                                                    const SimulationWorkload& simulationWork);
 

@@ -143,7 +143,10 @@
 #include "gpuforcereduction.h"
 
 class GpuEventSynchronizer;
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_enfrot;
 struct gmx_multisim_t;
 struct gmx_pme_t;
@@ -632,7 +635,7 @@ static void computeSpecialForces(FILE*                fplog,
                                  ForceWithVirial*     forceWithVirialMtsLevel0,
                                  ForceWithVirial*     forceWithVirialMtsLevel1,
                                  gmx_enerdata_t*      enerd,
-                                 gmx_edsam*           ed,
+                                 edsam*               ed,
                                  bool                 didNeighborSearch)
 {
     /* NOTE: Currently all ForceProviders only provide forces.
@@ -1540,7 +1543,7 @@ void do_force(FILE*                         fplog,
               VirtualSitesHandler*          vsite,
               rvec                          muTotal,
               double                        t,
-              gmx_edsam*                    ed,
+              edsam*                        ed,
               CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
               const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {

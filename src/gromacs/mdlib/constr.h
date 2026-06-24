@@ -55,7 +55,10 @@
 #include "gromacs/utility/vectypes.h"
 
 struct gmx_domdec_t;
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_localtop_t;
 struct gmx_moltype_t;
 struct gmx_mtop_t;
@@ -192,7 +195,7 @@ public:
                tensor                    constraintsVirial,
                ConstraintVariable        econq);
     //! Links the essentialdynamics and constraint code.
-    void saveEdsamPointer(gmx_edsam* ed);
+    void saveEdsamPointer(edsam* ed);
     //! Getter for use by domain decomposition.
     ArrayRef<const ListOfLists<int>> atom2constraints_moltype() const;
     //! Getter for use by domain decomposition.

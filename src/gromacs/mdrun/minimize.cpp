@@ -142,7 +142,10 @@ namespace gmx
 struct MDModulesNotifiers;
 } // namespace gmx
 struct ObservablesHistory;
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_enfrot;
 struct gmx_mdoutf;
 struct gmx_multisim_t;
@@ -1076,7 +1079,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 
     fr->longRangeNonbondeds->updateAfterPartition(*mdAtoms->mdatoms());
 
-    gmx_edsam* const ed = nullptr;
+    gmx::edsam* const ed = nullptr;
 
     if (bNS)
     {

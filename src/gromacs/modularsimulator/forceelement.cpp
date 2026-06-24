@@ -69,7 +69,10 @@
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_enfrot;
 struct gmx_multisim_t;
 class history_t;
@@ -198,7 +201,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
         {
             fr_->listedForcesGpu->updateHaveInteractions(localTopology_->idef);
         }
-        gmx_edsam* ed                = nullptr; // disabled
+        edsam* ed                    = nullptr; // disabled
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
                 *inputrec_, *fr_, pull_work_, ed, *mdAtoms_->mdatoms(), runScheduleWork_->simulationWork);
     }
@@ -269,8 +272,8 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     else
     {
         // Disabled functionality
-        Awh*       awh = nullptr;
-        gmx_edsam* ed  = nullptr;
+        Awh*   awh = nullptr;
+        edsam* ed  = nullptr;
 
         auto v = statePropagatorData_->velocitiesView();
 

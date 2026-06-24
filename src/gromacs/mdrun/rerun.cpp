@@ -149,7 +149,10 @@
 #include "replicaexchange.h"
 #include "shellfc.h"
 
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_mdoutf;
 struct gmx_shellfc_t;
 
@@ -645,7 +648,7 @@ void gmx::LegacySimulator::do_rerun()
         const int shellfcFlags     = force_flags | (mdrunOptions_.verbose ? GMX_FORCE_ENERGY : 0);
         const int legacyForceFlags = ((shellfc) ? shellfcFlags : force_flags) | GMX_FORCE_NS;
 
-        gmx_edsam* const ed = nullptr;
+        edsam* const ed = nullptr;
 
         if (bNS)
         {

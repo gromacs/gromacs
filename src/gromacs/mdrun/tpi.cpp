@@ -127,7 +127,10 @@
 
 #include "legacysimulator.h"
 
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 
 namespace gmx
 {
@@ -1192,7 +1195,7 @@ void LegacySimulator::do_tpi()
                                  xFrame,
                                  nullptr);
 
-        gmx_edsam* const ed = nullptr;
+        edsam* const ed = nullptr;
 
         // TPI does not support DD so we only call this once, on the first step
         GMX_ASSERT(runScheduleWork_->simulationWork.havePpDomainDecomposition == false,
