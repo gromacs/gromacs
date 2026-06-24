@@ -774,9 +774,24 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
     }
 }
 
-TEST_P(ConstraintsTest, TriangleDetectionWorks)
+INSTANTIATE_TEST_SUITE_P(AllHardware,
+                         ConstraintsTest,
+                         ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
+                                            ::testing::ValuesIn(c_pbcs)),
+                         sc_testNamer);
+
+/*! \brief Test fixture for topology-based constraint tests.
+ *
+ * These tests check properties of the constraint topology without needing to
+ * run the constraint algorithm on different hardware contexts.
+ */
+class ConstraintsTopologyTest : public ::testing::TestWithParam<ConstraintsTestSystem>
 {
-    const ConstraintsTestSystem& constraintsTestSystem = std::get<0>(GetParam());
+};
+
+TEST_P(ConstraintsTopologyTest, TriangleDetectionWorks)
+{
+    const ConstraintsTestSystem& constraintsTestSystem = GetParam();
     const ConstraintsTestData    testData(constraintsTestSystem.title,
                                        constraintsTestSystem.numAtoms,
                                        constraintsTestSystem.masses,
@@ -799,11 +814,11 @@ TEST_P(ConstraintsTest, TriangleDetectionWorks)
               hasTriangleConstraints(testData.mtop_, FlexibleConstraintTreatment::Include));
 }
 
-INSTANTIATE_TEST_SUITE_P(AllHardware,
-                         ConstraintsTest,
-                         ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
-                                            ::testing::ValuesIn(c_pbcs)),
-                         sc_testNamer);
+INSTANTIATE_TEST_SUITE_P(TopologyTests,
+                         ConstraintsTopologyTest,
+                         ::testing::ValuesIn(c_constraintsTestSystemList),
+                         [](const ::testing::TestParamInfo<ConstraintsTestSystem>& i)
+                         { return formatConstraintSystem(i.param); });
 
 } // namespace
 } // namespace test
