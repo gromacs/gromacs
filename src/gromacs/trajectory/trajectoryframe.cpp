@@ -54,6 +54,9 @@
 
 enum class PbcType : int;
 
+namespace gmx
+{
+
 void comp_frame(FILE* fp, t_trxframe* fr1, t_trxframe* fr2, gmx_bool bRMSD, real ftol, real abstol)
 {
     fprintf(fp, "\n");
@@ -109,9 +112,6 @@ void done_frame(t_trxframe* frame)
     sfree(frame->v);
     sfree(frame->f);
 }
-
-namespace gmx
-{
 
 TrajectoryFrame::TrajectoryFrame(const t_trxframe& frame) : frame_(frame)
 {

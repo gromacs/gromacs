@@ -897,7 +897,7 @@ int gmx_trjconv(int argc, char* argv[])
                 }
                 natoms = temporaryFrame.natoms;
                 close_trx(temporaryStatus);
-                done_frame(&temporaryFrame);
+                gmx::done_frame(&temporaryFrame);
             }
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1695,11 +1695,11 @@ int gmx_trjconv(int argc, char* argv[])
     sfree(grpnm);
     sfree(index);
     sfree(cindex);
-    done_frame(&fr);
-    done_frame(&nextFrame);
+    gmx::done_frame(&fr);
+    gmx::done_frame(&nextFrame);
     if (bTDump)
     {
-        done_frame(&previousFrame);
+        gmx::done_frame(&previousFrame);
     }
 
     do_view(oenv, out_file, nullptr);

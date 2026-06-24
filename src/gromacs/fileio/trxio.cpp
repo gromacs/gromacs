@@ -672,7 +672,7 @@ void close_trx(t_trxstatus* status)
 
 void done_trx_xframe(t_trxstatus* status)
 {
-    done_frame(status->xframe);
+    gmx::done_frame(status->xframe);
     sfree(status->xframe);
 }
 

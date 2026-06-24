@@ -370,7 +370,7 @@ static void clust_size(const char*             ndx,
         nframe++;
     } while (read_next_frame(oenv, status, &fr));
     close_trx(status);
-    done_frame(&fr);
+    gmx::done_frame(&fr);
     xvgrclose(fp);
     xvgrclose(gp);
     xvgrclose(hp);

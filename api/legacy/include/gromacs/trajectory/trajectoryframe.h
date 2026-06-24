@@ -80,12 +80,12 @@ typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
     int*     index; /* atom indices of contained coordinates */
 } t_trxframe;
 
+namespace gmx
+{
+
 void comp_frame(FILE* fp, t_trxframe* fr1, t_trxframe* fr2, gmx_bool bRMSD, real ftol, real abstol);
 
 void done_frame(t_trxframe* frame);
-
-namespace gmx
-{
 
 /*! \internal
  * \brief Contains a valid trajectory frame.

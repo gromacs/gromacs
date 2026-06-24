@@ -1207,7 +1207,7 @@ int gmx_traj(int argc, char* argv[])
     sfree(index0);
     sfree(isize0);
     sfree(grpname);
-    done_frame(&fr);
+    gmx::done_frame(&fr);
     output_env_done(oenv);
 
     return 0;
