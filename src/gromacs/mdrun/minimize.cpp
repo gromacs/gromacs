@@ -157,7 +157,7 @@ using gmx::RVec;
 using gmx::VirtualSitesHandler;
 
 //! Utility structure for manipulating states during EM
-typedef struct em_state
+struct em_state_t
 {
     //! Copy of the global state
     t_state s;
@@ -171,7 +171,7 @@ typedef struct em_state
     real fmax;
     //! Direction
     int a_fmax;
-} em_state_t;
+};
 
 //! Print the EM starting conditions
 static void print_em_start(FILE*                     fplog,
@@ -396,6 +396,24 @@ static void get_state_f_norm_max(const t_commrec* cr, const t_grpopts* opts, t_m
     get_f_norm_max(cr, opts, mdatoms, ems->f.view().force().data(), &ems->fnorm, &ems->fmax, &ems->a_fmax);
 }
 
+//! Copies the p vector contents from one t_state to another
+static void copyCGP(t_state* dest, const t_state& src)
+{
+    GMX_ASSERT(dest->hasEntry(StateEntry::Cgp), "dest should have cg_p");
+    GMX_ASSERT(src.hasEntry(StateEntry::Cgp), "src should have cg_p");
+    GMX_ASSERT(dest->cg_p.size() == src.cg_p.size(), "Sizes of p should match");
+
+    const RVec* gmx_restrict p1       = src.cg_p.data();
+    RVec* gmx_restrict       p2       = dest->cg_p.data();
+    const int gmx_unused     nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+    for (gmx::Index i = 0; i < gmx::ssize(src.cg_p); i++)
+    {
+        // Trivial OpenMP block that does not throw
+        p2[i] = p1[i];
+    }
+}
+
 //! Initialize the energy minimization
 static void init_em(FILE*                        fplog,
                     const gmx::MDLogger&         mdlog,
@@ -577,16 +595,6 @@ static void finish_em(const gmx::PmePpComm* pmePpComm, gmx_mdoutf_t outf, gmx_wa
     em_time_end(walltime_accounting);
 }
 
-//! Swap two different EM states during minimization
-static void swap_em_state(em_state_t** ems1, em_state_t** ems2)
-{
-    em_state_t* tmp;
-
-    tmp   = *ems1;
-    *ems1 = *ems2;
-    *ems2 = tmp;
-}
-
 //! Save the EM trajectory
 static void write_em_traj(FILE*               fplog,
                           const t_commrec*    cr,
@@ -671,29 +679,34 @@ static void write_em_traj(FILE*               fplog,
     }
 }
 
-//! \brief Do one minimization step
-//
-// \returns true when the step succeeded, false when a constraint error occurred
-static bool do_em_step(const t_commrec*                          cr,
-                       const t_inputrec*                         ir,
-                       t_mdatoms*                                md,
-                       em_state_t*                               ems1,
-                       real                                      a,
-                       gmx::ArrayRefWithPadding<const gmx::RVec> force,
-                       em_state_t*                               ems2,
-                       gmx::Constraints*                         constr,
-                       int64_t                                   count)
+/*! \brief Do one minimization step
+ *
+ * \param[in]     cr      Communication record
+ * \param[in]     ir      Run parameters
+ * \param[in]     md      Atom properties
+ * \param[in]     s1      Coordinates to take the step from, non-const for constrained halo atoms
+ * \param[in]     stepSize  Step size in nm/(kJ/mol/nm)
+ * \param[in]     force   The force for the coordinates in \p s1
+ * \param[in,out] ems2    Buffer for returning the new coordinates, the force buffer is resize
+ * \param[in,out] constr  Constraint object
+ * \param[in]     count   Step count, only used for reporting
+ *
+ * \returns true when the step succeeded, false when a constraint error occurred
+ */
+static bool do_em_step(const t_commrec*               cr,
+                       const t_inputrec*              ir,
+                       const t_mdatoms*               md,
+                       t_state*                       s1,
+                       const real                     stepSize,
+                       gmx::ArrayRef<const gmx::RVec> force,
+                       em_state_t*                    ems2,
+                       gmx::Constraints*              constr,
+                       const int64_t                  count)
 
 {
-    t_state *    s1, *s2;
-    int          start, end;
-    real         dvdl_constr;
-    int nthreads gmx_unused;
-
     bool validStep = true;
 
-    s1 = &ems1->s;
-    s2 = &ems2->s;
+    t_state* s2 = &ems2->s;
 
     if (haveDDAtomOrdering(*cr) && s1->ddp_count != cr->dd->ddp_count)
     {
@@ -715,12 +728,11 @@ static bool do_em_step(const t_commrec*                          cr,
     copy_mat(s1->box, s2->box);
     /* Copy free energy state */
     s2->lambda = s1->lambda;
-    copy_mat(s1->box, s2->box);
 
-    start = 0;
-    end   = md->homenr;
+    const int start = 0;
+    const int end   = md->homenr;
 
-    nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel num_threads(nthreads)
     {
         /* To maximize the ability of the compiler to optimize, all
@@ -729,7 +741,7 @@ static bool do_em_step(const t_commrec*                          cr,
          * same reason we do not use ArrayRef<RVec> for them. */
         const rvec* gmx_restrict x1 = s1->x.rvec_array();
         rvec* gmx_restrict       x2 = s2->x.rvec_array();
-        const rvec* gmx_restrict f  = as_rvec_array(force.unpaddedArrayRef().data());
+        const rvec* gmx_restrict f  = as_rvec_array(force.data());
 
         int gf = 0;
 #pragma omp for schedule(static) nowait
@@ -749,24 +761,11 @@ static bool do_em_step(const t_commrec*                          cr,
                     }
                     else
                     {
-                        x2[i][m] = x1[i][m] + a * f[i][m];
+                        x2[i][m] = x1[i][m] + stepSize * f[i][m];
                     }
                 }
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-        }
-
-        if (s2->hasEntry(StateEntry::Cgp))
-        {
-            /* Copy the CG p vector */
-            const rvec* p1 = s1->cg_p.rvec_array();
-            rvec*       p2 = s2->cg_p.rvec_array();
-#pragma omp for schedule(static) nowait
-            for (int i = start; i < end; i++)
-            {
-                // Trivial OpenMP block that does not throw
-                copy_rvec(p1[i], p2[i]);
-            }
         }
 
         if (haveDDAtomOrdering(*cr))
@@ -786,8 +785,8 @@ static bool do_em_step(const t_commrec*                          cr,
 
     if (constr)
     {
-        dvdl_constr = 0;
-        validStep   = constr->apply(true,
+        real dvdl_constr = 0;
+        validStep        = constr->apply(true,
                                   count,
                                   0,
                                   1.0,
@@ -1663,7 +1662,8 @@ void LegacySimulator::do_cg()
         }
 
         /* Take a trial step (new coords in s_c) */
-        do_em_step(cr_, inputRec_, mdatoms, s_min, c, s_min->s.cg_p.constArrayRefWithPadding(), s_c, constr_, -1);
+        do_em_step(cr_, inputRec_, mdatoms, &s_min->s, c, s_min->s.cg_p, s_c, constr_, -1);
+        copyCGP(&s_c->s, s_min->s);
 
         neval++;
         /* Calculate energy for the trial step */
@@ -1783,8 +1783,8 @@ void LegacySimulator::do_cg()
                 }
 
                 /* Take a trial step to this new point - new coords in s_b */
-                do_em_step(
-                        cr_, inputRec_, mdatoms, s_min, b, s_min->s.cg_p.constArrayRefWithPadding(), s_b, constr_, -1);
+                do_em_step(cr_, inputRec_, mdatoms, &s_min->s, b, s_min->s.cg_p, s_b, constr_, -1);
+                copyCGP(&s_b->s, s_min->s);
 
                 neval++;
                 /* Calculate energy for the trial step */
@@ -1822,14 +1822,14 @@ void LegacySimulator::do_cg()
                 if (gpb > 0)
                 {
                     /* Replace c endpoint with b */
-                    swap_em_state(&s_b, &s_c);
+                    std::swap(s_b, s_c);
                     c   = b;
                     gpc = gpb;
                 }
                 else
                 {
                     /* Replace a endpoint with b */
-                    swap_em_state(&s_b, &s_a);
+                    std::swap(s_b, s_a);
                     a   = b;
                     gpa = gpb;
                 }
@@ -1869,7 +1869,7 @@ void LegacySimulator::do_cg()
                 {
                     fprintf(debug, "CGE: C (%f) is lower than A (%f), moving C to B\n", s_c->epot, s_a->epot);
                 }
-                swap_em_state(&s_b, &s_c);
+                std::swap(s_b, s_c);
                 gpb = gpc;
             }
             else
@@ -1878,7 +1878,7 @@ void LegacySimulator::do_cg()
                 {
                     fprintf(debug, "CGE: A (%f) is lower than C (%f), moving A to B\n", s_a->epot, s_c->epot);
                 }
-                swap_em_state(&s_b, &s_a);
+                std::swap(s_b, s_a);
                 gpb = gpa;
             }
         }
@@ -1888,7 +1888,7 @@ void LegacySimulator::do_cg()
             {
                 fprintf(debug, "CGE: Found a lower energy %f, moving C to B\n", s_c->epot);
             }
-            swap_em_state(&s_b, &s_c);
+            std::swap(s_b, s_c);
             gpb = gpc;
         }
 
@@ -1917,7 +1917,7 @@ void LegacySimulator::do_cg()
 
 
         /* update positions */
-        swap_em_state(&s_min, &s_b);
+        std::swap(s_min, s_b);
         gpa = gpb;
 
         /* Print it if necessary */
@@ -2179,7 +2179,7 @@ void LegacySimulator::do_lbfgs()
     em_state_t* sb   = &s1;
     em_state_t* sc   = &s2;
     em_state_t* last = &s3;
-    /* Initialize by copying the state from ems (we could skip x and f here) */
+    /* Initialize by copying the state from ems (we could skip x and only resize f) */
     *sa = ems;
     *sb = ems;
     *sc = ems;
@@ -3031,7 +3031,7 @@ void LegacySimulator::do_steep()
         if (count > 0)
         {
             validStep = do_em_step(
-                    cr_, inputRec_, mdatoms, s_min, stepsize, s_min->f.view().forceWithPadding(), s_try, constr_, count);
+                    cr_, inputRec_, mdatoms, &s_min->s, stepsize, s_min->f.view().force(), s_try, constr_, count);
         }
 
         if (validStep)
@@ -3118,10 +3118,10 @@ void LegacySimulator::do_steep()
             /* Test whether the convergence criterion is met...  */
             bDone = (s_try->fmax < inputRec_->em_tol);
 
-            /* Copy the arrays for force, positions and energy  */
-            /* The 'Min' array always holds the coords and forces of the minimal
-               sampled energy  */
-            swap_em_state(&s_min, &s_try);
+            /* Swap the state pointers.
+             * The 'min' pointer always points to the coords and forces of the minimal sampled energy.
+             */
+            std::swap(s_min, s_try);
             if (count > 0)
             {
                 ustep *= 1.2;
