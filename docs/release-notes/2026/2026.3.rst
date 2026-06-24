@@ -69,6 +69,14 @@ Fixed compilation error with Visual Studio and CUDA 13
 Fixed compilation error with HeFFTe and NVHPC compiler
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
+Fixed gmxapi build failures with CUDA
+"""""""""""""""""""""""""""""""""""""
+
+In some configurations, building gmxapi could have failed with
+``The link interface of target "Gromacs::libgromacs" contains: OpenMP::OpenMP_CUDA but the target was not found.``
+
+:issue:`5656`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
