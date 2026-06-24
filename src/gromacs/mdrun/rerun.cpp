@@ -298,7 +298,7 @@ void gmx::LegacySimulator::do_rerun()
     if (ir->eI == IntegrationAlgorithm::Mimic)
     {
         auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&topGlobal_);
-        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(topGlobal_);
+        nonConstGlobalTopology->intermolecularExclusionGroup = gmx::genQmmmIndices(topGlobal_);
     }
     int*                fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
     gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>{};

@@ -44,6 +44,9 @@
 #include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+namespace gmx
+{
+
 std::vector<int> genQmmmIndices(const gmx_mtop_t& mtop)
 {
     std::vector<int>     output;
@@ -66,3 +69,5 @@ std::vector<int> genQmmmIndices(const gmx_mtop_t& mtop)
     }
     return output;
 }
+
+} // namespace gmx

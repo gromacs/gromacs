@@ -46,6 +46,9 @@
 
 struct gmx_mtop_t;
 
+namespace gmx
+{
+
 /*! \brief Generates the list of QM atoms
  *
  * This function generates vector containing global IDs of QM atoms
@@ -55,5 +58,7 @@ struct gmx_mtop_t;
  * \return              The list of global IDs of QM atoms
  */
 std::vector<int> genQmmmIndices(const gmx_mtop_t& mtop);
+
+} // namespace gmx
 
 #endif // GMX_MIMIC_MIMICUTILS_H

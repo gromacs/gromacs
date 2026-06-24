@@ -249,7 +249,7 @@ void gmx::LegacySimulator::do_mimic()
     const SimulationGroups* groups = &topGlobal_.groups;
     {
         auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&topGlobal_);
-        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(topGlobal_);
+        nonConstGlobalTopology->intermolecularExclusionGroup = gmx::genQmmmIndices(topGlobal_);
     }
 
     initialize_lambdas(fpLog_,
