@@ -1561,37 +1561,37 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxm_atomdata_t* nbatom, const Atom
  *
  * \param[in] grids        Grids for one interaction locality.
  * \param[in] gridBegin    Index of the first grid in the gridset (0 = local, 1 = non-local).
- * \param[in] numColumnsMax  Max. columns per grid; stride for per-grid device arrays.
+ * \param[in] numCellsMax  Max. cells per grid; stride for per-grid device arrays.
  */
-static FusedXToXqLaunchParams setupFusedXToXqLaunchParams(ArrayRef<const Grid> grids, int gridBegin, int numColumnsMax)
+static FusedXToXqLaunchParams setupFusedXToXqLaunchParams(ArrayRef<const Grid> grids, int gridBegin, int numCellsMax)
 {
     FusedXToXqLaunchParams params;
-    params.gridBegin     = gridBegin;
-    params.numColumnsMax = numColumnsMax;
+    params.gridBegin   = gridBegin;
+    params.numCellsMax = numCellsMax;
 
     const int numGrids = grids.ssize();
     GMX_ASSERT(numGrids <= c_maxGridsPerKernelLaunch,
                "Number of grids exceeds the maximum supported in a fused kernel launch");
     if (numGrids == 0)
     {
-        // totalNumColumns stays 0; will skip the kernel launch
+        // totalNumCells stays 0; will skip the kernel launch
         return params;
     }
 
     params.numAtomsPerBin = grids[0].numAtomsPerBin();
-    int totalColumns      = 0;
+    int totalCells        = 0;
     for (int g = 0; g < numGrids; g++)
     {
-        params.gridParams.columnsPrefix[g] = totalColumns;
-        totalColumns += grids[g].numCells();
+        params.gridParams.columnsPrefix[g] = totalCells;
+        totalCells += grids[g].numCells();
         params.gridParams.binOffset[g] = grids[g].binOffset();
-        params.maxNumAtomsPerColumn    = std::max(
-                params.maxNumAtomsPerColumn, grids[g].maxNumBinsPerCell() * params.numAtomsPerBin);
+        params.maxNumAtomsPerCell      = std::max(params.maxNumAtomsPerCell,
+                                             grids[g].maxNumBinsPerCell() * params.numAtomsPerBin);
     }
-    params.totalNumColumns = totalColumns;
+    params.totalNumCells = totalCells;
 
     // Fill unused slots with sentinels so the fully-unrolled kernel loop
-    // never matches columns beyond numGrids.
+    // never matches cells beyond numGrids.
     for (int g = numGrids; g < c_maxGridsPerKernelLaunch; g++)
     {
         params.gridParams.columnsPrefix[g] = INT_MAX;
@@ -1599,6 +1599,7 @@ static FusedXToXqLaunchParams setupFusedXToXqLaunchParams(ArrayRef<const Grid> g
     }
     return params;
 }
+
 
 /* Initialization for X buffer operations on GPU. */
 void nbnxm_gpu_init_x_to_nbat_x(const GridSet& gridSet, NbnxmGpu* gpu_nbv)

@@ -80,7 +80,7 @@ void nbnxm_gpu_x_to_nbat_x(NbnxmGpu*             nb,
         xReadyOnDevice->enqueueWaitEvent(deviceStream);
     }
 
-    if (nb->xToXqLaunchParams[interactionLoc].maxNumAtomsPerColumn > 0)
+    if (nb->xToXqLaunchParams[interactionLoc].maxNumAtomsPerCell > 0)
     {
         GMX_ASSERT(d_x, "Need a valid device pointer");
         launchNbnxmKernelTransformXToXq(nb->xToXqLaunchParams[interactionLoc], nb, d_x, deviceStream);

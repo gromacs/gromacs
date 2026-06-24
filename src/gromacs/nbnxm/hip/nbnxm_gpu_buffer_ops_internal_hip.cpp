@@ -60,37 +60,37 @@ constexpr static int c_bufOpsThreadsPerBlock = 64;
 
 /*! \brief HIP kernel for transforming position coordinates from rvec to nbnxm layout.
  *
- * Processes columns from multiple grids in a single kernel launch.
- * blockIdx.x covers atoms within a column, blockIdx.y maps to a global
- * column index across all grids. The grid membership of each column is
+ * Processes cells from multiple grids in a single kernel launch.
+ * blockIdx.x covers atoms within a cell, blockIdx.y maps to a global
+ * cell index across all grids. The grid membership of each cell is
  * determined using \p gridParams: columnsPrefix[] holds the prefix sum
- * of per-grid column counts and binOffset[] the starting bin for each
+ * of per-grid cell counts and binOffset[] the starting bin for each
  * grid.
  *
  * \param[in]     gridBegin           Index of first grid in gridset.
- * \param[in]     numColumnsMax       Max columns per grid (stride for per-grid arrays).
+ * \param[in]     numCellsMax         Max cells per grid (stride for per-grid arrays).
  * \param[in]     numAtomsPerBin      Number of atoms per bin (same for all grids).
  * \param[in]     gridParams          Per-grid parameters (prefix sums and bin offsets).
  * \param[out]    gm_xq               Coordinates buffer in nbnxm layout.
  * \param[in]     gm_x                Coordinates buffer.
  * \param[in]     gm_atomIndex        Atom index mapping.
- * \param[in]     gm_numAtoms         Array of number of atoms per column (all grids, stride numColumnsMax).
- * \param[in]     gm_binIndex         Array of bin indices per column (all grids, stride numColumnsMax).
+ * \param[in]     gm_numAtomsPerCell  Array of number of atoms per cell (all grids, stride numCellsMax).
+ * \param[in]     gm_cellToBin        Array of bin indices per cell (all grids, stride numCellsMax).
  */
 static __global__ void nbnxmKernelTransformXToXq(int                       gridBegin,
-                                                 int                       numColumnsMax,
+                                                 int                       numCellsMax,
                                                  int                       numAtomsPerBin,
                                                  gmx::FusedXToXqGridParams gridParams,
                                                  float4* __restrict__ gm_xq,
                                                  const float3* __restrict__ gm_x,
                                                  const int* __restrict__ gm_atomIndex,
-                                                 const int* __restrict__ gm_numAtoms,
-                                                 const int* __restrict__ gm_binIndex)
+                                                 const int* __restrict__ gm_numAtomsPerCell,
+                                                 const int* __restrict__ gm_cellToBin)
 {
-    const int globalCol = blockIdx.y;
+    const int globalCell = blockIdx.y;
 
-    // Start assuming the column belongs to grid 0, using constant [0] indices.
-    int localCol  = globalCol;
+    // Start assuming the cell belongs to grid 0, using constant [0] indices.
+    int localCell = globalCell;
     int gridIdx   = gridBegin;
     int binOffset = gridParams.binOffset[0];
 
@@ -100,18 +100,18 @@ static __global__ void nbnxmKernelTransformXToXq(int                       gridB
 #pragma unroll
     for (int g = 1; g < gmx::c_maxGridsPerKernelLaunch; g++)
     {
-        if (globalCol >= gridParams.columnsPrefix[g])
+        if (globalCell >= gridParams.columnsPrefix[g])
         {
-            localCol  = globalCol - gridParams.columnsPrefix[g];
+            localCell = globalCell - gridParams.columnsPrefix[g];
             gridIdx   = g + gridBegin;
             binOffset = gridParams.binOffset[g];
         }
     }
 
-    // Access per-grid device arrays using numColumnsMax stride
-    const int colDataOffset = numColumnsMax * gridIdx + localCol;
-    const int numAtoms      = gm_numAtoms[colDataOffset];
-    const int offset        = (binOffset + gm_binIndex[colDataOffset]) * numAtomsPerBin;
+    // Access per-grid device arrays using numCellsMax stride
+    const int cellDataOffset = numCellsMax * gridIdx + localCell;
+    const int numAtoms       = gm_numAtomsPerCell[cellDataOffset];
+    const int offset         = (binOffset + gm_cellToBin[cellDataOffset]) * numAtomsPerBin;
 
     const int threadIndex = blockIdx.x * c_bufOpsThreadsPerBlock + threadIdx.x;
 
@@ -140,33 +140,33 @@ void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& launchParams,
     config.blockSize[0] = c_bufOpsThreadsPerBlock;
     config.blockSize[1] = 1;
     config.blockSize[2] = 1;
-    config.gridSize[0] = gmx::divideRoundUp(launchParams.maxNumAtomsPerColumn, c_bufOpsThreadsPerBlock);
-    config.gridSize[1] = launchParams.totalNumColumns;
+    config.gridSize[0] = gmx::divideRoundUp(launchParams.maxNumAtomsPerCell, c_bufOpsThreadsPerBlock);
+    config.gridSize[1] = launchParams.totalNumCells;
     config.gridSize[2] = 1;
     GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, caller should skip empty grids");
     config.sharedMemorySize = 0;
 
-    auto        kernelFn            = nbnxmKernelTransformXToXq;
-    float3*     d_xFloat3           = asFloat3(d_x);
-    float4*     d_xq                = nb->atdat->xq;
-    const int*  d_atomIndices       = nb->atomIndices;
-    const int*  d_numAtomsPerColumn = nb->numAtomsPerCell;
-    const int*  d_columnToBin       = nb->cellToBin;
-    const auto& gridParams          = launchParams.gridParams;
-    const int   numAtomsPerBin      = launchParams.numAtomsPerBin;
-    const int   gridBegin           = launchParams.gridBegin;
-    const int   numColumnsMaxInt    = launchParams.numColumnsMax;
-    const auto  kernelArgs          = prepareGpuKernelArguments(kernelFn,
+    auto        kernelFn          = nbnxmKernelTransformXToXq;
+    float3*     d_xFloat3         = asFloat3(d_x);
+    float4*     d_xq              = nb->atdat->xq;
+    const int*  d_atomIndices     = nb->atomIndices;
+    const int*  d_numAtomsPerCell = nb->numAtomsPerCell;
+    const int*  d_cellToBin       = nb->cellToBin;
+    const auto& gridParams        = launchParams.gridParams;
+    const int   numAtomsPerBin    = launchParams.numAtomsPerBin;
+    const int   gridBegin         = launchParams.gridBegin;
+    const int   numCellsMaxInt    = launchParams.numCellsMax;
+    const auto  kernelArgs        = prepareGpuKernelArguments(kernelFn,
                                                       config,
                                                       &gridBegin,
-                                                      &numColumnsMaxInt,
+                                                      &numCellsMaxInt,
                                                       &numAtomsPerBin,
                                                       &gridParams,
                                                       &d_xq,
                                                       &d_xFloat3,
                                                       &d_atomIndices,
-                                                      &d_numAtomsPerColumn,
-                                                      &d_columnToBin);
+                                                      &d_numAtomsPerCell,
+                                                      &d_cellToBin);
     launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
 }
 

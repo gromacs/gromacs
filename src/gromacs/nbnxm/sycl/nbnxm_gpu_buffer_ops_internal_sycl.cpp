@@ -54,39 +54,39 @@ namespace gmx
 
 /*! \brief SYCL kernel for transforming position coordinates from rvec to nbnxm layout.
  *
- * Processes columns from multiple grids in a single kernel launch.
- * itemIdx.get(0) covers atoms within a column, itemIdx.get(1) maps to a
- * global column index across all grids. The grid membership of each column
+ * Processes cells from multiple grids in a single kernel launch.
+ * itemIdx.get(0) covers atoms within a cell, itemIdx.get(1) maps to a
+ * global cell index across all grids. The grid membership of each cell
  * is determined using \p gridParams: columnsPrefix[] holds the prefix sum
- * of per-grid column counts and binOffset[] the starting bin for each
+ * of per-grid cell counts and binOffset[] the starting bin for each
  * grid.
  *
  * \param[out]    gm_xq                Coordinates buffer in nbnxm layout.
  * \param[in]     gm_x                 Coordinates buffer.
  * \param[in]     gm_atomIndex         Atom index mapping.
- * \param[in]     gm_numAtoms          Array of number of atoms per column (all grids, stride numColumnsMax).
- * \param[in]     gm_binIndex          Array of bin indices per column (all grids, stride numColumnsMax).
+ * \param[in]     gm_numAtomsPerCell   Array of number of atoms per cell (all grids, stride numCellsMax).
+ * \param[in]     gm_cellToBin         Array of bin indices per cell (all grids, stride numCellsMax).
  * \param[in]     numAtomsPerBin       Number of atoms per bin.
  * \param[in]     gridBegin            Index of first grid in gridset.
- * \param[in]     numColumnsMax        Max columns per grid (stride for per-grid arrays).
+ * \param[in]     numCellsMax          Max cells per grid (stride for per-grid arrays).
  * \param[in]     gridParams           Per-grid parameters (prefix sums and bin offsets).
  */
 static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
                                       const Float3* __restrict__ gm_x,
                                       const int* __restrict__ gm_atomIndex,
-                                      const int* __restrict__ gm_numAtoms,
-                                      const int* __restrict__ gm_binIndex,
+                                      const int* __restrict__ gm_numAtomsPerCell,
+                                      const int* __restrict__ gm_cellToBin,
                                       int                  numAtomsPerBin,
                                       int                  gridBegin,
-                                      int                  numColumnsMax,
+                                      int                  numCellsMax,
                                       FusedXToXqGridParams gridParams)
 {
     return [=](sycl::id<2> itemIdx)
     {
-        const int globalCol = itemIdx.get(1);
+        const int globalCell = itemIdx.get(1);
 
-        // Start assuming the column belongs to grid 0, using constant [0] indices.
-        int localCol  = globalCol;
+        // Start assuming the cell belongs to grid 0, using constant [0] indices.
+        int localCell = globalCell;
         int gridIdx   = gridBegin;
         int binOffset = gridParams.binOffset[0];
 
@@ -96,18 +96,18 @@ static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
 #pragma unroll
         for (int g = 1; g < c_maxGridsPerKernelLaunch; g++)
         {
-            if (globalCol >= gridParams.columnsPrefix[g])
+            if (globalCell >= gridParams.columnsPrefix[g])
             {
-                localCol  = globalCol - gridParams.columnsPrefix[g];
+                localCell = globalCell - gridParams.columnsPrefix[g];
                 gridIdx   = g + gridBegin;
                 binOffset = gridParams.binOffset[g];
             }
         }
 
-        // Access per-grid device arrays using numColumnsMax stride
-        const int cxy      = numColumnsMax * gridIdx + localCol;
-        const int numAtoms = gm_numAtoms[cxy];
-        const int offset   = (binOffset + gm_binIndex[cxy]) * numAtomsPerBin;
+        // Access per-grid device arrays using numCellsMax stride
+        const int cxy      = numCellsMax * gridIdx + localCell;
+        const int numAtoms = gm_numAtomsPerCell[cxy];
+        const int offset   = (binOffset + gm_cellToBin[cxy]) * numAtomsPerBin;
 
         const int threadIndex = itemIdx.get(0);
 
@@ -129,8 +129,8 @@ void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& launchParams,
                                      DeviceBuffer<Float3>          d_x,
                                      const DeviceStream&           deviceStream)
 {
-    const sycl::range<2> globalSize{ static_cast<size_t>(launchParams.maxNumAtomsPerColumn),
-                                     static_cast<size_t>(launchParams.totalNumColumns) };
+    const sycl::range<2> globalSize{ static_cast<size_t>(launchParams.maxNumAtomsPerCell),
+                                     static_cast<size_t>(launchParams.totalNumCells) };
     sycl::queue          q = deviceStream.stream();
 
     auto kernelFunctionBuilder = nbnxmKernelTransformXToXq;
@@ -144,7 +144,7 @@ void launchNbnxmKernelTransformXToXq(const FusedXToXqLaunchParams& launchParams,
                                                                nb->cellToBin.get_pointer(),
                                                                launchParams.numAtomsPerBin,
                                                                launchParams.gridBegin,
-                                                               launchParams.numColumnsMax,
+                                                               launchParams.numCellsMax,
                                                                launchParams.gridParams);
 }
 

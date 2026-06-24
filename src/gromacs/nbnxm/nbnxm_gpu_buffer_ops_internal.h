@@ -60,7 +60,7 @@ static constexpr int c_maxGridsPerKernelLaunch = 8;
  */
 struct FusedXToXqGridParams
 {
-    //! Prefix-sum start offsets: columnsPrefix[g] = total columns in grids before g.
+    //! Prefix-sum start offsets: columnsPrefix[g] = total cells in grids before g.
     //! Indices [numGrids..c_maxGridsPerKernelLaunch-1] are INT_MAX sentinels (never matched).
     int columnsPrefix[c_maxGridsPerKernelLaunch];
     //! Bin offset for each grid.
@@ -74,24 +74,24 @@ struct FusedXToXqLaunchParams
 {
     //! Per-grid topology parameters passed to the kernel.
     FusedXToXqGridParams gridParams;
-    //! Total number of columns across all grids (= grid dimension Y).
-    int totalNumColumns = 0;
-    //! Maximum atoms-per-column across all grids (determines grid dimension X).
-    int maxNumAtomsPerColumn = 0;
+    //! Total number of cells across all grids (= grid dimension Y).
+    int totalNumCells = 0;
+    //! Maximum atoms-per-cell across all grids (determines grid dimension X).
+    int maxNumAtomsPerCell = 0;
     //! Atoms per bin, identical for all grids.
     int numAtomsPerBin = 0;
     //! Index of the first grid in the gridset (0 = local, 1 = non-local).
     int gridBegin = 0;
-    //! Maximum columns per grid; used as stride for per-grid device arrays.
-    int numColumnsMax = 0;
+    //! Maximum cells per grid; used as stride for per-grid device arrays.
+    int numCellsMax = 0;
 };
 
 /*! \brief Launch the fused coordinate layout conversion kernel.
  *
- * Processes all grids in a single kernel launch by mapping columns from
+ * Processes all grids in a single kernel launch by mapping cells from
  * all grids into a flat set of GPU blocks. Uses blockIdx.y for global
- * column indexing across grids, and a prefix-sum lookup to determine
- * which grid each column belongs to. All parameters are pre-computed at
+ * cell indexing across grids, and a prefix-sum lookup to determine
+ * which grid each cell belongs to. All parameters are pre-computed at
  * pair-list setup and stored per interaction locality in
  * NbnxmGpu::xToXqLaunchParams.
  *
