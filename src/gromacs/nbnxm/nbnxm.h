@@ -123,7 +123,6 @@
 #include "nbnxm_enums.h"
 
 struct DeviceInformation;
-class ExclusionChecker;
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
@@ -139,6 +138,7 @@ class GpuEventSynchronizer;
 
 namespace gmx
 {
+class ExclusionChecker;
 class FreeEnergyDispatch;
 class MpiComm;
 class Grid;
