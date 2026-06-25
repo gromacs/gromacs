@@ -47,22 +47,25 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/vectypes.h"
 
+namespace gmx
+{
+
 enum class Domain : int;
 enum class ChannelHistory : int;
 /* History of an ion type used in position swapping
  */
 struct swapstateIons_t
 {
-    gmx::EnumerationArray<Compartment, int> nMolReq; // Requested # of molecules per compartment
-    gmx::EnumerationArray<Compartment, int*> nMolReq_p; // Pointer to this data (for checkpoint writing)
-    gmx::EnumerationArray<Compartment, int>  inflow_net;   // Flux determined from the # of swaps
-    gmx::EnumerationArray<Compartment, int*> inflow_net_p; // Pointer to this data
-    gmx::EnumerationArray<Compartment, int*> nMolPast;   // Array with nAverage entries for history
-    gmx::EnumerationArray<Compartment, int*> nMolPast_p; // Pointer points to the first entry only
+    EnumerationArray<Compartment, int>  nMolReq;    // Requested # of molecules per compartment
+    EnumerationArray<Compartment, int*> nMolReq_p;  // Pointer to this data (for checkpoint writing)
+    EnumerationArray<Compartment, int>  inflow_net; // Flux determined from the # of swaps
+    EnumerationArray<Compartment, int*> inflow_net_p; // Pointer to this data
+    EnumerationArray<Compartment, int*> nMolPast;     // Array with nAverage entries for history
+    EnumerationArray<Compartment, int*> nMolPast_p;   // Pointer points to the first entry only
 
     // Channel flux detection, this is counting only and has no influence on whether swaps are performed or not:                                                                 */
-    gmx::EnumerationArray<Channel, int>  fluxfromAtoB;   // Flux determined from the split cylinders
-    gmx::EnumerationArray<Channel, int*> fluxfromAtoB_p; // Pointer to this data
+    EnumerationArray<Channel, int>  fluxfromAtoB;   // Flux determined from the split cylinders
+    EnumerationArray<Channel, int*> fluxfromAtoB_p; // Pointer to this data
     // Sometimes these vectors are filled during checkpoint reading, and sometimes during tpr reading,
     // so we use std::shared_ptr so there will be only one vector and it can be allocated from either place.
     std::shared_ptr<std::vector<Domain>> comp_from;             // Ion came from which compartment?
@@ -79,16 +82,18 @@ struct swapstateIons_t
  * \todo move out of this file to ObservablesHistory
  *
  */
-typedef struct swaphistory_t
+struct swaphistory_t
 {
     SwapType eSwapCoords; // Swapping along x, y, or z-direction?
     int  nAverage; // Use average over this many swap attempt steps when determining the ion counts
     int  fluxleak; // Ions not going through any channel (bad!)
     int* fluxleak_p; // Pointer to this data
     bool bFromCpt;   // Did we start from a checkpoint file?
-    gmx::EnumerationArray<Channel, std::vector<gmx::RVec>> xc_old_whole; // Last known whole positions of the two channels (important for multimeric ch.!)
-    gmx::EnumerationArray<Channel, std::vector<gmx::RVec>*> xc_old_whole_p; // Pointer to these positions
-    std::vector<swapstateIons_t> ionType; // History information for one ion type
-} swaphistory_t;
+    EnumerationArray<Channel, std::vector<RVec>> xc_old_whole; // Last known whole positions of the two channels (important for multimeric ch.!)
+    EnumerationArray<Channel, std::vector<RVec>*> xc_old_whole_p; // Pointer to these positions
+    std::vector<swapstateIons_t>                  ionType; // History information for one ion type
+};
+
+} // namespace gmx
 
 #endif

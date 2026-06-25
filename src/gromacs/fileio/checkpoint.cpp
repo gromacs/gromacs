@@ -101,8 +101,6 @@
 #include "buildinfo.h"
 
 
-enum class ChannelHistory : int;
-
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 

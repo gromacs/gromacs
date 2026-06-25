@@ -88,14 +88,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 
-namespace gmx
-{
-class ForceProviders;
-class IMDOutputProvider;
-class IMdpOptionProvider;
-struct MDModulesNotifiers;
-} // namespace gmx
-
 //! For output that comes from the swap module
 static const std::string SwS = { "SWAP:" };
 //! Placeholder for multi-line output
@@ -107,6 +99,9 @@ static constexpr gmx::EnumerationArray<SwapType, const char*> SwapStr = { "", "X
 //! Name for the swap dimension.
 static const char* const DimStr[DIM + 1] = { "X", "Y", "Z", nullptr };
 
+namespace gmx
+{
+
 //! Keep track of through which channel the ions have passed
 enum class ChannelHistory : int
 {
@@ -116,9 +111,9 @@ enum class ChannelHistory : int
     Count
 };
 //! Names for the channels
-static constexpr gmx::EnumerationArray<ChannelHistory, const char*> ChannelString = { "none",
-                                                                                      "channel0",
-                                                                                      "channel1" };
+static constexpr EnumerationArray<ChannelHistory, const char*> ChannelString = { "none",
+                                                                                 "channel0",
+                                                                                 "channel1" };
 
 /*! \brief Domain identifier.
  *
@@ -133,12 +128,14 @@ enum class Domain : int
     Count
 };
 //! Names for the domains
-static constexpr gmx::EnumerationArray<Domain, const char*> DomainString = { "not_assigned",
-                                                                             "Domain_A",
-                                                                             "Domain_B" };
+static constexpr EnumerationArray<Domain, const char*> DomainString = { "not_assigned",
+                                                                        "Domain_A",
+                                                                        "Domain_B" };
 
-namespace gmx
-{
+class ForceProviders;
+class IMDOutputProvider;
+class IMdpOptionProvider;
+struct MDModulesNotifiers;
 
 extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const int> globalAtomIndex);
 
@@ -160,9 +157,6 @@ std::unique_ptr<IMDModule> SwapCoordinatesModuleInfo::create()
 {
     return std::make_unique<SwapCoordinates>();
 }
-
-
-} // namespace gmx
 
 /*! \internal \brief
  * Structure containing compartment-specific data.
@@ -2238,3 +2232,5 @@ gmx_bool do_swapcoords(const gmx::MpiComm&      mpiComm,
 
     return bSwap;
 }
+
+} // namespace gmx

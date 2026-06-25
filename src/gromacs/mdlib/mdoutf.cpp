@@ -394,8 +394,8 @@ static void write_checkpoint(const char*                     fn,
     edsamhistory_t* edsamhist = observablesHistory->edsamHistory.get();
     int             nED       = (edsamhist ? edsamhist->nED : 0);
 
-    swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
-    SwapType       eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
+    gmx::swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
+    SwapType            eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
 
     gmx::CheckpointHeaderContents headerContents = { gmx::CheckPointVersion::UnknownVersion0,
                                                      { 0 },
