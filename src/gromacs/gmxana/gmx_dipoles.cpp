@@ -857,7 +857,7 @@ static void do_dip(const t_topology*       top,
     double         M_diff = 0, epsilon, invtel, vol_aver;
     double         mu_ave, mu_mol, M2_ave = 0, M_ave2 = 0, M_av[DIM], M_av2[DIM];
     double         M[3], M2[3], M4[3], Gk = 0, g_k = 0;
-    gmx_stats_t *  Qlsq, mulsq, muframelsq = nullptr;
+    gmx::stats_t * Qlsq, mulsq, muframelsq = nullptr;
     ivec           iMu;
     real**         muall        = nullptr;
     rvec*          slab_dipoles = nullptr;
@@ -951,9 +951,9 @@ static void do_dip(const t_topology*       top,
     snew(Qlsq, DIM);
     for (i = 0; (i < DIM); i++)
     {
-        Qlsq[i] = gmx_stats_init();
+        Qlsq[i] = gmx::stats_init();
     }
-    mulsq = gmx_stats_init();
+    mulsq = gmx::stats_init();
 
     /* Open all the files */
     outmtot = xvgropen(out_mtot,
@@ -1111,7 +1111,7 @@ static void do_dip(const t_topology*       top,
         }
         t1 = t;
 
-        muframelsq = gmx_stats_init();
+        muframelsq = gmx::stats_init();
 
         /* Initialise */
         for (m = 0; (m < DIM); m++)
@@ -1148,8 +1148,8 @@ static void do_dip(const t_topology*       top,
                     ind1 = mols->index[molindex[n][i] + 1];
 
                     mol_dip(ind0, ind1, x, atom, dipole[i]);
-                    gmx_stats_add_point(mulsq, 0, norm(dipole[i]), 0, 0);
-                    gmx_stats_add_point(muframelsq, 0, norm(dipole[i]), 0, 0);
+                    gmx::stats_add_point(mulsq, 0, norm(dipole[i]), 0, 0);
+                    gmx::stats_add_point(muframelsq, 0, norm(dipole[i]), 0, 0);
                     if (bSlab)
                     {
                         update_slab_dipoles(ind0, ind1, x, dipole[i], idim, nslices, slab_dipoles, box);
@@ -1159,7 +1159,7 @@ static void do_dip(const t_topology*       top,
                         mol_quad(ind0, ind1, x, atom, quad);
                         for (m = 0; (m < DIM); m++)
                         {
-                            gmx_stats_add_point(Qlsq[m], 0, quad[m], 0, 0);
+                            gmx::stats_add_point(Qlsq[m], 0, quad[m], 0, 0);
                         }
                     }
                     if (bCorr && !bTotal)
@@ -1364,7 +1364,7 @@ static void do_dip(const t_topology*       top,
 
             if (fnadip)
             {
-                fprintf(adip, "%10g %f \n", t, gmx_stats_get_average(muframelsq));
+                fprintf(adip, "%10g %f \n", t, gmx::stats_get_average(muframelsq));
             }
             /*if (dipole)
                printf("%f %f\n", norm(dipole[0]), norm(dipole[1]));
@@ -1391,7 +1391,7 @@ static void do_dip(const t_topology*       top,
                 fprintf(outeps, "%10g  %12.8e\n", t, epsilon);
             }
         }
-        gmx_stats_free(muframelsq);
+        gmx::stats_free(muframelsq);
 
         if (bMU)
         {
@@ -1483,15 +1483,15 @@ static void do_dip(const t_topology*       top,
     }
     if (!bMU)
     {
-        auto [aver, sigma, error] = gmx_stats_get_ase(mulsq);
+        auto [aver, sigma, error] = gmx::stats_get_ase(mulsq);
         printf("\nDipole moment (Debye)\n");
         printf("---------------------\n");
         printf("Average  = %8.4f  Std. Dev. = %8.4f  Error = %8.4f\n", aver, sigma, error);
         if (bQuad)
         {
-            auto [averageXX, sigmaXX, errorXX] = gmx_stats_get_ase(Qlsq[XX]);
-            auto [averageYY, sigmaYY, errorYY] = gmx_stats_get_ase(Qlsq[YY]);
-            auto [averageZZ, sigmaZZ, errorZZ] = gmx_stats_get_ase(Qlsq[ZZ]);
+            auto [averageXX, sigmaXX, errorXX] = gmx::stats_get_ase(Qlsq[XX]);
+            auto [averageYY, sigmaYY, errorYY] = gmx::stats_get_ase(Qlsq[YY]);
+            auto [averageZZ, sigmaZZ, errorZZ] = gmx::stats_get_ase(Qlsq[ZZ]);
 
             printf("\nQuadrupole moment (Debye-Ang)\n");
             printf("-----------------------------\n");

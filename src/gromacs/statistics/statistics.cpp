@@ -43,81 +43,83 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/vec.h"
 
 
-typedef struct gmx_stats
+namespace gmx
+{
+
+struct stats
 {
     double  aa, a, b, sigma_a, sigma_b, aver, sigma_aver, error;
     double  rmsd, Rfit, chi2;
     double *x, *y, *dx, *dy;
     int     computed;
     int     np, nalloc;
-} gmx_stats;
+};
 
-gmx_stats_t gmx_stats_init()
+stats_t stats_init()
 {
-    gmx_stats* stats;
+    stats* s;
 
-    snew(stats, 1);
+    snew(s, 1);
 
-    return static_cast<gmx_stats_t>(stats);
+    return static_cast<stats_t>(s);
 }
 
-void gmx_stats_free(gmx_stats_t gstats)
+void stats_free(stats_t gstats)
 {
-    gmx_stats* stats = static_cast<gmx_stats*>(gstats);
+    stats* s = static_cast<stats*>(gstats);
 
-    sfree(stats->x);
-    sfree(stats->y);
-    sfree(stats->dx);
-    sfree(stats->dy);
-    sfree(stats);
+    sfree(s->x);
+    sfree(s->y);
+    sfree(s->dx);
+    sfree(s->dy);
+    sfree(s);
 }
 
-void gmx_stats_add_point(gmx_stats_t gstats, double x, double y, double dx, double dy)
+void stats_add_point(stats_t gstats, double x, double y, double dx, double dy)
 {
-    gmx_stats* stats = gstats;
+    stats* s = gstats;
 
-    if (stats->np + 1 >= stats->nalloc)
+    if (s->np + 1 >= s->nalloc)
     {
-        if (stats->nalloc == 0)
+        if (s->nalloc == 0)
         {
-            stats->nalloc = 1024;
+            s->nalloc = 1024;
         }
         else
         {
-            stats->nalloc *= 2;
+            s->nalloc *= 2;
         }
-        srenew(stats->x, stats->nalloc);
-        srenew(stats->y, stats->nalloc);
-        srenew(stats->dx, stats->nalloc);
-        srenew(stats->dy, stats->nalloc);
-        for (int i = stats->np; (i < stats->nalloc); i++)
+        srenew(s->x, s->nalloc);
+        srenew(s->y, s->nalloc);
+        srenew(s->dx, s->nalloc);
+        srenew(s->dy, s->nalloc);
+        for (int i = s->np; (i < s->nalloc); i++)
         {
-            stats->x[i]  = 0;
-            stats->y[i]  = 0;
-            stats->dx[i] = 0;
-            stats->dy[i] = 0;
+            s->x[i]  = 0;
+            s->y[i]  = 0;
+            s->dx[i] = 0;
+            s->dy[i] = 0;
         }
     }
-    stats->x[stats->np]  = x;
-    stats->y[stats->np]  = y;
-    stats->dx[stats->np] = dx;
-    stats->dy[stats->np] = dy;
-    stats->np++;
-    stats->computed = 0;
+    s->x[s->np]  = x;
+    s->y[s->np]  = y;
+    s->dx[s->np] = dx;
+    s->dy[s->np] = dy;
+    s->np++;
+    s->computed = 0;
 }
 
-static void gmx_stats_compute(gmx_stats* stats, int weight)
+static void stats_compute(stats* s, int weight)
 {
     double yx, xx, sx, sy, dy, chi2, d2;
     double ssxx, ssyy, ssxy;
     double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2;
 
-    int N = stats->np;
+    int N = s->np;
 
-    if (stats->computed == 0)
+    if (s->computed == 0)
     {
         GMX_RELEASE_ASSERT(N >= 1, "Must have points to work on");
 
@@ -130,10 +132,10 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
         d2         = 0;
         for (int i = 0; (i < N); i++)
         {
-            d2 += gmx::square(stats->x[i] - stats->y[i]);
-            if (((stats->dy[i]) != 0.0) && (weight == elsqWEIGHT_Y))
+            d2 += square(s->x[i] - s->y[i]);
+            if (((s->dy[i]) != 0.0) && (weight == elsqWEIGHT_Y))
             {
-                w = 1 / gmx::square(stats->dy[i]);
+                w = 1 / square(s->dy[i]);
             }
             else
             {
@@ -142,28 +144,28 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
 
             wtot += w;
 
-            xx += w * gmx::square(stats->x[i]);
-            xx_nw += gmx::square(stats->x[i]);
+            xx += w * square(s->x[i]);
+            xx_nw += square(s->x[i]);
 
-            yy_nw += gmx::square(stats->y[i]);
+            yy_nw += square(s->y[i]);
 
-            yx += w * stats->y[i] * stats->x[i];
-            yx_nw += stats->y[i] * stats->x[i];
+            yx += w * s->y[i] * s->x[i];
+            yx_nw += s->y[i] * s->x[i];
 
-            sx += w * stats->x[i];
-            sx_nw += stats->x[i];
+            sx += w * s->x[i];
+            sx_nw += s->x[i];
 
-            sy += w * stats->y[i];
-            sy_nw += stats->y[i];
+            sy += w * s->y[i];
+            sy_nw += s->y[i];
         }
 
         /* Compute average, sigma and error */
-        stats->aver       = sy_nw / N;
-        stats->sigma_aver = std::sqrt(yy_nw / N - gmx::square(sy_nw / N));
-        stats->error      = stats->sigma_aver / std::sqrt(static_cast<double>(N));
+        s->aver       = sy_nw / N;
+        s->sigma_aver = std::sqrt(yy_nw / N - square(sy_nw / N));
+        s->error      = s->sigma_aver / std::sqrt(static_cast<double>(N));
 
         /* Compute RMSD between x and y */
-        stats->rmsd = std::sqrt(d2 / N);
+        s->rmsd = std::sqrt(d2 / N);
 
         /* Correlation coefficient for data */
         yx_nw /= N;
@@ -171,8 +173,8 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
         yy_nw /= N;
         sx_nw /= N;
         sy_nw /= N;
-        ssxx = N * (xx_nw - gmx::square(sx_nw));
-        ssyy = N * (yy_nw - gmx::square(sy_nw));
+        ssxx = N * (xx_nw - square(sx_nw));
+        ssyy = N * (yy_nw - square(sy_nw));
         ssxy = N * (yx_nw - (sx_nw * sy_nw));
 
         /* Compute straight line through datapoints, either with intercept
@@ -183,101 +185,101 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
         sx = sx / wtot;
         sy = sy / wtot;
 
-        stats->aa = (yx / xx);
-        stats->a  = (yx - sx * sy) / (xx - sx * sx);
-        stats->b  = (sy) - (stats->a) * (sx);
+        s->aa = (yx / xx);
+        s->a  = (yx - sx * sy) / (xx - sx * sx);
+        s->b  = (sy) - (s->a) * (sx);
 
         /* Compute chi2, deviation from a line y = ax+b. */
         chi2 = 0;
         for (int i = 0; (i < N); i++)
         {
-            if (stats->dy[i] > 0)
+            if (s->dy[i] > 0)
             {
-                dy = stats->dy[i];
+                dy = s->dy[i];
             }
             else
             {
                 dy = 1;
             }
-            chi2 += gmx::square((stats->y[i] - (stats->a * stats->x[i] + stats->b)) / dy);
+            chi2 += square((s->y[i] - (s->a * s->x[i] + s->b)) / dy);
         }
         if (N > 2)
         {
-            stats->chi2 = std::sqrt(chi2 / (N - 2));
+            s->chi2 = std::sqrt(chi2 / (N - 2));
 
             /* Look up equations! */
-            dx2            = (xx - sx * sx);
-            stats->sigma_a = std::sqrt(stats->chi2 / ((N - 2) * dx2));
-            stats->sigma_b = stats->sigma_a * std::sqrt(xx);
-            stats->Rfit    = std::abs(ssxy) / std::sqrt(ssxx * ssyy);
+            dx2        = (xx - sx * sx);
+            s->sigma_a = std::sqrt(s->chi2 / ((N - 2) * dx2));
+            s->sigma_b = s->sigma_a * std::sqrt(xx);
+            s->Rfit    = std::abs(ssxy) / std::sqrt(ssxx * ssyy);
         }
         else
         {
-            stats->chi2    = 0;
-            stats->sigma_a = 0;
-            stats->sigma_b = 0;
-            stats->Rfit    = 0;
+            s->chi2    = 0;
+            s->sigma_a = 0;
+            s->sigma_b = 0;
+            s->Rfit    = 0;
         }
 
-        stats->computed = 1;
+        s->computed = 1;
     }
 }
 
-void gmx_stats_get_ab(gmx_stats_t gstats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit)
+void stats_get_ab(stats_t gstats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit)
 {
-    gmx_stats* stats = gstats;
+    stats* s = gstats;
 
-    gmx_stats_compute(stats, weight);
+    stats_compute(s, weight);
     if (nullptr != a)
     {
-        *a = stats->a;
+        *a = s->a;
     }
     if (nullptr != b)
     {
-        *b = stats->b;
+        *b = s->b;
     }
     if (nullptr != da)
     {
-        *da = stats->sigma_a;
+        *da = s->sigma_a;
     }
     if (nullptr != db)
     {
-        *db = stats->sigma_b;
+        *db = s->sigma_b;
     }
     if (nullptr != chi2)
     {
-        *chi2 = stats->chi2;
+        *chi2 = s->chi2;
     }
     if (nullptr != Rfit)
     {
-        *Rfit = stats->Rfit;
+        *Rfit = s->Rfit;
     }
 }
 
-real gmx_stats_get_average(gmx_stats_t gstats)
+real stats_get_average(stats_t gstats)
 {
-    gmx_stats* stats = gstats;
+    stats* s = gstats;
 
-    if (gstats->np < 1)
+    if (s->np < 1)
     {
-        GMX_THROW(gmx::InconsistentInputError("No points to average"));
+        GMX_THROW(InconsistentInputError("No points to average"));
     }
-    gmx_stats_compute(stats, elsqWEIGHT_NONE);
+    stats_compute(s, elsqWEIGHT_NONE);
 
-    return stats->aver;
+    return s->aver;
 }
 
-std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t gstats)
+std::tuple<real, real, real> stats_get_ase(stats_t gstats)
 {
-    gmx_stats* stats = gstats;
+    stats* s = gstats;
 
-    if (gstats->np < 1)
+    if (s->np < 1)
     {
-        GMX_THROW(gmx::InconsistentInputError("No points to average"));
+        GMX_THROW(InconsistentInputError("No points to average"));
     }
-    gmx_stats_compute(stats, elsqWEIGHT_NONE);
+    stats_compute(s, elsqWEIGHT_NONE);
 
-    return std::make_tuple(stats->aver, stats->sigma_aver, stats->error);
+    return std::make_tuple(s->aver, s->sigma_aver, s->error);
 }
 
 // When using GMX_DOUBLE=OFF, some callers want to analyse x values
@@ -287,13 +289,13 @@ std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t gstats)
 template<typename RealT>
 void low_lsq_y_ax_b(int n, const RealT* xr, real yr[], real* a, real* b, real* r, real* chi2)
 {
-    gmx_stats_t lsq = gmx_stats_init();
+    stats_t lsq = stats_init();
     for (int i = 0; (i < n); i++)
     {
-        gmx_stats_add_point(lsq, double(xr[i]), yr[i], 0, 0);
+        stats_add_point(lsq, double(xr[i]), yr[i], 0, 0);
     }
-    gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, nullptr, nullptr, chi2, r);
-    gmx_stats_free(lsq);
+    stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, nullptr, nullptr, chi2, r);
+    stats_free(lsq);
 }
 
 void lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2)
@@ -310,14 +312,16 @@ void lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, re
 {
     if (n < 1)
     {
-        GMX_THROW(gmx::InconsistentInputError("No points to fit"));
+        GMX_THROW(InconsistentInputError("No points to fit"));
     }
 
-    gmx_stats_t lsq = gmx_stats_init();
+    stats_t lsq = stats_init();
     for (int i = 0; (i < n); i++)
     {
-        gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i]);
+        stats_add_point(lsq, x[i], y[i], 0, dy[i]);
     }
-    gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r);
-    gmx_stats_free(lsq);
+    stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r);
+    stats_free(lsq);
 }
+
+} // namespace gmx

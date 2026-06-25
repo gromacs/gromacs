@@ -47,8 +47,11 @@
 
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 //! Abstract container type
-typedef struct gmx_stats* gmx_stats_t;
+typedef struct stats* stats_t;
 
 //! Enum for statistical weights
 enum
@@ -64,13 +67,13 @@ enum
  * Initiate a data structure
  * \return the data structure
  */
-gmx_stats_t gmx_stats_init();
+stats_t stats_init();
 
 /*! \brief
  * Destroy a data structure
  * \param stats The data structure
  */
-void gmx_stats_free(gmx_stats_t stats);
+void stats_free(stats_t stats);
 
 /*! \brief
  * Add a point to the data set
@@ -80,7 +83,7 @@ void gmx_stats_free(gmx_stats_t stats);
  * \param[in] dx  The error in the x value
  * \param[in] dy  The error in the y value
  */
-void gmx_stats_add_point(gmx_stats_t stats, double x, double y, double dx, double dy);
+void stats_add_point(stats_t stats, double x, double y, double dx, double dy);
 
 /*! \brief
  * Fit the data to y = ax + b, possibly weighted, if uncertainties
@@ -94,7 +97,7 @@ void gmx_stats_add_point(gmx_stats_t stats, double x, double y, double dx, doubl
  * \param[out] chi2 normalized quality of fit
  * \param[out] Rfit correlation coefficient
  */
-void gmx_stats_get_ab(gmx_stats_t stats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit);
+void stats_get_ab(stats_t stats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit);
 
 /*! \brief
  * Computes and returns the average value.
@@ -102,7 +105,7 @@ void gmx_stats_get_ab(gmx_stats_t stats, int weight, real* a, real* b, real* da,
  * \return Average value
  * \throws  InconsistentInputError if given no points to average
  */
-real gmx_stats_get_average(gmx_stats_t stats);
+real stats_get_average(stats_t stats);
 
 /*! \brief
  * Pointers may be null, in which case no assignment will be done.
@@ -110,7 +113,7 @@ real gmx_stats_get_average(gmx_stats_t stats);
  * \return Tuple of (average value, its standard deviation, its standard error)
  * \throws  InconsistentInputError if given no points to analyze
  */
-std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t stats);
+std::tuple<real, real, real> stats_get_ase(stats_t stats);
 
 /****************************************************
  * Some statistics utilities for convenience: useful when a complete data
@@ -153,5 +156,7 @@ void lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, 
  * \throws  InconsistentInputError if given no points to fit
  */
 void lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2);
+
+} // namespace gmx
 
 #endif
