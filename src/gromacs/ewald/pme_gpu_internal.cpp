@@ -1535,13 +1535,11 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 
         // prepare the ppRanksFInfo struct for sending it to gpu.
         int receiverIndex = 0;
+        int startIndex    = 0;
         for (const auto& receiver : pmeGpu->nvshmemParams->ppRanksRef)
         {
-            auto& ppRankFInfo_prev = pmeGpu->nvshmemParams->ppRanksFInfo[receiverIndex - 1];
-            int   startIndex =
-                    receiverIndex ? ppRankFInfo_prev.startAtomOffset + ppRankFInfo_prev.numAtoms : 0;
-
             pmeGpu->nvshmemParams->ppRanksFInfo[receiverIndex] = { receiver.rankId, receiver.numAtoms, startIndex };
+            startIndex += receiver.numAtoms;
             receiverIndex++;
         }
 
