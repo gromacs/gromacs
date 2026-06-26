@@ -60,6 +60,9 @@ struct interaction_const_t;
 /*! \brief Flag to only make 1,4 pair tables for make_tables */
 #define GMX_MAKETABLES_14ONLY (1 << 1)
 
+namespace gmx
+{
+
 //! \brief The types of interactions contained in the table
 enum class TableInteraction : int
 {
@@ -100,7 +103,7 @@ struct t_forcetable
     //! distance (nm) between two table points
     real scale;
     //! The actual table data
-    std::vector<real, gmx::AlignedAllocator<real>> data;
+    std::vector<real, AlignedAllocator<real>> data;
 
     /* Some information about the table layout. This can also be derived from the interpolation
      * type and the table interactions, but it is convenient to have here for sanity checks, and it
@@ -207,5 +210,7 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle);
  */
 std::unique_ptr<t_forcetable>
 makeDispersionCorrectionTable(FILE* fp, const interaction_const_t& ic, real rtab, const char* tabfn);
+
+} // namespace gmx
 
 #endif /* GMX_TABLES_FORCETABLE_H */

@@ -58,12 +58,12 @@ class DispersionCorrection;
 class ListedForces;
 class CpuPpLongRangeNonbondeds;
 struct t_fcdata;
-struct t_forcetable;
 struct interaction_const_t;
 
 namespace gmx
 {
 struct nonbonded_verlet_t;
+struct t_forcetable;
 class DeviceStreamManager;
 class ListedForcesGpu;
 class GpuForceReduction;
@@ -183,7 +183,7 @@ struct t_forcerec
     /* Fudge factors */
     real fudgeQQ = 0;
 
-    std::unique_ptr<t_forcetable> pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
+    std::unique_ptr<gmx::t_forcetable> pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
     FreeEnergyPerturbationType efep = FreeEnergyPerturbationType::No;
@@ -201,8 +201,8 @@ struct t_forcerec
     std::unique_ptr<gmx::nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
-    int                                                     nwall = 0;
-    std::vector<std::vector<std::unique_ptr<t_forcetable>>> wall_tab;
+    int                                                          nwall = 0;
+    std::vector<std::vector<std::unique_ptr<gmx::t_forcetable>>> wall_tab;
 
     /* The number of atoms participating in do_force_lowlevel */
     int natoms_force = 0;

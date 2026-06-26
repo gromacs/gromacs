@@ -561,7 +561,7 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                     f
                     if (gmx::endsWith(tabbfnm[j], patternToFind))
                     {
                         // Finally read the table from the file found
-                        tab[i]    = make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1) - 2);
+                        tab[i] = gmx::make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1) - 2);
                         madeTable = true;
                     }
                 }
@@ -615,7 +615,7 @@ static void init_ewald_f_table(const interaction_const_t& ic,
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
      */
-    const real tableScale = ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
+    const real tableScale = gmx::ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
 
     const bool havePerturbedNonbondeds = (ic.softCoreParameters != nullptr);
 
@@ -634,13 +634,14 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
     if (useCoulombTable)
     {
-        *coulombTables = generateEwaldCorrectionTables(
-                tableSize, tableScale, ic.coulomb.ewaldCoeff, v_q_ewald_lr);
+        *coulombTables = gmx::generateEwaldCorrectionTables(
+                tableSize, tableScale, ic.coulomb.ewaldCoeff, gmx::v_q_ewald_lr);
     }
 
     if (useVdwTable)
     {
-        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.vdw.ewaldCoeff, v_lj_ewald_lr);
+        *vdwTables = gmx::generateEwaldCorrectionTables(
+                tableSize, tableScale, ic.vdw.ewaldCoeff, gmx::v_lj_ewald_lr);
     }
 }
 
@@ -1003,7 +1004,8 @@ void init_forcerec(FILE*                            fplog,
         || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulomb14Q) > 0
         || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulombNonBondedPairs) > 0)
     {
-        forcerec->pairsTable = make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
+        forcerec->pairsTable =
+                gmx::make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
     }
 
     /* Wall stuff */
