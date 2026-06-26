@@ -105,12 +105,5 @@ void PmeForceSenderGpu::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> /* sendbuf */,
                "implementation.");
 }
 
-void PmeForceSenderGpu::waitForEvents()
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub for PME-PP GPU communication was called instead of the correct "
-               "implementation.");
-}
-
 
 } // namespace gmx

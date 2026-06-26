@@ -174,6 +174,11 @@ static std::vector<PpRanks> makePpRanks(const gmx_domdec_t& dd)
     return ppRanks;
 }
 
+static bool usingNvshmemForceComm(const gmx_pme_pp& pmePP, bool computeEnergyAndVirial)
+{
+    return pmePP.useNvshmem && !computeEnergyAndVirial;
+}
+
 gmx_pme_pp::gmx_pme_pp(MPI_Comm                        simulationCommunicator,
                        std::vector<PpRanks>&&          ppRanksArg,
                        const bool                      usePmeGpu,
@@ -689,11 +694,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     }
     else
     {
-        if (!computeEnergyAndVirial && pme_pp->useNvshmem)
-        {
-            pme_pp->pmeForceSenderGpu->waitForEvents();
-        }
-        else
+        if (!usingNvshmemForceComm(*pme_pp, computeEnergyAndVirial))
         {
             for (const auto& receiver : pme_pp->ppRanks)
             {
@@ -950,7 +951,11 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                                   pme_pp->pmeCoordinateReceiverGpu.get(),
                                   pme_pp->useMdGpuGraph);
             pme_gpu_launch_complex_transforms(pme.get(), wcycle, stepWork);
-            pme_gpu_launch_gather(pme.get(), wcycle, lambda_q, stepWork.computeVirial);
+            // With NVSHMEM, we use special signals to mark send completion; no need to mark GPU event
+            GMX_ASSERT(stepWork.computeVirial == stepWork.computeEnergy,
+                       "Gather kernel assumes computeVirial == computeEnergy");
+            const bool markForceReadyEvent = !usingNvshmemForceComm(*pme_pp, stepWork.computeVirial);
+            pme_gpu_launch_gather(pme.get(), wcycle, lambda_q, stepWork.computeVirial, markForceReadyEvent);
             output = pme_gpu_wait_finish_task(
                     pme.get(), stepWork.computeEnergy || stepWork.computeVirial, lambda_q, wcycle);
         }

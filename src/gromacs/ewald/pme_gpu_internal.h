@@ -423,13 +423,14 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
  * \param[in] lambda   The lambda value to use.
  * \param[in] wcycle   The wallclock counter.
  * \param[in] computeVirial  Whether this is a virial step.
+ * \param[in] markFReadyEvent  Whether to mark the force-ready event after the kernel.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                       GPU_FUNC_ARGUMENT(pmeGpu),
                                        gmx::ArrayRef<PmeAndFftGrids> GPU_FUNC_ARGUMENT(h_grids),
                                        float                         GPU_FUNC_ARGUMENT(lambda),
                                        gmx_wallcycle*                GPU_FUNC_ARGUMENT(wcycle),
-                                       bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
-
+                                       bool GPU_FUNC_ARGUMENT(computeVirial),
+                                       bool GPU_FUNC_ARGUMENT(markFReadyEvent)) GPU_FUNC_TERM;
 
 /*! \brief Sets the device pointer to coordinate data
  * \param[in] pmeGpu         The PME GPU structure.

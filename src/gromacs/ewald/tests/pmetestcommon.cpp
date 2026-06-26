@@ -487,11 +487,12 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
         {
             // Variable initialization needs a non-switch scope
             const bool computeEnergyAndVirial = false;
+            const bool markFReadyEvent        = true;
             const real lambdaQ                = 1.0;
             PmeOutput  output = pme_gpu_getOutput(pme, computeEnergyAndVirial, lambdaQ);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
-            pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, nullptr, computeEnergyAndVirial);
+            pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, nullptr, computeEnergyAndVirial, markFReadyEvent);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;

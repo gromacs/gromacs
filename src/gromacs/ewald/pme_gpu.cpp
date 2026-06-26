@@ -239,7 +239,11 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void pme_gpu_launch_gather(gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, const real lambdaQ, const bool computeVirial)
+void pme_gpu_launch_gather(gmx_pme_t*                pme,
+                           gmx_wallcycle gmx_unused* wcycle,
+                           const real                lambdaQ,
+                           const bool                computeVirial,
+                           const bool                markFReadyEvent)
 {
     GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
 
@@ -248,7 +252,7 @@ void pme_gpu_launch_gather(gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, con
         return;
     }
 
-    pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, wcycle, computeVirial);
+    pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, wcycle, computeVirial, markFReadyEvent);
 }
 
 //! Accumulate the \c forcesToAdd to \c f, using the available threads.

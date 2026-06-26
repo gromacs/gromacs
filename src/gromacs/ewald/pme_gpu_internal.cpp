@@ -2402,7 +2402,8 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
                     gmx::ArrayRef<PmeAndFftGrids> h_grids,
                     const float                   lambda,
                     gmx_wallcycle*                wcycle,
-                    bool                          computeVirial)
+                    bool                          computeVirial,
+                    bool                          markFReadyEvent)
 {
     GMX_ASSERT(
             pmeGpu->common->ngrids == 1 || pmeGpu->common->ngrids == 2,
@@ -2576,7 +2577,10 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
 
     if (pmeGpu->settings.useGpuForceReduction)
     {
-        pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream_);
+        if (markFReadyEvent)
+        {
+            pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream_);
+        }
     }
     else if (pmeGpu->kernelParams->atoms.nAtoms > 0)
     {

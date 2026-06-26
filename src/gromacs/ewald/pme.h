@@ -437,11 +437,13 @@ pme_gpu_launch_complex_transforms(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
  * \param[in] wcycle            The wallclock counter.
  * \param[in] lambdaQ           The Coulomb lambda to use when calculating the results.
  * \param[in] computeVirial     Whether this is a virial step.
+ * \param[in] markFReadyEvent   Whether the f_ready_synchronizer should be marked after the kernel.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
                                               real           GPU_FUNC_ARGUMENT(lambdaQ),
-                                              bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
+                                              bool           GPU_FUNC_ARGUMENT(computeVirial),
+                                              bool GPU_FUNC_ARGUMENT(markFReadyEvent) = true) GPU_FUNC_TERM;
 
 /*! \brief
  * Attempts to complete PME GPU tasks.

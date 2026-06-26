@@ -112,9 +112,6 @@ public:
      */
     void sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
 
-    //! Wait for PME-force event to complete
-    void waitForEvents();
-
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;

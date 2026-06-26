@@ -226,12 +226,6 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(const int ppRank, const int nu
     tmpPpCommEventRecordedPtr->store(true, std::memory_order_release);
 }
 
-void PmeForceSenderGpu::Impl::waitForEvents()
-{
-    GMX_ASSERT(GMX_LIB_MPI, "waitForEvents is expected to be called only for Lib-MPI");
-    pmeForcesReady_->waitForEvent();
-}
-
 
 PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer*  pmeForcesReady,
                                      MPI_Comm               comm,
@@ -261,11 +255,6 @@ void PmeForceSenderGpu::sendFToPpGpuAwareMpi(DeviceBuffer<RVec> sendbuf,
 void PmeForceSenderGpu::sendFToPpPeerToPeer(const int ppRank, const int numAtoms, const bool sendForcesDirectToPpGpu)
 {
     impl_->sendFToPpPeerToPeer(ppRank, numAtoms, sendForcesDirectToPpGpu);
-}
-
-void PmeForceSenderGpu::waitForEvents()
-{
-    impl_->waitForEvents();
 }
 
 
