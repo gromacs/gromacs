@@ -75,8 +75,8 @@
 
 namespace gmx
 {
+
 class CommandLineHelpContext;
-} // namespace gmx
 
 namespace
 {
@@ -175,7 +175,7 @@ void registerObsoleteTool(gmx::CommandLineModuleManager* manager, const char* na
 
 } // namespace
 
-void registerLegacyModules(gmx::CommandLineModuleManager* manager)
+void registerLegacyModules(CommandLineModuleManager* manager)
 {
     registerModule(manager, &gmx_check, "check", "Check and compare files");
     gmx::ICommandLineOptionsModule::registerModuleFactory(
@@ -554,3 +554,5 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
                                        "Find a potential energy minimum and calculate the Hessian");
     }
 }
+
+} // namespace gmx

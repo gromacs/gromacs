@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     {
         gmx::CommandLineModuleManager manager("gmx", &context);
         registerTrajectoryAnalysisModules(&manager);
-        registerLegacyModules(&manager);
+        gmx::registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::createSelectionHelpTopic());
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
