@@ -1,0 +1,16 @@
+; Atom renaming specification for legacy GROMACS input names.
+; residue   input   forcefield
+  ILE       CD      CD1
+  ILE       HD1     HD11
+  ILE       HD2     HD12
+  ILE       HD3     HD13
+  CILE      CD      CD1
+  CILE      HD1     HD11
+  CILE      HD2     HD12
+  CILE      HD3     HD13
+  NILE      CD      CD1
+  NILE      HD1     HD11
+  NILE      HD2     HD12
+  NILE      HD3     HD13
+  LYN       HZ1     HZ3
+  NPRO      H1      H3

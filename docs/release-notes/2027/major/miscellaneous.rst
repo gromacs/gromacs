@@ -20,3 +20,11 @@ with other parts of |Gromacs|, it now uses the definition of Bohr radius from th
 the rest of the code. Notably, the value of the constant changed from ``0.529177249`` (IUPAC 1999)
 to ``0.529177210903`` (NIST 2018).
 
+AMBER19SB and AMBER14SB force fields now use IUPAC standard hydrogen names
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:ref:`gmx pdb2gmx` now recognizes the hydrogen names from the force field rather than always
+starting from 1. This means that the AMBER19SB and AMBER14SB force fields now use the original
+hydrogen names, (i.e. HB2 and HB3 for methylene hydrogens instead of HB1 and HB2). This is more
+consistent with the naming in the original Amber force field files and with the IUPAC standard
+for hydrogen names.
