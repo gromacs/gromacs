@@ -39,7 +39,7 @@ function(gmx_manage_vkfft BACKEND_NAME)
 
     if (NOT GMX_EXTERNAL_VKFFT)
         set(vkfft_DIR ${PROJECT_SOURCE_DIR}/src/external/vkfft)
-        set(vkfft_VERSION "internal (1.3.1) with ${BACKEND_NAME} backend" PARENT_SCOPE)
+        set(vkfft_VERSION "internal (1.3.4) with ${BACKEND_NAME} backend" PARENT_SCOPE)
     else()
         find_path(vkfft_DIR
             NAMES vkFFT.h
@@ -55,7 +55,6 @@ function(gmx_manage_vkfft BACKEND_NAME)
     add_library(VkFFT INTERFACE)
     target_include_directories(VkFFT INTERFACE ${vkfft_DIR})
 
-    # The "-Wcast-qual" warning appears when compiling VkFFT for OpenCL, but not for HIP. It cannot be suppressed.
     gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-parameter" HAS_WARNING_NO_UNUSED_PARAMETER)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-variable" HAS_WARNING_NO_UNUSED_VARIABLE)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-newline-eof" HAS_WARNING_NO_NEWLINE_EOF)
@@ -63,6 +62,7 @@ function(gmx_manage_vkfft BACKEND_NAME)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-but-set-variable" HAS_WARNING_NO_UNUSED_BUT_SET_VARIABLE)
     gmx_target_interface_warning_suppression(VkFFT "-Wno-sign-compare" HAS_WARNING_NO_SIGN_COMPARE)
+    gmx_target_interface_warning_suppression(VkFFT "-Wno-nan-infinity-disabled" HAS_WARNING_NO_NAN_INFINITY_DISABLED)
 
     if (APPLE)
         # macOS Ventura because `sprintf` was deprecated in favor of `snprintf`.
@@ -97,9 +97,11 @@ function(gmx_manage_vkfft BACKEND_NAME)
         gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-result" HAS_WARNING_NO_UNUSED_RESULT)
         # ... and since Clang 20 this warning is called -Wunused-value
         gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-value" HAS_WARNING_NO_UNUSED_VALUE)
+        # Needed with ROCm < 7, see https://github.com/ROCm/HIP/issues/3426
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-cast-qual" HAS_WARNING_NO_CAST_QUAL)
     elseif(BACKEND_NAME STREQUAL "OpenCL")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=3)
-        # The "-Wcast-qual" warning appears when compiling VkFFT for OpenCL, but not for HIP.
+        # The "-Wcast-qual" warning appears when compiling VkFFT for OpenCL
         gmx_target_interface_warning_suppression(VkFFT "-Wno-cast-qual" HAS_WARNING_NO_CAST_QUAL)
     elseif(BACKEND_NAME STREQUAL "LevelZero")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=4)

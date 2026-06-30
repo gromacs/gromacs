@@ -57,7 +57,10 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 
 	appendConstantsVkFFT(sc);
 	//additional functions
-	if (((!sc->LUT) || (!sc->LUT_4step)) && (sc->floatTypeCode == 2)) {
+	if ((((sc->floatTypeCode/10)%10) == 3) || (((sc->floatTypeInputMemoryCode/10)%10) == 3) || (((sc->floatTypeOutputMemoryCode/10)%10) == 3)) {
+		appendQuadDoubleDoubleStruct(sc);
+	}
+	if (((!sc->LUT) || (!sc->LUT_4step)) && (((sc->floatTypeCode/10)%10) == 2)) {
 		appendSinCos20(sc);
 	}
 	if ((sc->floatTypeCode != sc->floatTypeInputMemoryCode) || (sc->floatTypeCode != sc->floatTypeOutputMemoryCode)) {
@@ -66,9 +69,9 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 	appendPushConstants(sc);
 	
 	int id = 0;
-	appendInputLayoutVkFFT(sc, id, type);
+	appendInputLayoutVkFFT(sc, id);
 	id++;
-	appendOutputLayoutVkFFT(sc, id, type);
+	appendOutputLayoutVkFFT(sc, id);
 	id++;
 	if (sc->convolutionStep) {
 		appendKernelLayoutVkFFT(sc, id);
@@ -89,23 +92,23 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 		if (sc->BluesteinPreMultiplication || sc->BluesteinPostMultiplication)
 			id++;
 	}
-	int locType = (((type == 0) || (type == 5) || (type == 6) || (type == 110) || (type == 120) || (type == 130) || (type == 140) || (type == 142) || (type == 144)) && (sc->axisSwapped)) ? 1 : type;
+	int locType = (((type%10)==0) && (sc->axisSwapped)) ? 1 : (type%10);
 	
-	appendKernelStart(sc, type);
+	appendKernelStart(sc, locType);
 	
 	setReadToRegisters(sc, type);
 	setWriteFromRegisters(sc, type);
 
 	appendRegisterInitialization(sc, type);
 	
-	PfContainer stageSize;
+	PfContainer stageSize = VKFFT_ZERO_INIT;
 	stageSize.type = 31;
-	PfContainer stageSizeSum;
+	PfContainer stageSizeSum = VKFFT_ZERO_INIT;
 	stageSizeSum.type = 31;
-	PfContainer stageAngle;
-	stageAngle.type = 32;
+	PfContainer stageAngle = VKFFT_ZERO_INIT;
+	stageAngle.type = 22;
 	
-	int64_t max_coordinate = 0;
+	pfINT max_coordinate = 0;
 	if ((sc->convolutionStep) && (sc->matrixConvolution > 1)) {
 		max_coordinate = sc->matrixConvolution - 1;
 	}
@@ -115,23 +118,25 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 
 		//pre-processing
 		//r2c, r2r
-		if (type == 6) {
+		if (type == 600) {
 			appendC2R_read(sc, type, 0);
 		}
-		if ((type == 110) || (type == 111)) {
-			appendDCTI_read(sc, type, 0);
-		}
-		if ((type == 120) || (type == 121)) {
-			appendDCTII_read_III_write(sc, type, 0);
-		}
-		if ((type == 130) || (type == 131)) {
-			appendDCTII_write_III_read(sc, type, 0);
-		}
-		if ((type == 142) || (type == 143)) {
-			appendDCTIV_even_read(sc, type, 0);
-		}
-		if ((type == 144) || (type == 145)) {
-			appendDCTIV_odd_read(sc, type, 0);
+		if (sc->numAxisUploads == 1) {
+			if ((type/10) == 110) {
+				appendDCTI_read(sc, type, 0);
+			}
+			if ((type/10) == 120) {
+				appendDCTII_read_III_write(sc, type, 0);
+			}
+			if ((type/10) == 130) {
+				appendDCTII_write_III_read(sc, type, 0);
+			}
+			if ((type/10) == 140) {
+				appendDCTIV_even_read(sc, type, 0);
+			}
+			if ((type/10) == 142) {
+				appendDCTIV_odd_read(sc, type, 0);
+			}
 		}
 		if (sc->useBluesteinFFT && sc->BluesteinPreMultiplication) {
 			appendBluesteinMultiplication(sc, locType, 0);
@@ -174,7 +179,7 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 						stageSizeSum.data.i += stageSize.data.i * 5;
 						break;
 					case 7:
-						stageSizeSum.data.i += stageSize.data.i * 6;
+							stageSizeSum.data.i += stageSize.data.i * 6;
 						break;
 					case 8:
 						stageSizeSum.data.i += stageSize.data.i * 3;
@@ -186,13 +191,19 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 						stageSizeSum.data.i += stageSize.data.i * 9;
 						break;
 					case 11:
-						stageSizeSum.data.i += stageSize.data.i * 10;
+						if (sc->precision == 3)
+							stageSizeSum.data.i += stageSize.data.i * 11;
+						else
+							stageSizeSum.data.i += stageSize.data.i * 10;
 						break;
 					case 12:
 						stageSizeSum.data.i += stageSize.data.i * 11;
 						break;
 					case 13:
-						stageSizeSum.data.i += stageSize.data.i * 12;
+						if (sc->precision == 3)
+							stageSizeSum.data.i += stageSize.data.i * 13;
+						else
+							stageSizeSum.data.i += stageSize.data.i * 12;
 						break;
 					case 14:
 						stageSizeSum.data.i += stageSize.data.i * 13;
@@ -258,7 +269,7 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 				stageSizeSum.data.i = 0;
 				stageAngle.data.d = sc->double_PI;
 				sc->inverse = 1;
-				for (uint64_t i = 0; i < (uint64_t)sc->numStages; i++) {
+				for (pfUINT i = 0; i < (pfUINT)sc->numStages; i++) {
 					temp_int.data.i = sc->stageRadix[i];
 					appendRadixStage(sc, &stageSize, &stageSizeSum, &stageAngle, &temp_int, (int)i, locType);
 					if (i > 0) {
@@ -279,7 +290,7 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 							stageSizeSum.data.i += stageSize.data.i * 5;
 							break;
 						case 7:
-							stageSizeSum.data.i += stageSize.data.i * 6;
+								stageSizeSum.data.i += stageSize.data.i * 6;
 							break;
 						case 8:
 							stageSizeSum.data.i += stageSize.data.i * 3;
@@ -291,13 +302,19 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 							stageSizeSum.data.i += stageSize.data.i * 9;
 							break;
 						case 11:
-							stageSizeSum.data.i += stageSize.data.i * 10;
+							if (sc->precision == 3)
+								stageSizeSum.data.i += stageSize.data.i * 11;
+							else
+								stageSizeSum.data.i += stageSize.data.i * 10;
 							break;
 						case 12:
 							stageSizeSum.data.i += stageSize.data.i * 11;
 							break;
 						case 13:
-							stageSizeSum.data.i += stageSize.data.i * 12;
+							if (sc->precision == 3)
+								stageSizeSum.data.i += stageSize.data.i * 13;
+							else
+								stageSizeSum.data.i += stageSize.data.i * 12;
 							break;
 						case 14:
 							stageSizeSum.data.i += stageSize.data.i * 13;
@@ -316,7 +333,7 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 							break;
 						}
 					}
-					if (i == sc->numStages - 1) {
+					if ((i == sc->numStages - 1) || (sc->registerBoost == 1)) {
 						temp_int.data.i = sc->stageRadix[i];
 						temp_int1.data.i = sc->stageRadix[i];
 
@@ -343,20 +360,22 @@ static inline VkFFTResult shaderGen_FFT(VkFFTSpecializationConstantsLayout* sc, 
 			if (sc->useBluesteinFFT && sc->BluesteinPostMultiplication) {
 				appendBluesteinMultiplication(sc, locType, 1);
 			}
-			if ((type == 5) && (sc->mergeSequencesR2C)) {
-				appendR2C_write(sc, type, 1);
-			}
-			if ((type == 120) || (type == 121)) {
-				appendDCTII_write_III_read(sc, type, 1);
-			}
-			if ((type == 130) || (type == 131)) {
-				appendDCTII_read_III_write(sc, type, 1);
-			}
-			if ((type == 142) || (type == 143)) {
-				appendDCTIV_even_write(sc, type, 1);
-			}
-			if ((type == 144) || (type == 145)) {
-				appendDCTIV_odd_write(sc, type, 1);
+			if (sc->numAxisUploads == 1) {
+				if ((type == 500) && (sc->mergeSequencesR2C)) {
+					appendR2C_write(sc, type, 1);
+				}
+				if ((type / 10) == 120) {
+					appendDCTII_write_III_read(sc, type, 1);
+				}
+				if ((type / 10) == 130) {
+					appendDCTII_read_III_write(sc, type, 1);
+				}
+				if ((type / 10) == 140) {
+					appendDCTIV_even_write(sc, type, 1);
+				}
+				if ((type / 10) == 142) {
+					appendDCTIV_odd_write(sc, type, 1);
+				}
 			}
 			appendWriteDataVkFFT(sc, type);
 		}

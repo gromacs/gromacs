@@ -29,14 +29,14 @@
 #include "vkFFT/vkFFT_CodeGen/vkFFT_KernelsLevel0/vkFFT_KernelUtils.h"
 #include "vkFFT/vkFFT_CodeGen/vkFFT_KernelsLevel0/vkFFT_MemoryManagement/vkFFT_MemoryTransfers/vkFFT_Transfers.h"
 
-static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLayout* sc, uint64_t strideType, uint64_t pre_or_post_multiplication) {
+static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLayout* sc, pfUINT strideType, pfUINT pre_or_post_multiplication) {
 	if (sc->res != VKFFT_SUCCESS) return;
 	PfContainer temp_int = VKFFT_ZERO_INIT;
 	temp_int.type = 31;
 	PfContainer temp_int1 = VKFFT_ZERO_INIT;
 	temp_int1.type = 31;
 	PfContainer temp_double = VKFFT_ZERO_INIT;
-	temp_double.type = 32;
+	temp_double.type = 22;
 
 	
 	//char index_y[2000] = "";
@@ -79,8 +79,8 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 		
 	PfDivCeil(sc, &used_registers, &sc->fftDim, &localSize);
 
-	for (uint64_t i = 0; i < (uint64_t)used_registers.data.i; i++) {
-		if (localSize.data.i * ((1 + (int64_t)i)) > sc->fftDim.data.i) {
+	for (pfUINT i = 0; i < (pfUINT)used_registers.data.i; i++) {
+		if (localSize.data.i * ((1 + (pfINT)i)) > sc->fftDim.data.i) {
 			PfContainer current_group_cut;
 			current_group_cut.type = 31;
 			current_group_cut .data.i = sc->fftDim.data.i - i * localSize.data.i;
@@ -88,14 +88,14 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 		}
 
 		if (sc->fftDim.data.i == sc->fft_dim_full.data.i) {
-			switch (strideType) {
-			case 0: case 2: case 5: case 6: case 110: case 120: case 130: case 140: case 142: case 144:
+			switch (strideType % 10) {
+			case 0: case 2: 
 			{
 				temp_int.data.i = i * sc->localSize[0].data.i;
 				PfAdd(sc, &sc->inoutID, &sc->gl_LocalInvocationID_x, &temp_int);
 				break;
 			}
-			case 1: case 111: case 121: case 131: case 141: case 143: case 145:
+			case 1: 
 			{
 				temp_int.data.i = i * sc->localSize[1].data.i;
 				PfAdd(sc, &sc->inoutID, &sc->gl_LocalInvocationID_y, &temp_int);
@@ -104,8 +104,8 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 			}
 		}
 		else {
-			switch (strideType) {
-			case 0: case 2: case 5: case 6: case 110: case 120: case 130: case 140: case 142: case 144:
+			switch (strideType % 10) {
+			case 0: case 2: 
 			{
 				PfMod(sc, &sc->inoutID, &sc->shiftX, &sc->stageStartSize);
 
@@ -120,7 +120,7 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 				PfAdd(sc, &sc->inoutID, &sc->inoutID, &sc->tempInt);
 				break;
 			}
-			case 1: case 111: case 121: case 131: case 141: case 143: case 145:
+			case 1:
 			{
 				temp_int.data.i = i * sc->localSize[1].data.i;
 				PfAdd(sc, &sc->inoutID, &sc->gl_LocalInvocationID_y, &temp_int);
@@ -141,17 +141,19 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 		}
 		
 		if ((sc->zeropadBluestein[0]) && (pre_or_post_multiplication == 0)) {
-			PfMod(sc, &sc->tempInt, &sc->inoutID, &sc->fft_dim_full);
-			PfIf_lt_start(sc, &sc->tempInt, &sc->fft_zeropad_Bluestein_left_read[sc->axis_id]);
+			temp_int.data.i = sc->fft_zeropad_Bluestein_left_read[sc->axis_id].data.i;
+			if (sc->performDCT == 1) temp_int.data.i = 2 * temp_int.data.i - 2;
+			if (sc->performDST == 1) temp_int.data.i = 2 * temp_int.data.i + 2;
+			PfIf_lt_start(sc, &sc->inoutID, &temp_int);
 		}
 		if ((sc->zeropadBluestein[1]) && (pre_or_post_multiplication == 1)) {
-			PfMod(sc, &sc->tempInt, &sc->inoutID, &sc->fft_dim_full);
-			PfIf_lt_start(sc, &sc->tempInt, &sc->fft_zeropad_Bluestein_left_write[sc->axis_id]);		
+			temp_int.data.i = sc->fft_zeropad_Bluestein_left_write[sc->axis_id].data.i;
+			if (sc->performDST == 1) temp_int.data.i += 1;
+			PfIf_lt_start(sc, &sc->inoutID, &temp_int);		
 		}
 
 		appendGlobalToRegisters(sc, &sc->w, &sc->BluesteinStruct, &sc->inoutID);
-		
-		//uint64_t k = 0;
+		//pfUINT k = 0;
 		if (!((sc->readToRegisters && (pre_or_post_multiplication == 0)) || (sc->writeFromRegisters && (pre_or_post_multiplication == 1)))) {
 			if (sc->stridedSharedLayout) {
 				temp_int.data.i = i * sc->localSize[1].data.i;
@@ -170,6 +172,7 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 			}
 			appendSharedToRegisters(sc, &sc->regIDs[i], &sc->sdataID);
 		}
+		//if ((sc->actualInverse == 1) && pre_or_post_multiplication && (((sc->reverseBluesteinMultiUpload == 1) && (sc->axis_upload_id == sc->numAxisUploads-1)) || (sc->numAxisUploads == 1))) PfPrintReg(sc, &sc->inoutID, &sc->regIDs[i]);
 		
 		if (!sc->inverseBluestein)
 			PfConjugate(sc, &sc->w, &sc->w);
@@ -185,7 +188,7 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 		if ((sc->zeropadBluestein[1]) && (pre_or_post_multiplication == 1)) {
 			PfIf_end(sc);
 		}
-		if (localSize.data.i * ((1 + (int64_t)i)) > sc->fftDim.data.i) {
+		if (localSize.data.i * ((1 + (pfINT)i)) > sc->fftDim.data.i) {
 			PfIf_end(sc);
 		}
 	}
@@ -195,14 +198,14 @@ static inline void appendBluesteinMultiplication(VkFFTSpecializationConstantsLay
 	return;
 }
 
-static inline void appendBluesteinConvolution(VkFFTSpecializationConstantsLayout* sc, uint64_t strideType) {
+static inline void appendBluesteinConvolution(VkFFTSpecializationConstantsLayout* sc, pfUINT strideType) {
 	if (sc->res != VKFFT_SUCCESS) return;
 	PfContainer temp_int = VKFFT_ZERO_INIT;
 	temp_int.type = 31;
 	PfContainer temp_int1 = VKFFT_ZERO_INIT;
 	temp_int1.type = 31;
 	PfContainer temp_double = VKFFT_ZERO_INIT;
-	temp_double.type = 32;
+	temp_double.type = 22;
 	
 	if (sc->useDisableThreads) {
 		temp_int.data.i = 0;
@@ -227,20 +230,20 @@ static inline void appendBluesteinConvolution(VkFFTSpecializationConstantsLayout
 		PfDivCeil(sc, &used_registers, &sc->fftDim, &sc->localSize[0]);
 	}
 
-	for (uint64_t i = 0; i < (uint64_t)used_registers.data.i; i++) {
-		if (localSize.data.i * ((1 + (int64_t)i)) > sc->fftDim.data.i) {
+	for (pfUINT i = 0; i < (pfUINT)used_registers.data.i; i++) {
+		if (localSize.data.i * ((1 + (pfINT)i)) > sc->fftDim.data.i) {
 			temp_int.data.i = sc->fftDim.data.i - i * localSize.data.i;
 			PfIf_lt_start(sc, localInvocationID, &temp_int);
 		}
 		if (sc->fftDim.data.i == sc->fft_dim_full.data.i) {
-			switch (strideType) {
-			case 0: case 2: case 5: case 6: case 110: case 120: case 130: case 140: case 142: case 144:
+			switch (strideType % 10) {
+			case 0: case 2: 
 			{
 				temp_int.data.i = i * sc->localSize[0].data.i;
 				PfAdd(sc, &sc->inoutID, &sc->gl_LocalInvocationID_x, &temp_int);
 				break;
 			}
-			case 1: case 111: case 121: case 131: case 141: case 143: case 145:
+			case 1: 
 			{
 				temp_int.data.i = i * sc->localSize[1].data.i;
 				PfAdd(sc, &sc->inoutID, &sc->gl_LocalInvocationID_y, &temp_int);
@@ -249,8 +252,8 @@ static inline void appendBluesteinConvolution(VkFFTSpecializationConstantsLayout
 			}
 		}
 		else {
-			switch (strideType) {
-			case 0: case 2: case 5: case 6: case 110: case 120: case 130: case 140: case 142: case 144:
+			switch (strideType % 10) {
+			case 0: case 2: 
 			{
 				temp_int.data.i = sc->firstStageStartSize.data.i / sc->fftDim.data.i;
 				PfMod(sc, &sc->inoutID, &sc->shiftX, &temp_int);
@@ -269,7 +272,7 @@ static inline void appendBluesteinConvolution(VkFFTSpecializationConstantsLayout
 				PfAdd(sc, &sc->inoutID, &sc->inoutID, &sc->tempInt);
 				break;
 			}
-			case 1: case 111: case 121: case 131: case 141: case 143: case 145:
+			case 1: 
 			{
 				temp_int.data.i = i * sc->localSize[1].data.i;
 				PfAdd(sc, &sc->inoutID, &sc->gl_LocalInvocationID_y, &temp_int);
@@ -291,14 +294,14 @@ static inline void appendBluesteinConvolution(VkFFTSpecializationConstantsLayout
 		PfIf_lt_start(sc, &sc->inoutID, &sc->fft_dim_full);
 		
 		appendGlobalToRegisters(sc, &sc->w, &sc->BluesteinConvolutionKernelStruct, &sc->inoutID);
-
+		
 		if ((sc->inverseBluestein) && (sc->fftDim.data.i == sc->fft_dim_full.data.i))
 			PfConjugate(sc, &sc->w, &sc->w);
 		
 		PfMul(sc, &sc->regIDs[i], &sc->regIDs[i], &sc->w, &sc->temp);
 		
 		PfIf_end(sc);
-		if (localSize.data.i * ((1 + (int64_t)i)) > sc->fftDim.data.i) {
+		if (localSize.data.i * ((1 + (pfINT)i)) > sc->fftDim.data.i) {
 			PfIf_end(sc);
 		}
 	}
