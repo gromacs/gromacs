@@ -48,7 +48,6 @@ struct bonded_threading_t;
 struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
-struct gmx_shellfc_t;
 struct gmx_wallcycle;
 struct t_forcerec;
 struct t_inputrec;
@@ -56,6 +55,7 @@ struct t_mdatoms;
 
 namespace gmx
 {
+struct shellfc_t;
 class Constraints;
 class ForceBuffers;
 class MDAtoms;
@@ -69,7 +69,7 @@ class VirtualSitesHandler;
  * \param[in]     md        The MD atom data
  * \param[in,out] shfc      The shell/flexible-constraint data
  */
-void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, gmx_shellfc_t* shfc);
+void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, shellfc_t* shfc);
 
 /*! \brief Sets atom data for several MD algorithms
  *
@@ -102,7 +102,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                MDAtoms*                  mdAtoms,
                                Constraints*              constr,
                                VirtualSitesHandler*      vsite,
-                               gmx_shellfc_t*            shellfc,
+                               shellfc_t*                shellfc,
                                StatePropagatorDataGpu*   stateGpu,
                                gmx_wallcycle*            wcycle);
 

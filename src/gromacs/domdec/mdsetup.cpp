@@ -81,7 +81,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                MDAtoms*                  mdAtoms,
                                Constraints*              constr,
                                VirtualSitesHandler*      vsite,
-                               gmx_shellfc_t*            shellfc,
+                               shellfc_t*                shellfc,
                                StatePropagatorDataGpu*   stateGpu,
                                gmx_wallcycle*            wcycle)
 {

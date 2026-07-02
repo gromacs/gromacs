@@ -42,11 +42,12 @@
 #ifndef GMX_MDRUNUTILITY_FREEENERGY_H
 #define GMX_MDRUNUTILITY_FREEENERGY_H
 
-struct ReplicaExchangeParameters;
 struct t_inputrec;
 
 namespace gmx
 {
+
+struct ReplicaExchangeParameters;
 
 
 /*! \brief Compute the period at which FEP calculation is performed

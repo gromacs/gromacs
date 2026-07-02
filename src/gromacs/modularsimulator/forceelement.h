@@ -57,7 +57,6 @@
 #include "topologyholder.h"
 
 struct gmx_enfrot;
-struct gmx_shellfc_t;
 struct gmx_wallcycle;
 class CpuPpLongRangeNonbondeds;
 struct pull_t;
@@ -65,6 +64,7 @@ struct t_nrnb;
 
 namespace gmx
 {
+struct shellfc_t;
 class Awh;
 class DeviceStreamManager;
 class EnergyData;
@@ -169,7 +169,7 @@ private:
     void run(Step step, Time time, unsigned int flags);
 
     //! The shell / FC helper struct
-    gmx_shellfc_t* shellfc_;
+    shellfc_t* shellfc_;
     //! Whether shells or flexible constraints are present
     const bool doShellFC_;
 

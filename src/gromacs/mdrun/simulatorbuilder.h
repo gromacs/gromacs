@@ -56,7 +56,6 @@ struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
 struct pull_t;
-struct ReplicaExchangeParameters;
 class SwapCoords;
 struct t_commrec;
 struct t_filenm;
@@ -67,6 +66,7 @@ class t_state;
 
 namespace gmx
 {
+struct ReplicaExchangeParameters;
 class BoxDeformation;
 class Constraints;
 class DeviceStreamManager;
@@ -440,7 +440,7 @@ public:
      * pack insulates the builder from changes to the arguments of the
      * Simulator objects.
      *
-     * \throws gmx::APIError if expected set-up methods have not been called before build()
+     * \throws APIError if expected set-up methods have not been called before build()
      *
      * \return  Unique pointer to a Simulator object
      */

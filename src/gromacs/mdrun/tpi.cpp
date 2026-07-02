@@ -130,10 +130,6 @@
 namespace gmx
 {
 struct edsam;
-}
-
-namespace gmx
-{
 
 //! Global max algorithm
 static void global_max(const MpiComm& mpiComm, int* n)
@@ -145,10 +141,10 @@ static void global_max(const MpiComm& mpiComm, int* n)
 }
 
 //! Computes and returns the RF exclusion energy for the last molecule starting at \p beginAtom
-static real reactionFieldExclusionCorrection(gmx::ArrayRef<const gmx::RVec> x,
-                                             const t_mdatoms&               mdatoms,
-                                             const interaction_const_t&     ic,
-                                             const int                      beginAtom)
+static real reactionFieldExclusionCorrection(ArrayRef<const RVec>       x,
+                                             const t_mdatoms&           mdatoms,
+                                             const interaction_const_t& ic,
+                                             const int                  beginAtom)
 {
     real energy = 0;
 
@@ -258,7 +254,7 @@ private:
     const MDModulesNotifiers& mdModulesNotifiers_;
 
     //! A single rank MPI communicator
-    gmx::MpiComm mpiCommSingleRank_ = gmx::MpiComm(gmx::MpiComm::SingleRank{});
+    MpiComm mpiCommSingleRank_ = MpiComm(MpiComm::SingleRank{});
     //! A non-parallel commrec for the energy calculations
     const t_commrec cr_;
 
@@ -267,7 +263,7 @@ private:
     //! Energy output
     gmx_enerdata_t& enerd_;
     //! The force buffers
-    gmx::ForceBuffers forceBuffers_;
+    ForceBuffers forceBuffers_;
 
     //! Random number generator with 16 bits internal counter => 2^16 * 2 = 131072 values per stream
     ThreeFry2x64<16> rng_;
@@ -382,7 +378,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
 
     forceBuffers_.resize(topGlobal_.natoms);
 
-    gid_tp_ = atomInfoInsertion.atomInfo[0] & gmx::sc_atomInfo_EnergyGroupIdMask;
+    gid_tp_ = atomInfoInsertion.atomInfo[0] & sc_atomInfo_EnergyGroupIdMask;
 
     haveDispCorr_ = (inputRec.eDispCorr != DispersionCorrectionType::No);
     haveRFExcl_   = (haveElectrostatics_ && usingRF(inputRec.coulombtype));
@@ -434,8 +430,7 @@ void TestParticleInsertion::checkEnergyGroups(ArrayRef<const AtomInfoWithinMolec
 
     for (int a : testAtomsRange_)
     {
-        if ((atomInfoInsertion.atomInfo[a - *testAtomsRange_.begin()] & gmx::sc_atomInfo_EnergyGroupIdMask)
-            != gid_tp_)
+        if ((atomInfoInsertion.atomInfo[a - *testAtomsRange_.begin()] & sc_atomInfo_EnergyGroupIdMask) != gid_tp_)
         {
             fprintf(fpLog,
                     "NOTE: Atoms in the molecule to insert belong to different energy groups.\n"
@@ -460,7 +455,7 @@ FILE* TestParticleInsertion::openOutputFile(const char* fileName, const gmx_outp
 
     for (int i = 0; i < ngid_; i++)
     {
-        leg.emplace_back(gmx::formatString(
+        leg.emplace_back(formatString(
                 "f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
                 *(groups.groupNames[groups.groups[SimulationAtomGroupType::EnergyOutput][i]])));
     }
@@ -472,7 +467,7 @@ FILE* TestParticleInsertion::openOutputFile(const char* fileName, const gmx_outp
     {
         for (int i = 0; i < ngid_; i++)
         {
-            leg.emplace_back(gmx::formatString(
+            leg.emplace_back(formatString(
                     "f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
                     *(groups.groupNames[groups.groups[SimulationAtomGroupType::EnergyOutput][i]])));
         }
@@ -950,7 +945,7 @@ void LegacySimulator::do_tpi()
         }
         fprintf(fpLog_, "\n  The temperature for test particle insertion is %.3f K\n\n", temp);
     }
-    const real beta = 1.0 / (gmx::c_boltz * temp);
+    const real beta = 1.0 / (c_boltz * temp);
 
     /* Number of insertions per frame */
     const int64_t nsteps = inputRec_->nsteps;
@@ -1304,7 +1299,7 @@ void LegacySimulator::do_tpi()
                           "\\betaU - log(V/<V>)",
                           "count",
                           oenv_);
-        auto str = gmx::formatString("number \\betaU > %g: %9.3e", sc_bU_bin_limit, bins[0]);
+        auto str = formatString("number \\betaU > %g: %9.3e", sc_bU_bin_limit, bins[0]);
         xvgr_subtitle(fp_tpi, str.c_str(), oenv_);
         std::array<std::string, 2> tpid_leg = { "direct", "reweighted" };
         xvgrLegend(fp_tpi, tpid_leg, oenv_);

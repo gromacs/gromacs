@@ -179,12 +179,12 @@
 #include "shellfc.h"
 
 struct gmx_mdoutf;
-struct gmx_shellfc_t;
 struct pme_load_balancing_t;
 
-using gmx::SimulationSignaller;
+namespace gmx
+{
 
-void gmx::LegacySimulator::do_md()
+void LegacySimulator::do_md()
 {
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
@@ -275,8 +275,8 @@ void gmx::LegacySimulator::do_md()
 
     const bool isMainRank = cr_->commMySim.isMainRank();
 
-    int*                fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>{};
+    int*           fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
+    ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : ArrayRef<real>{};
     initialize_lambdas(
             fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, isMainRank, fep_state, lambda);
     Update upd(*ir, *ekind_, deform_);
@@ -318,7 +318,7 @@ void gmx::LegacySimulator::do_md()
             // Inter-simulation signal communication does not need to happen
             // often, so we use a minimum of 200 steps to reduce overhead.
             const int c_minimumInterSimulationSignallingInterval = 200;
-            nstSignalComm = gmx::divideRoundUp(c_minimumInterSimulationSignallingInterval, nstglobalcomm)
+            nstSignalComm = divideRoundUp(c_minimumInterSimulationSignallingInterval, nstglobalcomm)
                             * nstglobalcomm;
         }
     }
@@ -327,7 +327,7 @@ void gmx::LegacySimulator::do_md()
     {
         pleaseCiteCouplingAlgorithms(fpLog_, *ir);
     }
-    gmx_mdoutf*       outf = init_mdoutf(fpLog_,
+    gmx_mdoutf*  outf = init_mdoutf(fpLog_,
                                    nFile_,
                                    fnm_,
                                    mdrunOptions_,
@@ -341,15 +341,15 @@ void gmx::LegacySimulator::do_md()
                                    startingBehavior_,
                                    simulationsShareState,
                                    ms_);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   topGlobal_,
-                                   *ir,
-                                   pullWork_,
-                                   mdoutf_get_fp_dhdl(outf),
-                                   false,
-                                   startingBehavior_,
-                                   simulationsShareHamiltonian,
-                                   mdModulesNotifiers_);
+    EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
+                              topGlobal_,
+                              *ir,
+                              pullWork_,
+                              mdoutf_get_fp_dhdl(outf),
+                              false,
+                              startingBehavior_,
+                              simulationsShareHamiltonian,
+                              mdModulesNotifiers_);
 
     gmx_global_stat_t gstat = global_stat_init(ir);
 
@@ -359,13 +359,13 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
     // Set up polarizable models and flexible constraints if appropriate
-    gmx_shellfc_t* shellfc = init_shell_flexcon(fpLog_,
-                                                topGlobal_,
-                                                constr_ ? constr_->numFlexibleConstraints() : 0,
-                                                ir->outputControl.nstcalcenergy,
-                                                haveDDAtomOrdering(*cr_),
-                                                fr_->deviceStreamManager,
-                                                simulationWork);
+    shellfc_t* shellfc = init_shell_flexcon(fpLog_,
+                                            topGlobal_,
+                                            constr_ ? constr_->numFlexibleConstraints() : 0,
+                                            ir->outputControl.nstcalcenergy,
+                                            haveDDAtomOrdering(*cr_),
+                                            fr_->deviceStreamManager,
+                                            simulationWork);
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
@@ -486,16 +486,15 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(fr_->deviceStreamManager != nullptr,
                            "Device stream manager should be initialized in order to use GPU "
                            "update-constraints.");
-        GMX_RELEASE_ASSERT(
-                fr_->deviceStreamManager->streamIsValid(gmx::DeviceStreamType::UpdateAndConstraints),
-                "Update stream should be initialized in order to use GPU "
-                "update-constraints.");
+        GMX_RELEASE_ASSERT(fr_->deviceStreamManager->streamIsValid(DeviceStreamType::UpdateAndConstraints),
+                           "Update stream should be initialized in order to use GPU "
+                           "update-constraints.");
         integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir,
                 topGlobal_,
                 ekind_->numTemperatureCouplingGroups(),
                 fr_->deviceStreamManager->context(),
-                fr_->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
+                fr_->deviceStreamManager->stream(DeviceStreamType::UpdateAndConstraints),
                 wallCycleCounters_);
 
         stateGpu->setXUpdatedOnDeviceEvent(integrator->xUpdatedOnDeviceEvent());
@@ -1027,7 +1026,7 @@ void gmx::LegacySimulator::do_md()
 
         if (isMainRank && do_log)
         {
-            gmx::EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
+            EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != FreeEnergyPerturbationType::No)
@@ -1919,7 +1918,7 @@ void gmx::LegacySimulator::do_md()
                             enerd_->term[InteractionFunction::TotalEnergy]
                             + NPT_energy(ir->pressureCouplingOptions,
                                          ir->etc,
-                                         gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
+                                         constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
                                          *ekind_,
                                          inputrecNvtTrotter(ir) || inputrecNptTrotter(ir),
                                          state_,
@@ -1977,7 +1976,7 @@ void gmx::LegacySimulator::do_md()
 
             if (doSimulatedAnnealing)
             {
-                gmx::EnergyOutput::printAnnealingTemperatures(
+                EnergyOutput::printAnnealingTemperatures(
                         do_log ? fpLog_ : nullptr, *groups, ir->opts, *ekind_);
             }
             if (do_log || do_ene || do_dr || do_or)
@@ -2196,7 +2195,7 @@ void gmx::LegacySimulator::do_md()
         {
             energyOutput.printEnergyConservation(fpLog_, ir->simulation_part, EI_MD(ir->eI));
 
-            gmx::EnergyOutput::printAnnealingTemperatures(fpLog_, *groups, ir->opts, *ekind_);
+            EnergyOutput::printAnnealingTemperatures(fpLog_, *groups, ir->opts, *ekind_);
             energyOutput.printAverages(fpLog_, groups);
         }
     }
@@ -2219,3 +2218,5 @@ void gmx::LegacySimulator::do_md()
 
     global_stat_destroy(gstat);
 }
+
+} // namespace gmx

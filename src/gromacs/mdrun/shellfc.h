@@ -45,10 +45,10 @@
 #include "gromacs/utility/vectypes.h"
 
 class DDBalanceRegionHandler;
+struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_localtop_t;
-struct gmx_shellfc_t;
 struct gmx_mtop_t;
 class history_t;
 struct pull_t;
@@ -62,6 +62,7 @@ struct t_commrec;
 
 namespace gmx
 {
+struct shellfc_t;
 template<typename>
 class ArrayRef;
 template<typename>
@@ -74,7 +75,6 @@ struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
 class SimulationWorkload;
 class VirtualSitesHandler;
-} // namespace gmx
 
 /*! \brief Initialization function, also predicts the initial shell positions.
  *
@@ -89,49 +89,51 @@ class VirtualSitesHandler;
  *
  * \returns a pointer to an initialized \c shellfc object.
  */
-gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
-                                  const gmx_mtop_t&               mtop,
-                                  int                             nflexcon,
-                                  int                             nstcalcenergy,
-                                  bool                            usingDomainDecomposition,
-                                  const gmx::DeviceStreamManager* deviceStreamManager,
-                                  const gmx::SimulationWorkload&  simulationWork);
+shellfc_t* init_shell_flexcon(FILE*                      fplog,
+                              const gmx_mtop_t&          mtop,
+                              int                        nflexcon,
+                              int                        nstcalcenergy,
+                              bool                       usingDomainDecomposition,
+                              const DeviceStreamManager* deviceStreamManager,
+                              const SimulationWorkload&  simulationWork);
 
 /* Optimize shell positions */
-void relax_shell_flexcon(FILE*                               log,
-                         const t_commrec*                    cr,
-                         gmx_bool                            bVerbose,
-                         gmx_enfrot*                         enforcedRotation,
-                         int64_t                             mdstep,
-                         const t_inputrec*                   inputrec,
-                         const gmx::MDModulesNotifiers&      mdModulesNotifiers,
-                         gmx::ImdSession*                    imdSession,
-                         pull_t*                             pull_work,
-                         gmx_bool                            bDoNS,
-                         const gmx_localtop_t*               top,
-                         gmx::Constraints*                   constr,
-                         gmx_enerdata_t*                     enerd,
-                         int                                 natoms,
-                         gmx::ArrayRefWithPadding<gmx::RVec> x,
-                         gmx::ArrayRefWithPadding<gmx::RVec> v,
-                         const matrix                        box,
-                         gmx::ArrayRef<real>                 lambda,
-                         const history_t*                    hist,
-                         gmx::ForceBuffersView*              f,
-                         tensor                              force_vir,
-                         const t_mdatoms&                    md,
-                         CpuPpLongRangeNonbondeds*           longRangeNonbondeds,
-                         t_nrnb*                             nrnb,
-                         gmx_wallcycle*                      wcycle,
-                         gmx_shellfc_t*                      shfc,
-                         t_forcerec*                         fr,
-                         const gmx::MdrunScheduleWorkload&   runScheduleWork,
-                         double                              t,
-                         rvec                                mu_tot,
-                         gmx::VirtualSitesHandler*           vsite,
-                         const DDBalanceRegionHandler&       ddBalanceRegionHandler);
+void relax_shell_flexcon(FILE*                         log,
+                         const t_commrec*              cr,
+                         gmx_bool                      bVerbose,
+                         gmx_enfrot*                   enforcedRotation,
+                         int64_t                       mdstep,
+                         const t_inputrec*             inputrec,
+                         const MDModulesNotifiers&     mdModulesNotifiers,
+                         ImdSession*                   imdSession,
+                         pull_t*                       pull_work,
+                         gmx_bool                      bDoNS,
+                         const gmx_localtop_t*         top,
+                         Constraints*                  constr,
+                         gmx_enerdata_t*               enerd,
+                         int                           natoms,
+                         ArrayRefWithPadding<RVec>     x,
+                         ArrayRefWithPadding<RVec>     v,
+                         const matrix                  box,
+                         ArrayRef<real>                lambda,
+                         const history_t*              hist,
+                         ForceBuffersView*             f,
+                         tensor                        force_vir,
+                         const t_mdatoms&              md,
+                         CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
+                         t_nrnb*                       nrnb,
+                         gmx_wallcycle*                wcycle,
+                         shellfc_t*                    shfc,
+                         t_forcerec*                   fr,
+                         const MdrunScheduleWorkload&  runScheduleWork,
+                         double                        t,
+                         rvec                          mu_tot,
+                         VirtualSitesHandler*          vsite,
+                         const DDBalanceRegionHandler& ddBalanceRegionHandler);
 
 /* Print some final output and delete shellfc */
-void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
+void done_shellfc(FILE* fplog, shellfc_t* shellfc, int64_t numSteps);
+
+} // namespace gmx
 
 #endif

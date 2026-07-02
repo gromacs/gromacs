@@ -55,6 +55,9 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 
+namespace gmx
+{
+
 /*! \libinternal
  * \brief The parameters for the replica exchange algorithm. */
 struct ReplicaExchangeParameters
@@ -103,5 +106,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
  *
  * Should only be called on the main ranks */
 void print_replica_exchange_statistics(FILE* fplog, gmx_repl_ex_t re);
+
+} // namespace gmx
 
 #endif

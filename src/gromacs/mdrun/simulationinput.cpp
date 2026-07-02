@@ -57,16 +57,16 @@ void applyGlobalSimulationState(const SimulationInput&      simulationInput,
             read_tpx_state(simulationInput.tprFilename_, inputRecord, globalState, molecularTopology);
 }
 
-void applyLocalState(const SimulationInput&         simulationInput,
-                     t_fileio*                      logfio,
-                     const MpiComm&                 mpiCommSimulation,
-                     t_inputrec*                    inputRecord,
-                     t_state*                       state,
-                     ObservablesHistory*            observablesHistory,
-                     bool                           reproducibilityRequested,
-                     const MDModulesNotifiers&      mdModulesNotifiers,
-                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
-                     const bool                     useModularSimulator)
+void applyLocalState(const SimulationInput&    simulationInput,
+                     t_fileio*                 logfio,
+                     const MpiComm&            mpiCommSimulation,
+                     t_inputrec*               inputRecord,
+                     t_state*                  state,
+                     ObservablesHistory*       observablesHistory,
+                     bool                      reproducibilityRequested,
+                     const MDModulesNotifiers& mdModulesNotifiers,
+                     ReadCheckpointDataHolder* modularSimulatorCheckpointData,
+                     const bool                useModularSimulator)
 {
     load_checkpoint(simulationInput.cpiFilename_.c_str(),
                     logfio,

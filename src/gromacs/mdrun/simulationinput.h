@@ -149,16 +149,16 @@ void                     applyGlobalTopology(const SimulationInput&, gmx_mtop_t*
  * \see applyGlobalInputRecord()
  * \see applyGlobalTopology()
  */
-void applyLocalState(const SimulationInput&         simulationInput,
-                     t_fileio*                      logfio,
-                     const MpiComm&                 mpiCommSimulation,
-                     t_inputrec*                    ir,
-                     t_state*                       state,
-                     ObservablesHistory*            observablesHistory,
-                     bool                           reproducibilityRequested,
-                     const MDModulesNotifiers&      notifiers,
-                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
-                     bool                           useModularSimulator);
+void applyLocalState(const SimulationInput&    simulationInput,
+                     t_fileio*                 logfio,
+                     const MpiComm&            mpiCommSimulation,
+                     t_inputrec*               ir,
+                     t_state*                  state,
+                     ObservablesHistory*       observablesHistory,
+                     bool                      reproducibilityRequested,
+                     const MDModulesNotifiers& notifiers,
+                     ReadCheckpointDataHolder* modularSimulatorCheckpointData,
+                     bool                      useModularSimulator);
 
 } // end namespace gmx
 

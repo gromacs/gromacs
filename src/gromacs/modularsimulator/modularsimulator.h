@@ -56,13 +56,13 @@
 struct CheckpointHeaderContents;
 struct t_fcdata;
 struct t_trxframe;
-struct ReplicaExchangeParameters;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct t_inputrec;
 
 namespace gmx
 {
+struct ReplicaExchangeParameters;
 class DeviceStreamManager;
 class MDLogger;
 class ModularSimulatorAlgorithmBuilder;

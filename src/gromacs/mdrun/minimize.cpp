@@ -137,27 +137,18 @@
 #include "legacysimulator.h"
 #include "shellfc.h"
 
-namespace gmx
-{
-struct MDModulesNotifiers;
-} // namespace gmx
 struct ObservablesHistory;
-namespace gmx
-{
-struct edsam;
-}
 struct gmx_enfrot;
 struct gmx_mdoutf;
 struct gmx_multisim_t;
-struct gmx_shellfc_t;
+struct shellfc_t;
 struct pull_t;
 
-using gmx::ArrayRef;
-using gmx::Matrix3x3;
-using gmx::MDModulesNotifiers;
-using gmx::MdrunScheduleWorkload;
-using gmx::RVec;
-using gmx::VirtualSitesHandler;
+namespace gmx
+{
+
+struct MDModulesNotifiers;
+struct edsam;
 
 //! Utility structure for manipulating states during EM
 struct em_state_t
@@ -165,7 +156,7 @@ struct em_state_t
     //! Copy of the global state
     t_state s;
     //! Force array
-    gmx::ForceBuffers f;
+    ForceBuffers f;
     //! Potential energy
     real epot;
     //! Norm of the force
@@ -326,7 +317,7 @@ static void get_f_norm_max(const t_commrec*         cr,
             {
                 if (!opts->nFreeze[gf][m])
                 {
-                    fam += gmx::square(f[i][m]);
+                    fam += square(f[i][m]);
                 }
             }
             fnorm2 += fam;
@@ -361,7 +352,7 @@ static void get_f_norm_max(const t_commrec*         cr,
     }
     if (cr->commMyGroup.isParallel())
     {
-        const gmx::MpiComm& mpiComm = cr->commMyGroup;
+        const MpiComm&      mpiComm = cr->commMyGroup;
         std::vector<double> sum(2 * mpiComm.size() + 1, 0);
         sum[2 * mpiComm.rank()]     = fmax2;
         sum[2 * mpiComm.rank() + 1] = a_max;
@@ -374,7 +365,7 @@ static void get_f_norm_max(const t_commrec*         cr,
             if (sum[2 * i] > fmax2)
             {
                 fmax2 = sum[2 * i];
-                a_max = gmx::roundToInt(sum[2 * i + 1]);
+                a_max = roundToInt(sum[2 * i + 1]);
             }
         }
     }
@@ -410,7 +401,7 @@ static void copyCGP(t_state* dest, const t_state& src)
     RVec* gmx_restrict       p2       = dest->cg_p.data();
     const int gmx_unused     nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (gmx::Index i = 0; i < gmx::ssize(src.cg_p); i++)
+    for (Index i = 0; i < gmx::ssize(src.cg_p); i++)
     {
         // Trivial OpenMP block that does not throw
         p2[i] = p1[i];
@@ -419,12 +410,12 @@ static void copyCGP(t_state* dest, const t_state& src)
 
 //! Initialize the energy minimization
 static void init_em(FILE*                        fplog,
-                    const gmx::MDLogger&         mdlog,
+                    const MDLogger&              mdlog,
                     const char*                  title,
                     const t_commrec*             cr,
                     const t_inputrec*            ir,
                     const MDModulesNotifiers&    mdModulesNotifiers,
-                    gmx::ImdSession*             imdSession,
+                    ImdSession*                  imdSession,
                     pull_t*                      pull_work,
                     t_state*                     state_global,
                     const gmx_mtop_t&            top_global,
@@ -432,12 +423,12 @@ static void init_em(FILE*                        fplog,
                     gmx_localtop_t*              top,
                     t_nrnb*                      nrnb,
                     t_forcerec*                  fr,
-                    gmx::MDAtoms*                mdAtoms,
+                    MDAtoms*                     mdAtoms,
                     gmx_global_stat_t*           gstat,
                     VirtualSitesHandler*         vsite,
-                    gmx::Constraints*            constr,
+                    Constraints*                 constr,
                     const MdrunScheduleWorkload& runScheduleWork,
-                    gmx_shellfc_t**              shellfc,
+                    shellfc_t**                  shellfc,
                     gmx_wallcycle*               wcycle)
 {
     const bool isMainRank = cr->commMyGroup.isMainRank();
@@ -453,8 +444,8 @@ static void init_em(FILE*                        fplog,
     {
         state_global->ngtc = 0;
     }
-    int*                fep_state = isMainRank ? &state_global->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = isMainRank ? state_global->lambda : gmx::ArrayRef<real>{};
+    int*           fep_state = isMainRank ? &state_global->fep_state : nullptr;
+    ArrayRef<real> lambda    = isMainRank ? state_global->lambda : ArrayRef<real>{};
     initialize_lambdas(
             fplog, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, nullptr, isMainRank, fep_state, lambda);
 
@@ -566,10 +557,10 @@ static void init_em(FILE*                        fplog,
                           ems->s.box,
                           ems->s.lambda[FreeEnergyPerturbationCouplingType::Fep],
                           &dvdl_constr,
-                          gmx::ArrayRefWithPadding<RVec>{},
+                          ArrayRefWithPadding<RVec>{},
                           computeVirial,
                           nullptr,
-                          gmx::ConstraintVariable::Positions);
+                          ConstraintVariable::Positions);
         }
     }
 
@@ -586,7 +577,7 @@ static void init_em(FILE*                        fplog,
 }
 
 //! Finalize the minimization
-static void finish_em(const gmx::PmePpComm* pmePpComm, gmx_mdoutf_t outf, gmx_walltime_accounting_t walltime_accounting)
+static void finish_em(const PmePpComm* pmePpComm, gmx_mdoutf_t outf, gmx_walltime_accounting_t walltime_accounting)
 {
     if (pmePpComm)
     {
@@ -631,7 +622,7 @@ static void write_em_traj(FILE*               fplog,
         mdof_flags |= MDOF_IMD;
     }
 
-    gmx::WriteCheckpointDataHolder checkpointDataHolder;
+    WriteCheckpointDataHolder checkpointDataHolder;
     mdoutf_write_to_trajectory_files(fplog,
                                      cr,
                                      outf,
@@ -652,7 +643,7 @@ static void write_em_traj(FILE*               fplog,
             /* If bX=true, x was collected to state_global in the call above */
             if (!bX)
             {
-                auto globalXRef = isMainRank ? state_global->x : gmx::ArrayRef<gmx::RVec>{};
+                auto globalXRef = isMainRank ? state_global->x : ArrayRef<RVec>{};
                 dd_collect_vec(
                         cr->dd, state->s.ddp_count, state->s.ddp_count_cg_gl, state->s.cg_gl, state->s.x, globalXRef);
             }
@@ -696,15 +687,15 @@ static void write_em_traj(FILE*               fplog,
  *
  * \returns true when the step succeeded, false when a constraint error occurred
  */
-static bool do_em_step(const t_commrec*               cr,
-                       const t_inputrec*              ir,
-                       const t_mdatoms*               md,
-                       t_state*                       s1,
-                       const real                     stepSize,
-                       gmx::ArrayRef<const gmx::RVec> force,
-                       em_state_t*                    ems2,
-                       gmx::Constraints*              constr,
-                       const int64_t                  count)
+static bool do_em_step(const t_commrec*     cr,
+                       const t_inputrec*    ir,
+                       const t_mdatoms*     md,
+                       t_state*             s1,
+                       const real           stepSize,
+                       ArrayRef<const RVec> force,
+                       em_state_t*          ems2,
+                       Constraints*         constr,
+                       const int64_t        count)
 
 {
     bool validStep = true;
@@ -775,7 +766,7 @@ static bool do_em_step(const t_commrec*               cr,
         {
             /* OpenMP does not supported unsigned loop variables */
 #pragma omp for schedule(static) nowait
-            for (gmx::Index i = 0; i < gmx::ssize(s2->cg_gl); i++)
+            for (Index i = 0; i < gmx::ssize(s2->cg_gl); i++)
             {
                 s2->cg_gl[i] = s1->cg_gl[i];
             }
@@ -799,10 +790,10 @@ static bool do_em_step(const t_commrec*               cr,
                                   s2->box,
                                   s2->lambda[FreeEnergyPerturbationCouplingType::Bonded],
                                   &dvdl_constr,
-                                  gmx::ArrayRefWithPadding<RVec>{},
+                                  ArrayRefWithPadding<RVec>{},
                                   false,
                                   nullptr,
-                                  gmx::ConstraintVariable::Positions);
+                                  ConstraintVariable::Positions);
 
         if (cr->commMyGroup.isParallel())
         {
@@ -831,24 +822,24 @@ static bool do_em_step(const t_commrec*               cr,
 }
 
 //! Prepare EM for using domain decomposition parallellization
-static void em_dd_partition_system(FILE*                          fplog,
-                                   const gmx::MDLogger&           mdlog,
-                                   const gmx::SimulationWorkload& simulationWork,
-                                   int                            step,
-                                   const t_commrec*               cr,
-                                   const gmx_mtop_t&              top_global,
-                                   const t_inputrec*              ir,
-                                   const MDModulesNotifiers&      mdModulesNotifiers,
-                                   gmx::ImdSession*               imdSession,
-                                   pull_t*                        pull_work,
-                                   em_state_t*                    ems,
-                                   gmx_localtop_t*                top,
-                                   gmx::MDAtoms*                  mdAtoms,
-                                   t_forcerec*                    fr,
-                                   VirtualSitesHandler*           vsite,
-                                   gmx::Constraints*              constr,
-                                   t_nrnb*                        nrnb,
-                                   gmx_wallcycle*                 wcycle)
+static void em_dd_partition_system(FILE*                     fplog,
+                                   const MDLogger&           mdlog,
+                                   const SimulationWorkload& simulationWork,
+                                   int                       step,
+                                   const t_commrec*          cr,
+                                   const gmx_mtop_t&         top_global,
+                                   const t_inputrec*         ir,
+                                   const MDModulesNotifiers& mdModulesNotifiers,
+                                   ImdSession*               imdSession,
+                                   pull_t*                   pull_work,
+                                   em_state_t*               ems,
+                                   gmx_localtop_t*           top,
+                                   MDAtoms*                  mdAtoms,
+                                   t_forcerec*               fr,
+                                   VirtualSitesHandler*      vsite,
+                                   Constraints*              constr,
+                                   t_nrnb*                   nrnb,
+                                   gmx_wallcycle*            wcycle)
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog,
@@ -887,7 +878,7 @@ void setCoordinates(std::vector<RVec>* coords, ArrayRef<const RVec> refCoords)
 
     const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int i = 0; i < ssize(refCoords); i++)
+    for (int i = 0; i < gmx::ssize(refCoords); i++)
     {
         (*coords)[i] = refCoords[i];
     }
@@ -904,9 +895,9 @@ real maxCoordinateDifference(ArrayRef<const RVec> coords1, ArrayRef<const RVec> 
     const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #    pragma omp parallel for reduction(max : maxDiffSquared) num_threads(nthreads) schedule(static)
 #endif
-    for (int i = 0; i < ssize(coords1); i++)
+    for (int i = 0; i < gmx::ssize(coords1); i++)
     {
-        maxDiffSquared = std::max(maxDiffSquared, gmx::norm2(coords1[i] - coords2[i]));
+        maxDiffSquared = std::max(maxDiffSquared, norm2(coords1[i] - coords2[i]));
     }
 
 #if GMX_MPI
@@ -956,7 +947,7 @@ public:
     //! Handles logging (deprecated).
     FILE* fplog;
     //! Handles logging.
-    const gmx::MDLogger& mdlog;
+    const MDLogger& mdlog;
     //! Handles communication.
     const t_commrec* cr;
     //! Coordinates multi-simulations.
@@ -970,7 +961,7 @@ public:
     // Handles notifications for MDModules
     const MDModulesNotifiers& mdModulesNotifiers;
     //! The Interactive Molecular Dynamics session.
-    gmx::ImdSession* imdSession;
+    ImdSession* imdSession;
     //! The pull work object.
     pull_t* pull_work;
     //! Data for rotational pulling.
@@ -982,13 +973,13 @@ public:
     //! Legacy coordinator of global reduction.
     gmx_global_stat_t gstat;
     //! Coordinates reduction for observables
-    gmx::ObservablesReducer* observablesReducer;
+    ObservablesReducer* observablesReducer;
     //! Handles virtual sites.
     VirtualSitesHandler* vsite;
     //! Handles constraints.
-    gmx::Constraints* constr;
+    Constraints* constr;
     //! Per-atom data for this domain.
-    gmx::MDAtoms* mdAtoms;
+    MDAtoms* mdAtoms;
     //! Handles how to calculate the forces.
     t_forcerec* fr;
     //! Schedule of force-calculation work each step for this task.
@@ -1014,7 +1005,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 
     if (vsite)
     {
-        vsite->construct(ems->s.x, {}, ems->s.box, gmx::VSiteOperation::Positions);
+        vsite->construct(ems->s.x, {}, ems->s.box, VSiteOperation::Positions);
     }
 
     // Compute the buffer size of the pair list
@@ -1079,7 +1070,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 
     fr->longRangeNonbondeds->updateAfterPartition(*mdAtoms->mdatoms());
 
-    gmx::edsam* const ed = nullptr;
+    edsam* const ed = nullptr;
 
     if (bNS)
     {
@@ -1181,10 +1172,10 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                       ems->s.box,
                       ems->s.lambda[FreeEnergyPerturbationCouplingType::Bonded],
                       &dvdl_constr,
-                      gmx::ArrayRefWithPadding<RVec>{},
+                      ArrayRefWithPadding<RVec>{},
                       computeVirial,
                       shake_vir,
-                      gmx::ConstraintVariable::ForceDispl);
+                      ConstraintVariable::ForceDispl);
         enerd->term[InteractionFunction::dHdLambdaConstraint] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
     }
@@ -1197,7 +1188,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     const Matrix3x3 ekin;
     Matrix3x3       pressure;
     enerd->term[InteractionFunction::Pressure] = calc_pres(
-            fr->pbcType, inputrec->nwall, ems->s.box, ekin, gmx::createMatrix3x3FromLegacyMatrix(vir), &pressure);
+            fr->pbcType, inputrec->nwall, ems->s.box, ekin, createMatrix3x3FromLegacyMatrix(vir), &pressure);
     fillLegacyMatrix(pressure, pres);
 
     if (inputrec->efep != FreeEnergyPerturbationType::No)
@@ -1232,11 +1223,11 @@ static double reorder_partsum(const t_commrec*  cr,
      * This conflicts with the spirit of domain decomposition,
      * but to fully optimize this a much more complicated algorithm is required.
      */
-    const int              natoms = top_global.natoms;
-    std::vector<gmx::RVec> fmg(natoms, { 0.0_real, 0.0_real, 0.0_real });
+    const int         natoms = top_global.natoms;
+    std::vector<RVec> fmg(natoms, { 0.0_real, 0.0_real, 0.0_real });
 
-    gmx::ArrayRef<const int> indicesMin = s_min->s.cg_gl;
-    int                      i          = 0;
+    ArrayRef<const int> indicesMin = s_min->s.cg_gl;
+    int                 i          = 0;
     for (int globalAtomIndex : indicesMin)
     {
         if (isValidGlobalAtom(globalAtomIndex))
@@ -1248,12 +1239,12 @@ static double reorder_partsum(const t_commrec*  cr,
     cr->commMyGroup.sumReduce(top_global.natoms * 3, reinterpret_cast<real*>(fmg.data()));
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
-    gmx::ArrayRef<const int> indicesB = s_b->s.cg_gl;
+    ArrayRef<const int> indicesB = s_b->s.cg_gl;
 
-    double partsum                        = 0;
-    i                                     = 0;
-    int                                gf = 0;
-    gmx::ArrayRef<const unsigned char> grpnrFREEZE =
+    double partsum                   = 0;
+    i                                = 0;
+    int                           gf = 0;
+    ArrayRef<const unsigned char> grpnrFREEZE =
             top_global.groups.groupNumbers[SimulationAtomGroupType::Freeze];
     for (int globalAtomIndex : indicesB)
     {
@@ -1326,11 +1317,8 @@ static real pr_beta(const t_commrec*  cr,
 
     cr->commMyGroup.sumReduce(1, &sum);
 
-    return sum / gmx::square(s_min->fnorm);
+    return sum / square(s_min->fnorm);
 }
-
-namespace gmx
-{
 
 void LegacySimulator::do_cg()
 {
@@ -1407,8 +1395,8 @@ void LegacySimulator::do_cg()
             *runScheduleWork_,
             nullptr,
             wallCycleCounters_);
-    const bool        simulationsShareState = false;
-    gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
+    const bool   simulationsShareState = false;
+    gmx_mdoutf*  outf                  = init_mdoutf(fpLog_,
                                    nFile_,
                                    fnm_,
                                    mdrunOptions_,
@@ -1422,15 +1410,15 @@ void LegacySimulator::do_cg()
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
                                    ms_);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   topGlobal_,
-                                   *inputRec_,
-                                   pullWork_,
-                                   nullptr,
-                                   false,
-                                   StartingBehavior::NewSimulation,
-                                   simulationsShareState,
-                                   mdModulesNotifiers_);
+    EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
+                              topGlobal_,
+                              *inputRec_,
+                              pullWork_,
+                              nullptr,
+                              false,
+                              StartingBehavior::NewSimulation,
+                              simulationsShareState,
+                              mdModulesNotifiers_);
 
     /* Print to log file */
     print_em_start(fpLog_, cr_, wallTimeAccounting_, wallCycleCounters_, CG);
@@ -2148,8 +2136,8 @@ void LegacySimulator::do_lbfgs()
             *runScheduleWork_,
             nullptr,
             wallCycleCounters_);
-    const bool        simulationsShareState = false;
-    gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
+    const bool   simulationsShareState = false;
+    gmx_mdoutf*  outf                  = init_mdoutf(fpLog_,
                                    nFile_,
                                    fnm_,
                                    mdrunOptions_,
@@ -2163,15 +2151,15 @@ void LegacySimulator::do_lbfgs()
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
                                    ms_);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   topGlobal_,
-                                   *inputRec_,
-                                   pullWork_,
-                                   nullptr,
-                                   false,
-                                   StartingBehavior::NewSimulation,
-                                   simulationsShareState,
-                                   mdModulesNotifiers_);
+    EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
+                              topGlobal_,
+                              *inputRec_,
+                              pullWork_,
+                              nullptr,
+                              false,
+                              StartingBehavior::NewSimulation,
+                              simulationsShareState,
+                              mdModulesNotifiers_);
 
     const int start = 0;
     const int end   = mdatoms->homenr;
@@ -2356,7 +2344,7 @@ void LegacySimulator::do_lbfgs()
             mdof_flags |= MDOF_IMD;
         }
 
-        gmx::WriteCheckpointDataHolder checkpointDataHolder;
+        WriteCheckpointDataHolder checkpointDataHolder;
         mdoutf_write_to_trajectory_files(fpLog_,
                                          cr_,
                                          outf,
@@ -2373,7 +2361,7 @@ void LegacySimulator::do_lbfgs()
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
         /* make s a pointer to current search direction - point=0 first time we get here */
-        gmx::ArrayRef<const real> s = dx[point];
+        ArrayRef<const real> s = dx[point];
 
         const real* gmx_restrict xx = static_cast<real*>(ems.s.x.rvec_array()[0]);
         const real* gmx_restrict ff = static_cast<real*>(ems.f.view().force().data()[0]);
@@ -2946,8 +2934,8 @@ void LegacySimulator::do_steep()
             *runScheduleWork_,
             nullptr,
             wallCycleCounters_);
-    const bool        simulationsShareState = false;
-    gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
+    const bool   simulationsShareState = false;
+    gmx_mdoutf*  outf                  = init_mdoutf(fpLog_,
                                    nFile_,
                                    fnm_,
                                    mdrunOptions_,
@@ -2961,15 +2949,15 @@ void LegacySimulator::do_steep()
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
                                    ms_);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   topGlobal_,
-                                   *inputRec_,
-                                   pullWork_,
-                                   nullptr,
-                                   false,
-                                   StartingBehavior::NewSimulation,
-                                   simulationsShareState,
-                                   mdModulesNotifiers_);
+    EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
+                              topGlobal_,
+                              *inputRec_,
+                              pullWork_,
+                              nullptr,
+                              false,
+                              StartingBehavior::NewSimulation,
+                              simulationsShareState,
+                              mdModulesNotifiers_);
 
     /* Print to log file  */
     print_em_start(fpLog_, cr_, wallTimeAccounting_, wallCycleCounters_, SD);
@@ -3193,7 +3181,7 @@ void LegacySimulator::do_steep()
         if (imdSession_->run(count,
                              TRUE,
                              isMainRank ? stateGlobal_->box : nullptr,
-                             isMainRank ? stateGlobal_->x : gmx::ArrayRef<gmx::RVec>{},
+                             isMainRank ? stateGlobal_->x : ArrayRef<RVec>{},
                              0)
             && isMainRank)
         {
@@ -3271,7 +3259,7 @@ void LegacySimulator::do_nm()
                 "Constraints present with Normal Mode Analysis, this combination is not supported");
     }
 
-    gmx_shellfc_t* shellfc;
+    shellfc_t* shellfc;
 
     em_state_t state_work{};
 
@@ -3316,8 +3304,8 @@ void LegacySimulator::do_nm()
                                    simulationsShareState,
                                    ms_);
 
-    std::vector<int>       atom_index = get_atom_index(topGlobal_);
-    std::vector<gmx::RVec> fneg(atom_index.size(), { 0, 0, 0 });
+    std::vector<int>  atom_index = get_atom_index(topGlobal_);
+    std::vector<RVec> fneg(atom_index.size(), { 0, 0, 0 });
     snew(dfdx, atom_index.size());
 
     if (!GMX_DOUBLE && isMainRank)
@@ -3382,7 +3370,7 @@ void LegacySimulator::do_nm()
     }
 
     /* Make evaluate_energy do a single node force calculation */
-    gmx::MpiComm    commSingleRank(gmx::MpiComm::SingleRank{});
+    MpiComm         commSingleRank(MpiComm::SingleRank{});
     t_commrec       crSingleRank(commSingleRank, commSingleRank, cr_->dd);
     EnergyEvaluator energyEvaluator{ fpLog_,
                                      mdLog_,

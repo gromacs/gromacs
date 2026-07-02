@@ -92,9 +92,8 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vecdump.h"
 
-using gmx::ArrayRef;
-using gmx::ArrayRefWithPadding;
-using gmx::RVec;
+namespace gmx
+{
 
 struct t_shell
 {
@@ -110,7 +109,7 @@ struct t_shell
     rvec step;            /* Step size for steepest descents */
 };
 
-struct gmx_shellfc_t
+struct shellfc_t
 {
     /* Shell counts, indices, parameters and working data */
     std::vector<t_shell> shell_gl;              /* All the shells (for DD only)              */
@@ -125,12 +124,12 @@ struct gmx_shellfc_t
     std::array<PaddedHostVector<RVec>, 2> f; /* Force buffers for iterative minimization */
 
     /* Flexible constraint working data */
-    std::vector<RVec>       acc_dir;                /* Acceleration direction for flexcon        */
-    gmx::PaddedVector<RVec> x_old;                  /* Old coordinates for flexcon               */
-    gmx::PaddedVector<RVec> adir_xnold;             /* Work space for init_adir                  */
-    gmx::PaddedVector<RVec> adir_xnew;              /* Work space for init_adir                  */
-    std::int64_t            numForceEvaluations;    /* Total number of force evaluations         */
-    int                     numConvergedIterations; /* Total number of iterations that converged */
+    std::vector<RVec>  acc_dir;                /* Acceleration direction for flexcon        */
+    PaddedVector<RVec> x_old;                  /* Old coordinates for flexcon               */
+    PaddedVector<RVec> adir_xnold;             /* Work space for init_adir                  */
+    PaddedVector<RVec> adir_xnew;              /* Work space for init_adir                  */
+    std::int64_t       numForceEvaluations;    /* Total number of force evaluations         */
+    int                numConvergedIterations; /* Total number of iterations that converged */
 };
 
 
@@ -163,13 +162,13 @@ static void pr_shell(FILE* fplog, ArrayRef<const t_shell> shells)
  * started, but even when called, the prediction was always
  * over-written by a subsequent call in the MD loop, so has been
  * removed. */
-static void predict_shells(FILE*                     fplog,
-                           ArrayRef<RVec>            x,
-                           ArrayRef<RVec>            v,
-                           real                      dt,
-                           ArrayRef<const t_shell>   shells,
-                           gmx::ArrayRef<const real> mass,
-                           gmx_bool                  bInit)
+static void predict_shells(FILE*                   fplog,
+                           ArrayRef<RVec>          x,
+                           ArrayRef<RVec>          v,
+                           real                    dt,
+                           ArrayRef<const t_shell> shells,
+                           ArrayRef<const real>    mass,
+                           gmx_bool                bInit)
 {
     int  m, n1, n2, n3;
     real dt_1, fudge, tm, m1, m2, m3;
@@ -241,15 +240,15 @@ static void predict_shells(FILE*                     fplog,
     }
 }
 
-gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
-                                  const gmx_mtop_t&               mtop,
-                                  const int                       nflexcon,
-                                  const int                       nstcalcenergy,
-                                  const bool                      usingDomainDecomposition,
-                                  const gmx::DeviceStreamManager* deviceStreamManager,
-                                  const gmx::SimulationWorkload&  simulationWork)
+shellfc_t* init_shell_flexcon(FILE*                      fplog,
+                              const gmx_mtop_t&          mtop,
+                              const int                  nflexcon,
+                              const int                  nstcalcenergy,
+                              const bool                 usingDomainDecomposition,
+                              const DeviceStreamManager* deviceStreamManager,
+                              const SimulationWorkload&  simulationWork)
 {
-    gmx_shellfc_t* shfc;
+    shellfc_t* shfc;
 
     int                 ns, nshell, nsi;
     int                 i, j, type, a_offset, mol, nra;
@@ -264,11 +263,11 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
 #define NBT asize(bondtypes)
     const gmx_ffparams_t* ffparams;
 
-    const gmx::EnumerationArray<ParticleType, int> numParticles = gmx_mtop_particletype_count(mtop);
+    const EnumerationArray<ParticleType, int> numParticles = gmx_mtop_particletype_count(mtop);
     if (fplog)
     {
         /* Print the number of each particle type */
-        for (const auto entry : gmx::keysOf(numParticles))
+        for (const auto entry : keysOf(numParticles))
         {
             const int number = numParticles[entry];
             if (number != 0)
@@ -286,7 +285,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
         return nullptr;
     }
 
-    shfc           = new gmx_shellfc_t;
+    shfc           = new shellfc_t;
     shfc->nflexcon = nflexcon;
 
     if (nshell == 0)
@@ -448,7 +447,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
                                               aS + 1,
                                               mb + 1);
                                 }
-                                shell[nsi].k += gmx::square(qS) * gmx::c_one4PiEps0
+                                shell[nsi].k += square(qS) * c_one4PiEps0
                                                 / ffparams->iparams[type].polarize.alpha;
                                 break;
                             case InteractionFunction::WaterPolarization:
@@ -466,7 +465,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
                                          + ffparams->iparams[type].wpol.al_y
                                          + ffparams->iparams[type].wpol.al_z)
                                         / 3.0;
-                                shell[nsi].k += gmx::square(qS) * gmx::c_one4PiEps0 / alpha;
+                                shell[nsi].k += square(qS) * c_one4PiEps0 / alpha;
                                 break;
                             default: gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                         }
@@ -546,19 +545,19 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                           fplog,
      * must be pinned if coordinates are on the GPU (e.g. for PME or GPU buffer ops). */
     // NB this logic is more complicated and overly specific than it
     // should be, probably simulationWork.useGpuNonbonded is sufficient.
-    gmx::HostAllocationPolicy hostAllocationPolicy = gmx::makeHostAllocationPolicy(
-            simulationWork.useGpuPme || simulationWork.useGpuXBufferOpsWhenAllowed
-                    || simulationWork.useGpuFBufferOpsWhenAllowed,
-            deviceStreamManager);
+    HostAllocationPolicy hostAllocationPolicy =
+            makeHostAllocationPolicy(simulationWork.useGpuPme || simulationWork.useGpuXBufferOpsWhenAllowed
+                                             || simulationWork.useGpuFBufferOpsWhenAllowed,
+                                     deviceStreamManager);
     for (i = 0; i < 2; i++)
     {
-        shfc->x[i] = gmx::PaddedHostVector<gmx::RVec>(hostAllocationPolicy);
+        shfc->x[i] = PaddedHostVector<RVec>(hostAllocationPolicy);
     }
 
     return shfc;
 }
 
-void gmx::make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, gmx_shellfc_t* shfc)
+void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, shellfc_t* shfc)
 {
     int a0, a1;
 
@@ -801,7 +800,7 @@ static real rms_force(const t_commrec*        cr,
         buf[2] = *sf_dir;
         buf[3] = *Epot;
         cr->commMyGroup.sumReduce(buf);
-        ntot    = gmx::roundToInt(buf[1]);
+        ntot    = roundToInt(buf[1]);
         *sf_dir = buf[2];
         *Epot   = buf[3];
     }
@@ -814,7 +813,7 @@ static void dump_shells(FILE* fp, ArrayRef<RVec> f, real ftol, ArrayRef<const t_
 {
     real ft2, ff2;
 
-    ft2 = gmx::square(ftol);
+    ft2 = square(ftol);
 
     for (const t_shell& shell : shells)
     {
@@ -833,8 +832,8 @@ static void dump_shells(FILE* fp, ArrayRef<RVec> f, real ftol, ArrayRef<const t_
     }
 }
 
-static void init_adir(gmx_shellfc_t*            shfc,
-                      gmx::Constraints*         constr,
+static void init_adir(shellfc_t*                shfc,
+                      Constraints*              constr,
                       const t_inputrec*         ir,
                       const t_commrec*          cr,
                       int                       dd_ac1,
@@ -904,7 +903,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   {},
                   computeVirial,
                   nullptr,
-                  gmx::ConstraintVariable::Positions);
+                  ConstraintVariable::Positions);
     constr->apply(computeRmsd,
                   step,
                   0,
@@ -918,14 +917,14 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   {},
                   computeVirial,
                   nullptr,
-                  gmx::ConstraintVariable::Positions);
+                  ConstraintVariable::Positions);
 
     for (n = 0; n < end; n++)
     {
         for (d = 0; d < DIM; d++)
         {
-            xnew[n][d] = -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / gmx::square(dt)
-                         - f[n][d] * md.invmass[n];
+            xnew[n][d] =
+                    -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / square(dt) - f[n][d] * md.invmass[n];
         }
         clear_rvec(acc_dir[n]);
     }
@@ -944,41 +943,41 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   {},
                   computeVirial,
                   nullptr,
-                  gmx::ConstraintVariable::Deriv_FlexCon);
+                  ConstraintVariable::Deriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE*                             fplog,
-                         const t_commrec*                  cr,
-                         gmx_bool                          bVerbose,
-                         gmx_enfrot*                       enforcedRotation,
-                         int64_t                           mdstep,
-                         const t_inputrec*                 inputrec,
-                         const gmx::MDModulesNotifiers&    mdModulesNotifiers,
-                         gmx::ImdSession*                  imdSession,
-                         pull_t*                           pull_work,
-                         gmx_bool                          bDoNS,
-                         const gmx_localtop_t*             top,
-                         gmx::Constraints*                 constr,
-                         gmx_enerdata_t*                   enerd,
-                         int                               natoms,
-                         ArrayRefWithPadding<RVec>         xPadded,
-                         ArrayRefWithPadding<RVec>         vPadded,
-                         const matrix                      box,
-                         ArrayRef<real>                    lambda,
-                         const history_t*                  hist,
-                         gmx::ForceBuffersView*            f,
-                         tensor                            force_vir,
-                         const t_mdatoms&                  md,
-                         CpuPpLongRangeNonbondeds*         longRangeNonbondeds,
-                         t_nrnb*                           nrnb,
-                         gmx_wallcycle*                    wcycle,
-                         gmx_shellfc_t*                    shfc,
-                         t_forcerec*                       fr,
-                         const gmx::MdrunScheduleWorkload& runScheduleWork,
-                         double                            t,
-                         rvec                              mu_tot,
-                         gmx::VirtualSitesHandler*         vsite,
-                         const DDBalanceRegionHandler&     ddBalanceRegionHandler)
+void relax_shell_flexcon(FILE*                         fplog,
+                         const t_commrec*              cr,
+                         gmx_bool                      bVerbose,
+                         gmx_enfrot*                   enforcedRotation,
+                         int64_t                       mdstep,
+                         const t_inputrec*             inputrec,
+                         const MDModulesNotifiers&     mdModulesNotifiers,
+                         ImdSession*                   imdSession,
+                         pull_t*                       pull_work,
+                         gmx_bool                      bDoNS,
+                         const gmx_localtop_t*         top,
+                         Constraints*                  constr,
+                         gmx_enerdata_t*               enerd,
+                         int                           natoms,
+                         ArrayRefWithPadding<RVec>     xPadded,
+                         ArrayRefWithPadding<RVec>     vPadded,
+                         const matrix                  box,
+                         ArrayRef<real>                lambda,
+                         const history_t*              hist,
+                         ForceBuffersView*             f,
+                         tensor                        force_vir,
+                         const t_mdatoms&              md,
+                         CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
+                         t_nrnb*                       nrnb,
+                         gmx_wallcycle*                wcycle,
+                         shellfc_t*                    shfc,
+                         t_forcerec*                   fr,
+                         const MdrunScheduleWorkload&  runScheduleWork,
+                         double                        t,
+                         rvec                          mu_tot,
+                         VirtualSitesHandler*          vsite,
+                         const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {
     real Epot[2], df[2];
     real sf_dir, invdt;
@@ -1075,7 +1074,7 @@ void relax_shell_flexcon(FILE*                             fplog,
     {
         pr_rvecs(debug, 0, "x b4 do_force", as_rvec_array(x.data()), homenr);
     }
-    gmx::ForceBuffersView forceViewInit = gmx::ForceBuffersView(forceWithPadding[Min], {}, false);
+    ForceBuffersView forceViewInit = ForceBuffersView(forceWithPadding[Min], {}, false);
 
     do_force(fplog,
              cr,
@@ -1187,8 +1186,8 @@ void relax_shell_flexcon(FILE*                             fplog,
     // the corresponding stepWork flag to avoid executing any (remaining) search-related
     // operations in do_force().
     // This copy can be removed when the doPairSearch() call is moved out of do_force().
-    gmx::MdrunScheduleWorkload runScheduleWorkWithoutNS = runScheduleWork;
-    runScheduleWorkWithoutNS.stepWork.doNeighborSearch  = false;
+    MdrunScheduleWorkload runScheduleWorkWithoutNS     = runScheduleWork;
+    runScheduleWorkWithoutNS.stepWork.doNeighborSearch = false;
 
     /* First check whether we should do shells, or whether the force is
      * low enough even without minimization.
@@ -1199,7 +1198,7 @@ void relax_shell_flexcon(FILE*                             fplog,
     {
         if (vsite)
         {
-            vsite->construct(pos[Min], v, box, gmx::VSiteOperation::PositionsAndVelocities);
+            vsite->construct(pos[Min], v, box, VSiteOperation::PositionsAndVelocities);
         }
 
         if (nflexcon)
@@ -1233,7 +1232,7 @@ void relax_shell_flexcon(FILE*                             fplog,
             pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
         }
         /* Try the new positions */
-        gmx::ForceBuffersView forceViewTry = gmx::ForceBuffersView(forceWithPadding[Try], {}, false);
+        ForceBuffersView forceViewTry = ForceBuffersView(forceWithPadding[Try], {}, false);
 
         do_force(fplog,
                  cr,
@@ -1379,7 +1378,7 @@ void relax_shell_flexcon(FILE*                             fplog,
     std::copy(force[Min].begin(), force[Min].end(), f->force().begin());
 }
 
-void done_shellfc(FILE* fplog, gmx_shellfc_t* shfc, int64_t numSteps)
+void done_shellfc(FILE* fplog, shellfc_t* shfc, int64_t numSteps)
 {
     if (shfc && fplog && numSteps > 0)
     {
@@ -1394,3 +1393,5 @@ void done_shellfc(FILE* fplog, gmx_shellfc_t* shfc, int64_t numSteps)
 
     delete shfc;
 }
+
+} // namespace gmx
