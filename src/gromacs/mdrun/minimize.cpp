@@ -141,7 +141,6 @@ struct ObservablesHistory;
 struct gmx_enfrot;
 struct gmx_mdoutf;
 struct gmx_multisim_t;
-struct shellfc_t;
 struct pull_t;
 
 namespace gmx

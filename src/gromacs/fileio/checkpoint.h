@@ -59,10 +59,11 @@ struct t_trxframe;
 enum class IntegrationAlgorithm : int;
 enum class SwapType : int;
 enum class LambdaWeightCalculation : int;
-enum class CheckPointVersion : int;
 
 namespace gmx
 {
+
+enum class CheckPointVersion : int;
 
 struct MDModulesNotifiers;
 class MpiComm;
@@ -127,8 +128,6 @@ extern template void writeKvtCheckpointValue(const real&               value,
                                              std::string_view          name,
                                              std::string_view          identifier,
                                              KeyValueTreeObjectBuilder kvtBuilder);
-
-} // namespace gmx
 
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
@@ -288,9 +287,9 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
                            LambdaWeightCalculation           elamstats,
                            t_state*                          state,
                            ObservablesHistory*               observablesHistory,
-                           const gmx::MDModulesNotifiers&    mdModulesNotifiers,
+                           const MDModulesNotifiers&         mdModulesNotifiers,
                            std::vector<gmx_file_position_t>* outputfiles,
-                           gmx::WriteCheckpointDataHolder*   modularSimulatorCheckpointData);
+                           WriteCheckpointDataHolder*        modularSimulatorCheckpointData);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -299,16 +298,16 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
  * but not the state itself.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
-void load_checkpoint(const std::filesystem::path&   fn,
-                     t_fileio*                      logfio,
-                     const gmx::MpiComm&            mpiCommSimulation,
-                     t_inputrec*                    ir,
-                     t_state*                       state,
-                     ObservablesHistory*            observablesHistory,
-                     gmx_bool                       reproducibilityRequested,
-                     const gmx::MDModulesNotifiers& mdModulesNotifiers,
-                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
-                     bool                           useModularSimulator);
+void load_checkpoint(const std::filesystem::path& fn,
+                     t_fileio*                    logfio,
+                     const MpiComm&               mpiCommSimulation,
+                     t_inputrec*                  ir,
+                     t_state*                     state,
+                     ObservablesHistory*          observablesHistory,
+                     gmx_bool                     reproducibilityRequested,
+                     const MDModulesNotifiers&    mdModulesNotifiers,
+                     ReadCheckpointDataHolder*    modularSimulatorCheckpointData,
+                     bool                         useModularSimulator);
 
 /*! \brief Read everything that can be stored in t_trxframe from a checkpoint file
  *
@@ -340,5 +339,7 @@ void read_checkpoint_part_and_step(const std::filesystem::path& filename, int* s
 CheckpointHeaderContents
 read_checkpoint_simulation_part_and_filenames(const std::filesystem::path&      filename,
                                               std::vector<gmx_file_position_t>* outputfiles);
+
+} // namespace gmx
 
 #endif

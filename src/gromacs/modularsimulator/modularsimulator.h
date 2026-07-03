@@ -53,7 +53,6 @@
 
 #include "gromacs/mdrun/isimulator.h"
 
-struct CheckpointHeaderContents;
 struct t_fcdata;
 struct t_trxframe;
 struct gmx_mtop_t;
@@ -62,6 +61,8 @@ struct t_inputrec;
 
 namespace gmx
 {
+
+struct CheckpointHeaderContents;
 struct ReplicaExchangeParameters;
 class DeviceStreamManager;
 class MDLogger;

@@ -995,7 +995,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
         case efCPT:
             // Only one frame can be read from a checkpoint, so we don't
             // want to leave an open file handle around.
-            read_checkpoint_trxframe(fn, fr);
+            gmx::read_checkpoint_trxframe(fn, fr);
             bFirst = FALSE;
             break;
         case efG96:

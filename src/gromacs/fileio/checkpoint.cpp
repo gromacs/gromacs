@@ -106,9 +106,6 @@ enum class ChannelHistory : int;
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
-using gmx::ISerializer;
-using gmx::XdrSerializer;
-
 namespace gmx
 {
 
@@ -159,8 +156,8 @@ template void writeKvtCheckpointValue(const real&               value,
                                       std::string_view          identifier,
                                       KeyValueTreeObjectBuilder kvtBuilder);
 
-
-} // namespace gmx
+namespace
+{
 
 /*! \brief Version number of the file format written to checkpoint
  * files by this version of the code.
@@ -178,8 +175,13 @@ template void writeKvtCheckpointValue(const real&               value,
  * Backward compatibility for reading old run input files is maintained
  * by checking this version number against that of the file and then using
  * the correct code path. */
-static constexpr CheckPointVersion cpt_version = CheckPointVersion::CurrentVersion;
+constexpr CheckPointVersion cpt_version = CheckPointVersion::CurrentVersion;
 
+} // namespace
+} // namespace gmx
+
+// enumValueToString(StateEntry) must be at global scope to match
+// the declaration in state.h, which is also at global scope
 const char* enumValueToString(StateEntry enumValue)
 {
     static constexpr gmx::EnumerationArray<StateEntry, const char*> stateEntryNames = {
@@ -215,6 +217,11 @@ const char* enumValueToString(StateEntry enumValue)
     return stateEntryNames[enumValue];
 }
 
+namespace gmx
+{
+namespace
+{
+
 enum class StateKineticEntry : int
 {
     EkinNumber,
@@ -232,7 +239,7 @@ enum class StateKineticEntry : int
 
 static const char* enumValueToString(StateKineticEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StateKineticEntry, const char*> stateKineticEntryNames = {
+    static constexpr EnumerationArray<StateKineticEntry, const char*> stateKineticEntryNames = {
         "Ekin_n",    "Ekinh",          "dEkindlambda",   "mv_cos",     "Ekinf",
         "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC", "Vscale_NHC", "Ekin_Total"
     };
@@ -279,7 +286,7 @@ enum class StatePullCoordEntry : int
 
 static const char* enumValueToString(StatePullCoordEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StatePullCoordEntry, const char*> statePullCoordEntryNames = {
+    static constexpr EnumerationArray<StatePullCoordEntry, const char*> statePullCoordEntryNames = {
         "reference-sum", "sum", "dr01-sum", "dr23-sum", "dr45-sum", "fscal-sum", "dynax-sum"
     };
     return statePullCoordEntryNames[enumValue];
@@ -293,7 +300,7 @@ enum class StatePullGroupEntry : int
 
 static const char* enumValueToString(StatePullGroupEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StatePullGroupEntry, const char*> statePullGroupEntryNames = {
+    static constexpr EnumerationArray<StatePullGroupEntry, const char*> statePullGroupEntryNames = {
         "coordinate-sum"
     };
     return statePullGroupEntryNames[enumValue];
@@ -301,7 +308,7 @@ static const char* enumValueToString(StatePullGroupEntry enumValue)
 
 static const char* enumValueToString(StateEnergyEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StateEnergyEntry, const char*> stateEnergyEntryNames = {
+    static constexpr EnumerationArray<StateEnergyEntry, const char*> stateEnergyEntryNames = {
         "energy_n",
         "energy_sum_sq_dev",
         "energy_sum",
@@ -320,7 +327,7 @@ static const char* enumValueToString(StateEnergyEntry enumValue)
 
 static const char* enumValueToString(StatePullEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StatePullEntry, const char*> statePullEntryNames = {
+    static constexpr EnumerationArray<StatePullEntry, const char*> statePullEntryNames = {
         "pullhistory_numcoordinates",
         "pullhistory_numgroups",
         "pullhistory_numvaluesinxsum",
@@ -353,7 +360,7 @@ enum class StateFepEntry : int
 //! free energy history names
 static const char* enumValueToString(StateFepEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StateFepEntry, const char*> stateFepEntryNames = {
+    static constexpr EnumerationArray<StateFepEntry, const char*> stateFepEntryNames = {
         "bEquilibrated",
         "Number at State Stats",
         "Number at State Equil",
@@ -391,7 +398,7 @@ enum class StateAwhEntry : int
 
 static const char* enumValueToString(StateAwhEntry enumValue)
 {
-    static constexpr gmx::EnumerationArray<StateAwhEntry, const char*> stateAwhEntryNames = {
+    static constexpr EnumerationArray<StateAwhEntry, const char*> stateAwhEntryNames = {
         "awh_in_initial", "awh_equilibrateHistogram", "awh_histsize",   "awh_npoints",
         "awh_coordpoint", "awh_umbrellaGridpoint",    "awh_updatelist", "awh_logScaledSampleWeight",
         "awh_numupdates", "awh_forceCorrelationGrid"
@@ -424,7 +431,7 @@ static void cp_warning(FILE* fp)
     gmx_fatal(FARGS, "Checkpoint file corrupted/truncated, or maybe you are out of disk space?");
 }
 
-static void do_cpt_string_err(XdrSerializer* serializer, const char* desc, gmx::ArrayRef<char> s, FILE* list)
+static void do_cpt_string_err(XdrSerializer* serializer, const char* desc, ArrayRef<char> s, FILE* list)
 {
     char* data = s.data();
     if (xdr_string(serializer->xdr(), &data, s.size()) == 0)
@@ -597,11 +604,13 @@ struct xdr_type<int>
     static const XdrDataType value = XdrDataType::Int;
 };
 
+#if !GMX_DOUBLE
 template<>
 struct xdr_type<float>
 {
     static const XdrDataType value = XdrDataType::Float;
 };
+#endif
 
 template<>
 struct xdr_type<double>
@@ -900,7 +909,7 @@ static int doVector(XdrSerializer* serializer, Enum ecpt, std::vector<T>* vector
 #if !GMX_DOUBLE
 //! \brief Read/Write an ArrayRef<float>.
 template<typename Enum>
-static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<float> vector, FILE* list)
+static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, ArrayRef<float> vector, FILE* list)
 {
     float* data = vector.data();
     return doVectorLow<float, std::allocator<float>>(
@@ -910,7 +919,7 @@ static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<fl
 
 //! \brief Read/Write an ArrayRef<double>.
 template<typename Enum>
-static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<double> vector, FILE* list)
+static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, ArrayRef<double> vector, FILE* list)
 {
     double* data = vector.data();
     return doVectorLow<double, std::allocator<double>>(
@@ -919,7 +928,7 @@ static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<do
 
 //! \brief Read/Write an ArrayRef<int>.
 template<typename Enum>
-static int doIntArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<int> vector, FILE* list)
+static int doIntArrayRef(XdrSerializer* serializer, Enum ecpt, ArrayRef<int> vector, FILE* list)
 {
     int* v_int = vector.data();
     return doVectorLow<int, std::allocator<int>>(
@@ -928,14 +937,14 @@ static int doIntArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<int
 
 //! Convert from view of BasicVector to view of its scalar type
 template<typename T>
-static gmx::ArrayRef<T> scalarArrayRefFromVecArrayRef(gmx::ArrayRef<gmx::BasicVector<T>> ofVecs)
+static ArrayRef<T> scalarArrayRefFromVecArrayRef(ArrayRef<BasicVector<T>> ofVecs)
 {
-    return gmx::arrayRefFromArray<T>(reinterpret_cast<T*>(ofVecs.data()), ofVecs.size() * DIM);
+    return arrayRefFromArray<T>(reinterpret_cast<T*>(ofVecs.data()), ofVecs.size() * DIM);
 }
 
 //! \brief Read/Write a Vector whose value_type is BasicVector.
 template<typename VectorOfRVecType, typename Enum>
-static int doRvecVector(XdrSerializer* serializer, Enum ecpt, VectorOfRVecType* v, gmx::Index numElements, FILE* list)
+static int doRvecVector(XdrSerializer* serializer, Enum ecpt, VectorOfRVecType* v, Index numElements, FILE* list)
 {
     const int numScalars = numElements * DIM;
 
@@ -1020,7 +1029,7 @@ static int do_cpte_matrix(XdrSerializer* serializer, Enum ecpt, matrix v, FILE* 
 }
 
 template<typename Enum>
-static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int n, std::vector<gmx::Matrix3x3>* v, FILE* list)
+static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int n, std::vector<Matrix3x3>* v, FILE* list)
 {
     int nf  = n;
     int res = xdr_int(serializer->xdr(), &nf);
@@ -1036,8 +1045,8 @@ static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int n, std::ve
                   n,
                   nf);
     }
-    std::vector<gmx::Matrix3x3>   va;
-    gmx::ArrayRef<gmx::Matrix3x3> vp;
+    std::vector<Matrix3x3> va;
+    ArrayRef<Matrix3x3>    vp;
     if (list)
     {
         va.resize(nf);
@@ -1326,7 +1335,7 @@ static int do_cpt_state(XdrSerializer* serializer, t_state* state, FILE* list)
 
     int       ret    = 0;
     const int sflags = state->flags();
-    using StateFlags = gmx::EnumerationArray<StateEntry, bool>;
+    using StateFlags = EnumerationArray<StateEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
         if (sflags & enumValueToBitMask(*i))
@@ -1453,7 +1462,7 @@ static int do_cpt_ekinstate(XdrSerializer* serializer, int fflags, ekinstate_t* 
 {
     int ret = 0;
 
-    using StateFlags = gmx::EnumerationArray<StateKineticEntry, bool>;
+    using StateFlags = EnumerationArray<StateKineticEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
         if (fflags & enumValueToBitMask(*i))
@@ -1539,7 +1548,7 @@ static int do_cpt_swapstate(XdrSerializer* serializer,
         swapstate->ionType.resize(numIonTypes);
     }
 
-    for (auto ic : gmx::EnumerationWrapper<Compartment>{})
+    for (auto ic : EnumerationWrapper<Compartment>{})
     {
         for (swapstateIons_t& gs : swapstate->ionType)
         {
@@ -1581,7 +1590,7 @@ static int do_cpt_swapstate(XdrSerializer* serializer,
     }
 
     /* Ion flux per channel */
-    for (auto ic : gmx::EnumerationWrapper<Channel>{})
+    for (auto ic : EnumerationWrapper<Channel>{})
     {
         for (swapstateIons_t& gs : swapstate->ionType)
         {
@@ -1698,7 +1707,7 @@ static int do_cpt_enerhist(XdrSerializer* serializer, gmx_bool bRead, int fflags
     }
 
     delta_h_history_t* deltaH = enerhist->deltaHForeignLambdas.get();
-    using StateFlags          = gmx::EnumerationArray<StateEnergyEntry, bool>;
+    using StateFlags          = EnumerationArray<StateEnergyEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
         if (fflags & enumValueToBitMask(*i))
@@ -1878,7 +1887,7 @@ static int doCptPullHist(XdrSerializer* serializer, gmx_bool bRead, int fflags, 
         GMX_RELEASE_ASSERT(fflags == 0, "Without pull history, all flags should be off");
     }
 
-    using StateFlags = gmx::EnumerationArray<StatePullEntry, bool>;
+    using StateFlags = EnumerationArray<StatePullEntry, bool>;
     for (auto i = StateFlags::keys().begin(); i != StateFlags::keys().end(); i++)
     {
         if (fflags & enumValueToBitMask(*i))
@@ -1944,7 +1953,7 @@ static int do_cpt_df_hist(XdrSerializer*                 serializer,
     }
     df_history_t* dfhist = dfhistPtr->get();
 
-    using StateFlags = gmx::EnumerationArray<StateFepEntry, bool>;
+    using StateFlags = EnumerationArray<StateFepEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
         if (fflags & enumValueToBitMask(*i))
@@ -2070,12 +2079,12 @@ static int do_cpt_EDstate(XdrSerializer* serializer, gmx_bool bRead, int nED, ed
     return 0;
 }
 
-static int do_cpt_correlation_grid(XdrSerializer*               serializer,
-                                   gmx_bool                     bRead,
-                                   gmx_unused int               fflags,
-                                   gmx::CorrelationGridHistory* corrGrid,
-                                   FILE*                        list,
-                                   StateAwhEntry                eawhh)
+static int do_cpt_correlation_grid(XdrSerializer*          serializer,
+                                   gmx_bool                bRead,
+                                   gmx_unused int          fflags,
+                                   CorrelationGridHistory* corrGrid,
+                                   FILE*                   list,
+                                   StateAwhEntry           eawhh)
 {
     int ret = 0;
 
@@ -2089,7 +2098,7 @@ static int do_cpt_correlation_grid(XdrSerializer*               serializer,
                 corrGrid, corrGrid->numCorrelationTensors, corrGrid->tensorSize, corrGrid->blockDataListSize);
     }
 
-    for (gmx::CorrelationBlockDataHistory& blockData : corrGrid->blockDataBuffer)
+    for (CorrelationBlockDataHistory& blockData : corrGrid->blockDataBuffer)
     {
         do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockSumWeight), list);
         do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockSumSquareWeight), list);
@@ -2114,14 +2123,14 @@ static int do_cpt_correlation_grid(XdrSerializer*               serializer,
 static int do_cpt_awh_bias(XdrSerializer*          serializer,
                            gmx_bool                bRead,
                            int                     fflags,
-                           gmx::AwhBiasHistory*    biasHistory,
+                           AwhBiasHistory*         biasHistory,
                            FILE*                   list,
                            const CheckPointVersion fileVersion)
 {
     int ret = 0;
 
-    gmx::AwhBiasStateHistory* state = &biasHistory->state;
-    using StateFlags                = gmx::EnumerationArray<StateAwhEntry, bool>;
+    AwhBiasStateHistory* state = &biasHistory->state;
+    using StateFlags           = EnumerationArray<StateAwhEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
     {
         if (fflags & enumValueToBitMask(*i))
@@ -2207,7 +2216,7 @@ static int do_cpt_awh_bias(XdrSerializer*          serializer,
 static int do_cpt_awh(XdrSerializer*          serializer,
                       gmx_bool                bRead,
                       int                     fflags,
-                      gmx::AwhHistory*        awhHistory,
+                      AwhHistory*             awhHistory,
                       FILE*                   list,
                       const CheckPointVersion fileVersion)
 {
@@ -2215,14 +2224,14 @@ static int do_cpt_awh(XdrSerializer*          serializer,
 
     if (fflags != 0)
     {
-        std::shared_ptr<gmx::AwhHistory> awhHistoryLocal;
+        std::shared_ptr<AwhHistory> awhHistoryLocal;
 
         if (awhHistory == nullptr)
         {
             GMX_RELEASE_ASSERT(bRead,
                                "do_cpt_awh should not be called for writing without an AwhHistory");
 
-            awhHistoryLocal = std::make_shared<gmx::AwhHistory>();
+            awhHistoryLocal = std::make_shared<AwhHistory>();
             awhHistory      = awhHistoryLocal.get();
         }
 
@@ -2260,22 +2269,20 @@ static int do_cpt_awh(XdrSerializer*          serializer,
     return ret;
 }
 
-static void do_cpt_mdmodules(CheckPointVersion              fileVersion,
-                             ISerializer*                   serializer,
-                             const gmx::MDModulesNotifiers& mdModulesNotifiers,
-                             FILE*                          outputFile)
+static void do_cpt_mdmodules(CheckPointVersion         fileVersion,
+                             ISerializer*              serializer,
+                             const MDModulesNotifiers& mdModulesNotifiers,
+                             FILE*                     outputFile)
 {
     if (fileVersion >= CheckPointVersion::MDModules)
     {
-        gmx::KeyValueTreeObject mdModuleCheckpointParameterTree = gmx::deserializeKeyValueTree(serializer);
+        KeyValueTreeObject mdModuleCheckpointParameterTree = deserializeKeyValueTree(serializer);
         if (outputFile)
         {
-            gmx::TextWriter textWriter(outputFile);
-            gmx::dumpKeyValueTree(&textWriter, mdModuleCheckpointParameterTree);
+            TextWriter textWriter(outputFile);
+            dumpKeyValueTree(&textWriter, mdModuleCheckpointParameterTree);
         }
-        gmx::MDModulesCheckpointReadingDataOnMain mdModuleCheckpointReadingDataOnMain = {
-            mdModuleCheckpointParameterTree
-        };
+        MDModulesCheckpointReadingDataOnMain mdModuleCheckpointReadingDataOnMain = { mdModuleCheckpointParameterTree };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModuleCheckpointReadingDataOnMain);
     }
 }
@@ -2368,15 +2375,17 @@ static int do_cpt_files(XdrSerializer*                    serializer,
     return 0;
 }
 
+} // namespace
+
 void write_checkpoint_data(const std::filesystem::path&      filename,
                            CheckpointHeaderContents          headerContents,
                            gmx_bool                          bExpanded,
                            LambdaWeightCalculation           elamstats,
                            t_state*                          state,
                            ObservablesHistory*               observablesHistory,
-                           const gmx::MDModulesNotifiers&    mdModulesNotifiers,
+                           const MDModulesNotifiers&         mdModulesNotifiers,
                            std::vector<gmx_file_position_t>* outputfiles,
-                           gmx::WriteCheckpointDataHolder*   modularSimulatorCheckpointData)
+                           WriteCheckpointDataHolder*        modularSimulatorCheckpointData)
 {
     XdrSerializer serializer(filename, "w");
     headerContents.flags_eks = 0;
@@ -2496,11 +2505,11 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
 
     // Checkpointing MDModules
     {
-        gmx::KeyValueTreeBuilder          builder;
-        gmx::MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject() };
+        KeyValueTreeBuilder          builder;
+        MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject() };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModulesWriteCheckpoint);
         auto tree = builder.build();
-        gmx::serializeKeyValueTree(tree, &serializer);
+        serializeKeyValueTree(tree, &serializer);
     }
 
     // Checkpointing modular simulator
@@ -2589,7 +2598,7 @@ static void check_match(FILE* fplog, const CheckpointHeaderContents& headerConte
     {
         check_string(fplog,
                      "Program name",
-                     gmx::getProgramContext().fullBinaryPath().string().c_str(),
+                     getProgramContext().fullBinaryPath().string().c_str(),
                      headerContents.fprog,
                      &mm);
     }
@@ -2637,18 +2646,18 @@ static void check_match(FILE* fplog, const CheckpointHeaderContents& headerConte
     }
 }
 
-static void read_checkpoint(const std::filesystem::path&   fn,
-                            t_fileio*                      logfio,
-                            const gmx::MpiComm&            mpiCommSimulation,
-                            IntegrationAlgorithm           eIntegrator,
-                            int*                           init_fep_state,
-                            CheckpointHeaderContents*      headerContents,
-                            t_state*                       state,
-                            ObservablesHistory*            observablesHistory,
-                            gmx_bool                       reproducibilityRequested,
-                            const gmx::MDModulesNotifiers& mdModulesNotifiers,
-                            gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
-                            bool                           useModularSimulator)
+static void read_checkpoint(const std::filesystem::path& fn,
+                            t_fileio*                    logfio,
+                            const MpiComm&               mpiCommSimulation,
+                            IntegrationAlgorithm         eIntegrator,
+                            int*                         init_fep_state,
+                            CheckpointHeaderContents*    headerContents,
+                            t_state*                     state,
+                            ObservablesHistory*          observablesHistory,
+                            gmx_bool                     reproducibilityRequested,
+                            const MDModulesNotifiers&    mdModulesNotifiers,
+                            ReadCheckpointDataHolder*    modularSimulatorCheckpointData,
+                            bool                         useModularSimulator)
 {
     char buf[STEPSTRSIZE];
     int  ret;
@@ -2832,7 +2841,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
 
     if (headerContents->flags_awhh != 0 && state->awhHistory == nullptr)
     {
-        state->awhHistory = std::make_shared<gmx::AwhHistory>();
+        state->awhHistory = std::make_shared<AwhHistory>();
     }
     ret = do_cpt_awh(&serializer,
                      TRUE,
@@ -2875,16 +2884,16 @@ static void read_checkpoint(const std::filesystem::path&   fn,
 }
 
 
-void load_checkpoint(const std::filesystem::path&   fn,
-                     t_fileio*                      logfio,
-                     const gmx::MpiComm&            mpiCommSimulation,
-                     t_inputrec*                    ir,
-                     t_state*                       state,
-                     ObservablesHistory*            observablesHistory,
-                     gmx_bool                       reproducibilityRequested,
-                     const gmx::MDModulesNotifiers& mdModulesNotifiers,
-                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
-                     bool                           useModularSimulator)
+void load_checkpoint(const std::filesystem::path& fn,
+                     t_fileio*                    logfio,
+                     const MpiComm&               mpiCommSimulation,
+                     t_inputrec*                  ir,
+                     t_state*                     state,
+                     ObservablesHistory*          observablesHistory,
+                     gmx_bool                     reproducibilityRequested,
+                     const MDModulesNotifiers&    mdModulesNotifiers,
+                     ReadCheckpointDataHolder*    modularSimulatorCheckpointData,
+                     bool                         useModularSimulator)
 {
     CheckpointHeaderContents headerContents;
     if (mpiCommSimulation.isMainRank())
@@ -2906,8 +2915,8 @@ void load_checkpoint(const std::filesystem::path&   fn,
     if (mpiCommSimulation.isParallel())
     {
         gmx_bcast(sizeof(headerContents.step), &headerContents.step, mpiCommSimulation.comm());
-        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = { mpiCommSimulation.comm(),
-                                                                             mpiCommSimulation.size() > 1 };
+        MDModulesCheckpointReadingBroadcast broadcastCheckPointData = { mpiCommSimulation.comm(),
+                                                                        mpiCommSimulation.size() > 1 };
         mdModulesNotifiers.checkpointingNotifier_.notify(broadcastCheckPointData);
     }
     ir->bContinuation = TRUE;
@@ -2923,12 +2932,12 @@ void load_checkpoint(const std::filesystem::path&   fn,
         {
             char        buf[STEPSTRSIZE];
             std::string message =
-                    gmx::formatString("The input requested %s steps, ", gmx_step_str(ir->nsteps, buf));
+                    formatString("The input requested %s steps, ", gmx_step_str(ir->nsteps, buf));
             if (ir->init_step > 0)
             {
-                message += gmx::formatString("starting from step %s, ", gmx_step_str(ir->init_step, buf));
+                message += formatString("starting from step %s, ", gmx_step_str(ir->init_step, buf));
             }
-            message += gmx::formatString(
+            message += formatString(
                     "however the checkpoint "
                     "file has already reached step %s. The simulation will not "
                     "proceed, because either your simulation is already complete, "
@@ -2961,7 +2970,7 @@ void read_checkpoint_part_and_step(const std::filesystem::path& filename, int* s
 static CheckpointHeaderContents read_checkpoint_data(XdrSerializer*                    serializer,
                                                      t_state*                          state,
                                                      std::vector<gmx_file_position_t>* outputfiles,
-                                                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData)
+                                                     ReadCheckpointDataHolder* modularSimulatorCheckpointData)
 {
     CheckpointHeaderContents headerContents;
     do_cpt_header(serializer, TRUE, nullptr, &headerContents);
@@ -3032,7 +3041,7 @@ static CheckpointHeaderContents read_checkpoint_data(XdrSerializer*             
     {
         cp_error();
     }
-    gmx::MDModulesNotifiers mdModuleNotifiers;
+    MDModulesNotifiers mdModuleNotifiers;
     do_cpt_mdmodules(headerContents.file_version, serializer, mdModuleNotifiers, nullptr);
     if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
@@ -3052,12 +3061,12 @@ void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe*
     XdrSerializer                    serializer(filename, "r");
     t_state                          state;
     std::vector<gmx_file_position_t> outputfiles;
-    gmx::ReadCheckpointDataHolder    modularSimulatorCheckpointData;
+    ReadCheckpointDataHolder         modularSimulatorCheckpointData;
     CheckpointHeaderContents         headerContents =
             read_checkpoint_data(&serializer, &state, &outputfiles, &modularSimulatorCheckpointData);
     if (headerContents.isModularSimulatorCheckpoint)
     {
-        gmx::ModularSimulator::readCheckpointToTrxFrame(fr, &modularSimulatorCheckpointData, headerContents);
+        ModularSimulator::readCheckpointToTrxFrame(fr, &modularSimulatorCheckpointData, headerContents);
         return;
     }
 
@@ -3155,11 +3164,11 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
         std::vector<gmx_file_position_t> outputfiles;
         ret = do_cpt_files(&serializer, TRUE, &outputfiles, out, headerContents.file_version);
     }
-    gmx::MDModulesNotifiers mdModuleNotifiers;
+    MDModulesNotifiers mdModuleNotifiers;
     do_cpt_mdmodules(headerContents.file_version, &serializer, mdModuleNotifiers, out);
     if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
-        gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
+        ReadCheckpointDataHolder modularSimulatorCheckpointData;
         modularSimulatorCheckpointData.deserialize(&serializer);
         modularSimulatorCheckpointData.dump(out);
     }
@@ -3179,10 +3188,12 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
 CheckpointHeaderContents read_checkpoint_simulation_part_and_filenames(const std::filesystem::path& filename,
                                                                        std::vector<gmx_file_position_t>* outputfiles)
 {
-    XdrSerializer                 serializer(filename, "r");
-    t_state                       state;
-    gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
-    CheckpointHeaderContents      headerContents =
+    XdrSerializer            serializer(filename, "r");
+    t_state                  state;
+    ReadCheckpointDataHolder modularSimulatorCheckpointData;
+    CheckpointHeaderContents headerContents =
             read_checkpoint_data(&serializer, &state, outputfiles, &modularSimulatorCheckpointData);
     return headerContents;
 }
+
+} // namespace gmx
