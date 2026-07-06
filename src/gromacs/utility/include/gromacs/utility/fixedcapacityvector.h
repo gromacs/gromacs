@@ -221,11 +221,11 @@ public:
         GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
         if constexpr (std::is_move_assignable_v<T>)
         {
-            data_[size_] = std::move(T(args...));
+            data_[size_] = std::move(T(std::forward<Args>(args)...));
         }
         else
         {
-            data_[size_] = T(args...);
+            data_[size_] = T(std::forward<Args>(args)...);
         }
         size_++;
 

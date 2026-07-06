@@ -99,6 +99,7 @@ void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const X
 class XvgMatch : public ITextBlockMatcherSettings
 {
 public:
+    ~XvgMatch() override = default;
     //! Sets the tolerance for matching data point values.
     XvgMatch& tolerance(const FloatingPointTolerance& tolerance)
     {

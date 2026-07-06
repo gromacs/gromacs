@@ -330,7 +330,15 @@ std::string formatNameFromParam(const Param                                     
 template<typename T, T... S, typename F>
 constexpr void ForSequence(std::integer_sequence<T, S...> /*unused*/, F&& f)
 {
-    (void(f(std::integral_constant<T, S>{})), ...);
+    // Forward f into a local variable, preserving move semantics.
+    // The local variable is then used multiple times in the fold expression.
+    // GCC incorrectly warns "set but not used" for variables used in fold expressions.
+#ifdef __GNUC__
+    [[maybe_unused]] auto func = std::forward<F>(f);
+#else
+    auto func = std::forward<F>(f);
+#endif
+    (void(func(std::integral_constant<T, S>{})), ...);
 }
 
 /*! \brief Apply the \c formatters to the respective \c params to

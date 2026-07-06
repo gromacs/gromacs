@@ -213,7 +213,7 @@ public:
      * \param[in] other mdspan-implementing container
      */
     template<typename U, typename = std::enable_if_t<std::is_same_v<typename std::remove_reference_t<U>::view_type::element_type, ElementType>>>
-    constexpr basic_mdspan(U&& other) : basic_mdspan(other.asView())
+    constexpr basic_mdspan(U& other) : basic_mdspan(other.asView())
     {
     }
     /*! \brief Construct mdspan of const Elements from multidimensional arrays implemented with mdspan

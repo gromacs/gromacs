@@ -127,6 +127,7 @@ protected:
 class ExactTextMatch : public ITextBlockMatcherSettings
 {
 public:
+    ~ExactTextMatch() override = default;
     TextBlockMatcherPointer createMatcher() const override;
 };
 
@@ -139,6 +140,7 @@ public:
 class NoTextMatch : public ITextBlockMatcherSettings
 {
 public:
+    ~NoTextMatch() override = default;
     TextBlockMatcherPointer createMatcher() const override;
 };
 
@@ -166,6 +168,7 @@ public:
     explicit FilteringExactTextMatch(std::vector<std::string> linesToSkip,
                                      bool                     trimLeadingWhiteSpace,
                                      bool                     trimTrailingWhiteSpace);
+    ~FilteringExactTextMatch() override = default;
     //! Factory method.
     TextBlockMatcherPointer createMatcher() const override;
     //! Add a regular expression for which a matching line should be skipped.

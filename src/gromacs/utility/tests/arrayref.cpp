@@ -278,6 +278,26 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
     this->runTests(h.a, arrayRef);
 }
 
+TYPED_TEST(ArrayRefTest, ConversionFromNonConstArrayRefToConstArrayRefWorks)
+{
+    // This test only makes sense for const ArrayRef types
+    if constexpr (std::is_const_v<typename TestFixture::ValueType>)
+    {
+        // Create a non-const ArrayRef
+        ArrayRef<typename TestFixture::NonConstValueType> nonConstRef(this->ma, this->ma + aSize);
+
+        // Test implicit conversion to const ArrayRef (should accept rvalue)
+        typename TestFixture::ArrayRefType constRef = nonConstRef;
+        this->runTests(this->ma, constRef);
+
+        // Test that we can also pass rvalue directly (e.g., in return statements)
+        auto makeNonConstRef = [this]()
+        { return ArrayRef<typename TestFixture::NonConstValueType>(this->ma, this->ma + aSize); };
+        typename TestFixture::ArrayRefType constRef2 = makeNonConstRef();
+        this->runTests(this->ma, constRef2);
+    }
+}
+
 #else // GTEST_HAS_TYPED_TEST
 
 /* A dummy test that at least signals that something is missing if one runs the
