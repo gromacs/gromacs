@@ -44,7 +44,6 @@ gromacs:clang-ASAN:test:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  allow_failure: true # Temporary workaround for #5633
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
     # ASAN tests are more demanding of CPU
@@ -65,7 +64,6 @@ gromacs:clang-ASAN:regressiontest:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  allow_failure: true # Temporary workaround for #5633
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
