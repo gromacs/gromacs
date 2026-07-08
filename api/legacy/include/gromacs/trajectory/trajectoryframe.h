@@ -50,7 +50,7 @@
 struct t_atoms;
 enum class PbcType : int;
 
-typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
+typedef struct t_trxframe // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     int      not_ok; /* integrity flags                  */
     int      natoms; /* number of atoms (atoms, x, v, f, index) */

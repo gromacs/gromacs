@@ -431,7 +431,7 @@ struct OutputControl
 
 } // namespace gmx
 
-struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
+struct t_inputrec // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
     explicit t_inputrec(const t_inputrec&)   = delete;

@@ -98,7 +98,7 @@ constexpr unsigned int IF_LIMZERO = 1 << 9;
  * atom numbers for warnings and error messages.
  * ddgatindex is NULL when domain decomposition is not used.
  */
-struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Padding)
+struct t_interaction_function // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     const char* name;         //!< The name of this function.
     const char* longname;     //!< The name for printing etc.

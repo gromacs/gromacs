@@ -562,7 +562,7 @@ struct CartesianRankSetup
  * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
  * unless stated otherwise.
  */
-struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
+struct gmx_domdec_comm_t // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim);
     ~gmx_domdec_comm_t();

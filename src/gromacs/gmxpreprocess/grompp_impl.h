@@ -152,7 +152,7 @@ struct CmapInteractionType
  * topology file definition.
  */
 struct InteractionsOfType
-{ // NOLINT (clang-analyzer-optin.performance.Padding)
+{ // NOLINT(clang-analyzer-optin.performance.Padding)
     //! The different parameters in the system.
     std::vector<InteractionOfType> interactionTypes;
     //! Data for all CMAP interaction types.

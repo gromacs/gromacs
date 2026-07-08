@@ -126,7 +126,7 @@ private:
     //! Shift force array for computing the virial, size c_numShiftVectors
     std::vector<gmx::RVec> shiftForces_;
 };
-// NOLINTNEXTLINE (clang-analyzer-optin.performance.Padding)
+// NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct t_forcerec
 {
     // Declare an explicit constructor and destructor, so they can be
