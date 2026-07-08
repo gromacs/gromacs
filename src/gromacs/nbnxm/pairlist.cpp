@@ -3038,7 +3038,7 @@ static void nbnxm_make_pairlist_part(const GridSet&          gridSet,
                 const real by1 = c_listIsSimple ? bb_i[ci].upper.y + shy
                                                 : iGridDims.cellLowerCorner(YY, ci_y + 1) + shy;
 
-                int cyf, cyl; //NOLINT(cppcoreguidelines-init-variables)
+                int cyf, cyl; // NOLINT(cppcoreguidelines-init-variables)
                 get_cell_range<YY>(by0, by1, jGridDims, d2z_cx, rlist, &cyf, &cyl);
 
                 if (cyf > cyl)
@@ -3075,7 +3075,7 @@ static void nbnxm_make_pairlist_part(const GridSet&          gridSet,
                     const real bx1 = c_listIsSimple ? bb_i[ci].upper.x + shx
                                                     : iGridDims.cellLowerCorner(XX, ci_x + 1) + shx;
 
-                    int cxf, cxl; //NOLINT(cppcoreguidelines-init-variables)
+                    int cxf, cxl; // NOLINT(cppcoreguidelines-init-variables)
                     get_cell_range<XX>(bx0, bx1, jGridDims, d2z_cy, rlist, &cxf, &cxl);
 
                     if (cxf > cxl)

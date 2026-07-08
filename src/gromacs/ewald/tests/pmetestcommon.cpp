@@ -256,8 +256,8 @@ static real* pmeGetRealGridInternal(const gmx_pme_t* pme)
 //! Getting local PME real grid dimensions
 static void pmeGetRealGridSizesInternal(const gmx_pme_t* pme,
                                         CodePath         mode,
-                                        IVec& gridSize,       //NOLINT(google-runtime-references)
-                                        IVec& paddedGridSize) //NOLINT(google-runtime-references)
+                                        IVec& gridSize,       // NOLINT(google-runtime-references)
+                                        IVec& paddedGridSize) // NOLINT(google-runtime-references)
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused;
@@ -285,8 +285,8 @@ static t_complex* pmeGetComplexGridInternal(gmx_pme_t* pme)
 
 //! Getting local PME complex grid dimensions
 static void pmeGetComplexGridSizesInternal(const gmx_pme_t* pme,
-                                           IVec& gridSize,       //NOLINT(google-runtime-references)
-                                           IVec& paddedGridSize) //NOLINT(google-runtime-references)
+                                           IVec& gridSize, // NOLINT(google-runtime-references)
+                                           IVec& paddedGridSize) // NOLINT(google-runtime-references)
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused, complexOrderUnused;
@@ -301,9 +301,9 @@ static void pmeGetComplexGridSizesInternal(const gmx_pme_t* pme,
 template<typename ValueType>
 static void pmeGetGridAndSizesInternal(gmx_pme_t* /*unused*/,
                                        CodePath /*unused*/,
-                                       ValueType*& /*unused*/, //NOLINT(google-runtime-references)
-                                       IVec& /*unused*/,       //NOLINT(google-runtime-references)
-                                       IVec& /*unused*/) = delete; //NOLINT(google-runtime-references)
+                                       ValueType*& /*unused*/, // NOLINT(google-runtime-references)
+                                       IVec& /*unused*/,       // NOLINT(google-runtime-references)
+                                       IVec& /*unused*/) = delete; // NOLINT(google-runtime-references)
 
 //! Getting the PME real grid memory buffer and its sizes
 template<>

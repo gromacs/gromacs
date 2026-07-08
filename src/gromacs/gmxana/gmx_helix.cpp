@@ -114,7 +114,7 @@ int gmx_helix(int argc, char* argv[])
                      { "-ahxend", FALSE, etINT, { &rEnd }, "Last residue in helix" } };
 
     typedef struct
-    { //NOLINT(clang-analyzer-optin.performance.Padding)
+    { // NOLINT(clang-analyzer-optin.performance.Padding)
         FILE *      fp, *fp2;
         gmx_bool    bfp2;
         const char* filenm;

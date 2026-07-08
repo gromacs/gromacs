@@ -144,7 +144,7 @@ bool mrcHeaderIsSane(const MrcDensityMapHeader& header)
     constexpr std::int32_t c_maxCellAngle = 360;
     if (anyLargerThanValue(header.cellAngles_, c_maxCellAngle))
     {
-        return false; //NOLINT(readability-simplify-boolean-expr)
+        return false; // NOLINT(readability-simplify-boolean-expr)
     }
 
     return true;

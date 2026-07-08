@@ -76,7 +76,7 @@ public:
 
 // NB need to use this->mask() because of GoogleTest quirks
 
-TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment) //NOLINT(misc-definitions-in-headers)
+TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment) // NOLINT(misc-definitions-in-headers)
 {
     using pointer = typename TypeParam::value_type*;
     TypeParam a;
@@ -87,7 +87,7 @@ TYPED_TEST(AllocatorTest, AllocatorAlignAllocatesWithAlignment) //NOLINT(misc-de
 }
 
 
-TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment) //NOLINT(misc-definitions-in-headers)
+TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment) // NOLINT(misc-definitions-in-headers)
 {
     using value_type = typename TypeParam::value_type;
     std::vector<value_type, TypeParam> v(10);
@@ -103,7 +103,7 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndResizesWithAlignment) //NOLINT(misc-
     }
 }
 
-TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment) //NOLINT(misc-definitions-in-headers)
+TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment) // NOLINT(misc-definitions-in-headers)
 {
     using value_type = typename TypeParam::value_type;
     std::vector<value_type, TypeParam> v(10);
@@ -119,7 +119,7 @@ TYPED_TEST(AllocatorTest, VectorAllocatesAndReservesWithAlignment) //NOLINT(misc
     }
 }
 
-TYPED_TEST(AllocatorTest, Move) //NOLINT(misc-definitions-in-headers)
+TYPED_TEST(AllocatorTest, Move) // NOLINT(misc-definitions-in-headers)
 {
     using value_type = typename TypeParam::value_type;
     std::vector<value_type, TypeParam> v1(1);

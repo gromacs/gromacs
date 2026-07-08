@@ -115,7 +115,7 @@ private:
     };
 
     //! The text to iterate over.
-    const std::string& text_; //NOLINT(google-runtime-member-string-references)
+    const std::string& text_; // NOLINT(google-runtime-member-string-references)
 
     //! Start of the current paragraph.
     size_t begin_;

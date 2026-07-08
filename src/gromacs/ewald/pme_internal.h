@@ -364,7 +364,7 @@ struct pme_solve_work_t;
 
 /*! \brief Main PME data structure */
 struct gmx_pme_t
-{ //NOLINT(clang-analyzer-optin.performance.Padding)
+{ // NOLINT(clang-analyzer-optin.performance.Padding)
     //! Constructor, can be called with nullptr, in that case a single rank comm is used
     gmx_pme_t(const gmx::MpiComm* mpiComm);
 

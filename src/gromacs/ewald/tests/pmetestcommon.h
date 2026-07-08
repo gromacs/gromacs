@@ -185,7 +185,7 @@ void pmePerformSolve(gmx_pme_t*        pme,
 //! PME force gathering
 void pmePerformGather(gmx_pme_t*    pme,
                       CodePath      mode,
-                      ForcesVector& forces); //NOLINT(google-runtime-references)
+                      ForcesVector& forces); // NOLINT(google-runtime-references)
 //! PME test finalization before fetching the outputs
 void pmeFinalizeTest(const gmx_pme_t* pme, CodePath mode);
 

@@ -151,7 +151,7 @@ bool update_randomize_velocities(const t_inputrec*              ir,
 void berendsen_tcoupl(const t_inputrec*    ir,
                       gmx_ekindata_t*      ekind,
                       real                 dt,
-                      std::vector<double>& therm_integral); //NOLINT(google-runtime-references)
+                      std::vector<double>& therm_integral); // NOLINT(google-runtime-references)
 
 void andersen_tcoupl(const t_inputrec*              ir,
                      int64_t                        step,

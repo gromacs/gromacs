@@ -112,7 +112,7 @@ struct UnitCellInfo
 };
 
 struct gmx_domdec_t
-{ //NOLINT(clang-analyzer-optin.performance.Padding)
+{ // NOLINT(clang-analyzer-optin.performance.Padding)
     //! Constructor, only partial for now
     gmx_domdec_t(const gmx::MpiComm& mpiComm, const t_inputrec& ir, gmx::ArrayRef<const int> ddDims);
     ~gmx_domdec_t();

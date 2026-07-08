@@ -132,7 +132,7 @@ int getGroupType(const SimulationGroups& group, SimulationAtomGroupType type, in
  * TODO: Find a solution for ensuring that the derived data is in sync
  *       with the primary data, possibly by converting to a class.
  */
-struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
+struct gmx_mtop_t // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     gmx_mtop_t();
 

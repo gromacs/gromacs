@@ -141,7 +141,7 @@ public:
     /*! \brief Marks the synchronization point in the \p stream and reset the consumption counter,
      * for an external event while capturing a graph
      */
-    //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void markExternalEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
 #if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA
@@ -213,7 +213,7 @@ public:
      * for an external event while capturing a graph.
      *
      */
-    //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void enqueueExternalWaitEventWhileCapturingGraph(const DeviceStream& deviceStream)
     {
 #if GMX_HAVE_GPU_GRAPH_SUPPORT && GMX_GPU_CUDA

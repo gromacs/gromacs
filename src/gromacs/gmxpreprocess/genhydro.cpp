@@ -337,7 +337,7 @@ getMoleculePatchDatabases(const t_atoms*                              pdba,
 }
 
 static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
-                                  const std::string localAtomName, //NOLINT(performance-unnecessary-value-param)
+                                  const std::string localAtomName, // NOLINT(performance-unnecessary-value-param)
                                   const PreprocessResidue&    residueTopology,
                                   std::vector<MoleculePatch>* globalPatches,
                                   bool                        bN,

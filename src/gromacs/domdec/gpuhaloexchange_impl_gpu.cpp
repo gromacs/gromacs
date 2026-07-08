@@ -266,12 +266,12 @@ void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynch
     // Similarly send event to task that will push data to this task.
     GpuEventSynchronizer* remoteCoordinatesReadyOnDeviceEvent;
     MPI_Sendrecv(&coordinatesReadyOnDeviceEvent,
-                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
+                 sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  recvRankX_,
                  0,
                  &remoteCoordinatesReadyOnDeviceEvent,
-                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
+                 sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  sendRankX_,
                  0,
@@ -575,12 +575,12 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3*  sendPtr,
     haloDataTransferLaunched->markEvent(haloStream_);
 
     MPI_Sendrecv(&haloDataTransferLaunched,
-                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
+                 sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  sendRank,
                  0,
                  &haloDataTransferRemote,
-                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
+                 sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  recvRank,
                  0,

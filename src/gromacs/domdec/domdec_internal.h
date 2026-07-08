@@ -509,7 +509,7 @@ struct DDSettings
 // The following suppression suppresses an error: "declaration uses
 // identifier '__i0', which is a reserved identifier" which does not
 // make sense from the code, but is not yet a known clang-tidy bug.
-struct DDRankSetup //NOLINT(bugprone-reserved-identifier,google-readability-braces-around-statements,readability-braces-around-statements)
+struct DDRankSetup // NOLINT(bugprone-reserved-identifier,google-readability-braces-around-statements,readability-braces-around-statements)
 {
     /**< The rank ordering */
     gmx::DdRankOrder rankOrder;

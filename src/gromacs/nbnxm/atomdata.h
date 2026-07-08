@@ -182,7 +182,7 @@ const char* enumValueToString(LJCombinationRule enumValue);
  *       in this struct would not initialize during resize().
  */
 struct nbnxm_atomdata_t
-{ //NOLINT(clang-analyzer-optin.performance.Padding)
+{ // NOLINT(clang-analyzer-optin.performance.Padding)
 
     nbnxm_atomdata_t(const HostAllocationPolicy& hostAllocationPolicy);
 

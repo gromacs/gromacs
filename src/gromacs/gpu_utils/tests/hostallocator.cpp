@@ -318,7 +318,7 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
     {
         SCOPED_TRACE("Copy construction into unpinned HostVector uses unpinned memory");
         typename TestFixture::VectorType input1;
-        typename TestFixture::VectorType input2(input1); //NOLINT(performance-unnecessary-copy-initialization)
+        typename TestFixture::VectorType input2(input1); // NOLINT(performance-unnecessary-copy-initialization)
         EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     }
 
@@ -329,7 +329,7 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
 
         SCOPED_TRACE("Copy construction into pinned HostVector uses unpinned memory");
         typename TestFixture::VectorType input3(hostAllocationPolicy);
-        typename TestFixture::VectorType input4(input3); //NOLINT(performance-unnecessary-copy-initialization)
+        typename TestFixture::VectorType input4(input3); // NOLINT(performance-unnecessary-copy-initialization)
         EXPECT_FALSE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     }
 }

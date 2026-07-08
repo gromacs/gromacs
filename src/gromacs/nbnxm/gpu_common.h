@@ -286,7 +286,7 @@ static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxm_t* timings,
  * cuda_runtime.h if needed for any remaining CUDA-specific
  * objects.
  */
-//NOLINTNEXTLINE(misc-definitions-in-headers)
+// NOLINTNEXTLINE(misc-definitions-in-headers)
 bool gpu_try_finish_task(NbnxmGpu*           nb,
                          const StepWorkload& stepWork,
                          const AtomLocality  aloc,
@@ -390,7 +390,7 @@ bool gpu_try_finish_task(NbnxmGpu*           nb,
  * \param[out] wcycle Pointer to wallcycle data structure
  * \return            The number of cycles the gpu wait took
  */
-//NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
+// NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
 float gpu_wait_finish_task(NbnxmGpu*           nb,
                            const StepWorkload& stepWork,
                            AtomLocality        aloc,
