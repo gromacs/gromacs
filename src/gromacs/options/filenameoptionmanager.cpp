@@ -211,7 +211,7 @@ std::string FileNameOptionManager::completeFileName(const std::string& value, co
                 return processedValue;
             }
             if (bAllowMissing)
-            { // NOLINT bugprone-branch-clone
+            { // NOLINT(bugprone-branch-clone)
                 return value + option.defaultExtension();
             }
             else if (option.isLibraryFile())
@@ -276,10 +276,10 @@ std::string FileNameOptionManager::completeDefaultFileName(const std::string&   
             return completedName;
         }
         if (option.allowMissing())
-        { // NOLINT bugprone-branch-clone
+        { // NOLINT(bugprone-branch-clone)
             return realPrefix + option.defaultExtension();
         }
-        else if (option.isLibraryFile()) // NOLINT bugprone-branch-clone
+        else if (option.isLibraryFile()) // NOLINT(bugprone-branch-clone)
         {
             // TODO: Treat also library files here and remove the NOLINT
             return realPrefix + option.defaultExtension();

@@ -204,7 +204,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeDirectGpu(bool receivePmeForceToGpu)
     }
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(const bool receivePmeForceToGpu)
 {
 #if GMX_LIB_MPI
@@ -300,7 +300,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeDirectGpu(const Float3* sendPtr,
 #endif
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
                                                          int           sendSize,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,

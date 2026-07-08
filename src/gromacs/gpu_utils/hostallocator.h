@@ -223,7 +223,7 @@ public:
     //! Propagate the allocator during swap
     using propagate_on_container_swap = std::true_type;
     //! \brief Return the policy the container should use for copy construction
-    // NOLINTNEXTLINE readability-convert-member-functions-to-static
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     HostAllocationPolicy select_on_container_copy_construction() const
     {
         if (propagateDuringContainerCopyConstruction_)

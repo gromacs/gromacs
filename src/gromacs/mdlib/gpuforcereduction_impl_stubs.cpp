@@ -73,7 +73,7 @@ GpuForceReduction::GpuForceReduction(const DeviceContext& /* deviceContext */,
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuForceReduction::reinit(DeviceBuffer<RVec> /*baseForcePtr*/,
                                const int /*numAtoms*/,
                                ArrayRef<const int> /*cell*/,
@@ -84,31 +84,31 @@ void GpuForceReduction::reinit(DeviceBuffer<RVec> /*baseForcePtr*/,
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuForceReduction::registerNbnxmForce(DeviceBuffer<RVec> /* forcePtr */)
 {
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuForceReduction::registerRvecForce(DeviceBuffer<gmx::RVec> /* forcePtr */)
 {
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuForceReduction::registerForcesReadyNvshmemFlags(DeviceBuffer<uint64_t> /* forceSyncObjPtr */)
 {
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuForceReduction::addDependency(GpuEventSynchronizer* const /* dependency */)
 {
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void GpuForceReduction::execute()
 {
     GMX_RELEASE_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");

@@ -836,7 +836,7 @@ static char** read_topol(const char*                                 infile,
                             push_nbt(d, nbparam, atypes, pline, static_cast<int>(nb_funct), wi);
                             break;
 
-                        case Directive::d_implicit_genborn_params: // NOLINT bugprone-branch-clone
+                        case Directive::d_implicit_genborn_params: // NOLINT(bugprone-branch-clone)
                             // Skip this line, so old topologies with
                             // GB parameters can be read.
                             break;

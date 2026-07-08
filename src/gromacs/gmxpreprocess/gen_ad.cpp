@@ -114,7 +114,7 @@ static bool dcomp(const InteractionOfType& d1, const InteractionOfType& d2)
 
     /* First sort by J & K (the two central) atoms */
     if (((dc = (d1.aj() - d2.aj())) != 0) || ((dc = (d1.ak() - d2.ak())) != 0))
-    { // NOLINT bugprone-branch-clone
+    { // NOLINT(bugprone-branch-clone)
         return dc < 0;
     }
     /* Then make sure to put rtp dihedrals before generated ones */

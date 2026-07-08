@@ -121,7 +121,7 @@ public:
             expectAffinitySet(core);
         }
     }
-    // NOLINTNEXTLINE readability-convert-member-functions-to-static
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     void expectAffinitySetThatFails(int core)
     {
         using ::testing::Return;

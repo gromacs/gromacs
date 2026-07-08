@@ -436,7 +436,7 @@ static std::optional<LJCombinationRule> chooseLJCombinationRule(const t_forcerec
         return std::nullopt;
     }
     else if (forcerec.ic->vdw.type == VanDerWaalsType::Pme)
-    { // NOLINT bugprone-branch-clone
+    { // NOLINT(bugprone-branch-clone)
         /* With LJ-PME the NBNxM module does not support combination rules for the pair parameters */
         return LJCombinationRule::None;
     }

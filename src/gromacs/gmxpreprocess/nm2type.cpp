@@ -172,7 +172,7 @@ enum
 static int match_str(const char* atom, const char* template_string)
 {
     if (!atom || !template_string)
-    { // NOLINT bugprone-branch-clone
+    { // NOLINT(bugprone-branch-clone)
         return ematchNone;
     }
     else if (gmx_strcasecmp(atom, template_string) == 0)
