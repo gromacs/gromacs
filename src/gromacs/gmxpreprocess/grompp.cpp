@@ -2059,11 +2059,9 @@ void deformInitFlow(t_state* state, const matrix deform)
 }
 
 } // namespace
-} // namespace gmx
 
 int gmx_grompp(int argc, char* argv[])
 {
-    using namespace gmx;
     const char* desc[] = {
         "[THISMODULE] (the gromacs preprocessor)",
         "reads a molecular topology file, checks the validity of the",
@@ -2950,3 +2948,5 @@ int gmx_grompp(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

@@ -90,6 +90,9 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 static bool is_bond(int nnm, t_nm2type nmt[], const char* ai, const char* aj, real blen)
 {
     int i, j;
@@ -98,10 +101,9 @@ static bool is_bond(int nnm, t_nm2type nmt[], const char* ai, const char* aj, re
     {
         for (j = 0; (j < nmt[i].nbonds); j++)
         {
-            if ((((gmx::equalCaseInsensitive(ai, nmt[i].elem, 1))
-                  && (gmx::equalCaseInsensitive(aj, nmt[i].bond[j], 1)))
-                 || ((gmx::equalCaseInsensitive(ai, nmt[i].bond[j], 1))
-                     && (gmx::equalCaseInsensitive(aj, nmt[i].elem, 1))))
+            if ((((equalCaseInsensitive(ai, nmt[i].elem, 1)) && (equalCaseInsensitive(aj, nmt[i].bond[j], 1)))
+                 || ((equalCaseInsensitive(ai, nmt[i].bond[j], 1))
+                     && (equalCaseInsensitive(aj, nmt[i].elem, 1))))
                 && (std::fabs(blen - nmt[i].blen[j]) <= 0.1 * nmt[i].blen[j]))
             {
                 return TRUE;
@@ -189,7 +191,7 @@ static void set_atom_type(PreprocessingAtomTypes* atypes,
                           int*                    nbonds,
                           int                     nnm,
                           t_nm2type               nm2t[],
-                          const gmx::MDLogger&    logger)
+                          const MDLogger&         logger)
 {
     int nresolved;
 
@@ -254,12 +256,12 @@ static void lo_set_force_const(InteractionsOfType* plist, real c[], int nrfp, bo
     }
 }
 
-static void set_force_const(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                            real                                                            kb,
-                            real                                                            kt,
-                            real                                                            kp,
-                            bool                                                            bRound,
-                            bool                                                            bParam)
+static void set_force_const(EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                            real                                                       kb,
+                            real                                                       kt,
+                            real                                                       kp,
+                            bool                                                       bRound,
+                            bool                                                       bParam)
 {
     real c[MAXFORCEPARAM];
 
@@ -289,7 +291,7 @@ static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, c
         int  ai = angle.ai();
         int  aj = angle.aj();
         int  ak = angle.ak();
-        real th = gmx::c_rad2Deg
+        real th = c_rad2Deg
                   * bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr, r_ij, r_kj, &costh, &t1, &t2);
         angle.setForceParameter(0, th);
     }
@@ -300,7 +302,7 @@ static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, c
         int  ak = dihedral.ak();
         int  al = dihedral.al();
         real ph =
-                gmx::c_rad2Deg
+                c_rad2Deg
                 * dih_angle(
                         x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         dihedral.setForceParameter(0, ph);
@@ -315,11 +317,11 @@ static void dump_hybridization(FILE* fp, t_atoms* atoms, int nbonds[])
     }
 }
 
-static void print_pl(FILE*                                                                 fp,
-                     const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                     InteractionFunction                                                   ftp,
-                     const char*                                                           name,
-                     char***                                                               atomname)
+static void print_pl(FILE*                                                            fp,
+                     const EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                     InteractionFunction                                              ftp,
+                     const char*                                                      name,
+                     char***                                                          atomname)
 {
     if (!plist[ftp].interactionTypes.empty())
     {
@@ -328,8 +330,8 @@ static void print_pl(FILE*                                                      
         int nrfp = interaction_function[ftp].nrfpA;
         for (const auto& param : plist[ftp].interactionTypes)
         {
-            gmx::ArrayRef<const int>  atoms      = param.atoms();
-            gmx::ArrayRef<const real> forceParam = param.forceParam();
+            ArrayRef<const int>  atoms      = param.atoms();
+            ArrayRef<const real> forceParam = param.forceParam();
             for (const auto& atom : atoms)
             {
                 fprintf(fp, "  %5s", *atomname[atom]);
@@ -346,12 +348,12 @@ static void print_pl(FILE*                                                      
     }
 }
 
-static void print_rtp(const char*                                                           filenm,
-                      const char*                                                           title,
-                      t_atoms*                                                              atoms,
-                      const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                      PreprocessingAtomTypes*                                               atypes,
-                      int                                                                   cgnr[])
+static void print_rtp(const char*                                                      filenm,
+                      const char*                                                      title,
+                      t_atoms*                                                         atoms,
+                      const EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                      PreprocessingAtomTypes*                                          atypes,
+                      int                                                              cgnr[])
 {
     FILE* fp;
     int   i, tp;
@@ -410,17 +412,17 @@ int gmx_x2top(int argc, char* argv[])
         ("The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in "
          "the data directory). Please extend it and send the results back to the GROMACS crew.")
     };
-    FILE*                                                          fp;
-    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> plist;
-    t_excls*                                                       excls;
-    t_nm2type*                                                     nm2t;
-    t_mols                                                         mymol;
-    int                                                            nnm;
-    char                                                           forcefield[32];
-    rvec*                                                          x; /* coordinates? */
-    int *                                                          nbonds, *cgnr;
-    int                                                            bts[] = { 1, 1, 1, 2 };
-    matrix                                                         box; /* box length matrix */
+    FILE*                                                     fp;
+    EnumerationArray<InteractionFunction, InteractionsOfType> plist;
+    t_excls*                                                  excls;
+    t_nm2type*                                                nm2t;
+    t_mols                                                    mymol;
+    int                                                       nnm;
+    char                                                      forcefield[32];
+    rvec*                                                     x; /* coordinates? */
+    int *                                                     nbonds, *cgnr;
+    int                                                       bts[] = { 1, 1, 1, 2 };
+    matrix                                                    box; /* box length matrix */
     int               natoms; /* number of atoms in one molecule  */
     PbcType           pbcType;
     bool              bRTP, bTOP, bOPLS;
@@ -499,11 +501,11 @@ int gmx_x2top(int argc, char* argv[])
         gmx_fatal(FARGS, "Specify at least one output file");
     }
 
-    gmx::LoggerBuilder builder;
-    builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
-    builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &gmx::TextOutputFile::standardError());
-    gmx::LoggerOwner logOwner(builder.build());
-    gmx::MDLogger    logger(logOwner.logger());
+    LoggerBuilder builder;
+    builder.addTargetStream(MDLogger::LogLevel::Info, &TextOutputFile::standardOutput());
+    builder.addTargetStream(MDLogger::LogLevel::Warning, &TextOutputFile::standardError());
+    LoggerOwner logOwner(builder.build());
+    MDLogger    logger(logOwner.logger());
 
 
     /* Force field selection, interactive or direct */
@@ -557,7 +559,7 @@ int gmx_x2top(int argc, char* argv[])
     GMX_LOG(logger.info)
             .asParagraph()
             .appendTextFormatted("Generating angles and dihedrals from bonds...");
-    gen_pad(atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE, {}, {});
+    gen_pad(atoms, arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE, {}, {});
 
     if (!bPairs)
     {
@@ -604,7 +606,7 @@ int gmx_x2top(int argc, char* argv[])
                   excls,
                   &atypes,
                   rtp_header_settings.nrexcl);
-        print_top_mols(fp, mymol.name.c_str(), ffdir, nullptr, {}, gmx::arrayRefFromArray(&mymol, 1));
+        print_top_mols(fp, mymol.name.c_str(), ffdir, nullptr, {}, arrayRefFromArray(&mymol, 1));
 
         gmx_ffclose(fp);
     }
@@ -627,3 +629,5 @@ int gmx_x2top(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx
