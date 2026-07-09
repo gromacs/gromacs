@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_TRJCAT_H
 #define GMX_TOOLS_TRJCAT_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx trjcat
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_trjcat(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

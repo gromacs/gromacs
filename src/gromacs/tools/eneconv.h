@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_ENECONV_H
 #define GMX_TOOLS_ENECONV_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx eneconv
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_eneconv(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

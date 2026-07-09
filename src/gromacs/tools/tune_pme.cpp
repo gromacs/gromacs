@@ -88,6 +88,12 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
+namespace
+{
+
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
  * const char* ParseLog[] */
@@ -107,6 +113,8 @@ enum
     eParselogFatal,
     eParselogNr
 };
+
+} // namespace
 
 
 typedef struct
@@ -193,6 +201,9 @@ static void finalize(const char* fn_out)
 }
 
 
+namespace
+{
+
 enum
 {
     eFoundNothing,
@@ -200,6 +211,8 @@ enum
     eFoundAccountingStr,
     eFoundCycleStr
 };
+
+} // namespace
 
 static int parse_logfile(const char* logfile,
                          const char* errfile,
@@ -515,7 +528,7 @@ static gmx_bool analyze_data(FILE*          fp,
                     s = 0.0;
                     for (j = 0; j < nrepeats; j++)
                     {
-                        s += gmx::square(pd->Gcycles[j] - pd->Gcycles_Av);
+                        s += square(pd->Gcycles[j] - pd->Gcycles_Av);
                     }
                     s /= (nrepeats - 1);
                     s = std::sqrt(s);
@@ -800,7 +813,7 @@ static std::string make_gpu_id_command_line(const char* eligible_gpu_ids)
      * to mdrun -gpu_id */
     if (eligible_gpu_ids != nullptr)
     {
-        return gmx::formatString("-gpu_id %s", eligible_gpu_ids);
+        return formatString("-gpu_id %s", eligible_gpu_ids);
     }
 
 
@@ -1145,10 +1158,8 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
         info->fsz[j]      = fac * fourierspacing;
 
         /* Write the benchmark tpr file */
-        fn_bench_tprs[j] =
-                gmx_strdup(gmx::concatenateBeforeExtension(fn_sim_tpr, gmx::formatString("_bench%.2d", j))
-                                   .string()
-                                   .c_str());
+        fn_bench_tprs[j] = gmx_strdup(
+                concatenateBeforeExtension(fn_sim_tpr, formatString("_bench%.2d", j)).string().c_str());
 
         fprintf(stdout, "Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
         fprintf(stdout, "%" PRId64, ir->nsteps);
@@ -1221,7 +1232,7 @@ static void cleanup(const t_filenm* fnm, int nfile, int k, int nnodes, int nPMEn
             {
                 sprintf(numstring, "_%d", nr);
             }
-            std::string newfilename = gmx::formatString(
+            std::string newfilename = formatString(
                     "%s_no%d_np%d_npme%d%s", opt2fn("-bg", nfile, fnm), k, nnodes, nPMEnodes, numstring);
             if (gmx_fexist(opt2fn("-bg", nfile, fnm)))
             {
@@ -1241,7 +1252,7 @@ static void cleanup(const t_filenm* fnm, int nfile, int k, int nnodes, int nPMEn
                 sprintf(numstring, "_%d", nr);
             }
             std::string newfilename =
-                    gmx::formatString("%s_no%d_np%d_npme%d%s", fn, k, nnodes, nPMEnodes, numstring);
+                    formatString("%s_no%d_np%d_npme%d%s", fn, k, nnodes, nPMEnodes, numstring);
             if (gmx_fexist(fn))
             {
                 if (bKeepStderr)
@@ -1266,6 +1277,9 @@ static void cleanup(const t_filenm* fnm, int nfile, int k, int nnodes, int nPMEn
 }
 
 
+namespace
+{
+
 enum
 {
     eNpmeAuto,
@@ -1274,6 +1288,8 @@ enum
     eNpmeSubset,
     eNpmeNr
 };
+
+} // namespace
 
 /* Create a list of numbers of PME nodes to test */
 static void make_npme_list(const char* npmevalues_opt, /* Make a complete list with all
@@ -2526,7 +2542,7 @@ int gmx_tune_pme(int argc, char* argv[])
     {
         const char* filename = opt2fn("-cpi", NFILE, fnm);
         int         cpt_sim_part;
-        gmx::read_checkpoint_part_and_step(filename, &cpt_sim_part, &cpt_steps);
+        read_checkpoint_part_and_step(filename, &cpt_sim_part, &cpt_steps);
         if (cpt_sim_part == 0)
         {
             gmx_fatal(FARGS, "Checkpoint file %s could not be read!", filename);
@@ -2773,3 +2789,5 @@ int gmx_tune_pme(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

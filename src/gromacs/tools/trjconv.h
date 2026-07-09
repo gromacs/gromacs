@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_TRJCONV_H
 #define GMX_TOOLS_TRJCONV_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx trjconv
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_trjconv(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

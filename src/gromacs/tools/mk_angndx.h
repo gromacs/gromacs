@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_MK_ANGNDX_H
 #define GMX_TOOLS_MK_ANGNDX_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx mk_angndx
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_mk_angndx(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

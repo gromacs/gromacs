@@ -68,6 +68,9 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
 #define TIME_LAST 2
@@ -75,7 +78,7 @@ struct gmx_output_env_t;
 #    define FLT_MAX 1e36
 #endif
 
-static int* select_it(gmx::ArrayRef<const gmx_enxnm_t> nm, int* nset)
+static int* select_it(ArrayRef<const gmx_enxnm_t> nm, int* nset)
 {
     gmx_bool* bE;
     int       n, k, j, i;
@@ -131,12 +134,12 @@ static int* select_it(gmx::ArrayRef<const gmx_enxnm_t> nm, int* nset)
     return set;
 }
 
-static void sort_files(gmx::ArrayRef<std::string> files, real* settime)
+static void sort_files(ArrayRef<std::string> files, real* settime)
 {
-    for (gmx::Index i = 0; i < files.ssize(); i++)
+    for (Index i = 0; i < files.ssize(); i++)
     {
-        gmx::Index minidx = i;
-        for (gmx::Index j = i + 1; j < files.ssize(); j++)
+        Index minidx = i;
+        for (Index j = i + 1; j < files.ssize(); j++)
         {
             if (settime[j] < settime[minidx])
             {
@@ -228,12 +231,12 @@ static int scan_ene_files(const std::vector<std::string>& files, real* readtime,
 }
 
 
-static void edit_files(gmx::ArrayRef<std::string> files,
-                       real*                      readtime,
-                       real*                      settime,
-                       int*                       cont_type,
-                       gmx_bool                   bSetTime,
-                       gmx_bool                   bSort)
+static void edit_files(ArrayRef<std::string> files,
+                       real*                 readtime,
+                       real*                 settime,
+                       int*                  cont_type,
+                       gmx_bool              bSetTime,
+                       gmx_bool              bSort)
 {
     gmx_bool ok;
     char     inputstring[STRLEN], *chptr;
@@ -262,7 +265,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
                 "          File             Current start       New start\n"
                 "---------------------------------------------------------\n");
 
-        for (gmx::Index i = 0; i < files.ssize(); i++)
+        for (Index i = 0; i < files.ssize(); i++)
         {
             fprintf(stderr, "%25s   %10.3f             ", files[i].c_str(), readtime[i]);
             ok = FALSE;
@@ -311,7 +314,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
     }
     else
     {
-        for (gmx::Index i = 0; i < files.ssize(); i++)
+        for (Index i = 0; i < files.ssize(); i++)
         {
             settime[i] = readtime[i];
         }
@@ -332,7 +335,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
             "\nSummary of files and start times used:\n\n"
             "          File                Start time\n"
             "-----------------------------------------\n");
-    for (gmx::Index i = 0; i < files.ssize(); i++)
+    for (Index i = 0; i < files.ssize(); i++)
     {
         switch (cont_type[i])
         {
@@ -402,9 +405,9 @@ static void update_ee_sum(int         nre,
         {
             for (i = 0; i < nre; i++)
             {
-                ee_sum[i].sumSqDev += gmx::square(ee_sum[i].esum / nsum
-                                                  - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1))
-                                      * nsum * (nsum + 1);
+                ee_sum[i].sumSqDev +=
+                        square(ee_sum[i].esum / nsum - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1))
+                        * nsum * (nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
         }
@@ -414,8 +417,8 @@ static void update_ee_sum(int         nre,
             {
                 ee_sum[i].sumSqDev +=
                         fr->ener[i].sumSqDev
-                        + gmx::square(ee_sum[i].esum / nsum
-                                      - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
+                        + square(ee_sum[i].esum / nsum
+                                 - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
                                   * nsum * (nsum + fr->nsum) / static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
             }
@@ -522,7 +525,7 @@ int gmx_eneconv(int argc, char* argv[])
     lastfilestep = 0;
     laststep     = 0;
 
-    auto files = gmx::copyOf(opt2fns("-f", NFILE, fnm));
+    auto files = copyOf(opt2fns("-f", NFILE, fnm));
 
     if (files.empty())
     {
@@ -610,7 +613,7 @@ int gmx_eneconv(int argc, char* argv[])
                         fr->t,
                         gmx_step_str(fro->step, buf2),
                         fro->t,
-                        gmx::boolToString(bWrite));
+                        boolToString(bWrite));
             }
 
             if (bError)
@@ -816,3 +819,5 @@ int gmx_eneconv(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

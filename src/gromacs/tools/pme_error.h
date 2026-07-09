@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_PME_ERROR_H
 #define GMX_TOOLS_PME_ERROR_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx pme_error
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_pme_error(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

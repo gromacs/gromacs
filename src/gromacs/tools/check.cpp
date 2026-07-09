@@ -85,6 +85,9 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 typedef struct
 {
     int bStep;
@@ -121,7 +124,7 @@ static void comp_tpx(const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol
     {
         ir[i] = std::make_unique<t_inputrec>();
         read_tpx_state(ff[i], ir[i].get(), &state[i], &(mtop[i]));
-        gmx::MDModules().adjustInputrecBasedOnModules(ir[i].get());
+        MDModules().adjustInputrecBasedOnModules(ir[i].get());
     }
     if (fn2)
     {
@@ -166,7 +169,7 @@ static void comp_trx(const gmx_output_env_t* oenv, const char* fn1, const char* 
     {
         do
         {
-            gmx::comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol);
+            comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol);
 
             for (i = 0; i < 2; i++)
             {
@@ -257,10 +260,10 @@ static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec*
     t_pbc pbc;
     rvec  dx;
 
-    gmx::ArrayRef<const t_iparams> iparams = idef->iparams;
+    ArrayRef<const t_iparams> iparams = idef->iparams;
 
     set_pbc(&pbc, pbcType, box);
-    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
+    for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
     {
         if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND)
         {
@@ -285,8 +288,8 @@ static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec*
                 {
                     pbc_dx(&pbc, x[ai], x[aj], dx);
                     blen      = norm(dx);
-                    deviation = gmx::square(blen - b0);
-                    if (std::sqrt(deviation / gmx::square(b0)) > tol)
+                    deviation = square(blen - b0);
+                    if (std::sqrt(deviation / square(b0)) > tol)
                     {
                         fprintf(stderr,
                                 "Distance between atoms %d and %d is %.3f, should be %.3f\n",
@@ -511,8 +514,8 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
                 ekin += 0.5 * atoms->atom[i].m * v[i][j] * v[i][j];
             }
         }
-        temp1 = (2.0 * ekin) / (natom * DIM * gmx::c_boltz);
-        temp2 = (2.0 * ekin) / (natom * (DIM - 1) * gmx::c_boltz);
+        temp1 = (2.0 * ekin) / (natom * DIM * c_boltz);
+        temp2 = (2.0 * ekin) / (natom * (DIM - 1) * c_boltz);
         fprintf(stderr, "Kinetic energy: %g (kJ/mol)\n", ekin);
         fprintf(stderr,
                 "Assuming the number of degrees of freedom to be "
@@ -528,9 +531,9 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
     /* check coordinates */
     if (bX)
     {
-        vdwfac2 = gmx::square(vdw_fac);
-        bonlo2  = gmx::square(bon_lo);
-        bonhi2  = gmx::square(bon_hi);
+        vdwfac2 = square(vdw_fac);
+        bonlo2  = square(bon_lo);
+        bonhi2  = square(bon_hi);
 
         fprintf(stderr,
                 "Checking for atoms closer than %g and not between %g and %g,\n"
@@ -580,7 +583,7 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
                     rvec_sub(x[i], x[j], dx);
                 }
                 r2    = iprod(dx, dx);
-                dist2 = gmx::square(atom_vdw[i] + atom_vdw[j]);
+                dist2 = square(atom_vdw[i] + atom_vdw[j]);
                 if ((r2 <= dist2 * bonlo2) || ((r2 >= dist2 * bonhi2) && (r2 <= dist2 * vdwfac2)))
                 {
                     if (bFirst)
@@ -692,7 +695,7 @@ static void chk_ndx(const char* fn)
         printf("Contents of index file %s\n", fn);
         printf("--------------------------------------------------\n");
         printf("Nr.   Group               #Entries   First    Last\n");
-        for (gmx::Index i = 0; i < gmx::ssize(grps); i++)
+        for (Index i = 0; i < gmx::ssize(grps); i++)
         {
             printf("%4td  %-20s%8td%8d%8d\n",
                    i,
@@ -926,3 +929,5 @@ int gmx_check(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

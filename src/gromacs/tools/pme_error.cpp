@@ -83,8 +83,14 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 /* #define TAKETIME */
 /* #define DEBUG  */
+
+namespace
+{
 
 /* Enum for situations that can occur during log file parsing */
 enum
@@ -97,6 +103,7 @@ enum
     eParselogNr
 };
 
+} // namespace
 
 struct PmeErrorInputs
 {
@@ -194,10 +201,10 @@ static real estimate_direct(PmeErrorInputs* info)
     beta      = info->ewald_beta[0];
     r_coulomb = info->rcoulomb[0];
 
-    e_dir = 2.0 * info->q2all * gmx::invsqrt(info->q2allnr * r_coulomb * info->volume);
+    e_dir = 2.0 * info->q2all * invsqrt(info->q2allnr * r_coulomb * info->volume);
     e_dir *= std::exp(-beta * beta * r_coulomb * r_coulomb);
 
-    return gmx::c_one4PiEps0 * e_dir;
+    return c_one4PiEps0 * e_dir;
 }
 
 #define SUMORDER 6
@@ -434,7 +441,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
                                 int  seed,     /* The seed for the random number generator */
                                 int* nsamples, /* Return the number of samples used if Monte Carlo
                                                 * algorithm is used for self energy error estimate */
-                                const gmx::MpiComm& mpiComm)
+                                const MpiComm& mpiComm)
 {
     real     e_rec   = 0; /* reciprocal error estimate */
     real     e_rec1  = 0; /* Error estimate term 1*/
@@ -475,12 +482,12 @@ static real estimate_reciprocal(PmeErrorInputs* info,
 
     if (seed == 0)
     {
-        seed = static_cast<int>(gmx::makeRandomSeed());
+        seed = static_cast<int>(makeRandomSeed());
     }
     fprintf(stderr, "Using random seed %d.\n", seed);
 
-    gmx::DefaultRandomEngine         rng(seed);
-    gmx::UniformIntDistribution<int> dist(0, nr - 1);
+    DefaultRandomEngine         rng(seed);
+    UniformIntDistribution<int> dist(0, nr - 1);
 
     clear_rvec(gridpx);
     clear_rvec(gridpxy);
@@ -791,7 +798,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
     e_rec = std::sqrt(e_rec1 + e_rec2 + e_rec3);
 
 
-    return gmx::c_one4PiEps0 * e_rec;
+    return c_one4PiEps0 * e_rec;
 }
 
 
@@ -822,7 +829,7 @@ static void create_info(PmeErrorInputs* info)
 /* Allocate and fill an array with coordinates and charges,
  * returns the number of charges found
  */
-static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec x_orig[], const gmx::MpiComm& mpiComm)
+static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec x_orig[], const MpiComm& mpiComm)
 {
     int nq = 0; /* number of charged particles, keep static-analyzer happy by zeroing here */
 
@@ -911,7 +918,7 @@ static void read_tpr_file(const char*     fn_sim_tpr,
 
 
 /* Transfer what we need for parallelizing the reciprocal error estimate */
-static void bcast_info(PmeErrorInputs* info, const gmx::MpiComm& mpiComm)
+static void bcast_info(PmeErrorInputs* info, const MpiComm& mpiComm)
 {
     nblock_bc(mpiComm.comm(), info->n_entries, info->nkx);
     nblock_bc(mpiComm.comm(), info->n_entries, info->nky);
@@ -934,13 +941,13 @@ static void bcast_info(PmeErrorInputs* info, const gmx::MpiComm& mpiComm)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(PmeErrorInputs*     info,
-                               const t_state*      state,
-                               const gmx_mtop_t*   mtop,
-                               FILE*               fp_out,
-                               gmx_bool            bVerbose,
-                               unsigned int        seed,
-                               const gmx::MpiComm& mpiComm)
+static void estimate_PME_error(PmeErrorInputs*   info,
+                               const t_state*    state,
+                               const gmx_mtop_t* mtop,
+                               FILE*             fp_out,
+                               gmx_bool          bVerbose,
+                               unsigned int      seed,
+                               const MpiComm&    mpiComm)
 {
     rvec* x     = nullptr; /* The coordinates */
     real* q     = nullptr; /* The charges     */
@@ -1158,7 +1165,7 @@ int gmx_pme_error(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    const gmx::MpiComm mpiComm(MPI_COMM_WORLD);
+    const MpiComm mpiComm(MPI_COMM_WORLD);
     PCA_Flags = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(
@@ -1248,3 +1255,5 @@ int gmx_pme_error(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

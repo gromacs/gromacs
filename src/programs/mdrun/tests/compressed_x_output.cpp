@@ -87,7 +87,7 @@ TEST_P(MdrunCompressedXOutput, ExitsNormally)
     ::gmx::test::CommandLine checkCaller;
     checkCaller.append("check");
     checkCaller.addOption("-f", runner_.reducedPrecisionTrajectoryFileName_);
-    ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
+    ASSERT_EQ(0, gmx::gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 
 INSTANTIATE_TEST_SUITE_P(WithDifferentOutputGroupSettings,

@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_MAKE_NDX_H
 #define GMX_TOOLS_MAKE_NDX_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx make_ndx
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_make_ndx(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

@@ -34,11 +34,16 @@
 #ifndef GMX_TOOLS_TUNE_PME_H
 #define GMX_TOOLS_TUNE_PME_H
 
+namespace gmx
+{
+
 /*! \brief Implements gmx tune_pme
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
 int gmx_tune_pme(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

@@ -68,6 +68,9 @@
 enum class PbcType : int;
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 /* It's not nice to have size limits, but we should not spend more time
  * on this ancient tool, but instead use the new selection library.
  */
@@ -169,7 +172,7 @@ static gmx_bool is_name_char(char c)
     return (c != '\0' && std::strchr(spec, c) == nullptr);
 }
 
-static int parse_names(char** string, int* n_names, gmx::ArrayRef<char*> names)
+static int parse_names(char** string, int* n_names, ArrayRef<char*> names)
 {
     int i;
 
@@ -280,7 +283,7 @@ static gmx_bool isquote(char c)
     return (c == '\"');
 }
 
-static gmx_bool parse_string(char** string, int* nr, gmx::ArrayRef<const IndexGroup> indexGroups)
+static gmx_bool parse_string(char** string, int* nr, ArrayRef<const IndexGroup> indexGroups)
 {
     char *s, *sp;
     char  c;
@@ -583,7 +586,7 @@ static gmx_bool comp_name(const char* name, const char* search)
     return matches;
 }
 
-static int select_chainnames(const t_atoms* atoms, int n_names, gmx::ArrayRef<char*> names, int* nr, int* index)
+static int select_chainnames(const t_atoms* atoms, int n_names, ArrayRef<char*> names, int* nr, int* index)
 {
     char name[2];
     int  j;
@@ -615,7 +618,7 @@ static int select_chainnames(const t_atoms* atoms, int n_names, gmx::ArrayRef<ch
     return *nr;
 }
 
-static int select_atomnames(const t_atoms* atoms, int n_names, gmx::ArrayRef<char*> names, int* nr, int* index, gmx_bool bType)
+static int select_atomnames(const t_atoms* atoms, int n_names, ArrayRef<char*> names, int* nr, int* index, gmx_bool bType)
 {
     char* name;
     int   j;
@@ -653,7 +656,7 @@ static int select_atomnames(const t_atoms* atoms, int n_names, gmx::ArrayRef<cha
     return *nr;
 }
 
-static int select_residuenames(const t_atoms* atoms, int n_names, gmx::ArrayRef<char*> names, int* nr, int* index)
+static int select_residuenames(const t_atoms* atoms, int n_names, ArrayRef<char*> names, int* nr, int* index)
 {
     char* name;
     int   j;
@@ -684,7 +687,7 @@ static int select_residuenames(const t_atoms* atoms, int n_names, gmx::ArrayRef<
     return *nr;
 }
 
-static void make_gname(int n, gmx::ArrayRef<char*> names, char* gname)
+static void make_gname(int n, ArrayRef<char*> names, char* gname)
 {
     int i;
 
@@ -696,10 +699,10 @@ static void make_gname(int n, gmx::ArrayRef<char*> names, char* gname)
     }
 }
 
-static void copy_group(gmx::ArrayRef<const int> group, int* nr, int* index)
+static void copy_group(ArrayRef<const int> group, int* nr, int* index)
 {
     *nr = gmx::ssize(group);
-    for (gmx::Index i = 0; i < *nr; i++)
+    for (Index i = 0; i < *nr; i++)
     {
         index[i] = group[i];
     }
@@ -730,8 +733,8 @@ static void split_group(const t_atoms* atoms, int sel_nr, std::vector<IndexGroup
             (*indexGroups)[sel_nr].name; // Need a copy since indexGroups can reallocate
     printf("Splitting group %d '%s' into %s\n", sel_nr, nameToSplit.c_str(), bAtom ? "atoms" : "residues");
 
-    gmx::ArrayRef<const int> groupToSplit = (*indexGroups)[sel_nr].particleIndices;
-    int                      prevAtom     = -1;
+    ArrayRef<const int> groupToSplit = (*indexGroups)[sel_nr].particleIndices;
+    int                 prevAtom     = -1;
     for (const int a : groupToSplit)
     {
         const int   resind = atoms->atom[a].resind;
@@ -868,7 +871,7 @@ static gmx_bool parse_entry(char**                   string,
                             int*                     nr,
                             int*                     index,
                             char*                    gname,
-                            gmx::ArrayRef<char*>     entryNames)
+                            ArrayRef<char*>          entryNames)
 {
     char*         ostring;
     int           j, n_names, sel_nr1;
@@ -1391,7 +1394,7 @@ static void edit_index(int                      natoms,
 }
 
 //! Find the number of atoms in the system implied by the largest atom index
-static int impliedNumberOfAtom(gmx::ArrayRef<const IndexGroup> indexGroups)
+static int impliedNumberOfAtom(ArrayRef<const IndexGroup> indexGroups)
 {
     int maxAtomIndex = -1;
 
@@ -1468,10 +1471,10 @@ int gmx_make_ndx(int argc, char* argv[])
         return 0;
     }
 
-    stxfile                                     = ftp2fn_null(efSTX, NFILE, fnm);
-    gmx::ArrayRef<const std::string> ndxInFiles = opt2fnsIfOptionSet("-n", NFILE, fnm);
-    ndxoutfile                                  = opt2fn("-o", NFILE, fnm);
-    bNatoms                                     = opt2parg_bSet("-natoms", NPA, pa);
+    stxfile                                = ftp2fn_null(efSTX, NFILE, fnm);
+    ArrayRef<const std::string> ndxInFiles = opt2fnsIfOptionSet("-n", NFILE, fnm);
+    ndxoutfile                             = opt2fn("-o", NFILE, fnm);
+    bNatoms                                = opt2parg_bSet("-natoms", NPA, pa);
 
     if (!stxfile && ndxInFiles.empty())
     {
@@ -1532,3 +1535,5 @@ int gmx_make_ndx(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

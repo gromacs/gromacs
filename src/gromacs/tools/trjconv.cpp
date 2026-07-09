@@ -88,6 +88,9 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 static void mk_filenm(char* base, const char* ext, int ndigit, int file_nr, char out_file[])
 {
     char nbuf[128];
@@ -897,7 +900,7 @@ int gmx_trjconv(int argc, char* argv[])
                 }
                 natoms = temporaryFrame.natoms;
                 close_trx(temporaryStatus);
-                gmx::done_frame(&temporaryFrame);
+                done_frame(&temporaryFrame);
             }
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1066,14 +1069,8 @@ int gmx_trjconv(int argc, char* argv[])
             switch (ftp)
             {
                 case efTNG:
-                    trxout = trjtools_gmx_prepare_tng_writing(out_file,
-                                                              filemode[0],
-                                                              trxin,
-                                                              {},
-                                                              nout,
-                                                              mtop.get(),
-                                                              gmx::arrayRefFromArray(index, nout),
-                                                              grpnm);
+                    trxout = trjtools_gmx_prepare_tng_writing(
+                            out_file, filemode[0], trxin, {}, nout, mtop.get(), arrayRefFromArray(index, nout), grpnm);
                     break;
                 case efXTC:
                 case efTRR:
@@ -1400,8 +1397,7 @@ int gmx_trjconv(int argc, char* argv[])
                             }
                         }
 
-                        auto positionsArrayRef =
-                                gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(fr.x), natoms);
+                        auto positionsArrayRef = arrayRefFromArray(reinterpret_cast<RVec*>(fr.x), natoms);
                         if (bPBCcomAtom)
                         {
                             switch (unitcell_enum)
@@ -1536,7 +1532,7 @@ int gmx_trjconv(int argc, char* argv[])
                                 {
                                     std::strcpy(stepstr, "");
                                 }
-                                title = gmx::formatString("%s%s%s", top_title, timestr, stepstr);
+                                title = formatString("%s%s%s", top_title, timestr, stepstr);
                                 if (bSeparate || bSplitHere)
                                 {
                                     out = gmx_ffopen(out_file2, "w");
@@ -1695,11 +1691,11 @@ int gmx_trjconv(int argc, char* argv[])
     sfree(grpnm);
     sfree(index);
     sfree(cindex);
-    gmx::done_frame(&fr);
-    gmx::done_frame(&nextFrame);
+    done_frame(&fr);
+    done_frame(&nextFrame);
     if (bTDump)
     {
-        gmx::done_frame(&previousFrame);
+        done_frame(&previousFrame);
     }
 
     do_view(oenv, out_file, nullptr);
@@ -1707,3 +1703,5 @@ int gmx_trjconv(int argc, char* argv[])
     output_env_done(oenv);
     return 0;
 }
+
+} // namespace gmx
