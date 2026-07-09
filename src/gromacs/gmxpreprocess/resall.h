@@ -55,6 +55,9 @@ class MDLogger;
 struct PreprocessResidue;
 struct t_symtab;
 
+namespace gmx
+{
+
 /*! \brief
  * Search for an entry in the rtp database.
  *
@@ -116,5 +119,7 @@ void readResidueDatabase(const std::filesystem::path&    resdb,
 void print_resall(FILE*                                  out,
                   gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
                   const PreprocessingAtomTypes&          atype);
+
+} // namespace gmx
 
 #endif

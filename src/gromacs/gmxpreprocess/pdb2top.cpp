@@ -1050,8 +1050,8 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
          */
         key = *resinfo[i].rtp;
 
-        resinfo[i].rtp = put_symtab(symtab, searchResidueDatabase(key, rtpFFDB, logger).c_str());
-        auto res       = getDatabaseEntry(*resinfo[i].rtp, rtpFFDB);
+        resinfo[i].rtp = put_symtab(symtab, gmx::searchResidueDatabase(key, rtpFFDB, logger).c_str());
+        auto res = gmx::getDatabaseEntry(*resinfo[i].rtp, rtpFFDB);
         usedPpResidues->emplace_back();
         PreprocessResidue* newentry = &usedPpResidues->back();
         copyPreprocessResidues(*res, newentry, symtab);

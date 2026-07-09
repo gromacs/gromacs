@@ -43,6 +43,9 @@ struct t_atoms;
 struct InteractionsOfType;
 struct t_symtab;
 
+namespace gmx
+{
+
 struct t_nm2type
 {
     char *  elem, *type;
@@ -64,5 +67,7 @@ int nm2type(int nnm, t_nm2type nm2t[], t_atoms* atoms, PreprocessingAtomTypes* a
 /* Try to determine the atomtype (force field dependent) for the atoms
  * with help of the bond list
  */
+
+} // namespace gmx
 
 #endif

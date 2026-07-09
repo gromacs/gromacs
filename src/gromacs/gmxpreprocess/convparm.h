@@ -50,6 +50,9 @@ template<typename>
 class ArrayRef;
 }
 
+namespace gmx
+{
+
 //! Whether interactions of type \c ftype should have parameters converted
 bool shouldConvertInteractionType(InteractionFunction ftype);
 
@@ -76,5 +79,7 @@ void convertInteractionsOfType(int atnr,
                                double                                   reppow,
                                real                                     fudgeQQ,
                                gmx_mtop_t*                              mtop);
+
+} // namespace gmx
 
 #endif

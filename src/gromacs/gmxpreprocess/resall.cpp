@@ -65,6 +65,9 @@
 
 #include "hackblock.h"
 
+namespace gmx
+{
+
 PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
 {
     FILE*  in;
@@ -214,15 +217,15 @@ static void print_resbondeds(FILE* out, BondedTypes bt, const PreprocessResidue&
     }
 }
 
-static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
-                      const std::filesystem::path&           libfn,
-                      const gmx::MDLogger&                   logger)
+static void check_rtp(ArrayRef<const PreprocessResidue> rtpDBEntry,
+                      const std::filesystem::path&      libfn,
+                      const MDLogger&                   logger)
 {
     /* check for double entries, assuming list is already sorted */
     for (auto it = rtpDBEntry.begin() + 1; it != rtpDBEntry.end(); it++)
     {
         auto prev = it - 1;
-        if (gmx::equalCaseInsensitive(prev->resname, it->resname))
+        if (equalCaseInsensitive(prev->resname, it->resname))
         {
             GMX_LOG(logger.warning)
                     .asParagraph()
@@ -234,12 +237,12 @@ static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
 
 static std::optional<BondedTypes> get_bt(const char* header)
 {
-    gmx::StringToEnumValueConverter<BondedTypes, enumValueToString> converter;
+    StringToEnumValueConverter<BondedTypes, enumValueToString> converter;
     return converter.valueFrom(header);
 }
 
 /* print all the BondedTypes type numbers */
-static void print_resall_header(FILE* out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
+static void print_resall_header(FILE* out, ArrayRef<const PreprocessResidue> rtpDBEntry)
 {
     fprintf(out, "[ bondedtypes ]\n");
     fprintf(out,
@@ -258,7 +261,7 @@ static void print_resall_header(FILE* out, gmx::ArrayRef<const PreprocessResidue
 }
 
 
-static void print_resall_log(const gmx::MDLogger& logger, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
+static void print_resall_log(const MDLogger& logger, ArrayRef<const PreprocessResidue> rtpDBEntry)
 {
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("[ bondedtypes ]");
     GMX_LOG(logger.info)
@@ -280,7 +283,7 @@ static void print_resall_log(const gmx::MDLogger& logger, gmx::ArrayRef<const Pr
 }
 
 
-void print_resall(FILE* out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry, const PreprocessingAtomTypes& atype)
+void print_resall(FILE* out, ArrayRef<const PreprocessResidue> rtpDBEntry, const PreprocessingAtomTypes& atype)
 {
     if (rtpDBEntry.empty())
     {
@@ -294,7 +297,7 @@ void print_resall(FILE* out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry, 
         if (r.natom() > 0)
         {
             print_resatoms(out, atype, r);
-            for (auto bt : gmx::EnumerationWrapper<BondedTypes>{})
+            for (auto bt : EnumerationWrapper<BondedTypes>{})
             {
                 print_resbondeds(out, bt, r);
             }
@@ -306,7 +309,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
                          std::vector<PreprocessResidue>* rtpDBEntry,
                          PreprocessingAtomTypes*         atype,
                          t_symtab*                       tab,
-                         const gmx::MDLogger&            logger,
+                         const MDLogger&                 logger,
                          bool                            bAllowOverrideRTP)
 {
     FILE* in;
@@ -358,7 +361,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     {
         gmx_fatal(FARGS, "in .rtp file at line:\n%s\n", line);
     }
-    if (gmx::equalCaseInsensitive("bondedtypes", header, 5))
+    if (equalCaseInsensitive("bondedtypes", header, 5))
     {
         get_a_line(in, line, STRLEN);
         if ((nparam = sscanf(line,
@@ -429,7 +432,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
                 .appendTextFormatted(
                         "Reading .rtp file without '[ bondedtypes ]' directive, "
                         "Will proceed as if the entry was:");
-        print_resall_log(logger, gmx::arrayRefFromArray(&header_settings, 1));
+        print_resall_log(logger, arrayRefFromArray(&header_settings, 1));
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
     auto oldArrayEnd = rtpDBEntry->end();
@@ -462,7 +465,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
                     /* header is an bonded directive */
                     bError = !read_bondeds(*bt, in, line, res);
                 }
-                else if (gmx::equalCaseInsensitive("atoms", header, 5))
+                else if (equalCaseInsensitive("atoms", header, 5))
                 {
                     /* header is the atoms directive */
                     bError = !read_atoms(in, line, res, tab, atype);
@@ -487,7 +490,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
         auto found = std::find_if(rtpDBEntry->begin(),
                                   rtpDBEntry->end() - 1,
                                   [&res](const PreprocessResidue& entry)
-                                  { return gmx::equalCaseInsensitive(entry.resname, res->resname); });
+                                  { return equalCaseInsensitive(entry.resname, res->resname); });
 
         if (found != rtpDBEntry->end() - 1)
         {
@@ -563,7 +566,7 @@ static int neq_str_sign(const char* a1, const char* a2)
     lm = std::min(l1, l2);
 
     if (lm >= 1 && ((l1 == l2 + 1 && is_sign(a1[l1 - 1])) || (l2 == l1 + 1 && is_sign(a2[l2 - 1])))
-        && gmx::equalCaseInsensitive(a1, a2, lm))
+        && equalCaseInsensitive(a1, a2, lm))
     {
         return lm;
     }
@@ -573,9 +576,9 @@ static int neq_str_sign(const char* a1, const char* a2)
     }
 }
 
-std::string searchResidueDatabase(const std::string&                     key,
-                                  gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
-                                  const gmx::MDLogger&                   logger)
+std::string searchResidueDatabase(const std::string&                key,
+                                  ArrayRef<const PreprocessResidue> rtpDBEntry,
+                                  const MDLogger&                   logger)
 {
     int         nbest, best, besti;
     std::string bestbuf;
@@ -586,7 +589,7 @@ std::string searchResidueDatabase(const std::string&                     key,
     best = 1;
     for (auto it = rtpDBEntry.begin(); it != rtpDBEntry.end(); it++)
     {
-        if (gmx::equalCaseInsensitive(key, it->resname))
+        if (equalCaseInsensitive(key, it->resname))
         {
             besti = std::distance(rtpDBEntry.begin(), it);
             nbest = 1;
@@ -596,7 +599,7 @@ std::string searchResidueDatabase(const std::string&                     key,
         {
             /* Allow a mismatch of at most a sign character (with warning) */
             int n = neq_str_sign(key.c_str(), it->resname.c_str());
-            if (n >= best && n + 1 >= gmx::Index(key.length()) && n + 1 >= gmx::Index(it->resname.length()))
+            if (n >= best && n + 1 >= Index(key.length()) && n + 1 >= Index(it->resname.length()))
             {
                 if (n == best)
                 {
@@ -631,7 +634,7 @@ std::string searchResidueDatabase(const std::string&                     key,
     {
         gmx_fatal(FARGS, "Residue '%s' not found in residue topology database", key.c_str());
     }
-    if (!gmx::equalCaseInsensitive(rtpDBEntry[besti].resname, key))
+    if (!equalCaseInsensitive(rtpDBEntry[besti].resname, key))
     {
         GMX_LOG(logger.warning)
                 .asParagraph()
@@ -645,13 +648,13 @@ std::string searchResidueDatabase(const std::string&                     key,
     return rtpDBEntry[besti].resname;
 }
 
-gmx::ArrayRef<const PreprocessResidue>::const_iterator
-getDatabaseEntry(const std::string& rtpname, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
+ArrayRef<const PreprocessResidue>::const_iterator getDatabaseEntry(const std::string& rtpname,
+                                                                   ArrayRef<const PreprocessResidue> rtpDBEntry)
 {
     auto found = std::find_if(rtpDBEntry.begin(),
                               rtpDBEntry.end(),
                               [&rtpname](const PreprocessResidue& entry)
-                              { return gmx::equalCaseInsensitive(rtpname, entry.resname); });
+                              { return equalCaseInsensitive(rtpname, entry.resname); });
     if (found == rtpDBEntry.end())
     {
         /* This should never happen, since searchResidueDatabase should have been called
@@ -662,3 +665,5 @@ getDatabaseEntry(const std::string& rtpname, gmx::ArrayRef<const PreprocessResid
 
     return found;
 }
+
+} // namespace gmx

@@ -612,8 +612,8 @@ static int get_atype(int                                    atom,
     else
     {
         /* get type from rtpFFDB */
-        auto localPpResidue = getDatabaseEntry(*(at->resinfo[at->atom[atom].resind].name), rtpFFDB);
-        bNterm              = namedResidueHasType(
+        auto localPpResidue = gmx::getDatabaseEntry(*(at->resinfo[at->atom[atom].resind].name), rtpFFDB);
+        bNterm = namedResidueHasType(
                          residueTypeMap, *(at->resinfo[at->atom[atom].resind].name), "Protein")
                  && (at->atom[atom].resind == 0);
         int j = search_jtype(*localPpResidue, *(at->atomname[atom]), bNterm);
@@ -648,8 +648,8 @@ static real get_amass(int                                    atom,
     else
     {
         /* get mass from rtpFFDB */
-        auto localPpResidue = getDatabaseEntry(*(at->resinfo[at->atom[atom].resind].name), rtpFFDB);
-        bNterm              = namedResidueHasType(
+        auto localPpResidue = gmx::getDatabaseEntry(*(at->resinfo[at->atom[atom].resind].name), rtpFFDB);
+        bNterm = namedResidueHasType(
                          residueTypeMap, *(at->resinfo[at->atom[atom].resind].name), "Protein")
                  && (at->atom[atom].resind == 0);
         int j = search_jtype(*localPpResidue, *(at->atomname[atom]), bNterm);

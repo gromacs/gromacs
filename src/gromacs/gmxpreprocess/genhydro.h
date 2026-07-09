@@ -50,6 +50,9 @@ template<typename>
 class ArrayRef;
 }
 
+namespace gmx
+{
+
 /*! \brief
  * Generate hydrogen atoms and N and C terminal patches.
  *
@@ -81,4 +84,7 @@ int add_h(t_atoms**                                   initialAtoms,
           gmx::ArrayRef<const int>                    rC,
           bool                                        bMissing,
           gmx::ArrayRef<const int>                    cyclicBondsIndex);
+
+} // namespace gmx
+
 #endif

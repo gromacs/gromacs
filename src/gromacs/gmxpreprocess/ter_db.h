@@ -47,6 +47,9 @@ template<typename>
 class ArrayRef;
 }
 
+namespace gmx
+{
+
 /*! \brief
  * Read database for N&C terminal modifications.
  *
@@ -78,5 +81,7 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
  * \returns The modification block selected.
  */
 MoleculePatchDatabase* choose_ter(gmx::ArrayRef<MoleculePatchDatabase*> tb, const char* title);
+
+} // namespace gmx
 
 #endif

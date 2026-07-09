@@ -44,6 +44,11 @@ template<typename>
 class ArrayRef;
 }
 
+namespace gmx
+{
+
 void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAtomTypes* atype);
+
+} // namespace gmx
 
 #endif

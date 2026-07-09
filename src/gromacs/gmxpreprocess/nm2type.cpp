@@ -62,6 +62,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vec.h"
 
+namespace gmx
+{
+
 static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_nm2type** nmp)
 {
     FILE*      fp;
@@ -364,3 +367,5 @@ int nm2type(int nnm, t_nm2type nm2t[], t_atoms* atoms, PreprocessingAtomTypes* a
 
     return nresolved;
 }
+
+} // namespace gmx

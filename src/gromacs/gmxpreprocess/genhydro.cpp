@@ -68,18 +68,21 @@
 #include "hackblock.h"
 #include "resall.h"
 
+namespace gmx
+{
+
 static void copy_atom(const t_atoms* atoms1, int a1, t_atoms* atoms2, int a2, t_symtab* symtab)
 {
     atoms2->atom[a2]     = atoms1->atom[a1];
     atoms2->atomname[a2] = put_symtab(symtab, *atoms1->atomname[a1]);
 }
 
-static std::optional<int> pdbasearch_atom(const char*              name,
-                                          int                      resind,
-                                          const t_atoms*           pdba,
-                                          const char*              searchtype,
-                                          bool                     bAllowMissing,
-                                          gmx::ArrayRef<const int> cyclicBondsIndex)
+static std::optional<int> pdbasearch_atom(const char*         name,
+                                          int                 resind,
+                                          const t_atoms*      pdba,
+                                          const char*         searchtype,
+                                          bool                bAllowMissing,
+                                          ArrayRef<const int> cyclicBondsIndex)
 {
     int i;
 
@@ -170,7 +173,7 @@ static bool matchesHydrogenNameFromResidueTopology(const char* bondedAtomName, c
     // Single-hydrogen HDB entries specify the full atom name, e.g. HG.
     if (patch.nr == 1)
     {
-        return gmx::equalCaseInsensitive(bondedAtomName, patch.nname);
+        return equalCaseInsensitive(bondedAtomName, patch.nname);
     }
 
     // Multi-hydrogen HDB entries specify a shared stem, e.g. HB, which should
@@ -262,12 +265,12 @@ static bool patchAppliesToLocalAtom(const MoleculePatch& patch, const std::strin
  * \todo The short-circuit logic will be simpler if this returned a
  * std::pair<int, int> as soon as the first double match is found.
  */
-static void hacksearch_atom(int*                                            ii,
-                            int*                                            jj,
-                            const char*                                     name,
-                            gmx::ArrayRef<const std::vector<MoleculePatch>> patches,
-                            int                                             resind,
-                            const t_atoms*                                  pdba)
+static void hacksearch_atom(int*                                       ii,
+                            int*                                       jj,
+                            const char*                                name,
+                            ArrayRef<const std::vector<MoleculePatch>> patches,
+                            int                                        resind,
+                            const t_atoms*                             pdba)
 {
     int i;
 
@@ -298,13 +301,13 @@ static void hacksearch_atom(int*                                            ii,
 }
 
 static std::vector<MoleculePatchDatabase>
-getMoleculePatchDatabases(const t_atoms*                              pdba,
-                          gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
-                          int                                         nterpairs,
-                          gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
-                          gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
-                          gmx::ArrayRef<const int>                    rN,
-                          gmx::ArrayRef<const int>                    rC)
+getMoleculePatchDatabases(const t_atoms*                         pdba,
+                          ArrayRef<const MoleculePatchDatabase>  globalPatches,
+                          int                                    nterpairs,
+                          ArrayRef<MoleculePatchDatabase* const> ntdb,
+                          ArrayRef<MoleculePatchDatabase* const> ctdb,
+                          ArrayRef<const int>                    rN,
+                          ArrayRef<const int>                    rC)
 {
     std::vector<MoleculePatchDatabase> modBlock(pdba->nres);
     /* make space */
@@ -422,7 +425,7 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                 {
                     /* This is a water lone pair, not a hydrogen */
                     /* Ugly hardcoded name hack */
-                    patch->nname.assign(gmx::formatString("LP%d", 1 + k - 2));
+                    patch->nname.assign(formatString("LP%d", 1 + k - 2));
                 }
                 else if (useRtpHydrogenNames)
                 {
@@ -431,7 +434,7 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                 else if (singlePatch.nr > 1)
                 {
                     /* adding more than one atom, number them */
-                    patch->nname.append(gmx::formatString("%d", 1 + k));
+                    patch->nname.append(formatString("%d", 1 + k));
                 }
             }
 
@@ -454,13 +457,13 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
     }
 }
 
-static void expand_hackblocks(const t_atoms*                             pdba,
-                              gmx::ArrayRef<const MoleculePatchDatabase> hb,
-                              gmx::ArrayRef<const PreprocessResidue>     residueTopology,
-                              gmx::ArrayRef<std::vector<MoleculePatch>>  patches,
-                              int                                        nterpairs,
-                              gmx::ArrayRef<const int>                   rN,
-                              gmx::ArrayRef<const int>                   rC)
+static void expand_hackblocks(const t_atoms*                        pdba,
+                              ArrayRef<const MoleculePatchDatabase> hb,
+                              ArrayRef<const PreprocessResidue>     residueTopology,
+                              ArrayRef<std::vector<MoleculePatch>>  patches,
+                              int                                   nterpairs,
+                              ArrayRef<const int>                   rN,
+                              ArrayRef<const int>                   rC)
 {
     for (int i = 0; i < pdba->nr; i++)
     {
@@ -485,9 +488,9 @@ static void expand_hackblocks(const t_atoms*                             pdba,
     }
 }
 
-static int check_atoms_present(const t_atoms*                            pdba,
-                               gmx::ArrayRef<std::vector<MoleculePatch>> patches,
-                               gmx::ArrayRef<const int>                  cyclicBondsIndex)
+static int check_atoms_present(const t_atoms*                       pdba,
+                               ArrayRef<std::vector<MoleculePatch>> patches,
+                               ArrayRef<const int>                  cyclicBondsIndex)
 {
     int nadd = 0;
     for (int i = 0; i < pdba->nr; i++)
@@ -523,7 +526,7 @@ static int check_atoms_present(const t_atoms*                            pdba,
                 }
                 default:
                 {
-                    GMX_THROW(gmx::InternalError("Case not handled"));
+                    GMX_THROW(InternalError("Case not handled"));
                 }
             }
         }
@@ -531,11 +534,11 @@ static int check_atoms_present(const t_atoms*                            pdba,
     return nadd;
 }
 
-static void calc_all_pos(const t_atoms*                            pdba,
-                         gmx::ArrayRef<const gmx::RVec>            x,
-                         gmx::ArrayRef<std::vector<MoleculePatch>> patches,
-                         bool                                      bCheckMissing,
-                         gmx::ArrayRef<const int>                  cyclicBondsIndex)
+static void calc_all_pos(const t_atoms*                       pdba,
+                         ArrayRef<const RVec>                 x,
+                         ArrayRef<std::vector<MoleculePatch>> patches,
+                         bool                                 bCheckMissing,
+                         ArrayRef<const int>                  cyclicBondsIndex)
 {
     int ii, l = 0;
 #define MAXH 4
@@ -623,24 +626,24 @@ static void calc_all_pos(const t_atoms*                            pdba,
     }
 }
 
-static int add_h_low(t_atoms**                                   initialAtoms,
-                     t_atoms**                                   modifiedAtoms,
-                     std::vector<gmx::RVec>*                     xptr,
-                     gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
-                     gmx::ArrayRef<const PreprocessResidue>      residueTopology,
-                     t_symtab*                                   symtab,
-                     const int                                   nterpairs,
-                     gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
-                     gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
-                     gmx::ArrayRef<const int>                    rN,
-                     gmx::ArrayRef<const int>                    rC,
-                     const bool                                  bCheckMissing,
-                     gmx::ArrayRef<const int>                    cyclicBondsIndex)
+static int add_h_low(t_atoms**                              initialAtoms,
+                     t_atoms**                              modifiedAtoms,
+                     std::vector<RVec>*                     xptr,
+                     ArrayRef<const MoleculePatchDatabase>  globalPatches,
+                     ArrayRef<const PreprocessResidue>      residueTopology,
+                     t_symtab*                              symtab,
+                     const int                              nterpairs,
+                     ArrayRef<MoleculePatchDatabase* const> ntdb,
+                     ArrayRef<MoleculePatchDatabase* const> ctdb,
+                     ArrayRef<const int>                    rN,
+                     ArrayRef<const int>                    rC,
+                     const bool                             bCheckMissing,
+                     ArrayRef<const int>                    cyclicBondsIndex)
 {
     int                                     nadd;
     int                                     newi, natoms, nalreadypresent;
     std::vector<std::vector<MoleculePatch>> patches;
-    std::vector<gmx::RVec>                  xn;
+    std::vector<RVec>                       xn;
 
     t_atoms* pdba = *initialAtoms;
 
@@ -767,19 +770,19 @@ static int add_h_low(t_atoms**                                   initialAtoms,
     return newi;
 }
 
-int add_h(t_atoms**                                   initialAtoms,
-          t_atoms**                                   localAtoms,
-          std::vector<gmx::RVec>*                     xptr,
-          gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
-          gmx::ArrayRef<const PreprocessResidue>      residueTopology,
-          t_symtab*                                   symtab,
-          const int                                   nterpairs,
-          gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
-          gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
-          gmx::ArrayRef<const int>                    rN,
-          gmx::ArrayRef<const int>                    rC,
-          const bool                                  bAllowMissing,
-          gmx::ArrayRef<const int>                    cyclicBondsIndex)
+int add_h(t_atoms**                              initialAtoms,
+          t_atoms**                              localAtoms,
+          std::vector<RVec>*                     xptr,
+          ArrayRef<const MoleculePatchDatabase>  globalPatches,
+          ArrayRef<const PreprocessResidue>      residueTopology,
+          t_symtab*                              symtab,
+          const int                              nterpairs,
+          ArrayRef<MoleculePatchDatabase* const> ntdb,
+          ArrayRef<MoleculePatchDatabase* const> ctdb,
+          ArrayRef<const int>                    rN,
+          ArrayRef<const int>                    rC,
+          const bool                             bAllowMissing,
+          ArrayRef<const int>                    cyclicBondsIndex)
 {
     int nold, nnew, niter;
 
@@ -833,3 +836,5 @@ int add_h(t_atoms**                                   initialAtoms,
 
     return nnew;
 }
+
+} // namespace gmx

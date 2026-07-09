@@ -69,6 +69,13 @@
 #include "hackblock.h"
 #include "resall.h"
 
+namespace gmx
+{
+
+// findTypeFromKeyword() below is instantiated for BondedTypes as well as
+// ReplaceType, and needs both overloads of enumValueToString() in scope.
+using ::enumValueToString;
+
 /* use bonded types definitions in hackblock.h */
 enum class ReplaceType : int
 {
@@ -80,16 +87,16 @@ enum class ReplaceType : int
 
 static const char* enumValueToString(ReplaceType enumValue)
 {
-    constexpr gmx::EnumerationArray<ReplaceType, const char*> replaceTypeNames = { "replace",
-                                                                                   "add",
-                                                                                   "delete" };
+    constexpr EnumerationArray<ReplaceType, const char*> replaceTypeNames = { "replace",
+                                                                              "add",
+                                                                              "delete" };
     return replaceTypeNames[enumValue];
 }
 
 template<typename EnumType>
 static std::optional<EnumType> findTypeFromKeyword(char* keyw)
 {
-    gmx::StringToEnumValueConverter<EnumType, enumValueToString, gmx::StringCompareType::CaseInsensitive, gmx::StripStrings::Yes> converter;
+    StringToEnumValueConverter<EnumType, enumValueToString, StringCompareType::CaseInsensitive, StripStrings::Yes> converter;
     return converter.valueFrom(keyw);
 }
 
@@ -140,10 +147,10 @@ static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, Prep
     auto atomType = atype->atomTypeFromName(buf[i++]);
     if (atomType == std::nullopt)
     {
-        GMX_THROW(gmx::InconsistentInputError(
-                gmx::formatString("Atom type %s specified in terminal database has not been "
-                                  "defined in the force field",
-                                  buf[i - 1])));
+        GMX_THROW(InconsistentInputError(
+                formatString("Atom type %s specified in terminal database has not been "
+                             "defined in the force field",
+                             buf[i - 1])));
     }
     else
     {
@@ -168,12 +175,9 @@ static void print_atom(FILE* out, const t_atom& a, PreprocessingAtomTypes* atype
     fprintf(out, "\t%s\t%g\t%g\n", atype->atomNameFromAtomType(a.type)->c_str(), a.m, a.q);
 }
 
-static void print_ter_db(const char*                                ff,
-                         char                                       C,
-                         gmx::ArrayRef<const MoleculePatchDatabase> tb,
-                         PreprocessingAtomTypes*                    atype)
+static void print_ter_db(const char* ff, char C, ArrayRef<const MoleculePatchDatabase> tb, PreprocessingAtomTypes* atype)
 {
-    std::string buf = gmx::formatString("%s-%c.tdb", ff, C);
+    std::string buf = formatString("%s-%c.tdb", ff, C);
     FILE*       out = gmx_fio_fopen(buf.c_str(), "w");
 
     for (const auto& modification : tb)
@@ -221,7 +225,7 @@ static void print_ter_db(const char*                                ff,
                 }
             }
         }
-        for (auto bt : gmx::EnumerationWrapper<BondedTypes>{})
+        for (auto bt : EnumerationWrapper<BondedTypes>{})
         {
             if (!modification.rb[bt].b.empty())
             {
@@ -394,7 +398,7 @@ int read_ter_db(const std::filesystem::path&        ffdir,
                 std::vector<MoleculePatchDatabase>* tbptr,
                 PreprocessingAtomTypes*             atype)
 {
-    std::string ext = gmx::formatString(".%c.tdb", ter);
+    std::string ext = formatString(".%c.tdb", ter);
 
     /* Search for termini database files.
      * Do not generate an error when none are found.
@@ -414,7 +418,7 @@ int read_ter_db(const std::filesystem::path&        ffdir,
     return tbptr->size();
 }
 
-std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDatabase> tb, const char* resname)
+std::vector<MoleculePatchDatabase*> filter_ter(ArrayRef<MoleculePatchDatabase> tb, const char* resname)
 {
     // TODO Four years later, no force fields have ever used this, so decide status of this feature
     /* Since some force fields (e.g. OPLS) needs different
@@ -447,7 +451,7 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
         bool        found = false;
         do
         {
-            if (gmx::equalCaseInsensitive(resname, s, 3))
+            if (equalCaseInsensitive(resname, s, 3))
             {
                 found = true;
                 list.push_back(&*it);
@@ -473,7 +477,7 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
     for (auto it = tb.begin(); it != tb.end(); it++)
     {
         const char* s = it->name.c_str();
-        if (gmx::equalCaseInsensitive("None", it->name))
+        if (equalCaseInsensitive("None", it->name))
         {
             none_idx = it;
         }
@@ -518,7 +522,7 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
 }
 
 
-MoleculePatchDatabase* choose_ter(gmx::ArrayRef<MoleculePatchDatabase*> tb, const char* title)
+MoleculePatchDatabase* choose_ter(ArrayRef<MoleculePatchDatabase*> tb, const char* title)
 {
     int sel, ret;
 
@@ -540,3 +544,5 @@ MoleculePatchDatabase* choose_ter(gmx::ArrayRef<MoleculePatchDatabase*> tb, cons
 
     return tb[sel];
 }
+
+} // namespace gmx
