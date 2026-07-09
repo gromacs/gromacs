@@ -108,6 +108,9 @@ namespace gmx
 class CommandLineModuleSettings;
 } // namespace gmx
 
+namespace
+{
+
 struct RtpRename
 {
     RtpRename(const char* newGmx, const char* newMain, const char* newNter, const char* newCter, const char* newBter) :
@@ -120,9 +123,6 @@ struct RtpRename
     std::string cter;
     std::string bter;
 };
-
-namespace
-{
 
 const char* res2bb_notermini(const std::string& name, gmx::ArrayRef<const RtpRename> rr)
 {
