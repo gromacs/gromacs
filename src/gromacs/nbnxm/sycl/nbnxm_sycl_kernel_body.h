@@ -713,7 +713,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
      * it causes up to 20x slowdown compared to generic, local memory-based reduction. */
     constexpr bool useShuffleReductionForceI =
             (numReductionSteps <= 3) && (c_clSize == 8 || c_clSize == 4)
-            && !(numReductionSteps == 1 && c_avoidFloatingPointAtomics);
+            && !(numReductionSteps == 1 && c_avoidFloatingPointAtomics(sc_layoutType));
     constexpr bool useShuffleReductionForceJ = gmx::isPowerOfTwo(c_superClusterSize);
 
     // Local memory buffer for i x+q pre-loading
