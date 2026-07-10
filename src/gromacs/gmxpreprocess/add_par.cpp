@@ -53,7 +53,10 @@
 
 #include "hackblock.h"
 
-void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real> c, const char* s)
+namespace gmx
+{
+
+void add_param(InteractionsOfType* ps, int ai, int aj, ArrayRef<const real> c, const char* s)
 {
     if ((ai < 0) || (aj < 0))
     {
@@ -65,14 +68,7 @@ void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real>
     ps->interactionTypes.emplace_back(atoms, forceParm, s ? s : "");
 }
 
-void add_cmap_param(InteractionsOfType*       ps,
-                    int                       ai,
-                    int                       aj,
-                    int                       ak,
-                    int                       al,
-                    int                       am,
-                    gmx::ArrayRef<const real> c,
-                    const char*               s)
+void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, ArrayRef<const real> c, const char* s)
 {
     std::vector<int>  atoms = { ai, aj, ak, al, am };
     std::vector<real> forceParm(c.begin(), c.end());
@@ -96,7 +92,7 @@ void add_vsite3_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, re
 void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
     std::vector<int> atoms = { ai, aj, ak, al };
-    ps->interactionTypes.emplace_back(atoms, gmx::ArrayRef<const real>{});
+    ps->interactionTypes.emplace_back(atoms, ArrayRef<const real>{});
 
     if (bSwapParity)
     {
@@ -107,7 +103,7 @@ void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bo
 void add_vsite4_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am)
 {
     std::vector<int> atoms = { ai, aj, ak, al, am };
-    ps->interactionTypes.emplace_back(atoms, gmx::ArrayRef<const real>{});
+    ps->interactionTypes.emplace_back(atoms, ArrayRef<const real>{});
 }
 
 int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool bNterm)
@@ -183,3 +179,5 @@ int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool
     }
     return jmax;
 }
+
+} // namespace gmx

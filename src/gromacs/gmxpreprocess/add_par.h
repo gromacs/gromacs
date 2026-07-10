@@ -44,7 +44,6 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
 
 /*!
  * \brief Adds an interaction to the list of interactions.
@@ -55,7 +54,7 @@ class ArrayRef;
  * \param c Interaction parameters.
  * \param s Interaction name.
  */
-void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real> c, const char* s);
+void add_param(InteractionsOfType* ps, int ai, int aj, ArrayRef<const real> c, const char* s);
 
 /*!
  * \brief Adds a CMAP interaction to the list of interactions.
@@ -70,14 +69,7 @@ void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real>
  * for state B.
  * \param s Interaction name.
  */
-void add_cmap_param(InteractionsOfType*       ps,
-                    int                       ai,
-                    int                       aj,
-                    int                       ak,
-                    int                       al,
-                    int                       am,
-                    gmx::ArrayRef<const real> c,
-                    const char*               s);
+void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, ArrayRef<const real> c, const char* s);
 
 void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bool bSwapParity);
 
@@ -88,5 +80,7 @@ void add_vsite3_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, re
 void add_vsite4_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am);
 
 int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool bFirstRes);
+
+} // namespace gmx
 
 #endif
