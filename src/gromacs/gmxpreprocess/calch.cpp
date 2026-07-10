@@ -47,6 +47,9 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vec.h"
 
+namespace gmx
+{
+
 #define xAI xa[0]
 #define xAJ xa[1]
 #define xAK xa[2]
@@ -97,9 +100,9 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
 #define alfaHpl (2 * M_PI / 3)      /* 120 degrees */
 #define distH 0.1
 
-#define alfaCOM (gmx::c_deg2Rad * 117)
-#define alfaCO (gmx::c_deg2Rad * 121)
-#define alfaCOA (gmx::c_deg2Rad * 115)
+#define alfaCOM (c_deg2Rad * 117)
+#define alfaCO (c_deg2Rad * 121)
+#define alfaCOA (c_deg2Rad * 115)
 
 #define distO 0.123
 #define distOA 0.125
@@ -125,7 +128,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
                 xd     = xAJ[d];
                 sij[d] = xAI[d] - xd;
                 sb[d]  = xd - xAK[d];
-                rij += gmx::square(sij[d]);
+                rij += square(sij[d]);
             }
             rij    = std::sqrt(rij);
             sa[XX] = sij[YY] * sb[ZZ] - sij[ZZ] * sb[YY];
@@ -135,7 +138,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
             for (d = 0; (d < DIM); d++)
             {
                 sij[d] = sij[d] / rij;
-                ra += gmx::square(sa[d]);
+                ra += square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
@@ -158,8 +161,8 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
             {
                 sij[d] = xAI[d] - xAJ[d];
                 sb[d]  = xAI[d] - xAK[d];
-                rij += gmx::square(sij[d]);
-                rb += gmx::square(sb[d]);
+                rij += square(sij[d]);
+                rb += square(sb[d]);
             }
             rij = std::sqrt(rij);
             rb  = std::sqrt(rb);
@@ -167,7 +170,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
             for (d = 0; (d < DIM); d++)
             {
                 sa[d] = sij[d] / rij + sb[d] / rb;
-                ra += gmx::square(sa[d]);
+                ra += square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
@@ -279,3 +282,5 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
         default: gmx_fatal(FARGS, "Invalid argument (%d) for nht in routine genh\n", nht);
     } /* end switch */
 }
+
+} // namespace gmx

@@ -41,7 +41,12 @@
 struct t_atoms;
 struct t_symtab;
 
+namespace gmx
+{
+
 void set_histp(t_atoms* pdba, rvec* x, t_symtab* symtab, real angle, real distance);
 /* calculate HIStidine protonation state */
+
+} // namespace gmx
 
 #endif

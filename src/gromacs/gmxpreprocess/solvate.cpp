@@ -78,7 +78,8 @@
 struct gmx_output_env_t;
 struct t_symtab;
 
-using gmx::RVec;
+namespace gmx
+{
 
 /*! \brief Describes a molecule type, and keeps track of the number of these molecules
  *
@@ -297,7 +298,7 @@ static void replicateSolventBox(t_atoms*           atoms,
     // but not in all).
     t_atoms newAtoms;
     init_t_atoms(&newAtoms, 0, FALSE);
-    gmx::AtomsBuilder builder(&newAtoms, nullptr);
+    AtomsBuilder builder(&newAtoms, nullptr);
     builder.reserve(atoms->nr * nmol, atoms->nres * nmol);
     std::vector<RVec> newX(atoms->nr * nmol);
     std::vector<RVec> newV(!v->empty() ? atoms->nr * nmol : 0);
@@ -367,7 +368,7 @@ static void replicateSolventBox(t_atoms*           atoms,
     if (atoms->havePdbInfo)
     {
         sfree(atoms->pdbinfo);
-        // gmx::AtomsBuilder does not fill pdbinfo, but let's copy nulls just in case.
+        // AtomsBuilder does not fill pdbinfo, but let's copy nulls just in case.
         atoms->pdbinfo     = newAtoms.pdbinfo;
         atoms->havePdbInfo = newAtoms.havePdbInfo;
     }
@@ -410,18 +411,18 @@ static void removeSolventBoxOverlap(t_atoms*           atoms,
                                     std::vector<real>* r,
                                     const t_pbc&       pbc)
 {
-    gmx::AtomsRemover remover(*atoms);
+    AtomsRemover remover(*atoms);
 
     // TODO: We could limit the amount of pairs searched significantly,
     // since we are only interested in pairs where the positions are on
     // opposite edges.
-    const real                maxRadius = *std::max_element(r->begin(), r->end());
-    gmx::AnalysisNeighborhood nb;
+    const real           maxRadius = *std::max_element(r->begin(), r->end());
+    AnalysisNeighborhood nb;
     nb.setCutoff(2 * maxRadius);
-    gmx::AnalysisNeighborhoodPositions  pos(*x);
-    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, pos);
-    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
-    gmx::AnalysisNeighborhoodPair       pair;
+    AnalysisNeighborhoodPositions  pos(*x);
+    AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, pos);
+    AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
         const int i1 = pair.refIndex();
@@ -435,7 +436,7 @@ static void removeSolventBoxOverlap(t_atoms*           atoms,
         {
             continue;
         }
-        if (pair.distance2() < gmx::square((*r)[i1] + (*r)[i2]))
+        if (pair.distance2() < square((*r)[i1] + (*r)[i2]))
         {
             rvec dx;
             rvec_sub((*x)[i2], (*x)[i1], dx);
@@ -501,14 +502,14 @@ static void removeSolventOutsideShell(t_atoms*                 atoms,
                                       const std::vector<RVec>& x_solute,
                                       real                     rshell)
 {
-    gmx::AtomsRemover         remover(*atoms);
-    gmx::AnalysisNeighborhood nb;
+    AtomsRemover         remover(*atoms);
+    AnalysisNeighborhood nb;
     nb.setCutoff(rshell);
-    gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
-    gmx::AnalysisNeighborhoodSearch     search = nb.initSearch(&pbc, posSolute);
-    gmx::AnalysisNeighborhoodPositions  pos(*x_solvent);
-    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
-    gmx::AnalysisNeighborhoodPair       pair;
+    AnalysisNeighborhoodPositions  posSolute(x_solute);
+    AnalysisNeighborhoodSearch     search = nb.initSearch(&pbc, posSolute);
+    AnalysisNeighborhoodPositions  pos(*x_solvent);
+    AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    AnalysisNeighborhoodPair       pair;
 
     // Remove everything
     remover.markAll();
@@ -551,18 +552,18 @@ static void removeSolventOverlappingWithSolute(t_atoms*                 atoms,
                                                const std::vector<RVec>& x_solute,
                                                const std::vector<real>& r_solute)
 {
-    gmx::AtomsRemover remover(*atoms);
-    const real        maxRadius1 = *std::max_element(r->begin(), r->end());
-    const real        maxRadius2 = *std::max_element(r_solute.begin(), r_solute.end());
+    AtomsRemover remover(*atoms);
+    const real   maxRadius1 = *std::max_element(r->begin(), r->end());
+    const real   maxRadius2 = *std::max_element(r_solute.begin(), r_solute.end());
 
     // Now check for overlap.
-    gmx::AnalysisNeighborhood     nb;
-    gmx::AnalysisNeighborhoodPair pair;
+    AnalysisNeighborhood     nb;
+    AnalysisNeighborhoodPair pair;
     nb.setCutoff(maxRadius1 + maxRadius2);
-    gmx::AnalysisNeighborhoodPositions  posSolute(x_solute);
-    gmx::AnalysisNeighborhoodSearch     search = nb.initSearch(&pbc, posSolute);
-    gmx::AnalysisNeighborhoodPositions  pos(*x);
-    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    AnalysisNeighborhoodPositions  posSolute(x_solute);
+    AnalysisNeighborhoodSearch     search = nb.initSearch(&pbc, posSolute);
+    AnalysisNeighborhoodPositions  pos(*x);
+    AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
     while (pairSearch.findNextPair(&pair))
     {
         if (remover.isMarked(pair.testIndex()))
@@ -572,7 +573,7 @@ static void removeSolventOverlappingWithSolute(t_atoms*                 atoms,
         }
         const real r1      = r_solute[pair.refIndex()];
         const real r2      = (*r)[pair.testIndex()];
-        const bool bRemove = (pair.distance2() < gmx::square(r1 + r2));
+        const bool bRemove = (pair.distance2() < square(r1 + r2));
         remover.markResidue(*atoms, pair.testIndex(), bRemove);
     }
 
@@ -601,8 +602,8 @@ static void removeSolventOverlappingWithSolute(t_atoms*                 atoms,
  */
 static void removeExtraSolventMolecules(t_atoms* atoms, std::vector<RVec>* x, std::vector<RVec>* v, int numberToRemove)
 {
-    gmx::AtomsRemover               remover(*atoms);
-    std::mt19937                    randomNumberGenerator(gmx::makeRandomSeed());
+    AtomsRemover                    remover(*atoms);
+    std::mt19937                    randomNumberGenerator(makeRandomSeed());
     std::uniform_int_distribution<> randomDistribution(0, atoms->nr - 1);
     while (numberToRemove > 0)
     {
@@ -642,7 +643,7 @@ static void add_solv(const char*        filename,
     fprintf(stderr, "Reading solvent configuration\n");
     bool  bTprFileWasRead;
     rvec *temporaryX = nullptr, *temporaryV = nullptr;
-    readConfAndTopology(gmx::findLibraryFile(filename).c_str(),
+    readConfAndTopology(findLibraryFile(filename).c_str(),
                         &bTprFileWasRead,
                         &topSolvent,
                         &pbcTypeSolvent,
@@ -656,7 +657,7 @@ static void add_solv(const char*        filename,
     sfree(temporaryX);
     vSolvent.assign(temporaryV, temporaryV + topSolvent.natoms);
     sfree(temporaryV);
-    if (gmx::boxIsZero(boxSolvent))
+    if (boxIsZero(boxSolvent))
     {
         gmx_fatal(FARGS,
                   "No box information for solvent in %s, please use a properly formatted file\n",
@@ -679,7 +680,7 @@ static void add_solv(const char*        filename,
     fprintf(stderr, "Generating solvent configuration\n");
     t_pbc pbc;
     set_pbc(&pbc, pbcType, box);
-    if (!gmx::boxesAreEqual(boxSolvent, box))
+    if (!boxesAreEqual(boxSolvent, box))
     {
         if (TRICLINIC(boxSolvent))
         {
@@ -728,7 +729,7 @@ static void add_solv(const char*        filename,
         v->insert(v->end(), vSolvent.begin(), vSolvent.end());
     }
     {
-        gmx::AtomsBuilder builder(atoms, symtab);
+        AtomsBuilder builder(atoms, symtab);
         builder.mergeAtoms(*sortedAtomsSolvent);
     }
     fprintf(stderr,
@@ -777,7 +778,7 @@ static void update_top(t_atoms*        atoms,
     vol = det(box);
 
     fprintf(stderr, "Volume                 :  %10g (nm^3)\n", vol);
-    fprintf(stderr, "Density                :  %10g (g/l)\n", (mtot * 1e24) / (gmx::c_avogadro * vol));
+    fprintf(stderr, "Density                :  %10g (g/l)\n", (mtot * 1e24) / (c_avogadro * vol));
     fprintf(stderr, "Number of solvent molecules:  %5d   \n\n", nsol);
 
     /* open topology file and append sol molecules */
@@ -1066,3 +1067,5 @@ int gmx_solvate(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

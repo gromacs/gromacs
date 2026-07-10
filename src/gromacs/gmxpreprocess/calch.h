@@ -36,6 +36,9 @@
 
 #include "gromacs/utility/vectypes.h"
 
+namespace gmx
+{
+
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l);
 /*
  *    w.f. van gunsteren, groningen, july 1981
@@ -56,5 +59,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l);
  *
  *    l : dynamically changed index
  */
+
+} // namespace gmx
 
 #endif

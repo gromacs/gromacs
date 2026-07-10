@@ -47,19 +47,20 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
 
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.
  */
-void rename_atoms(const std::filesystem::path&           xlfile,
-                  const std::filesystem::path&           ffdir,
-                  t_atoms*                               atoms,
-                  t_symtab*                              symtab,
-                  gmx::ArrayRef<const PreprocessResidue> restp,
-                  bool                                   bResname,
-                  const ResidueTypeMap&                  rt,
-                  bool                                   bReorderNum,
-                  bool                                   bVerbose);
+void rename_atoms(const std::filesystem::path&      xlfile,
+                  const std::filesystem::path&      ffdir,
+                  t_atoms*                          atoms,
+                  t_symtab*                         symtab,
+                  ArrayRef<const PreprocessResidue> restp,
+                  bool                              bResname,
+                  const ResidueTypeMap&             rt,
+                  bool                              bReorderNum,
+                  bool                              bVerbose);
+
+} // namespace gmx
 
 #endif

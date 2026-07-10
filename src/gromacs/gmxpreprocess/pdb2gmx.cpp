@@ -728,7 +728,7 @@ int read_pdball(const char*           inf,
     rename_pdbres(atoms, "SOL", watres, false, symtab);
     rename_pdbres(atoms, "WAT", watres, false, symtab);
 
-    rename_atoms("xlateat.dat", {}, atoms, symtab, {}, true, residueTypeMap, true, bVerbose);
+    gmx::rename_atoms("xlateat.dat", {}, atoms, symtab, {}, true, residueTypeMap, true, bVerbose);
 
     if (natom == 0)
     {
@@ -803,7 +803,7 @@ void process_chain(const gmx::MDLogger&           logger,
 
     if (!bHisMan)
     {
-        set_histp(pdba, gmx::as_rvec_array(x.data()), symtab, angle, distance);
+        gmx::set_histp(pdba, gmx::as_rvec_array(x.data()), symtab, angle, distance);
     }
     else
     {
