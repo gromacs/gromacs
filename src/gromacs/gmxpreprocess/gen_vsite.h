@@ -53,7 +53,6 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
 
 /* stuff for pdb2gmx */
 
@@ -67,16 +66,16 @@ struct VsiteTypeAndSign
 };
 
 //! Turn all hydrogens that can be turned into virtual sites into virtual sites
-void do_vsites(gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
-               PreprocessingAtomTypes*                                         atype,
-               t_atoms*                                                        at,
-               t_symtab*                                                       symtab,
-               std::vector<gmx::RVec>*                                         x,
-               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-               std::vector<VsiteTypeAndSign>*                                  vsiteTypeAndSign,
-               real                                                            mHmult,
-               bool                                                            bVSiteAromatics,
-               const std::filesystem::path&                                    ffdir);
+void do_vsites(ArrayRef<const PreprocessResidue>                          rtpFFDB,
+               PreprocessingAtomTypes*                                    atype,
+               t_atoms*                                                   at,
+               t_symtab*                                                  symtab,
+               std::vector<RVec>*                                         x,
+               EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               std::vector<VsiteTypeAndSign>*                             vsiteTypeAndSign,
+               real                                                       mHmult,
+               bool                                                       bVSiteAromatics,
+               const std::filesystem::path&                               ffdir);
 
 /*! \brief Optionally, change masses of hydrogens
  *
@@ -86,10 +85,12 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue>                          r
  * \param[in] mHmult     Factor to multiply the masses of hydrogens with
  * \param[in] deuterate  When false, subtract the increase in hydrogen mass from the bonded heavt atom
  */
-void do_h_mass(const InteractionsOfType&             psb,
-               gmx::ArrayRef<const VsiteTypeAndSign> vsiteType,
-               t_atoms*                              at,
-               real                                  mHmult,
-               bool                                  deuterate);
+void do_h_mass(const InteractionsOfType&        psb,
+               ArrayRef<const VsiteTypeAndSign> vsiteType,
+               t_atoms*                         at,
+               real                             mHmult,
+               bool                             deuterate);
+
+} // namespace gmx
 
 #endif
