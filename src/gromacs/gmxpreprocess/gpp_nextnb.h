@@ -40,14 +40,6 @@
 
 struct InteractionsOfType;
 
-namespace gmx
-{
-template<typename>
-class ArrayRef;
-template<typename>
-class ListOfLists;
-} // namespace gmx
-
 struct t_nextnb
 {
     int nr;   /* nr atoms (0 <= i < nr) (atoms->nr)	        */
@@ -58,6 +50,13 @@ struct t_nextnb
     /* per list stored in one 2d array of lists	*/
     int*** a; /* like this: a[i][nre][nrx]			*/
 };
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+template<typename>
+class ListOfLists;
 
 void init_nnb(t_nextnb* nnb, int nr, int nrex);
 /* Initiate the arrays for nnb (see above) */
@@ -73,19 +72,21 @@ void print_nnb(t_nextnb* nnb, char* s);
 #    define print_nnb(nnb, s)
 #endif
 
-void gen_nnb(t_nextnb* nnb, gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist);
+void gen_nnb(t_nextnb* nnb, EnumerationArray<InteractionFunction, InteractionsOfType>& plist);
 /* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
  * initiated using init_nnb.
  */
 
-void generate_excl(int                                                             nrexcl,
-                   int                                                             nratoms,
-                   gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                   gmx::ListOfLists<int>*                                          excls);
+void generate_excl(int                                                        nrexcl,
+                   int                                                        nratoms,
+                   EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                   ListOfLists<int>*                                          excls);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */
+
+} // namespace gmx
 
 #endif

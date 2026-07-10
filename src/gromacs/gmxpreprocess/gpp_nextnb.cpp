@@ -50,6 +50,9 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* #define DEBUG_NNB */
 
 typedef struct
@@ -174,7 +177,7 @@ void __print_nnb(t_nextnb* nnb, char* s)
 }
 #endif
 
-static void nnb2excl(t_nextnb* nnb, gmx::ListOfLists<int>* excls)
+static void nnb2excl(t_nextnb* nnb, ListOfLists<int>* excls)
 {
     int       i, j, j_index;
     int       nre, nrx, nrs, nr_of_sortables;
@@ -234,7 +237,7 @@ static void nnb2excl(t_nextnb* nnb, gmx::ListOfLists<int>* excls)
 
         /* put the sorted exclusions in the target list */
         excls->pushBackListOfSize(nr_of_sortables);
-        gmx::ArrayRef<int> exclusionsForAtom = excls->back();
+        ArrayRef<int> exclusionsForAtom = excls->back();
         for (nrs = 0; (nrs < nr_of_sortables); nrs++)
         {
             exclusionsForAtom[nrs] = s[nrs].aj;
@@ -353,13 +356,13 @@ static void add_b(InteractionsOfType* bonds, int* nrf, sortable* s)
     }
 }
 
-void gen_nnb(t_nextnb* nnb, gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist)
+void gen_nnb(t_nextnb* nnb, EnumerationArray<InteractionFunction, InteractionsOfType>& plist)
 {
     sortable* s;
     int       nrbonds, nrf;
 
     nrbonds = 0;
-    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
+    for (const auto i : EnumerationWrapper<InteractionFunction>{})
     {
         if (IS_CHEMBOND(i))
         {
@@ -371,7 +374,7 @@ void gen_nnb(t_nextnb* nnb, gmx::EnumerationArray<InteractionFunction, Interacti
     snew(s, nrbonds);
 
     nrf = 0;
-    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
+    for (const auto i : EnumerationWrapper<InteractionFunction>{})
     {
         if (IS_CHEMBOND(i))
         {
@@ -433,10 +436,10 @@ static void sort_and_purge_nnb(t_nextnb* nnb)
 }
 
 
-void generate_excl(int                                                             nrexcl,
-                   int                                                             nratoms,
-                   gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                   gmx::ListOfLists<int>*                                          excls)
+void generate_excl(int                                                        nrexcl,
+                   int                                                        nratoms,
+                   EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                   ListOfLists<int>*                                          excls)
 {
     t_nextnb nnb;
     if (nrexcl < 0)
@@ -449,3 +452,5 @@ void generate_excl(int                                                          
     nnb2excl(&nnb, excls);
     done_nnb(&nnb);
 }
+
+} // namespace gmx
