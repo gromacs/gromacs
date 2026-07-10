@@ -51,6 +51,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 std::filesystem::path fflib_forcefield_dir_ext()
 {
     return ".ff";
@@ -77,16 +80,16 @@ std::vector<std::filesystem::path> fflib_search_file_end(const std::filesystem::
 {
     try
     {
-        auto ffdirFull = gmx::getLibraryFileFinder().findFile(ffdir);
-        auto result = gmx::DirectoryEnumerator::enumerateFilesWithExtension(ffdirFull, file_end, true);
+        auto ffdirFull = getLibraryFileFinder().findFile(ffdir);
+        auto result = DirectoryEnumerator::enumerateFilesWithExtension(ffdirFull, file_end, true);
         if (result.empty() && bFatalError)
         {
-            std::string message = gmx::formatString(
+            std::string message = formatString(
                     "Could not find any files ending on '%s' "
                     "in the force field directory '%s'",
                     file_end,
                     ffdir.string().c_str());
-            GMX_THROW(gmx::InvalidInputError(message));
+            GMX_THROW(InvalidInputError(message));
         }
         for (auto& filename : result)
         {
@@ -97,19 +100,19 @@ std::vector<std::filesystem::path> fflib_search_file_end(const std::filesystem::
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
+std::vector<DataFileInfo> fflib_enumerate_forcefields()
 {
-    const auto&                    dirend     = fflib_forcefield_dir_ext();
-    const auto&                    filename   = fflib_forcefield_itp();
-    std::vector<gmx::DataFileInfo> candidates = gmx::getLibraryFileFinder().enumerateFiles(
-            gmx::DataFileOptions(dirend).throwIfNotFound(false));
+    const auto&               dirend   = fflib_forcefield_dir_ext();
+    const auto&               filename = fflib_forcefield_itp();
+    std::vector<DataFileInfo> candidates =
+            getLibraryFileFinder().enumerateFiles(DataFileOptions(dirend).throwIfNotFound(false));
 
-    std::vector<gmx::DataFileInfo> result;
+    std::vector<DataFileInfo> result;
     for (const auto& candidate : candidates)
     {
         auto testPath = std::filesystem::path(candidate.dir_) / candidate.name_ / filename;
         // TODO: Consider also checking that the directory can be listed.
-        if (gmx::File::exists(testPath, gmx::File::returnFalseOnError))
+        if (File::exists(testPath, File::returnFalseOnError))
         {
             result.push_back(candidate);
         }
@@ -119,12 +122,12 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     // could also list the directories searched.
     if (result.empty())
     {
-        std::string message = gmx::formatString(
+        std::string message = formatString(
                 "No force fields found (files with name '%s' "
                 "in subdirectories ending on '%s')",
                 filename.string().c_str(),
                 dirend.string().c_str());
-        GMX_THROW(gmx::InvalidInputError(message));
+        GMX_THROW(InvalidInputError(message));
     }
 
     return result;
@@ -132,13 +135,15 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
 
 bool fflib_fexist(const std::filesystem::path& file)
 {
-    return !gmx::findLibraryFile(file, true, false).empty();
+    return !findLibraryFile(file, true, false).empty();
 }
 
 
 FILE* fflib_open(const std::filesystem::path& file)
 {
-    std::filesystem::path fileFullPath = gmx::findLibraryFile(file);
+    std::filesystem::path fileFullPath = findLibraryFile(file);
     fprintf(stderr, "Opening force field file %s\n", fileFullPath.string().c_str());
     return gmx_ffopen(fileFullPath, "r");
 }
+
+} // namespace gmx
