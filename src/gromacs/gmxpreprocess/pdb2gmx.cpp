@@ -136,9 +136,9 @@ const char* res2bb_notermini(const std::string& name, gmx::ArrayRef<const RtpRen
     return found != rr.end() ? found->main.c_str() : name.c_str();
 }
 
-const char* enumValueToLongString(HistidineStates enumValue)
+const char* enumValueToLongString(gmx::HistidineStates enumValue)
 {
-    constexpr gmx::EnumerationArray<HistidineStates, const char*> histidineStatesLongNames = {
+    constexpr gmx::EnumerationArray<gmx::HistidineStates, const char*> histidineStatesLongNames = {
         "H on ND1 only", "H on NE2 only", "H on ND1 and NE2", "Coupled to Heme"
     };
     return histidineStatesLongNames[enumValue];
@@ -303,7 +303,7 @@ const char* get_argtp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 
 const char* get_histp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    return select_res<HistidineStates>(resnr, "HISTIDINE", rr);
+    return select_res<gmx::HistidineStates>(resnr, "HISTIDINE", rr);
 }
 
 void read_rtprename(const char* fname, FILE* fp, std::vector<RtpRename>* rtprename)

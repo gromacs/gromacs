@@ -70,11 +70,14 @@
 #include "hackblock.h"
 #include "resall.h"
 
+namespace gmx
+{
+
 #define DIHEDRAL_WAS_SET_IN_RTP 0
 static bool was_dihedral_set_in_rtp(const InteractionOfType& dih)
 {
     // This is a bad way to check this, but I don't know how to make this better now.
-    gmx::ArrayRef<const real> forceParam = dih.forceParam();
+    ArrayRef<const real> forceParam = dih.forceParam();
     return forceParam[MAXFORCEPARAM - 1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
@@ -176,9 +179,9 @@ static void rm2par(std::vector<InteractionOfType>* p, peq eq)
     }
 }
 
-static void cppar(gmx::ArrayRef<const InteractionOfType>                          types,
-                  gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                  InteractionFunction                                             ftype)
+static void cppar(ArrayRef<const InteractionOfType>                          types,
+                  EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                  InteractionFunction                                        ftype)
 {
     /* Keep old stuff */
     for (const auto& type : types)
@@ -201,7 +204,7 @@ static bool idcomp(const InteractionOfType& a, const InteractionOfType& b)
     }
 }
 
-static void sort_id(gmx::ArrayRef<InteractionOfType> ps)
+static void sort_id(ArrayRef<InteractionOfType> ps)
 {
     if (ps.size() > 1)
     {
@@ -213,7 +216,7 @@ static void sort_id(gmx::ArrayRef<InteractionOfType> ps)
     }
 }
 
-static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
+static int n_hydro(ArrayRef<const int> a, char*** atomname)
 {
     int nh = 0;
 
@@ -237,8 +240,8 @@ static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
     return nh;
 }
 
-static bool dihedralIsOnSameBondAsImproper(const InteractionOfType&               dihedral,
-                                           gmx::ArrayRef<const InteractionOfType> improperDihedrals)
+static bool dihedralIsOnSameBondAsImproper(const InteractionOfType&          dihedral,
+                                           ArrayRef<const InteractionOfType> improperDihedrals)
 {
     return std::any_of(improperDihedrals.begin(),
                        improperDihedrals.end(),
@@ -248,11 +251,11 @@ static bool dihedralIsOnSameBondAsImproper(const InteractionOfType&             
 
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
-static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> originalDihedrals,
-                                                gmx::ArrayRef<const InteractionOfType> improperDihedrals,
-                                                t_atoms* atoms,
-                                                bool     bKeepAllGeneratedDihedrals,
-                                                bool     bRemoveDihedralIfWithImproper)
+static std::vector<InteractionOfType> clean_dih(ArrayRef<const InteractionOfType> originalDihedrals,
+                                                ArrayRef<const InteractionOfType> improperDihedrals,
+                                                t_atoms*                          atoms,
+                                                bool bKeepAllGeneratedDihedrals,
+                                                bool bRemoveDihedralIfWithImproper)
 {
     std::vector<InteractionOfType> newDihedrals;
 
@@ -353,11 +356,11 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
     return newDihedrals;
 }
 
-static std::vector<InteractionOfType> get_impropers(t_atoms* atoms,
-                                                    gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                                                    bool                     bAllowMissing,
-                                                    gmx::ArrayRef<const int> cyclicBondsIndex,
-                                                    gmx::ArrayRef<const DisulfideBond> ssbonds)
+static std::vector<InteractionOfType> get_impropers(t_atoms*                        atoms,
+                                                    ArrayRef<MoleculePatchDatabase> globalPatches,
+                                                    bool                            bAllowMissing,
+                                                    ArrayRef<const int>           cyclicBondsIndex,
+                                                    ArrayRef<const DisulfideBond> ssbonds)
 {
     std::vector<InteractionOfType> improper;
 
@@ -390,7 +393,7 @@ static std::vector<InteractionOfType> get_impropers(t_atoms* atoms,
                 if (!stopSearch)
                 {
                     /* Not broken out */
-                    improper.emplace_back(ai, gmx::ArrayRef<const real>{}, bondeds.s);
+                    improper.emplace_back(ai, ArrayRef<const real>{}, bondeds.s);
                 }
             }
             while ((start < atoms->nr) && (atoms->atom[start].resind == i))
@@ -443,7 +446,7 @@ static std::vector<InteractionOfType> get_impropers(t_atoms* atoms,
             }
             if (!stopSearch)
             {
-                improper.emplace_back(ai, gmx::ArrayRef<const real>{}, "", true);
+                improper.emplace_back(ai, ArrayRef<const real>{}, "", true);
             }
         }
     }
@@ -482,11 +485,7 @@ static bool is_hydro(t_atoms* atoms, int ai)
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
-static void get_atomnames_min(int                        n,
-                              gmx::ArrayRef<std::string> anm,
-                              int                        resind,
-                              t_atoms*                   atoms,
-                              gmx::ArrayRef<const int>   a)
+static void get_atomnames_min(int n, ArrayRef<std::string> anm, int resind, t_atoms* atoms, ArrayRef<const int> a)
 {
     /* Assume ascending residue numbering */
     for (int m = 0; m < n; m++)
@@ -507,11 +506,11 @@ static void get_atomnames_min(int                        n,
     }
 }
 
-static void gen_excls(t_atoms*                             atoms,
-                      t_excls*                             excls,
-                      gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                      bool                                 bAllowMissing,
-                      gmx::ArrayRef<const int>             cyclicBondsIndex)
+static void gen_excls(t_atoms*                        atoms,
+                      t_excls*                        excls,
+                      ArrayRef<MoleculePatchDatabase> globalPatches,
+                      bool                            bAllowMissing,
+                      ArrayRef<const int>             cyclicBondsIndex)
 {
     int astart = 0;
     for (int a = 0; a < atoms->nr; a++)
@@ -628,14 +627,14 @@ static void clean_excls(t_nextnb* nnb, int nrexcl, t_excls excls[])
     }
 }
 
-void gen_pad(t_atoms*                                                        atoms,
-             gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
-             gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-             t_excls                                                         excls[],
-             gmx::ArrayRef<MoleculePatchDatabase>                            globalPatches,
-             bool                                                            bAllowMissing,
-             gmx::ArrayRef<const int>                                        cyclicBondsIndex,
-             gmx::ArrayRef<const DisulfideBond>                              ssbonds)
+void gen_pad(t_atoms*                                                   atoms,
+             ArrayRef<const PreprocessResidue>                          rtpFFDB,
+             EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+             t_excls                                                    excls[],
+             ArrayRef<MoleculePatchDatabase>                            globalPatches,
+             bool                                                       bAllowMissing,
+             ArrayRef<const int>                                        cyclicBondsIndex,
+             ArrayRef<const DisulfideBond>                              ssbonds)
 {
     t_nextnb nnb;
     init_nnb(&nnb, atoms->nr, 4);
@@ -837,9 +836,9 @@ void gen_pad(t_atoms*                                                        ato
                     continue;
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
-                std::vector<int>                   atomNumbers;
-                bool                               foundMatch = true;
-                gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
+                std::vector<int>              atomNumbers;
+                bool                          foundMatch = true;
+                ArrayRef<const int>::iterator cyclicBondsIterator;
                 for (int k = 0; k < 3 && foundMatch; k++)
                 {
                     const char* p   = bondeds.a[k].c_str();
@@ -892,9 +891,9 @@ void gen_pad(t_atoms*                                                        ato
                     continue;
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
-                std::vector<int>                   atomNumbers;
-                bool                               foundMatch = true;
-                gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
+                std::vector<int>              atomNumbers;
+                bool                          foundMatch = true;
+                ArrayRef<const int>::iterator cyclicBondsIterator;
                 for (int k = 0; k < 4 && foundMatch; k++)
                 {
                     const char* p   = bondeds.a[k].c_str();
@@ -991,3 +990,5 @@ void gen_pad(t_atoms*                                                        ato
     clean_excls(&nnb, rtpFFDB[0].nrexcl, excls);
     done_nnb(&nnb);
 }
+
+} // namespace gmx

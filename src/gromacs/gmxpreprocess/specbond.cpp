@@ -57,6 +57,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 
+namespace gmx
+{
+
 struct SpecialBond
 {
     std::string firstResidue, secondResidue;
@@ -165,20 +168,20 @@ std::vector<SpecialBond> generateSpecialBonds()
     return specialBonds;
 }
 
-static bool is_special(gmx::ArrayRef<const SpecialBond> sb, const char* res, const char* atom)
+static bool is_special(ArrayRef<const SpecialBond> sb, const char* res, const char* atom)
 {
     return std::any_of(sb.begin(),
                        sb.end(),
                        [res, atom](const auto& bond)
                        {
                            return (((std::strncmp(bond.firstResidue.c_str(), res, 3) == 0)
-                                    && (gmx::equalCaseInsensitive(bond.firstAtomName, atom)))
+                                    && (equalCaseInsensitive(bond.firstAtomName, atom)))
                                    || ((std::strncmp(bond.secondResidue.c_str(), res, 3) == 0)
-                                       && (gmx::equalCaseInsensitive(bond.secondAtomName, atom))));
+                                       && (equalCaseInsensitive(bond.secondAtomName, atom))));
                        });
 }
 
-static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, int a2, real d, int* index_sb, bool* bSwap)
+static bool is_bond(ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, int a2, real d, int* index_sb, bool* bSwap)
 {
     const char* at1  = *pdba->atomname[a1];
     const char* at2  = *pdba->atomname[a2];
@@ -190,9 +193,9 @@ static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, 
     {
         *index_sb = i;
         if (((std::strncmp(bond.firstResidue.c_str(), res1, 3) == 0)
-             && (gmx::equalCaseInsensitive(bond.firstAtomName, at1))
+             && (equalCaseInsensitive(bond.firstAtomName, at1))
              && (std::strncmp(bond.secondResidue.c_str(), res2, 3) == 0)
-             && (gmx::equalCaseInsensitive(bond.secondAtomName, at2))))
+             && (equalCaseInsensitive(bond.secondAtomName, at2))))
         {
             *bSwap = FALSE;
             if ((0.9 * bond.length < d) && (1.1 * bond.length > d))
@@ -201,9 +204,9 @@ static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, 
             }
         }
         if (((std::strncmp(bond.firstResidue.c_str(), res2, 3) == 0)
-             && (gmx::equalCaseInsensitive(bond.firstAtomName, at2))
+             && (equalCaseInsensitive(bond.firstAtomName, at2))
              && (std::strncmp(bond.secondResidue.c_str(), res1, 3) == 0)
-             && (gmx::equalCaseInsensitive(bond.secondAtomName, at1))))
+             && (equalCaseInsensitive(bond.secondAtomName, at1))))
         {
             *bSwap = TRUE;
             if ((0.9 * bond.length < d) && (1.1 * bond.length > d))
@@ -297,7 +300,7 @@ makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive,
                 e = std::min(b + MAXCOL, nspec - 1);
                 for (int i = b; (i < e); i++)
                 {
-                    std::string bufSpecial = gmx::formatString(
+                    std::string bufSpecial = formatString(
                             "%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i] + 1);
                     fprintf(stderr, "%8s", bufSpecial.c_str());
                 }
@@ -306,12 +309,12 @@ makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive,
                 e = std::min(b + MAXCOL, nspec);
                 for (int i = b + 1; (i < nspec); i++)
                 {
-                    std::string bufSpecial = gmx::formatString(
-                            "%s%d",
-                            *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
-                            pdba->resinfo[specialBondResIdxs[i]].nr);
+                    std::string bufSpecial =
+                            formatString("%s%d",
+                                         *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
+                                         pdba->resinfo[specialBondResIdxs[i]].nr);
                     fprintf(stderr, "%8s", bufSpecial.c_str());
-                    bufSpecial = gmx::formatString(
+                    bufSpecial = formatString(
                             "%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i] + 1);
                     fprintf(stderr, "%8s", bufSpecial.c_str());
                     int e2 = std::min(i, e);
@@ -416,3 +419,5 @@ makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive,
 
     return bonds;
 }
+
+} // namespace gmx

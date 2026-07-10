@@ -42,6 +42,10 @@
 #include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
+
+namespace gmx
+{
+
 struct SpecialBond;
 
 struct DisulfideBond
@@ -61,5 +65,7 @@ std::vector<DisulfideBond>
 makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive, bool bVerbose);
 
 std::vector<SpecialBond> generateSpecialBonds();
+
+} // namespace gmx
 
 #endif

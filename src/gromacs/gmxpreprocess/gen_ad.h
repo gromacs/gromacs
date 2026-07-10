@@ -51,7 +51,6 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
 
 /*! \brief
  * Generate pairs, angles and dihedrals from .rtp settings
@@ -69,13 +68,15 @@ class ArrayRef;
  *                                 improper dihedrals from specbond. Empty if no such
  *                                 bonds exist.
  */
-void gen_pad(t_atoms*                                                        atoms,
-             gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
-             gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-             t_excls                                                         excls[],
-             gmx::ArrayRef<MoleculePatchDatabase>                            globalPatches,
-             bool                                                            bAllowMissing,
-             gmx::ArrayRef<const int>                                        cyclicBondsIndex,
-             gmx::ArrayRef<const DisulfideBond>                              ssbonds);
+void gen_pad(t_atoms*                                                   atoms,
+             ArrayRef<const PreprocessResidue>                          rtpFFDB,
+             EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+             t_excls                                                    excls[],
+             ArrayRef<MoleculePatchDatabase>                            globalPatches,
+             bool                                                       bAllowMissing,
+             ArrayRef<const int>                                        cyclicBondsIndex,
+             ArrayRef<const DisulfideBond>                              ssbonds);
+
+} // namespace gmx
 
 #endif

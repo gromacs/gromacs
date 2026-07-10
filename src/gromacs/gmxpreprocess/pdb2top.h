@@ -48,13 +48,6 @@
 
 class PreprocessingAtomTypes;
 
-namespace gmx
-{
-template<typename>
-class ArrayRef;
-class MDLogger;
-} // namespace gmx
-
 struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
@@ -62,8 +55,14 @@ struct t_mols;
 struct InteractionsOfType;
 struct t_resinfo;
 struct PreprocessResidue;
-struct DisulfideBond;
 struct t_symtab;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+class MDLogger;
+struct DisulfideBond;
 
 /* this *MUST* correspond to array in pdb2top.cpp */
 enum class HistidineStates : int
@@ -76,7 +75,7 @@ enum class HistidineStates : int
 };
 const char* enumValueToString(HistidineStates enumValue);
 
-std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxlen, const gmx::MDLogger& logger);
+std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxlen, const MDLogger& logger);
 /* Find force fields in the current and libdirs and choose an ff.
  * If ffsel!=NULL: search for ffsel.
  * If ffsel==NULL: interactive selection.
@@ -85,36 +84,36 @@ std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxl
 void choose_watermodel(const char*                  wmsel,
                        const std::filesystem::path& ffdir,
                        char**                       watermodel,
-                       const gmx::MDLogger&         logger);
+                       const MDLogger&              logger);
 /* Choose, possibly interactively, which water model to include,
  * based on the wmsel command line option choice and watermodels.dat
  * in ffdir.
  */
 
-void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
-                        std::vector<PreprocessResidue>*        usedPpResidues,
-                        gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-                        int                                    nres,
-                        t_resinfo*                             resinfo,
-                        int                                    nterpairs,
-                        t_symtab*                              symtab,
-                        gmx::ArrayRef<MoleculePatchDatabase*>  ntdb,
-                        gmx::ArrayRef<MoleculePatchDatabase*>  ctdb,
-                        gmx::ArrayRef<const int>               rn,
-                        gmx::ArrayRef<const int>               rc,
-                        bool                                   bAllowMissing,
-                        const gmx::MDLogger&                   logger);
+void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>* globalPatches,
+                        std::vector<PreprocessResidue>*     usedPpResidues,
+                        ArrayRef<const PreprocessResidue>   rtpFFDB,
+                        int                                 nres,
+                        t_resinfo*                          resinfo,
+                        int                                 nterpairs,
+                        t_symtab*                           symtab,
+                        ArrayRef<MoleculePatchDatabase*>    ntdb,
+                        ArrayRef<MoleculePatchDatabase*>    ctdb,
+                        ArrayRef<const int>                 rn,
+                        ArrayRef<const int>                 rc,
+                        bool                                bAllowMissing,
+                        const MDLogger&                     logger);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
  */
 
-void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidues,
-                              gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                              t_atoms*                             pdba,
-                              t_symtab*                            symtab,
-                              gmx::ArrayRef<gmx::RVec>             x,
-                              bool                                 bVerbose,
-                              const gmx::MDLogger&                 logger);
+void match_atomnames_with_rtp(ArrayRef<PreprocessResidue>     usedPpResidues,
+                              ArrayRef<MoleculePatchDatabase> globalPatches,
+                              t_atoms*                        pdba,
+                              t_symtab*                       symtab,
+                              ArrayRef<RVec>                  x,
+                              bool                            bVerbose,
+                              const MDLogger&                 logger);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,
  * add these atoms to restp.
@@ -131,51 +130,53 @@ void print_top_header(FILE*                        out,
                       const std::filesystem::path& ffdir,
                       real                         mHmult);
 
-void print_top_mols(FILE*                                      out,
-                    const char*                                title,
-                    const std::filesystem::path&               ffdir,
-                    const char*                                water,
-                    gmx::ArrayRef<const std::filesystem::path> incls,
-                    gmx::ArrayRef<const t_mols>                mols);
+void print_top_mols(FILE*                                 out,
+                    const char*                           title,
+                    const std::filesystem::path&          ffdir,
+                    const char*                           water,
+                    ArrayRef<const std::filesystem::path> incls,
+                    ArrayRef<const t_mols>                mols);
 
-void write_top(FILE*                                                                 out,
-               const std::filesystem::path&                                          pr,
-               const char*                                                           molname,
-               t_atoms*                                                              at,
-               bool                                                                  bRTPresname,
-               gmx::ArrayRef<const int>                                              bts,
-               const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-               t_excls                                                               excls[],
-               PreprocessingAtomTypes*                                               atype,
-               int                                                                   nrexcl);
+void write_top(FILE*                                                            out,
+               const std::filesystem::path&                                     pr,
+               const char*                                                      molname,
+               t_atoms*                                                         at,
+               bool                                                             bRTPresname,
+               ArrayRef<const int>                                              bts,
+               const EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               t_excls                                                          excls[],
+               PreprocessingAtomTypes*                                          atype,
+               int                                                              nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
-void pdb2top(FILE*                                  top_file,
-             const std::filesystem::path&           posre_fn,
-             const char*                            molname,
-             t_atoms*                               atoms,
-             std::vector<gmx::RVec>*                x,
-             PreprocessingAtomTypes*                atype,
-             t_symtab*                              tab,
-             gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             gmx::ArrayRef<PreprocessResidue>       usedPpResidues,
-             gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
-             bool                                   bAllowMissing,
-             bool                                   bVsites,
-             bool                                   bVsiteAromatics,
-             const std::filesystem::path&           ffdir,
-             real                                   mHmult,
-             gmx::ArrayRef<const DisulfideBond>     ssbonds,
-             real                                   long_bond_dist,
-             real                                   short_bond_dist,
-             bool                                   bDeuterate,
-             bool                                   bCmap,
-             bool                                   bRenumRes,
-             bool                                   bRTPresname,
-             gmx::ArrayRef<const int>               cyclicBondsIndex,
-             const gmx::MDLogger&                   logger);
+void pdb2top(FILE*                             top_file,
+             const std::filesystem::path&      posre_fn,
+             const char*                       molname,
+             t_atoms*                          atoms,
+             std::vector<RVec>*                x,
+             PreprocessingAtomTypes*           atype,
+             t_symtab*                         tab,
+             ArrayRef<const PreprocessResidue> rtpFFDB,
+             ArrayRef<PreprocessResidue>       usedPpResidues,
+             ArrayRef<MoleculePatchDatabase>   globalPatches,
+             bool                              bAllowMissing,
+             bool                              bVsites,
+             bool                              bVsiteAromatics,
+             const std::filesystem::path&      ffdir,
+             real                              mHmult,
+             ArrayRef<const DisulfideBond>     ssbonds,
+             real                              long_bond_dist,
+             real                              short_bond_dist,
+             bool                              bDeuterate,
+             bool                              bCmap,
+             bool                              bRenumRes,
+             bool                              bRTPresname,
+             ArrayRef<const int>               cyclicBondsIndex,
+             const MDLogger&                   logger);
 /* Create a topology ! */
 
-void print_sums(const t_atoms* atoms, bool bSystem, const gmx::MDLogger& logger);
+void print_sums(const t_atoms* atoms, bool bSystem, const MDLogger& logger);
+
+} // namespace gmx
 
 #endif
