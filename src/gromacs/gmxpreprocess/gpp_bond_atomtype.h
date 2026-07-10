@@ -49,6 +49,9 @@
 #include <optional>
 #include <string>
 
+namespace gmx
+{
+
 /*! \libinternal \brief
  * Storage for all bonded atomtypes during simulation preprocessing.
  */
@@ -102,5 +105,7 @@ private:
     //! Pimpl that holds the data.
     std::unique_ptr<Impl> impl_;
 };
+
+} // namespace gmx
 
 #endif

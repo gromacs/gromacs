@@ -43,7 +43,6 @@
 
 enum class Directive : int;
 class PreprocessingAtomTypes;
-class PreprocessingBondAtomType;
 struct t_atoms;
 struct t_block;
 struct MoleculeInformation;
@@ -59,6 +58,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 struct ExclusionBlock;
+class PreprocessingBondAtomType;
 
 void generate_nbparams(CombinationRule         comb,
                        int                     funct,

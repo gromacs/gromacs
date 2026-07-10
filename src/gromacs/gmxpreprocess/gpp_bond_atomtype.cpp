@@ -46,6 +46,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 class PreprocessingBondAtomType::Impl
 {
 public:
@@ -109,3 +112,5 @@ bool PreprocessingBondAtomType::isSet(int nt) const
 {
     return ((nt >= 0) && (nt < gmx::ssize(*this)));
 }
+
+} // namespace gmx
