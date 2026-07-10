@@ -40,7 +40,6 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
-enum class Directive : int;
 struct t_atoms;
 struct t_excls;
 struct MoleculeInformation;
@@ -52,6 +51,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;
+enum class Directive : int;
 
 /* UTILITIES */
 

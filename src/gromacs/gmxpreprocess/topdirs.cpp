@@ -53,10 +53,13 @@
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringtoenumvalueconverter.h"
 
+namespace gmx
+{
+
 const char* enumValueToString(Directive d)
 {
     /* Must correspond to the Directive enum in topdirs.h */
-    static constexpr gmx::EnumerationArray<Directive, const char*> directiveNames = {
+    static constexpr EnumerationArray<Directive, const char*> directiveNames = {
         "defaults",
         "atomtypes",
         "bondtypes",
@@ -262,7 +265,7 @@ enum class DeprecatedDirectives : int
 
 static const char* enumValueToString(DeprecatedDirectives d)
 {
-    static constexpr gmx::EnumerationArray<DeprecatedDirectives, const char*> directiveNames = {
+    static constexpr EnumerationArray<DeprecatedDirectives, const char*> directiveNames = {
         "dummies1", "dummies2", "dummies3", "dummies4", "dummiesn"
     };
     return directiveNames[d];
@@ -270,7 +273,7 @@ static const char* enumValueToString(DeprecatedDirectives d)
 
 Directive str2dir(const char* dstr)
 {
-    static const gmx::StringToEnumValueConverter<Directive, enumValueToString, gmx::StringCompareType::CaseAndDashInsensitive> s_converter;
+    static const StringToEnumValueConverter<Directive, enumValueToString, StringCompareType::CaseAndDashInsensitive> s_converter;
 
     if (std::optional<Directive> d = s_converter.valueFrom(dstr); d.has_value())
     {
@@ -279,12 +282,11 @@ Directive str2dir(const char* dstr)
     // Also handle deprecated directives that have modern replacements, like
     // "dummies*" -> "virtual_sites*"
 
-    static const gmx::StringToEnumValueConverter<DeprecatedDirectives, enumValueToString, gmx::StringCompareType::CaseAndDashInsensitive>
-            s_converterForDeprecated;
+    static const StringToEnumValueConverter<DeprecatedDirectives, enumValueToString, StringCompareType::CaseAndDashInsensitive> s_converterForDeprecated;
 
     if (std::optional<DeprecatedDirectives> d = s_converterForDeprecated.valueFrom(dstr); d.has_value())
     {
-        static constexpr gmx::EnumerationArray<DeprecatedDirectives, Directive> s_deprecatedDirectiveToDirective = {
+        static constexpr EnumerationArray<DeprecatedDirectives, Directive> s_deprecatedDirectiveToDirective = {
             Directive::d_vsites1, Directive::d_vsites2, Directive::d_vsites3,
             Directive::d_vsites4, Directive::d_vsitesn,
         };
@@ -294,7 +296,7 @@ Directive str2dir(const char* dstr)
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static gmx::EnumerationArray<Directive, Directive*> necessary = { { nullptr } };
+static EnumerationArray<Directive, Directive*> necessary = { { nullptr } };
 
 static void set_nec(Directive** n, ...)
 /* Must always have at least one extra argument */
@@ -437,3 +439,5 @@ int DS_Check_Order(DirStack* DS, Directive d)
     }
     return FALSE;
 }
+
+} // namespace gmx

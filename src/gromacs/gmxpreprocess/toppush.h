@@ -41,7 +41,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-enum class Directive : int;
 struct t_atoms;
 struct t_block;
 struct MoleculeInformation;
@@ -58,6 +57,7 @@ template<typename>
 class ArrayRef;
 struct ExclusionBlock;
 class PreprocessingAtomTypes;
+enum class Directive : int;
 class PreprocessingBondAtomType;
 
 void generate_nbparams(CombinationRule         comb,

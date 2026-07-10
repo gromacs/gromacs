@@ -35,6 +35,11 @@
 #ifndef GMX_GMXPREPROCESS_TOPDIRS_H
 #define GMX_GMXPREPROCESS_TOPDIRS_H
 
+enum class InteractionFunction : int;
+
+namespace gmx
+{
+
 /* Must correspond to strings in topdirs.cpp */
 enum class Directive : int
 {
@@ -82,7 +87,6 @@ enum class Directive : int
     d_none,
     Count
 };
-enum class InteractionFunction : int;
 
 const char* enumValueToString(Directive d);
 
@@ -105,5 +109,7 @@ void DS_Push(DirStack** DS, Directive d);
 int DS_Search(DirStack* DS, Directive d);
 
 int DS_Check_Order(DirStack* DS, Directive d);
+
+} // namespace gmx
 
 #endif
