@@ -64,6 +64,9 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 int gmx_genrestr(int argc, char* argv[])
 {
     const char* desc[] = {
@@ -321,3 +324,5 @@ int gmx_genrestr(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

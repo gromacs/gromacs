@@ -34,6 +34,11 @@
 #ifndef GMX_GMXPREPROCESS_EDITCONF_H
 #define GMX_GMXPREPROCESS_EDITCONF_H
 
+namespace gmx
+{
+
 int gmx_editconf(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

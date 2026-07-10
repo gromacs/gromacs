@@ -82,6 +82,9 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+
 static real calc_mass(t_atoms* atoms, gmx_bool bGetMass, AtomProperties* aps)
 {
     real tmass;
@@ -398,9 +401,9 @@ static void visualize_box(FILE* out, int a0, int r0, matrix box, const rvec grid
     a0++;
     r0++;
 
-    nx   = gmx::roundToInt(gridsize[XX]);
-    ny   = gmx::roundToInt(gridsize[YY]);
-    nz   = gmx::roundToInt(gridsize[ZZ]);
+    nx   = roundToInt(gridsize[XX]);
+    ny   = roundToInt(gridsize[YY]);
+    nz   = roundToInt(gridsize[ZZ]);
     nbox = nx * ny * nz;
     if (TRICLINIC(box))
     {
@@ -908,7 +911,7 @@ int gmx_editconf(int argc, char* argv[])
                     {
                         sig6 = c12 / c6;
                     }
-                    vdw = 0.5 * gmx::sixthroot(sig6);
+                    vdw = 0.5 * sixthroot(sig6);
                 }
                 else
                 {
@@ -984,9 +987,9 @@ int gmx_editconf(int argc, char* argv[])
         printf("    center      :%7.3f%7.3f%7.3f (nm)\n", gc[XX], gc[YY], gc[ZZ]);
         printf("    box vectors :%7.3f%7.3f%7.3f (nm)\n", norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
-               norm2(box[ZZ]) == 0 ? 0 : gmx::c_rad2Deg * gmx_angle(box[YY], box[ZZ]),
-               norm2(box[ZZ]) == 0 ? 0 : gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]),
-               norm2(box[YY]) == 0 ? 0 : gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]));
+               norm2(box[ZZ]) == 0 ? 0 : c_rad2Deg * gmx_angle(box[YY], box[ZZ]),
+               norm2(box[ZZ]) == 0 ? 0 : c_rad2Deg * gmx_angle(box[XX], box[ZZ]),
+               norm2(box[YY]) == 0 ? 0 : c_rad2Deg * gmx_angle(box[XX], box[YY]));
         printf("    box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -1019,7 +1022,7 @@ int gmx_editconf(int argc, char* argv[])
             real vol, dens;
 
             vol  = det(box);
-            dens = (mass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
+            dens = (mass * c_amu) / (vol * c_nano * c_nano * c_nano);
             fprintf(stderr, "Volume  of input %g (nm^3)\n", vol);
             fprintf(stderr, "Mass    of input %g (a.m.u.)\n", mass);
             fprintf(stderr, "Density of input %g (g/l)\n", dens);
@@ -1139,7 +1142,7 @@ int gmx_editconf(int argc, char* argv[])
                rotangles[ZZ]);
         for (int i = 0; i < DIM; i++)
         {
-            rotangles[i] *= gmx::c_deg2Rad;
+            rotangles[i] *= c_deg2Rad;
         }
         rotate_conf(natom, x, v, rotangles[XX], rotangles[YY], rotangles[ZZ]);
     }
@@ -1249,9 +1252,9 @@ int gmx_editconf(int argc, char* argv[])
     {
         printf("new box vectors :%7.3f%7.3f%7.3f (nm)\n", norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
-               norm2(box[ZZ]) == 0 ? 0 : gmx::c_rad2Deg * gmx_angle(box[YY], box[ZZ]),
-               norm2(box[ZZ]) == 0 ? 0 : gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]),
-               norm2(box[YY]) == 0 ? 0 : gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]));
+               norm2(box[ZZ]) == 0 ? 0 : c_rad2Deg * gmx_angle(box[YY], box[ZZ]),
+               norm2(box[ZZ]) == 0 ? 0 : c_rad2Deg * gmx_angle(box[XX], box[ZZ]),
+               norm2(box[YY]) == 0 ? 0 : c_rad2Deg * gmx_angle(box[XX], box[YY]));
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -1417,3 +1420,5 @@ int gmx_editconf(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx

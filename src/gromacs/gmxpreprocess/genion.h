@@ -34,6 +34,11 @@
 #ifndef GMX_GMXPREPROCESS_GENION_H
 #define GMX_GMXPREPROCESS_GENION_H
 
+namespace gmx
+{
+
 int gmx_genion(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif

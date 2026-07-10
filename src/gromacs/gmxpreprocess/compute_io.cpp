@@ -51,11 +51,14 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
 static int div_nsteps(int nsteps, int nst)
 {
     if (nst > 0)
     {
-        return gmx::divideRoundUp(1 + nsteps, nst);
+        return divideRoundUp(1 + nsteps, nst);
     }
     else
     {
@@ -65,7 +68,7 @@ static int div_nsteps(int nsteps, int nst)
 
 double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& groups, int nrener, int nrepl)
 {
-    const gmx::OutputControl& outputControl = ir->outputControl;
+    const OutputControl& outputControl = ir->outputControl;
 
     int    nsteps    = ir->nsteps;
     int    nxtcatoms = 0;
@@ -159,3 +162,5 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
 
     return cio * nrepl / (1024 * 1024);
 }
+
+} // namespace gmx

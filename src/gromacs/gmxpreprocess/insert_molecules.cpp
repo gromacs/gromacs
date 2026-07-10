@@ -91,7 +91,8 @@ namespace gmx
 class CommandLineModuleSettings;
 } // namespace gmx
 
-using gmx::RVec;
+namespace gmx
+{
 
 /* enum for random rotations of inserted solutes */
 enum class RotationType : int
@@ -101,11 +102,11 @@ enum class RotationType : int
     None,
     Count
 };
-static const gmx::EnumerationArray<RotationType, const char*> c_rotationTypeNames = {
+static const EnumerationArray<RotationType, const char*> c_rotationTypeNames = {
     { "xyz", "z", "none" }
 };
 
-static void center_molecule(gmx::ArrayRef<RVec> x)
+static void center_molecule(ArrayRef<RVec> x)
 {
     rvec center = { 0 };
     for (auto& xi : x)
@@ -119,13 +120,13 @@ static void center_molecule(gmx::ArrayRef<RVec> x)
     }
 }
 
-static void generate_trial_conf(gmx::ArrayRef<RVec>       xin,
-                                const rvec                offset,
-                                RotationType              enum_rot,
-                                gmx::DefaultRandomEngine* rng,
-                                std::vector<RVec>*        xout)
+static void generate_trial_conf(ArrayRef<RVec>       xin,
+                                const rvec           offset,
+                                RotationType         enum_rot,
+                                DefaultRandomEngine* rng,
+                                std::vector<RVec>*   xout)
 {
-    gmx::UniformRealDistribution<real> dist(0, 2.0 * M_PI);
+    UniformRealDistribution<real> dist(0, 2.0 * M_PI);
     xout->assign(xin.begin(), xin.end());
 
     real alfa = 0.0, beta = 0.0, gamma = 0.0;
@@ -141,7 +142,7 @@ static void generate_trial_conf(gmx::ArrayRef<RVec>       xin,
             gamma       = dist(*rng);
             break;
         case RotationType::None: alfa = beta = gamma = 0.; break;
-        default: GMX_THROW(gmx::InternalError("Invalid RotationType"));
+        default: GMX_THROW(InternalError("Invalid RotationType"));
     }
     if (enum_rot == RotationType::XYZ || enum_rot == RotationType::Z)
     {
@@ -153,22 +154,22 @@ static void generate_trial_conf(gmx::ArrayRef<RVec>       xin,
     }
 }
 
-static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch* search,
-                               const std::vector<real>&         exclusionDistances,
-                               const std::vector<RVec>&         x,
-                               const std::vector<real>&         exclusionDistances_insrt,
-                               const t_atoms&                   atoms,
-                               const std::set<int>&             removableAtoms,
-                               gmx::AtomsRemover*               remover)
+static bool isInsertionAllowed(AnalysisNeighborhoodSearch* search,
+                               const std::vector<real>&    exclusionDistances,
+                               const std::vector<RVec>&    x,
+                               const std::vector<real>&    exclusionDistances_insrt,
+                               const t_atoms&              atoms,
+                               const std::set<int>&        removableAtoms,
+                               AtomsRemover*               remover)
 {
-    gmx::AnalysisNeighborhoodPositions  pos(x);
-    gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
-    gmx::AnalysisNeighborhoodPair       pair;
+    AnalysisNeighborhoodPositions  pos(x);
+    AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
+    AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
     {
         const real r1 = exclusionDistances[pair.refIndex()];
         const real r2 = exclusionDistances_insrt[pair.testIndex()];
-        if (pair.distance2() < gmx::square(r1 + r2))
+        if (pair.distance2() < square(r1 + r2))
         {
             if (removableAtoms.count(pair.refIndex()) == 0)
             {
@@ -192,7 +193,7 @@ static void insert_mols(int                  nmol_insrt,
                         std::vector<RVec>*   x,
                         const std::set<int>& removableAtoms,
                         const t_atoms&       atoms_insrt,
-                        gmx::ArrayRef<RVec>  x_insrt,
+                        ArrayRef<RVec>       x_insrt,
                         PbcType              pbcType,
                         matrix               box,
                         const std::string&   posfn,
@@ -216,17 +217,17 @@ static void insert_mols(int                  nmol_insrt,
     }
 
     // TODO: Make all of this exception-safe.
-    gmx::AnalysisNeighborhood nb;
+    AnalysisNeighborhood nb;
     nb.setCutoff(maxInsertRadius + maxRadius);
 
 
     if (seed == 0)
     {
-        seed = static_cast<int>(gmx::makeRandomSeed());
+        seed = static_cast<int>(makeRandomSeed());
     }
     fprintf(stderr, "Using random seed %d\n", seed);
 
-    gmx::DefaultRandomEngine rng(seed);
+    DefaultRandomEngine rng(seed);
 
     t_pbc pbc;
     set_pbc(&pbc, pbcType, box);
@@ -245,8 +246,8 @@ static void insert_mols(int                  nmol_insrt,
         fprintf(stderr, "Read %d positions from file %s\n\n", nmol_insrt, posfn.c_str());
     }
 
-    gmx::AtomsBuilder builder(atoms, symtab);
-    gmx::AtomsRemover remover(*atoms);
+    AtomsBuilder builder(atoms, symtab);
+    AtomsRemover remover(*atoms);
     {
         const int finalAtomCount    = atoms->nr + nmol_insrt * atoms_insrt.nr;
         const int finalResidueCount = atoms->nres + nmol_insrt * atoms_insrt.nres;
@@ -257,11 +258,11 @@ static void insert_mols(int                  nmol_insrt,
 
     std::vector<RVec> x_n(x_insrt.size());
 
-    int                                mol        = 0;
-    int                                trial      = 0;
-    int                                firstTrial = 0;
-    int                                failed     = 0;
-    gmx::UniformRealDistribution<real> dist;
+    int                           mol        = 0;
+    int                           trial      = 0;
+    int                           firstTrial = 0;
+    int                           failed     = 0;
+    UniformRealDistribution<real> dist;
 
     while (mol < nmol_insrt && trial < ntry * nmol_insrt)
     {
@@ -297,8 +298,8 @@ static void insert_mols(int                  nmol_insrt,
         std::fflush(stderr);
 
         generate_trial_conf(x_insrt, offset_x, enum_rot, &rng, &x_n);
-        gmx::AnalysisNeighborhoodPositions pos(*x);
-        gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
+        AnalysisNeighborhoodPositions pos(*x);
+        AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
         if (isInsertionAllowed(
                     &search, exclusionDistances, x_n, exclusionDistances_insrt, *atoms, removableAtoms, &remover))
         {
@@ -339,9 +340,6 @@ static void insert_mols(int                  nmol_insrt,
         sfree(rpos);
     }
 }
-
-namespace gmx
-{
 
 namespace
 {
@@ -590,7 +588,7 @@ int InsertMolecules::run()
     {
         if (concIns_ > 0)
         {
-            nmolIns_ = gmx::roundToInt(concIns_ * vol * gmx::c_avogadro / 1e24);
+            nmolIns_ = roundToInt(concIns_ * vol * c_avogadro / 1e24);
             if (!nmolIns_)
             {
                 gmx_fatal(FARGS, "Very low concentration is set, nothing to insert");

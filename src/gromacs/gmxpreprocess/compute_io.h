@@ -45,7 +45,12 @@
 struct SimulationGroups;
 struct t_inputrec;
 
+namespace gmx
+{
+
 //! Return an estimate of the total output in MiB to be written from this simulation
 double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& groups, int nrener, int nrepl);
+
+} // namespace gmx
 
 #endif

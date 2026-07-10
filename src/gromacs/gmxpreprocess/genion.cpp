@@ -77,6 +77,8 @@
 enum class PbcType : int;
 struct gmx_output_env_t;
 
+namespace gmx
+{
 
 /*! \brief Return whether any atoms of two groups are below minimum distance.
  *
@@ -89,11 +91,11 @@ struct gmx_output_env_t;
  * \returns true if any distance between an atom from group A and group B is
  *               smaller than a minimum distance.
  */
-static bool groupsCloserThanCutoffWithPbc(t_pbc*                   pbc,
-                                          rvec                     x[],
-                                          gmx::ArrayRef<const int> smallerGroupIndices,
-                                          gmx::ArrayRef<const int> largerGroupIndices,
-                                          real                     minimumDistance)
+static bool groupsCloserThanCutoffWithPbc(t_pbc*              pbc,
+                                          rvec                x[],
+                                          ArrayRef<const int> smallerGroupIndices,
+                                          ArrayRef<const int> largerGroupIndices,
+                                          real                minimumDistance)
 {
     const real minimumDistance2 = minimumDistance * minimumDistance;
     for (int aIndex : largerGroupIndices)
@@ -121,9 +123,9 @@ static bool groupsCloserThanCutoffWithPbc(t_pbc*                   pbc,
  *
  * \returns atom indices of the specified solvent molecule
  */
-static std::vector<int> solventMoleculeIndices(int solventMoleculeNumber,
-                                               int numberAtomsPerSolventMolecule,
-                                               gmx::ArrayRef<const int> solventGroupIndex)
+static std::vector<int> solventMoleculeIndices(int                 solventMoleculeNumber,
+                                               int                 numberAtomsPerSolventMolecule,
+                                               ArrayRef<const int> solventGroupIndex)
 {
     std::vector<int> indices(numberAtomsPerSolventMolecule);
     for (int solventAtomNumber = 0; solventAtomNumber < numberAtomsPerSolventMolecule; ++solventAtomNumber)
@@ -134,18 +136,18 @@ static std::vector<int> solventMoleculeIndices(int solventMoleculeNumber,
     return indices;
 }
 
-static void insert_ion(int                      nsa,
-                       std::vector<int>*        solventMoleculesForReplacement,
-                       int                      repl[],
-                       gmx::ArrayRef<const int> index,
-                       rvec                     x[],
-                       t_pbc*                   pbc,
-                       int                      sign,
-                       int                      q,
-                       const char*              ionname,
-                       t_atoms*                 atoms,
-                       real                     rmin,
-                       std::vector<int>*        notSolventGroup)
+static void insert_ion(int                 nsa,
+                       std::vector<int>*   solventMoleculesForReplacement,
+                       int                 repl[],
+                       ArrayRef<const int> index,
+                       rvec                x[],
+                       t_pbc*              pbc,
+                       int                 sign,
+                       int                 q,
+                       const char*         ionname,
+                       t_atoms*            atoms,
+                       real                rmin,
+                       std::vector<int>*   notSolventGroup)
 {
     std::vector<int> solventMoleculeAtomsToBeReplaced =
             solventMoleculeIndices(solventMoleculesForReplacement->back(), nsa, index);
@@ -206,16 +208,16 @@ static char* aname(const char* mname)
     return str;
 }
 
-static void sort_ions(int                      nsa,
-                      int                      nw,
-                      const int                repl[],
-                      gmx::ArrayRef<const int> index,
-                      t_atoms*                 atoms,
-                      rvec                     x[],
-                      char**                   pptr,
-                      char**                   nptr,
-                      char**                   paptr,
-                      char**                   naptr)
+static void sort_ions(int                 nsa,
+                      int                 nw,
+                      const int           repl[],
+                      ArrayRef<const int> index,
+                      t_atoms*            atoms,
+                      rvec                x[],
+                      char**              pptr,
+                      char**              nptr,
+                      char**              paptr,
+                      char**              naptr)
 {
     int   i, j, k, r, np, nn, starta, startr, npi, nni;
     rvec* xt;
@@ -543,14 +545,14 @@ int gmx_genion(int argc, char* argv[])
     {
         qtot += atoms.atom[i].q;
     }
-    iqtot = gmx::roundToInt(qtot);
+    iqtot = roundToInt(qtot);
 
 
     if (conc > 0)
     {
         /* Compute number of ions to be added */
         vol   = det(box);
-        nsalt = gmx::roundToInt(conc * vol * gmx::c_avogadro / 1e24);
+        nsalt = roundToInt(conc * vol * c_avogadro / 1e24);
         p_num = std::abs(nsalt * n_q);
         n_num = std::abs(nsalt * p_q);
     }
@@ -610,7 +612,7 @@ int gmx_genion(int argc, char* argv[])
             sfree(index);
         }
 
-        for (gmx::Index i = 1; i < gmx::ssize(solventGroup); i++)
+        for (Index i = 1; i < gmx::ssize(solventGroup); i++)
         {
             if (solventGroup[i] != solventGroup[i - 1] + 1)
             {
@@ -656,7 +658,7 @@ int gmx_genion(int argc, char* argv[])
         if (seed == 0)
         {
             // For now we make do with 32 bits to avoid changing the user input to 64 bit hex
-            seed = static_cast<int>(gmx::makeRandomSeed());
+            seed = static_cast<int>(makeRandomSeed());
         }
         fprintf(stderr, "Using random seed %d.\n", seed);
 
@@ -668,7 +670,7 @@ int gmx_genion(int argc, char* argv[])
 
         // Randomly shuffle the solvent molecules that shall be replaced by ions
         // then pick molecules from the back of the list as replacement candidates
-        gmx::DefaultRandomEngine rng(seed);
+        DefaultRandomEngine rng(seed);
         std::shuffle(
                 std::begin(solventMoleculesForReplacement), std::end(solventMoleculesForReplacement), rng);
 
@@ -709,3 +711,5 @@ int gmx_genion(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace gmx
