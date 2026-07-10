@@ -42,7 +42,6 @@
 #include "gromacs/utility/real.h"
 
 enum class Directive : int;
-class PreprocessingAtomTypes;
 struct t_atoms;
 struct t_block;
 struct MoleculeInformation;
@@ -58,6 +57,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 struct ExclusionBlock;
+class PreprocessingAtomTypes;
 class PreprocessingBondAtomType;
 
 void generate_nbparams(CombinationRule         comb,

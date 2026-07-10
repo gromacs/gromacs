@@ -38,13 +38,14 @@
 
 #include <filesystem>
 
-class PreprocessingAtomTypes;
 struct t_atoms;
 struct InteractionsOfType;
 struct t_symtab;
 
 namespace gmx
 {
+
+class PreprocessingAtomTypes;
 
 struct t_nm2type
 {

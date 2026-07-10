@@ -46,7 +46,6 @@
 
 struct gmx_molblock_t;
 struct gmx_mtop_t;
-class PreprocessingAtomTypes;
 struct t_inputrec;
 struct MoleculeInformation;
 struct InteractionsOfType;
@@ -56,6 +55,7 @@ enum class CombinationRule : int;
 
 namespace gmx
 {
+class PreprocessingAtomTypes;
 template<typename>
 class ArrayRef;
 class MDLogger;

@@ -62,6 +62,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 /* UTILITIES */
 
 void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b)
@@ -71,13 +74,13 @@ void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b)
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE*                                                                 out,
-                     Directive                                                             d,
-                     PreprocessingAtomTypes*                                               at,
-                     InteractionFunction                                                   ftype,
-                     int                                                                   fsubtype,
-                     const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                     bool                                                                  bFullDih)
+static void print_bt(FILE*                                                            out,
+                     Directive                                                        d,
+                     PreprocessingAtomTypes*                                          at,
+                     InteractionFunction                                              ftype,
+                     int                                                              fsubtype,
+                     const EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                     bool                                                             bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
@@ -170,7 +173,7 @@ static void print_bt(FILE*                                                      
         {
             bSwapParity = (parm.c0() == NOTSET) && (parm.c1() == -1);
         }
-        gmx::ArrayRef<const int> atoms = parm.atoms();
+        ArrayRef<const int> atoms = parm.atoms();
         if (!bDih)
         {
             for (int j = 0; (j < nral); j++)
@@ -193,7 +196,7 @@ static void print_bt(FILE*                                                      
         }
         else
         {
-            gmx::ArrayRef<const real> forceParam = parm.forceParam();
+            ArrayRef<const real> forceParam = parm.forceParam();
             for (int j = 0; (j < nrfp) && (forceParam[j] != NOTSET); j++)
             {
                 fprintf(out, "%13.6e ", forceParam[j]);
@@ -363,19 +366,21 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRT
     std::fflush(out);
 }
 
-void print_bondeds(FILE*                                                                 out,
-                   int                                                                   natoms,
-                   Directive                                                             d,
-                   InteractionFunction                                                   ftype,
-                   int                                                                   fsubtype,
-                   const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist)
+void print_bondeds(FILE*                                                            out,
+                   int                                                              natoms,
+                   Directive                                                        d,
+                   InteractionFunction                                              ftype,
+                   int                                                              fsubtype,
+                   const EnumerationArray<InteractionFunction, InteractionsOfType>& plist)
 {
     auto                   atom = std::make_unique<t_atom>();
     PreprocessingAtomTypes atype;
     for (int i = 0; (i < natoms); i++)
     {
-        std::string name = gmx::toString(i + 1);
+        std::string name = toString(i + 1);
         atype.addType(*atom, name, InteractionOfType({}, {}), 0, 0);
     }
     print_bt(out, d, &atype, ftype, fsubtype, plist, TRUE);
 }
+
+} // namespace gmx

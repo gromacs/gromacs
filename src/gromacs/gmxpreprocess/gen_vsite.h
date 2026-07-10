@@ -43,7 +43,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
-class PreprocessingAtomTypes;
 struct t_atoms;
 struct InteractionsOfType;
 struct PreprocessResidue;
@@ -53,6 +52,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
+class PreprocessingAtomTypes;
 
 /* stuff for pdb2gmx */
 

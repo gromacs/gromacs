@@ -46,12 +46,11 @@
 
 #include "gromacs/utility/arrayref.h"
 
-class PreprocessingAtomTypes;
-
 namespace gmx
 {
 class MDLogger;
-}
+class PreprocessingAtomTypes;
+} // namespace gmx
 struct PreprocessResidue;
 struct t_symtab;
 

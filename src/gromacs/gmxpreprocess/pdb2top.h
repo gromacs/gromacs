@@ -46,8 +46,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
-class PreprocessingAtomTypes;
-
 struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
@@ -61,6 +59,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
+class PreprocessingAtomTypes;
 class MDLogger;
 struct DisulfideBond;
 

@@ -62,7 +62,6 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
 
 /*! \libinternal \brief
  * Storage of all atom types used during preprocessing of a simulation
@@ -198,15 +197,17 @@ public:
      * \param[inout] wallAtomType Atom types of wall atoms, which may also be renumbered
      * \param[in] verbose If we want to print additional info.
      */
-    void renumberTypes(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                       gmx_mtop_t*                                                     mtop,
-                       int*                                                            wallAtomType,
-                       bool                                                            verbose);
+    void renumberTypes(EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                       gmx_mtop_t*                                                mtop,
+                       int*                                                       wallAtomType,
+                       bool                                                       verbose);
 
 private:
     class Impl;
     //! Pimpl that holds the data.
     std::unique_ptr<Impl> impl_;
 };
+
+} // namespace gmx
 
 #endif

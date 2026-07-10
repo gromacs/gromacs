@@ -35,7 +35,6 @@
 #ifndef GMX_GMXPREPROCESS_VSITE_PARM_H
 #define GMX_GMXPREPROCESS_VSITE_PARM_H
 
-class PreprocessingAtomTypes;
 struct gmx_moltype_t;
 struct t_atoms;
 struct InteractionsOfType;
@@ -45,6 +44,7 @@ struct InteractionsOfType;
 
 namespace gmx
 {
+class PreprocessingAtomTypes;
 template<typename>
 class ArrayRef;
 class MDLogger;

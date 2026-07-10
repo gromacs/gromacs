@@ -67,6 +67,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vecdump.h"
 
+namespace gmx
+{
+
 struct AtomTypeData
 {
     //! Explicit constructor.
@@ -163,7 +166,7 @@ std::optional<real> PreprocessingAtomTypes::atomNonBondedParamFromAtomType(int n
     {
         return std::nullopt;
     }
-    gmx::ArrayRef<const real> forceParam = impl_->types[nt].nb_.forceParam();
+    ArrayRef<const real> forceParam = impl_->types[nt].nb_.forceParam();
     if ((param < 0) || (param >= MAXFORCEPARAM))
     {
         return std::nullopt;
@@ -227,12 +230,12 @@ std::optional<int> PreprocessingAtomTypes::setType(int                      nt,
     return std::make_optional(nt);
 }
 
-static int search_atomtypes(const PreprocessingAtomTypes*          ga,
-                            int*                                   n,
-                            gmx::ArrayRef<int>                     typelist,
-                            int                                    thistype,
-                            gmx::ArrayRef<const InteractionOfType> interactionTypes,
-                            InteractionFunction                    ftype)
+static int search_atomtypes(const PreprocessingAtomTypes*     ga,
+                            int*                              n,
+                            ArrayRef<int>                     typelist,
+                            int                               thistype,
+                            ArrayRef<const InteractionOfType> interactionTypes,
+                            InteractionFunction               ftype)
 {
     int nn    = *n;
     int nrfp  = NRFP(ftype);
@@ -253,9 +256,8 @@ static int search_atomtypes(const PreprocessingAtomTypes*          ga,
         for (int j = 0; j < ntype && bFound; j++)
         {
             /* Check nonbonded parameters */
-            gmx::ArrayRef<const real> forceParam1 =
-                    interactionTypes[ntype * typelist[i] + j].forceParam();
-            gmx::ArrayRef<const real> forceParam2 = interactionTypes[ntype * thistype + j].forceParam();
+            ArrayRef<const real> forceParam1 = interactionTypes[ntype * typelist[i] + j].forceParam();
+            ArrayRef<const real> forceParam2 = interactionTypes[ntype * thistype + j].forceParam();
             for (int k = 0; (k < nrfp) && bFound; k++)
             {
                 bFound = forceParam1[k] == forceParam2[k];
@@ -286,7 +288,7 @@ static int search_atomtypes(const PreprocessingAtomTypes*          ga,
     return i;
 }
 
-void PreprocessingAtomTypes::renumberTypes(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+void PreprocessingAtomTypes::renumberTypes(EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
                                            gmx_mtop_t* mtop,
                                            int*        wall_atomtype,
                                            bool        bVerbose)
@@ -375,3 +377,5 @@ void PreprocessingAtomTypes::renumberTypes(gmx::EnumerationArray<InteractionFunc
     impl_->types                  = new_types;
     plist[ftype].interactionTypes = nbsnew;
 }
+
+} // namespace gmx
