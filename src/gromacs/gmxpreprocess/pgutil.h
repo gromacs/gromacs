@@ -44,6 +44,9 @@
 struct t_atom;
 struct t_atoms;
 
+namespace gmx
+{
+
 /*! \brief
  * Search for an atom named \c atomName in \c atoms
  *
@@ -64,12 +67,12 @@ struct t_atoms;
  *                             empty if no such bonds exist.
  * \return Atom index within \c atoms matching \c atomName, or std::nullopt if none found.
  */
-std::optional<int> search_atom(const char*              atomName,
-                               int                      start,
-                               const t_atoms*           atoms,
-                               const char*              bondtype,
-                               bool                     bAllowMissing,
-                               gmx::ArrayRef<const int> cyclicBondsIndex);
+std::optional<int> search_atom(const char*         atomName,
+                               int                 start,
+                               const t_atoms*      atoms,
+                               const char*         bondtype,
+                               bool                bAllowMissing,
+                               ArrayRef<const int> cyclicBondsIndex);
 
 /* Similar to search_atom, but this routine searches for the named
  * atom in residue with index \c resind.
@@ -79,5 +82,7 @@ std::optional<int> search_res_atom(const char*    atomName,
                                    const t_atoms* atoms,
                                    const char*    bondtype,
                                    bool           bAllowMissing);
+
+} // namespace gmx
 
 #endif

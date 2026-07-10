@@ -48,6 +48,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/snprintf.h"
 
+namespace gmx
+{
+
 #define BUFSIZE 1024
 static void atom_not_found(int         fatal_errno,
                            const char* file,
@@ -98,19 +101,19 @@ static void atom_not_found(int         fatal_errno,
     }
 }
 
-std::optional<int> search_atom(const char*              atomName,
-                               int                      start,
-                               const t_atoms*           atoms,
-                               const char*              bondtype,
-                               bool                     bAllowMissing,
-                               gmx::ArrayRef<const int> cyclicBondsIndex)
+std::optional<int> search_atom(const char*         atomName,
+                               int                 start,
+                               const t_atoms*      atoms,
+                               const char*         bondtype,
+                               bool                bAllowMissing,
+                               ArrayRef<const int> cyclicBondsIndex)
 {
-    int                                i, resind = -1;
-    bool                               bPrevious, bNext, bOverring;
-    int                                natoms             = atoms->nr;
-    t_atom*                            at                 = atoms->atom;
-    char** const*                      atomNameSearchPool = atoms->atomname;
-    gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
+    int                           i, resind = -1;
+    bool                          bPrevious, bNext, bOverring;
+    int                           natoms             = atoms->nr;
+    t_atom*                       at                 = atoms->atom;
+    char** const*                 atomNameSearchPool = atoms->atomname;
+    ArrayRef<const int>::iterator cyclicBondsIterator;
 
     bPrevious = (std::strchr(atomName, '-') != nullptr);
     bNext     = (std::strchr(atomName, '+') != nullptr);
@@ -208,9 +211,11 @@ std::optional<int> search_res_atom(const char*    atomName,
     {
         if (atoms->atom[i].resind == resind)
         {
-            return search_atom(atomName, i, atoms, bondtype, bAllowMissing, gmx::ArrayRef<const int>{});
+            return search_atom(atomName, i, atoms, bondtype, bAllowMissing, ArrayRef<const int>{});
         }
     }
 
     return std::nullopt;
 }
+
+} // namespace gmx

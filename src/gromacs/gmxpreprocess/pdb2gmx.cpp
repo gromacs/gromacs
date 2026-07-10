@@ -1472,13 +1472,13 @@ bool checkChainCyclicity(t_atoms*                               pdba,
         name_aj = patch.aj().c_str();
         if (name_ai[0] == '-')
         {
-            aj = search_res_atom(++name_ai, end_ter, pdba, "check", TRUE);
-            ai = search_res_atom(name_aj, start_ter, pdba, "check", TRUE);
+            aj = gmx::search_res_atom(++name_ai, end_ter, pdba, "check", TRUE);
+            ai = gmx::search_res_atom(name_aj, start_ter, pdba, "check", TRUE);
         }
         else if (name_aj[0] == '-')
         {
-            aj = search_res_atom(++name_aj, end_ter, pdba, "check", TRUE);
-            ai = search_res_atom(name_ai, start_ter, pdba, "check", TRUE);
+            aj = gmx::search_res_atom(++name_aj, end_ter, pdba, "check", TRUE);
+            ai = gmx::search_res_atom(name_ai, start_ter, pdba, "check", TRUE);
         }
         if (ai.has_value() and aj.has_value())
         {
@@ -1504,13 +1504,13 @@ bool checkChainCyclicity(t_atoms*                               pdba,
 
             if (name_ai[0] == '+')
             {
-                ai = search_res_atom(name_aj, end_ter, pdba, "check", TRUE);
-                aj = search_res_atom(++name_ai, start_ter, pdba, "check", TRUE);
+                ai = gmx::search_res_atom(name_aj, end_ter, pdba, "check", TRUE);
+                aj = gmx::search_res_atom(++name_ai, start_ter, pdba, "check", TRUE);
             }
             else if (name_aj[0] == '+')
             {
-                ai = search_res_atom(name_ai, end_ter, pdba, "check", TRUE);
-                aj = search_res_atom(++name_aj, start_ter, pdba, "check", TRUE);
+                ai = gmx::search_res_atom(name_ai, end_ter, pdba, "check", TRUE);
+                aj = gmx::search_res_atom(++name_aj, start_ter, pdba, "check", TRUE);
             }
             if (ai.has_value() and aj.has_value())
             {
