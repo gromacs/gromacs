@@ -59,6 +59,9 @@
 
 #include "hackblock.h"
 
+namespace gmx
+{
+
 /* Number of control atoms for each 'add' type.
  *
  * There are 11 types of adding hydrogens, numbered from 1 thru
@@ -146,7 +149,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
     while (fgets2(line, STRLEN - 1, in))
     {
         // Skip lines that are only whitespace
-        if (gmx::countWords(line) == 0)
+        if (countWords(line) == 0)
         {
             continue;
         }
@@ -222,11 +225,13 @@ int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatab
     return globalPatches->size();
 }
 
-gmx::ArrayRef<const MoleculePatchDatabase>::iterator
-search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key)
+ArrayRef<const MoleculePatchDatabase>::iterator search_h_db(ArrayRef<const MoleculePatchDatabase> globalPatches,
+                                                            const char* key)
 {
     return std::find_if(globalPatches.begin(),
                         globalPatches.end(),
                         [&key](const MoleculePatchDatabase& a)
-                        { return gmx::equalCaseInsensitive(key, a.name); });
+                        { return equalCaseInsensitive(key, a.name); });
 }
+
+} // namespace gmx

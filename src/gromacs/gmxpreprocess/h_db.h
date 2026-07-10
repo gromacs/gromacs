@@ -45,6 +45,9 @@
 struct MoleculePatch;
 struct MoleculePatchDatabase;
 
+namespace gmx
+{
+
 /* functions for the h-database */
 
 void read_ab(char* line, const std::filesystem::path& fn, MoleculePatch* ab);
@@ -68,8 +71,10 @@ void print_ab(FILE* out, const MoleculePatch& ab, const char* nname);
  * \param[in] globalPatches Database to search.
  * \param[in] key Name to search for.
  */
-gmx::ArrayRef<const MoleculePatchDatabase>::iterator
-search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key);
+ArrayRef<const MoleculePatchDatabase>::iterator search_h_db(ArrayRef<const MoleculePatchDatabase> globalPatches,
+                                                            const char* key);
 /* Search for an entry in the database */
+
+} // namespace gmx
 
 #endif
