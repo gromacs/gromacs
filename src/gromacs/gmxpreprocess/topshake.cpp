@@ -58,7 +58,10 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static int count_hydrogens(char*** atomname, int nra, gmx::ArrayRef<const int> a)
+namespace gmx
+{
+
+static int count_hydrogens(char*** atomname, int nra, ArrayRef<const int> a)
 {
     int nh;
 
@@ -79,10 +82,10 @@ static int count_hydrogens(char*** atomname, int nra, gmx::ArrayRef<const int> a
     return nh;
 }
 
-void make_shake(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-                t_atoms*                                                        atoms,
-                int                                                             nshake,
-                const gmx::MDLogger&                                            logger)
+void make_shake(EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                t_atoms*                                                   atoms,
+                int                                                        nshake,
+                const MDLogger&                                            logger)
 {
     char*** info = atoms->atomname;
     real    b_ij, b_jk;
@@ -118,12 +121,12 @@ void make_shake(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& 
             /* Add all the angles with hydrogens to the shake list
              * and remove them from the bond list
              */
-            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
+            for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
             {
                 const InteractionsOfType* bonds = &(plist[ftype]);
                 if ((interaction_function[ftype].flags & IF_CHEMBOND) && (bonds->size() > 0))
                 {
-                    for (InteractionFunction ftype_a : gmx::EnumerationWrapper<InteractionFunction>{})
+                    for (InteractionFunction ftype_a : EnumerationWrapper<InteractionFunction>{})
                     {
                         if (interaction_function[ftype_a].flags & IF_ATYPE)
                         {
@@ -170,7 +173,7 @@ void make_shake(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& 
                                     {
                                         real param = std::sqrt(
                                                 b_ij * b_ij + b_jk * b_jk
-                                                - 2.0 * b_ij * b_jk * std::cos(gmx::c_deg2Rad * ang->c0()));
+                                                - 2.0 * b_ij * b_jk * std::cos(c_deg2Rad * ang->c0()));
                                         std::vector<real> forceParm = { param, param };
                                         if (ftype == InteractionFunction::ConnectBonds
                                             || ftype_a == InteractionFunction::ConnectBonds)
@@ -211,7 +214,7 @@ void make_shake(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& 
         /* Add all the bonds with hydrogens to the shake list
          * and remove them from the bond list
          */
-        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
+        for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
         {
             if (interaction_function[ftype].flags & IF_BTYPE)
             {
@@ -236,3 +239,5 @@ void make_shake(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& 
         }
     }
 }
+
+} // namespace gmx
