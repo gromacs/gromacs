@@ -212,9 +212,9 @@ void list_top(const char* fn)
 {
     int status, done;
     // Legacy string length macro
-    char      buf[STRLEN];
-    gmx_cpp_t handle;
-    char*     cppopts[] = { nullptr };
+    char            buf[STRLEN];
+    CPreProcessor_t handle;
+    char*           cppopts[] = { nullptr };
 
     status = cpp_open_file(fn, &handle, cppopts);
     if (status != 0)

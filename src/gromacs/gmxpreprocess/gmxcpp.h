@@ -38,7 +38,10 @@
 #include <filesystem>
 #include <string>
 
-typedef struct gmx_cpp* gmx_cpp_t;
+namespace gmx
+{
+
+typedef struct CPreProcessor* CPreProcessor_t;
 
 /* The possible return codes for these functions */
 enum
@@ -59,40 +62,42 @@ enum
    info for the cpp emulator. The cppopt variable (null terminated)
    can hold cpp options like -IXXX and -DXXX. Return integer status.
  */
-int cpp_open_file(const std::filesystem::path& filenm, gmx_cpp_t* handlep, char** cppopts);
+int cpp_open_file(const std::filesystem::path& filenm, CPreProcessor_t* handlep, char** cppopts);
 
 /* Return one whole line from the file into buf which holds at most n
    characters, for subsequent processing. Returns integer status.
  */
-int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[]);
+int cpp_read_line(CPreProcessor_t* handlep, int n, char buf[]);
 
 /* Return the file currently being read.
  */
-std::filesystem::path cpp_cur_file(const gmx_cpp_t* handlep);
+std::filesystem::path cpp_cur_file(const CPreProcessor_t* handlep);
 
 /* Return the current line number.
  */
-int cpp_cur_linenr(const gmx_cpp_t* handlep);
+int cpp_cur_linenr(const CPreProcessor_t* handlep);
 
 /* Close the file! Return integer status.
  */
-int cpp_close_file(gmx_cpp_t* handlep);
+int cpp_close_file(CPreProcessor_t* handlep);
 
 /* Return a pointer to the value of defineName, when present, nullptr othwerwise.
  */
-const std::string* cpp_find_define(const gmx_cpp_t* handlep, const std::string& defineName);
+const std::string* cpp_find_define(const CPreProcessor_t* handlep, const std::string& defineName);
 
 /* Clean up normal and file static data structures
  */
-void cpp_done(gmx_cpp_t handle);
+void cpp_done(CPreProcessor_t handle);
 
 /* Return a string containing the error message coresponding to status
    variable.
  */
-char* cpp_error(gmx_cpp_t* handlep, int status);
+char* cpp_error(CPreProcessor_t* handlep, int status);
 
 /* Returns warning message if strings defined in mdp define section (e.g. -DFLEXIBLE)
  * were not not found when processing the topology */
-std::string checkAndWarnForUnusedDefines(const gmx_cpp& handle);
+std::string checkAndWarnForUnusedDefines(const CPreProcessor& handle);
+
+} // namespace gmx
 
 #endif

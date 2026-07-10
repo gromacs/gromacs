@@ -570,12 +570,12 @@ static char** read_topol(const char*                                 infile,
     double               qt = 0, qBt = 0; /* total charge */
     int                  dcatt = -1, nmol_couple;
     /* File handling variables */
-    int         status;
-    bool        done;
-    gmx_cpp_t   handle;
-    char*       tmp_line = nullptr;
-    char        warn_buf[STRLEN];
-    const char* floating_point_arithmetic_tip =
+    int             status;
+    bool            done;
+    CPreProcessor_t handle;
+    char*           tmp_line = nullptr;
+    char            warn_buf[STRLEN];
+    const char*     floating_point_arithmetic_tip =
             "Total charge should normally be an integer. See\n"
             "https://manual.gromacs.org/current/user-guide/floating-point.html\n"
             "for discussion on how close it should be to an integer.\n";

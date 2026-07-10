@@ -58,6 +58,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 struct t_define
 {
     std::string name;
@@ -73,7 +76,7 @@ enum
     eifNR
 };
 
-struct gmx_cpp
+struct CPreProcessor
 {
     std::shared_ptr<std::vector<t_define>>              defines;
     std::shared_ptr<std::vector<std::filesystem::path>> includes;
@@ -85,8 +88,8 @@ struct gmx_cpp
     std::string                                         line;
     int                                                 line_nr;
     std::vector<int>                                    ifdefs;
-    struct gmx_cpp*                                     child  = nullptr;
-    struct gmx_cpp*                                     parent = nullptr;
+    struct CPreProcessor*                               child  = nullptr;
+    struct CPreProcessor*                               parent = nullptr;
 };
 
 static bool is_word_end(char c)
@@ -168,7 +171,7 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     return TRUE;
 }
 
-static bool is_ifdeffed_out(gmx::ArrayRef<const int> ifdefs)
+static bool is_ifdeffed_out(ArrayRef<const int> ifdefs)
 {
     return (!ifdefs.empty() && ifdefs.back() != eifTRUE);
 }
@@ -209,14 +212,14 @@ static void add_define(std::vector<t_define>* defines, const std::string& name, 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
 static int cpp_open_file(const std::filesystem::path&                         filenm,
-                         gmx_cpp_t*                                           handle,
+                         CPreProcessor_t*                                     handle,
                          char**                                               cppopts,
                          std::shared_ptr<std::vector<t_define>>*              definesFromParent,
                          std::shared_ptr<std::vector<std::filesystem::path>>* includesFromParent)
 {
     // TODO: We should avoid new/delete, we should use Pimpl instead
-    gmx_cpp* cpp = new gmx_cpp;
-    *handle      = cpp;
+    CPreProcessor* cpp = new CPreProcessor;
+    *handle            = cpp;
 
     if (definesFromParent)
     {
@@ -289,7 +292,7 @@ static int cpp_open_file(const std::filesystem::path&                         fi
         /* If still not found, check the Gromacs library search path. */
         if (cpp->fn.empty())
         {
-            cpp->fn = gmx::findLibraryFile(filenm, false, false);
+            cpp->fn = findLibraryFile(filenm, false, false);
         }
     }
     if (cpp->fn.empty())
@@ -328,15 +331,15 @@ static int cpp_open_file(const std::filesystem::path&                         fi
 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
-int cpp_open_file(const std::filesystem::path& filenm, gmx_cpp_t* handle, char** cppopts)
+int cpp_open_file(const std::filesystem::path& filenm, CPreProcessor_t* handle, char** cppopts)
 {
     return cpp_open_file(filenm, handle, cppopts, nullptr, nullptr);
 }
 
 /* Note that dval might be null, e.g. when handling a line like '#define */
-static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const std::string& dval)
+static int process_directive(CPreProcessor_t* handlep, const std::string& dname, const std::string& dval)
 {
-    gmx_cpp_t handle = *handlep;
+    CPreProcessor_t handle = *handlep;
 
     std::vector<int>& ifdefs = handle->ifdefs;
 
@@ -362,7 +365,7 @@ static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const
                 if (define.name == dval)
                 {
                     // erase from unmatched_defines in original handle
-                    gmx_cpp_t root = handle;
+                    CPreProcessor_t root = handle;
                     while (root->parent != nullptr)
                     {
                         root = root->parent;
@@ -531,11 +534,11 @@ static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const
    routine also does all the "intelligent" work like processing cpp
    directives and so on. Note that often the routine is called
    recursively and no cpp directives are printed. */
-int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
+int cpp_read_line(CPreProcessor_t* handlep, int n, char buf[])
 {
-    gmx_cpp_t handle = *handlep;
-    int       status;
-    bool      bEOF;
+    CPreProcessor_t handle = *handlep;
+    int             status;
+    bool            bEOF;
 
     if (!handle)
     {
@@ -623,7 +626,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
             if (nn > 0)
             {
                 // Need to erase  unmatched define in original handle
-                gmx_cpp_t root = handle;
+                CPreProcessor_t root = handle;
                 while (root->parent != nullptr)
                 {
                     root = root->parent;
@@ -650,20 +653,20 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
     return eCPP_OK;
 }
 
-std::filesystem::path cpp_cur_file(const gmx_cpp_t* handlep)
+std::filesystem::path cpp_cur_file(const CPreProcessor_t* handlep)
 {
     return (*handlep)->fn;
 }
 
-int cpp_cur_linenr(const gmx_cpp_t* handlep)
+int cpp_cur_linenr(const CPreProcessor_t* handlep)
 {
     return (*handlep)->line_nr;
 }
 
 /* Close the file! Return integer status. */
-int cpp_close_file(gmx_cpp_t* handlep)
+int cpp_close_file(CPreProcessor_t* handlep)
 {
-    gmx_cpp_t handle = *handlep;
+    CPreProcessor_t handle = *handlep;
 
     if (!handle)
     {
@@ -687,7 +690,7 @@ int cpp_close_file(gmx_cpp_t* handlep)
     return eCPP_OK;
 }
 
-const std::string* cpp_find_define(const gmx_cpp_t* handlep, const std::string& defineName)
+const std::string* cpp_find_define(const CPreProcessor_t* handlep, const std::string& defineName)
 {
     for (const t_define& define : *(*handlep)->defines)
     {
@@ -700,7 +703,7 @@ const std::string* cpp_find_define(const gmx_cpp_t* handlep, const std::string& 
     return nullptr;
 }
 
-void cpp_done(gmx_cpp_t handle)
+void cpp_done(CPreProcessor_t handle)
 {
     int status = cpp_close_file(&handle);
     if (status != eCPP_OK)
@@ -712,20 +715,20 @@ void cpp_done(gmx_cpp_t handle)
 
 /* Return a string containing the error message coresponding to status
    variable */
-char* cpp_error(gmx_cpp_t* handlep, int status)
+char* cpp_error(CPreProcessor_t* handlep, int status)
 {
-    char        buf[256];
-    const char* ecpp[] = { "OK",
-                           "File not found",
-                           "End of file",
-                           "Syntax error",
-                           "Interrupted",
-                           "Invalid file handle",
-                           "Invalid delimiter for filename in #include statement",
-                           "File not open",
-                           "Unknown error, perhaps your text file uses wrong line endings?",
-                           "Error status out of range" };
-    gmx_cpp_t   handle = *handlep;
+    char            buf[256];
+    const char*     ecpp[] = { "OK",
+                               "File not found",
+                               "End of file",
+                               "Syntax error",
+                               "Interrupted",
+                               "Invalid file handle",
+                               "Invalid delimiter for filename in #include statement",
+                               "File not open",
+                               "Unknown error, perhaps your text file uses wrong line endings?",
+                               "Error status out of range" };
+    CPreProcessor_t handle = *handlep;
 
     if (!handle)
     {
@@ -747,7 +750,7 @@ char* cpp_error(gmx_cpp_t* handlep, int status)
     return gmx_strdup(buf);
 }
 
-std::string checkAndWarnForUnusedDefines(const gmx_cpp& handle)
+std::string checkAndWarnForUnusedDefines(const CPreProcessor& handle)
 {
     std::string warning;
     if (!handle.unmatched_defines.empty())
@@ -766,3 +769,5 @@ std::string checkAndWarnForUnusedDefines(const gmx_cpp& handle)
     }
     return warning;
 }
+
+} // namespace gmx
