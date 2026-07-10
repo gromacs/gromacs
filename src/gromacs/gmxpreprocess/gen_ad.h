@@ -42,13 +42,12 @@
 
 struct t_atoms;
 struct t_excls;
-struct MoleculePatchDatabase;
 struct InteractionsOfType;
-struct PreprocessResidue;
-struct DisulfideBond;
 
 namespace gmx
 {
+struct MoleculePatchDatabase;
+struct PreprocessResidue;
 template<typename>
 class ArrayRef;
 

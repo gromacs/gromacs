@@ -40,13 +40,13 @@
 #include "gromacs/topology/residuetypes.h"
 
 struct t_atoms;
-struct PreprocessResidue;
 struct t_symtab;
 
 namespace gmx
 {
 template<typename>
 class ArrayRef;
+struct PreprocessResidue;
 
 /* If bResname is true renames atoms based on residue names,
  * otherwise renames atoms based on rtp entry names.

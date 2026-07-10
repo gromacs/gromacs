@@ -42,11 +42,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct MoleculePatch;
-struct MoleculePatchDatabase;
-
 namespace gmx
 {
+struct MoleculePatch;
+struct MoleculePatchDatabase;
 
 /* functions for the h-database */
 

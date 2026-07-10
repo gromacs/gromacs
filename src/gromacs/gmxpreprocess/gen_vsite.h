@@ -45,7 +45,6 @@
 
 struct t_atoms;
 struct InteractionsOfType;
-struct PreprocessResidue;
 struct t_symtab;
 
 namespace gmx
@@ -53,6 +52,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;
+struct PreprocessResidue;
 
 /* stuff for pdb2gmx */
 

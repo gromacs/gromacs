@@ -48,7 +48,6 @@ struct t_nbparam;
 struct t_symtab;
 class InteractionOfType;
 struct InteractionsOfType;
-struct PreprocessResidue;
 class WarningHandler;
 enum class CombinationRule : int;
 namespace gmx
@@ -59,6 +58,7 @@ struct ExclusionBlock;
 class PreprocessingAtomTypes;
 enum class Directive : int;
 class PreprocessingBondAtomType;
+struct PreprocessResidue;
 
 void generate_nbparams(CombinationRule         comb,
                        int                     funct,

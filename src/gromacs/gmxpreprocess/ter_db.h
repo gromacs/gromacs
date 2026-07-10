@@ -38,13 +38,12 @@
 #include <filesystem>
 #include <vector>
 
-struct MoleculePatchDatabase;
-
 namespace gmx
 {
 template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;
+struct MoleculePatchDatabase;
 } // namespace gmx
 
 namespace gmx

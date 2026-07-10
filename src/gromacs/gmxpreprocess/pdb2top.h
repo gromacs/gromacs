@@ -48,11 +48,9 @@
 
 struct t_atoms;
 struct t_excls;
-struct MoleculePatchDatabase;
 struct t_mols;
 struct InteractionsOfType;
 struct t_resinfo;
-struct PreprocessResidue;
 struct t_symtab;
 
 namespace gmx
@@ -61,6 +59,8 @@ template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;
 class MDLogger;
+struct MoleculePatchDatabase;
+struct PreprocessResidue;
 struct DisulfideBond;
 
 /* this *MUST* correspond to array in pdb2top.cpp */

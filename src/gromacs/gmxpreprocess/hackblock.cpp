@@ -55,10 +55,13 @@
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/vec.h"
 
+namespace gmx
+{
+
 const char* enumValueToString(BondedTypes enumValue)
 {
     /* these MUST correspond to the enum in hackblock.h */
-    constexpr gmx::EnumerationArray<BondedTypes, const char*> bondedTypeNames = {
+    constexpr EnumerationArray<BondedTypes, const char*> bondedTypeNames = {
         "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap"
     };
     return bondedTypeNames[enumValue];
@@ -66,7 +69,7 @@ const char* enumValueToString(BondedTypes enumValue)
 
 int enumValueToNumIAtoms(BondedTypes enumValue)
 {
-    constexpr gmx::EnumerationArray<BondedTypes, int> bondedTypeIAtoms = { 2, 3, 4, 4, 2, 5 };
+    constexpr EnumerationArray<BondedTypes, int> bondedTypeIAtoms = { 2, 3, 4, 4, 2, 5 };
     return bondedTypeIAtoms[enumValue];
 }
 
@@ -86,7 +89,7 @@ MoleculePatchType MoleculePatch::type() const
     }
     else
     {
-        GMX_THROW(gmx::InvalidInputError("Unknown type of atom modification"));
+        GMX_THROW(InvalidInputError("Unknown type of atom modification"));
     }
 }
 
@@ -115,9 +118,9 @@ static bool contains_char(const BondedInteraction& s, char c)
     return bRet;
 }
 
-static int rbonded_find_atoms_in_list(const BondedInteraction&               b,
-                                      gmx::ArrayRef<const BondedInteraction> blist,
-                                      int                                    natoms)
+static int rbonded_find_atoms_in_list(const BondedInteraction&          b,
+                                      ArrayRef<const BondedInteraction> blist,
+                                      int                               natoms)
 {
     int foundPos = -1;
 
@@ -155,13 +158,13 @@ static int rbonded_find_atoms_in_list(const BondedInteraction&               b,
     return foundPos;
 }
 
-bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
-                                gmx::ArrayRef<BondedInteractionList>       d,
-                                bool                                       bMin,
-                                bool                                       bPlus)
+bool mergeBondedInteractionList(ArrayRef<const BondedInteractionList> s,
+                                ArrayRef<BondedInteractionList>       d,
+                                bool                                  bMin,
+                                bool                                  bPlus)
 {
     bool bBondsRemoved = false;
-    for (auto i : gmx::EnumerationWrapper<BondedTypes>{})
+    for (auto i : EnumerationWrapper<BondedTypes>{})
     {
         int value = static_cast<int>(i);
         if (!s[value].b.empty())
@@ -247,7 +250,7 @@ void copyPreprocessResidues(const PreprocessResidue& s, PreprocessResidue* d, t_
     {
         d->atomname.push_back(put_symtab(symtab, *a));
     }
-    for (auto i : gmx::EnumerationWrapper<BondedTypes>{})
+    for (auto i : EnumerationWrapper<BondedTypes>{})
     {
         d->rb[i].type = s.rb[i].type;
         d->rb[i].b.clear();
@@ -280,3 +283,5 @@ void copyModificationBlocks(const MoleculePatchDatabase& s, MoleculePatchDatabas
     }
     mergeAtomAndBondModifications(s, d);
 }
+
+} // namespace gmx

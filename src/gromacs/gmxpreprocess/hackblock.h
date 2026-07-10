@@ -56,7 +56,6 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
 
 /*! \brief
  * Used for reading .rtp/.tdb
@@ -144,7 +143,7 @@ struct PreprocessResidue
     //! Ensure that residue names are replaced with residue types
     bool replaceResidueNameWithResidueType = false;
     //! List of bonded interactions to potentially add.
-    gmx::EnumerationArray<BondedTypes, BondedInteractionList> rb;
+    EnumerationArray<BondedTypes, BondedInteractionList> rb;
     //! Get number of atoms in residue.
     int natom() const;
 };
@@ -220,7 +219,7 @@ struct MoleculePatchDatabase
     //! List of changes to atoms.
     std::vector<MoleculePatch> hack;
     //! List of bonded interactions to potentially add.
-    gmx::EnumerationArray<BondedTypes, BondedInteractionList> rb;
+    EnumerationArray<BondedTypes, BondedInteractionList> rb;
     //! Number of atoms to modify
     int nhack() const { return hack.size(); }
 };
@@ -252,10 +251,10 @@ void copyPreprocessResidues(const PreprocessResidue& s, PreprocessResidue* d, t_
  * \param[in] bPlus don't copy bondeds with atoms starting with '+'.
  * \returns if bonds were removed at the termini.
  */
-bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
-                                gmx::ArrayRef<BondedInteractionList>       d,
-                                bool                                       bMin,
-                                bool                                       bPlus);
+bool mergeBondedInteractionList(ArrayRef<const BondedInteractionList> s,
+                                ArrayRef<BondedInteractionList>       d,
+                                bool                                  bMin,
+                                bool                                  bPlus);
 
 /*! \brief
  * Copy all information from datastructure.
@@ -275,5 +274,7 @@ void mergeAtomModifications(const MoleculePatchDatabase& s, MoleculePatchDatabas
 
 //! \copydoc mergeAtomModifications
 void mergeAtomAndBondModifications(const MoleculePatchDatabase& s, MoleculePatchDatabase* d);
+
+} // namespace gmx
 
 #endif

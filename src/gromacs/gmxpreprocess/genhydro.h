@@ -41,14 +41,14 @@
 
 struct t_atoms;
 struct t_symtab;
-struct MoleculePatchDatabase;
-struct PreprocessResidue;
 
 namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
+struct MoleculePatchDatabase;
+struct PreprocessResidue;
+} // namespace gmx
 
 namespace gmx
 {

@@ -50,8 +50,8 @@ namespace gmx
 {
 class MDLogger;
 class PreprocessingAtomTypes;
-} // namespace gmx
 struct PreprocessResidue;
+} // namespace gmx
 struct t_symtab;
 
 namespace gmx

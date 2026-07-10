@@ -38,10 +38,10 @@
 #include "gromacs/utility/real.h"
 
 struct InteractionsOfType;
-struct PreprocessResidue;
 
 namespace gmx
 {
+struct PreprocessResidue;
 template<typename>
 class ArrayRef;
 

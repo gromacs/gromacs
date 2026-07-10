@@ -850,11 +850,11 @@ bool pdbicomp(const t_pdbindex& a, const t_pdbindex& b)
     return d < 0;
 }
 
-std::vector<IndexGroup> sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> restp_chain,
-                                      int                                    natoms,
-                                      t_atoms**                              pdbaptr,
-                                      t_atoms**                              newPdbAtoms,
-                                      std::vector<gmx::RVec>*                x)
+std::vector<IndexGroup> sort_pdbatoms(gmx::ArrayRef<const gmx::PreprocessResidue> restp_chain,
+                                      int                                         natoms,
+                                      t_atoms**                                   pdbaptr,
+                                      t_atoms**                                   newPdbAtoms,
+                                      std::vector<gmx::RVec>*                     x)
 {
     t_atoms*               pdba = *pdbaptr;
     std::vector<gmx::RVec> xnew;
@@ -866,9 +866,9 @@ std::vector<IndexGroup> sort_pdbatoms(gmx::ArrayRef<const PreprocessResidue> res
 
     for (int i = 0; i < natoms; i++)
     {
-        atomnm                                  = *pdba->atomname[i];
-        const PreprocessResidue* localPpResidue = &restp_chain[pdba->atom[i].resind];
-        auto                     found =
+        atomnm                                       = *pdba->atomname[i];
+        const gmx::PreprocessResidue* localPpResidue = &restp_chain[pdba->atom[i].resind];
+        auto                          found =
                 std::find_if(localPpResidue->atomname.begin(),
                              localPpResidue->atomname.end(),
                              [&atomnm](char** it) { return gmx::equalCaseInsensitive(atomnm, *it); });
@@ -1441,14 +1441,14 @@ void modify_chain_numbers(t_atoms* pdba, ChainSeparationType chainSeparation, co
     }
 }
 
-bool checkChainCyclicity(t_atoms*                               pdba,
-                         gmx::ArrayRef<const gmx::RVec>         x,
-                         int                                    start_ter,
-                         int                                    end_ter,
-                         gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-                         gmx::ArrayRef<const RtpRename>         rr,
-                         real                                   long_bond_dist_,
-                         real                                   short_bond_dist_)
+bool checkChainCyclicity(t_atoms*                                    pdba,
+                         gmx::ArrayRef<const gmx::RVec>              x,
+                         int                                         start_ter,
+                         int                                         end_ter,
+                         gmx::ArrayRef<const gmx::PreprocessResidue> rtpFFDB,
+                         gmx::ArrayRef<const RtpRename>              rr,
+                         real                                        long_bond_dist_,
+                         real                                        short_bond_dist_)
 {
     // if start and end are the same, we can't have a cycle
     if (start_ter == end_ter)
@@ -1466,7 +1466,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
     const char *name_ai, *name_aj;
 
     bool bothFound = false;
-    for (const auto& patch : res->rb[BondedTypes::Bonds].b)
+    for (const auto& patch : res->rb[gmx::BondedTypes::Bonds].b)
     { /* Search backward bond for n/5' terminus */
         name_ai = patch.ai().c_str();
         name_aj = patch.aj().c_str();
@@ -1496,7 +1496,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
             newName = rtpname;
         }
         res = getDatabaseEntry(newName, rtpFFDB);
-        for (const auto& patch : res->rb[BondedTypes::Bonds].b)
+        for (const auto& patch : res->rb[gmx::BondedTypes::Bonds].b)
         {
             /* Seach forward bond for c/3' terminus */
             name_ai = patch.ai().c_str();
@@ -1545,18 +1545,18 @@ struct t_pdbchain
 
 struct t_chain
 {
-    char                                chainid   = ' ';
-    int                                 chainnum  = ' ';
-    bool                                bAllWat   = false;
-    int                                 nterpairs = -1;
-    std::vector<int>                    chainstart;
-    std::vector<MoleculePatchDatabase*> ntdb;
-    std::vector<MoleculePatchDatabase*> ctdb;
-    std::vector<int>                    r_start;
-    std::vector<int>                    r_end;
-    t_atoms*                            pdba;
-    std::vector<gmx::RVec>              x;
-    std::vector<int>                    cyclicBondsIndex;
+    char                                     chainid   = ' ';
+    int                                      chainnum  = ' ';
+    bool                                     bAllWat   = false;
+    int                                      nterpairs = -1;
+    std::vector<int>                         chainstart;
+    std::vector<gmx::MoleculePatchDatabase*> ntdb;
+    std::vector<gmx::MoleculePatchDatabase*> ctdb;
+    std::vector<int>                         r_start;
+    std::vector<int>                         r_end;
+    t_atoms*                                 pdba;
+    std::vector<gmx::RVec>                   x;
+    std::vector<int>                         cyclicBondsIndex;
 };
 
 enum class VSitesType : int

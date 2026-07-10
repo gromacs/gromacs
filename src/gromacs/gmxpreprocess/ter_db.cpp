@@ -72,10 +72,6 @@
 namespace gmx
 {
 
-// findTypeFromKeyword() below is instantiated for BondedTypes as well as
-// ReplaceType, and needs both overloads of enumValueToString() in scope.
-using ::enumValueToString;
-
 /* use bonded types definitions in hackblock.h */
 enum class ReplaceType : int
 {
