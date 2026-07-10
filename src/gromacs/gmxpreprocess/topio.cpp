@@ -96,6 +96,9 @@
 
 struct t_nbparam;
 
+namespace gmx
+{
+
 #define OPENDIR '['  /* starting sign for directive */
 #define CLOSEDIR ']' /* ending sign for directive   */
 
@@ -125,7 +128,7 @@ static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, 
         /* Copy type.atoms */
         atomNumbers = { i / nnn, i % nnn };
         /* Copy normal and FEP parameters and multiply by fudge factor */
-        gmx::ArrayRef<const real> existingParam = type.forceParam();
+        ArrayRef<const real> existingParam = type.forceParam();
         GMX_RELEASE_ASSERT(2 * nrfp <= MAXFORCEPARAM,
                            "Can't have more parameters than half of maximum parameter number");
         for (int j = 0; j < nrfp; j++)
@@ -228,7 +231,7 @@ static std::string describeAtomsForRBDihedralOfGivenType(const gmx_mtop_t& mtop,
             const int                 nra   = interaction_function[ftype].nratoms;
             if (type == interactionType)
             {
-                return gmx::formatString(
+                return formatString(
                         "First such dihedral in molecule %s, involving atoms %d %d %d %d",
                         *(molt.name),
                         ia[1],
@@ -304,7 +307,7 @@ void checkRBDihedralSum(const gmx_mtop_t& mtop, const t_inputrec& ir, WarningHan
 
     auto generateMessage = [](int numDihedrals, const std::string& note, const std::string& involvedAtoms)
     {
-        return gmx::formatString(
+        return formatString(
                 "%d dihedrals with function type 3 (Ryckaert-Bellemans or Fourier) have "
                 "coefficients %s"
                 "\n%s",
@@ -394,7 +397,7 @@ static void sum_q(const t_atoms* atoms, int numMols, double* qTotA, double* qTot
 static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, CombinationRule* comb, WarningHandler* wi)
 {
     *nb = VanDerWaalsPotential::Count;
-    for (auto i : gmx::EnumerationArray<VanDerWaalsPotential, bool>::keys())
+    for (auto i : EnumerationArray<VanDerWaalsPotential, bool>::keys())
     {
         if (gmx_strcasecmp(nb_str, enumValueToString(i)) == 0)
         {
@@ -406,10 +409,9 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
         int integerValue = std::strtol(nb_str, nullptr, 10);
         if ((integerValue < 1) || (integerValue >= static_cast<int>(VanDerWaalsPotential::Count)))
         {
-            std::string message =
-                    gmx::formatString("Invalid nonbond function selector '%s' using %s",
-                                      nb_str,
-                                      enumValueToString(VanDerWaalsPotential::LJ));
+            std::string message = formatString("Invalid nonbond function selector '%s' using %s",
+                                               nb_str,
+                                               enumValueToString(VanDerWaalsPotential::LJ));
             wi->addError(message);
             *nb = VanDerWaalsPotential::LJ;
         }
@@ -419,7 +421,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
         }
     }
     *comb = CombinationRule::Count;
-    for (auto i : gmx::EnumerationArray<CombinationRule, bool>::keys())
+    for (auto i : EnumerationArray<CombinationRule, bool>::keys())
     {
         if (gmx_strcasecmp(comb_str, enumValueToString(i)) == 0)
         {
@@ -431,10 +433,9 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
         int integerValue = std::strtol(comb_str, nullptr, 10);
         if ((integerValue < 1) || (integerValue >= static_cast<int>(CombinationRule::Count)))
         {
-            std::string message =
-                    gmx::formatString("Invalid combination rule selector '%s' using %s",
-                                      comb_str,
-                                      enumValueToString(CombinationRule::Geometric));
+            std::string message = formatString("Invalid combination rule selector '%s' using %s",
+                                               comb_str,
+                                               enumValueToString(CombinationRule::Geometric));
             wi->addError(message);
             *comb = CombinationRule::Geometric;
         }
@@ -507,9 +508,9 @@ static std::vector<char*> cpp_opts(const char* define, const char* include, Warn
 }
 
 
-static void make_atoms_sys(gmx::ArrayRef<const gmx_molblock_t>      molblock,
-                           gmx::ArrayRef<const MoleculeInformation> molinfo,
-                           t_atoms*                                 atoms)
+static void make_atoms_sys(ArrayRef<const gmx_molblock_t>      molblock,
+                           ArrayRef<const MoleculeInformation> molinfo,
+                           t_atoms*                            atoms)
 {
     atoms->nr   = 0;
     atoms->atom = nullptr;
@@ -539,10 +540,10 @@ static char** read_topol(const char*                                 infile,
                          PreprocessingAtomTypes*                     atypes,
                          std::vector<MoleculeInformation>*           molinfo,
                          std::unique_ptr<MoleculeInformation>*       intermolecular_interactions,
-                         gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
+                         EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
                          CombinationRule*             combination_rule,
                          double*                      reppow,
-                         gmx::t_gromppopts*           opts,
+                         t_gromppopts*                opts,
                          real*                        fudgeQQ,
                          std::vector<gmx_molblock_t>* molblock,
                          bool*                        ffParametrizedWithHBondConstraints,
@@ -550,7 +551,7 @@ static char** read_topol(const char*                                 infile,
                          bool                         bZero,
                          bool                         usingFullRangeElectrostatics,
                          WarningHandler*              wi,
-                         const gmx::MDLogger&         logger)
+                         const MDLogger&              logger)
 {
     FILE*                out;
     int                  sl;
@@ -603,8 +604,8 @@ static char** read_topol(const char*                                 infile,
     d       = Directive::d_invalid; /* first thing should be a directive */
     nbparam = nullptr;              /* The temporary non-bonded matrix */
     pair    = nullptr;              /* The temporary pair interaction matrix */
-    std::vector<std::vector<gmx::ExclusionBlock>> exclusionBlocks;
-    VanDerWaalsPotential                          nb_funct = VanDerWaalsPotential::LJ;
+    std::vector<std::vector<ExclusionBlock>> exclusionBlocks;
+    VanDerWaalsPotential                     nb_funct = VanDerWaalsPotential::LJ;
 
     *reppow = 12.0; /* Default value for repulsion power     */
 
@@ -770,7 +771,7 @@ static char** read_topol(const char*                                 infile,
                                 get_nbparm(nb_str, comb_str, &nb_funct, combination_rule, wi);
                                 if (nscan >= 3)
                                 {
-                                    bGenPairs = (gmx::equalCaseInsensitive(genpairs, "Y", 1));
+                                    bGenPairs = (equalCaseInsensitive(genpairs, "Y", 1));
                                     if (nb_funct != VanDerWaalsPotential::LJ && bGenPairs)
                                     {
                                         gmx_fatal(FARGS,
@@ -1063,7 +1064,7 @@ static char** read_topol(const char*                                 infile,
                             if (!mi0->bProcessed)
                             {
                                 generate_excl(mi0->nrexcl, mi0->atoms.nr, mi0->interactions, &(mi0->excls));
-                                gmx::mergeExclusions(&(mi0->excls), exclusionBlocks[whichmol]);
+                                mergeExclusions(&(mi0->excls), exclusionBlocks[whichmol]);
                                 make_shake(mi0->interactions, &mi0->atoms, opts->nshake, logger);
 
                                 if (bCouple)
@@ -1238,24 +1239,24 @@ static char** read_topol(const char*                                 infile,
     return title;
 }
 
-char** do_top(bool                                                            bVerbose,
-              const char*                                                     topfile,
-              const std::optional<std::filesystem::path>&                     topppfile,
-              gmx::t_gromppopts*                                              opts,
-              bool                                                            bZero,
-              t_symtab*                                                       symtab,
-              gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
-              CombinationRule*                                                combination_rule,
-              double*                                                         repulsion_power,
-              real*                                                           fudgeQQ,
-              PreprocessingAtomTypes*                                         atypes,
-              std::vector<MoleculeInformation>*                               molinfo,
+char** do_top(bool                                                       bVerbose,
+              const char*                                                topfile,
+              const std::optional<std::filesystem::path>&                topppfile,
+              t_gromppopts*                                              opts,
+              bool                                                       bZero,
+              t_symtab*                                                  symtab,
+              EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
+              CombinationRule*                                           combination_rule,
+              double*                                                    repulsion_power,
+              real*                                                      fudgeQQ,
+              PreprocessingAtomTypes*                                    atypes,
+              std::vector<MoleculeInformation>*                          molinfo,
               std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
               const t_inputrec*                     ir,
               std::vector<gmx_molblock_t>*          molblock,
               bool*                                 ffParametrizedWithHBondConstraints,
               WarningHandler*                       wi,
-              const gmx::MDLogger&                  logger)
+              const MDLogger&                       logger)
 {
     char** title;
 
@@ -1310,7 +1311,7 @@ char** do_top(bool                                                            bV
 static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
                                     const unsigned char* grpnr,
                                     t_inputrec*          ir,
-                                    const gmx::MDLogger& logger)
+                                    const MDLogger&      logger)
 {
     /* This routine expects molt->ilist to be of size InteractionFunction::Count and ordered. */
 
@@ -1394,7 +1395,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
     /* now we delete all bonded interactions, except the ones describing
      * a chemical bond. These are converted to CONNBONDS
      */
-    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
+    for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
     {
         if (!(interaction_function[ftype].flags & IF_BOND) || ftype == InteractionFunction::ConnectBonds)
         {
@@ -1510,9 +1511,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
     /* and merging with the exclusions already present in sys.
      */
 
-    std::vector<gmx::ExclusionBlock> qmexcl2(molt->atoms.nr);
-    gmx::blockaToExclusionBlocks(&qmexcl, qmexcl2);
-    gmx::mergeExclusions(&(molt->excls), qmexcl2);
+    std::vector<ExclusionBlock> qmexcl2(molt->atoms.nr);
+    blockaToExclusionBlocks(&qmexcl, qmexcl2);
+    mergeExclusions(&(molt->excls), qmexcl2);
 
     /* Finally, we also need to get rid of the pair interactions of the
      * classical atom bonded to the boundary QM atoms with the QMatoms,
@@ -1552,7 +1553,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
     std::free(link_arr);
 } /* generate_qmexcl */
 
-void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logger)
+void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const MDLogger& logger)
 {
     /* This routine expects molt->molt[m].ilist to be of size InteractionFunction::Count and ordered.
      */
@@ -1634,3 +1635,5 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logge
         }
     }
 }
+
+} // namespace gmx

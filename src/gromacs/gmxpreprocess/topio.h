@@ -60,7 +60,6 @@ template<typename>
 class ArrayRef;
 class MDLogger;
 struct t_gromppopts;
-} // namespace gmx
 
 double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi);
 /* Check mass and charge */
@@ -76,26 +75,28 @@ double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi);
 void checkRBDihedralSum(const gmx_mtop_t& mtop, const t_inputrec& ir, WarningHandler* wi);
 
 
-char** do_top(bool                                                            bVerbose,
-              const char*                                                     topfile,
-              const std::optional<std::filesystem::path>&                     topppfile,
-              gmx::t_gromppopts*                                              opts,
-              bool                                                            bZero,
-              t_symtab*                                                       symtab,
-              gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
-              CombinationRule*                                                combination_rule,
-              double*                                                         repulsion_power,
-              real*                                                           fudgeQQ,
-              PreprocessingAtomTypes*                                         atype,
-              std::vector<MoleculeInformation>*                               molinfo,
+char** do_top(bool                                                       bVerbose,
+              const char*                                                topfile,
+              const std::optional<std::filesystem::path>&                topppfile,
+              t_gromppopts*                                              opts,
+              bool                                                       bZero,
+              t_symtab*                                                  symtab,
+              EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+              CombinationRule*                                           combination_rule,
+              double*                                                    repulsion_power,
+              real*                                                      fudgeQQ,
+              PreprocessingAtomTypes*                                    atype,
+              std::vector<MoleculeInformation>*                          molinfo,
               std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
               const t_inputrec*                     ir,
               std::vector<gmx_molblock_t>*          molblock,
               bool*                                 ffParametrizedWithHBondConstraints,
               WarningHandler*                       wi,
-              const gmx::MDLogger&                  logger);
+              const MDLogger&                       logger);
 
 /* This routine expects sys->molt[m].ilist to be of size InteractionFunction::Count and ordered. */
-void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logger);
+void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const MDLogger& logger);
+
+} // namespace gmx
 
 #endif
