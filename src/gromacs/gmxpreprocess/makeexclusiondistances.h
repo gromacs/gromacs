@@ -41,6 +41,9 @@
 class AtomProperties;
 struct t_atoms;
 
+namespace gmx
+{
+
 /*! \brief Allocate and fill an array of inter-atomic half distances
  *
  * These are either scaled VDW radii taken from vdwradii.dat, or the
@@ -48,5 +51,7 @@ struct t_atoms;
  * insert-molecules for deciding whether molecules clash. The return
  * pointer should be freed by the caller. */
 std::vector<real> makeExclusionDistances(const t_atoms* a, AtomProperties* aps, real defaultDistance, real scaleFactor);
+
+} // namespace gmx
 
 #endif

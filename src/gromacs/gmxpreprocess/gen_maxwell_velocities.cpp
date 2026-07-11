@@ -52,11 +52,14 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
-static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], gmx::ThreeFry2x64<>* rng, const gmx::MDLogger& logger)
+namespace gmx
 {
-    int                                    nrdf;
-    real                                   ekin, temp;
-    gmx::TabulatedNormalDistribution<real> normalDist;
+
+static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], ThreeFry2x64<>* rng, const MDLogger& logger)
+{
+    int                               nrdf;
+    real                              ekin, temp;
+    TabulatedNormalDistribution<real> normalDist;
 
     ekin = 0.0;
     nrdf = 0;
@@ -68,7 +71,7 @@ static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], gmx::ThreeFry2x64
         if (mass > 0)
         {
             rng->restart(i, 0);
-            real sd = std::sqrt(gmx::c_boltz * tempi / mass);
+            real sd = std::sqrt(c_boltz * tempi / mass);
             for (int m = 0; (m < DIM); m++)
             {
                 v[i][m] = sd * normalDist(*rng);
@@ -77,7 +80,7 @@ static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], gmx::ThreeFry2x64
             nrdf += DIM;
         }
     }
-    temp = (2.0 * ekin) / (nrdf * gmx::c_boltz);
+    temp = (2.0 * ekin) / (nrdf * c_boltz);
     if (temp > 0)
     {
         real scal = std::sqrt(tempi / temp);
@@ -102,17 +105,17 @@ static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], gmx::ThreeFry2x64
     }
 }
 
-void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const gmx::MDLogger& logger)
+void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const MDLogger& logger)
 {
 
     if (seed == -1)
     {
-        seed = static_cast<int>(gmx::makeRandomSeed());
+        seed = static_cast<int>(makeRandomSeed());
         GMX_LOG(logger.info)
                 .asParagraph()
                 .appendTextFormatted("Using random seed %d for generating velocities", seed);
     }
-    gmx::ThreeFry2x64<> rng(seed, gmx::RandomDomain::MaxwellVelocities);
+    ThreeFry2x64<> rng(seed, RandomDomain::MaxwellVelocities);
 
     low_mspeed(tempi, mtop, v, &rng, logger);
 }
@@ -166,7 +169,7 @@ static real calc_cm(int natoms, const real mass[], rvec x[], rvec v[], rvec xcm,
     return tm;
 }
 
-void stop_cm(const gmx::MDLogger gmx_unused& logger, int natoms, real mass[], rvec x[], rvec v[])
+void stop_cm(const MDLogger gmx_unused& logger, int natoms, real mass[], rvec x[], rvec v[])
 {
     rvec   xcm, vcm, acm;
     tensor L;
@@ -186,3 +189,5 @@ void stop_cm(const gmx::MDLogger gmx_unused& logger, int natoms, real mass[], rv
         }
     }
 }
+
+} // namespace gmx

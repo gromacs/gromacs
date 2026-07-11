@@ -45,7 +45,6 @@ struct gmx_mtop_t;
 namespace gmx
 {
 class MDLogger;
-}
 
 /*! \brief
  * Generate Maxwellian velocities.
@@ -57,7 +56,7 @@ class MDLogger;
  * \param[out] v    Velocities
  * \param[in] logger Handle to logging interface.
  */
-void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const gmx::MDLogger& logger);
+void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const MDLogger& logger);
 
 /*! \brief
  * Remove the center of mass motion in a set of coordinates.
@@ -68,6 +67,8 @@ void maxwell_speed(real tempi, int seed, gmx_mtop_t* mtop, rvec v[], const gmx::
  * \param[in]  x      Coordinates
  * \param[out] v      Velocities
  */
-void stop_cm(const gmx::MDLogger& logger, int natoms, real mass[], rvec x[], rvec v[]);
+void stop_cm(const MDLogger& logger, int natoms, real mass[], rvec x[], rvec v[]);
+
+} // namespace gmx
 
 #endif

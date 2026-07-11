@@ -34,6 +34,11 @@
 #ifndef GMX_GMXPREPROCESS_GENCONF_H
 #define GMX_GMXPREPROCESS_GENCONF_H
 
+namespace gmx
+{
+
 int gmx_genconf(int argc, char* argv[]);
+
+} // namespace gmx
 
 #endif
