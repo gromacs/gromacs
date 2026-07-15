@@ -43,13 +43,13 @@
 
 struct t_atoms;
 struct t_block;
-struct t_nbparam;
 struct t_symtab;
 class WarningHandler;
 enum class CombinationRule : int;
 namespace gmx
 {
 struct MoleculeInformation;
+struct t_nbparam;
 class InteractionOfType;
 struct InteractionsOfType;
 template<typename>

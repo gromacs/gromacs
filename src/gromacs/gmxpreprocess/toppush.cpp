@@ -222,14 +222,8 @@ void generate_nbparams(CombinationRule         comb,
     }
 }
 
-} // namespace gmx
-
 /*! \brief Used to temporarily store the explicit non-bonded parameter
- * combinations, which will be copied to InteractionsOfType.
- *
- * Declared at global scope (matching its forward declaration in toppush.h
- * and topio.cpp) rather than in namespace gmx, since it is an incomplete
- * type at the point where those headers use it. */
+ * combinations, which will be copied to InteractionsOfType. */
 struct t_nbparam
 {
     //! Has this combination been set.
@@ -237,9 +231,6 @@ struct t_nbparam
     //! The non-bonded parameters
     real c[4];
 };
-
-namespace gmx
-{
 
 static void realloc_nb_params(PreprocessingAtomTypes* atypes, t_nbparam*** nbparam, t_nbparam*** pair)
 {

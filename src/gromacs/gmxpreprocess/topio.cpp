@@ -94,10 +94,10 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-struct t_nbparam;
-
 namespace gmx
 {
+
+struct t_nbparam;
 
 #define OPENDIR '['  /* starting sign for directive */
 #define CLOSEDIR ']' /* ending sign for directive   */
