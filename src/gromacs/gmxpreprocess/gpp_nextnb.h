@@ -40,8 +40,8 @@
 
 namespace gmx
 {
+
 struct InteractionsOfType;
-} // namespace gmx
 
 struct t_nextnb
 {
@@ -54,8 +54,6 @@ struct t_nextnb
     int*** a; /* like this: a[i][nre][nrx]			*/
 };
 
-namespace gmx
-{
 template<typename>
 class ArrayRef;
 template<typename>
