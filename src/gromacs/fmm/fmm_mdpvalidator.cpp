@@ -49,14 +49,17 @@
 #include "fmmoptions.h"
 
 
-gmx::FmmMdpValidator::FmmMdpValidator(const IFmmOptions& fmmOptions) : fmmOptions_(fmmOptions) {}
+namespace gmx
+{
 
-void gmx::FmmMdpValidator::setWarningHandler(WarningHandler* wi)
+FmmMdpValidator::FmmMdpValidator(const IFmmOptions& fmmOptions) : fmmOptions_(fmmOptions) {}
+
+void FmmMdpValidator::setWarningHandler(WarningHandler* wi)
 {
     wi_ = wi;
 }
 
-void gmx::FmmMdpValidator::validateFmmMdpSettings(const MdModulesCoulombTypeInfo& coulombType)
+void FmmMdpValidator::validateFmmMdpSettings(const MdModulesCoulombTypeInfo& coulombType)
 {
     if (wi_ == nullptr)
     {
@@ -73,3 +76,5 @@ void gmx::FmmMdpValidator::validateFmmMdpSettings(const MdModulesCoulombTypeInfo
 
     fmmOptions_.validateMdpOptions(wi_);
 }
+
+} // namespace gmx
