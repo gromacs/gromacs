@@ -47,10 +47,11 @@
 
 struct gmx_wallcycle;
 struct t_inputrec;
-struct gmx_inputrec_strings;
 
 namespace gmx
 {
+
+struct inputrec_strings;
 
 class ForceProviders;
 class KeyValueTreeObjectBuilder;
@@ -148,7 +149,7 @@ public:
     void assignOptionsToModules(const KeyValueTreeObject&  params,
                                 IKeyValueTreeErrorHandler* errorHandler,
                                 t_inputrec*                inputrec             = nullptr,
-                                gmx_inputrec_strings*      preprocessingStrings = nullptr);
+                                inputrec_strings*          preprocessingStrings = nullptr);
 
     /*! \brief
      * Normalizes inputrec parameters to match current code version.
@@ -175,9 +176,9 @@ public:
      * \param[in] routeSubObjects     Whether to route sub-objects to modules (default true)
      * \param[in] preprocessingStrings Optional preprocessing string storage (default nullptr)
      */
-    void adjustInputrecBasedOnModules(t_inputrec*           ir,
-                                      bool                  routeSubObjects      = true,
-                                      gmx_inputrec_strings* preprocessingStrings = nullptr);
+    void adjustInputrecBasedOnModules(t_inputrec*       ir,
+                                      bool              routeSubObjects      = true,
+                                      inputrec_strings* preprocessingStrings = nullptr);
 
     /*! \brief
      * Returns an interface for initializing and finalizing output for modules.

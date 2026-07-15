@@ -121,7 +121,7 @@ namespace gmx
  */
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static gmx_inputrec_strings* inputrecStrings = nullptr;
+static inputrec_strings* inputrecStrings = nullptr;
 
 void init_inputrec_strings()
 {
@@ -131,7 +131,7 @@ void init_inputrec_strings()
                 "Attempted to call init_inputrec_strings before calling done_inputrec_strings. "
                 "Only one inputrec (i.e. .mdp file) can be parsed at a time.");
     }
-    inputrecStrings = new gmx_inputrec_strings();
+    inputrecStrings = new inputrec_strings();
 }
 
 void done_inputrec_strings()

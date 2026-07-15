@@ -121,7 +121,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, BuildsNoOutputByDefault)
 TEST_F(OutputControlModuleBuildMdpOutputTest, BuildsOutputWithDefaultValues)
 {
     // Setup preprocessing strings (required for MDP output in tests)
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
     setOutputControlPreprocessingStrings(module_.get(), &preprocessingStrings);
@@ -157,7 +157,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, BuildsOutputWithDefaultValues)
 TEST_F(OutputControlModuleBuildMdpOutputTest, BuildsOutputWithCustomValues)
 {
     // Setup preprocessing strings (required for MDP output in tests)
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
     setOutputControlPreprocessingStrings(module_.get(), &preprocessingStrings);
@@ -200,7 +200,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, BuildsOutputWithCustomValues)
 TEST_F(OutputControlModuleBuildMdpOutputTest, FieldNamesMatchMdpFormat)
 {
     // Setup preprocessing strings (required for MDP output in tests)
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
     setOutputControlPreprocessingStrings(module_.get(), &preprocessingStrings);
@@ -232,7 +232,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, FieldNamesMatchMdpFormat)
 TEST_F(OutputControlModuleBuildMdpOutputTest, IncludesCommentsInOutput)
 {
     // Setup preprocessing strings (required for MDP output in tests)
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
     setOutputControlPreprocessingStrings(module_.get(), &preprocessingStrings);
@@ -284,7 +284,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, NoTextOutputByDefault)
 TEST_F(OutputControlModuleBuildMdpOutputTest, OutputOrderWithDefaultValues)
 {
     // Setup preprocessing strings (required for MDP output in tests)
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
     setOutputControlPreprocessingStrings(module_.get(), &preprocessingStrings);
@@ -304,7 +304,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, OutputOrderWithDefaultValues)
 TEST_F(OutputControlModuleBuildMdpOutputTest, OutputOrderWithCustomValues)
 {
     // Setup preprocessing strings (required for MDP output in tests)
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
     setOutputControlPreprocessingStrings(module_.get(), &preprocessingStrings);
@@ -334,7 +334,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, OutputOrderWithCustomValues)
 TEST_F(OutputControlModuleBuildMdpOutputTest, WritesGroupParameters)
 {
     // Setup preprocessing strings
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "Protein";
     preprocessingStrings.energyGroups      = "Protein Non-Protein";
 
@@ -364,7 +364,7 @@ TEST_F(OutputControlModuleBuildMdpOutputTest, WritesGroupParameters)
 TEST_F(OutputControlModuleBuildMdpOutputTest, WritesEmptyGroupParameters)
 {
     // Setup empty preprocessing strings
-    gmx_inputrec_strings preprocessingStrings;
+    inputrec_strings preprocessingStrings;
     preprocessingStrings.compressedXGroups = "";
     preprocessingStrings.energyGroups      = "";
 

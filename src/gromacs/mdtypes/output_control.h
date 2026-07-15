@@ -71,11 +71,11 @@
 #include <memory>
 #include <string_view>
 
-//! Forward declaration for preprocessing-only string storage (local to grompp)
-struct gmx_inputrec_strings;
-
 namespace gmx
 {
+
+//! Forward declaration for preprocessing-only string storage (local to grompp)
+struct inputrec_strings;
 
 struct OutputControl;
 class IMDModule;
@@ -125,7 +125,7 @@ void setOutputControlTarget(IMDModule* module, OutputControl* outputControl);
  * \param[in] preprocessingStrings Pointer to storage for preprocessing-only strings
  * \throws InternalError if module is not an OutputControlModule
  */
-void setOutputControlPreprocessingStrings(IMDModule* module, gmx_inputrec_strings* preprocessingStrings);
+void setOutputControlPreprocessingStrings(IMDModule* module, inputrec_strings* preprocessingStrings);
 
 /*! \brief Enable MDP output writing for OutputControl module (for testing only)
  *

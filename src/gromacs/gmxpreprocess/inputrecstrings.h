@@ -33,7 +33,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx_inputrec_strings for preprocessing-only MDP parameters
+ * Declares inputrec_strings for preprocessing-only MDP parameters
  *
  * This structure holds string representations of MDP parameters that are
  * only used during grompp preprocessing. These are not serialized to TPR
@@ -53,6 +53,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+namespace gmx
+{
+
 /*! \libinternal
  * \brief Storage for preprocessing-only string parameters from MDP files
  *
@@ -64,23 +67,25 @@
  * relevant modules, who e.g. provide them to the index-group machinery via
  * callback and can also write them back to mdp output when required.
  */
-struct gmx_inputrec_strings
+struct inputrec_strings
 {
     char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN], accelerationGroups[STRLEN],
             acceleration[STRLEN], freeze[STRLEN], frdim[STRLEN], user1[STRLEN], user2[STRLEN],
             vcm[STRLEN], couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN],
             egpexcl[STRLEN], wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN],
             QMMM[STRLEN], imd_grp[STRLEN];
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::string> fep_lambda;
-    char                                                                   lambdaWeights[STRLEN];
-    char                                                                   lambdaCounts[STRLEN];
-    char                     wlHistogramCounts[STRLEN];
-    std::vector<std::string> pullGroupNames;
-    std::vector<std::string> rotateGroupNames;
+    EnumerationArray<FreeEnergyPerturbationCouplingType, std::string> fep_lambda;
+    char                                                              lambdaWeights[STRLEN];
+    char                                                              lambdaCounts[STRLEN];
+    char                                                              wlHistogramCounts[STRLEN];
+    std::vector<std::string>                                          pullGroupNames;
+    std::vector<std::string>                                          rotateGroupNames;
     char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
 
     std::string compressedXGroups; //!< Groups for compressed trajectory output
     std::string energyGroups;      //!< Groups for energy calculation
 };
+
+} // namespace gmx
 
 #endif // GMX_GMXPREPROCESS_INPUTRECSTRINGS_H

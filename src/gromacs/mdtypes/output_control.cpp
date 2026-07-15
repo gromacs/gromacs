@@ -125,7 +125,7 @@ public:
      *
      * \param[in] preprocessingStrings Pointer to storage for preprocessing-only strings (must not be null)
      */
-    void setPreprocessingStrings(gmx_inputrec_strings* preprocessingStrings)
+    void setPreprocessingStrings(inputrec_strings* preprocessingStrings)
     {
         GMX_RELEASE_ASSERT(preprocessingStrings,
                            "setPreprocessingStrings() called with null pointer");
@@ -136,7 +136,7 @@ private:
     //! Pointer to external OutputControl (typically embedded in t_inputrec)
     OutputControl* outputControl_ = nullptr;
     //! Pointer to preprocessing-only string storage (local to grompp)
-    gmx_inputrec_strings* preprocessingGroupNames_ = nullptr;
+    inputrec_strings* preprocessingGroupNames_ = nullptr;
     //! Whether to write output in buildMdpOutput (default false, for testing only)
     bool writeToMdpOutput_ = false;
 };
@@ -284,7 +284,7 @@ void setOutputControlWriteToMdpOutput(IMDModule* module, bool enable)
     outputControlModule->setWriteToMdpOutput(enable);
 }
 
-void setOutputControlPreprocessingStrings(IMDModule* module, gmx_inputrec_strings* preprocessingStrings)
+void setOutputControlPreprocessingStrings(IMDModule* module, inputrec_strings* preprocessingStrings)
 {
     auto* outputControlModule = dynamic_cast<OutputControlModule*>(module);
     GMX_RELEASE_ASSERT(outputControlModule, "Module must be an OutputControlModule");
