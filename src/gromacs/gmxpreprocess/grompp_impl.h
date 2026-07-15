@@ -52,9 +52,9 @@
 
 namespace gmx
 {
+
 template<typename>
 class ArrayRef;
-}
 
 /*! \libinternal \brief
  * Describes an interaction of a given type, plus its parameters.
@@ -63,10 +63,10 @@ class InteractionOfType
 {
 public:
     //! Constructor that initializes vectors.
-    InteractionOfType(gmx::ArrayRef<const int>  atoms,
-                      gmx::ArrayRef<const real> params,
-                      const std::string&        name    = "",
-                      bool                      special = false);
+    InteractionOfType(ArrayRef<const int>  atoms,
+                      ArrayRef<const real> params,
+                      const std::string&   name    = "",
+                      bool                 special = false);
     /*!@{*/
     //! Access the individual elements set for the parameter.
     const int& ai() const;
@@ -93,13 +93,13 @@ public:
     void setForceParameter(int pos, real value);
 
     //! View on all atoms numbers that are actually set.
-    gmx::ArrayRef<int> atoms() { return atoms_; }
+    ArrayRef<int> atoms() { return atoms_; }
     //! Const view on all atoms numbers that are actually set.
-    gmx::ArrayRef<const int> atoms() const { return atoms_; }
+    ArrayRef<const int> atoms() const { return atoms_; }
     //! View on all of the force field parameters
-    gmx::ArrayRef<const real> forceParam() const { return forceParam_; }
+    ArrayRef<const real> forceParam() const { return forceParam_; }
     //! View on all of the force field parameters
-    gmx::ArrayRef<real> forceParam() { return forceParam_; }
+    ArrayRef<real> forceParam() { return forceParam_; }
 
 private:
     //! Return if we have a bond parameter, means two atoms right now.
@@ -135,7 +135,7 @@ struct CmapInteractionType
 {
     static constexpr size_t sc_numAtomTypesPerCmapInteraction = 5;
     //! Grid data for a CMAP type, for FEP state A or B.
-    gmx::MultiDimArray<std::vector<real>, gmx::dynamicExtents2D> gridA_, gridB_;
+    MultiDimArray<std::vector<real>, dynamicExtents2D> gridA_, gridB_;
     //! The five atomtypes
     std::array<int, sc_numAtomTypesPerCmapInteraction> atomTypes_;
     //! The names of the five residue types
@@ -205,9 +205,9 @@ struct MoleculeInformation
     //! Molecules separated in datastructure.
     t_block mols;
     //! Exclusions in the molecule.
-    gmx::ListOfLists<int> excls;
+    ListOfLists<int> excls;
     //! Interactions of a defined type.
-    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> interactions;
+    EnumerationArray<InteractionFunction, InteractionsOfType> interactions;
 
     /*! \brief
      * Initializer.
@@ -244,5 +244,7 @@ struct t_mols
 
 bool is_int(double x);
 /* Returns TRUE when x is integer */
+
+} // namespace gmx
 
 #endif

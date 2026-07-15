@@ -139,16 +139,19 @@
 struct gmx_output_env_t;
 struct pull_t;
 
+namespace gmx
+{
+
 /* TODO The implementation details should move to their own source file. */
-InteractionOfType::InteractionOfType(gmx::ArrayRef<const int>  atoms,
-                                     gmx::ArrayRef<const real> params,
-                                     const std::string&        name,
-                                     bool                      special) :
+InteractionOfType::InteractionOfType(ArrayRef<const int>  atoms,
+                                     ArrayRef<const real> params,
+                                     const std::string&   name,
+                                     bool                 special) :
     atoms_(atoms.begin(), atoms.end()), interactionTypeName_(name), specbond_(special)
 {
     GMX_RELEASE_ASSERT(
             params.size() <= forceParam_.size(),
-            gmx::formatString("Cannot have more parameters than the maximum number possible (%d)", MAXFORCEPARAM)
+            formatString("Cannot have more parameters than the maximum number possible (%d)", MAXFORCEPARAM)
                     .c_str());
     std::array<real, MAXFORCEPARAM>::iterator forceParamIt = forceParam_.begin();
     for (const auto param : params)
@@ -256,8 +259,7 @@ void InteractionOfType::sortAtomIds()
     }
     else
     {
-        GMX_THROW(gmx::InternalError(
-                "Can not sort parameters other than bonds, angles or dihedrals"));
+        GMX_THROW(InternalError("Can not sort parameters other than bonds, angles or dihedrals"));
     }
 };
 
@@ -285,9 +287,6 @@ void MoleculeInformation::fullCleanUp()
     done_atom(&atoms);
     done_block(&mols);
 }
-
-namespace gmx
-{
 
 namespace
 {

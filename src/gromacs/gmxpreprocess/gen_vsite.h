@@ -44,11 +44,11 @@
 #include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
-struct InteractionsOfType;
 struct t_symtab;
 
 namespace gmx
 {
+struct InteractionsOfType;
 template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;

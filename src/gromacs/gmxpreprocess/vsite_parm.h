@@ -37,13 +37,13 @@
 
 struct gmx_moltype_t;
 struct t_atoms;
-struct InteractionsOfType;
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 namespace gmx
 {
+struct InteractionsOfType;
 class PreprocessingAtomTypes;
 template<typename>
 class ArrayRef;

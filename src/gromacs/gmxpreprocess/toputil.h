@@ -41,13 +41,13 @@
 #include "gromacs/utility/enumerationhelpers.h"
 
 struct t_atoms;
+
+namespace gmx
+{
 struct t_excls;
 struct MoleculeInformation;
 class InteractionOfType;
 struct InteractionsOfType;
-
-namespace gmx
-{
 template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;

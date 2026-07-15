@@ -138,8 +138,6 @@ static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, i
     return nmiss;
 }
 
-} // namespace gmx
-
 bool is_int(double x)
 {
     const double tol = 1e-4;
@@ -149,13 +147,10 @@ bool is_int(double x)
     {
         x = -x;
     }
-    ix = gmx::roundToInt(x);
+    ix = roundToInt(x);
 
     return (std::fabs(x - ix) < tol);
 }
-
-namespace gmx
-{
 
 static std::filesystem::path choose_ff_impl(const char* ffsel, char* forcefield, int ff_maxlen, const MDLogger& logger)
 {

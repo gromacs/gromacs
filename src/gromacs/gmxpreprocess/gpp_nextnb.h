@@ -38,7 +38,10 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+namespace gmx
+{
 struct InteractionsOfType;
+} // namespace gmx
 
 struct t_nextnb
 {

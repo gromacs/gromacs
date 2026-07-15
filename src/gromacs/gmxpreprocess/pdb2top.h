@@ -47,14 +47,14 @@
 #include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
-struct t_excls;
-struct t_mols;
-struct InteractionsOfType;
 struct t_resinfo;
 struct t_symtab;
 
 namespace gmx
 {
+struct t_excls;
+struct t_mols;
+struct InteractionsOfType;
 template<typename>
 class ArrayRef;
 class PreprocessingAtomTypes;

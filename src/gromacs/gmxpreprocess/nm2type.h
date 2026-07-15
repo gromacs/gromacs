@@ -39,11 +39,12 @@
 #include <filesystem>
 
 struct t_atoms;
-struct InteractionsOfType;
 struct t_symtab;
 
 namespace gmx
 {
+
+struct InteractionsOfType;
 
 class PreprocessingAtomTypes;
 

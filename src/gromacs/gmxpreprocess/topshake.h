@@ -39,10 +39,10 @@
 #include "gromacs/utility/enumerationhelpers.h"
 
 struct t_atoms;
-struct InteractionsOfType;
 
 namespace gmx
 {
+struct InteractionsOfType;
 template<typename>
 class ArrayRef;
 class MDLogger;

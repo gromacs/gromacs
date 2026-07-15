@@ -40,18 +40,15 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct MoleculeInformation;
-struct InteractionsOfType;
 enum class CombinationRule : int;
 
 namespace gmx
 {
+
+struct MoleculeInformation;
+struct InteractionsOfType;
 template<typename>
 class ArrayRef;
-}
-
-namespace gmx
-{
 
 //! Whether interactions of type \c ftype should have parameters converted
 bool shouldConvertInteractionType(InteractionFunction ftype);
@@ -72,13 +69,13 @@ bool shouldConvertInteractionType(InteractionFunction ftype);
  * \param[out] mtop    The molecular topology containing the converted parameters
  */
 void convertInteractionsOfType(int atnr,
-                               const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& nbtypes,
-                               gmx::ArrayRef<const MoleculeInformation> mi,
-                               const MoleculeInformation*               intermolecular_interactions,
-                               CombinationRule                          comb,
-                               double                                   reppow,
-                               real                                     fudgeQQ,
-                               gmx_mtop_t*                              mtop);
+                               const EnumerationArray<InteractionFunction, InteractionsOfType>& nbtypes,
+                               ArrayRef<const MoleculeInformation> mi,
+                               const MoleculeInformation*          intermolecular_interactions,
+                               CombinationRule                     comb,
+                               double                              reppow,
+                               real                                fudgeQQ,
+                               gmx_mtop_t*                         mtop);
 
 } // namespace gmx
 

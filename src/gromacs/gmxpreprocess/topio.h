@@ -47,14 +47,14 @@
 struct gmx_molblock_t;
 struct gmx_mtop_t;
 struct t_inputrec;
-struct MoleculeInformation;
-struct InteractionsOfType;
 struct t_symtab;
 class WarningHandler;
 enum class CombinationRule : int;
 
 namespace gmx
 {
+struct MoleculeInformation;
+struct InteractionsOfType;
 class PreprocessingAtomTypes;
 template<typename>
 class ArrayRef;

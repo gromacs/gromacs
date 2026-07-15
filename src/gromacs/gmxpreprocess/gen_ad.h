@@ -41,11 +41,11 @@
 #include "specbond.h"
 
 struct t_atoms;
-struct t_excls;
-struct InteractionsOfType;
 
 namespace gmx
 {
+struct t_excls;
+struct InteractionsOfType;
 struct MoleculePatchDatabase;
 struct PreprocessResidue;
 template<typename>

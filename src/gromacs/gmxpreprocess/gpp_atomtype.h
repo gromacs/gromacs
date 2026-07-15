@@ -55,11 +55,11 @@
 
 struct gmx_mtop_t;
 struct t_atom;
-class InteractionOfType;
-struct InteractionsOfType;
 enum class ParticleType : int;
 namespace gmx
 {
+class InteractionOfType;
+struct InteractionsOfType;
 template<typename>
 class ArrayRef;
 
