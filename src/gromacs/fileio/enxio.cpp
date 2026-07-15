@@ -1634,8 +1634,8 @@ void comp_enx(const std::filesystem::path& fn1,
         }
     } while (b1 && b2);
 
-    close_enx(in1);
-    close_enx(in2);
+    done_ener_file(in1);
+    done_ener_file(in2);
 
     free_enxframe(fr2);
     sfree(fr2);

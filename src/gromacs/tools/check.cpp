@@ -181,6 +181,9 @@ static void comp_trx(const gmx_output_env_t* oenv, const char* fn1, const char* 
                 fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn[1 - i], fn[i]);
             }
             close_trx(status[i]);
+            sfree(fr[i].x);
+            sfree(fr[i].v);
+            sfree(fr[i].f);
         }
     }
     if (!b[0] && !b[1])
