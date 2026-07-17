@@ -82,16 +82,26 @@ public:
     void calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput) override;
 
 private:
-    DVec calc_com(ArrayRef<const RVec> x, const std::vector<Index>& indices)
+    //! Computes the mass-weighted center of mass of the given (global) atom indices.
+    //! Atoms are first re-referenced to a pbc reference atom via the minimum-image convention
+    //! so that a group split across a periodic boundary is treated as whole, matching the
+    //! approach used by the GROMACS pull code (sum of mass-weighted differences to a reference
+    //! atom). \p pbcatom follows the pull-group-pbcatom convention: 0 selects the middle atom
+    //! of the group (by position), a value > 0 is a 1-based global atom number.
+    DVec calc_com(ArrayRef<const RVec> x, const std::vector<Index>& indices, const t_pbc& pbc, int pbcatom = 0)
     {
         DVec com        = DVec(0.0, 0.0, 0.0);
         real total_mass = 0.0;
+        const Index refIndex = pbcatom > 0 ? static_cast<Index>(pbcatom - 1) : indices[indices.size() / 2];
+        const RVec& x_ref    = x[refIndex];
         for (auto idx : indices)
         {
             const real mass = mTopLookUp_.getAtomParameters(idx).m;
+            rvec dx;
+            pbc_dx(&pbc, x[idx], x_ref, dx);
             for (int j = 0; j < DIM; ++j)
             {
-                com[j] += mass * x[idx][j];
+                com[j] += mass * (x_ref[j] + dx[j]);
             }
             total_mass += mass;
         }
