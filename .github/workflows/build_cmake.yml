@@ -38,11 +38,11 @@ jobs:
             openmp_var: "Off"
           }
         - {
-            name: "macOS Latest GCC 14 with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
+            name: "macOS Latest GCC 15 with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
             # In a release branch, we should fix this for the lifetime
             # of the branch.
             os: macos-latest,
-            cc: "gcc-14", cxx: "g++-14",
+            cc: "gcc-15", cxx: "g++-15",
             gpu_var: "OpenCL",
             openmp_var: "On"
           }
