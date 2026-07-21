@@ -93,10 +93,11 @@ public:
     float ftoler = 1e-6;
     //! Tolerance for double evaluation
     double dtoler = 1e-8;
-    //! Do free energy perturbation?
-    bool fep = false;
     //! Interaction parameters
     t_iparams iparams = { { 0 } };
+
+    //! Helper to detect if parameters have FEP (A != B states)
+    bool hasFepParameters() const;
 
     friend std::ostream& operator<<(std::ostream& out, const iListInput& input);
 

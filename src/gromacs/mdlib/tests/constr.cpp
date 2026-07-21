@@ -63,15 +63,23 @@
 
 #include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/math/paddedvector.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/lincs.h"
+#include "gromacs/mdlib/shake.h"
+#include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/hardware_test_fixture.h"
 #include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
@@ -79,7 +87,14 @@
 #include "testutils/testasserts.h"
 
 #include "constrtestdata.h"
-#include "constrtestrunners.h"
+
+#if GMX_GPU && !GMX_GPU_OPENCL
+#    include "gromacs/gpu_utils/device_context.h"
+#    include "gromacs/gpu_utils/device_stream.h"
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/gputraits.h"
+#    include "gromacs/mdlib/lincs_gpu.h"
+#endif
 
 //! Helper function to convert t_pbc into string and make test failure messages readable
 static void PrintTo(const t_pbc& pbc, std::ostream* os)
@@ -95,6 +110,146 @@ namespace test
 {
 namespace
 {
+
+void applyShakeCpu(ConstraintsTestData* testData, t_pbc /* pbc */)
+{
+    shakedata shaked;
+    make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->numAtoms_);
+    bool success = constrain_shake(nullptr,
+                                   &shaked,
+                                   testData->invmass_,
+                                   *testData->idef_,
+                                   testData->ir_,
+                                   testData->x_,
+                                   testData->xPrime_,
+                                   testData->xPrime2_,
+                                   nullptr,
+                                   &testData->nrnb_,
+                                   testData->lambda_,
+                                   &testData->dHdLambda_,
+                                   testData->invdt_,
+                                   testData->v_,
+                                   testData->computeVirial_,
+                                   testData->virialScaled_,
+                                   false,
+                                   gmx::ConstraintVariable::Positions);
+    EXPECT_TRUE(success) << "Test failed with a false return value in SHAKE.";
+}
+
+void applyLincsCpu(ConstraintsTestData* testData, t_pbc pbc)
+{
+    Lincs* lincsd;
+    int    maxwarn         = 100;
+    int    warncount_lincs = 0;
+    gmx_omp_nthreads_set(ModuleMultiThread::Lincs, 1);
+
+    gmx_domdec_t* dd = nullptr;
+
+    gmx_multisim_t ms{ 1, 0, MPI_COMM_NULL, MPI_COMM_NULL };
+
+    std::vector<ListOfLists<int>> at2con_mt;
+    at2con_mt.reserve(testData->mtop_.moltype.size());
+    for (const gmx_moltype_t& moltype : testData->mtop_.moltype)
+    {
+        at2con_mt.push_back(make_at2con(moltype,
+                                        testData->mtop_.ffparams.iparams,
+                                        flexibleConstraintTreatment(EI_DYNAMICS(testData->ir_.eI))));
+    }
+    lincsd = init_lincs(nullptr,
+                        testData->mtop_,
+                        testData->nflexcon_,
+                        at2con_mt,
+                        false,
+                        testData->ir_.nLincsIter,
+                        testData->ir_.nProjOrder,
+                        nullptr);
+    set_lincs(*testData->idef_,
+              testData->numAtoms_,
+              testData->invmass_,
+              testData->lambda_,
+              EI_DYNAMICS(testData->ir_.eI),
+              dd,
+              lincsd);
+
+    bool success = constrain_lincs(false,
+                                   testData->ir_,
+                                   0,
+                                   lincsd,
+                                   testData->invmass_,
+                                   dd,
+                                   &ms,
+                                   testData->x_.arrayRefWithPadding(),
+                                   testData->xPrime_.arrayRefWithPadding(),
+                                   testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(),
+                                   pbc.box,
+                                   &pbc,
+                                   testData->hasMassPerturbed_,
+                                   testData->lambda_,
+                                   &testData->dHdLambda_,
+                                   testData->invdt_,
+                                   testData->v_.arrayRefWithPadding().unpaddedArrayRef(),
+                                   testData->computeVirial_,
+                                   testData->virialScaled_,
+                                   gmx::ConstraintVariable::Positions,
+                                   &testData->nrnb_,
+                                   maxwarn,
+                                   &warncount_lincs,
+                                   nullptr);
+    EXPECT_TRUE(success) << "Test failed with a false return value in LINCS.";
+    EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
+    done_lincs(lincsd);
+}
+
+#if GMX_GPU && !GMX_GPU_OPENCL
+
+void applyLincsGpu(const DeviceContext& deviceContext,
+                   const DeviceStream&  deviceStream,
+                   ConstraintsTestData* testData,
+                   t_pbc                pbc)
+{
+    deviceContext.activate();
+
+    auto lincsGpu = std::make_unique<LincsGpu>(
+            testData->ir_.nLincsIter, testData->ir_.nProjOrder, deviceContext, deviceStream);
+
+    bool updateVelocities = true;
+    int  numAtoms         = testData->numAtoms_;
+
+    Float3* h_x  = gmx::asGenericFloat3Pointer(testData->x_);
+    Float3* h_xp = gmx::asGenericFloat3Pointer(testData->xPrime_);
+    Float3* h_v  = gmx::asGenericFloat3Pointer(testData->v_);
+
+    DeviceBuffer<Float3> d_x, d_xp, d_v;
+
+    lincsGpu->set(*testData->idef_, testData->numAtoms_, testData->invmass_);
+    PbcAiuc pbcAiuc;
+    setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
+
+    allocateDeviceBuffer(&d_x, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
+
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    if (updateVelocities)
+    {
+        copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    }
+    lincsGpu->apply(
+            d_x, d_xp, updateVelocities, d_v, testData->invdt_, testData->computeVirial_, testData->virialScaled_, pbcAiuc);
+
+    copyFromDeviceBuffer(h_xp, &d_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    if (updateVelocities)
+    {
+        copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    }
+
+    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(&d_xp);
+    freeDeviceBuffer(&d_v);
+}
+
+#endif // GMX_GPU && !GMX_GPU_OPENCL
 
 // Forward declaration for the test system structure
 struct ConstraintsTestSystem;
@@ -390,8 +545,15 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = []
     return constraintsTestSystemList;
 }();
 
-//! Parameter tuple type for Constraints tests
-using ConstraintsParametersTuple = std::tuple<ConstraintsTestSystem, t_pbc>;
+//! Input configuration for Constraints tests (defines the physical scenario: constraint topology, PBC)
+using ConstraintsInputConfig = std::tuple<ConstraintsTestSystem, t_pbc>;
+
+/*! \brief Hardware test helper for Constraints
+ *
+ * \todo There are no execution modes - tests don't vary constraint
+ * algorithm, but perhaps they should test LINCS vs SHAKE here rather
+ * than reset test data. They should test SIMD vs no SIMD here. */
+using ConstraintsTestHelper = HardwareAndExecutionTestHelper<ConstraintsInputConfig, std::tuple<>>;
 
 //! Format PBC type for test names
 std::string formatPbcType(const t_pbc& pbc)
@@ -422,24 +584,20 @@ std::string formatConstraintSystem(const ConstraintsTestSystem& system)
     return formatString("%datoms_%s", system.numAtoms, name.c_str());
 }
 
-//! Test naming functor
-const NameOfTestFromTuple<ConstraintsParametersTuple> sc_testNamer{ std::make_tuple(formatConstraintSystem,
-                                                                                    formatPbcType) };
+//! Formatters for parameters in the config info
+static const auto sc_configInfoFormatters = std::make_tuple(formatConstraintSystem, formatPbcType);
+//! Formatters for parameters in the execution mode (currently empty)
+static const auto sc_executionModeFormatters = std::make_tuple();
 
-//! Reference data filename maker (same as test namer)
-const RefDataFilenameMaker<ConstraintsParametersTuple> sc_refDataFilenameMaker{
-    std::make_tuple(formatConstraintSystem, formatPbcType)
-};
+//! Helper object to name tests using all parameters
+static const NameOfTestFromTuple<ConstraintsTestHelper::DynamicParameters> sc_testNamer =
+        ConstraintsTestHelper::testNamer(sc_configInfoFormatters, sc_executionModeFormatters);
 
 //! Helper class for checking constraints against reference data
 class ConstraintsVerifier
 {
 public:
-    ConstraintsVerifier(const std::filesystem::path& refDataFilename) :
-        refData_(refDataFilename), checker_(refData_.rootChecker())
-    {
-    }
-    ConstraintsVerifier() : checker_(refData_.rootChecker()) {}
+    explicit ConstraintsVerifier(TestReferenceChecker* checker) : checker_(checker) {}
 
 private:
     /*! \brief Test if the final position correspond to the reference data.
@@ -449,7 +607,7 @@ private:
     void checkFinalPositions(const ConstraintsTestData& testData)
     {
         TestReferenceChecker finalPositionsRef(
-                checker_.checkSequenceCompound("FinalPositions", testData.numAtoms_));
+                checker_->checkSequenceCompound("FinalPositions", testData.numAtoms_));
         for (int i = 0; i < testData.numAtoms_; i++)
         {
             TestReferenceChecker xPrimeRef(finalPositionsRef.checkCompound("Atom", nullptr));
@@ -467,7 +625,7 @@ private:
     void checkFinalVelocities(const ConstraintsTestData& testData)
     {
         TestReferenceChecker finalVelocitiesRef(
-                checker_.checkSequenceCompound("FinalVelocities", testData.numAtoms_));
+                checker_->checkSequenceCompound("FinalVelocities", testData.numAtoms_));
         for (int i = 0; i < testData.numAtoms_; i++)
         {
             TestReferenceChecker vRef(finalVelocitiesRef.checkCompound("Atom", nullptr));
@@ -637,7 +795,7 @@ private:
     void checkVirialTensor(const ConstraintsTestData& testData)
     {
         const tensor&        virialScaled = testData.virialScaled_;
-        TestReferenceChecker virialScaledRef(checker_.checkCompound("VirialScaled", nullptr));
+        TestReferenceChecker virialScaledRef(checker_->checkCompound("VirialScaled", nullptr));
 
         virialScaledRef.checkReal(virialScaled[XX][XX], "XX");
         virialScaledRef.checkReal(virialScaled[XX][YY], "XY");
@@ -651,16 +809,21 @@ private:
     }
 
 public:
-    //! The workflow for checking whether constraints have been satisfied
+    /*! \brief The workflow for checking whether constraints have been satisfied
+     *
+     * \param[in] testData   Test data to verify
+     * \param[in] algorithm  Constraint algorithm used (SHAKE or LINCS)
+     * \param[in] pbc        Periodic boundary conditions
+     */
     void check(const ConstraintsTestData& testData, const ConstraintAlgorithm algorithm, t_pbc pbc)
     {
         const FloatingPointTolerance positionsTolerance = absoluteTolerance(0.001F);
         const FloatingPointTolerance velocityTolerance  = absoluteTolerance(0.02F);
         const FloatingPointTolerance lengthTolerance = relativeToleranceAsFloatingPoint(0.1, 0.002F);
 
-        checker_.setDefaultTolerance(positionsTolerance);
+        checker_->setDefaultTolerance(positionsTolerance);
         checkFinalPositions(testData);
-        checker_.setDefaultTolerance(velocityTolerance);
+        checker_->setDefaultTolerance(velocityTolerance);
         checkFinalVelocities(testData);
 
         checkConstrainsLength(lengthTolerance, testData, pbc);
@@ -683,16 +846,15 @@ public:
         FloatingPointTolerance virialTolerance =
                 absoluteTolerance(fabs(virialTrace) / 3 * virialRelativeTolerance);
 
-        checker_.setDefaultTolerance(virialTolerance);
+        checker_->setDefaultTolerance(virialTolerance);
         checkVirialTensor(testData);
     }
 
 private:
-    //! Reference data
-    TestReferenceData refData_;
-    //! Checker for reference data
-    TestReferenceChecker checker_;
+    //! Reference data checker used for all verifications
+    TestReferenceChecker* checker_;
 };
+
 
 /*! \brief Test fixture for constraints.
  *
@@ -712,31 +874,15 @@ private:
  * For some systems, the value for scaled virial tensor is checked against
  * pre-computed data.
  */
-class ConstraintsTest : public ::testing::TestWithParam<std::tuple<ConstraintsTestSystem, t_pbc>>
+class ConstraintsTest : public HardwareTestFixture<ConstraintsTestHelper>
 {
-public:
-    //! Before any test is run, work out whether any compatible GPUs exist.
-    static std::vector<std::unique_ptr<IConstraintsTestRunner>> getRunners()
-    {
-        std::vector<std::unique_ptr<IConstraintsTestRunner>> runners;
-        // Add runners for CPU versions of SHAKE and LINCS
-        runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
-        runners.emplace_back(std::make_unique<LincsConstraintsRunner>());
-        // If supported, add runners for the GPU version of LINCS for each available GPU
-        if (GpuConfigurationCapabilities::Update)
-        {
-            for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
-            {
-                runners.emplace_back(std::make_unique<LincsDeviceConstraintsRunner>(*testDevice));
-            }
-        }
-        return runners;
-    }
+protected:
+    ConstraintsTest() : HardwareTestFixture(sc_configInfoFormatters) {}
 };
 
 TEST_P(ConstraintsTest, SatisfiesConstraints)
 {
-    auto [constraintsTestSystem, pbc] = GetParam();
+    auto [constraintsTestSystem, pbc, _] = GetParam();
 
     ConstraintsTestData testData(constraintsTestSystem.title,
                                  constraintsTestSystem.numAtoms,
@@ -756,28 +902,60 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
                                  constraintsTestSystem.lincslincsExpansionOrder,
                                  constraintsTestSystem.lincsWarnAngle);
 
-    ConstraintsVerifier verifier(sc_refDataFilenameMaker(GetParam()));
+    testData.reset();
 
-    // Cycle through all available runners
-    for (const auto& runner : getRunners())
+    // Apply constraints based on hardware context
+    if (isGpuTest())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+#if GMX_GPU && !GMX_GPU_OPENCL
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s (LINCS).",
                                   testData.title_.c_str(),
                                   c_pbcTypeNames[pbc.pbcType].c_str(),
-                                  runner->name().c_str()));
+                                  hardwareContext()->description().c_str()));
 
-        testData.reset();
+        activateHardware();
+        applyLincsGpu(*deviceContext(), *deviceStream(), &testData, pbc);
 
-        // Apply constraints
-        runner->applyConstraints(&testData, pbc);
-        verifier.check(testData, runner->algorithm(), pbc);
+        ConstraintsVerifier verifier(&checker());
+        verifier.check(testData, ConstraintAlgorithm::Lincs, pbc);
+#else
+        GMX_THROW(gmx::InternalError("GPU hardware context with no test code"));
+#endif
+    }
+    else
+    {
+        // Run both SHAKE and LINCS on CPU
+        {
+            SCOPED_TRACE(formatString("Testing %s with %s PBC using %s (SHAKE).",
+                                      testData.title_.c_str(),
+                                      c_pbcTypeNames[pbc.pbcType].c_str(),
+                                      hardwareContext()->description().c_str()));
+            testData.reset();
+            applyShakeCpu(&testData, pbc);
+
+            ConstraintsVerifier verifier(&checker());
+            verifier.check(testData, ConstraintAlgorithm::Shake, pbc);
+        }
+        {
+            SCOPED_TRACE(formatString("Testing %s with %s PBC using %s (LINCS).",
+                                      testData.title_.c_str(),
+                                      c_pbcTypeNames[pbc.pbcType].c_str(),
+                                      hardwareContext()->description().c_str()));
+            testData.reset();
+            applyLincsCpu(&testData, pbc);
+
+            ConstraintsVerifier verifier(&checker());
+            verifier.check(testData, ConstraintAlgorithm::Lincs, pbc);
+        }
     }
 }
 
 INSTANTIATE_TEST_SUITE_P(AllHardware,
                          ConstraintsTest,
                          ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
-                                            ::testing::ValuesIn(c_pbcs)),
+                                            ::testing::ValuesIn(c_pbcs),
+                                            ::testing::ValuesIn(getHardwareContextsWithCapability(
+                                                    GpuConfigurationCapabilities::Update))),
                          sc_testNamer);
 
 /*! \brief Test fixture for topology-based constraint tests.

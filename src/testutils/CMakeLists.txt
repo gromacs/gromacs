@@ -75,6 +75,7 @@ target_sources(testutils PRIVATE
                conftest.cpp
                filematchers.cpp
                generate_frame_data.cpp
+               hardware_test_fixture.cpp
                interactivetest.cpp
                loggertest.cpp
                mpi_printer.cpp
@@ -101,7 +102,6 @@ target_sources(testutils PRIVATE
                xvgtest.cpp
                )
 
-
 if(HAVE_TINYXML2)
     target_include_directories(testutils SYSTEM PRIVATE ${TinyXML2_INCLUDE_DIR})
     target_link_libraries(testutils PRIVATE ${TinyXML2_LIBRARIES})
@@ -115,7 +115,9 @@ target_include_directories(testutils PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 if (GMX_GPU_SYCL)
     add_sycl_to_target(
         TARGET testutils
-        SOURCES test_device.cpp
+        SOURCES
+            hardware_test_fixture.cpp
+            test_device.cpp
         )
 endif()
 

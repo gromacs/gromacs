@@ -52,6 +52,7 @@
 
 #include <cmath>
 
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -67,6 +68,7 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/hardware_test_fixture.h"
 #include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
@@ -74,7 +76,19 @@
 #include "testutils/testasserts.h"
 
 #include "leapfrogtestdata.h"
-#include "leapfrogtestrunners.h"
+
+#if GMX_GPU && !GMX_GPU_OPENCL
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/gputraits.h"
+#    include "gromacs/mdlib/leapfrog_gpu.h"
+#    include "gromacs/mdlib/stat.h"
+#endif
+
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
@@ -83,13 +97,129 @@ namespace test
 namespace
 {
 
-//! Parameter tuple type for LeapFrog tests (with vfName for naming infrastructure)
-using LeapFrogParametersTuple = std::tuple<int,         // numAtoms
-                                           real,        // timestep
-                                           int,         // numSteps
-                                           std::string, // vfName (velocity/force pair name)
-                                           int,         // numTCoupleGroups
-                                           int>;        // nstpcouple
+void integrateLeapFrogCpu(LeapFrogTestData* testData, int numSteps)
+{
+    testData->state_.x.resizeWithPadding(testData->numAtoms_);
+    testData->state_.v.resizeWithPadding(testData->numAtoms_);
+    for (int i = 0; i < testData->numAtoms_; i++)
+    {
+        testData->state_.x[i] = testData->x_[i];
+        testData->state_.v[i] = testData->v_[i];
+    }
+
+    gmx_omp_nthreads_set(ModuleMultiThread::Update, 1);
+
+    for (int step = 0; step < numSteps; step++)
+    {
+        testData->update_->update_coords(testData->inputRecord_,
+                                         step,
+                                         testData->mdAtoms_.homenr,
+                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
+                                         testData->mdAtoms_.ptype,
+                                         testData->mdAtoms_.invmass,
+                                         testData->mdAtoms_.invMassPerDim,
+                                         &testData->state_,
+                                         testData->f_,
+                                         &testData->forceCalculationData_,
+                                         &testData->kineticEnergyData_,
+                                         testData->velocityScalingMatrix_,
+                                         etrtNONE,
+                                         nullptr,
+                                         false);
+        testData->update_->finish_update(testData->inputRecord_,
+                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
+                                         testData->mdAtoms_.homenr,
+                                         &testData->state_,
+                                         nullptr,
+                                         false);
+    }
+    const auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
+    for (int i = 0; i < testData->numAtoms_; i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            testData->x_[i][d]      = testData->state_.x[i][d];
+            testData->v_[i][d]      = testData->state_.v[i][d];
+            testData->xPrime_[i][d] = xp[i][d];
+        }
+    }
+}
+
+#if GMX_GPU && !GMX_GPU_OPENCL
+
+void integrateLeapFrogGpu(const DeviceContext& deviceContext,
+                          const DeviceStream&  deviceStream,
+                          LeapFrogTestData*    testData,
+                          int                  numSteps)
+{
+    int numAtoms = testData->numAtoms_;
+
+    Float3* h_x  = gmx::asGenericFloat3Pointer(testData->x_);
+    Float3* h_xp = gmx::asGenericFloat3Pointer(testData->xPrime_);
+    Float3* h_v  = gmx::asGenericFloat3Pointer(testData->v_);
+    Float3* h_f  = gmx::asGenericFloat3Pointer(testData->f_);
+
+    DeviceBuffer<Float3> d_x, d_xp, d_v, d_f;
+
+    allocateDeviceBuffer(&d_x, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_f, numAtoms, deviceContext);
+
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_f, h_f, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+
+    auto integrator =
+            std::make_unique<LeapFrogGpu>(deviceContext, deviceStream, testData->numTCoupleGroups_);
+
+    integrator->set(numAtoms, testData->inverseMasses_, testData->mdAtoms_.cTC);
+
+    bool doTempCouple = testData->numTCoupleGroups_ > 0;
+    for (int step = 0; step < numSteps; step++)
+    {
+        bool doPressureCouple =
+                testData->doPressureCouple_
+                && do_per_step(step + testData->inputRecord_.pressureCouplingOptions.nstpcouple - 1,
+                               testData->inputRecord_.pressureCouplingOptions.nstpcouple);
+        integrator->integrate(d_x,
+                              d_xp,
+                              d_v,
+                              d_f,
+                              testData->timestep_,
+                              doTempCouple,
+                              testData->kineticEnergyData_.tcstat,
+                              doPressureCouple,
+                              testData->dtPressureCouple_,
+                              testData->velocityScalingMatrix_);
+    }
+
+    copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+
+    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(&d_xp);
+    freeDeviceBuffer(&d_v);
+    freeDeviceBuffer(&d_f);
+}
+
+#endif // GMX_GPU && !GMX_GPU_OPENCL
+
+//! Input configuration for LeapFrog tests (defines the physical scenario: atoms, timestep, etc.)
+using LeapFrogInputConfig = std::tuple<int,         // numAtoms
+                                       real,        // timestep
+                                       int,         // numSteps
+                                       std::string, // vfName (velocity/force pair name)
+                                       int,         // numTCoupleGroups
+                                       int>;        // nstpcouple
+
+/*! \brief Hardware test helper for LeapFrog
+ *
+ * \todo There are no execution modes - should test SIMD vs no SIMD
+ * here. Perhaps coupling vs no-coupling is useful to express this way
+ * also. */
+using LeapFrogTestHelper = HardwareAndExecutionTestHelper<LeapFrogInputConfig, std::tuple<>>;
 
 //! Format timestep as integer for test names
 std::string formatTimestep(real timestep)
@@ -98,23 +228,20 @@ std::string formatTimestep(real timestep)
     return formatString("dt%d", timestepInt);
 }
 
-//! Test naming functor
-const NameOfTestFromTuple<LeapFrogParametersTuple> sc_testNamer{ std::make_tuple(
-        [](int n) { return formatString("%datoms", n); },
-        formatTimestep,
-        [](int n) { return formatString("%dsteps", n); },
-        useString, // Velocity/force pair name
-        [](int n) { return formatString("tcg%d", n); },
-        [](int n) { return formatString("nstpc%d", n); }) };
+//! Formatters for parameters in the config info
+static const auto sc_configInfoFormatters =
+        std::make_tuple([](int n) { return formatString("%datoms", n); },
+                        formatTimestep,
+                        [](int n) { return formatString("%dsteps", n); },
+                        useString, // Velocity/force pair name
+                        [](int n) { return formatString("tcg%d", n); },
+                        [](int n) { return formatString("nstpc%d", n); });
+//! Formatters for parameters in the execution mode (currently empty)
+static const auto sc_executionModeFormatters = std::make_tuple();
 
-//! Reference data filename maker (same as test namer for now)
-const RefDataFilenameMaker<LeapFrogParametersTuple> sc_refDataFilenameMaker{ std::make_tuple(
-        [](int n) { return formatString("%datoms", n); },
-        formatTimestep,
-        [](int n) { return formatString("%dsteps", n); },
-        useString, // Velocity/force pair name distinguishes different initial conditions
-        [](int n) { return formatString("tcg%d", n); },
-        [](int n) { return formatString("nstpc%d", n); }) };
+//! Helper object to name tests using all parameters
+static const NameOfTestFromTuple<LeapFrogTestHelper::DynamicParameters> sc_testNamer =
+        LeapFrogTestHelper::testNamer(sc_configInfoFormatters, sc_executionModeFormatters);
 
 //! Named velocity/force combination
 struct VelocityForcePair
@@ -149,40 +276,34 @@ const VelocityForcePair& getVelocityForcePair(const std::string& name)
  *
  * Each entry is a tuple of (numAtoms, timestep, numSteps, vfName, numTCoupleGroups, nstpcouple).
  */
-const LeapFrogParametersTuple parametersSets[] = {
-    { 1, 0.001, 1, "zero", 0, 0 },        // Zero velocity and force
-    { 1, 0.001, 1, "zeroV", 0, 0 },       // Zero velocity
-    { 1, 0.001, 1, "zeroF", 0, 0 },       // Zero force
-    { 1, 0.001, 1, "standard", 0, 0 },    // 1 particle
-    { 10, 0.001, 1, "standard", 0, 0 },   // 10 particles
-    { 100, 0.001, 1, "standard", 0, 0 },  // 100 particles
-    { 300, 0.001, 1, "standard", 0, 0 },  // 300 particles
-    { 1, 0.0005, 1, "standard", 0, 0 },   // 0.0005 ps timestep
-    { 1, 0.001, 10, "standard", 0, 0 },   // 10 step
-    { 1, 0.001, 100, "standard", 0, 0 },  // 100 steps
-    { 100, 0.001, 1, "standard", 1, 0 },  // 1 temperature couple group
-    { 100, 0.001, 1, "standard", 2, 0 },  // 2 temperature couple groups
-    { 100, 0.001, 1, "standard", 10, 0 }, // 10 temperature couple groups
-    { 100, 0.001, 10, "standard", 0, 1 }, // With pressure coupling
-    { 100, 0.001, 10, "standard", 2, 1 }, // With both temperature and pressure coupling
-    { 100, 0.001, 10, "standard", 0, 3 }  // Do pressure coupling not on every step
-};
+const std::array<LeapFrogInputConfig, 16> sc_leapFrogConfigs = { {
+        { 1, 0.001, 1, "zero", 0, 0 },        // Zero velocity and force
+        { 1, 0.001, 1, "zeroV", 0, 0 },       // Zero velocity
+        { 1, 0.001, 1, "zeroF", 0, 0 },       // Zero force
+        { 1, 0.001, 1, "standard", 0, 0 },    // 1 particle
+        { 10, 0.001, 1, "standard", 0, 0 },   // 10 particles
+        { 100, 0.001, 1, "standard", 0, 0 },  // 100 particles
+        { 300, 0.001, 1, "standard", 0, 0 },  // 300 particles
+        { 1, 0.0005, 1, "standard", 0, 0 },   // 0.0005 ps timestep
+        { 1, 0.001, 10, "standard", 0, 0 },   // 10 step
+        { 1, 0.001, 100, "standard", 0, 0 },  // 100 steps
+        { 100, 0.001, 1, "standard", 1, 0 },  // 1 temperature couple group
+        { 100, 0.001, 1, "standard", 2, 0 },  // 2 temperature couple groups
+        { 100, 0.001, 1, "standard", 10, 0 }, // 10 temperature couple groups
+        { 100, 0.001, 10, "standard", 0, 1 }, // With pressure coupling
+        { 100, 0.001, 10, "standard", 2, 1 }, // With both temperature and pressure coupling
+        { 100, 0.001, 10, "standard", 0, 3 }  // Do pressure coupling not on every step
+} };
 
 
 /*! \brief Test fixture for LeapFrog integrator.
  */
-class LeapFrogTest : public ::testing::TestWithParam<LeapFrogParametersTuple>
+class LeapFrogTest : public HardwareTestFixture<LeapFrogTestHelper>
 {
+protected:
+    LeapFrogTest() : HardwareTestFixture(sc_configInfoFormatters) {}
+
 public:
-    //! Reference data (CPU/GPU share same data)
-    TestReferenceData refData_;
-    //! Checker for reference data
-    TestReferenceChecker checker_;
-
-    LeapFrogTest() : refData_(sc_refDataFilenameMaker(GetParam())), checker_(refData_.rootChecker())
-    {
-    }
-
     /*! \brief Test the numerical integrator against analytical solution for simple constant force case.
      *
      * \param[in]  tolerance  Tolerance
@@ -224,7 +345,7 @@ public:
     void testAgainstReferenceData(const LeapFrogTestData& testData)
     {
         TestReferenceChecker finalPositionsRef(
-                checker_.checkSequenceCompound("FinalPositions", testData.numAtoms_));
+                checker().checkSequenceCompound("FinalPositions", testData.numAtoms_));
         for (int i = 0; i < testData.numAtoms_; i++)
         {
             const gmx::RVec&     xPrime = testData.xPrime_[i];
@@ -235,7 +356,7 @@ public:
         }
 
         TestReferenceChecker finalVelocitiesRef(
-                checker_.checkSequenceCompound("FinalVelocities", testData.numAtoms_));
+                checker().checkSequenceCompound("FinalVelocities", testData.numAtoms_));
         for (int i = 0; i < testData.numAtoms_; i++)
         {
             const gmx::RVec&     v = testData.v_[i];
@@ -249,38 +370,27 @@ public:
 
 TEST_P(LeapFrogTest, SimpleIntegration)
 {
-    // Extract parameters using structured bindings
-    auto [numAtoms, timestep, numSteps, vfName, numTCoupleGroups, nstpcouple] = GetParam();
+    // Extract parameters (skip hardware context with _)
+    auto [numAtoms, timestep, numSteps, vfName, numTCoupleGroups, nstpcouple, _] = GetParam();
 
     // Look up velocity and force from table
     const VelocityForcePair& vfPair = getVelocityForcePair(vfName);
 
-    // Construct the list of runners
-    std::vector<std::unique_ptr<ILeapFrogTestRunner>> runners;
-    // Add runners for CPU version
-    runners.emplace_back(std::make_unique<LeapFrogHostTestRunner>());
-    // If supported, add runners for the GPU version for each available GPU
-    if (GpuConfigurationCapabilities::Update)
-    {
-        for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
-        {
-            runners.emplace_back(std::make_unique<LeapFrogDeviceTestRunner>(*testDevice));
-        }
-    }
-
-    for (const auto& runner : runners)
+    // Extra indentation for reviewer convenience
     {
         std::string testDescription = formatString(
                 "Testing on %s with %d atoms for %d timesteps with %d temperature coupling "
                 "groups and "
-                "%s pressure coupling (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f), nstpcouple = "
+                "%s pressure coupling (dt = %f, vf=%s, v0=(%f, %f, %f), f0=(%f, %f, %f), "
+                "nstpcouple = "
                 "%d)",
-                runner->hardwareDescription().c_str(),
+                hardwareContext()->description().c_str(),
                 numAtoms,
                 numSteps,
                 numTCoupleGroups,
                 nstpcouple == 0 ? "without" : "with",
                 timestep,
+                vfName.c_str(),
                 vfPair.velocity[XX],
                 vfPair.velocity[YY],
                 vfPair.velocity[ZZ],
@@ -293,7 +403,21 @@ TEST_P(LeapFrogTest, SimpleIntegration)
         std::unique_ptr<LeapFrogTestData> testData = std::make_unique<LeapFrogTestData>(
                 numAtoms, timestep, vfPair.velocity, vfPair.force, numTCoupleGroups, nstpcouple);
 
-        runner->integrate(testData.get(), numSteps);
+        // Run integration on selected hardware
+        if (isGpuTest())
+        {
+#if GMX_GPU && !GMX_GPU_OPENCL
+            activateHardware();
+            integrateLeapFrogGpu(*deviceContext(), *deviceStream(), testData.get(), numSteps);
+#else
+            GMX_THROW(gmx::InternalError("GPU hardware context with no test code"));
+#endif
+        }
+        else
+        {
+            // CPU implementation
+            integrateLeapFrogCpu(testData.get(), numSteps);
+        }
 
         real totalTime = numSteps * timestep;
         // TODO For the case of constant force, the numerical scheme is exact and
@@ -307,12 +431,19 @@ TEST_P(LeapFrogTest, SimpleIntegration)
             testAgainstAnalyticalSolution(tolerance, *testData, totalTime);
         }
 
-        checker_.setDefaultTolerance(tolerance);
+        checker().setDefaultTolerance(tolerance);
         testAgainstReferenceData(*testData);
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(AllHardware, LeapFrogTest, ::testing::ValuesIn(parametersSets), sc_testNamer);
+INSTANTIATE_TEST_SUITE_P(AllHardware,
+                         LeapFrogTest,
+                         ::testing::ConvertGenerator(
+                                 ::testing::Combine(::testing::ValuesIn(sc_leapFrogConfigs),
+                                                    ::testing::ValuesIn(getHardwareContextsWithCapability(
+                                                            GpuConfigurationCapabilities::Update))),
+                                 flattenTupleWithHardwareContext<LeapFrogInputConfig>()),
+                         sc_testNamer);
 
 } // namespace
 } // namespace test

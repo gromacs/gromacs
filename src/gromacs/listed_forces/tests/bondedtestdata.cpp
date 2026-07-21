@@ -59,6 +59,60 @@ namespace gmx
 namespace test
 {
 
+// Check if iListInput has FEP parameters (A != B states)
+bool iListInput::hasFepParameters() const
+{
+    if (!ftype.has_value())
+    {
+        return false;
+    }
+
+    const InteractionFunction ft = ftype.value();
+
+    switch (ft)
+    {
+        case InteractionFunction::Bonds:
+        case InteractionFunction::GROMOS96Bonds:
+        case InteractionFunction::Angles:
+        case InteractionFunction::GROMOS96Angles:
+        case InteractionFunction::ImproperDihedrals:
+        case InteractionFunction::RestrictedBendingPotential:
+            return (iparams.harmonic.rA != iparams.harmonic.rB
+                    || iparams.harmonic.krA != iparams.harmonic.krB);
+
+        case InteractionFunction::MorsePotential:
+            return (iparams.morse.b0A != iparams.morse.b0B || iparams.morse.cbA != iparams.morse.cbB
+                    || iparams.morse.betaA != iparams.morse.betaB);
+
+        case InteractionFunction::LinearAngles:
+            return (iparams.linangle.klinA != iparams.linangle.klinB
+                    || iparams.linangle.aA != iparams.linangle.aB);
+
+        case InteractionFunction::UreyBradleyPotential:
+            return (iparams.u_b.thetaA != iparams.u_b.thetaB || iparams.u_b.kthetaA != iparams.u_b.kthetaB
+                    || iparams.u_b.r13A != iparams.u_b.r13B || iparams.u_b.kUBA != iparams.u_b.kUBB);
+
+        case InteractionFunction::ProperDihedrals:
+        case InteractionFunction::AngleRestraints:
+        case InteractionFunction::AngleZAxisRestraints:
+            return (iparams.pdihs.phiA != iparams.pdihs.phiB || iparams.pdihs.cpA != iparams.pdihs.cpB);
+
+        case InteractionFunction::RyckaertBellemansDihedrals:
+            for (int i = 0; i < NR_RBDIHS; i++)
+            {
+                if (iparams.rbdihs.rbcA[i] != iparams.rbdihs.rbcB[i])
+                {
+                    return true;
+                }
+            }
+            return false;
+
+        default:
+            // All other types don't support FEP
+            return false;
+    }
+}
+
 // iListInput setter implementations
 iListInput iListInput::setHarmonic(InteractionFunction ft, real rA, real krA, real rB, real krB)
 {
@@ -67,7 +121,6 @@ iListInput iListInput::setHarmonic(InteractionFunction ft, real rA, real krA, re
     iparams.harmonic.krA = krA;
     iparams.harmonic.krB = krB;
     ftype                = ft;
-    fep                  = (rA != rB || krA != krB);
     return *this;
 }
 
@@ -94,7 +147,6 @@ iListInput iListInput::setMorse(real b0A, real cbA, real betaA, real b0B, real c
     iparams.morse.b0B   = b0B;
     iparams.morse.cbB   = cbB;
     iparams.morse.betaB = betaB;
-    fep                 = (b0A != b0B || cbA != cbB || betaA != betaB);
     return *this;
 }
 
@@ -118,7 +170,6 @@ iListInput iListInput::setLinearAngle(real klinA, real aA, real klinB, real aB)
     iparams.linangle.aA    = aA;
     iparams.linangle.klinB = klinB;
     iparams.linangle.aB    = aB;
-    fep                    = (klinA != klinB || aA != aB);
     return *this;
 }
 
@@ -145,7 +196,6 @@ iListInput iListInput::setUreyBradley(real thetaA,
     iparams.u_b.kthetaB = kthetaB;
     iparams.u_b.r13B    = r13B;
     iparams.u_b.kUBB    = kUBB;
-    fep                 = (thetaA != thetaB || kthetaA != kthetaB || r13A != r13B || kUBA != kUBB);
     return *this;
 }
 
@@ -193,7 +243,6 @@ iListInput iListInput::setPDihedrals(InteractionFunction ft, real phiA, real cpA
     iparams.pdihs.phiB = phiB;
     iparams.pdihs.cpB  = cpB;
     iparams.pdihs.mult = mult;
-    fep                = (phiA != phiB || cpA != cpB);
     return *this;
 }
 
@@ -205,12 +254,10 @@ iListInput iListInput::setPDihedrals(InteractionFunction ft, real phiA, real cpA
 iListInput iListInput::setRbDihedrals(const real rbcA[NR_RBDIHS], const real rbcB[NR_RBDIHS])
 {
     ftype = InteractionFunction::RyckaertBellemansDihedrals;
-    fep   = false;
     for (int i = 0; i < NR_RBDIHS; i++)
     {
         iparams.rbdihs.rbcA[i] = rbcA[i];
         iparams.rbdihs.rbcB[i] = rbcB[i];
-        fep                    = fep || (rbcA[i] != rbcB[i]);
     }
     return *this;
 }
@@ -223,7 +270,6 @@ iListInput iListInput::setRbDihedrals(const real rbc[NR_RBDIHS])
 iListInput iListInput::setPolarization(real alpha)
 {
     ftype                  = InteractionFunction::Polarization;
-    fep                    = false;
     iparams.polarize.alpha = alpha;
     return *this;
 }
@@ -231,7 +277,6 @@ iListInput iListInput::setPolarization(real alpha)
 iListInput iListInput::setAnharmPolarization(real alpha, real drcut, real khyp)
 {
     ftype                         = InteractionFunction::AnharmonicPolarization;
-    fep                           = false;
     iparams.anharm_polarize.alpha = alpha;
     iparams.anharm_polarize.drcut = drcut;
     iparams.anharm_polarize.khyp  = khyp;
@@ -241,7 +286,6 @@ iListInput iListInput::setAnharmPolarization(real alpha, real drcut, real khyp)
 iListInput iListInput::setTholePolarization(real a, real alpha1, real alpha2)
 {
     ftype                = InteractionFunction::TholePolarization;
-    fep                  = false;
     iparams.thole.a      = a;
     iparams.thole.alpha1 = alpha1;
     iparams.thole.alpha2 = alpha2;
@@ -251,7 +295,6 @@ iListInput iListInput::setTholePolarization(real a, real alpha1, real alpha2)
 iListInput iListInput::setWaterPolarization(real alpha_x, real alpha_y, real alpha_z, real rOH, real rHH, real rOD)
 {
     ftype             = InteractionFunction::WaterPolarization;
-    fep               = false;
     iparams.wpol.al_x = alpha_x;
     iparams.wpol.al_y = alpha_y;
     iparams.wpol.al_z = alpha_z;
@@ -274,7 +317,7 @@ std::ostream& operator<<(std::ostream& out, const iListInput& input)
         printInteractionParameters(&writer, input.ftype.value(), input.iparams);
     }
     out << "Function parameters " << stream.toString();
-    out << "Parameters trigger FEP? " << (input.fep ? "true" : "false") << endl;
+    out << "Parameters trigger FEP? " << (input.hasFepParameters() ? "true" : "false") << endl;
     return out;
 }
 
@@ -297,6 +340,12 @@ void checkOutput(TestReferenceChecker* checker, const OutputQuantities& output, 
     {
         checker->checkReal(output.energy, "Epot ");
         checker->checkReal(output.dvdlambda, "dVdlambda ");
+    }
+    else
+    {
+        // For flavors that don't compute energy, disable unused entries check
+        // so we don't complain about energy entries in reference data
+        checker->disableUnusedEntriesCheck();
     }
     checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
 }

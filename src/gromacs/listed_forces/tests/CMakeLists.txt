@@ -33,13 +33,11 @@
 
 gmx_add_unit_test(ListedForcesTest listed_forces-test HARDWARE_DETECTION
     CPP_SOURCE_FILES
-        bonded.cpp
         bondedtestdata.cpp
-        bondedtestrunners.cpp
         pairs.cpp
         position_restraints.cpp
     GPU_CPP_SOURCE_FILES
-        bondedtestrunners_gpu.cpp
+        bonded.cpp
     )
 target_link_libraries(listed_forces-test PRIVATE
         math
