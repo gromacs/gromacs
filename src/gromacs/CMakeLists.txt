@@ -446,7 +446,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:utility>
     )
 if (GMX_OPENMP)
-    target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(libgromacs PRIVATE OpenMP::OpenMP_CXX)
     if (GMX_GPU_CUDA AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
         # Since CMake 3.31, OpenMP::OpenMP_CUDA is needed for files with LANGUAGE CUDA
         target_link_libraries(libgromacs PRIVATE OpenMP::OpenMP_CUDA)

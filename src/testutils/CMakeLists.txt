@@ -133,6 +133,12 @@ target_include_directories(testutils SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}
 target_link_libraries(testutils PRIVATE libgromacs ${GMX_COMMON_LIBRARIES} gmock)
 target_link_libraries(testutils PUBLIC common)
 
+if(GMX_OPENMP)
+    # Until we have fully transitioned GROMACS modules to OBJECT targets, we need
+    # this to handle cases when internal headers have OpenMP.
+    target_link_libraries(testutils PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 # GROMACS module dependencies.
 # Note that testutils conveys transitive dependencies on some modules.
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
