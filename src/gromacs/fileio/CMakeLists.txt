@@ -101,6 +101,8 @@ target_link_libraries(fileio INTERFACE
                       h5md
                       legacy_api
                       math
+                      # bundled RCSB mmCIF/PDBx parser+writer, used by cifio.cpp
+                      mmcif
                       )
 
 # TODO: when fileio is an OBJECT target
