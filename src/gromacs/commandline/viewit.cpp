@@ -53,7 +53,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
-static constexpr std::array<int, 5> canViewFileType = { 0, efEPS, efXPM, efXVG, efPDB };
+static constexpr std::array<int, 6> canViewFileType = { 0, efEPS, efXPM, efXVG, efPDB, efCIF };
 
 static constexpr int numberOfPossibleFiles = canViewFileType.size();
 

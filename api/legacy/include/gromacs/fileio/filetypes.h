@@ -56,6 +56,7 @@ enum GromacsFileType
     efGRO,
     efG96,
     efPDB,
+    efCIF,
     efBRK,
     efENT,
     efESP,

@@ -41,6 +41,7 @@
 #include <filesystem>
 #include <string>
 
+#include "gromacs/fileio/cifio.h"
 #include "gromacs/fileio/espio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
@@ -113,6 +114,9 @@ void write_sto_conf_indexed(const std::filesystem::path& outfile,
                     out, title, atoms, x, pbcType, box, ' ', -1, nindex, index, nullptr, ftp == efPQR);
             gmx_fio_fclose(out);
             break;
+        case efCIF:
+            CifIO::writeIndexed(outfile, title, atoms, x, pbcType, box, nindex, index);
+            break;
         case efESP:
             out = gmx_fio_fopen(outfile, "w");
             write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
@@ -165,6 +169,7 @@ void write_sto_conf(const std::filesystem::path& outfile,
             write_pdbfile(out, title, atoms, x, pbcType, box, ' ', -1, nullptr);
             gmx_fio_fclose(out);
             break;
+        case efCIF: CifIO::write(outfile, title, atoms, x, pbcType, box); break;
         case efESP:
             out = gmx_fio_fopen(outfile, "w");
             write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
@@ -240,6 +245,7 @@ static void get_stx_coordnum(const std::filesystem::path& infile, int* natoms)
             get_pdb_coordnum(in, natoms);
             gmx_fio_fclose(in);
             break;
+        case efCIF: CifIO::countAtoms(infile, natoms); break;
         case efESP: *natoms = get_espresso_coordnum(infile); break;
         default: gmx_fatal(FARGS, "File type %s not supported in get_stx_coordnum", ftp2ext(ftp));
     }
@@ -385,6 +391,7 @@ static void read_stx_conf(const std::filesystem::path& infile,
         case efPDB:
         case efBRK:
         case efENT: gmx_pdb_read_conf(infile, symtab, name, atoms, x, pbcType, box); break;
+        case efCIF: CifIO::read(infile, symtab, name, atoms, x, pbcType, box); break;
         case efESP: gmx_espresso_read_conf(infile, symtab, name, atoms, x, v, box); break;
         default: gmx_incons("Not supported in read_stx_conf");
     }
@@ -423,7 +430,7 @@ void readConfAndAtoms(const std::filesystem::path& infile,
     int natoms;
     get_stx_coordnum(infile, &natoms);
 
-    init_t_atoms(atoms, natoms, (fn2ftp(infile) == efPDB));
+    init_t_atoms(atoms, natoms, (fn2ftp(infile) == efPDB || fn2ftp(infile) == efCIF));
 
     bool xIsNull = false;
     if (x == nullptr)

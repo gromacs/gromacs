@@ -115,12 +115,12 @@ TEST_P(FileTypeTest, CorrectValueForExtension)
 
 const std::vector<TypeAndName> testParams = {
     { 0, ".mdp" },  { 4, ".trr" },  { 6, ".xtc" },  { 7, ".tng" },  { 8, ".h5md" }, { 9, ".edr" },
-    { 12, ".gro" }, { 13, ".g96" }, { 14, ".pdb" }, { 15, ".brk" }, { 16, ".ent" }, { 17, ".esp" },
-    { 18, ".pqr" }, { 19, ".cpt" }, { 20, ".log" }, { 21, ".xvg" }, { 22, ".out" }, { 23, ".ndx" },
-    { 24, ".top" }, { 25, ".itp" }, { 27, ".tpr" }, { 28, ".tex" }, { 29, ".rtp" }, { 30, ".atp" },
-    { 31, ".hdb" }, { 32, ".dat" }, { 33, ".dlg" }, { 34, ".map" }, { 35, ".eps" }, { 36, ".mat" },
-    { 37, ".m2p" }, { 38, ".mtx" }, { 39, ".edi" }, { 40, ".cub" }, { 41, ".xpm" }, { 43, ".csv" },
-    { 44, ".inp" }
+    { 12, ".gro" }, { 13, ".g96" }, { 14, ".pdb" }, { 15, ".cif" }, { 16, ".brk" }, { 17, ".ent" },
+    { 18, ".esp" }, { 19, ".pqr" }, { 20, ".cpt" }, { 21, ".log" }, { 22, ".xvg" }, { 23, ".out" },
+    { 24, ".ndx" }, { 25, ".top" }, { 26, ".itp" }, { 28, ".tpr" }, { 29, ".tex" }, { 30, ".rtp" },
+    { 31, ".atp" }, { 32, ".hdb" }, { 33, ".dat" }, { 34, ".dlg" }, { 35, ".map" }, { 36, ".eps" },
+    { 37, ".mat" }, { 38, ".m2p" }, { 39, ".mtx" }, { 40, ".edi" }, { 41, ".cub" }, { 42, ".xpm" },
+    { 44, ".csv" }, { 45, ".inp" }
 };
 
 const std::vector<std::string> prefixes = { "",
