@@ -757,7 +757,7 @@ int gmx_trjconv(int argc, char* argv[])
 
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS, NFILE, fnm) || bRmPBC || bReset || bPBCcomMol || bCluster
-                || (ftp == efGRO) || (ftp == efPDB) || bCONECT);
+                || (ftp == efGRO) || (ftp == efPDB) || (ftp == efCIF) || bCONECT);
 
         /* Determine if when can read index groups */
         bIndex = (bIndex || bTPS);
@@ -969,9 +969,9 @@ int gmx_trjconv(int argc, char* argv[])
         }
 
         // Make atoms struct for output of the selection into GRO,
-        // G96, or PDB files.
+        // G96, PDB or mmCIF files.
         std::optional<t_atoms> useatoms;
-        if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB))
+        if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB) || (ftp == efCIF))
         {
             /* get memory for stuff to go in .pdb file, and initialize
              * the pdbinfo structure part if the input has it.
@@ -1100,6 +1100,7 @@ int gmx_trjconv(int argc, char* argv[])
                                                               arrayRefFromArray(index, nout),
                                                               grpnm);
                     break;
+                case efCIF:
                 case efXTC:
                 case efTRR:
                     out = nullptr;
@@ -1524,6 +1525,12 @@ int gmx_trjconv(int argc, char* argv[])
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
                                 break;
+                            case efCIF:
+                                // mmCIF needs atom/residue names, supplied via the
+                                // topology (-s) like GRO/PDB, then written by write_trxframe.
+                                frout.atoms  = &useatoms.value();
+                                frout.bAtoms = TRUE;
+                                [[fallthrough]];
                             case efTRR:
                             case efXTC:
                                 if (bSplitHere)

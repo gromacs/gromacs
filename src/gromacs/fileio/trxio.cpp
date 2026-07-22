@@ -50,6 +50,7 @@
 #include <vector>
 
 #include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/cifio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/g96io.h"
@@ -109,6 +110,8 @@ struct t_trxstatus
     int                        fileType = efNR;
     int                        natoms   = 0;
     std::vector<char>          persistent_line; /* Persistent line for reading g96 trajectories */
+    CifTrajectory* cifReader = nullptr; /* Parsed multi-model mmCIF being read frame by frame */
+    int cifModelsWritten = 0; /* Number of models already streamed to an mmCIF trajectory */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
@@ -445,6 +448,22 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
                                       FALSE);
             }
             break;
+        case efCIF:
+            if (!fr->bAtoms)
+            {
+                gmx_fatal(FARGS, "Can not write a %s file without atom names", ftp2ext(status->fileType));
+            }
+            CifIO::writeTrajectoryFrame(gmx_fio_getfp(status->fio),
+                                        nullptr,
+                                        fr->atoms,
+                                        fr->x,
+                                        fr->box,
+                                        nind,
+                                        ind,
+                                        status->cifModelsWritten + 1,
+                                        status->cifModelsWritten == 0);
+            status->cifModelsWritten++;
+            break;
         case efG96:
             sprintf(title, "frame t= %.3f", fr->time);
             write_g96_conf(gmx_fio_getfp(status->fio), title, fr, nind, ind);
@@ -596,6 +615,31 @@ int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)
                               gc);
             }
             break;
+        case efCIF:
+        {
+            if (!fr->bAtoms)
+            {
+                gmx_fatal(FARGS,
+                          "Can not write a %s file without atom names",
+                          ftp2ext(gmx_fio_getftp(status->fio)));
+            }
+            std::vector<int> allIndex(fr->natoms);
+            for (int i = 0; i < fr->natoms; i++)
+            {
+                allIndex[i] = i;
+            }
+            CifIO::writeTrajectoryFrame(gmx_fio_getfp(status->fio),
+                                        nullptr,
+                                        fr->atoms,
+                                        fr->x,
+                                        fr->box,
+                                        fr->natoms,
+                                        allIndex.data(),
+                                        status->cifModelsWritten + 1,
+                                        status->cifModelsWritten == 0);
+            status->cifModelsWritten++;
+            break;
+        }
         case efG96: write_g96_conf(gmx_fio_getfp(status->fio), title, fr, -1, nullptr); break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe can not write %s", ftp2ext(status->fileType));
@@ -644,6 +688,10 @@ void close_trx(t_trxstatus* status)
     if (status->fio)
     {
         gmx_fio_close(status->fio);
+    }
+    if (status->cifReader)
+    {
+        CifIO::closeTrajectory(status->cifReader);
     }
 #if GMX_USE_PLUGINS
     delete status->vmdplugin;
@@ -818,6 +866,35 @@ static int pdb_first_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
     return fr->natoms;
 }
 
+static gmx_bool cif_next_x(t_trxstatus* status, t_trxframe* fr)
+{
+    // The whole mmCIF file was parsed in cif_first_x; hand out one model per call.
+    return (status->cifReader != nullptr && CifIO::readTrajectoryFrame(status->cifReader, fr)) ? TRUE
+                                                                                               : FALSE;
+}
+
+static int cif_first_x(t_trxstatus* status, const std::filesystem::path& fn, t_trxframe* fr)
+{
+    initcount(status);
+
+    fprintf(stderr, "Reading frames from cif file");
+    status->cifReader = CifIO::openTrajectory(fn);
+    if (status->cifReader == nullptr)
+    {
+        fr->natoms = 0;
+        return 0;
+    }
+    fr->natoms = CifIO::trajectoryNumAtoms(status->cifReader);
+    if (fr->natoms == 0)
+    {
+        gmx_fatal(FARGS, "\nNo coordinates in cif file\n");
+    }
+    snew(fr->x, fr->natoms);
+    cif_next_x(status, fr);
+
+    return fr->natoms;
+}
+
 bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxframe* fr)
 {
     int      ct;
@@ -888,6 +965,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
             case efH5MD: bRet = status->h5md->readNextFrame(fr); break;
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
+            case efCIF: bRet = cif_next_x(status, fr); break;
             case efGRO: bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr); break;
             default:
 #if GMX_USE_PLUGINS
@@ -1066,6 +1144,14 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             break;
         case efPDB:
             pdb_first_x(*status, gmx_fio_getfp(fio), fr);
+            if (fr->natoms)
+            {
+                printcount(*status, oenv, fr->time, FALSE);
+            }
+            bFirst = FALSE;
+            break;
+        case efCIF:
+            cif_first_x(*status, fn, fr);
             if (fr->natoms)
             {
                 printcount(*status, oenv, fr->time, FALSE);

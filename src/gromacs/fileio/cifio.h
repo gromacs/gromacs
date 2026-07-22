@@ -50,6 +50,8 @@
 #ifndef GMX_FILEIO_CIFIO_H
 #define GMX_FILEIO_CIFIO_H
 
+#include <cstdio>
+
 #include <filesystem>
 
 #include "gromacs/utility/vectypes.h"
@@ -57,6 +59,9 @@
 enum class PbcType : int;
 struct t_atoms;
 struct t_symtab;
+struct t_trxframe;
+//! Opaque parsed-mmCIF trajectory handle; defined in cifio.cpp.
+struct CifTrajectory;
 
 /*! \brief Reader/writer for mmCIF/PDBx structure files.
  *
@@ -103,6 +108,43 @@ public:
                              const matrix                 box,
                              int                          nindex,
                              const int                    index[]);
+
+    /*! \name Trajectory (multi-model) I/O
+     *
+     * mmCIF files can hold several models (e.g. an NMR ensemble or a saved
+     * trajectory) in one atom_site loop, distinguished by pdbx_PDB_model_num.
+     * These entry points let the trajectory framework (trxio) treat each model
+     * as a frame. Reading parses the whole file once (the bundled parser is not
+     * line-streamable) and then iterates models; writing streams one model per
+     * frame to an already-open FILE*.
+     * \{
+     */
+
+    //! Parse \p infile and return an opaque multi-model handle (nullptr on empty).
+    static CifTrajectory* openTrajectory(const std::filesystem::path& infile);
+    //! Number of atoms per model in an opened trajectory handle.
+    static int trajectoryNumAtoms(CifTrajectory* handle);
+    /*! \brief Fill \p fr with the next model's coordinates/box/time.
+     * \p fr->x must already be allocated for trajectoryNumAtoms() atoms.
+     * Returns false when all models have been consumed. */
+    static bool readTrajectoryFrame(CifTrajectory* handle, t_trxframe* fr);
+    //! Release a handle from openTrajectory().
+    static void closeTrajectory(CifTrajectory* handle);
+
+    /*! \brief Stream one model (frame) of \p nindex atoms to \p out.
+     * When \p writeHeader is true the data block, optional cell and the
+     * atom_site loop header are written first; \p modelNr is the 1-based
+     * pdbx_PDB_model_num for this frame. */
+    static void writeTrajectoryFrame(FILE*          out,
+                                     const char*    title,
+                                     const t_atoms* atoms,
+                                     const rvec     x[],
+                                     const matrix   box,
+                                     int            nindex,
+                                     const int      index[],
+                                     int            modelNr,
+                                     bool           writeHeader);
+    //! \}
 };
 
 #endif // GMX_FILEIO_CIFIO_H

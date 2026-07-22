@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,6 +52,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -252,6 +254,64 @@ std::string realToStr(real value, const char* fmt)
     char buf[32];
     std::snprintf(buf, sizeof(buf), fmt, value);
     return buf;
+}
+
+//! Build the 16 atom_site field values for atom \p i (column order as written below).
+std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rvec x[], int modelNr)
+{
+    const int         resind = atoms->atom[i].resind;
+    const std::string resnm  = *atoms->resinfo[resind].name;
+    const std::string atomnm = *atoms->atomname[i];
+    const std::string seqStr = std::to_string(atoms->resinfo[resind].nr);
+
+    char chainCh = atoms->resinfo[resind].chainid;
+    if (chainCh == 0 || chainCh == ' ')
+    {
+        chainCh = 'A';
+    }
+    const std::string chainStr(1, chainCh);
+
+    const char*       elem   = atoms->atom[i].elem;
+    const std::string symbol = (elem[0] != '\0') ? std::string(elem) : std::string("?");
+
+    std::string groupPdb = "ATOM";
+    real        occup    = 1.0;
+    real        bfac     = 0.0;
+    if (atoms->pdbinfo != nullptr)
+    {
+        groupPdb = (atoms->pdbinfo[i].type == PdbRecordType::Hetatm) ? "HETATM" : "ATOM";
+        occup    = atoms->pdbinfo[i].occup;
+        bfac     = atoms->pdbinfo[i].bfac;
+    }
+
+    return std::vector<std::string>{ groupPdb,
+                                     std::to_string(i + 1),
+                                     symbol,
+                                     atomnm,
+                                     resnm,
+                                     chainStr,
+                                     seqStr,
+                                     coordToStr(x[i][XX]),
+                                     coordToStr(x[i][YY]),
+                                     coordToStr(x[i][ZZ]),
+                                     realToStr(occup, "%.2f"),
+                                     realToStr(bfac, "%.2f"),
+                                     seqStr,
+                                     resnm,
+                                     chainStr,
+                                     std::to_string(modelNr) };
+}
+
+//! The atom_site column names, in the order produced by buildAtomSiteRow().
+const std::vector<const char*>& atomSiteColumns()
+{
+    static const std::vector<const char*> columns = {
+        "group_PDB",   "id",           "type_symbol", "label_atom_id",
+        "label_comp_id", "label_asym_id", "label_seq_id", "Cartn_x",
+        "Cartn_y",     "Cartn_z",      "occupancy",   "B_iso_or_equiv",
+        "auth_seq_id", "auth_comp_id", "auth_asym_id", "pdbx_PDB_model_num"
+    };
+    return columns;
 }
 
 } // namespace
@@ -481,64 +541,13 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
 
     // atom_site loop.
     ISTable& atomSite = block.AddTable("atom_site");
-    const std::vector<const char*> columns = { "group_PDB",      "id",
-                                               "type_symbol",    "label_atom_id",
-                                               "label_comp_id",  "label_asym_id",
-                                               "label_seq_id",   "Cartn_x",
-                                               "Cartn_y",        "Cartn_z",
-                                               "occupancy",      "B_iso_or_equiv",
-                                               "auth_seq_id",    "auth_comp_id",
-                                               "auth_asym_id",   "pdbx_PDB_model_num" };
-    for (const char* col : columns)
+    for (const char* col : atomSiteColumns())
     {
         atomSite.AddColumn(col);
     }
-
     for (int ii = 0; ii < nindex; ii++)
     {
-        const int         i      = index[ii];
-        const int         resind = atoms->atom[i].resind;
-        const std::string resnm  = *atoms->resinfo[resind].name;
-        const std::string atomnm = *atoms->atomname[i];
-        const int         resnr  = atoms->resinfo[resind].nr;
-
-        char chainCh = atoms->resinfo[resind].chainid;
-        if (chainCh == 0 || chainCh == ' ')
-        {
-            chainCh = 'A';
-        }
-        const std::string chainStr(1, chainCh);
-
-        const char*       elem   = atoms->atom[i].elem;
-        const std::string symbol = (elem[0] != '\0') ? std::string(elem) : std::string("?");
-
-        std::string groupPdb = "ATOM";
-        real        occup    = 1.0;
-        real        bfac     = 0.0;
-        if (atoms->pdbinfo != nullptr)
-        {
-            groupPdb = (atoms->pdbinfo[i].type == PdbRecordType::Hetatm) ? "HETATM" : "ATOM";
-            occup    = atoms->pdbinfo[i].occup;
-            bfac     = atoms->pdbinfo[i].bfac;
-        }
-
-        const std::string seqStr = std::to_string(resnr);
-        atomSite.AddRow(std::vector<std::string>{ groupPdb,
-                                                  std::to_string(i + 1),
-                                                  symbol,
-                                                  atomnm,
-                                                  resnm,
-                                                  chainStr,
-                                                  seqStr,
-                                                  coordToStr(x[i][XX]),
-                                                  coordToStr(x[i][YY]),
-                                                  coordToStr(x[i][ZZ]),
-                                                  realToStr(occup, "%.2f"),
-                                                  realToStr(bfac, "%.2f"),
-                                                  seqStr,
-                                                  resnm,
-                                                  chainStr,
-                                                  "1" });
+        atomSite.AddRow(buildAtomSiteRow(atoms, index[ii], x, /*modelNr*/ 1));
     }
 
     cif.Write(outfile.string());
@@ -557,4 +566,165 @@ void CifIO::write(const std::filesystem::path& outfile,
         index[i] = i;
     }
     writeIndexed(outfile, title, atoms, x, pbcType, box, atoms->nr, index.data());
+}
+
+//! Internal state behind CifIO's opaque CifTrajectory handle (see cifio.h).
+struct CifTrajectory
+{
+    std::unique_ptr<CifFile>               cif;
+    std::vector<std::string>               cartnX;
+    std::vector<std::string>               cartnY;
+    std::vector<std::string>               cartnZ;
+    std::vector<std::vector<unsigned int>> modelRows; //!< row indices per model, in file order
+    int                                    natoms  = 0;
+    bool                                   haveBox = false;
+    matrix                                 box     = { { 0 } };
+    size_t                                 cursor  = 0; //!< next model to hand out
+};
+
+CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
+{
+    auto        traj = std::make_unique<CifTrajectory>();
+    std::string block;
+    ISTable*    atomSite = parseFirstBlock(infile, traj->cif, &block);
+    if (atomSite == nullptr)
+    {
+        return nullptr;
+    }
+    traj->cartnX = getColumn(atomSite, "Cartn_x");
+    traj->cartnY = getColumn(atomSite, "Cartn_y");
+    traj->cartnZ = getColumn(atomSite, "Cartn_z");
+
+    const std::vector<std::string> model = getColumn(atomSite, "pdbx_PDB_model_num");
+    const unsigned int             nRows = atomSite->GetNumRows();
+    std::vector<std::string>       order; // model ids in first-seen order
+    for (unsigned int r = 0; r < nRows; r++)
+    {
+        const std::string id = model.empty() ? std::string("1") : model[r];
+        auto              it = std::find(order.begin(), order.end(), id);
+        size_t            mi;
+        if (it == order.end())
+        {
+            mi = order.size();
+            order.push_back(id);
+            traj->modelRows.emplace_back();
+        }
+        else
+        {
+            mi = static_cast<size_t>(std::distance(order.begin(), it));
+        }
+        traj->modelRows[mi].push_back(r);
+    }
+    traj->natoms = traj->modelRows.empty() ? 0 : static_cast<int>(traj->modelRows[0].size());
+
+    PbcType pt = PbcType::No;
+    readCell(traj->cif.get(), block, &pt, traj->box);
+    traj->haveBox = (pt != PbcType::No);
+
+    return traj.release();
+}
+
+int CifIO::trajectoryNumAtoms(CifTrajectory* traj)
+{
+    return (traj != nullptr) ? traj->natoms : 0;
+}
+
+bool CifIO::readTrajectoryFrame(CifTrajectory* traj, t_trxframe* fr)
+{
+    if (traj == nullptr || traj->cursor >= traj->modelRows.size())
+    {
+        return false;
+    }
+    const std::vector<unsigned int>& rows = traj->modelRows[traj->cursor];
+    fr->natoms                            = traj->natoms;
+    const int n = std::min(traj->natoms, static_cast<int>(rows.size()));
+    for (int i = 0; i < n; i++)
+    {
+        const unsigned int r = rows[i];
+        fr->x[i][XX]         = std::strtod(cell(traj->cartnX, r).c_str(), nullptr) * 0.1;
+        fr->x[i][YY]         = std::strtod(cell(traj->cartnY, r).c_str(), nullptr) * 0.1;
+        fr->x[i][ZZ]         = std::strtod(cell(traj->cartnZ, r).c_str(), nullptr) * 0.1;
+    }
+    fr->bX = TRUE;
+    if (traj->haveBox)
+    {
+        copy_mat(traj->box, fr->box);
+    }
+    fr->bBox  = traj->haveBox;
+    fr->step  = static_cast<int64_t>(traj->cursor);
+    fr->bStep = TRUE;
+    fr->time  = static_cast<real>(traj->cursor);
+    fr->bTime = TRUE;
+    fr->bPrec = TRUE;
+    fr->prec  = 10000;
+    traj->cursor++;
+    return true;
+}
+
+void CifIO::closeTrajectory(CifTrajectory* traj)
+{
+    delete traj;
+}
+
+void CifIO::writeTrajectoryFrame(FILE*          out,
+                                 const char*    title,
+                                 const t_atoms* atoms,
+                                 const rvec     x[],
+                                 const matrix   box,
+                                 int            nindex,
+                                 const int      index[],
+                                 int            modelNr,
+                                 bool           writeHeader)
+{
+    if (writeHeader)
+    {
+        const std::string entryId = (title != nullptr && title[0] != '\0') ? title : "gromacs";
+        std::string       blockName;
+        for (char ch : entryId)
+        {
+            blockName.push_back(std::isspace(static_cast<unsigned char>(ch)) ? '_' : ch);
+        }
+        std::fprintf(out, "data_%s\n#\n", blockName.c_str());
+        std::fprintf(out, "_entry.id   %s\n#\n", entryId.c_str());
+
+        const bool haveBox = box != nullptr
+                             && (norm2(box[XX]) != 0.0F || norm2(box[YY]) != 0.0F || norm2(box[ZZ]) != 0.0F);
+        if (haveBox)
+        {
+            const real a     = norm(box[XX]);
+            const real b     = norm(box[YY]);
+            const real c     = norm(box[ZZ]);
+            const real alpha = (b * c != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[YY], box[ZZ]) : 90.0F;
+            const real beta  = (a * c != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]) : 90.0F;
+            const real gamma = (a * b != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]) : 90.0F;
+            std::fprintf(out,
+                         "_cell.length_a   %.3f\n_cell.length_b   %.3f\n_cell.length_c   %.3f\n",
+                         10.0 * a,
+                         10.0 * b,
+                         10.0 * c);
+            std::fprintf(out,
+                         "_cell.angle_alpha   %.2f\n_cell.angle_beta   %.2f\n_cell.angle_gamma   %.2f\n#\n",
+                         alpha,
+                         beta,
+                         gamma);
+        }
+        std::fprintf(out, "loop_\n");
+        for (const char* col : atomSiteColumns())
+        {
+            std::fprintf(out, "_atom_site.%s\n", col);
+        }
+    }
+    for (int ii = 0; ii < nindex; ii++)
+    {
+        const std::vector<std::string> row = buildAtomSiteRow(atoms, index[ii], x, modelNr);
+        for (size_t k = 0; k < row.size(); k++)
+        {
+            std::string tok = row[k].empty() ? std::string(".") : row[k];
+            if (tok.find(' ') != std::string::npos)
+            {
+                tok = "'" + tok + "'";
+            }
+            std::fprintf(out, "%s%s", tok.c_str(), (k + 1 < row.size()) ? " " : "\n");
+        }
+    }
 }

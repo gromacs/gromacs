@@ -38,6 +38,7 @@ gmx_add_unit_test(FileIOTests fileio-test
     CPP_SOURCE_FILES
         checkpoint.cpp
         cifio.cpp
+        cifio_trajectory.cpp
         conect.cpp
         confio.cpp
         filemd5.cpp

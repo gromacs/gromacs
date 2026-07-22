@@ -58,13 +58,13 @@ enum
 /* To support multiple file types with one general (eg TRX) we have
  * these arrays.
  */
-static const int trxs[] = { efXTC, efTRR, efCPT, efGRO, efG96, efPDB, efTNG, efH5MD };
+static const int trxs[] = { efXTC, efTRR, efCPT, efGRO, efG96, efPDB, efCIF, efTNG, efH5MD };
 #define NTRXS asize(trxs)
 
 static const int trcompressed[] = { efXTC, efTNG };
 #define NTRCOMPRESSED asize(trcompressed)
 
-static const int tros[] = { efXTC, efTRR, efGRO, efG96, efPDB, efTNG, efH5MD };
+static const int tros[] = { efXTC, efTRR, efGRO, efG96, efPDB, efCIF, efTNG, efH5MD };
 #define NTROS asize(tros)
 
 static const int trns[] = { efTRR, efCPT, efTNG, efH5MD };
