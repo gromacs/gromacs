@@ -69,7 +69,7 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
         ppCommManagers_.emplace_back(PpForceCommManager{
                 std::make_unique<DeviceStream>(deviceContext, DeviceStreamPriority::High, false),
                 std::make_unique<GpuEventSynchronizer>(),
-                std::make_unique<std::atomic<CacheLineAlignedFlag>>(),
+                std::make_unique<CacheLineAlignedFlag>(),
                 nullptr,
                 nullptr,
                 nullptr });
@@ -132,8 +132,7 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
                      eCommType_FORCES_GPU_SYNCHRONIZER,
                      comm_);
 
-            std::atomic<bool>* tmpPpCommEventRecordedPtr =
-                    reinterpret_cast<std::atomic<bool>*>((ppCommManagers_[i].eventRecorded.get()));
+            std::atomic<bool>* tmpPpCommEventRecordedPtr = &ppCommManagers_[i].eventRecorded->flag;
             tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
             MPI_Send(&tmpPpCommEventRecordedPtr,
@@ -221,8 +220,7 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(const int ppRank, const int nu
     }
 
     ppCommManagers_[ppRank].event->markEvent(*ppCommManagers_[ppRank].stream);
-    std::atomic<bool>* tmpPpCommEventRecordedPtr =
-            reinterpret_cast<std::atomic<bool>*>(ppCommManagers_[ppRank].eventRecorded.get());
+    std::atomic<bool>* tmpPpCommEventRecordedPtr = &ppCommManagers_[ppRank].eventRecorded->flag;
     tmpPpCommEventRecordedPtr->store(true, std::memory_order_release);
 }
 
