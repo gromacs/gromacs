@@ -111,7 +111,7 @@ struct t_trxstatus
     int                        natoms   = 0;
     std::vector<char>          persistent_line; /* Persistent line for reading g96 trajectories */
     CifTrajectory* cifReader = nullptr; /* Parsed multi-model mmCIF being read frame by frame */
-    int cifModelsWritten = 0; /* Number of models already streamed to an mmCIF trajectory */
+    int numCifModelsWritten = 0; /* Number of models already streamed to an mmCIF trajectory */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
@@ -460,9 +460,9 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
                                         fr->box,
                                         nind,
                                         ind,
-                                        status->cifModelsWritten + 1,
-                                        status->cifModelsWritten == 0);
-            status->cifModelsWritten++;
+                                        status->numCifModelsWritten + 1,
+                                        status->numCifModelsWritten == 0);
+            status->numCifModelsWritten++;
             break;
         case efG96:
             sprintf(title, "frame t= %.3f", fr->time);
@@ -635,9 +635,9 @@ int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)
                                         fr->box,
                                         fr->natoms,
                                         allIndex.data(),
-                                        status->cifModelsWritten + 1,
-                                        status->cifModelsWritten == 0);
-            status->cifModelsWritten++;
+                                        status->numCifModelsWritten + 1,
+                                        status->numCifModelsWritten == 0);
+            status->numCifModelsWritten++;
             break;
         }
         case efG96: write_g96_conf(gmx_fio_getfp(status->fio), title, fr, -1, nullptr); break;
@@ -866,11 +866,10 @@ static int pdb_first_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
     return fr->natoms;
 }
 
-static gmx_bool cif_next_x(t_trxstatus* status, t_trxframe* fr)
+static bool cif_next_x(t_trxstatus* status, t_trxframe* fr)
 {
     // The whole mmCIF file was parsed in cif_first_x; hand out one model per call.
-    return (status->cifReader != nullptr && CifIO::readTrajectoryFrame(status->cifReader, fr)) ? TRUE
-                                                                                               : FALSE;
+    return status->cifReader != nullptr && CifIO::readTrajectoryFrame(status->cifReader, fr);
 }
 
 static int cif_first_x(t_trxstatus* status, const std::filesystem::path& fn, t_trxframe* fr)

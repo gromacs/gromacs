@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2024- The GROMACS Authors
+ * Copyright 2026- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -86,9 +86,10 @@ std::vector<std::string> getColumn(ISTable* table, const std::string& name)
 }
 
 //! Value of column \p col at row \p row, or empty string if the column is absent.
-std::string cell(const std::vector<std::string>& col, size_t row)
+const std::string& cell(const std::vector<std::string>& col, size_t row)
 {
-    return (row < col.size()) ? col[row] : std::string();
+    static const std::string empty;
+    return (row < col.size()) ? col[row] : empty;
 }
 
 /*! \brief Row indices of the atom_site table that belong to the first model.
@@ -399,16 +400,16 @@ void CifIO::read(const std::filesystem::path& infile,
                       atoms->nr);
         }
 
-        const std::string chainStr = cell(chain, r);
+        const std::string& chainStr = cell(chain, r);
         if (natom > 0 && chainStr != prevChain)
         {
             chainnum++;
         }
         prevChain = chainStr;
 
-        const std::string resnm = cell(resName, r);
+        const std::string& resnm = cell(resName, r);
         const int         resnr = std::atoi(cell(seq, r).c_str());
-        const std::string ins   = cell(insCode, r);
+        const std::string& ins   = cell(insCode, r);
         const unsigned char resic   = isCifNull(ins) ? ' ' : static_cast<unsigned char>(ins[0]);
         const char          chainid = chainStr.empty() ? ' ' : chainStr[0];
 
@@ -426,7 +427,7 @@ void CifIO::read(const std::filesystem::path& infile,
             atoms->atom[natom].resind = atoms->atom[natom - 1].resind;
         }
 
-        const std::string elem = cell(element, r);
+        const std::string& elem = cell(element, r);
         atoms->atomname[natom]  = put_symtab(symtab, cell(atomName, r).c_str());
         atoms->atom[natom].m    = 0.0;
         atoms->atom[natom].q    = 0.0;
@@ -440,8 +441,8 @@ void CifIO::read(const std::filesystem::path& infile,
 
         if (atoms->pdbinfo != nullptr)
         {
-            const std::string group_r = cell(group, r);
-            const std::string alt     = cell(altLoc, r);
+            const std::string& group_r = cell(group, r);
+            const std::string& alt     = cell(altLoc, r);
             atoms->pdbinfo[natom].type = (group_r == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
             atoms->pdbinfo[natom].atomnr = std::atoi(cell(serial, r).c_str());
             atoms->pdbinfo[natom].altloc = isCifNull(alt) ? ' ' : alt[0];

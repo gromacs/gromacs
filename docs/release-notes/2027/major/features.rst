@@ -57,3 +57,14 @@ Configuring warns when a SYCL build for Intel GPUs is paired with a LibTorch
 without XPU support.
 
 :issue:`5754`
+Reading and writing of mmCIF/PDBx structure and trajectory files
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+|Gromacs| tools can now read and write structures in the mmCIF/PDBx format
+(``.cif``), the primary distribution format of the wwPDB. Extended PDB entry
+identifiers (the ``pdb_########`` form, up to 12 characters) and expanded
+chemical-component identifiers (up to 5 characters) are preserved on a
+read/write round trip. Multi-model ``.cif`` files can be read and written as
+trajectories, for example with :ref:`gmx trjconv`.
+
+:issue:`4753`
