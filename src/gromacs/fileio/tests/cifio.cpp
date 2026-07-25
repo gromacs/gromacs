@@ -145,6 +145,8 @@ protected:
             refX_[i][ZZ] = 0.15 * (i + 1);
         }
     }
+
+public:
     ~CifStructureIoTest() override
     {
         done_top(refTop_);
@@ -152,6 +154,7 @@ protected:
         sfree(refX_);
     }
 
+protected:
     //! Write the reference structure to a temporary .cif file and return its path.
     std::string writeReference(const char* suffix)
     {

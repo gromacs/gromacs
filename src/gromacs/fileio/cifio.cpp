@@ -731,7 +731,8 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
             std::string tok = row[k].empty() ? std::string(".") : row[k];
             if (tok.find(' ') != std::string::npos)
             {
-                tok = "'" + tok + "'";
+                tok.insert(tok.begin(), '\'');
+                tok.push_back('\'');
             }
             std::fprintf(out, "%s%s", tok.c_str(), (k + 1 < row.size()) ? " " : "\n");
         }

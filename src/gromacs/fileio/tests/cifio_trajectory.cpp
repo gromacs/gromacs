@@ -94,14 +94,17 @@ protected:
         box_[YY][YY] = 3.0;
         box_[ZZ][ZZ] = 3.0;
     }
+
+public:
     ~CifTrajectoryIoTest() override
     {
         done_atom(&atoms_);
         done_symtab(&symtab_);
     }
 
+protected:
     //! Coordinates for model \p m (models differ by a per-model x shift).
-    std::array<RVec, c_numAtoms> modelCoords(int m) const
+    static std::array<RVec, c_numAtoms> modelCoords(int m)
     {
         std::array<RVec, c_numAtoms> x;
         for (int i = 0; i < c_numAtoms; ++i)
