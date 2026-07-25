@@ -54,12 +54,12 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/testfilemanager.h"
 
@@ -111,7 +111,7 @@ protected:
         for (int i = 0; i < numAtoms_; ++i)
         {
             refTop_->atoms.atomname[i] = put_symtab(&refTop_->symtab, spec[i].atomName);
-            const bool newResidue = (spec[i].resNr != prevResNr || spec[i].chain != prevChain);
+            const bool newResidue      = (spec[i].resNr != prevResNr || spec[i].chain != prevChain);
             if (newResidue)
             {
                 ++resind;
@@ -121,18 +121,12 @@ protected:
             refTop_->atoms.atom[i].resind = resind;
             if (newResidue)
             {
-                t_atoms_set_resinfo(&refTop_->atoms,
-                                    i,
-                                    &refTop_->symtab,
-                                    spec[i].resName,
-                                    spec[i].resNr,
-                                    ' ',
-                                    0,
-                                    spec[i].chain);
+                t_atoms_set_resinfo(
+                        &refTop_->atoms, i, &refTop_->symtab, spec[i].resName, spec[i].resNr, ' ', 0, spec[i].chain);
                 prevResNr = spec[i].resNr;
                 prevChain = spec[i].chain;
             }
-            refTop_->atoms.pdbinfo[i].type  = spec[i].hetatm ? PdbRecordType::Hetatm : PdbRecordType::Atom;
+            refTop_->atoms.pdbinfo[i].type = spec[i].hetatm ? PdbRecordType::Hetatm : PdbRecordType::Atom;
             refTop_->atoms.pdbinfo[i].occup = 1.0;
             refTop_->atoms.pdbinfo[i].bfac  = 0.0;
         }
@@ -241,8 +235,8 @@ TEST_F(CifStructureIoTest, RoundTripPreservesLongComponentName)
             foundLongLigand = true;
         }
     }
-    EXPECT_TRUE(foundLongLigand)
-            << "5-character component name '" << c_longLigandName << "' was lost on read/write";
+    EXPECT_TRUE(foundLongLigand) << "5-character component name '" << c_longLigandName
+                                 << "' was lost on read/write";
 
     sfree(x);
     done_top(top);

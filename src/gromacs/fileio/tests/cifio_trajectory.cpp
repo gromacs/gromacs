@@ -44,8 +44,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fileio/cifio.h"
-
 #include <cstdio>
 
 #include <array>
@@ -54,12 +52,13 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/cifio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/utility/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/testfilemanager.h"
 
@@ -83,8 +82,8 @@ protected:
         const char* const names[c_numAtoms] = { "N", "CA", "C" };
         for (int i = 0; i < c_numAtoms; ++i)
         {
-            atoms_.atomname[i]     = put_symtab(&symtab_, names[i]);
-            atoms_.atom[i].resind  = 0;
+            atoms_.atomname[i]    = put_symtab(&symtab_, names[i]);
+            atoms_.atom[i].resind = 0;
         }
         t_atoms_set_resinfo(&atoms_, 0, &symtab_, "ALA", 1, ' ', 0, 'A');
         atoms_.nres = 1;
@@ -120,9 +119,9 @@ protected:
 
 TEST_F(CifTrajectoryIoTest, WriteReadTwoModelsRoundTrips)
 {
-    const std::string           cifFile = fileManager_.getTemporaryFilePath("traj.cif").string();
-    const std::array<int, c_numAtoms> index = { 0, 1, 2 };
-    const int                   numModels = 2;
+    const std::string cifFile = fileManager_.getTemporaryFilePath("traj.cif").string();
+    const std::array<int, c_numAtoms> index     = { 0, 1, 2 };
+    const int                         numModels = 2;
 
     // Stream two models to the file; the header is written with the first only.
     FILE* out = std::fopen(cifFile.c_str(), "w");

@@ -48,7 +48,6 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/utility/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -56,6 +55,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 // RCSB mmCIF library (bundled under src/external/mmcif-dict-suite-*). Kept
 // strictly inside this translation unit so that cifio.h stays free of any
@@ -152,10 +152,10 @@ void cellToBox(double a, double b, double c, double alpha, double beta, double g
         const double cosb = (beta != 90.0) ? std::cos(beta * gmx::c_deg2Rad) : 0.0;
         const double cosg = (gamma != 90.0) ? std::cos(gamma * gmx::c_deg2Rad) : 0.0;
         const double sing = (gamma != 90.0) ? std::sin(gamma * gmx::c_deg2Rad) : 1.0;
-        box[YY][XX] = fb * cosg;
-        box[YY][YY] = fb * sing;
-        box[ZZ][XX] = fc * cosb;
-        box[ZZ][YY] = fc * (cosa - cosb * cosg) / sing;
+        box[YY][XX]       = fb * cosg;
+        box[YY][YY]       = fb * sing;
+        box[ZZ][XX]       = fc * cosb;
+        box[ZZ][YY]       = fc * (cosa - cosb * cosg) / sing;
         box[ZZ][ZZ] = std::sqrt(fc * fc - box[ZZ][XX] * box[ZZ][XX] - box[ZZ][YY] * box[ZZ][YY]);
     }
     else
@@ -174,9 +174,7 @@ void readCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix b
         return;
     }
     auto get = [cellTable](const char* name) -> std::string
-    {
-        return cellTable->IsColumnPresent(name) ? (*cellTable)(0, name) : std::string();
-    };
+    { return cellTable->IsColumnPresent(name) ? (*cellTable)(0, name) : std::string(); };
     const std::string a = get("length_a");
     const std::string b = get("length_b");
     const std::string c = get("length_c");
@@ -210,8 +208,8 @@ std::string readEntryId(CifFile* cif, const std::string& block)
 {
     Block& b = cif->GetBlock(block);
     // _entry.id is the canonical (extended, up to 12 char) identifier.
-    if (ISTable* entry = b.GetTablePtr("entry"); entry != nullptr && entry->GetNumRows() > 0
-                                                 && entry->IsColumnPresent("id"))
+    if (ISTable* entry = b.GetTablePtr("entry");
+        entry != nullptr && entry->GetNumRows() > 0 && entry->IsColumnPresent("id"))
     {
         const std::string id = (*entry)(0, "id");
         if (!isCifNull(id))
@@ -220,8 +218,8 @@ std::string readEntryId(CifFile* cif, const std::string& block)
         }
     }
     // Fall back to a human-readable title, then to the deposition database code.
-    if (ISTable* st = b.GetTablePtr("struct"); st != nullptr && st->GetNumRows() > 0
-                                               && st->IsColumnPresent("title"))
+    if (ISTable* st = b.GetTablePtr("struct");
+        st != nullptr && st->GetNumRows() > 0 && st->IsColumnPresent("title"))
     {
         const std::string title = (*st)(0, "title");
         if (!isCifNull(title))
@@ -229,8 +227,8 @@ std::string readEntryId(CifFile* cif, const std::string& block)
             return title;
         }
     }
-    if (ISTable* db = b.GetTablePtr("database_2"); db != nullptr && db->GetNumRows() > 0
-                                                   && db->IsColumnPresent("database_code"))
+    if (ISTable* db = b.GetTablePtr("database_2");
+        db != nullptr && db->GetNumRows() > 0 && db->IsColumnPresent("database_code"))
     {
         const std::string code = (*db)(0, "database_code");
         if (!isCifNull(code))
@@ -306,12 +304,14 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
 //! The atom_site column names, in the order produced by buildAtomSiteRow().
 const std::vector<const char*>& atomSiteColumns()
 {
-    static const std::vector<const char*> columns = {
-        "group_PDB",   "id",           "type_symbol", "label_atom_id",
-        "label_comp_id", "label_asym_id", "label_seq_id", "Cartn_x",
-        "Cartn_y",     "Cartn_z",      "occupancy",   "B_iso_or_equiv",
-        "auth_seq_id", "auth_comp_id", "auth_asym_id", "pdbx_PDB_model_num"
-    };
+    static const std::vector<const char*> columns = { "group_PDB",     "id",
+                                                      "type_symbol",   "label_atom_id",
+                                                      "label_comp_id", "label_asym_id",
+                                                      "label_seq_id",  "Cartn_x",
+                                                      "Cartn_y",       "Cartn_z",
+                                                      "occupancy",     "B_iso_or_equiv",
+                                                      "auth_seq_id",   "auth_comp_id",
+                                                      "auth_asym_id",  "pdbx_PDB_model_num" };
     return columns;
 }
 
@@ -407,9 +407,9 @@ void CifIO::read(const std::filesystem::path& infile,
         }
         prevChain = chainStr;
 
-        const std::string& resnm = cell(resName, r);
-        const int         resnr = std::atoi(cell(seq, r).c_str());
-        const std::string& ins   = cell(insCode, r);
+        const std::string&  resnm   = cell(resName, r);
+        const int           resnr   = std::atoi(cell(seq, r).c_str());
+        const std::string&  ins     = cell(insCode, r);
         const unsigned char resic   = isCifNull(ins) ? ' ' : static_cast<unsigned char>(ins[0]);
         const char          chainid = chainStr.empty() ? ' ' : chainStr[0];
 
@@ -427,10 +427,10 @@ void CifIO::read(const std::filesystem::path& infile,
             atoms->atom[natom].resind = atoms->atom[natom - 1].resind;
         }
 
-        const std::string& elem = cell(element, r);
-        atoms->atomname[natom]  = put_symtab(symtab, cell(atomName, r).c_str());
-        atoms->atom[natom].m    = 0.0;
-        atoms->atom[natom].q    = 0.0;
+        const std::string& elem       = cell(element, r);
+        atoms->atomname[natom]        = put_symtab(symtab, cell(atomName, r).c_str());
+        atoms->atom[natom].m          = 0.0;
+        atoms->atom[natom].q          = 0.0;
         atoms->atom[natom].atomnumber = 0;
         std::strncpy(atoms->atom[natom].elem, elem.c_str(), sizeof(atoms->atom[natom].elem) - 1);
         atoms->atom[natom].elem[sizeof(atoms->atom[natom].elem) - 1] = '\0';
@@ -443,15 +443,16 @@ void CifIO::read(const std::filesystem::path& infile,
         {
             const std::string& group_r = cell(group, r);
             const std::string& alt     = cell(altLoc, r);
-            atoms->pdbinfo[natom].type = (group_r == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
+            atoms->pdbinfo[natom].type =
+                    (group_r == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
             atoms->pdbinfo[natom].atomnr = std::atoi(cell(serial, r).c_str());
             atoms->pdbinfo[natom].altloc = isCifNull(alt) ? ' ' : alt[0];
             std::strncpy(atoms->pdbinfo[natom].atomnm,
                          cell(atomName, r).c_str(),
                          sizeof(atoms->pdbinfo[natom].atomnm) - 1);
             atoms->pdbinfo[natom].atomnm[sizeof(atoms->pdbinfo[natom].atomnm) - 1] = '\0';
-            atoms->pdbinfo[natom].occup = std::strtod(cell(occCol, r).c_str(), nullptr);
-            atoms->pdbinfo[natom].bfac  = std::strtod(cell(bfacCol, r).c_str(), nullptr);
+            atoms->pdbinfo[natom].occup        = std::strtod(cell(occCol, r).c_str(), nullptr);
+            atoms->pdbinfo[natom].bfac         = std::strtod(cell(bfacCol, r).c_str(), nullptr);
             atoms->pdbinfo[natom].bAnisotropic = FALSE;
         }
         natom++;
@@ -520,8 +521,13 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
         const real gamma = (a * b != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]) : 90.0F;
 
         ISTable& cell = block.AddTable("cell");
-        for (const char* col : { "entry_id", "length_a", "length_b", "length_c", "angle_alpha",
-                                 "angle_beta", "angle_gamma" })
+        for (const char* col : { "entry_id",
+                                 "length_a",
+                                 "length_b",
+                                 "length_c",
+                                 "angle_alpha",
+                                 "angle_beta",
+                                 "angle_gamma" })
         {
             cell.AddColumn(col);
         }
@@ -638,7 +644,7 @@ bool CifIO::readTrajectoryFrame(CifTrajectory* traj, t_trxframe* fr)
     }
     const std::vector<unsigned int>& rows = traj->modelRows[traj->cursor];
     fr->natoms                            = traj->natoms;
-    const int n = std::min(traj->natoms, static_cast<int>(rows.size()));
+    const int n                           = std::min(traj->natoms, static_cast<int>(rows.size()));
     for (int i = 0; i < n; i++)
     {
         const unsigned int r = rows[i];
@@ -688,15 +694,16 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
         std::fprintf(out, "data_%s\n#\n", blockName.c_str());
         std::fprintf(out, "_entry.id   %s\n#\n", entryId.c_str());
 
-        const bool haveBox = box != nullptr
-                             && (norm2(box[XX]) != 0.0F || norm2(box[YY]) != 0.0F || norm2(box[ZZ]) != 0.0F);
+        const bool haveBox =
+                box != nullptr
+                && (norm2(box[XX]) != 0.0F || norm2(box[YY]) != 0.0F || norm2(box[ZZ]) != 0.0F);
         if (haveBox)
         {
-            const real a     = norm(box[XX]);
-            const real b     = norm(box[YY]);
-            const real c     = norm(box[ZZ]);
+            const real a = norm(box[XX]);
+            const real b = norm(box[YY]);
+            const real c = norm(box[ZZ]);
             const real alpha = (b * c != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[YY], box[ZZ]) : 90.0F;
-            const real beta  = (a * c != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]) : 90.0F;
+            const real beta = (a * c != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]) : 90.0F;
             const real gamma = (a * b != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]) : 90.0F;
             std::fprintf(out,
                          "_cell.length_a   %.3f\n_cell.length_b   %.3f\n_cell.length_c   %.3f\n",
@@ -704,7 +711,8 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
                          10.0 * b,
                          10.0 * c);
             std::fprintf(out,
-                         "_cell.angle_alpha   %.2f\n_cell.angle_beta   %.2f\n_cell.angle_gamma   %.2f\n#\n",
+                         "_cell.angle_alpha   %.2f\n_cell.angle_beta   %.2f\n_cell.angle_gamma   "
+                         "%.2f\n#\n",
                          alpha,
                          beta,
                          gamma);
