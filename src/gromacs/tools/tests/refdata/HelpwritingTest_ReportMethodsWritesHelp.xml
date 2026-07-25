@@ -18,7 +18,7 @@ OPTIONS
 Options to specify input files:
 
  -s      [<.tpr/.gro/...>]  (topol.tpr)
-           Run input file for report: tpr gro g96 pdb brk ent
+           Run input file for report: tpr gro g96 pdb cif brk ent
 
 Options to specify output files:
 

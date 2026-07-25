@@ -28,14 +28,14 @@ OPTIONS
 Options to specify input files:
 
  -s      [<.tpr/.gro/...>]  (topol.tpr)
-           Run input file to modify: tpr gro g96 pdb brk ent
+           Run input file to modify: tpr gro g96 pdb cif brk ent
  -n      [<.ndx>]           (index.ndx)      (Opt.)
            File containing additional index groups
 
 Options to specify output files:
 
  -o      [<.tpr/.gro/...>]  (tprout.tpr)     (Opt.)
-           Generated modified run input file: tpr gro g96 pdb brk ent
+           Generated modified run input file: tpr gro g96 pdb cif brk ent
 
 Other options:
 

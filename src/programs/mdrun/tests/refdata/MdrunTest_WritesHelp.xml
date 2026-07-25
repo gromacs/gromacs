@@ -151,7 +151,7 @@ Options to specify input files:
  -tableb [&lt;.xvg&gt; [...]]     (table.xvg)      (Opt.)
            xvgr/xmgr file
  -rerun  [&lt;.xtc/.trr/...&gt;]  (rerun.xtc)      (Opt.)
-           Trajectory: xtc trr cpt gro g96 pdb tng h5md
+           Trajectory: xtc trr cpt gro g96 pdb cif tng h5md
  -ei     [&lt;.edi&gt;]           (sam.edi)        (Opt.)
            ED sampling input
  -multidir [&lt;dir&gt; [...]]    (rundir)         (Opt.)
@@ -176,7 +176,7 @@ Options to specify output files:
  -cpo    [&lt;.cpt&gt;]           (state.cpt)      (Opt.)
            Checkpoint file
  -c      [&lt;.gro/.g96/...&gt;]  (confout.gro)
-           Structure file: gro g96 pdb brk ent esp
+           Structure file: gro g96 pdb cif brk ent esp
  -e      [&lt;.edr&gt;]           (ener.edr)
            Energy file
  -g      [&lt;.log&gt;]           (md.log)
