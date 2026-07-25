@@ -874,3 +874,41 @@ entity_link                              5  '_entity_link.entity_seq_num_2'     
 
     return (false);
 }
+
+bool CifExcept::CanRepresentAsScientific(const string& itemName)
+{
+    // If a floating point value can be represented in scientific notation.
+    // Requires a change in eTypeCode for XML schema writer
+    if (itemName == "_struct_ncs_oper.matrix[1][1]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[1][2]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[1][1]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[1][3]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[2][1]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[2][2]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[2][3]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[3][1]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[3][2]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.matrix[3][3]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.vector[1]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.vector[2]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.vector[3]")
+       return (true);
+    else if (itemName == "_struct_ncs_oper.vector[3]")
+       return (true);
+    else if (itemName == "_refine_ls_restr_ncs.rms_dev_position")
+       return (true);
+
+    return (false);
+}

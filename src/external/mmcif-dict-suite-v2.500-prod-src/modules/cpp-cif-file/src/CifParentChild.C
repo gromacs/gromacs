@@ -459,7 +459,7 @@ int CifParentChild::CheckParentChild(Block& block, ISTable& catTable,
             vector<string> childKeyNonEmptyItems;
 #ifdef JW_HACK
             vector<string> skippedParKeyItems;
-            iKeyDif=0;
+            [[clang::suppress]] iKeyDif=0;
             allowMissing=false;
 #endif
             for (unsigned int keyI = 0; keyI < comboKeys.size(); ++keyI)
@@ -497,7 +497,8 @@ int CifParentChild::CheckParentChild(Block& block, ISTable& catTable,
             {
                 // Parent table does not exist. Ignore this fact.
 #ifdef JW_HACK
-                if ((parCatName != "chem_comp_atom") && (parCatName != "atom_sites_alt") && check_flag)
+                if ((parCatName != "chem_comp_atom") && (parCatName != "atom_sites_alt") &&
+		    (parCatName != "pdbx_nonpoly_scheme") && check_flag)
                 {
                    log << "++ERROR - In block \"" << block.GetName() <<
                      "\", parent category \"" << parCatName <<

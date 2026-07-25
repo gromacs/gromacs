@@ -83,11 +83,38 @@ target_include_directories(mmcif SYSTEM PUBLIC
 # This is third-party code: keep it position-independent for a shared libgromacs
 # and silence its (many) warnings so it does not pollute the GROMACS build.
 set_target_properties(mmcif PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel|IntelLLVM")
     target_compile_options(mmcif PRIVATE -w)
 elseif(MSVC)
     target_compile_options(mmcif PRIVATE /w)
 endif()
+
+# ---------------------------------------------------------------------------
+# WORKAROUNDS for defects in the vendored RCSB sources.
+#
+# The two settings below work around problems that live in the upstream RCSB
+# code, not in GROMACS. They are TEMPORARY: the intent is to submit fixes to
+# the upstream project (https://github.com/rcsb/cpp-dict-pack); if/when those
+# are accepted and this vendored copy is updated, remove these workarounds.
+# See UPDATING.md ("Local workarounds") for details.
+#
+# 1. GenString.C/.h and GenCont.C use std::bind2nd / std::not1, deprecated in
+#    C++11 and removed from the standard library in C++17. libstdc++ still
+#    offers them as an extension, but libc++ does not once the TU is compiled
+#    as C++17+, so a C++20 GROMACS build fails to compile this library. Build
+#    just this vendored target as C++14, where the binders still exist
+#    everywhere; it is a standalone static library, so its language standard is
+#    independent of the rest of GROMACS.
+set_target_properties(mmcif PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
+#
+# 2. The Clang static analyzer (GMX_CLANG_ANALYZER) reports harmless dead stores
+#    in this third-party code, which fails the analyzer CI job. Those stores are
+#    annotated in the sources with [[clang::suppress]] (grep for it under
+#    modules/); a compiler-flag bypass is not possible because the analyzer
+#    build compiles with g++ -- which rejects Clang-only analyzer flags -- while
+#    only the analysis pass is Clang, and both share the compile command.
+# ---------------------------------------------------------------------------
 
 # Keep the target out of IDE clutter alongside the other bundled externals.
 set_target_properties(mmcif PROPERTIES FOLDER "External")

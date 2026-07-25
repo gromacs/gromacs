@@ -410,6 +410,8 @@ class CifFile : public TableFile
     **  \param[in] extraCifChecks - optional parameter that indicates whether
     **    to perform additional, non-standard, CIF checks. If not specified,
     **    those checks are not performed.
+    **  \param[in] skipBlockNames - optional parameter that if set, indicates a
+    **    set of blocks to skip.
     **
     **  \return 0 - if all checks passed
     **  \return different than 0 - if checks failed
@@ -421,7 +423,8 @@ class CifFile : public TableFile
     **  \exception: None
     */
     int DataChecking(CifFile& dicRef, const std::string& diagFileName,
-      const bool extraDictChecks = false, const bool extraCifChecks = false);
+      const bool extraDictChecks = false, const bool extraCifChecks = false,
+      const std::vector<std::string>& skipBlockNames = std::vector<std::string>());
 
     /**
     **  Checks a block of CIF file against the specified reference block.

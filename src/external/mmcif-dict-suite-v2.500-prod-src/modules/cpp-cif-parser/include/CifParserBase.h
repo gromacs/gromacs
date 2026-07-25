@@ -91,25 +91,6 @@ class CifParser : public CifScanner
           const std::string& parseLogFileName = std::string());
 
         /**
-        **  Parses the CIF file from an open FILE stream.
-        **
-        **  \param[in] cifIn - an open file input stream to the file
-        **    that is to be parsed.
-        **  \param[out] diagnostics - parsing result. If empty, parsing
-        **    completed with no warnings or errors. If non-empty, there were
-        **    parsing warnings and/or parsing errors.
-        **
-        **  \return None
-        **
-        **  \pre cifIn is open
-        **
-        **  \post cifIn is still open after writing the CIF file
-        **
-        **  \exception None
-        */
-        void Parse(FILE *cifIn, string &diagnostics);
-
-    /**
         **  Parses the CIF data in a string.
         **
         **  \param[in] cifString - a string that contains CIF data that is to

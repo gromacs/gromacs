@@ -32,6 +32,7 @@ class CifExcept
     static bool CanBeInapplicable(const std::string& itemName);
     static bool IsBadParentRelation(const std::string& itemName);
     static bool IsBadChildRelation(const std::string& itemName);
+    static bool CanRepresentAsScientific(const std::string& itemName);
 };
 
 

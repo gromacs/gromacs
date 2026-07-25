@@ -16,6 +16,7 @@
 
 #include <stdexcept>
 #include <set>
+#include <algorithm>
 
 #include "GenString.h"
 #include "RcsbFile.h"
@@ -211,15 +212,19 @@ void CifFile::Write(ostream& cifo, const vector<string>& catOrder,
   const bool writeEmptyTables)
 {
 
-    vector<bool> processedTables(GetTotalNumTables());
     vector<unsigned int> tables;
     unsigned int tableIndex = 0;
 
+    // tables is a list broken into segments of # tables/data block 
+    // providing the index of tables to output
+
     // VLAD : Can this be improved by first searching the category and
     // then doing something about it? Well maybe this is not doable.
-    for (unsigned int blockI = 0, numTables = 0; blockI < _blocks.size();
+    for (unsigned int blockI = 0; blockI < _blocks.size();
       blockI++)
     {
+        vector<bool> processedTables(_blocks[blockI]._tables.size());
+
         for (unsigned int l = 0; l < catOrder.size(); l++)
         {
             tableIndex = _blocks[blockI]._tables.\
@@ -228,29 +233,26 @@ void CifFile::Write(ostream& cifo, const vector<string>& catOrder,
             if (tableIndex != _blocks[blockI]._tables.size())
             {
                 tables.push_back(tableIndex);
-                processedTables[tableIndex + numTables] = true;
+                processedTables[tableIndex] = true;
             }
             else
             {
-                processedTables[tableIndex + numTables] = false;
+                processedTables[tableIndex] = false;
             }
         }
-        numTables += _blocks[blockI]._tables.size();
-    }
 
-    for (unsigned int blockI = 0, numTables = 0; blockI < _blocks.size();
-      ++blockI)
-    {
+	// Now fill in the tables index that were missed -- critical for multi datablock files
+	// that tables are 
         for (unsigned int tableI = 0; tableI < _blocks[blockI]._tables.size();
           ++tableI)
         {
-            if (!processedTables[tableI + numTables])
+            if (!processedTables[tableI])
             {
                 tables.push_back(tableI);
             }
         }
-        numTables += _blocks[blockI]._tables.size();
-    }
+
+    } // for blockI
 
     Write(cifo, tables, writeEmptyTables);
 
@@ -293,7 +295,8 @@ void CifFile::WriteNmrStar(const string& nmrStarFileName,
 
 
 int CifFile::DataChecking(CifFile& ref, const string& diagFileName,
-  const bool extraDictChecks, const bool extraCifChecks)
+  const bool extraDictChecks, const bool extraCifChecks,
+  const std::vector<std::string>& skipBlockNames)
 {
     _extraDictChecks = extraDictChecks;
     _extraCifChecks = extraCifChecks;
@@ -321,6 +324,13 @@ int CifFile::DataChecking(CifFile& ref, const string& diagFileName,
     {
         Block& block = GetBlock(BlockNames[blockI]);
 
+	if (skipBlockNames.size() > 0) {
+	  std::string bName = block.GetName();
+	  if (std::find(skipBlockNames.begin(), skipBlockNames.end(), bName) != skipBlockNames.end()) {
+	      continue;
+	  }
+	}
+	
         ostringstream buf;
 
         ret = DataChecking(block, refBlock, buf, extraDictChecks,
@@ -404,6 +414,9 @@ int CifFile::_IsQuotableText(const string& itemValue)
       if (itemValue[i] == ' ')
           return(1);
 
+      if (itemValue[i] == '\t')
+          return(1);
+      
       if (itemValue[i] == '\n')
           return(1);
 
@@ -431,6 +444,10 @@ int CifFile::_IsQuotableText(const string& itemValue)
   if (String::IsCiEqual(itemValue.substr(0, 5), "loop_"))
       return(1);
   if (String::IsCiEqual(itemValue.substr(0, 5), "save_"))
+      return(1);
+  if (String::IsCiEqual(itemValue.substr(0, 5), "stop_"))
+      return(1);
+  if (String::IsCiEqual(itemValue.substr(0, 7), "global_"))
       return(1);
 
   return(0);
@@ -602,7 +619,7 @@ int CifFile::_PrintItemValue(ostream& cifo, const string& itemValue,
 
     for (unsigned int i = 0; i < str_len; i++)
     {
-        if (itemValue[i] == ' ')
+        if (itemValue[i] == ' ' || itemValue[i] == '\t')
             multipleWord = true;
         else if (itemValue[i] == '\n')
             multipleLine = true;
@@ -637,6 +654,10 @@ int CifFile::_PrintItemValue(ostream& cifo, const string& itemValue,
     if (String::IsCiEqual(itemValue.substr(0, 5), "loop_"))
         multipleWord = true;
     if (String::IsCiEqual(itemValue.substr(0, 5), "save_"))
+        multipleWord = true;
+    if (String::IsCiEqual(itemValue.substr(0, 5), "stop_"))
+        multipleWord = true;
+    if (String::IsCiEqual(itemValue.substr(0, 7), "global_"))
         multipleWord = true;
 
     if (embeddedQuotes && multipleWord)
@@ -874,6 +895,10 @@ int CifFile::_PrintItemNameInHeader(ostream& cifo, const string& itemValue,
     if (String::IsCiEqual(itemValue.substr(0, 5), "loop_"))
         multipleWord = true;
     if (String::IsCiEqual(itemValue.substr(0, 5), "save_"))
+        multipleWord = true;
+    if (String::IsCiEqual(itemValue.substr(0, 5), "stop_"))
+        multipleWord = true;
+    if (String::IsCiEqual(itemValue.substr(0, 7), "global_"))
         multipleWord = true;
 
     if (embeddedQuotes && multipleWord)

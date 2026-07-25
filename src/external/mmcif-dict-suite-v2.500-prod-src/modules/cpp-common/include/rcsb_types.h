@@ -25,7 +25,8 @@ enum eTypeCode
     eTYPE_CODE_STRING,     // 3
     eTYPE_CODE_TEXT,       // 4
     eTYPE_CODE_DATETIME,   // 5
-    eTYPE_CODE_BIGINT      // 6
+    eTYPE_CODE_BIGINT,     // 6
+    eTYPE_CODE_FLOAT_SCI   // 7 - float representing scientific notation - used for XML types
 };
 
 #endif // RCSB_TYPES_H not defined

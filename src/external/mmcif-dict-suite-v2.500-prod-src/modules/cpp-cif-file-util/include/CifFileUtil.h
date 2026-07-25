@@ -21,7 +21,8 @@ DicFile* GetDictFile(DicFile* ddlFileP, const std::string& dictFileName,
 void CheckDict(DicFile* dictFileP, DicFile* ddlFileP,
   const string& dictFileName, const bool extraDictChecks = false);
 void CheckCif(CifFile* cifFileP, DicFile* dictFileP,
-  const string& cifFileName, const bool extraCifChecks = false);
+  const string& cifFileName, const bool extraCifChecks = false,
+  const std::vector<std::string>& skipBlockNames = std::vector<std::string>());
 
 DicFile* ParseDict(const std::string& dictFileName, DicFile* ddlFileP = NULL,
   const bool verbose = false);

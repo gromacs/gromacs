@@ -1979,15 +1979,15 @@ int ISTable::WriteObjectV9(Serializer* ser, int& size)
 
     UInt32 firstIndex = ser->WriteString(_version);
 
-    UInt32 currIndex = ser->WriteString(_name);
+    [[clang::suppress]] UInt32 currIndex = ser->WriteString(_name);
 
-    currIndex = ser->WriteUInt32(_ittables.size());
+    [[clang::suppress]] currIndex = ser->WriteUInt32(_ittables.size());
 
     int unused = 0;
     for (unsigned int tableI = 0; tableI < _ittables.size(); ++tableI)
         _ittables[tableI].Write(ser, unused);
 
-    currIndex = ser->WriteUInt32(_colCaseSense);
+    [[clang::suppress]] currIndex = ser->WriteUInt32(_colCaseSense);
 
     currIndex = ser->WriteUInt32(_colNames.size());
 
@@ -1998,23 +1998,23 @@ int ISTable::WriteObjectV9(Serializer* ser, int& size)
         return (firstIndex);
     }
 
-    currIndex = ser->WriteStrings(_colNames.get_vector());
+    [[clang::suppress]] currIndex = ser->WriteStrings(_colNames.get_vector());
 
-    currIndex = ser->WriteUInt32s(_precision);
+    [[clang::suppress]] currIndex = ser->WriteUInt32s(_precision);
 
     string optsToWrite(_colNames.size(), ' ');
     for (unsigned int j = 0; j < _colNames.size(); ++j)
     {
         optsToWrite[j] = _compare_opts[j];
     }
-    currIndex = ser->WriteString(optsToWrite);
+    [[clang::suppress]] currIndex = ser->WriteString(optsToWrite);
 
     num = _indexNames.size();
     currIndex = ser->WriteUInt32(num);
 
     if (num != 0)
     {
-        currIndex = ser->WriteStrings(_indexNames);
+        [[clang::suppress]] currIndex = ser->WriteStrings(_indexNames);
 
         currIndex = ser->WriteUInt32s(_unique);
 
@@ -2641,7 +2641,7 @@ int ISTable::GetObjectV2(UInt32 index, Serializer* ser) {
 
   if ((version==3) || (version==4))
   {
-    num = ser->ReadUInt32(index);index++;
+    [[clang::suppress]] num = ser->ReadUInt32(index);index++;
     vector<UInt32> kToGet;
     ser->ReadUInt32s(kToGet, index);index++;
     kToGet.clear();
@@ -2803,7 +2803,7 @@ int ISTable::GetObjectV2(UInt32 index, Serializer* ser) {
   }
 
    // Correct the members
-  numRows -= numDels;
+  [[clang::suppress]] numRows -= numDels;
 
   // EnlargeRowMap(numRows);
 

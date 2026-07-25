@@ -102,7 +102,7 @@ CifParser::CifParser(CifFile *fo, CifFileReadDef readDef, bool verbose)
 }
 
 void CifParser::Parse(const string& fileName, string& diagnostics,
-                      const string& parseLogFileName)
+  const string& parseLogFileName)
 {
     diagnostics.clear();
 
@@ -110,10 +110,10 @@ void CifParser::Parse(const string& fileName, string& diagnostics,
 
     if ((cifIn = fopen(fileName.c_str(), "r")) == NULL)
     {
-        diagnostics = "Unable to open file.";
+      diagnostics = "Unable to open file.";
 
-        throw NotFoundException("File \"" + fileName + "\" cannot be opened",
-                                "CifParser::Parse");
+      throw NotFoundException("File \"" + fileName + "\" cannot be opened",
+        "CifParser::Parse");
     }
 
     string logFileName;
@@ -130,7 +130,18 @@ void CifParser::Parse(const string& fileName, string& diagnostics,
 
     OpenLog(logFileName, _verbose);
 
-    Parse(cifIn, diagnostics);
+    cifparser_in = cifIn;
+
+    int ret;
+
+    cifparser_restart(cifparser_in);
+
+    ret = cifparser_parse();
+    if (ret != 0)
+    {
+        int b = 0;
+        b++;
+    }
 
     fclose(cifIn);
 
@@ -143,17 +154,6 @@ void CifParser::Parse(const string& fileName, string& diagnostics,
     {
         log.close();
     }
-}
-
-void CifParser::Parse(FILE* cifIn, string &diagnostics) {
-
-    cifparser_in = cifIn;
-
-    int ret;
-
-    cifparser_restart(cifparser_in);
-
-    ret = cifparser_parse();
 
     if (this->errorLog.size() > 0)
     {
