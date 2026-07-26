@@ -44,6 +44,7 @@
 #define NBLIB_GMXBACKENDDATA_H
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -105,7 +106,7 @@ public:
     std::unique_ptr<gmx::nonbonded_verlet_t> nbv_;
 
     //! Only shift_vec is used
-    t_forcerec forcerec_{ false };
+    t_forcerec forcerec_{ gmx::HostAllocationPolicy{} };
 
     //! Parameters for various interactions in the system
     interaction_const_t interactionConst_;

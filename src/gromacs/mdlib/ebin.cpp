@@ -130,8 +130,8 @@ void t_ebin::addValues(const int entryIndex, const gmx::ArrayRef<const real> ene
         {
             for (int i = 0; i < gmx::ssize(ener); i++)
             {
-                accumulation_.energies_[entryIndex + i].eav  = 0;
-                accumulation_.energies_[entryIndex + i].esum = ener[i];
+                accumulation_.energies_[entryIndex + i].sumSqDev = 0;
+                accumulation_.energies_[entryIndex + i].esum     = ener[i];
                 simulationAccumulation_.energies_[entryIndex + i].esum += ener[i];
             }
         }
@@ -147,7 +147,7 @@ void t_ebin::addValues(const int entryIndex, const gmx::ArrayRef<const real> ene
                 /* first update sigma, then sum */
                 const double diff = accumulation_.energies_[entryIndex + i].esum - m * e;
 
-                accumulation_.energies_[entryIndex + i].eav += diff * diff * invmm;
+                accumulation_.energies_[entryIndex + i].sumSqDev += diff * diff * invmm;
                 accumulation_.energies_[entryIndex + i].esum += e;
                 simulationAccumulation_.energies_[entryIndex + i].esum += e;
             }
@@ -192,15 +192,15 @@ void t_ebin::addValuesIndexed(const int                 entryIndex,
             {
                 if (m == 0)
                 {
-                    energyEntry->eav  = 0;
-                    energyEntry->esum = theEnergy;
+                    energyEntry->sumSqDev = 0;
+                    energyEntry->esum     = theEnergy;
                     simEnergyEntry->esum += theEnergy;
                 }
                 else
                 {
                     /* first update sigma, then sum */
                     double diff = energyEntry->esum - m * theEnergy;
-                    energyEntry->eav += diff * diff * invmm;
+                    energyEntry->sumSqDev += diff * diff * invmm;
                     energyEntry->esum += theEnergy;
                     simEnergyEntry->esum += theEnergy;
                 }
@@ -244,8 +244,8 @@ void t_ebin::restoreFromEnergyHistory(const energyhistory_t& enerhist)
 
     for (int i = 0; i < nener_; i++)
     {
-        accumulation_.energies_[i].eav  = (enerhist.nsum > 0 ? enerhist.ener_ave[i] : 0);
-        accumulation_.energies_[i].esum = (enerhist.nsum > 0 ? enerhist.ener_sum[i] : 0);
+        accumulation_.energies_[i].sumSqDev = (enerhist.nsum > 0 ? enerhist.ener_sumSqDev[i] : 0);
+        accumulation_.energies_[i].esum     = (enerhist.nsum > 0 ? enerhist.ener_sum[i] : 0);
         simulationAccumulation_.energies_[i].esum =
                 (enerhist.nsum_sim > 0 ? enerhist.ener_sum_sim[i] : 0);
     }

@@ -67,7 +67,7 @@ using CharPtr = std::conditional_t<std::is_const_v<std::remove_pointer_t<TPtr>>,
  * negative offsets.
  */
 template<typename ValueType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE IndexType calculateOffset(IndexType index)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE IndexType calculateOffset(IndexType index)
 {
     __builtin_assume(index >= 0);
     return index * static_cast<IndexType>(sizeof(ValueType));
@@ -80,8 +80,7 @@ static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE IndexType calcula
  * of 64-bit vector versions, saving a few instructions for computing 64-bit vector addresses.
  */
 template<typename PointerType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType indexedAddress(PointerType address,
-                                                                                          IndexType idx)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE PointerType indexedAddress(PointerType address, IndexType idx)
 {
     return reinterpret_cast<PointerType>(reinterpret_cast<CharPtr<decltype(address)>>(address)
                                          + calculateOffset<std::remove_pointer_t<PointerType>>(idx));
@@ -104,7 +103,7 @@ static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType index
  * Ref: https://gpuopen.com/learn/amd-gcn-assembly-cross-lane-operations
  */
 template<class T, int dppCtrl, int rowMask = 0xf, int bankMask = 0xf, bool boundCtrl = true>
-GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE T amdDppUpdateShfl(const T& input)
+GMX_DEVICE_FUNC_ATTRIBUTE T amdDppUpdateShfl(const T& input)
 {
     static constexpr int c_wordCount = gmx::divideRoundUp(sizeof(T), sizeof(int));
 
@@ -273,7 +272,7 @@ GMX_FUNC_ATTRIBUTE static AmdPackedFloat3 operator*(const float& s, const AmdPac
  */
 #    if GMX_GPU_HIP
 template<typename BufferType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-static inline __device__ GMX_ALWAYS_INLINE_ATTRIBUTE void
+static inline GMX_DEVICE_FUNC_ATTRIBUTE void
 amdFastAtomicAddForce(BufferType* buffer, IndexType idx, IndexType component, float value)
 {
     BufferType* indexedBuffer = indexedAddress(buffer, idx);
@@ -292,12 +291,12 @@ private:
 public:
     GMX_DEVICE_ATTRIBUTE AmdFastBuffer(ValueType* buffer) : buffer_(buffer) {}
     template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-    inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE const ValueType& operator[](IndexType idx) const
+    inline GMX_DEVICE_FUNC_ATTRIBUTE const ValueType& operator[](IndexType idx) const
     {
         return *indexedAddress(buffer_, idx);
     }
     template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-    inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE ValueType& operator[](IndexType idx)
+    inline GMX_DEVICE_FUNC_ATTRIBUTE ValueType& operator[](IndexType idx)
     {
         return *indexedAddress(buffer_, idx);
     }

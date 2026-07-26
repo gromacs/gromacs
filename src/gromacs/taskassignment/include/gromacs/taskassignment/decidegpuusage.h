@@ -94,6 +94,8 @@ class MDAtoms;
 
 bool canUseGpusForNonbonded(const t_inputrec& ir, bool doRerun, std::string* error);
 
+bool canUseGpusForNonbondedFe(const t_inputrec& ir, std::string* error);
+
 /*! \brief Decide whether this thread-MPI simulation will run
  * nonbonded tasks on GPUs.
  *
@@ -195,13 +197,17 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
 /*! \brief Decide whether the simulation will try to run nonbonde FE tasks on GPUs.
  *
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
- * \param[in]  nonBondedFeTarget         The user's choice for mdrun -nbfe for where to assign tasks.
+ * \param[in]  nonBondedFeTarget         The user's choice for mdrun -nbfe for where to assign
+ *                                       tasks.
+ * \param[in]  inputrec                  The user input
  *
  * \returns    Whether the simulation will run nonbonded fe tasks on GPUs.
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
-bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget nonBondedFeTarget);
+bool decideWhetherToUseGpusForNonbondedFE(bool              useGpuForNonbonded,
+                                          TaskTarget        nonBondedFeTarget,
+                                          const t_inputrec& inputrec);
 
 /*! \brief Decide whether the simulation will try to run tasks of
  * different types on GPUs.

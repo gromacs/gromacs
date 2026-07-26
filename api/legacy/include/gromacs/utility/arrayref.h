@@ -159,12 +159,13 @@ public:
      */
     ArrayRef() : begin_(nullptr), end_(nullptr) {}
     /*! \brief
-     * Constructs a reference to a container or reference
+     * Constructs a reference to a container or another ArrayRef (lvalue overload)
      *
-     * \param[in] o container to reference.
+     * \param[in] o container or ArrayRef to reference.
      *
-     * Can be used to create a reference to a whole vector, std::array or
-     * an ArrayRef. The destination has to have a convertible pointer type
+     * Can be used to create a reference to a whole vector, std::array, or
+     * another ArrayRef (e.g., ArrayRef<int> to ArrayRef<const int>).
+     * The destination has to have a convertible pointer type
      * (identical besides const or base class).
      *
      * Passed container must remain valid and not be reallocated for the
@@ -173,7 +174,23 @@ public:
      * This constructor is not explicit to allow directly passing
      * a container to a method that takes ArrayRef.
      */
-    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename std::remove_reference_t<U>::pointer, pointer>>>
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename U::pointer, pointer>>>
+    ArrayRef(U& o) : begin_(o.data()), end_(o.data() + o.size())
+    {
+    }
+    /*! \brief
+     * Constructs a reference to a container or another ArrayRef (rvalue overload)
+     *
+     * \param[in] o container or ArrayRef to reference.
+     *
+     * This overload allows passing temporary containers directly to functions
+     * taking ArrayRef. The temporary lives for the full statement, so this is
+     * safe for immediate use but dangerous if the ArrayRef is stored.
+     *
+     * This constructor is not explicit to allow directly passing
+     * a temporary to a method that takes ArrayRef.
+     */
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename U::pointer, pointer>>>
     ArrayRef(U&& o) : begin_(o.data()), end_(o.data() + o.size())
     {
     }

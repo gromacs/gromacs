@@ -59,10 +59,10 @@
 #include <memory>
 #include <optional>
 
-#include "gromacs/math/matrix.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/vectypes.h"
 
 struct gmx_domdec_t;

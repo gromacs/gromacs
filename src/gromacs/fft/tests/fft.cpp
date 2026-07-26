@@ -348,7 +348,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
     t_complex* cdata;
     ivec       local_ndata, offset, realGridSizePadded, complexGridSizePadded, complex_order;
 
-    gmx_parallel_3dfft_init(&fft_, realGridSize, &rdata, &cdata, comm, TRUE, 1);
+    gmx_parallel_3dfft_init(&fft_, realGridSize, &rdata, &cdata, comm, TRUE, 1, nullptr);
 
     gmx_parallel_3dfft_real_limits(fft_, local_ndata, offset, realGridSizePadded);
     gmx_parallel_3dfft_complex_limits(fft_, complex_order, local_ndata, offset, complexGridSizePadded);

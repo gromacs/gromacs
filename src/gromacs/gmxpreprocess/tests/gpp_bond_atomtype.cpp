@@ -52,6 +52,13 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+namespace gmx
+{
+namespace test
+{
+namespace
+{
+
 class PreprocessingBondAtomTypeTest : public ::testing::Test
 {
 public:
@@ -151,3 +158,6 @@ TEST_F(PreprocessingBondAtomTypeTest, NoNameFromIncorrectTypeNumber)
 {
     EXPECT_FALSE(bat_.atomNameFromBondAtomType(-1).has_value());
 }
+} // namespace
+} // namespace test
+} // namespace gmx

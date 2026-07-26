@@ -50,6 +50,7 @@ gromacs:gcc-11-hip-710-mpi:release:build:
 gromacs:gcc-11-hip-710-mpi:release:test:
   extends:
     - .gromacs:base:test
+    - .use-gpu-aware-mpi-test:base
   rules:
     - !reference [.rules:nightly-only-for-release, rules]                 
   stage: release-tests

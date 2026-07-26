@@ -63,13 +63,13 @@ static inline int get_2log(int n)
 {
     if (!isPowerOfTwo(n))
     {
-        gmx_fatal(FARGS, "nbnxn na_c (%d) is not a power of 2", n);
+        gmx_fatal(FARGS, "nbnxm na_c (%d) is not a power of 2", n);
     }
 
     return log2I(n);
 }
 
-//! The nbnxn i-cluster size in atoms for the given NBNxM kernel type
+//! The nbnxm i-cluster size in atoms for the given NBNxM kernel type
 static constexpr int sc_iClusterSize(const NbnxmKernelType kernelType)
 {
     switch (kernelType)
@@ -85,7 +85,7 @@ static constexpr int sc_iClusterSize(const NbnxmKernelType kernelType)
     }
 }
 
-/*! \brief The nbnxn j-cluster size in atoms for the given NBNxM kernel type
+/*! \brief The nbnxm j-cluster size in atoms for the given NBNxM kernel type
  *
  * \note When including this file in files compiled for SYCL devices only,
  *       this function can not be called for SIMD kernel types. This is asserted.
@@ -150,7 +150,7 @@ real nbnxmPairlistVolumeRadiusIncrease(bool useGpu, real atomDensity);
  * \note This routine does not know which cluster layout is used and assumes the most common one.
  *       Therefore this should only be used to estimates, not for setting a pair list buffer.
  */
-real nbnxn_get_rlist_effective_inc(int clusterSize, const RVec& averageClusterBoundingBox);
+real nbnxm_get_rlist_effective_inc(int clusterSize, const RVec& averageClusterBoundingBox);
 
 } // namespace gmx
 

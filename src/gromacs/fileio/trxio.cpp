@@ -113,12 +113,12 @@ struct t_trxstatus
 
 /* utility functions */
 
-gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
+gmx_bool bRmod_fd(double a, double b, double c, gmx_bool compareTimesAsDouble)
 {
     int    iq;
     double tol;
 
-    tol = 2 * (bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
+    tol = 2 * (compareTimesAsDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
 
     iq = static_cast<int>((a - b + tol * a) / c);
 
@@ -126,14 +126,22 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 }
 
 
-int check_times2(real t, real t0, gmx_bool bDouble)
+/* This routine checks if the read-in time is correct or not;
+ * returns -1 if t<tbegin or t MOD dt = t0,
+ *          0 if tbegin <= t <=tend+margin,
+ *          1 if t>tend
+ * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
+ * tp and tpp should be the time of the previous frame and the one before.
+ * The mod is done with single or double precision accuracy depending
+ * on the value of compareTimesAsDouble. That value should be true only when
+ * a double-precision build of GROMACS is reading a file written in
+ * double precision.
+ */
+static int check_times2(real t, real t0, gmx_bool compareTimesAsDouble)
 {
+    GMX_ASSERT(GMX_DOUBLE || !compareTimesAsDouble,
+               "Only a double-precision build can compare times as double");
     int r;
-
-#if !GMX_DOUBLE
-    /* since t is float, we can not use double precision for bRmod */
-    bDouble = FALSE;
-#endif
 
     r              = -1;
     auto startTime = timeValue(TimeControl::Begin);
@@ -142,7 +150,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
     if ((!startTime.has_value() || (t >= startTime.value()))
         && (!endTime.has_value() || (t <= endTime.value())))
     {
-        if (deltaTime.has_value() && !bRmod_fd(t, t0, deltaTime.value(), bDouble))
+        if (deltaTime.has_value() && !bRmod_fd(t, t0, deltaTime.value(), compareTimesAsDouble))
         {
             r = -1;
         }
@@ -309,7 +317,6 @@ void clear_trxframe(t_trxframe* fr, gmx_bool bFirst)
     fr->bBox      = FALSE;
     if (bFirst)
     {
-        fr->bDouble   = FALSE;
         fr->natoms    = -1;
         fr->step      = 0;
         fr->time      = 0;
@@ -665,7 +672,7 @@ void close_trx(t_trxstatus* status)
 
 void done_trx_xframe(t_trxstatus* status)
 {
-    done_frame(status->xframe);
+    gmx::done_frame(status->xframe);
     sfree(status->xframe);
 }
 
@@ -695,12 +702,11 @@ static gmx_bool gmx_next_frame(t_trxstatus* status, t_trxframe* fr)
 
     if (gmx_trr_read_frame_header(status->fio, &sh, &bOK))
     {
-        fr->bDouble   = sh.bDouble;
         fr->natoms    = sh.natoms;
         fr->bStep     = TRUE;
         fr->step      = sh.step;
         fr->bTime     = TRUE;
-        fr->time      = sh.t;
+        fr->time      = static_cast<double>(sh.t);
         fr->bLambda   = TRUE;
         fr->bFepState = TRUE;
         fr->lambda    = sh.lambda;
@@ -836,6 +842,11 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
 
     pt = status->tf;
 
+    MSVC_DIAGNOSTIC_IGNORE(6237) // We intend to skip calling gmx_fio_is_double sometimes
+    const bool buildIsDoublePrecision = GMX_DOUBLE;
+    const bool compareTimesAsDouble =
+            (buildIsDoublePrecision && (status->fio ? gmx_fio_is_double(status->fio) : false));
+    MSVC_DIAGNOSTIC_RESET
     do
     {
         clear_trxframe(fr, FALSE);
@@ -855,6 +866,8 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 break;
             }
             case efXTC:
+            {
+                real timeAsReal;
                 if (startTime.has_value() && (status->tf < startTime.value()))
                 {
                     if (xtc_seek_time(status->fio, startTime.value(), fr->natoms, TRUE))
@@ -867,13 +880,17 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                     initcount(status);
                 }
                 bRet      = (read_next_xtc(
-                                status->fio, fr->natoms, &fr->step, &fr->time, fr->box, fr->x, &fr->prec, &bOK)
+                                status->fio, fr->natoms, &fr->step, &timeAsReal, fr->box, fr->x, &fr->prec, &bOK)
                         != 0);
                 fr->bPrec = (bRet && fr->prec > 0);
                 fr->bStep = bRet;
                 fr->bTime = bRet;
                 fr->bX    = bRet;
                 fr->bBox  = bRet;
+                if (bRet)
+                {
+                    fr->time = static_cast<double>(timeAsReal);
+                }
                 if (!bOK)
                 {
                     /* Actually the header could also be not ok,
@@ -881,6 +898,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                     fr->not_ok = DATA_NOT_OK;
                 }
                 break;
+            }
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
             case efH5MD: bRet = status->h5md->readNextFrame(fr); break;
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
@@ -905,7 +923,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             bSkip        = FALSE;
             if (!bMissingData)
             {
-                ct = check_times2(fr->time, status->t0, fr->bDouble);
+                ct = check_times2(fr->time, status->t0, compareTimesAsDouble);
                 if (ct == 0 || ((status->flags & TRX_DONT_SKIP) && ct < 0))
                 {
                     printcount(status, oenv, fr->time, FALSE);
@@ -944,6 +962,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
 {
     t_fileio* fio = nullptr;
     gmx_bool  bFirst, bOK;
+    real      timeAsReal;
 
     clear_trxframe(fr, TRUE);
 
@@ -976,7 +995,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
         case efCPT:
             // Only one frame can be read from a checkpoint, so we don't
             // want to leave an open file handle around.
-            read_checkpoint_trxframe(fn, fr);
+            gmx::read_checkpoint_trxframe(fn, fr);
             bFirst = FALSE;
             break;
         case efG96:
@@ -1003,7 +1022,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             break;
         }
         case efXTC:
-            if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x, &fr->prec, &bOK) == 0)
+            if (read_first_xtc(fio, &fr->natoms, &fr->step, &timeAsReal, fr->box, &fr->x, &fr->prec, &bOK) == 0)
             {
                 GMX_RELEASE_ASSERT(!bOK,
                                    "Inconsistent results - OK status from read_first_xtc, but 0 "
@@ -1022,6 +1041,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                 fr->bTime = TRUE;
                 fr->bX    = TRUE;
                 fr->bBox  = TRUE;
+                fr->time  = static_cast<double>(timeAsReal);
                 printcount(*status, oenv, fr->time, FALSE);
             }
             bFirst = FALSE;

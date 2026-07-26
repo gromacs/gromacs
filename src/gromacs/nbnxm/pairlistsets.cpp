@@ -52,7 +52,7 @@ namespace gmx
 {
 
 const PlainPairlist& PairlistSets::plainPairlist(const real              range,
-                                                 const nbnxn_atomdata_t& nbat,
+                                                 const nbnxm_atomdata_t& nbat,
                                                  ArrayRef<const int>     atomIndices)
 {
     GMX_RELEASE_ASSERT(includesAllPairs_ == true,

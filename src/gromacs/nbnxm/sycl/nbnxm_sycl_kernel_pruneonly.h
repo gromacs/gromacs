@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares nbnxn sycl helper functions
+ * Declares nbnxm sycl helper functions
  *
  * \ingroup module_nbnxm
  */

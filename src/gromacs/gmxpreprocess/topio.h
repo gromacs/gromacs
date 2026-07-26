@@ -47,7 +47,6 @@
 struct gmx_molblock_t;
 struct gmx_mtop_t;
 class PreprocessingAtomTypes;
-struct t_gromppopts;
 struct t_inputrec;
 struct MoleculeInformation;
 struct InteractionsOfType;
@@ -60,6 +59,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class MDLogger;
+struct t_gromppopts;
 } // namespace gmx
 
 double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi);
@@ -79,7 +79,7 @@ void checkRBDihedralSum(const gmx_mtop_t& mtop, const t_inputrec& ir, WarningHan
 char** do_top(bool                                                            bVerbose,
               const char*                                                     topfile,
               const std::optional<std::filesystem::path>&                     topppfile,
-              t_gromppopts*                                                   opts,
+              gmx::t_gromppopts*                                              opts,
               bool                                                            bZero,
               t_symtab*                                                       symtab,
               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,

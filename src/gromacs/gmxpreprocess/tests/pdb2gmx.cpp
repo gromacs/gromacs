@@ -42,8 +42,13 @@
 
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
 
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -95,6 +100,135 @@ std::vector<std::string> c_regexStringsToSkip = { "^;[[:blank:]] *File '.*' was 
                                                   "^;[[:blank:]]*pdb2gmx.*-test.*" };
 //! Compiled regular expressions for lines to skip when matching.
 FilteringExactTextMatch c_textMatcher(c_regexStringsToSkip, false, true);
+
+#if AMBER
+bool contains(const std::vector<std::string>& values, const std::string& value)
+{
+    return std::find(values.begin(), values.end(), value) != values.end();
+}
+
+std::map<std::string, std::vector<std::string>> readRtpAtomNames(const std::string& forceFieldName,
+                                                                 const std::vector<std::string>& residueNamesToCheck)
+{
+    const std::filesystem::path rtpFileName =
+            findLibraryFile(formatString("%s.ff/aminoacids.rtp", forceFieldName.c_str()), false, true);
+
+    std::ifstream inputFile(rtpFileName);
+    if (!inputFile.is_open())
+    {
+        ADD_FAILURE() << "Could not open " << rtpFileName;
+        return {};
+    }
+
+    std::map<std::string, std::vector<std::string>> atomNamesByResidue;
+    std::string                                     residueName;
+    bool                                            inAtomsSection = false;
+    std::string                                     line;
+    while (std::getline(inputFile, line))
+    {
+        line = line.substr(0, line.find(';'));
+        line = stripString(line);
+        if (line.empty())
+        {
+            continue;
+        }
+
+        if (line.front() == '[' && line.back() == ']')
+        {
+            const std::string sectionName = stripString(line.substr(1, line.size() - 2));
+            if (sectionName == "atoms")
+            {
+                // Only collect names from the [ atoms ] block of the residues exercised below.
+                inAtomsSection = contains(residueNamesToCheck, residueName);
+            }
+            else
+            {
+                inAtomsSection = false;
+                residueName = contains(residueNamesToCheck, sectionName) ? sectionName : std::string();
+            }
+            continue;
+        }
+
+        if (inAtomsSection)
+        {
+            std::istringstream lineStream(line);
+            std::string        atomName;
+            lineStream >> atomName;
+            if (!atomName.empty())
+            {
+                atomNamesByResidue[residueName].push_back(atomName);
+            }
+        }
+    }
+
+    for (const auto& residueNameToCheck : residueNamesToCheck)
+    {
+        EXPECT_FALSE(atomNamesByResidue[residueNameToCheck].empty())
+                << "No RTP atom names found for residue " << residueNameToCheck << " in " << rtpFileName;
+    }
+
+    return atomNamesByResidue;
+}
+
+void checkGeneratedHydrogenNamesMatchRtp(const std::string& outputConfFileName, const std::string& forceFieldName)
+{
+    // Keep this targeted: these stock residues include generated hydrogens whose names come from
+    // HDB stems, including methylene hydrogens, without adding a test-only force field.
+    const std::vector<std::string> residueNamesToCheck = { "ASP", "CYS", "ILE", "LEU", "PRO" };
+
+    // The RTP is the expected naming source. This test therefore passes both before and after an
+    // AMBER data rename, as long as generated hydrogen names follow the selected force field.
+    const auto rtpAtomNamesByResidue = readRtpAtomNames(forceFieldName, residueNamesToCheck);
+    ASSERT_EQ(rtpAtomNamesByResidue.size(), residueNamesToCheck.size());
+
+    std::ifstream inputFile(outputConfFileName);
+    ASSERT_TRUE(inputFile.is_open()) << "Could not open " << outputConfFileName;
+
+    std::string line;
+    ASSERT_TRUE(std::getline(inputFile, line));
+    ASSERT_TRUE(std::getline(inputFile, line));
+    const int numberOfAtoms = std::stoi(stripString(line));
+
+    std::vector<std::string> checkedResidueNames;
+    int                      checkedHydrogenCount = 0;
+    for (int atomIndex = 0; atomIndex < numberOfAtoms; atomIndex++)
+    {
+        ASSERT_TRUE(std::getline(inputFile, line));
+        ASSERT_GE(line.size(), 15);
+
+        const std::string residueName = stripString(line.substr(5, 5));
+        if (!contains(residueNamesToCheck, residueName))
+        {
+            continue;
+        }
+
+        // pdb2gmx is run with -ignh, so these hydrogens were generated from HDB entries.
+        const std::string atomName = stripString(line.substr(10, 5));
+        if (atomName.empty() || atomName[0] != 'H')
+        {
+            continue;
+        }
+
+        if (!contains(checkedResidueNames, residueName))
+        {
+            checkedResidueNames.push_back(residueName);
+        }
+        checkedHydrogenCount++;
+        const auto rtpResidue = rtpAtomNamesByResidue.find(residueName);
+        ASSERT_NE(rtpResidue, rtpAtomNamesByResidue.end());
+        EXPECT_TRUE(contains(rtpResidue->second, atomName))
+                << "Generated hydrogen atom " << atomName << " in residue " << residueName
+                << " is not present in " << forceFieldName << ".ff/aminoacids.rtp";
+    }
+
+    for (const auto& residueName : residueNamesToCheck)
+    {
+        EXPECT_TRUE(contains(checkedResidueNames, residueName))
+                << "No generated hydrogens checked for residue " << residueName;
+    }
+    EXPECT_GT(checkedHydrogenCount, 10);
+}
+#endif
 
 class Pdb2gmxTest : public test::CommandLineTestBase, public ::testing::WithParamInterface<CommandLineOptionParams>
 {
@@ -179,6 +313,45 @@ TEST_P(Pdb2gmxTest, Runs)
     setInputFile("-f", std::get<5>(params));
     runTest(CommandLine(cmdline));
 }
+
+#if AMBER
+class Pdb2gmxAmberHydrogenNamingTest : public test::CommandLineTestBase
+{
+public:
+    void runTest(const std::string& forceFieldName)
+    {
+        const std::string outputConfFileName = fileManager().getTemporaryFilePath("conf.gro").string();
+        const std::string outputTopologyFileName =
+                fileManager().getTemporaryFilePath("topol.top").string();
+
+        std::string cmdline[] = { "pdb2gmx",   "-ignh",
+                                  "-ff",       forceFieldName,
+                                  "-water",    "tip3p",
+                                  "-chainsep", "id_or_ter",
+                                  "-merge",    "no",
+                                  "-o",        outputConfFileName,
+                                  "-p",        outputTopologyFileName };
+        setInputFile("-f", "A.pdb");
+
+        CommandLine& commandLine = this->commandLine();
+        commandLine.merge(CommandLine(cmdline));
+
+        ASSERT_EQ(0, CommandLineTestHelper::runModuleFactory(&pdb2gmxInfo::create, &commandLine));
+
+        checkGeneratedHydrogenNamesMatchRtp(outputConfFileName, forceFieldName);
+    }
+};
+
+TEST_F(Pdb2gmxAmberHydrogenNamingTest, Amber14sbHydrogenNamesMatchResidueTopology)
+{
+    runTest("amber14sb");
+}
+
+TEST_F(Pdb2gmxAmberHydrogenNamingTest, Amber19sbHydrogenNamesMatchResidueTopology)
+{
+    runTest("amber19sb");
+}
+#endif
 
 //! Help GoogleTest name our test cases
 std::string namesOfTests(const testing::TestParamInfo<Pdb2gmxTest::ParamType>& info)

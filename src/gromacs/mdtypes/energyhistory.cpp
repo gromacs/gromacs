@@ -106,8 +106,9 @@ namespace
  */
 enum class EnergyHistoryCheckpointVersion
 {
-    Base, //!< First version of modular checkpointing
-    Count //!< Number of entries. Add new versions right above this!
+    Base,           //!< First version of modular checkpointing
+    RenameSumSqDev, //!< Renamed the sum of squares of energy differences entry
+    Count           //!< Number of entries. Add new versions right above this!
 };
 constexpr auto c_currentVersionEnergyHistory =
         EnergyHistoryCheckpointVersion(int(EnergyHistoryCheckpointVersion::Count) - 1);
@@ -116,7 +117,8 @@ constexpr auto c_currentVersionEnergyHistory =
 template<gmx::CheckpointDataOperation operation>
 void energyhistory_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData)
 {
-    gmx::checkpointVersion(&checkpointData, "energyhistory_t version", c_currentVersionEnergyHistory);
+    const EnergyHistoryCheckpointVersion fileVersion = gmx::checkpointVersion(
+            &checkpointData, "energyhistory_t version", c_currentVersionEnergyHistory);
 
     bool useCheckpoint = (nsum <= 0 && nsum_sim <= 0);
     checkpointData.scalar("useCheckpoint", &useCheckpoint);
@@ -126,7 +128,10 @@ void energyhistory_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData
         return;
     }
 
-    checkpointVectorSize(&checkpointData, "enerAveSize", &ener_ave);
+    const bool newSumSqDevName = (fileVersion >= EnergyHistoryCheckpointVersion::RenameSumSqDev);
+
+    checkpointVectorSize(
+            &checkpointData, newSumSqDevName ? "enerSumSqDevSize" : "enerAveSize", &ener_sumSqDev);
     checkpointVectorSize(&checkpointData, "enerSumSize", &ener_sum);
     checkpointVectorSize(&checkpointData, "enerSumSimSize", &ener_sum_sim);
 
@@ -145,7 +150,8 @@ void energyhistory_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData
 
     if (nsum > 0)
     {
-        checkpointData.arrayRef("ener_ave", gmx::makeCheckpointArrayRef<operation>(ener_ave));
+        checkpointData.arrayRef(newSumSqDevName ? "ener_sumSqDev" : "ener_ave",
+                                gmx::makeCheckpointArrayRef<operation>(ener_sumSqDev));
         checkpointData.arrayRef("ener_sum", gmx::makeCheckpointArrayRef<operation>(ener_sum));
     }
     if (nsum_sim > 0)

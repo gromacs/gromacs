@@ -80,13 +80,8 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
-//! Helps cut off probability values.
-constexpr int c_probabilityCutoff = 100;
-
-/* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
-
-//! Rank in the multisimulation
-#define MSRANK(ms, nodeid) (nodeid)
+namespace gmx
+{
 
 //! Enum for replica exchange flavours
 enum class ReplicaExchangeType : int
@@ -97,23 +92,6 @@ enum class ReplicaExchangeType : int
     TemperatureLambda,
     Count
 };
-/*! \brief Strings describing replica exchange flavours.
- *
- *  end_single_marker merely notes the end of single variable replica
- *  exchange. All types higher than it are multiple replica exchange
- *  methods.
- *
- * Eventually, should add 'pressure', 'temperature and pressure',
- *  'lambda_and_pressure', 'temperature_lambda_pressure'?; Let's wait
- *  until we feel better about the pressure control methods giving
- *  exact ensembles.  Right now, we assume constant pressure */
-static const char* enumValueToString(ReplicaExchangeType enumValue)
-{
-    constexpr gmx::EnumerationArray<ReplicaExchangeType, const char*> replicateExchangeTypeNames = {
-        "temperature", "lambda", "end_single_marker", "temperature and lambda"
-    };
-    return replicateExchangeTypeNames[enumValue];
-}
 
 //! Working data for replica exchange.
 struct gmx_repl_ex
@@ -127,7 +105,7 @@ struct gmx_repl_ex
     //! Replica exchange type from ReplicaExchangeType enum
     ReplicaExchangeType type;
     //! Quantity, e.g. temperature or lambda; first index is ere, second index is replica ID
-    gmx::EnumerationArray<ReplicaExchangeType, real*> q;
+    EnumerationArray<ReplicaExchangeType, real*> q;
     //! Use constant pressure and temperature
     gmx_bool bNPT;
     //! Replica pressures
@@ -172,6 +150,35 @@ struct gmx_repl_ex
     //! \}
 };
 
+namespace
+{
+
+//! Helps cut off probability values.
+constexpr int c_probabilityCutoff = 100;
+
+/* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
+
+//! Rank in the multisimulation
+#define MSRANK(ms, nodeid) (nodeid)
+
+/*! \brief Strings describing replica exchange flavours.
+ *
+ *  end_single_marker merely notes the end of single variable replica
+ *  exchange. All types higher than it are multiple replica exchange
+ *  methods.
+ *
+ * Eventually, should add 'pressure', 'temperature and pressure',
+ *  'lambda_and_pressure', 'temperature_lambda_pressure'?; Let's wait
+ *  until we feel better about the pressure control methods giving
+ *  exact ensembles.  Right now, we assume constant pressure */
+static const char* enumValueToString(ReplicaExchangeType enumValue)
+{
+    constexpr EnumerationArray<ReplicaExchangeType, const char*> replicateExchangeTypeNames = {
+        "temperature", "lambda", "end_single_marker", "temperature and lambda"
+    };
+    return replicateExchangeTypeNames[enumValue];
+}
+
 // TODO We should add Doxygen here some time.
 //! \cond
 
@@ -208,6 +215,8 @@ static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, 
     sfree(qall);
     return bDiff;
 }
+
+} // namespace
 
 gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
                                     const gmx_multisim_t*            ms,
@@ -272,7 +281,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     const int nst = replExParams.exchangeInterval;
     check_multi_int64(fplog,
                       *ms,
-                      gmx::divideRoundUp<int64_t>(ir->init_step, nst),
+                      divideRoundUp<int64_t>(ir->init_step, nst),
                       "first exchange step: init_step/-replex",
                       FALSE);
     check_multi_int(fplog, *ms, static_cast<int>(ir->etc), "the temperature coupling", FALSE);
@@ -470,7 +479,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     {
         if (isMainSim(ms))
         {
-            re->seed = static_cast<int>(gmx::makeRandomSeed());
+            re->seed = static_cast<int>(makeRandomSeed());
         }
         else
         {
@@ -653,7 +662,7 @@ static void copy_state_serial(const t_state* src, t_state* dest)
     }
 }
 
-static void scale_velocities(gmx::ArrayRef<gmx::RVec> velocities, real fac)
+static void scale_velocities(ArrayRef<RVec> velocities, real fac)
 {
     for (auto& v : velocities)
     {
@@ -869,7 +878,7 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
     if (re->bNPT)
     {
         /* revist the calculation for 5.0.  Might be some improvements. */
-        dpV = (beta[ap] * re->pres[ap] - beta[bp] * re->pres[bp]) * (Vol[b] - Vol[a]) / gmx::c_presfac;
+        dpV = (beta[ap] * re->pres[ap] - beta[bp] * re->pres[bp]) * (Vol[b] - Vol[a]) / c_presfac;
         if (bPrint)
         {
             fprintf(fplog, "  dpV = %10.3e  d = %10.3e\n", dpV, delta + dpV);
@@ -887,18 +896,18 @@ static void test_for_replica_exchange(FILE*                 fplog,
                                       int64_t               step,
                                       real                  time)
 {
-    int                                m, i, j, a, b, ap, bp, i0, i1, tmp;
-    real                               delta = 0;
-    gmx_bool                           bPrint, bMultiEx;
-    gmx_bool*                          bEx      = re->bEx;
-    real*                              prob     = re->prob;
-    int*                               pind     = re->destinations; /* permuted index */
-    gmx_bool                           bEpot    = FALSE;
-    gmx_bool                           bDLambda = FALSE;
-    gmx_bool                           bVol     = FALSE;
-    gmx::ThreeFry2x64<64>              rng(re->seed, gmx::RandomDomain::ReplicaExchange);
-    gmx::UniformRealDistribution<real> uniformRealDist;
-    gmx::UniformIntDistribution<int>   uniformNreplDist(0, re->nrepl - 1);
+    int                           m, i, j, a, b, ap, bp, i0, i1, tmp;
+    real                          delta = 0;
+    gmx_bool                      bPrint, bMultiEx;
+    gmx_bool*                     bEx      = re->bEx;
+    real*                         prob     = re->prob;
+    int*                          pind     = re->destinations; /* permuted index */
+    gmx_bool                      bEpot    = FALSE;
+    gmx_bool                      bDLambda = FALSE;
+    gmx_bool                      bVol     = FALSE;
+    ThreeFry2x64<64>              rng(re->seed, RandomDomain::ReplicaExchange);
+    UniformRealDistribution<real> uniformRealDist;
+    UniformIntDistribution<int>   uniformNreplDist(0, re->nrepl - 1);
 
     bMultiEx = (re->nex > 1); /* multiple exchanges at each state */
     fprintf(fplog, "Replica exchange at step %" PRId64 " time %.5f\n", step, time);
@@ -923,14 +932,14 @@ static void test_for_replica_exchange(FILE*                 fplog,
         /* temperatures of different states*/
         for (i = 0; i < re->nrepl; i++)
         {
-            re->beta[i] = 1.0 / (re->q[ReplicaExchangeType::Temperature][i] * gmx::c_boltz);
+            re->beta[i] = 1.0 / (re->q[ReplicaExchangeType::Temperature][i] * c_boltz);
         }
     }
     else
     {
         for (i = 0; i < re->nrepl; i++)
         {
-            re->beta[i] = 1.0 / (re->temp * gmx::c_boltz); /* we have a single temperature */
+            re->beta[i] = 1.0 / (re->temp * c_boltz); /* we have a single temperature */
         }
     }
     if (re->type == ReplicaExchangeType::Lambda || re->type == ReplicaExchangeType::TemperatureLambda)
@@ -1426,5 +1435,7 @@ void print_replica_exchange_statistics(FILE* fplog, struct gmx_repl_ex* re)
     /* print the transition matrix */
     print_transition_matrix(fplog, re->nrepl, re->nmoves, re->nattempt);
 }
+
+} // namespace gmx
 
 //! \endcond

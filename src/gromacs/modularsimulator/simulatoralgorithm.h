@@ -91,6 +91,7 @@ struct t_nrnb;
 namespace gmx
 {
 enum class IntegrationStage;
+class DeviceStreamManager;
 class EnergyData;
 class ModularSimulator;
 class ResetHandler;
@@ -417,7 +418,9 @@ class ModularSimulatorAlgorithmBuilder final
 {
 public:
     //! Constructor
-    ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*> legacySimulatorData,
+    ModularSimulatorAlgorithmBuilder(const DeviceStreamManager* deviceStreamManager,
+
+                                     compat::not_null<LegacySimulatorData*> legacySimulatorData,
                                      std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder);
     //! Build algorithm
     ModularSimulatorAlgorithm build();
@@ -465,6 +468,8 @@ private:
     GlobalCommunicationHelper globalCommunicationHelper_;
     //! Coordinates reduction for observables
     ObservablesReducer observablesReducer_;
+    //! Manages device streams and contexts
+    const DeviceStreamManager* deviceStreamManager_ = nullptr;
 
     /*! \brief Set arbitrary data in the ModularSimulatorAlgorithm
      *
@@ -623,6 +628,7 @@ private:
  * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
  * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
  * \param observablesReducer          Pointer to the \c ObservablesReducer object
+ * \param deviceStreamManager         Pointer to the device stream manager
  * \param args  Variable number of additional parameters to be forwarded
  *
  * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
@@ -635,6 +641,7 @@ ISimulatorElement* getElementPointer(LegacySimulatorData*                    leg
                                      FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                      GlobalCommunicationHelper*  globalCommunicationHelper,
                                      ObservablesReducer*         observablesReducer,
+                                     const DeviceStreamManager*  deviceStreamManager,
                                      Args&&... args)
 {
     return Element::getElementPointerImpl(legacySimulatorData,
@@ -644,6 +651,7 @@ ISimulatorElement* getElementPointer(LegacySimulatorData*                    leg
                                           freeEnergyPerturbationData,
                                           globalCommunicationHelper,
                                           observablesReducer,
+                                          deviceStreamManager,
                                           std::forward<Args>(args)...);
 }
 
@@ -664,6 +672,7 @@ void ModularSimulatorAlgorithmBuilder::add(Args&&... args)
                                                                      freeEnergyPerturbationData_.get(),
                                                                      &globalCommunicationHelper_,
                                                                      &observablesReducer_,
+                                                                     deviceStreamManager_,
                                                                      std::forward<Args>(args)...));
 
     // Make sure returned element pointer is owned by *this

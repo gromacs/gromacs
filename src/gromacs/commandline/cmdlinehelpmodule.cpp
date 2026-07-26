@@ -510,7 +510,7 @@ public:
 
 private:
     IFileOutputRedirector* outputRedirector_;
-    const std::string&     binaryName_; //NOLINT(google-runtime-member-string-references)
+    const std::string&     binaryName_; // NOLINT(google-runtime-member-string-references)
     HelpLinks              links_;
     // These never release ownership.
     std::unique_ptr<TextWriter> indexFile_;

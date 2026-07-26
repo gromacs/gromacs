@@ -122,7 +122,7 @@ static constexpr KernelLayoutClusterRatio kernelLayoutClusterRatio()
 
 #endif
 
-/*! \brief The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
+/*! \brief The nbnxm SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
  *  8-way SIMD: 4x4 setup, performance wise only useful on CPUs without FMA or on AMD Zen1
  * 16-way SIMD: 4x8 setup, used in single precision with 512 bit wide SIMD

@@ -1,191 +1,191 @@
 [
   {
-    "name": "int_argon_md-vv_verlet_pme",
-    "dir": "int_argon_md-vv_verlet_pme",
+    "name": "int_argon_md-vv_pme",
+    "dir": "int_argon_md-vv_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_argon_md-vv_verlet_switch",
-    "dir": "int_argon_md-vv_verlet_switch",
+    "name": "int_argon_md-vv_switch",
+    "dir": "int_argon_md-vv_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_argon_md_verlet_pme",
-    "dir": "int_argon_md_verlet_pme",
+    "name": "int_argon_md_pme",
+    "dir": "int_argon_md_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_argon_md_verlet_switch",
-    "dir": "int_argon_md_verlet_switch",
+    "name": "int_argon_md_switch",
+    "dir": "int_argon_md_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md_verlet_lincs_pme_pme",
-    "dir": "int_water_md_verlet_lincs_pme_pme",
+    "name": "int_water_md_lincs_pme_pme",
+    "dir": "int_water_md_lincs_pme_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md_verlet_lincs_pme_switch",
-    "dir": "int_water_md_verlet_lincs_pme_switch",
+    "name": "int_water_md_lincs_pme_switch",
+    "dir": "int_water_md_lincs_pme_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md_verlet_none_pme_pme",
-    "dir": "int_water_md_verlet_none_pme_pme",
+    "name": "int_water_md_none_pme_pme",
+    "dir": "int_water_md_none_pme_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md_verlet_none_pme_switch",
-    "dir": "int_water_md_verlet_none_pme_switch",
+    "name": "int_water_md_none_pme_switch",
+    "dir": "int_water_md_none_pme_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md_verlet_settle_pme_pme",
-    "dir": "int_water_md_verlet_settle_pme_pme",
+    "name": "int_water_md_settle_pme_pme",
+    "dir": "int_water_md_settle_pme_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md_verlet_settle_pme_switch",
-    "dir": "int_water_md_verlet_settle_pme_switch",
+    "name": "int_water_md_settle_pme_switch",
+    "dir": "int_water_md_settle_pme_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md-vv_verlet_lincs_pme_pme",
-    "dir": "int_water_md-vv_verlet_lincs_pme_pme",
+    "name": "int_water_md-vv_lincs_pme_pme",
+    "dir": "int_water_md-vv_lincs_pme_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md-vv_verlet_lincs_pme_switch",
-    "dir": "int_water_md-vv_verlet_lincs_pme_switch",
+    "name": "int_water_md-vv_lincs_pme_switch",
+    "dir": "int_water_md-vv_lincs_pme_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md-vv_verlet_none_pme_pme",
-    "dir": "int_water_md-vv_verlet_none_pme_pme",
+    "name": "int_water_md-vv_none_pme_pme",
+    "dir": "int_water_md-vv_none_pme_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md-vv_verlet_none_pme_switch",
-    "dir": "int_water_md-vv_verlet_none_pme_switch",
+    "name": "int_water_md-vv_none_pme_switch",
+    "dir": "int_water_md-vv_none_pme_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md-vv_verlet_settle_pme_pme",
-    "dir": "int_water_md-vv_verlet_settle_pme_pme",
+    "name": "int_water_md-vv_settle_pme_pme",
+    "dir": "int_water_md-vv_settle_pme_pme",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "int_water_md-vv_verlet_settle_pme_switch",
-    "dir": "int_water_md-vv_verlet_settle_pme_switch",
+    "name": "int_water_md-vv_settle_pme_switch",
+    "dir": "int_water_md-vv_settle_pme_switch",
     "tests": [
       {"test": "integrator", "args": "-n 5 -t 0.25"}
     ]
   },
   {
-    "name": "ens_argon_md_verlet_pme_vr",
-    "dir": "ens_argon_md_verlet_pme_vr",
+    "name": "ens_argon_md_pme_vr",
+    "dir": "ens_argon_md_pme_vr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 6"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_argon_md_verlet_pme_vr_pr",
-    "dir": "ens_argon_md_verlet_pme_vr_pr",
+    "name": "ens_argon_md_pme_vr_pr",
+    "dir": "ens_argon_md_pme_vr_pr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 3 0 3 --dpress 0 75 75"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_argon_md_verlet_pme_vr_cr",
-    "dir": "ens_argon_md_verlet_pme_vr_cr",
+    "name": "ens_argon_md_pme_vr_cr",
+    "dir": "ens_argon_md_pme_vr_cr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 3 0 3 --dpress 0 75 75"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_argon_md-vv_verlet_pme_nh_mttk",
-    "dir": "ens_argon_md-vv_verlet_pme_nh_mttk",
+    "name": "ens_argon_md-vv_pme_nh_mttk",
+    "dir": "ens_argon_md-vv_pme_nh_mttk",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 3 0 3 --dpress 0 75 75"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_argon_md-vv_verlet_pme_vr",
-    "dir": "ens_argon_md-vv_verlet_pme_vr",
+    "name": "ens_argon_md-vv_pme_vr",
+    "dir": "ens_argon_md-vv_pme_vr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 6"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_water_md_verlet_settle_pme_vr",
-    "dir": "ens_water_md_verlet_settle_pme_vr",
+    "name": "ens_water_md_settle_pme_vr",
+    "dir": "ens_water_md_settle_pme_vr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 9"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_water_md_verlet_settle_pme_vr_pr",
-    "dir": "ens_water_md_verlet_settle_pme_vr_pr",
+    "name": "ens_water_md_settle_pme_vr_pr",
+    "dir": "ens_water_md_settle_pme_vr_pr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 8 0 8 --dpress 0 300 300"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_water_md_verlet_settle_pme_vr_cr",
-    "dir": "ens_water_md_verlet_settle_pme_vr_cr",
+    "name": "ens_water_md_settle_pme_vr_cr",
+    "dir": "ens_water_md_settle_pme_vr_cr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 8 0 8 --dpress 0 300 300"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_water_md-vv_verlet_none_pme_nh_mttk",
-    "dir": "ens_water_md-vv_verlet_none_pme_nh_mttk",
+    "name": "ens_water_md-vv_none_pme_nh_mttk",
+    "dir": "ens_water_md-vv_none_pme_nh_mttk",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 8 0 8 --dpress 0 350 350"},
       {"test": "kin_mb", "args": "-t 0.01"}
     ]
   },
   {
-    "name": "ens_water_md-vv_verlet_settle_pme_vr",
-    "dir": "ens_water_md-vv_verlet_settle_pme_vr",
+    "name": "ens_water_md-vv_settle_pme_vr",
+    "dir": "ens_water_md-vv_settle_pme_vr",
     "tests": [
       {"test": "ensemble", "args": "--dtemp 9"},
       {"test": "kin_mb", "args": "-t 0.01"}

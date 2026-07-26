@@ -48,6 +48,13 @@
 
 #include "gromacs/utility/enumerationhelpers.h"
 
+namespace gmx
+{
+namespace test
+{
+namespace
+{
+
 TEST(TopDirTests, NamesArrayHasCorrectSize)
 {
     for (auto d : gmx::EnumerationWrapper<Directive>())
@@ -59,3 +66,6 @@ TEST(TopDirTests, NamesArrayHasCorrectSize)
         EXPECT_NE(name, nullptr);
     }
 }
+} // namespace
+} // namespace test
+} // namespace gmx

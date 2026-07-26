@@ -63,7 +63,7 @@ std::enable_if_t<std::is_same_v<T, gmx::BasicVector<float>>, gmx::BasicVector<fl
     return { corner.x, corner.y, corner.z };
 }
 
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
 
 /*! Loads a corner of a bounding box into a 4-wide SIMD register
  *
@@ -105,7 +105,7 @@ static inline float dotProduct(const gmx::BasicVector<float>& v1, const gmx::Bas
  */
 static inline float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
 {
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
     using T = Simd4Float;
 
     const T zero = simd4SetZeroF();
@@ -129,7 +129,7 @@ static inline float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const B
     return dotProduct(maxDifferenceZero, maxDifferenceZero);
 }
 
-#if NBNXN_SEARCH_BB_SIMD4
+#if NBNXM_SEARCH_BB_SIMD4
 
 /*! Calculates bounding box distances^2 of four i-bounding-boxes with one j-bounding-box
  *
@@ -191,7 +191,7 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
                                                               const float* bb_i,
                                                               float*       d2)
 {
-    static_assert(NBNXN_SEARCH_BB_SIMD4);
+    static_assert(NBNXM_SEARCH_BB_SIMD4);
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
     const std::array<Simd4Float, DIM> jLowerCorner = { Simd4Float(bb_j[0 * stride]),
@@ -219,10 +219,10 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* /* bb
                                                               const float* /* bb_i */,
                                                               float* /* d2 */)
 {
-    static_assert(!NBNXN_SEARCH_BB_SIMD4);
+    static_assert(!NBNXM_SEARCH_BB_SIMD4);
 }
 
-#endif /* NBNXN_SEARCH_BB_SIMD4 */
+#endif /* NBNXM_SEARCH_BB_SIMD4 */
 
 
 } // namespace gmx

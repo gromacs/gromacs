@@ -626,6 +626,10 @@ class Class(object):
         return self._rawdoc.get_visibility()
 
     def get_file_doc_type(self):
+        if not self._files:
+            # No files associated - return None or a default
+            # This can happen with forward declarations or incomplete parsing
+            return DocType.none
         return max([fileobj.get_doc_type() for fileobj in self._files])
 
 

@@ -171,7 +171,18 @@ touch $tmpdir/messages
 # Can only perform clang-tidy on a non-empty list of files
 cd $tmpdir/new
 if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
-    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
+    # Exclude third-party code in src/external/ (Boost, GoogleTest, etc.) from analysis.
+    # We don't maintain this code, and analyzing it produces ~230 lines of warnings.
+    # The grep -v inverts the match to keep only GROMACS source files.
+    grep -v '^src/external/' $tmpdir/filelist_clangtidy > $tmpdir/filelist_filtered || true
+
+    # Run clang-tidy only if the filtered list contains files
+    if [ -s $tmpdir/filelist_filtered ]; then
+        $RUN_CLANG_TIDY `cat $tmpdir/filelist_filtered` -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
+    else
+        # All modified files were in src/external/ - create empty output for downstream processing
+        touch $tmpdir/clang-tidy.out
+    fi
     awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-warnings.out
     grep '\berror:' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
     if [ -s $tmpdir/clang-tidy-errors.out ]; then

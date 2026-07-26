@@ -356,7 +356,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
     if (tableFileName || usingLJPme(ic.vdw.type))
     {
         iParams->dispersionCorrectionTable_ =
-                makeDispersionCorrectionTable(nullptr, ic, ic.vdw.cutoff, tableFileName);
+                gmx::makeDispersionCorrectionTable(nullptr, ic, ic.vdw.cutoff, tableFileName);
     }
 
     InteractionCorrection energy;
@@ -383,7 +383,8 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
         /* TODO This code depends on the logic in tables.c that
            constructs the table layout, which should be made
            explicit in future cleanup. */
-        GMX_ASSERT(iParams->dispersionCorrectionTable_->interaction_ == TableInteraction::VdwRepulsionVdwDispersion,
+        GMX_ASSERT(iParams->dispersionCorrectionTable_->interaction_
+                           == gmx::TableInteraction::VdwRepulsionVdwDispersion,
                    "Dispersion-correction code needs a table with both repulsion and dispersion "
                    "terms");
         const real  scale  = iParams->dispersionCorrectionTable_->scale;

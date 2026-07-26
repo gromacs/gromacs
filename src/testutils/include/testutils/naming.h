@@ -328,9 +328,17 @@ std::string formatNameFromParam(const Param                                     
 /*! \brief Fold a constexpr sequence of integers that match \c S to calls
  * to the function \c f taking a matching std::integral_constant. */
 template<typename T, T... S, typename F>
-constexpr void ForSequence(std::integer_sequence<T, S...>, F&& f)
+constexpr void ForSequence(std::integer_sequence<T, S...> /*unused*/, F&& f)
 {
-    (void(f(std::integral_constant<T, S>{})), ...);
+    // Forward f into a local variable, preserving move semantics.
+    // The local variable is then used multiple times in the fold expression.
+    // GCC incorrectly warns "set but not used" for variables used in fold expressions.
+#ifdef __GNUC__
+    [[maybe_unused]] auto func = std::forward<F>(f);
+#else
+    auto func = std::forward<F>(f);
+#endif
+    (void(func(std::integral_constant<T, S>{})), ...);
 }
 
 /*! \brief Apply the \c formatters to the respective \c params to
@@ -480,7 +488,7 @@ public:
         // If the test fixture body was created with TEST_P then there is
         // a further user-provided name that should contribute to the
         // reference data name. If present, it precedes "/".
-        auto        separatorPos = testName.find("/");
+        auto        separatorPos = testName.find('/');
         std::string testFixtureBodyName =
                 (separatorPos == std::string::npos) ? "" : (testName.substr(0, separatorPos));
         std::string refDataName = testSuiteName;
@@ -515,7 +523,7 @@ private:
 };
 
 //! Formatter to pass std::string through
-static inline std::string useString(const std::string s)
+static inline std::string useString(const std::string& s)
 {
     return s;
 }

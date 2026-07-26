@@ -129,12 +129,12 @@ struct t_conect
 void add_rec(t_conect c[], int i, int j, real d2)
 {
     if (c[i].aa == -1)
-    { // NOLINT bugprone-branch-clone
+    { // NOLINT(bugprone-branch-clone)
         c[i].aa  = j;
         c[i].d2a = d2;
     }
     else if (c[i].ab == -1)
-    { // NOLINT bugprone-branch-clone
+    { // NOLINT(bugprone-branch-clone)
         c[i].ab  = j;
         c[i].d2b = d2;
     }

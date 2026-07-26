@@ -71,35 +71,35 @@ public:
     /*! \brief Marks the synchronization point in the \p stream.
      * Should be followed by waitForEvent().
      */
-    inline void mark(const DeviceStream& /*deviceStream*/) // NOLINT readability-convert-member-functions-to-static
+    inline void mark(const DeviceStream& /*deviceStream*/) // NOLINT(readability-convert-member-functions-to-static)
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
     //! Synchronizes the host thread on the marked event.
-    inline void wait() // NOLINT readability-convert-member-functions-to-static
+    inline void wait() // NOLINT(readability-convert-member-functions-to-static)
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
     //! Checks the completion of the underlying event.
-    inline bool isReady() // NOLINT readability-convert-member-functions-to-static
+    inline bool isReady() // NOLINT(readability-convert-member-functions-to-static)
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
     //! Enqueues a wait for the recorded event in stream \p stream
-    // NOLINTNEXTLINE readability-convert-member-functions-to-static
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline void enqueueWait(const DeviceStream& /*deviceStream*/)
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
     //! Checks whether the underlying event was marked.
-    inline bool isMarked() const // NOLINT readability-convert-member-functions-to-static
+    inline bool isMarked() const // NOLINT(readability-convert-member-functions-to-static)
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
 
     //! Reset the event (not needed in CUDA)
-    // NOLINTNEXTLINE readability-convert-member-functions-to-static
-    inline void reset() // NOLINT readability-convert-member-functions-to-static
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    inline void reset() // NOLINT(readability-convert-member-functions-to-static)
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }

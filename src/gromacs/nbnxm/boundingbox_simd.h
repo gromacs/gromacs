@@ -65,20 +65,20 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
  * This uses less (cache-)memory and SIMD is faster, at least on x86.
  */
 #    if GMX_SIMD4_HAVE_FLOAT
-#        define NBNXN_SEARCH_BB_SIMD4 1
+#        define NBNXM_SEARCH_BB_SIMD4 1
 #    else
-#        define NBNXN_SEARCH_BB_SIMD4 0
+#        define NBNXM_SEARCH_BB_SIMD4 0
 #    endif
 
 
-#    if NBNXN_SEARCH_BB_SIMD4
+#    if NBNXM_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
 
 #        if !GMX_DOUBLE
 /* Single precision BBs + coordinates, we can also load coordinates with SIMD */
-#            define NBNXN_SEARCH_SIMD4_FLOAT_X_BB 1
+#            define NBNXM_SEARCH_SIMD4_FLOAT_X_BB 1
 #        else
-#            define NBNXN_SEARCH_SIMD4_FLOAT_X_BB 0
+#            define NBNXM_SEARCH_SIMD4_FLOAT_X_BB 0
 #        endif
 
 /* Whether we store bounding boxes corners as quadruplets: xxxxyyyyzzzz
@@ -104,9 +104,9 @@ static constexpr int packedBoundingBoxesIndex(int clusterIndex)
     return (clusterIndex / c_packedBoundingBoxesDimSize) * c_packedBoundingBoxesSize;
 }
 
-#    else /* NBNXN_SEARCH_BB_SIMD4 */
+#    else /* NBNXM_SEARCH_BB_SIMD4 */
 
-#        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB 0
+#        define NBNXM_SEARCH_SIMD4_FLOAT_X_BB 0
 
 static constexpr bool sc_boundingBoxCornersAsQuadruplets(const PairlistType gmx_unused pairlistType)
 {
@@ -124,7 +124,7 @@ static constexpr int packedBoundingBoxesIndex(int gmx_unused clusterIndex)
     return 0;
 }
 
-#    endif /* NBNXN_SEARCH_BB_SIMD4 */
+#    endif /* NBNXM_SEARCH_BB_SIMD4 */
 
 #endif // !DOXYGEN
 

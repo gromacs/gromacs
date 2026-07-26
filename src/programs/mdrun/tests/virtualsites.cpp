@@ -100,7 +100,9 @@
 #include "moduletest.h"
 #include "simulatorcomparison.h"
 
-namespace gmx::test
+namespace gmx
+{
+namespace test
 {
 namespace
 {
@@ -680,4 +682,5 @@ INSTANTIATE_TEST_SUITE_P(
                            ::testing::Values("no", "c-rescale", "parrinello-rahman")));
 
 } // namespace
-} // namespace gmx::test
+} // namespace test
+} // namespace gmx

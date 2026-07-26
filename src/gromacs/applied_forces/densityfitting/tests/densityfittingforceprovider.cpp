@@ -52,6 +52,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 TEST(DensityFittingForceProviderState, RoundTripSaving)
 {
@@ -87,4 +91,6 @@ TEST(DensityFittingForceProviderState, RoundTripSaving)
 }
 
 
+} // namespace
+} // namespace test
 } // namespace gmx

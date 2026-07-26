@@ -32,16 +32,18 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements common internal types for different NBNXN GPU implementations
+ * \brief Implements common internal types for different NBNXM GPU implementations
  *
  * \author Szilárd Páll <pall.szilard@gmail.com>
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_MDLIB_NBNXN_GPU_COMMON_TYPES_H
-#define GMX_MDLIB_NBNXN_GPU_COMMON_TYPES_H
+#ifndef GMX_MDLIB_NBNXM_GPU_COMMON_TYPES_H
+#define GMX_MDLIB_NBNXM_GPU_COMMON_TYPES_H
 
 #include "config.h"
+
+#include <optional>
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -89,13 +91,13 @@ static constexpr int c_sciSortingItemsPerThread  = 16;
 
 /*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *
- *  The GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
+ *  The GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override with the default value of 4.
  */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
-#    define GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
+#ifndef GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY
+#    define GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
 #endif
 //! Default for the prune kernel's jPacked processing concurrency.
-static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY;
+static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY;
 
 /* Convenience constants */
 /*! \cond */
@@ -121,7 +123,7 @@ static const int c_splitClSize = sc_gpuSplitJClusterSize(sc_layoutType);
 /*! \brief Size of exclusion list */
 static constexpr int c_exclSize = sc_gpuExclSize(sc_layoutType);
 
-// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
+// i-cluster interaction mask for a super-cluster with all c_nbnxmGpuNumClusterPerSupercluster=8 bits set.
 static constexpr unsigned superClInteractionMask = ((1U << c_superClusterSize) - 1U);
 
 // 1/sqrt(pi), same value as \c M_FLOAT_1_SQRTPI in other NB kernels.
@@ -136,12 +138,10 @@ static constexpr float c_oneTwelfth = 0.08333333F;
 
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.
- *
- * Since SYCL buffers already have host-side storage, this is a bit redundant.
- * But it allows prefetching of the data from GPU, and brings GPU backends closer together.
  */
 struct NBStagingData
 {
+    NBStagingData(const HostAllocationPolicy& hostAllocationPolicy, std::optional<size_t> nLambda);
     //! LJ energy
     HostVector<float> eLJ;
     //! electrostatic energy
@@ -405,7 +405,7 @@ public:
     int sciSortedNalloc = -1;
 
     //! list of sorted i-cluster ("super-clusters")
-    DeviceBuffer<nbnxn_sci_t> sciSorted = nullptr;
+    DeviceBuffer<nbnxm_sci_t> sciSorted = nullptr;
 };
 
 /*! \internal
@@ -433,7 +433,7 @@ public:
     //! allocation size of sci
     int sciAllocationSize = -1;
     //! list of i-cluster ("super-clusters")
-    DeviceBuffer<nbnxn_sci_t> sci = nullptr;
+    DeviceBuffer<nbnxm_sci_t> sci = nullptr;
 
     //! sorted pair list and data used for sorting
     GpuPairlistSorting sorting;
@@ -443,7 +443,7 @@ public:
     //! allocation size of cjPacked
     int packedJClustersAllocationSize = -1;
     //! Packed j cluster list, contains j cluster number and index into the i cluster list
-    DeviceBuffer<nbnxn_cj_packed_t> cjPacked = nullptr;
+    DeviceBuffer<nbnxm_cj_packed_t> cjPacked = nullptr;
     //! # of packed j clusters * # of warps
     int numIMask = -1;
     //! allocation size of imask
@@ -451,7 +451,7 @@ public:
     //! imask for 2 warps for each 4*j cluster group
     DeviceBuffer<unsigned int> imask = nullptr;
     //! atom interaction bits
-    DeviceBuffer<nbnxn_excl_t> excl = nullptr;
+    DeviceBuffer<nbnxm_excl_t> excl = nullptr;
     //! count for excl
     int numExcl = 1;
     //! allocation size of excl
@@ -511,29 +511,42 @@ public:
  * \brief GPU FEP Host Buffers */
 struct GpuFepHostData
 {
+    GpuFepHostData(const HostAllocationPolicy& hostAllocationPolicy) :
+        allLambdaCoul{ hostAllocationPolicy },
+        allLambdaVdw{ hostAllocationPolicy },
+        iinrHost{ hostAllocationPolicy },
+        jjnrHost{ hostAllocationPolicy },
+        jIndexHost{ hostAllocationPolicy },
+        shiftHost{ hostAllocationPolicy },
+        exclFepHost{ hostAllocationPolicy },
+        atomTypes4Host{ hostAllocationPolicy },
+        ljComb4Host{ hostAllocationPolicy },
+        q4Host{ hostAllocationPolicy }
+    {
+    }
     // Arrays of all lambda values
-    HostVector<float> allLambdaCoul{ { PinningPolicy::PinnedIfSupported } };
-    HostVector<float> allLambdaVdw{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> allLambdaCoul;
+    HostVector<float> allLambdaVdw;
 
     // The inverse of atom indices, used to find the correct atom indices
     std::vector<int> atomIndicesInv;
     // The i-atom list on host
-    HostVector<int> iinrHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> iinrHost;
     // The j-atom list on host
-    HostVector<int> jjnrHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> jjnrHost;
     // The Indices in jjnr on host
-    HostVector<int> jIndexHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> jIndexHost;
     // The shift vector index on host
-    HostVector<int> shiftHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> shiftHost;
     // The FEP exclusions on host
-    HostVector<int> exclFepHost{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> exclFepHost;
 
     //! atom typeA&B indices, size numAtoms, only in FEP
-    HostVector<int> atomTypes4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<int> atomTypes4Host;
     //! sqrt(c6),sqrt(c12) for stateA&B, size numAtoms, only in FEP
-    HostVector<float> ljComb4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> ljComb4Host;
     //! atom charge(A&B), size numAtoms, only in FEP
-    HostVector<float> q4Host{ { PinningPolicy::PinnedIfSupported } };
+    HostVector<float> q4Host;
 };
 
 

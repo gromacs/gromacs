@@ -659,8 +659,8 @@ void VelocityScalingTemperatureCoupling::setLambda(Step step)
     for (int temperatureGroup = 0; (temperatureGroup < numTemperatureGroups_); temperatureGroup++)
     {
         const real currentKineticEnergy = useFullStepKE_ == UseFullStepKE::Yes
-                                                  ? ::trace(ekind->tcstat[temperatureGroup].ekinf)
-                                                  : ::trace(ekind->tcstat[temperatureGroup].ekinh);
+                                                  ? trace(ekind->tcstat[temperatureGroup].ekinf)
+                                                  : trace(ekind->tcstat[temperatureGroup].ekinh);
         const real currentTemperature   = useFullStepKE_ == UseFullStepKE::Yes
                                                   ? ekind->tcstat[temperatureGroup].T
                                                   : ekind->tcstat[temperatureGroup].Th;
@@ -779,6 +779,7 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/,
         Offset                            offset,
         UseFullStepKE                     useFullStepKE,
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy,

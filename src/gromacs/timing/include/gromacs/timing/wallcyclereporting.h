@@ -52,7 +52,7 @@ namespace gmx
 class MDLogger;
 }
 
-struct gmx_wallclock_gpu_nbnxn_t;
+struct gmx_wallclock_gpu_nbnxm_t;
 struct gmx_wallclock_gpu_pme_t;
 
 using WallcycleCounts = std::array<double, sc_numWallCycleCounters + sc_numWallCycleSubCounters>;
@@ -71,7 +71,7 @@ void wallcycle_print(FILE*                                         fplog,
                      double                                        realtime,
                      gmx_wallcycle*                                wc,
                      const WallcycleCounts&                        cyc_sum,
-                     const gmx_wallclock_gpu_nbnxn_t*              gpu_nbnxn_t,
+                     const gmx_wallclock_gpu_nbnxm_t*              gpu_nbnxm_t,
                      const std::optional<gmx_wallclock_gpu_pme_t>& pmeGpuTimings);
 /* Print the cycle and time accounting */
 

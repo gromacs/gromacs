@@ -75,6 +75,7 @@ struct gmx_wallcycle;
 
 namespace gmx
 {
+class MpiComm;
 
 /*!\brief If StatePropagatorDataGpu object is needed.
  *
@@ -115,6 +116,8 @@ public:
      *  \param[in] allocationBlockSizeDivisor  Determines padding size for coordinates buffer.
      *  \param[in] useNvshmem                  Whether to use NVSHMEM for comm
      *  \param[in] useGpuFBufferOpsWhenAllowed Whether the simulation uses F-buffer ops on the GPU
+     *  \param[in] commMySim                   Communicator for the whole simulation, used
+     *                                         with NVSHMEM
      *  \param[in] wcycle                      Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStreamManager& deviceStreamManager,
@@ -122,6 +125,7 @@ public:
                            int                        allocationBlockSizeDivisor,
                            bool                       useNvshmem,
                            bool                       useGpuFBufferOpsWhenAllowed,
+                           const MpiComm&             commMySim,
                            gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -142,6 +146,7 @@ public:
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor Determines padding size for coordinates buffer.
      *  \param[in] useNvshmem      Whether to use NVSHMEM for comm
+     *  \param[in] commMySim       Communicator for the whole simulation, used with NVSHMEM
      *  \param[in] wcycle          Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStream*  pmeStream,
@@ -149,6 +154,7 @@ public:
                            GpuApiCallBehavior   transferKind,
                            int                  allocationBlockSizeDivisor,
                            bool                 useNvshmem,
+                           const MpiComm&       commMySim,
                            gmx_wallcycle*       wcycle);
 
     //! Move constructor
@@ -174,9 +180,8 @@ public:
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
-     *  \param[in] mpiCommMySim   MPI communicator for the whole simulation
      */
-    void reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim);
+    void reinit(int numAtomsLocal, int numAtomsAll);
 
     /*! \brief Returns the range of atoms to be copied based on the copy type (all, local or non-local).
      *

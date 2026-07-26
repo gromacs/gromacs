@@ -49,20 +49,20 @@
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#    define NBK_FUNC_NAME2(ui, uj, ljt, feg) nbnxn_kernel_##ui##x##uj##_ElecRF##ljt##feg##_ref
+#    define NBK_FUNC_NAME2(ui, uj, ljt, feg) nbnxm_kernel_##ui##x##uj##_ElecRF##ljt##feg##_ref
 #endif
 #ifdef CALC_COUL_TAB
 #    ifndef VDW_CUTOFF_CHECK
 #        define NBK_FUNC_NAME2(ui, uj, ljt, feg) \
-            nbnxn_kernel_##ui##x##uj##_ElecQSTab##ljt##feg##_ref
+            nbnxm_kernel_##ui##x##uj##_ElecQSTab##ljt##feg##_ref
 #    else
 #        define NBK_FUNC_NAME2(ui, uj, ljt, feg) \
-            nbnxn_kernel_##ui##x##uj##_ElecQSTabTwinCut##ljt##feg##_ref
+            nbnxm_kernel_##ui##x##uj##_ElecQSTabTwinCut##ljt##feg##_ref
 #    endif
 #endif
 
 #ifdef CALC_COUL_NONE
-#    define NBK_FUNC_NAME2(ui, uj, ljt, feg) nbnxn_kernel_##ui##x##uj##_ElecNone##ljt##feg##_ref
+#    define NBK_FUNC_NAME2(ui, uj, ljt, feg) nbnxm_kernel_##ui##x##uj##_ElecNone##ljt##feg##_ref
 #    define HAVE_ELECTROSTATICS 0
 #else
 #    define HAVE_ELECTROSTATICS 1
@@ -96,11 +96,11 @@ void
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-        (const NbnxnPairlistCpu&    pairlist,
-         const nbnxn_atomdata_t&    nbat,
+        (const NbnxmPairlistCpu&    pairlist,
+         const nbnxm_atomdata_t&    nbat,
          const interaction_const_t& ic,
          const rvec*                shift_vec,
-         nbnxn_atomdata_output_t*   out)
+         nbnxm_atomdata_output_t*   out)
 {
     GMX_RELEASE_ASSERT(UNROLLI == pairlist.na_ci && UNROLLJ == pairlist.na_cj,
                        "Kernel and list cluster sizes should match");
@@ -140,7 +140,7 @@ void
     const real swF4 = 5 * ic.vdw.switchConstants.c5;
 #endif
 
-    const nbnxn_atomdata_t::Params& nbatParams = nbat.params();
+    const nbnxm_atomdata_t::Params& nbatParams = nbat.params();
 
 #ifdef LJ_EWALD
     const real lje_coeff2   = gmx::square(ic.vdw.ewaldCoeff);
@@ -191,11 +191,11 @@ void
     const real* shiftvec = shift_vec[0];
     const real* x        = nbat.x().data();
 
-    const nbnxn_cj_t* l_cj = pairlist.cj.list_.data();
+    const nbnxm_cj_t* l_cj = pairlist.cj.list_.data();
 
-    for (const nbnxn_ci_t& ciEntry : pairlist.ci)
+    for (const nbnxm_ci_t& ciEntry : pairlist.ci)
     {
-        const int ish = (ciEntry.shift & NBNXN_CI_SHIFT);
+        const int ish = (ciEntry.shift & NBNXM_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
         const int ishf   = ish * DIM;
         const int cjind0 = ciEntry.cj_ind_start;
@@ -212,9 +212,9 @@ void
  * inner LJ          for full-LJ + no-C / half-LJ + no-C
  */
 #if HAVE_ELECTROSTATICS
-        const bool do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
-        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
-        const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
+        const bool do_LJ   = ((ciEntry.shift & NBNXM_CI_DO_LJ(0)) != 0);
+        const bool do_coul = ((ciEntry.shift & NBNXM_CI_DO_COUL(0)) != 0);
+        const bool half_LJ = (((ciEntry.shift & NBNXM_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 #endif
 #ifdef CALC_ENERGIES
 

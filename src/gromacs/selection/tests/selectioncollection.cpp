@@ -1291,6 +1291,15 @@ TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositionsInArithmetic)
     runTest("simple.gro", selections);
 }
 
+TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositionsVariableInArithmetic)
+{
+    static const char* const selections[] = {
+        "x_pos = x of cog of resnr 2",
+        "x < 1 + x_pos",
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {

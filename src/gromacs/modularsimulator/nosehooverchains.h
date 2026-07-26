@@ -51,6 +51,7 @@ struct t_grp_tcstat;
 
 namespace gmx
 {
+class DeviceStreamManager;
 class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
@@ -107,7 +108,7 @@ public:
                          NhcUsage             nhcUsage);
 
     //! Explicit default destructor
-    ~NoseHooverChainsData();
+    ~NoseHooverChainsData() override;
 
     //! Explicit copy constructor (interface has a standard destructor)
     NoseHooverChainsData(const NoseHooverChainsData& other);
@@ -216,6 +217,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param nhcUsage  What the NHC is connected to - system or barostat
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
@@ -232,6 +234,7 @@ public:
                           FreeEnergyPerturbationData*             freeEnergyPerturbationData,
                           GlobalCommunicationHelper*              globalCommunicationHelper,
                           ObservablesReducer*                     observablesReducer,
+                          const DeviceStreamManager*              deviceStreamManager,
                           NhcUsage                                nhcUsage,
                           Offset                                  offset,
                           UseFullStepKE                           useFullStepKE,
@@ -247,6 +250,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      * \param nhcUsage  What the NHC is connected to - system or barostat
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
@@ -261,12 +265,13 @@ public:
                                                     EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*  observablesReducer,
-                                                    NhcUsage             nhcUsage,
-                                                    Offset               offset,
-                                                    UseFullStepKE        useFullStepKE,
-                                                    ScheduleOnInitStep   scheduleOnInitStep,
-                                                    const PropagatorTag& propagatorTag);
+                                                    ObservablesReducer*        observablesReducer,
+                                                    const DeviceStreamManager* deviceStreamManager,
+                                                    NhcUsage                   nhcUsage,
+                                                    Offset                     offset,
+                                                    UseFullStepKE              useFullStepKE,
+                                                    ScheduleOnInitStep         scheduleOnInitStep,
+                                                    const PropagatorTag&       propagatorTag);
 
 private:
     //! Propagate the NHC degrees of freedom

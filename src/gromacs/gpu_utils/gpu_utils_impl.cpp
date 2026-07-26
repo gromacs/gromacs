@@ -56,11 +56,6 @@ void stopGpuProfiler() {}
 
 void resetGpuProfiler() {}
 
-bool isHostMemoryPinned(const void* /* h_ptr */)
-{
-    return false;
-}
-
 void checkPendingDeviceErrorBetweenSteps() {}
 
 void setupGpuDevicePeerAccess(gmx::ArrayRef<const int> /* gpuIdsToUse */, const gmx::MDLogger& /* mdlog */)

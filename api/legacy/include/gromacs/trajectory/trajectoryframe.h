@@ -39,27 +39,25 @@
 #ifndef GMX_TRAJECTORY_TRX_H
 #define GMX_TRAJECTORY_TRX_H
 
-#include <cstdio>
-
-#include <array>
+#include <optional>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
 enum class PbcType : int;
 
-typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
+typedef struct t_trxframe // NOLINT(clang-analyzer-optin.performance.Padding)
 {
-    int      not_ok;  /* integrity flags                  */
-    gmx_bool bDouble; /* Double precision?                */
-    int      natoms;  /* number of atoms (atoms, x, v, f, index) */
+    int      not_ok; /* integrity flags                  */
+    int      natoms; /* number of atoms (atoms, x, v, f, index) */
     gmx_bool bStep;
     int64_t  step; /* MD step number                   */
     gmx_bool bTime;
-    real     time; /* time of the frame                */
+    double   time; /* time of the frame                */
     gmx_bool bLambda;
     gmx_bool bFepState; /* does it contain fep_state?       */
     real     lambda;    /* free energy perturbation lambda  */
@@ -82,17 +80,12 @@ typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
     int*     index; /* atom indices of contained coordinates */
 } t_trxframe;
 
-void comp_frame(FILE* fp, t_trxframe* fr1, t_trxframe* fr2, gmx_bool bRMSD, real ftol, real abstol);
-
-void done_frame(t_trxframe* frame);
-
 namespace gmx
 {
 
-/*!\brief A 3x3 matrix data type useful for simulation boxes
- *
- * \todo Implement a full replacement for C-style real[DIM][DIM] */
-using BoxMatrix = std::array<std::array<real, DIM>, DIM>;
+void comp_frame(FILE* fp, t_trxframe* fr1, t_trxframe* fr2, gmx_bool bRMSD, real ftol, real abstol);
+
+void done_frame(t_trxframe* frame);
 
 /*! \internal
  * \brief Contains a valid trajectory frame.
@@ -100,13 +93,11 @@ using BoxMatrix = std::array<std::array<real, DIM>, DIM>;
  * Valid frames have a step and time, but need not have any particular
  * other fields.
  *
- * \todo Eventually t_trxframe should be replaced by a class such as
- * this. Currently we need to introduce BoxMatrix so that we can have
- * a normal C++ getter that returns the contents of a box matrix,
- * since you cannot use a real[DIM][DIM] as a function return type.
+ * \todo Eventually t_trxframe should be replaced by a class such as this.
  *
  * \todo Consider a std::optional work-alike type for expressing that
- * a field may or may not have content. */
+ * a field may or may not have content.
+ */
 class TrajectoryFrame
 {
 public:
@@ -123,6 +114,8 @@ public:
     std::int64_t step() const;
     //! Time read from the trajectory file frame.
     double time() const;
+    //! Precision of position coordinates read from the trajectory file frame, if available.
+    std::optional<real> positionPrecision() const;
     //! The PBC characteristics of the box.
     PbcType pbc() const;
     //! Get a view of position coordinates of the frame (which could be empty).
@@ -134,13 +127,13 @@ public:
     //! Return whether the frame has a box.
     bool hasBox() const;
     //! Return a handle to the frame's box, which is all zero if the frame has no box.
-    const BoxMatrix& box() const;
+    const Matrix3x3& box() const;
 
 private:
     //! Handle to trajectory data
     const t_trxframe& frame_;
     //! Box matrix data from the frame_.
-    BoxMatrix box_;
+    Matrix3x3 box_;
 };
 
 } // namespace gmx

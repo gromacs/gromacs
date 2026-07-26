@@ -423,13 +423,14 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
  * \param[in] lambda   The lambda value to use.
  * \param[in] wcycle   The wallclock counter.
  * \param[in] computeVirial  Whether this is a virial step.
+ * \param[in] markFReadyEvent  Whether to mark the force-ready event after the kernel.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                       GPU_FUNC_ARGUMENT(pmeGpu),
                                        gmx::ArrayRef<PmeAndFftGrids> GPU_FUNC_ARGUMENT(h_grids),
                                        float                         GPU_FUNC_ARGUMENT(lambda),
                                        gmx_wallcycle*                GPU_FUNC_ARGUMENT(wcycle),
-                                       bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
-
+                                       bool GPU_FUNC_ARGUMENT(computeVirial),
+                                       bool GPU_FUNC_ARGUMENT(markFReadyEvent)) GPU_FUNC_TERM;
 
 /*! \brief Sets the device pointer to coordinate data
  * \param[in] pmeGpu         The PME GPU structure.
@@ -522,13 +523,16 @@ GPU_FUNC_QUALIFIER PmeOutput pme_gpu_getOutput(gmx_pme_t* GPU_FUNC_ARGUMENT(pme)
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
 
 /*! \libinternal \brief
- * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
+ * Updates the GPU unit-cell parameters from box volume and reciprocal box. Does not
+ * check if update is necessary - that is done in pme_gpu_prepare_computation().
  *
- * \param[in] pme            The PME structure.
- * \param[in] box            The unit cell box.
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \param[in] boxVolume      The volume of the (scaled) simulation box.
+ * \param[in] recipbox       The reciprocal box matrix.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(gmx_pme_t*   GPU_FUNC_ARGUMENT(pme),
-                                                 const matrix GPU_FUNC_ARGUMENT(box)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
+                                                 real    GPU_FUNC_ARGUMENT(boxVolume),
+                                                 const matrix GPU_FUNC_ARGUMENT(recipbox)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Get the normal/padded grid dimensions of the real-space PME grid on GPU. Only used in tests.
@@ -544,23 +548,15 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
  *
- * \param[in,out] pme               The PME structure.
- * \param[in]     deviceContext     The GPU context.
- * \param[in]     deviceStream      The GPU stream.
- * \param[in,out] pmeGpuProgram     The handle to the program/kernel data created outside (e.g. in unit tests/runner)
- * \param[in]     useMdGpuGraph     Whether MD GPU Graph is in use
- * \param[in]     box               The simulation box.
- * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
+ * \param[in,out] pmeGpu         The PME GPU object to be reinitialized
+ * \param[in,out] pme            The PME structure, only box information is modified here.
+ * \param[in]     useMdGpuGraph  Whether MD GPU Graph is in use
  *
- * Note that the simulation box is needed upon init, but not upon reinit. Passing a box here
- * is forced by the design of doing initial init via a call to the reinit routine.
+ * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*           GPU_FUNC_ARGUMENT(pme),
-                                       const DeviceContext* GPU_FUNC_ARGUMENT(deviceContext),
-                                       const DeviceStream*  GPU_FUNC_ARGUMENT(deviceStream),
-                                       const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram),
-                                       bool                 GPU_FUNC_ARGUMENT(useMdGpuGraph),
-                                       const matrix         GPU_FUNC_ARGUMENT(box)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_reinit(PmeGpu*    GPU_FUNC_ARGUMENT(pmeGpu),
+                                       gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
+                                       bool       GPU_FUNC_ARGUMENT(useMdGpuGraph)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.
@@ -600,5 +596,14 @@ GPU_FUNC_QUALIFIER PmeOutput pme_gpu_wait_finish_task(gmx_pme_t* GPU_FUNC_ARGUME
                                                       real           GPU_FUNC_ARGUMENT(lambdaQ),
                                                       gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle))
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
+
+/*! \libinternal
+ * \brief Returns the current host allocation policy, so other parts
+ * of the code can pin buffers appropriately.
+ *
+ * \param[in] pmeGpu            The PME GPU structure.
+ */
+GPU_FUNC_QUALIFIER const gmx::HostAllocationPolicy* pme_gpu_host_allocation_policy(
+        const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 #endif

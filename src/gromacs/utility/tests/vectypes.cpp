@@ -276,22 +276,40 @@ TEST(RVecTest, CanLengthOfRVec)
 
 TEST(RVecTest, CanCastToRVec)
 {
-    DVec a(1, 2, 2);
-    RVec b;
-    b = a.toRVec();
+    const DVec a(1, 2, 4);
+    const RVec b = static_cast<const RVec>(a);
     EXPECT_EQ(1, b[XX]);
     EXPECT_EQ(2, b[YY]);
-    EXPECT_EQ(2, b[ZZ]);
+    EXPECT_EQ(4, b[ZZ]);
 }
 
 TEST(RVecTest, CanCastToDVec)
 {
-    RVec a(1, 2, 2);
-    DVec b;
+    const RVec a(1, 2, 4);
+    const DVec b = static_cast<const DVec>(a);
+    EXPECT_EQ(1, b[XX]);
+    EXPECT_EQ(2, b[YY]);
+    EXPECT_EQ(4, b[ZZ]);
+}
+
+TEST(RVecTest, CanConvertToRVec)
+{
+    const DVec a(1, 2, 4);
+    RVec       b;
+    b = a.toRVec();
+    EXPECT_EQ(1, b[XX]);
+    EXPECT_EQ(2, b[YY]);
+    EXPECT_EQ(4, b[ZZ]);
+}
+
+TEST(RVecTest, CanConvertToDVec)
+{
+    const RVec a(1, 2, 4);
+    DVec       b;
     b = a.toDVec();
     EXPECT_EQ(1, b[XX]);
     EXPECT_EQ(2, b[YY]);
-    EXPECT_EQ(2, b[ZZ]);
+    EXPECT_EQ(4, b[ZZ]);
 }
 
 

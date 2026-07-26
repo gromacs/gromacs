@@ -40,8 +40,8 @@
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_NBNXN_BENCH_SYSTEM_H
-#define GMX_NBNXN_BENCH_SYSTEM_H
+#ifndef GMX_NBNXM_BENCH_SYSTEM_H
+#define GMX_NBNXM_BENCH_SYSTEM_H
 
 #include <cstdint>
 #include <cstdio>
@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
@@ -90,7 +91,7 @@ struct BenchmarkSystem
     //! System simulation box.
     matrix box;
     //! Forcerec with only the entries used in the benchmark set
-    t_forcerec forceRec;
+    t_forcerec forceRec{ HostAllocationPolicy{} };
     //! csv output file
     FILE* csv;
 };

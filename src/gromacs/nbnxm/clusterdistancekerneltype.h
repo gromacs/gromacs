@@ -65,7 +65,7 @@ enum class ClusterDistanceKernelType : int
 
 //! Return the cluster distance kernel type given the pairlist type and atomdata
 static inline ClusterDistanceKernelType getClusterDistanceKernelType(const PairlistType pairlistType,
-                                                                     const nbnxn_atomdata_t& atomdata)
+                                                                     const nbnxm_atomdata_t& atomdata)
 {
     if (pairlistType == PairlistType::Hierarchical8x8x8)
     {

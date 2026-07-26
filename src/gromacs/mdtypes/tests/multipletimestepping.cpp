@@ -98,6 +98,11 @@ TEST(MultipleTimeStepping, ChecksNumLevels)
         mtsOpts.level2Factor = 2;
 
         t_inputrec ir;
+        // Set output frequencies to 0 to avoid MTS validation errors
+        ir.outputControl.nstcalcenergy = 0;
+        ir.outputControl.nstenergy     = 0;
+        ir.outputControl.nstlog        = 0;
+        ir.outputControl.nstfout       = 0;
 
         setAndCheckMtsLevels(mtsOpts, &ir, numLevels != 2 ? 1 : 0);
     }
@@ -118,6 +123,11 @@ TEST(MultipleTimeStepping, SelectsForceGroups)
         mtsOpts.level2Factor = 2;
 
         t_inputrec ir;
+        // Set output frequencies to 0 to avoid MTS validation errors
+        ir.outputControl.nstcalcenergy = 0;
+        ir.outputControl.nstenergy     = 0;
+        ir.outputControl.nstlog        = 0;
+        ir.outputControl.nstfout       = 0;
 
         setAndCheckMtsLevels(mtsOpts, &ir, 0);
 
@@ -136,6 +146,11 @@ TEST(MultipleTimeStepping, ChecksStepFactor)
         mtsOpts.level2Factor = stepFactor;
 
         t_inputrec ir;
+        // Set output frequencies to 0 to avoid MTS validation errors
+        ir.outputControl.nstcalcenergy = 0;
+        ir.outputControl.nstenergy     = 0;
+        ir.outputControl.nstlog        = 0;
+        ir.outputControl.nstfout       = 0;
 
         setAndCheckMtsLevels(mtsOpts, &ir, stepFactor < 2 ? 1 : 0);
     }
@@ -161,7 +176,12 @@ TEST(MultipleTimeStepping, ChecksPmeIsAtLastLevel)
     const GromppMtsOpts mtsOpts = simpleMtsOpts();
 
     t_inputrec ir;
-    ir.coulombtype = CoulombInteractionType::Pme;
+    // Set output frequencies to 0 to avoid MTS validation errors
+    ir.outputControl.nstcalcenergy = 0;
+    ir.outputControl.nstenergy     = 0;
+    ir.outputControl.nstlog        = 0;
+    ir.outputControl.nstfout       = 0;
+    ir.coulombtype                 = CoulombInteractionType::Pme;
 
     setAndCheckMtsLevels(mtsOpts, &ir, 1);
 }
@@ -180,15 +200,15 @@ public:
 
         if (parameterName == "nstcalcenergy")
         {
-            ir_.nstcalcenergy = interval;
+            ir_.outputControl.nstcalcenergy = interval;
         }
         else if (parameterName == "nstenergy")
         {
-            ir_.nstenergy = interval;
+            ir_.outputControl.nstenergy = interval;
         }
         else if (parameterName == "nstfout")
         {
-            ir_.nstfout = interval;
+            ir_.outputControl.nstfout = interval;
         }
         else if (parameterName == "nstlist")
         {
@@ -230,7 +250,12 @@ TEST(MultipleTimeStepping, ChecksIntegrator)
     const GromppMtsOpts mtsOpts = simpleMtsOpts();
 
     t_inputrec ir;
-    ir.eI = IntegrationAlgorithm::BD;
+    // Set output frequencies to 0 to avoid MTS validation errors
+    ir.outputControl.nstcalcenergy = 0;
+    ir.outputControl.nstenergy     = 0;
+    ir.outputControl.nstlog        = 0;
+    ir.outputControl.nstfout       = 0;
+    ir.eI                          = IntegrationAlgorithm::BD;
 
     setAndCheckMtsLevels(mtsOpts, &ir, 1);
 }

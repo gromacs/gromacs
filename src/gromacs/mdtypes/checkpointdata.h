@@ -49,12 +49,12 @@
 #include <type_traits>
 #include <vector>
 
-#include "gromacs/math/multidimarray.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
@@ -100,32 +100,9 @@ enum class CheckpointDataOperation
  * \ingroup module_modularsimulator
  */
 template<CheckpointDataOperation operation, typename T>
-ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const_v<T>, const typename T::value_type, typename T::value_type>>
-makeCheckpointArrayRef(T& container)
-{
-    return container;
-}
-
-/*! \internal
- * \brief Get an ArrayRef whose const-ness is defined by the checkpointing operation
- *
- * \tparam operation  Whether we are reading or writing
- * \tparam T          The type of values stored in the ArrayRef
- * \param container   The ephemeral container the ArrayRef is referencing
- * \return            The ArrayRef
- *
- * \see ArrayRef
- *
- * This overload suits use cases like
- *
- *  serialize(makeCheckpointArrayRef<operation, real>(arrayRefFromArray(legacyPtr, n)));
- *
- * where the "container" is an R-value whose lifetime is sufficient for the use case.
- *
- * \ingroup module_modularsimulator
- */
-template<CheckpointDataOperation operation, typename T>
-ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const_v<T>, const typename T::value_type, typename T::value_type>>
+ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const_v<std::remove_reference_t<T>>,
+                            const typename std::remove_reference_t<T>::value_type,
+                            typename std::remove_reference_t<T>::value_type>>
 makeCheckpointArrayRef(T&& container)
 {
     return container;
@@ -248,9 +225,18 @@ public:
     template<typename T>
     std::enable_if_t<IsSerializableType<T>::value, void> arrayRef(const std::string& key,
                                                                   ArrayRef<T>        values) const;
-    // Read ArrayRef of RVec
-    void arrayRef(const std::string& key, ArrayRef<RVec> values) const;
+    // Read ArrayRef of RVec or DVec
+    template<typename T>
+    void arrayRef(const std::string& key, ArrayRef<BasicVector<T>> values) const;
     //! }
+
+    /*! \brief Read or write a Matrix3x3 from / to checkpoint
+     *
+     * \tparam operation  Whether we are reading or writing
+     * \param key         The key to [read|write] the tensor [from|to]
+     * \param values      The tensor to [read|write]
+     */
+    void matrix3x3(const std::string& key, gmx::Matrix3x3& values) const;
 
     /*! \brief Read or write a tensor from / to checkpoint
      *
@@ -299,9 +285,13 @@ public:
     template<typename T>
     std::enable_if_t<IsSerializableType<T>::value, void> arrayRef(const std::string& key,
                                                                   ArrayRef<const T>  values);
-    // Write ArrayRef of RVec
-    void arrayRef(const std::string& key, ArrayRef<const RVec> values);
+    // Write ArrayRef of RVec or DVec
+    template<typename T>
+    void arrayRef(const std::string& key, ArrayRef<const BasicVector<T>> values);
     //! }
+
+    //! \copydoc CheckpointData<CheckpointDataOperation::Read>::matrix3x3
+    void matrix3x3(const std::string& key, const gmx::Matrix3x3& values);
 
     //! \copydoc CheckpointData<CheckpointDataOperation::Read>::tensor
     void tensor(const std::string& key, const ::tensor values);
@@ -526,7 +516,8 @@ WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const T> values)
     }
 }
 
-inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<RVec> values) const
+template<typename T>
+inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<BasicVector<T>> values) const
 {
     GMX_RELEASE_ASSERT(values.size() >= (*inputTree_)[key].asArray().values().size(),
                        "Read vector does not fit in passed ArrayRef.");
@@ -537,11 +528,12 @@ inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<RVec> 
     for (; outputIt != outputEnd && inputIt != inputEnd; outputIt++, inputIt++)
     {
         auto storedRVec = inputIt->asObject()["RVec"].asArray().values();
-        *outputIt = { storedRVec[XX].cast<real>(), storedRVec[YY].cast<real>(), storedRVec[ZZ].cast<real>() };
+        *outputIt = { storedRVec[XX].cast<T>(), storedRVec[YY].cast<T>(), storedRVec[ZZ].cast<T>() };
     }
 }
 
-inline void WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const RVec> values)
+template<typename T>
+inline void WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const BasicVector<T>> values)
 {
     auto builder = outputTreeBuilder_->addObjectArray(key);
     for (const auto& value : values)
@@ -549,6 +541,20 @@ inline void WriteCheckpointData::arrayRef(const std::string& key, ArrayRef<const
         auto subbuilder = builder.addObject();
         subbuilder.addUniformArray("RVec", { value[XX], value[YY], value[ZZ] });
     }
+}
+
+inline void ReadCheckpointData::matrix3x3(const std::string& key, gmx::Matrix3x3& values) const
+{
+    auto array     = (*inputTree_)[key].asArray().values();
+    values[XX][XX] = array[0].cast<real>();
+    values[XX][YY] = array[1].cast<real>();
+    values[XX][ZZ] = array[2].cast<real>();
+    values[YY][XX] = array[3].cast<real>();
+    values[YY][YY] = array[4].cast<real>();
+    values[YY][ZZ] = array[5].cast<real>();
+    values[ZZ][XX] = array[6].cast<real>();
+    values[ZZ][YY] = array[7].cast<real>();
+    values[ZZ][ZZ] = array[8].cast<real>();
 }
 
 inline void ReadCheckpointData::tensor(const std::string& key, ::tensor values) const
@@ -563,6 +569,20 @@ inline void ReadCheckpointData::tensor(const std::string& key, ::tensor values) 
     values[ZZ][XX] = array[6].cast<real>();
     values[ZZ][YY] = array[7].cast<real>();
     values[ZZ][ZZ] = array[8].cast<real>();
+}
+
+inline void WriteCheckpointData::matrix3x3(const std::string& key, const gmx::Matrix3x3& values)
+{
+    auto builder = outputTreeBuilder_->addUniformArray<real>(key);
+    builder.addValue(values[XX][XX]);
+    builder.addValue(values[XX][YY]);
+    builder.addValue(values[XX][ZZ]);
+    builder.addValue(values[YY][XX]);
+    builder.addValue(values[YY][YY]);
+    builder.addValue(values[YY][ZZ]);
+    builder.addValue(values[ZZ][XX]);
+    builder.addValue(values[ZZ][YY]);
+    builder.addValue(values[ZZ][ZZ]);
 }
 
 inline void WriteCheckpointData::tensor(const std::string& key, const ::tensor values)

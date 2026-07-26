@@ -47,10 +47,10 @@
 #ifndef GMX_MATH_BOXMATRIX_H
 #define GMX_MATH_BOXMATRIX_H
 
-#include "gromacs/math/matrix.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 

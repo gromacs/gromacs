@@ -74,7 +74,7 @@ TopologyInformation::TopologyInformation() :
 
 TopologyInformation::~TopologyInformation() {}
 
-void TopologyInformation::fillFromInputFile(const std::string& filename)
+void TopologyInformation::fillFromInputFile(const std::filesystem::path& filename)
 {
     mtop_ = std::make_unique<gmx_mtop_t>();
     // TODO When filename is not a .tpr, then using readConfAndAtoms
@@ -84,7 +84,7 @@ void TopologyInformation::fillFromInputFile(const std::string& filename)
     // TODO Once there are fewer callers of the file-reading
     // functionality, make them read directly into std::vector.
     rvec *x = nullptr, *v = nullptr;
-    readConfAndTopology(filename.c_str(), &bTop_, mtop_.get(), &pbcType_, &x, &v, boxtop_);
+    readConfAndTopology(filename, &bTop_, mtop_.get(), &pbcType_, &x, &v, boxtop_);
     xtop_.assign(x, x + mtop_->natoms);
     vtop_.assign(v, v + mtop_->natoms);
     sfree(x);

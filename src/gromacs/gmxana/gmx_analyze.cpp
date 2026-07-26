@@ -121,7 +121,7 @@ static void power_fit(int n, int nset, real** val, real* t)
         {
             fprintf(stdout, "Will power fit up to point %d, since it is not larger than 0\n", i);
         }
-        lsq_y_ax_b(i, x, y, &a, &b, &r, &quality);
+        gmx::lsq_y_ax_b(i, x, y, &a, &b, &r, &quality);
         fprintf(stdout, "Power fit set %3d:  error %.3f  a %g  b %g\n", s + 1, quality, a, std::exp(b));
     }
 
@@ -183,11 +183,11 @@ static void regression_analysis(int n, gmx_bool bXYdy, real* x, int nset, real**
         real S, a, b, da, db, r = 0;
         if (bXYdy)
         {
-            lsq_y_ax_b_error(n, x, val[0], val[1], &a, &b, &da, &db, &r, &S);
+            gmx::lsq_y_ax_b_error(n, x, val[0], val[1], &a, &b, &da, &db, &r, &S);
         }
         else
         {
-            lsq_y_ax_b(n, x, val[0], &a, &b, &r, &S);
+            gmx::lsq_y_ax_b(n, x, val[0], &a, &b, &r, &S);
         }
         real chi2 = gmx::square((n - 2) * S);
         printf("Chi2                    = %g\n", chi2);

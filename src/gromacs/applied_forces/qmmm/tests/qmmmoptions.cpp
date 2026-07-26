@@ -69,6 +69,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class QMMMOptionsTest : public ::testing::Test
 {
@@ -306,4 +310,6 @@ TEST_F(QMMMOptionsTest, CP2KInputProcessing)
     checker.checkInteger(params.qmMultiplicity_, "QM multiplicity");
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

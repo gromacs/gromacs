@@ -66,7 +66,7 @@ struct TrajectoryTolerances
 {
     /*!@{*/
     /*! \brief Tolerances for reproduction of different quantities. */
-    FloatingPointTolerance box, coordinates, velocities, forces;
+    FloatingPointTolerance box, coordinates, velocities, forces, time;
     /*!@}*/
 };
 

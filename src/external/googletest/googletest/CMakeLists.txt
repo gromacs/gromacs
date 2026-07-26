@@ -127,7 +127,11 @@ include_directories(${gtest_build_include_dirs})
 # present in libstdc++ in version GCC 12 compiled in C++17 mode. This
 # can probably be removed when we start requiring newer versions of
 # the standard library.
-cxx_library(gtest "${cxx_strict} -Wno-deprecated-declarations" src/gtest-all.cc)
+if (NOT MSVC)
+  cxx_library(gtest "${cxx_strict} -Wno-deprecated-declarations" src/gtest-all.cc)
+else()
+  cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
+endif()
 set_target_properties(gtest PROPERTIES VERSION ${GOOGLETEST_VERSION})
 if(GTEST_HAS_ABSL)
   target_compile_definitions(gtest PUBLIC GTEST_HAS_ABSL=1)

@@ -296,7 +296,7 @@ int gmx_genconf(int argc, char* argv[])
     }
     if (bTRX)
     {
-        done_frame(&frame);
+        gmx::done_frame(&frame);
         close_trx(status);
     }
     else

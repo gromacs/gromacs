@@ -1,4 +1,3 @@
-
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -53,9 +52,9 @@ namespace gmx
  * \param[in] name       The name of the group.
  * \returns the ID of the group.
  *
- * \throws FileIOError If the group cannot be created, such as if it already exists.
+ * \throws H5mdError If the group cannot be created, such as if it already exists.
  */
-hid_t createGroup(const hid_t container, const char* name);
+hid_t createGroup(hid_t container, const char* name);
 
 /*! \brief Open an existing HDF5 group.
  *
@@ -63,9 +62,9 @@ hid_t createGroup(const hid_t container, const char* name);
  * \param[in] name       The name of the group.
  * \returns the ID of the group.
  *
- * \throws FileIOError If the group cannot be found.
+ * \throws H5mdError If the group cannot be found.
  */
-hid_t openGroup(const hid_t container, const char* name);
+hid_t openGroup(hid_t container, const char* name);
 
 /*! \brief Open an existing HDF5 group or create it if it did not exist already.
  *
@@ -75,9 +74,9 @@ hid_t openGroup(const hid_t container, const char* name);
  * \param[in] name       The name of the group.
  * \returns the ID of the group.
  *
- * \throws FileIOError If the group cannot be found or created.
+ * \throws H5mdError If the group cannot be found or created.
  */
-hid_t openOrCreateGroup(const hid_t container, const char* name);
+hid_t openOrCreateGroup(hid_t container, const char* name);
 
 } // namespace gmx
 

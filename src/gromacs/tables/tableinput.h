@@ -56,7 +56,7 @@ namespace gmx
  */
 struct AnalyticalSplineTableInput
 {
-    //NOLINTNEXTLINE(google-runtime-member-string-references)
+    // NOLINTNEXTLINE(google-runtime-member-string-references)
     const std::string&            desc;       //!< \libinternal Brief description of function
     std::function<double(double)> function;   //!< \libinternal Analytical form of function
     std::function<double(double)> derivative; //!< \libinternal Analytical derivative
@@ -66,7 +66,7 @@ struct AnalyticalSplineTableInput
  */
 struct NumericalSplineTableInput
 {
-    //NOLINTNEXTLINE(google-runtime-member-string-references)
+    // NOLINTNEXTLINE(google-runtime-member-string-references)
     const std::string&     desc;       //!< \libinternal Brief description of function
     ArrayRef<const double> function;   //!< \libinternal Vector with function values
     ArrayRef<const double> derivative; //!< \libinternal Vector with derivative values

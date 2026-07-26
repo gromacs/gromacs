@@ -65,9 +65,10 @@ namespace gmx
 {
 class AtomPairlist;
 class GridSet;
+class HostAllocationPolicy;
 template<typename>
 class ListOfLists;
-struct nbnxn_atomdata_t;
+struct nbnxm_atomdata_t;
 struct PairlistParams;
 struct PairsearchWork;
 struct PlainPairlist;
@@ -80,7 +81,7 @@ class PairlistSet
 {
 public:
     //! Constructor: initializes the pairlist set as empty
-    PairlistSet(const PairlistParams& listParams, PinningPolicy pinPolicy);
+    PairlistSet(const PairlistParams& listParams, const HostAllocationPolicy& hostAllocationPolicy);
 
     ~PairlistSet();
 
@@ -88,7 +89,7 @@ public:
     void constructPairlists(InteractionLocality      locality,
                             const GridSet&           gridSet,
                             ArrayRef<PairsearchWork> searchWork,
-                            nbnxn_atomdata_t*        nbat,
+                            nbnxm_atomdata_t*        nbat,
                             const ListOfLists<int>&  exclusions,
                             bool                     includeAllPairs,
                             int                      minimumIlistCountForGpuBalancing,
@@ -96,13 +97,13 @@ public:
                             SearchCycleCounting*     searchCycleCounting);
 
     //! Dispatch the kernel for dynamic pairlist pruning
-    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, ArrayRef<const RVec> shift_vec);
+    void dispatchPruneKernel(const nbnxm_atomdata_t* nbat, ArrayRef<const RVec> shift_vec);
 
     //! Returns the lists of CPU pairlists
-    ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
+    ArrayRef<const NbnxmPairlistCpu> cpuLists() const { return cpuLists_; }
 
     //! Returns a pointer to the GPU pairlist, nullptr when not present
-    const NbnxnPairlistGpu* gpuList() const
+    const NbnxmPairlistGpu* gpuList() const
     {
         if (!gpuLists_.empty())
         {
@@ -132,16 +133,16 @@ public:
      */
     void appendPlainPairlist(PlainPairlist*          plainPairlist,
                              real                    range,
-                             const nbnxn_atomdata_t& nbat,
+                             const nbnxm_atomdata_t& nbat,
                              ArrayRef<const int>     atomIndices);
 
 private:
     //! List of pairlists in CPU layout
-    std::vector<NbnxnPairlistCpu> cpuLists_;
+    std::vector<NbnxmPairlistCpu> cpuLists_;
     //! List of working list for rebalancing CPU lists
-    std::vector<NbnxnPairlistCpu> cpuListsWork_;
+    std::vector<NbnxmPairlistCpu> cpuListsWork_;
     //! List of pairlists in GPU layout
-    std::vector<NbnxnPairlistGpu> gpuLists_;
+    std::vector<NbnxmPairlistGpu> gpuLists_;
     //! Pairlist parameters describing setup and ranges
     const PairlistParams& params_;
     //! Tells whether multiple lists get merged into one (the first) after creation

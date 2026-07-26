@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="RBDIHS">
+    <Real Name="Epot ">16.286666682030003</Real>
+    <Real Name="dVdlambda ">7.2925381469254464</Real>
+    <Sequence Name="Forces">
+      <Int Name="Length">4</Int>
+      <Vector>
+        <Real Name="X">-5.9858565628887783</Real>
+        <Real Name="Y">-3.2706100470661372</Real>
+        <Real Name="Z">-5.7049127500937882</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">6.0407006748826468</Real>
+        <Real Name="Y">3.2567329229148649</Real>
+        <Real Name="Z">5.6675328808302528</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">5.7923382021873842</Real>
+        <Real Name="Y">3.330365983990605</Real>
+        <Real Name="Z">5.8588719340694215</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-5.8471823141812536</Real>
+        <Real Name="Y">-3.3164888598393327</Real>
+        <Real Name="Z">-5.821492064805887</Real>
+      </Vector>
+    </Sequence>
+    <Shift-Forces Name="Shift-forces">
+      <Vector Name="Central">
+        <Real Name="X">-8.8817841970012523e-16</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">-8.8817841970012523e-16</Real>
+      </Vector>
+    </Shift-Forces>
+  </FunctionType>
+</ReferenceData>
+

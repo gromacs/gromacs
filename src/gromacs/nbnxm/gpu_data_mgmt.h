@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \libinternal \file
- *  \brief Declare interface for GPU data transfer for NBNXN module
+ *  \brief Declare interface for GPU data transfer for NBNXM module
  *
  *  \author Szilard Pall <pall.szilard@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
@@ -40,18 +40,20 @@
  *  \inlibraryapi
  */
 
-#ifndef GMX_NBNXN_GPU_DATA_MGMT_H
-#define GMX_NBNXN_GPU_DATA_MGMT_H
+#ifndef GMX_NBNXM_GPU_DATA_MGMT_H
+#define GMX_NBNXM_GPU_DATA_MGMT_H
 
 #include <memory>
+#include <optional>
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "nbnxm.h"
 
-struct gmx_wallclock_gpu_nbnxn_t;
+struct gmx_wallclock_gpu_nbnxm_t;
 struct interaction_const_t;
 class DeviceStream;
 
@@ -60,8 +62,8 @@ namespace gmx
 class AtomPairlist;
 struct NbnxmGpu;
 struct NBAtomDataGpu;
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistGpu;
+struct nbnxm_atomdata_t;
+struct NbnxmPairlistGpu;
 struct PairlistParams;
 class DeviceStreamManager;
 
@@ -88,15 +90,15 @@ GPU_FUNC_QUALIFIER
 NbnxmGpu* gpu_init(const DeviceStreamManager gmx_unused& deviceStreamManager,
                    const interaction_const_t gmx_unused* ic,
                    const PairlistParams gmx_unused&      listParams,
-                   const nbnxn_atomdata_t gmx_unused*    nbat,
+                   const nbnxm_atomdata_t gmx_unused*    nbat,
                    /* true if both local and non-local are done on GPU */
-                   bool gmx_unused                     bLocalAndNonlocal,
-                   const std::optional<int> gmx_unused nLambda) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+                   bool gmx_unused bLocalAndNonlocal,
+                   const std::optional<size_t> gmx_unused nLambda) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
 void gpu_init_pairlist(NbnxmGpu gmx_unused*                      nb,
-                       const struct NbnxnPairlistGpu gmx_unused* h_nblist,
+                       const struct NbnxmPairlistGpu gmx_unused* h_nblist,
                        InteractionLocality gmx_unused            iloc) GPU_FUNC_TERM;
 
 /** Initializes fep pair-list data for GPU, called at every pair search step. */
@@ -104,11 +106,11 @@ GPU_FUNC_QUALIFIER
 void gpu_init_feppairlist(NbnxmGpu gmx_unused*           nb,
                           const AtomPairlist gmx_unused& h_feplist,
                           InteractionLocality gmx_unused iloc,
-                          const GridSet gmx_unused&      gridSet) GPU_FUNC_TERM;
+                          ArrayRef<const int> gmx_unused atomIndices) GPU_FUNC_TERM;
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
-void gpu_init_atomdata(NbnxmGpu gmx_unused* nb, const nbnxn_atomdata_t gmx_unused* nbat) GPU_FUNC_TERM;
+void gpu_init_atomdata(NbnxmGpu gmx_unused* nb, const nbnxm_atomdata_t gmx_unused* nbat) GPU_FUNC_TERM;
 
 /*! \brief Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed.
@@ -119,7 +121,7 @@ void gpu_pme_loadbal_update_param(struct nonbonded_verlet_t gmx_unused* nbv,
 
 /** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 GPU_FUNC_QUALIFIER
-void gpu_upload_shiftvec(NbnxmGpu gmx_unused* nb, const nbnxn_atomdata_t gmx_unused* nbatom) GPU_FUNC_TERM;
+void gpu_upload_shiftvec(NbnxmGpu gmx_unused* nb, const nbnxm_atomdata_t gmx_unused* nbatom) GPU_FUNC_TERM;
 
 /** Clears GPU outputs: nonbonded force, shift force and energy. */
 GPU_FUNC_QUALIFIER
@@ -131,7 +133,7 @@ void gpu_free(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM;
 
 /** Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 GPU_FUNC_QUALIFIER
-struct gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu gmx_unused* nb)
+struct gmx_wallclock_gpu_nbnxm_t* gpu_get_timings(NbnxmGpu gmx_unused* nb)
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Resets nonbonded GPU timings. */

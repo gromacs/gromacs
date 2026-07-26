@@ -122,6 +122,11 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
             streams_[DeviceStreamType::PmePpTransfer] =
                     std::make_unique<DeviceStream>(context_, DeviceStreamPriority::Normal, useTiming);
         }
+        if (simulationWork.useGpuHaloExchange)
+        {
+            streams_[DeviceStreamType::HaloExchange] =
+                    std::make_unique<DeviceStream>(context_, DeviceStreamPriority::High, false);
+        }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }

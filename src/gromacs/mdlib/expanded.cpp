@@ -1581,7 +1581,7 @@ static void simulatedTemperingUpdateTemperature(const t_inputrec&               
     if (inputrecNptTrotter(&ir) || inputrecNphTrotter(&ir) || inputrecNvtTrotter(&ir))
     {
         /* we need to recalculate the masses if the temperature has changed */
-        init_npt_masses(ir, *ekind, state, MassQ, FALSE);
+        gmx::init_npt_masses(ir, *ekind, state, MassQ, FALSE);
         for (int i = 0; i < state->nnhpres; i++)
         {
             for (int j = 0; j < ir.opts.nhchainlength; j++)

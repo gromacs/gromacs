@@ -105,6 +105,10 @@ public:
     bool combineMtsForcesBeforeHaloExchange = false;
     //! Whether to clear local force buffer on the device early on in the step
     bool clearGpuFBufferEarly = false;
+    //! Whether we need to copy coordinates from GPU for IO at this step, will occur just before update, is always false with update on CPU
+    bool copyXFromGpuForIO = false;
+    //! Whether we need to copy velocities from GPU for IO at this step, will occur just before update, is always false with update on CPU
+    bool copyVFromGpuForIO = false;
 };
 
 /*! \libinternal

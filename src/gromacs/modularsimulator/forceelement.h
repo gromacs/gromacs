@@ -57,7 +57,6 @@
 #include "topologyholder.h"
 
 struct gmx_enfrot;
-struct gmx_shellfc_t;
 struct gmx_wallcycle;
 class CpuPpLongRangeNonbondeds;
 struct pull_t;
@@ -65,7 +64,9 @@ struct t_nrnb;
 
 namespace gmx
 {
+struct shellfc_t;
 class Awh;
+class DeviceStreamManager;
 class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
@@ -101,6 +102,7 @@ public:
                  bool                        isVerbose,
                  FILE*                       fplog,
                  const t_commrec*            cr,
+                 const DeviceStreamManager*  deviceStreamManager,
                  const t_inputrec*           inputrec,
                  const MDModulesNotifiers&   mdModulesNotifiers,
                  const MDAtoms*              mdAtoms,
@@ -115,7 +117,7 @@ public:
                  const gmx_mtop_t&           globalTopology,
                  gmx_enfrot*                 enforcedRotation);
     //! Destructor
-    ~ForceElement();
+    ~ForceElement() override;
 
     /*! \brief Register force calculation for step / time
      *
@@ -139,6 +141,7 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
      * \param observablesReducer          Pointer to the \c ObservablesReducer object
+     * \param deviceStreamManager         Pointer to the device stream manager
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
@@ -148,7 +151,8 @@ public:
                                                     EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer* observablesReducer);
+                                                    ObservablesReducer*        observablesReducer,
+                                                    const DeviceStreamManager* deviceStreamManager);
 
     //! Callback on domain decomposition repartitioning
     DomDecCallback registerDomDecCallback() override;
@@ -165,7 +169,7 @@ private:
     void run(Step step, Time time, unsigned int flags);
 
     //! The shell / FC helper struct
-    gmx_shellfc_t* shellfc_;
+    shellfc_t* shellfc_;
     //! Whether shells or flexible constraints are present
     const bool doShellFC_;
 

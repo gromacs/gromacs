@@ -64,7 +64,7 @@ class ArrayRef;
  * \libinternal
  * \brief Simulation environment and configuration.
  *
- * SimulationContext allows a simulation module (\relates gmx::mdrun) to retrieve
+ * SimulationContext allows a simulation module (\relates mdrun) to retrieve
  * runtime parameters and resources from client code. The client retains ownership
  * of the context and its resources, with exceptions as noted.
  *
@@ -76,7 +76,7 @@ class ArrayRef;
  * https://gitlab.com/gromacs/gromacs/-/issues/2587
  *
  * The public interface of SimulationContext is not yet well-specified.
- * Client code can create an instance with gmx::createSimulationContext()
+ * Client code can create an instance with createSimulationContext()
  *
  * \warning The SimulationContext does not yet encapsulate the resources allocated
  * to the simulator. See https://gitlab.com/gromacs/gromacs/-/issues/3650
@@ -123,7 +123,7 @@ public:
      * and then freeing the communicator, if appropriate.
      *
      * With an external MPI library (non-thread-MPI chosen when configuring with CMake),
-     * the client promises that MPI has been initialized (such as by calling gmx::init()).
+     * the client promises that MPI has been initialized (such as by calling init()).
      * This communicator is "borrowed" (not duplicated) from the caller.
      * Additional communicators may be split from the provided communicator
      * during the life of the SimulationContext or its consumers.
@@ -143,7 +143,7 @@ public:
      * \brief MPI resources for the entire simulation context.
      *
      * With an external MPI library (non-thread-MPI chosen when configuring with CMake),
-     * gmx::init() has called MPI_Init and the provided communicator is valid to use.
+     * init() has called MPI_Init and the provided communicator is valid to use.
      * The communicator is "borrowed" (not duplicated) from the caller.
      *
      * With thread-MPI, the communicator is set up later
@@ -156,7 +156,7 @@ public:
      * \brief MPI communicator object for this simulation.
      *
      * With an external MPI library (non-thread-MPI chosen when configuring with CMake),
-     * gmx::init() has called MPI_Init and the provided communicator is valid to use.
+     * init() has called MPI_Init and the provided communicator is valid to use.
      * The communicator is "borrowed" (not duplicated) from the caller.
      *
      * With thread-MPI, the communicator is set up later

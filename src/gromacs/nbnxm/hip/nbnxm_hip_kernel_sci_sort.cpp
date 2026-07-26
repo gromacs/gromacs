@@ -75,7 +75,7 @@ __launch_bounds__(threadsPerBlock) __global__ void nbnxmKernelBucketSciSort(GpuP
 
     if (size > (blockOffset + tid))
     {
-        nbnxn_sci_t sci      = plist.sci[blockOffset + tid];
+        nbnxm_sci_t sci      = plist.sci[blockOffset + tid];
         int         sciCount = plist.sorting.sciCount[blockOffset + tid];
 
         // Choose an order in the sorted list for sci with the same number of neighbours as each other.
@@ -103,7 +103,7 @@ void launchNbnxmKernelHelperSciSort(const DeviceStream& deviceStream, GpuPairlis
     const auto kernelSciSort       = nbnxmKernelBucketSciSort<c_sciSortingThreadsPerBlock>;
     const auto kernelSciSortArgs   = prepareGpuKernelArguments(kernelSciSort, configSortSci, plist);
 
-    launchGpuKernel(kernelSciSort, configSortSci, deviceStream, nullptr, "nbnxn_kernel_sci_sort", kernelSciSortArgs);
+    launchGpuKernel(kernelSciSort, configSortSci, deviceStream, nullptr, "nbnxm_kernel_sci_sort", kernelSciSortArgs);
 }
 
 void launchNbnxmKernelSciSort(NbnxmGpu* nb, InteractionLocality iloc)

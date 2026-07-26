@@ -152,7 +152,7 @@ public:
      * whether the test conditions are satisfied */
     static bool conditionSatisfied(const int /* numRanks */) { return true; }
     //! Reason to echo when skipping the test
-    inline static const char* s_skipReason = "UNUSED - any rank count satisfies";
+    inline static const std::string s_skipReason = "UNUSED - any rank count satisfies";
 };
 
 //! \internal \brief Helper for GMX_MPI_TEST to permit only a specific rank count

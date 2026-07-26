@@ -64,10 +64,10 @@ public:
     void runAndCheckResults();
 
     //! \brief Select groups when prompted for when running the tool.
-    void selectGroups(const std::initializer_list<const char*> groups);
+    void selectGroups(std::initializer_list<const char*> groups);
 
     //! \brief Select groups when prompted for when running the tool.
-    void selectGroups(const ArrayRef<const std::string> groups);
+    void selectGroups(ArrayRef<const std::string> groups);
 
 private:
     //! \brief Function for tool to test, must be set by derived class.

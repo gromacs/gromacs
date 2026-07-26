@@ -125,13 +125,12 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
         for (bool useGraph : { false, true })
         {
 
-            HostVector<int> h_one;
-            changePinningPolicy(&h_one, PinningPolicy::PinnedIfSupported);
+            HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+            HostVector<int> h_one(hostAllocationPolicy);
             h_one.resize(1);
             h_one[0] = 1;
 
-            HostVector<int> h_output;
-            changePinningPolicy(&h_output, PinningPolicy::PinnedIfSupported);
+            HostVector<int> h_output(hostAllocationPolicy);
             h_output.resize(1);
 
             // Set output to 1 on GPU
@@ -157,8 +156,13 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
             const DeviceStream& stream =
                     deviceStreamManager.stream(gmx::DeviceStreamType::UpdateAndConstraints);
             clearDeviceBufferAsync(&d_staging, 0, 1, stream);
-            copyBetweenDeviceBuffers(
-                    asMpiPointer(d_output), asMpiPointer(d_staging), 0, 1, stream, GpuApiCallBehavior::Async, nullptr);
+            copyBetweenDeviceBuffers(asRawDevicePointer(d_output),
+                                     asRawDevicePointer(d_staging),
+                                     0,
+                                     1,
+                                     stream,
+                                     GpuApiCallBehavior::Async,
+                                     nullptr);
 
             if (mdGpuGraph.graphIsCapturingThisStep()) // denote end of graph region
             {

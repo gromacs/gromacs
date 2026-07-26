@@ -138,9 +138,6 @@ If you want to check which loops have been vectorized, add
 ``-Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize``
 to the ``CMAKE_CXX_FLAGS``.
 
-When calling ``gmx mdrun``, set the
-``GMX_NBNXN_PLAINC_1X1`` environment variable to choose the correct kernel.
-
 Please note the early state and instability of the compilers at the time of writing.
 If you experience errors, try adding ``-fno-vectorize``, after ``-O3`` when present,
 to ``CMAKE_CXX_FLAGS`` to disable vectorization of the code that's not explicitly vectorized.

@@ -75,7 +75,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -125,5 +126,5 @@ TEST_F(QMMMTest, ForceProviderLackingInputThrows)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

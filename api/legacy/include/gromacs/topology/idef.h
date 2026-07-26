@@ -46,6 +46,8 @@
 #include <array>
 #include <vector>
 
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
@@ -366,21 +368,24 @@ static inline int ilistStride(const InteractionListHandle& ilistHandle)
     return 1 + NRAL(ilistHandle.functionType);
 }
 
-/*! \brief CMAP data for a single grid. */
-struct gmx_cmapdata_t
-{
-    /*! Has length \f$4 \times gridExtent \times gridExtent\f$,
-     * there are 4 entries for each CMAP type \f$(V, dV dx, dV dy, d^2 dV dx dy)\f$
-     */
-    std::vector<real> cmap;
-};
-
-/*! \brief CMAP grids. */
-struct gmx_cmap_t
-{
-    int                         gridExtent = 0; //!< Grid extent.
-    std::vector<gmx_cmapdata_t> cmapdata; //!< Lists of grids with actual, pre-interpolated data.
-};
+/*! \brief Grids with pre-interpolated CMAP data.
+ *
+ * The outer lookup is a (square) 2D array corresponding to lookups
+ * for pairs of dihedral angles found in the 5 atoms of the CMAP
+ * interaction, and the inner loop has four entries for each grid
+ * point \f$(V, dV dx, dV dy, d^2 dV dx dy)\f$.
+ *
+ * Note that only one FEP state is described here; FEP of CMAP is not
+ * supported. */
+using CmapGrid = gmx::MultiDimArray<std::vector<std::array<real, 4>>, gmx::dynamicExtents2D>;
+/*! \brief Grids with pre-interpolated CMAP data.
+ *
+ * This outer-most lookup is over all CMAP types used in the force
+ * field.
+ *
+ * Note that only one FEP state is described here; FEP of CMAP is not
+ * supported. */
+using CmapGrids = std::vector<CmapGrid>;
 
 /*! \brief Sorting of the interaction list. */
 enum
@@ -422,8 +427,8 @@ public:
     gmx::EnumerationArray<InteractionFunction, int> numNonperturbedInteractions;
     //! The sorting state of interaction in il.
     int ilsort = ilsortUNKNOWN;
-    //! The dihedral correction maps.
-    gmx_cmap_t cmap_grid;
+    //! The dihedral correction maps (only for state A, FEP of CMAP is not supported).
+    CmapGrids cmapGrids;
 };
 
 /*! \brief Deprecated interation definitions, used in t_topology

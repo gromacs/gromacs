@@ -342,7 +342,7 @@ static std::variant<int, IncompatibilityReasons> detectGroup(int                
     {
         AtomIndexExtremes extremes = vsiteConstructRange(lastAtom + 1, moltype);
         if (extremes.minAtom < firstAtom)
-        { // NOLINT bugprone-branch-clone
+        { // NOLINT(bugprone-branch-clone)
             /* Constructing atom precedes the group */
             return IncompatibilityReasons::VsiteConstructingAtomsSplit;
         }

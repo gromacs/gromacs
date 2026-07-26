@@ -42,8 +42,8 @@
 #ifndef GMX_MATH_INVERTMATRIX_H
 #define GMX_MATH_INVERTMATRIX_H
 
-#include "gromacs/math/matrix.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/vec.h"
 
 namespace gmx

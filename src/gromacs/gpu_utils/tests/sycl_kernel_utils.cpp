@@ -137,8 +137,9 @@ TEST_P(StaticLocalStorageTest, Works)
         deviceContext.activate();
 
         // Prepare inputs
-        const int       lowestValue = 3;
-        HostVector<int> input(sc_numThreads, { PinningPolicy::PinnedIfSupported });
+        const int            lowestValue = 3;
+        HostAllocationPolicy allocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+        HostVector<int>      input(sc_numThreads, allocationPolicy);
         // Give each thread a unique value to handle
         std::iota(input.begin(), input.end(), lowestValue);
         DeviceBuffer<int> d_input;
@@ -148,7 +149,7 @@ TEST_P(StaticLocalStorageTest, Works)
         const int* gm_input = d_input.get_pointer();
 
         // Prepare outputs, using initial sentinel value of -1
-        HostVector<int>   output(input.size(), -1, { PinningPolicy::PinnedIfSupported });
+        HostVector<int>   output(input.size(), -1, allocationPolicy);
         DeviceBuffer<int> d_output;
         allocateDeviceBuffer(&d_output, output.size(), deviceContext);
         int* gm_output = d_output.get_pointer();

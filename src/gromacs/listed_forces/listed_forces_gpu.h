@@ -151,11 +151,11 @@ public:
      * to device data structures, and updates device buffers that
      * may have been updated after search.
      *
-     * \param[in]     nbnxnAtomOrder   Mapping between rvec and NBNXM formats.
+     * \param[in]     nbnxmAtomOrder   Mapping between rvec and NBNXM formats.
      * \param[in]     idef             List of interactions to compute.
      * \param[in,out] nbnxmAtomDataGpu Nbnxm GPU atom data (XQ and force buffers).
      */
-    void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
+    void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxmAtomOrder,
                                                 const InteractionDefinitions& idef,
                                                 NBAtomDataGpu*                nbnxmAtomDataGpu);
     /*! \brief

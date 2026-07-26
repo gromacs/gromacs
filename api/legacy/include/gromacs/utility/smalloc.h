@@ -198,7 +198,7 @@ template<typename T>
 static inline void gmx_snew_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem)
 {
     static_assert(std::is_standard_layout_v<T>, "snew() called on C++ type");
-    // NOLINTNEXTLINE bugprone-sizeof-expression
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     ptr = static_cast<T*>(save_calloc(name, file, line, nelem, sizeof(T)));
 }
 /** C++ helper for srenew(). */
@@ -206,7 +206,7 @@ template<typename T>
 static inline void gmx_srenew_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem)
 {
     static_assert(std::is_standard_layout_v<T>, "srenew() called on C++ type");
-    // NOLINTNEXTLINE bugprone-sizeof-expression
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     ptr = static_cast<T*>(save_realloc(name, file, line, ptr, nelem, sizeof(T)));
 }
 /** C++ helper for smalloc(). */

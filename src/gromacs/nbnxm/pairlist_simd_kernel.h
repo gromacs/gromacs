@@ -87,7 +87,7 @@ void setICellCoordinatesSimd2xMM(int                   ci,
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
 void makeClusterListSimd4xM(const Grid&              jGrid,
-                            NbnxnPairlistCpu*        nbl,
+                            NbnxmPairlistCpu*        nbl,
                             int                      icluster,
                             int                      firstCell,
                             int                      lastCell,
@@ -114,7 +114,7 @@ void makeClusterListSimd4xM(const Grid&              jGrid,
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
 void makeClusterListSimd2xMM(const Grid&              jGrid,
-                             NbnxnPairlistCpu*        nbl,
+                             NbnxmPairlistCpu*        nbl,
                              int                      icluster,
                              int                      firstCell,
                              int                      lastCell,

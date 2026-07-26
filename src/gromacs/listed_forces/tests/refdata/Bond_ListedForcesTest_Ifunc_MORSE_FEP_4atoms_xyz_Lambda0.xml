@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="MORSE">
+    <Real Name="Epot ">0.0050728139182472523</Real>
+    <Real Name="dVdlambda ">-0.072414585075343207</Real>
+    <Sequence Name="Forces">
+      <Int Name="Length">4</Int>
+      <Vector>
+        <Real Name="X">-0.77176008581511446</Real>
+        <Real Name="Y">-0.10697664555853084</Real>
+        <Real Name="Z">0.87109554240517972</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.85454406165755559</Real>
+        <Real Name="Y">-0.92406014447913343</Real>
+        <Real Name="Z">-0.36686587136486259</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.85709367051145291</Real>
+        <Real Name="Y">0.91827324227033313</Real>
+        <Real Name="Z">0.33773815228909299</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.77430969466901178</Real>
+        <Real Name="Y">0.11276354776733109</Real>
+        <Real Name="Z">-0.84196782332941011</Real>
+      </Vector>
+    </Sequence>
+    <Shift-Forces Name="Shift-forces">
+      <Vector Name="Central">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+    </Shift-Forces>
+  </FunctionType>
+</ReferenceData>
+

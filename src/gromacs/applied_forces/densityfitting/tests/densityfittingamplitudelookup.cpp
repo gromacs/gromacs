@@ -55,6 +55,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class DensityFittingAmplitudeLookupTest : public ::testing::Test
 {
@@ -125,4 +129,6 @@ TEST_F(DensityFittingAmplitudeLookupTest, CanMoveConstruct)
     EXPECT_EQ(lookupResult[1], 1);
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

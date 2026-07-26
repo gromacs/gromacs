@@ -2685,6 +2685,7 @@ int pdb2gmx::run()
               &localAtoms[chain],
               &x,
               ah,
+              restp_chain,
               &symtab,
               cc->nterpairs,
               cc->ntdb,

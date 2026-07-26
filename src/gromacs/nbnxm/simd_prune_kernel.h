@@ -50,28 +50,28 @@
 namespace gmx
 {
 
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistCpu;
+struct nbnxm_atomdata_t;
+struct NbnxmPairlistCpu;
 template<typename>
 class ArrayRef;
 
-//! Prune a single NbnxnPairlistCpu entry with distance rlistInner
+//! Prune a single NbnxmPairlistCpu entry with distance rlistInner
 template<KernelLayout kernelLayout>
-void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
-                          const nbnxn_atomdata_t& nbat,
+void nbnxmSimdPruneKernel(NbnxmPairlistCpu*       nbl,
+                          const nbnxm_atomdata_t& nbat,
                           ArrayRef<const RVec>    shiftvec,
                           real                    rlistInner);
 
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-extern template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*       nbl,
-                                                               const nbnxn_atomdata_t& nbat,
+extern template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxmPairlistCpu*       nbl,
+                                                               const nbnxm_atomdata_t& nbat,
                                                                ArrayRef<const RVec>    shiftvec,
                                                                real                    rlistInner);
 #endif
 
 #if GMX_HAVE_NBNXM_SIMD_4XM
-extern template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*       nbl,
-                                                              const nbnxn_atomdata_t& nbat,
+extern template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxmPairlistCpu*       nbl,
+                                                              const nbnxm_atomdata_t& nbat,
                                                               ArrayRef<const RVec>    shiftvec,
                                                               real                    rlistInner);
 #endif

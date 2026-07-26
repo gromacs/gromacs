@@ -42,7 +42,6 @@
 namespace gmx
 {
 class CommandLineModuleManager;
-} // namespace gmx
 
 /*! \internal \brief
  * Registers all legacy command-line modules.
@@ -53,6 +52,8 @@ class CommandLineModuleManager;
  * Registers all modules corresponding to pre-5.0 binaries such that
  * they can be run through \p manager.
  */
-void registerLegacyModules(gmx::CommandLineModuleManager* manager);
+void registerLegacyModules(CommandLineModuleManager* manager);
+
+} // namespace gmx
 
 #endif

@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
@@ -55,6 +56,9 @@
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -98,14 +102,16 @@ TEST_F(H5mdAttributeTest, ScalarAttribute)
     }
 
     {
-        EXPECT_EQ(getAttribute<int32_t>(group, "creation_year"), referenceCreationYear);
-        EXPECT_EQ(getAttribute<int64_t>(group, "members"), referenceMembers);
-        EXPECT_EQ(getAttribute<uint32_t>(group, "age"), referenceAge);
-        EXPECT_EQ(getAttribute<uint64_t>(group, "birthday"), referenceBirthday);
-        EXPECT_EQ(getAttribute<float>(group, "height"), referenceHeight);
-        EXPECT_EQ(getAttribute<double>(group, "score"), referenceScore);
-        EXPECT_EQ(getAttribute<std::string>(group, "name"), referenceName);
-        EXPECT_EQ(getAttribute<std::string>(group, "address"), referenceAddress);
+        EXPECT_THAT(getAttribute<int32_t>(group, "creation_year"),
+                    ::testing::Optional(referenceCreationYear));
+        EXPECT_THAT(getAttribute<int64_t>(group, "members"), ::testing::Optional(referenceMembers));
+        EXPECT_THAT(getAttribute<uint32_t>(group, "age"), ::testing::Optional(referenceAge));
+        EXPECT_THAT(getAttribute<uint64_t>(group, "birthday"), ::testing::Optional(referenceBirthday));
+        EXPECT_THAT(getAttribute<float>(group, "height"), ::testing::Optional(referenceHeight));
+        EXPECT_THAT(getAttribute<double>(group, "score"), ::testing::Optional(referenceScore));
+        EXPECT_THAT(getAttribute<std::string>(group, "name"), ::testing::Optional(referenceName));
+        EXPECT_THAT(getAttribute<std::string>(group, "address"),
+                    ::testing::Optional(::testing::StrEq(referenceAddress)));
     }
 }
 
@@ -141,16 +147,18 @@ TEST_F(H5mdAttributeTest, NumericAttributeViaVector)
     {
         SCOPED_TRACE("Testing H5MD reading of array-like attributes.");
 
-        EXPECT_EQ(getAttributeVector<int32_t>(group, "index"), referenceResIDs);
-        EXPECT_EQ(getAttributeVector<int64_t>(group, "atomic_numbers"), referenceAtomicNumbers);
-        EXPECT_EQ(getAttributeVector<uint32_t>(group, "atom_ids"), referenceAtomIDs);
-        EXPECT_EQ(getAttributeVector<uint64_t>(group, "melt"), referenceMelt);
-        EXPECT_EQ(getAttributeVector<float>(group, "masses"), referenceMasses);
-        EXPECT_EQ(getAttributeVector<double>(group, "positions"), referencePositions);
+        EXPECT_THAT(getAttributeVector<int32_t>(group, "index"), ::testing::Optional(referenceResIDs));
+        EXPECT_THAT(getAttributeVector<int64_t>(group, "atomic_numbers"),
+                    ::testing::Optional(referenceAtomicNumbers));
+        EXPECT_THAT(getAttributeVector<uint32_t>(group, "atom_ids"), ::testing::Optional(referenceAtomIDs));
+        EXPECT_THAT(getAttributeVector<uint64_t>(group, "melt"), ::testing::Optional(referenceMelt));
+        EXPECT_THAT(getAttributeVector<float>(group, "masses"), ::testing::Optional(referenceMasses));
+        EXPECT_THAT(getAttributeVector<double>(group, "positions"),
+                    ::testing::Optional(referencePositions));
     }
 }
 
-/*! \brief Test the reading and writing of array-like (gmx::ArrayRef) attributes.
+/*! \brief Test the reading and writing of array-like (ArrayRef) attributes.
  */
 TEST_F(H5mdAttributeTest, NumericAttributeViaArrayRef)
 {
@@ -180,12 +188,14 @@ TEST_F(H5mdAttributeTest, NumericAttributeViaArrayRef)
     {
         SCOPED_TRACE("Testing H5MD reading of array-like attributes.");
 
-        EXPECT_EQ(getAttributeVector<int32_t>(group, "index"), referenceResIDs);
-        EXPECT_EQ(getAttributeVector<int64_t>(group, "atomic_numbers"), referenceAtomicNumbers);
-        EXPECT_EQ(getAttributeVector<uint32_t>(group, "atom_ids"), referenceAtomIDs);
-        EXPECT_EQ(getAttributeVector<uint64_t>(group, "melt"), referenceMelt);
-        EXPECT_EQ(getAttributeVector<float>(group, "masses"), referenceMasses);
-        EXPECT_EQ(getAttributeVector<double>(group, "positions"), referencePositions);
+        EXPECT_THAT(getAttributeVector<int32_t>(group, "index"), ::testing::Optional(referenceResIDs));
+        EXPECT_THAT(getAttributeVector<int64_t>(group, "atomic_numbers"),
+                    ::testing::Optional(referenceAtomicNumbers));
+        EXPECT_THAT(getAttributeVector<uint32_t>(group, "atom_ids"), ::testing::Optional(referenceAtomIDs));
+        EXPECT_THAT(getAttributeVector<uint64_t>(group, "melt"), ::testing::Optional(referenceMelt));
+        EXPECT_THAT(getAttributeVector<float>(group, "masses"), ::testing::Optional(referenceMasses));
+        EXPECT_THAT(getAttributeVector<double>(group, "positions"),
+                    ::testing::Optional(referencePositions));
     }
 }
 
@@ -214,12 +224,8 @@ TEST_F(H5mdAttributeTest, StringAttributeViaArrayRef)
     }
 
     {
-        const auto ret1 = getAttributeVector<std::string>(group, "sequence");
-        const auto ret2 = getAttributeVector<std::string>(group, "sequence_c");
-        EXPECT_TRUE(ret1.has_value());
-        EXPECT_TRUE(ret2.has_value());
-        EXPECT_EQ(ret1.value(), refSeq);
-        EXPECT_EQ(ret2.value(), refSeq);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence"), ::testing::Optional(refSeq));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence_c"), ::testing::Optional(refSeq));
     }
 }
 
@@ -229,8 +235,8 @@ TEST_F(H5mdAttributeTest, VectorOfStringsNoReuse)
     const std::vector<std::string> stringsToWrite  = { "Margaret Nearl", "Lee", "Sona" };
     setAttributeVector(fileid(), attributeName, stringsToWrite);
 
-    ASSERT_TRUE(getAttributeVector<std::string>(fileid(), attributeName).has_value());
-    EXPECT_EQ(getAttributeVector<std::string>(fileid(), attributeName).value(), stringsToWrite);
+    EXPECT_THAT(getAttributeVector<std::string>(fileid(), attributeName),
+                ::testing::Optional(stringsToWrite));
 }
 
 TEST_F(H5mdAttributeTest, VectorOfCStringsNoReuse)
@@ -242,11 +248,7 @@ TEST_F(H5mdAttributeTest, VectorOfCStringsNoReuse)
     std::optional<std::vector<std::string>> readStrings =
             getAttributeVector<std::string>(fileid(), attributeName);
     ASSERT_TRUE(readStrings.has_value());
-    EXPECT_EQ(readStrings->size(), stringsToWrite.size());
-    for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
-    {
-        EXPECT_EQ(readStrings.value()[i], stringsToWrite[i]);
-    }
+    EXPECT_THAT(readStrings.value(), ::testing::Pointwise(::testing::Eq(), stringsToWrite));
 }
 
 TEST_F(H5mdAttributeTest, CharPtrPtrNoReuse)
@@ -266,11 +268,7 @@ TEST_F(H5mdAttributeTest, CharPtrPtrNoReuse)
     std::optional<std::vector<std::string>> readStrings =
             getAttributeVector<std::string>(fileid(), attributeName);
     ASSERT_TRUE(readStrings.has_value());
-    EXPECT_EQ(readStrings->size(), referenceStrings.size());
-    for (int i = 0; i < gmx::ssize(referenceStrings); ++i)
-    {
-        EXPECT_EQ(readStrings.value()[i], stringsToWrite[i]);
-    }
+    EXPECT_THAT(readStrings.value(), ::testing::Pointwise(::testing::Eq(), referenceStrings));
 
     sfree(stringsToWrite);
 }
@@ -293,8 +291,8 @@ TEST_F(H5mdAttributeTest, StringBufferReuse)
                 setAttributeStringVector(group, "sequence0", {}, refSeq_ref.begin(), refSeq_ref.end());
         auto bufferCStr = setAttributeStringVector(
                 group, "sequence_c0", std::move(buffer), refSeqCStr_ref.begin(), refSeqCStr_ref.end());
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence0"), refSeq);
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence_c0"), refSeq);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence0"), ::testing::Optional(refSeq));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence_c0"), ::testing::Optional(refSeq));
     }
 
     {
@@ -306,8 +304,8 @@ TEST_F(H5mdAttributeTest, StringBufferReuse)
         buffer = setAttributeStringVector(
                 group, "sequence_c1", std::move(buffer), refSeqCStr_ref.begin(), refSeqCStr_ref.end());
 
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence1"), refSeq);
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence_c1"), refSeq);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence1"), ::testing::Optional(refSeq));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence_c1"), ::testing::Optional(refSeq));
     }
 
     {
@@ -318,8 +316,8 @@ TEST_F(H5mdAttributeTest, StringBufferReuse)
         buffer = setAttributeStringVector(
                 group, "sequence_c2", std::move(buffer), refSeqCStr_ref.begin(), refSeqCStr_ref.end());
 
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence2"), refSeq);
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence_c2"), refSeq);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence2"), ::testing::Optional(refSeq));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence_c2"), ::testing::Optional(refSeq));
     }
 
     {
@@ -331,8 +329,8 @@ TEST_F(H5mdAttributeTest, StringBufferReuse)
         buffer = setAttributeStringVector(
                 group, "sequence_c3", std::move(buffer), refSeqCStr_ref.begin(), refSeqCStr_ref.end());
 
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence3"), refSeq);
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence_c3"), refSeq);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence3"), ::testing::Optional(refSeq));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence_c3"), ::testing::Optional(refSeq));
     }
 
     {
@@ -346,8 +344,8 @@ TEST_F(H5mdAttributeTest, StringBufferReuse)
                 group, "sequence_c4", std::move(buffer), refSeqCStr_ref.begin(), refSeqCStr_ref.end());
         EXPECT_EQ(buffer.size(), 4 * refSeq_ref.size());
 
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence4"), refSeq);
-        EXPECT_EQ(getAttributeVector<std::string>(group, "sequence_c4"), refSeq);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence4"), ::testing::Optional(refSeq));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "sequence_c4"), ::testing::Optional(refSeq));
     }
 }
 
@@ -373,15 +371,15 @@ TEST_F(H5mdAttributeTest, ScalarAttributeEdgeCases)
     {
         SCOPED_TRACE("Testing H5MD reading from a mismatched data type.");
         // Supposed to fail to match the required type and the attribute type
-        EXPECT_THROW(getAttribute<int64_t>(group, "height"), FileIOError);
-        EXPECT_THROW(getAttribute<int64_t>(group, "name"), FileIOError);
+        EXPECT_THROW_GMX(getAttribute<int64_t>(group, "height"), H5mdError);
+        EXPECT_THROW_GMX(getAttribute<int64_t>(group, "name"), H5mdError);
     }
 
     {
         SCOPED_TRACE("Testing H5MD write to an existing attribute.");
         // Supposed to fail to rewrite to an existing attribute
-        EXPECT_THROW(setAttribute(group, "name", "Maria Nearl"), FileIOError);
-        EXPECT_THROW(setAttribute(group, "height", 165), FileIOError);
+        EXPECT_THROW_GMX(setAttribute(group, "name", "Maria Nearl"), H5mdError);
+        EXPECT_THROW_GMX(setAttribute(group, "height", 165), H5mdError);
     }
 
     {
@@ -449,8 +447,8 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
 
     {
         SCOPED_TRACE("Testing H5MD reading from a mismatched data type.");
-        EXPECT_THROW(getAttributeVector<int64_t>(group, "index"), FileIOError);
-        EXPECT_THROW(getAttributeVector<int64_t>(group, "residue_names"), FileIOError);
+        EXPECT_THROW_GMX(getAttributeVector<int64_t>(group, "index"), H5mdError);
+        EXPECT_THROW_GMX(getAttributeVector<int64_t>(group, "residue_names"), H5mdError);
     }
 
     {
@@ -459,27 +457,27 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
         const std::vector<int32_t>     resID2       = { 1, 2, 3, 4 };
         const std::vector<std::string> resName2     = { "ALA", "GLY", "PHE", "VAL" };
         auto                           resName2_ref = makeArrayRef(resName2);
-        EXPECT_THROW(setAttributeVector<int32_t>(group, "index", resID2), FileIOError);
-        EXPECT_THROW(buffer = setAttributeStringVector(group,
-                                                       "residue_names",
-                                                       std::move(buffer),
-                                                       resName2_ref.begin(),
-                                                       resName2_ref.end()),
-                     FileIOError);
+        EXPECT_THROW_GMX(setAttributeVector<int32_t>(group, "index", resID2), H5mdError);
+        EXPECT_THROW_GMX(buffer = setAttributeStringVector(group,
+                                                           "residue_names",
+                                                           std::move(buffer),
+                                                           resName2_ref.begin(),
+                                                           resName2_ref.end()),
+                         H5mdError);
     }
 
     {
         SCOPED_TRACE("Testing H5MD writing an empty vector.");
         // NOTE: Empty vector throws in H5Awrite
         std::vector<int32_t> emptyIntegerVector{};
-        EXPECT_THROW(setAttributeVector<int32_t>(group, "empty_int", emptyIntegerVector), FileIOError);
+        EXPECT_THROW_GMX(setAttributeVector<int32_t>(group, "empty_int", emptyIntegerVector), H5mdError);
 
         // NOTE: Empty buffer throws as expected similar to numerical attributes
         std::vector<std::string>    emptyStringVector{};
         ArrayRef<const std::string> emptyStringRef = makeArrayRef(emptyStringVector);
-        EXPECT_THROW(buffer = setAttributeStringVector(
-                             group, "empty_string", {}, emptyStringRef.begin(), emptyStringRef.end()),
-                     FileIOError);
+        EXPECT_THROW_GMX(buffer = setAttributeStringVector(
+                                 group, "empty_string", {}, emptyStringRef.begin(), emptyStringRef.end()),
+                         H5mdError);
     }
 
     {
@@ -494,16 +492,10 @@ TEST_F(H5mdAttributeTest, VectorAttributeEdgeCases)
 
     {
         SCOPED_TRACE("Testing H5MD reading of previously written attributes.");
-        auto readNonCanonicalStrings =
-                getAttributeVector<std::string>(group, "non_canonical_strings");
-        ASSERT_TRUE(readNonCanonicalStrings.has_value());
-        EXPECT_EQ(*readNonCanonicalStrings, nonCanonicalStrings);
-        auto readResIDs = getAttributeVector<int32_t>(group, "index");
-        ASSERT_TRUE(readResIDs.has_value());
-        EXPECT_EQ(*readResIDs, referenceResIDs);
-        auto readResNames = getAttributeVector<std::string>(group, "residue_names");
-        ASSERT_TRUE(readResNames.has_value());
-        EXPECT_EQ(*readResNames, refNames);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "non_canonical_strings"),
+                    ::testing::Optional(nonCanonicalStrings));
+        EXPECT_THAT(getAttributeVector<int32_t>(group, "index"), ::testing::Optional(referenceResIDs));
+        EXPECT_THAT(getAttributeVector<std::string>(group, "residue_names"), ::testing::Optional(refNames));
     }
 }
 
@@ -552,6 +544,7 @@ TEST_F(H5mdAttributeTest, AtomNameAttributes)
     // have in the plan, whereever that is.
     std::vector<std::string> atomNames = { "AA", "BBB", "C", "DD", "EEE", "F", "GGG", "HH", "III" };
     std::vector<char*>       handlesToAtomNames;
+    handlesToAtomNames.reserve(atomNames.size());
     for (const auto& atomName : atomNames)
     {
         handlesToAtomNames.push_back(const_cast<char*>(atomName.data()));
@@ -595,7 +588,7 @@ TEST_F(H5mdAttributeTest, AtomNameAttributes)
     {
         SCOPED_TRACE("Testing H5MD reading of array-like attributes.");
 
-        EXPECT_EQ(getAttributeVector<std::string>(group, "atom_names"), atomNames);
+        EXPECT_THAT(getAttributeVector<std::string>(group, "atom_names"), ::testing::Optional(atomNames));
     }
 }
 

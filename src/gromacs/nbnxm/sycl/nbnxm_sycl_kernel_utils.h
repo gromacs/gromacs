@@ -37,8 +37,8 @@
  *
  * \ingroup module_nbnxm
  */
-#ifndef GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
-#define GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
+#ifndef GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_UTILS_H
+#define GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_UTILS_H
 
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -50,11 +50,11 @@ namespace gmx
 
 /*! \brief Prune kernel's jPacked processing concurrency.
  *
- *  The \c GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override.
+ *  The \c GMX_NBNXM_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override.
  */
 static constexpr int c_syclPruneKernelJPackedConcurrency = c_pruneKernelJPackedConcurrency;
 
-// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
+// i-cluster interaction mask for a super-cluster with all c_nbnxmGpuNumClusterPerSupercluster=8 bits set.
 static constexpr unsigned sc_superClInteractionMask(const PairlistType layoutType)
 {
     return ((1U << sc_gpuClusterPerSuperCluster(layoutType)) - 1U);
@@ -78,4 +78,4 @@ static constexpr unsigned sc_superClInteractionMask(const PairlistType layoutTyp
 
 } // namespace gmx
 
-#endif // GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
+#endif // GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_UTILS_H

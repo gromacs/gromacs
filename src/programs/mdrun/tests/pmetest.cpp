@@ -245,6 +245,8 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
     messages.startContext("Test is being skipped because:");
 
     const int numRanks = getNumberOfTestMpiRanks();
+    messages.appendIf(commandLine.contains("-ddorder") && numRanks == 1,
+                      "it tests DD rank order, but the simulation is using only one rank");
 
     // -npme was already required
     std::string npmeOptionArgument(commandLine.argumentOf("-npme").value());
@@ -417,6 +419,8 @@ const auto c_reproducesEnergies = ::testing::ValuesIn(std::vector<PmeTestParamet
         { PmeTestFlavor::WithWalls, "-notunepme -npme 0 -pme cpu" },
         { PmeTestFlavor::WithWalls, "-notunepme -npme 0 -pme gpu -pmefft cpu" },
         { PmeTestFlavor::WithWalls, "-notunepme -npme 0 -pme gpu -pmefft gpu" },
+        // Testing cartesian order for PP+PME ranks
+        { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme auto -ddorder cartesian" },
         // Here are all tests with a PME-only rank, which requires
         // more than one total rank
         { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme cpu" },
@@ -427,6 +431,8 @@ const auto c_reproducesEnergies = ::testing::ValuesIn(std::vector<PmeTestParamet
         { PmeTestFlavor::WithWalls, "-notunepme -npme 1 -pme cpu" },
         { PmeTestFlavor::WithWalls, "-notunepme -npme 1 -pme gpu -pmefft cpu" },
         { PmeTestFlavor::WithWalls, "-notunepme -npme 1 -pme gpu -pmefft gpu" },
+        // Testing cartesian order for PP ranks with a separate PME rank
+        { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme auto -ddorder cartesian" },
         // All tests with PME tuning here
         { PmeTestFlavor::Basic, "-tunepme -npme 0 -pme cpu" },
         { PmeTestFlavor::Basic, "-tunepme -npme 0 -pme gpu -pmefft cpu" },

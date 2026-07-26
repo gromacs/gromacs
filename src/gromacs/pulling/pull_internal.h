@@ -150,15 +150,15 @@ struct pull_group_work_t
 /* Struct describing the instantaneous spatial layout of a pull coordinate */
 struct PullCoordSpatialData
 {
-    dvec   dr01;       /* The direction vector of group 1 relative to group 0 */
-    dvec   dr23;       /* The direction vector of group 3 relative to group 2 */
-    dvec   dr45;       /* The direction vector of group 5 relative to group 4 */
-    dvec   vec;        /* The pull direction */
-    double vec_len;    /* Length of vec for direction-relative */
-    dvec   ffrad;      /* conversion factor from vec to radial force */
-    double cyl_dev;    /* The deviation from the reference position */
-    dvec   planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
-    dvec   planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
+    gmx::DVec dr01;       /* The direction vector of group 1 relative to group 0 */
+    gmx::DVec dr23;       /* The direction vector of group 3 relative to group 2 */
+    gmx::DVec dr45;       /* The direction vector of group 5 relative to group 4 */
+    gmx::DVec vec;        /* The pull direction */
+    double    vec_len;    /* Length of vec for direction-relative */
+    gmx::DVec ffrad;      /* conversion factor from vec to radial force */
+    double    cyl_dev;    /* The deviation from the reference position */
+    gmx::DVec planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
+    gmx::DVec planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
 
     double value; /* The current value of the coordinate, units of nm or rad */
 };
@@ -206,19 +206,19 @@ struct pull_coord_work_t
 /* Struct for storing vectorial forces for a pull coordinate */
 struct PullCoordVectorForces
 {
-    dvec force01; /* Force due to the pulling/constraining for groups 0, 1 */
-    dvec force23; /* Force for groups 2 and 3 */
-    dvec force45; /* Force for groups 4 and 5 */
+    gmx::DVec force01; /* Force due to the pulling/constraining for groups 0, 1 */
+    gmx::DVec force23; /* Force for groups 2 and 3 */
+    gmx::DVec force45; /* Force for groups 4 and 5 */
 };
 
 /* Struct for sums over (local) atoms in a pull group */
 struct ComSums
 {
     /* For normal weighting */
-    double sum_wm;   /* Sum of weight*mass        */
-    double sum_wwm;  /* Sum of weight*weight*mass */
-    dvec   sum_wmx;  /* Sum of weight*mass*x      */
-    dvec   sum_wmxp; /* Sum of weight*mass*xp     */
+    double    sum_wm;   /* Sum of weight*mass        */
+    double    sum_wwm;  /* Sum of weight*weight*mass */
+    gmx::DVec sum_wmx;  /* Sum of weight*mass*x      */
+    gmx::DVec sum_wmxp; /* Sum of weight*mass*xp     */
 
     /* For cosine weighting */
     double sum_cm;  /* Sum of cos(x)*mass          */
@@ -256,9 +256,9 @@ struct pull_comm_t
     int64_t must_count;  /* The last count our rank needed to be part */
 
     /* Buffers for parallel reductions */
-    std::vector<gmx::RVec>                pbcAtomBuffer; /* COM calculation buffer */
-    std::vector<gmx::BasicVector<double>> comBuffer;     /* COM calculation buffer */
-    std::vector<double> cylinderBuffer; /* cylinder ref. groups calculation buffer */
+    std::vector<gmx::RVec> pbcAtomBuffer;  /* COM calculation buffer */
+    std::vector<gmx::DVec> comBuffer;      /* COM calculation buffer */
+    std::vector<double>    cylinderBuffer; /* cylinder ref. groups calculation buffer */
 };
 
 // The COM pull force calculation data structure

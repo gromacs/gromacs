@@ -160,8 +160,15 @@ public:
         GMX_ASSERT((reinterpret_cast<size_type>(end) / sizeof(*end)) % simdWidth == 0,
                    "Size of ArrayRef needs to be divisible by type size");
     }
-    //! \copydoc ArrayRef::ArrayRef(U)
-    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename std::remove_reference_t<U>::pointer, pointer>>>
+    //! \copydoc ArrayRef::ArrayRef(U&)
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename U::pointer, pointer>>>
+    SimdArrayRef(U& o) :
+        begin_(reinterpret_cast<pointer>(o.data())),
+        end_(reinterpret_cast<pointer>(o.data() + o.size()))
+    {
+    }
+    //! \copydoc ArrayRef::ArrayRef(U&&)
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename U::pointer, pointer>>>
     SimdArrayRef(U&& o) :
         begin_(reinterpret_cast<pointer>(o.data())),
         end_(reinterpret_cast<pointer>(o.data() + o.size()))

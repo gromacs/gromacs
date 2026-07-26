@@ -41,14 +41,13 @@
 
 #include "h5md_fixeddataset.h"
 
+#include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
-
-#include "h5md_error.h"
-#include "h5md_guard.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -139,11 +138,11 @@ static void readVariableSizeStringsFromDataSet(const hid_t           dataSet,
 }
 
 static void writeFixedSizeStringsToDataSet(const hid_t                 dataSet,
-                                           const hid_t                 dataType,
+                                           const hid_t                 nativeDataType,
                                            ArrayRef<const std::string> stringsToWrite)
 {
     // Get the maximum string size (including the terminating '\0')
-    const size_t      maxStringSize = H5Tget_size(dataType);
+    const size_t      maxStringSize = H5Tget_size(nativeDataType);
     std::vector<char> writeBuffer(stringsToWrite.size() * maxStringSize);
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
@@ -158,12 +157,12 @@ static void writeFixedSizeStringsToDataSet(const hid_t                 dataSet,
     }
 
     GMX_H5MD_THROW_UPON_ERROR(
-            H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer.data()) < 0,
+            H5Dwrite(dataSet, nativeDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer.data()) < 0,
             "Error writing data.");
 }
 
 static void writeVariableSizeStringsToDataSet(const hid_t                 dataSet,
-                                              const hid_t                 dataType,
+                                              const hid_t                 nativeDataType,
                                               ArrayRef<const std::string> stringsToWrite)
 {
     std::vector<const char*> writeBufferPointers(stringsToWrite.size(), nullptr);
@@ -173,7 +172,7 @@ static void writeVariableSizeStringsToDataSet(const hid_t                 dataSe
     }
 
     GMX_H5MD_THROW_UPON_ERROR(
-            H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBufferPointers.data()) < 0,
+            H5Dwrite(dataSet, nativeDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBufferPointers.data()) < 0,
             "Error writing data.");
 }
 
@@ -223,14 +222,12 @@ void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
         }
         else
         {
-            throw gmx::NotImplementedError("Reading fixed-size string data is not implemented");
+            throw NotImplementedError("Reading fixed-size string data is not implemented");
         }
     }
     else
     {
-        GMX_H5MD_THROW_UPON_ERROR(
-                H5Dread(this->id(), this->nativeDataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data.data()) < 0,
-                "Error reading data.");
+        GMX_H5MD_THROW_UPON_ERROR(!Base::read(data, H5S_ALL, H5S_ALL), "Error reading data.");
     }
 }
 
@@ -246,20 +243,18 @@ void H5mdFixedDataSet<ValueType>::writeData(ArrayRef<const ValueType> data) cons
 
     if constexpr (std::is_same_v<ValueType, std::string>)
     {
-        if (H5Tis_variable_str(this->dataType()) > 0)
+        if (H5Tis_variable_str(this->nativeDataType()) > 0)
         {
-            writeVariableSizeStringsToDataSet(this->id(), this->dataType(), data);
+            writeVariableSizeStringsToDataSet(this->id(), this->nativeDataType(), data);
         }
         else
         {
-            writeFixedSizeStringsToDataSet(this->id(), this->dataType(), data);
+            writeFixedSizeStringsToDataSet(this->id(), this->nativeDataType(), data);
         }
     }
     else
     {
-        GMX_H5MD_THROW_UPON_ERROR(
-                H5Dwrite(this->id(), this->dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data.data()) < 0,
-                "Error writing data.");
+        GMX_H5MD_THROW_UPON_ERROR(!Base::write(data, H5S_ALL, H5S_ALL), "Error writing data.");
     }
 }
 

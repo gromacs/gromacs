@@ -63,10 +63,7 @@ using H5mdCloseType = herr_t (*)(hid_t);
 class H5mdCloser
 {
 public:
-    H5mdCloser(hid_t object, H5mdCloseType deleter) :
-        object_{ std::move(object) }, deleter_{ std::move(deleter) }
-    {
-    }
+    H5mdCloser(hid_t object, H5mdCloseType deleter) : object_{ object }, deleter_{ deleter } {}
     void operator()() { deleter_(object_); }
 
 private:

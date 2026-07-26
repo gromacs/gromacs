@@ -152,6 +152,8 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
 
     GMX_RELEASE_ASSERT(haveValidMtsSetup(ir), "MTS setup should be valid here");
 
+    const OutputControl& outputControl = ir.outputControl;
+
     ArrayRef<const MtsLevel> mtsLevels = ir.mtsLevels;
 
     if (ir.eI != IntegrationAlgorithm::MD)
@@ -170,22 +172,22 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
     }
 
     std::optional<std::string> mesg;
-    if (ir.nstcalcenergy > 0)
+    if (outputControl.nstcalcenergy > 0)
     {
-        if ((mesg = checkMtsInterval(mtsLevels, "nstcalcenergy", ir.nstcalcenergy)))
+        if ((mesg = checkMtsInterval(mtsLevels, "nstcalcenergy", outputControl.nstcalcenergy)))
         {
             errorMessages.push_back(mesg.value());
         }
     }
-    if ((mesg = checkMtsInterval(mtsLevels, "nstenergy", ir.nstenergy)))
+    if ((mesg = checkMtsInterval(mtsLevels, "nstenergy", outputControl.nstenergy)))
     {
         errorMessages.push_back(mesg.value());
     }
-    if ((mesg = checkMtsInterval(mtsLevels, "nstlog", ir.nstlog)))
+    if ((mesg = checkMtsInterval(mtsLevels, "nstlog", outputControl.nstlog)))
     {
         errorMessages.push_back(mesg.value());
     }
-    if ((mesg = checkMtsInterval(mtsLevels, "nstfout", ir.nstfout)))
+    if ((mesg = checkMtsInterval(mtsLevels, "nstfout", outputControl.nstfout)))
     {
         errorMessages.push_back(mesg.value());
     }

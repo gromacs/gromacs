@@ -62,6 +62,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class SimulationWorkload;
 class VirtualSitesHandler;
 
 /*! \internal
@@ -83,6 +84,7 @@ public:
                    t_forcerec*                         fr,
                    MDAtoms*                            mdAtoms,
                    Constraints*                        constr,
+                   const SimulationWorkload&           simulationWork,
                    VirtualSitesHandler*                vsite);
 
     //! Get global topology

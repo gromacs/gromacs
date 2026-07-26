@@ -105,7 +105,7 @@ gmx_unused static constexpr int sc_xStride()
     return std::max(sc_iClusterSizeSimd<kernelType>(), sc_jClusterSizeSimd<kernelType>());
 }
 
-//! Returns the nbnxn coordinate data index given the i-cluster index
+//! Returns the nbnxm coordinate data index given the i-cluster index
 template<ClusterDistanceKernelType kernelType>
 gmx_unused static inline int xIndexFromCi(int ci)
 {
@@ -131,7 +131,7 @@ gmx_unused static inline int xIndexFromCi(int ci)
     }
 }
 
-//! Returns the nbnxn coordinate data index given the j-cluster index
+//! Returns the nbnxm coordinate data index given the j-cluster index
 template<ClusterDistanceKernelType kernelType>
 gmx_unused static inline int xIndexFromCj(int cj)
 {
@@ -317,7 +317,7 @@ static inline SimdReal loadJData(const real* x)
  */
 template<ClusterDistanceKernelType kernelType>
 static inline void makeClusterListSimd(const Grid&              jGrid,
-                                       NbnxnPairlistCpu*        nbl,
+                                       NbnxmPairlistCpu*        nbl,
                                        int                      icluster,
                                        int                      firstBin,
                                        int                      lastBin,
@@ -488,7 +488,7 @@ static inline void makeClusterListSimd(const Grid&              jGrid,
         for (int jcluster = jclusterFirst; jcluster <= jclusterLast; jcluster++)
         {
             /* Store cj and the interaction mask */
-            nbnxn_cj_t cjEntry;
+            nbnxm_cj_t cjEntry;
             cjEntry.cj = cjFromCi<kernelType, 0>(jGrid.binOffset()) + jcluster;
             cjEntry.excl =
                     getImask<c_iClusterSize, c_jClusterSize>(excludeSubDiagonal, icluster, jcluster);
@@ -502,7 +502,7 @@ static inline void makeClusterListSimd(const Grid&              jGrid,
 #endif // GMX_SIMD && GMX_USE_SIMD_KERNELS
 
 void makeClusterListSimd4xM(const Grid gmx_unused&              jGrid,
-                            NbnxnPairlistCpu gmx_unused*        nbl,
+                            NbnxmPairlistCpu gmx_unused*        nbl,
                             int gmx_unused                      icluster,
                             int gmx_unused                      firstBin,
                             int gmx_unused                      lastBin,
@@ -521,7 +521,7 @@ void makeClusterListSimd4xM(const Grid gmx_unused&              jGrid,
 }
 
 void makeClusterListSimd2xMM(const Grid gmx_unused&              jGrid,
-                             NbnxnPairlistCpu gmx_unused*        nbl,
+                             NbnxmPairlistCpu gmx_unused*        nbl,
                              int gmx_unused                      icluster,
                              int gmx_unused                      firstBin,
                              int gmx_unused                      lastBin,

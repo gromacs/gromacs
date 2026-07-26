@@ -592,7 +592,9 @@ static int ddcoord2simnodeid(const gmx_domdec_t& dd, int x, int y, int z)
 
     if (cartSetup.bCartesianPP_PME)
     {
-        nodeid = dd.comm->mpiCommMySim_.rank();
+#if GMX_MPI
+        MPI_Cart_rank(dd.comm->mpiCommMySim_.comm(), coords, &nodeid);
+#endif
     }
     else
     {
@@ -731,15 +733,15 @@ std::vector<int> get_pme_ddranks(const gmx_domdec_t& dd, const int pmenodeid)
     return ddranks;
 }
 
-static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int> pmeRanks)
+static gmx_bool receive_vir_ener(const gmx_domdec_t& dd, gmx::ArrayRef<const int> pmeRanks)
 {
     bool bReceive = true;
 
-    const DDRankSetup& ddRankSetup = dd->comm->ddRankSetup;
+    const DDRankSetup& ddRankSetup = dd.comm->ddRankSetup;
     if (ddRankSetup.usePmeOnlyRanks)
     {
-        const gmx::MpiComm&       commMySim = dd->comm->mpiCommMySim_;
-        const CartesianRankSetup& cartSetup = dd->comm->cartesianRankSetup;
+        const gmx::MpiComm&       commMySim = dd.comm->mpiCommMySim_;
+        const CartesianRankSetup& cartSetup = dd.comm->cartesianRankSetup;
         if (cartSetup.bCartesianPP_PME)
         {
 #if GMX_MPI
@@ -748,7 +750,7 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int
             ivec coords;
             MPI_Cart_coords(commMySim.comm(), commMySim.rank(), DIM, coords);
             coords[cartSetup.cartpmedim]++;
-            if (coords[cartSetup.cartpmedim] < dd->numCells[cartSetup.cartpmedim])
+            if (coords[cartSetup.cartpmedim] < dd.numCells[cartSetup.cartpmedim])
             {
                 int rank = 0;
                 MPI_Cart_rank(commMySim.comm(), coords, &rank);
@@ -905,6 +907,28 @@ void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl)
     if (cycles > dd->comm->cycl_max[ddCycl])
     {
         dd->comm->cycl_max[ddCycl] = cycles;
+    }
+}
+
+void dd_cycles_add_pme(const gmx_domdec_t* dd,
+                       const float         pmeCycleTotal,
+                       const float         pmeCyclesMaxPerStep,
+                       const int           pmeNumSteps)
+{
+    GMX_ASSERT(pmeNumSteps >= 0, "PME cycle accounting step count should not be negative");
+
+    if (pmeNumSteps == 0)
+    {
+        GMX_ASSERT(pmeCycleTotal == 0 && pmeCyclesMaxPerStep == 0,
+                   "Non-zero cycle count for zero steps");
+        return;
+    }
+
+    dd->comm->cycl[ddCyclPME] += pmeCycleTotal;
+    dd->comm->cycl_n[ddCyclPME] += pmeNumSteps;
+    if (pmeCyclesMaxPerStep > dd->comm->cycl_max[ddCyclPME])
+    {
+        dd->comm->cycl_max[ddCyclPME] = pmeCyclesMaxPerStep;
     }
 }
 
@@ -1180,7 +1204,10 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
             if (cartSetup.ddindex2simnodeid[i] == 0)
             {
                 ddindex2xyz(dd->numCells, i, dd->main_ci);
-                GMX_RELEASE_ASSERT(dd->mpiComm().isMainRank(), "The main MPI rank has to be 0");
+                int mainRank = 0;
+                MPI_Cart_rank(dd->mpiComm().comm(), dd->main_ci, &mainRank);
+                GMX_RELEASE_ASSERT(mainRank == dd->mpiComm().mainRank(),
+                                   "The main MPI rank has to be 0");
             }
         }
         if (debug)
@@ -1356,7 +1383,7 @@ static CommSetup split_communicator(const MDLogger&       mdlog,
          */
         cs.commMySim = MpiComm(comm_cart);
 
-        MPI_Cart_coords(mpiCommSimulation.comm(), mpiCommSimulation.rank(), DIM, cs.ddCellIndex);
+        MPI_Cart_coords(cs.commMySim.comm(), cs.commMySim.rank(), DIM, cs.ddCellIndex);
 
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Cartesian rank %d, coordinates %d %d %d\n",
@@ -1456,14 +1483,12 @@ static CommSetup makeGroupCommunicators(const MDLogger&    mdlog,
  * For PME ranks get the rank id.
  * For PP only ranks, sets the PME-only rank.
  */
-static void setupGroupCommunication(const MDLogger&     mdlog,
-                                    const DDSettings&   ddSettings,
-                                    ArrayRef<const int> pmeRanks,
-                                    const int           numAtomsInSystem,
-                                    gmx_domdec_t*       dd)
+static void setupGroupCommunication(const MDLogger&   mdlog,
+                                    const DDSettings& ddSettings,
+                                    const int         numAtomsInSystem,
+                                    gmx_domdec_t*     dd)
 {
-    const DDRankSetup&        ddRankSetup = dd->comm->ddRankSetup;
-    const CartesianRankSetup& cartSetup   = dd->comm->cartesianRankSetup;
+    const CartesianRankSetup& cartSetup = dd->comm->cartesianRankSetup;
 
     if (dd->hasPPDuty)
     {
@@ -1483,25 +1508,6 @@ static void setupGroupCommunication(const MDLogger&     mdlog,
     else
     {
         receive_ddindex2simnodeid(dd);
-    }
-
-    if (!dd->hasPmeDuty)
-    {
-        /* Set up the commnuication to our PME node */
-        dd->pme_nodeid = dd_simnode2pmenode(
-                ddRankSetup, cartSetup, pmeRanks, dd->comm->mpiCommMySim_, dd->comm->mpiCommMySim_.rank());
-        dd->pme_receive_vir_ener = receive_vir_ener(dd, pmeRanks);
-        if (debug)
-        {
-            fprintf(debug,
-                    "My pme_nodeid %d receive ener %s\n",
-                    dd->pme_nodeid,
-                    gmx::boolToString(dd->pme_receive_vir_ener));
-        }
-    }
-    else
-    {
-        dd->pme_nodeid = -1;
     }
 
     if (dd->mpiComm_.isMainRank())
@@ -2590,7 +2596,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     else
     {
         ddRankSetup.numRanksDoingPme = 0;
-        if (dd->pme_nodeid >= 0)
+        if (dd->numPmeOnlyRanks > 0)
         {
             gmx_fatal_collective(FARGS,
                                  dd->mpiComm().comm(),
@@ -2643,7 +2649,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
-    ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
+    ddSettings.useCartesianReorder = (dd_getenv(mdlog, "GMX_NO_CART_REORDER", 0) == 0);
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
     const int recload              = dd_getenv(mdlog, "GMX_DD_RECORD_LOAD", 1);
     ddSettings.nstDDDump           = dd_getenv(mdlog, "GMX_DD_NST_DUMP", 0);
@@ -2725,6 +2731,8 @@ public:
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
+    //! Get the settings for the manager for PME-PP communication, if used
+    std::optional<PmePpCommSettings> pmePpCommSettings(const gmx_domdec_t& dd) const;
 
     //! Objects used in constructing and configuring DD
     //! {
@@ -2895,7 +2903,7 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                   ir_,
                   ddbox_);
 
-    setupGroupCommunication(mdlog_, ddSettings_, commSetup_.pmeRanks, mtop_.natoms, dd.get());
+    setupGroupCommunication(mdlog_, ddSettings_, mtop_.natoms, dd.get());
 
     // The simulation main rank is the PP rank with rank id 0, check that this matches
     // the main simulation rank in t_commrec
@@ -2933,6 +2941,36 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                                                                       observablesReducerBuilder);
 
     return dd;
+}
+
+std::optional<PmePpCommSettings> DomainDecompositionBuilder::Impl::pmePpCommSettings(const gmx_domdec_t& dd) const
+{
+    std::optional<PmePpCommSettings> pmePpCommSettings;
+    if (!dd.hasPmeDuty)
+    {
+        // Set up the communication to our PME-only rank
+        const DDRankSetup&        ddRankSetup = dd.comm->ddRankSetup;
+        const CartesianRankSetup& cartSetup   = dd.comm->cartesianRankSetup;
+
+        pmePpCommSettings = PmePpCommSettings{
+
+            dd_simnode2pmenode(ddRankSetup,
+                               cartSetup,
+                               commSetup_.pmeRanks,
+                               dd.comm->mpiCommMySim_,
+                               dd.comm->mpiCommMySim_.rank()),
+            receive_vir_ener(dd, commSetup_.pmeRanks)
+        };
+
+        if (debug)
+        {
+            fprintf(debug,
+                    "My PME partner rank %d receive ener %s\n",
+                    pmePpCommSettings->rankOfPartnerPmeRank,
+                    boolToString(pmePpCommSettings->thisRankReceivesVirialAndEnergy));
+        }
+    }
+    return pmePpCommSettings;
 }
 
 DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&           mdlog,
@@ -2977,6 +3015,11 @@ std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetMana
                                                                 ObservablesReducerBuilder* observablesReducerBuilder)
 {
     return impl_->build(atomSets, haveFillerParticlesInLocalState, observablesReducerBuilder);
+}
+
+std::optional<PmePpCommSettings> DomainDecompositionBuilder::pmePpCommSettings(const gmx_domdec_t& dd) const
+{
+    return impl_->pmePpCommSettings(dd);
 }
 
 DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;
@@ -3100,84 +3143,105 @@ bool change_dd_cutoff(gmx_domdec_t*                  dd,
     return bCutoffAllowed;
 }
 
-void constructGpuHaloExchange(const t_commrec&                cr,
-                              const gmx::DeviceStreamManager& deviceStreamManager,
-                              gmx_wallcycle*                  wcycle,
-                              const bool                      useNvshmem)
+void constructOrUpdateGpuHaloExchange(gmx_domdec_t*                   dd,
+                                      const gmx::DeviceStreamManager& deviceStreamManager,
+                                      const bool                      useNvshmem,
+                                      const std::optional<int>        rankOfControlledPmeRank,
+                                      const DeviceBuffer<gmx::RVec>   d_coordinatesBuffer,
+                                      const DeviceBuffer<gmx::RVec>   d_forcesBuffer,
+                                      gmx_wallcycle*                  wcycle)
 {
+    // The construction and reinit behaviours could be separated
+    // better if we had an umbrella object that had overall
+    // responsibility for GPU halo exchange, because it could cache
+    // things only needed when the number of pulses increases.
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be valid when using"
                        "GPU halo exchange.");
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedNonLocal),
                        "Non-local non-bonded stream should be valid when using "
                        "GPU halo exchange.");
+    GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::HaloExchange),
+                       "Halo exchange stream should be valid when using GPU halo exchange.");
 
     if (useNvshmem)
     {
         /* The gpuHaloExchangeNvshmemHelper is created on first use, or after it was explicitly
-         * destroyed and reset to nullptr (e.g., during teardown or mode switches).
-         * When useNvshmem is true at this point, we must ensure the it exists. */
-        if (cr.dd->gpuHaloExchangeNvshmemHelper == nullptr)
+         * destroyed and reset to nullptr (e.g., during teardown or mode switches). */
+        if (dd->gpuHaloExchangeNvshmemHelper == nullptr)
         {
-            cr.dd->useGpuHaloExchangeNvshmem = true;
-            cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
-                    *cr.dd,
+            dd->useGpuHaloExchangeNvshmem    = true;
+            dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
+                    *dd,
                     deviceStreamManager.context(),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                    deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
+                    rankOfControlledPmeRank,
                     std::nullopt,
-                    wcycle,
-                    cr.commMyGroup.comm(),
-                    cr.commMySim.comm());
+                    dd->mpiComm().comm(),
+                    dd->mpiCommMySim().comm());
         }
-        for (auto& cdDim : cr.dd->comm->cd)
-        {
-            for (auto& indices : cdDim.ind)
-            {
-                gmx::changePinningPolicy(&indices.index, gmx::PinningPolicy::PinnedIfSupported);
-            }
-        }
-        GMX_RELEASE_ASSERT(
-                cr.dd->gpuHaloExchangeNvshmemHelper != nullptr,
-                "GpuHaloExchangeNvshmemHelper must be constructed when useNvshmem is true");
+        // Does global communication and symmetric reallocation
+        dd->gpuHaloExchangeNvshmemHelper->reinit();
+        // Might change pinning of index vectors
+        dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(dd, d_coordinatesBuffer, d_forcesBuffer);
     }
     else
     {
-        for (int d = 0; d < cr.dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
-            for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses();
-                 pulse++)
+            // Initially no pulses have been added and are constructed
+            // here after the first DD partitioning. However both
+            // dynamic load balancing and dynamic box size can change
+            // the number of pulses used, and if that is an increase
+            // then new pulses are added here. (Extra pulse objects
+            // are not a problem because numPulses() is used elsewhere
+            // when doing halo exchanges.)
+            for (int pulse = dd->gpuHaloExchange[d].size(); pulse < dd->comm->cd[d].numPulses(); pulse++)
             {
-                cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                        cr.dd, d, cr.commMyGroup.comm(), cr.commMySim.comm(), deviceStreamManager.context(), pulse, wcycle));
+                dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
+                        dd,
+                        d,
+                        dd->mpiComm().comm(),
+                        dd->mpiCommMySim().comm(),
+                        deviceStreamManager.stream(gmx::DeviceStreamType::HaloExchange),
+                        deviceStreamManager.context(),
+                        pulse));
+                // During initial construction, wcycle is nullptr and
+                // this call does nothing - a separate call to
+                // addWallcycleCountersToGpuHaloExchange takes care of
+                // it. During updates when pulse count increases,
+                // wcycle is valid and gets added to the new objects
+                // here.
+                dd->gpuHaloExchange[d][pulse]->addWallcycleCounters(wcycle);
+            }
+            // Now that the exchange objects are definitely
+            // constructed, update them for this partitioning.
+            for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
+            {
+                dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
             }
         }
     }
+    GMX_UNUSED_VALUE(deviceStreamManager);
 }
 
-void reinitGpuHaloExchange(const t_commrec&              cr,
-                           const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
-                           const DeviceBuffer<gmx::RVec> d_forcesBuffer)
+void addWallcycleCountersToGpuHaloExchange(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
 {
-    if (cr.dd->useGpuHaloExchangeNvshmem)
+    if (dd->useGpuHaloExchangeNvshmem)
     {
-        cr.dd->gpuHaloExchangeNvshmemHelper->reinitAllHaloExchanges(cr, d_coordinatesBuffer, d_forcesBuffer);
+        dd->gpuHaloExchangeNvshmemHelper->addWallcycleCounters(wcycle);
     }
     else
     {
-        for (int d = 0; d < cr.dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
-            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
             {
-                cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+                dd->gpuHaloExchange[d][pulse]->addWallcycleCounters(wcycle);
             }
         }
     }
-}
-
-void reinitGpuHaloExchangeNvshmem(const t_commrec& cr)
-{
-    // Does global communication and symmetric reallocation
-    cr.dd->gpuHaloExchangeNvshmemHelper->reinit();
 }
 
 void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)

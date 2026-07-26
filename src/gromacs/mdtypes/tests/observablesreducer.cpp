@@ -59,7 +59,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/stringutil.h"
 
-namespace gmx::test
+namespace gmx
+{
+namespace test
 {
 namespace
 {
@@ -664,4 +666,5 @@ INSTANTIATE_TEST_SUITE_P(WithVariousSubscriberCounts,
                          namesOfTests);
 
 } // namespace
-} // namespace gmx::test
+} // namespace test
+} // namespace gmx

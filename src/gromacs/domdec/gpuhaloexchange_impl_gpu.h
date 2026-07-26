@@ -85,19 +85,21 @@ public:
      * \param [in]    dimIndex                 the dimension index for this instance
      * \param [in]    mpi_comm_mysim           communicator used for simulation
      * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
+     * \param [in]    haloStream               GPU device stream to perform haloexchange in
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
-     * \param [in]    wcycle                   The wallclock counter
      */
     Impl(gmx_domdec_t*        dd,
          int                  dimIndex,
          MPI_Comm             mpi_comm_mysim,
          MPI_Comm             mpi_comm_mysim_world,
+         const DeviceStream&  haloStream,
          const DeviceContext& deviceContext,
-         int                  pulse,
-         gmx_wallcycle*       wcycle);
+         int                  pulse);
     ~Impl();
 
+    //! Finish the construction once \c wcycle is available
+    void addWallcycleCounters(gmx_wallcycle* wcycle);
     /*! \brief
      * (Re-) Initialization for GPU halo exchange
      * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
@@ -281,7 +283,7 @@ private:
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! Device stream for this halo exchange
-    std::unique_ptr<DeviceStream> haloStream_;
+    const DeviceStream& haloStream_;
     //! full coordinates buffer in GPU memory
     DeviceBuffer<Float3> d_x_ = nullptr;
     //! full forces buffer in GPU memory

@@ -166,10 +166,6 @@ std::string gpuFftDescription()
         {
             return std::string("rocFFT ") + rocfft_VERSION;
         }
-        else if (GMX_GPU_FFT_HIPFFT)
-        {
-            return std::string("hipFFT ") + hipfft_VERSION;
-        }
         else if (GMX_GPU_FFT_BBFFT)
         {
             return std::string("Double-Batched FFT Library ") + bbfft_VERSION;

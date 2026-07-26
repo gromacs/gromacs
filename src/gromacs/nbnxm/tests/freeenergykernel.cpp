@@ -65,6 +65,7 @@
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
@@ -450,7 +451,8 @@ protected:
         input_.frHelper.setSoftcoreType(softcoreType_);
 
         // get forcerec and interaction_const
-        t_forcerec fr{ false };
+        t_forcerec fr{ HostAllocationPolicy{} };
+
         input_.frHelper.getForcerec(&fr);
 
         // AtomPairlist

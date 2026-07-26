@@ -54,6 +54,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/settle.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -155,36 +156,67 @@ settleParameters(const real mO, const real mH, const real invmO, const real invm
     return params;
 }
 
-SettleData::SettleData(const gmx_mtop_t& mtop) :
-    useSimd_(std::getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
+SettleWaterTopology getSettleTopologyData(const gmx_mtop_t& mtop)
 {
-    /* Check that we have only one settle type */
-    int       settle_type = -1;
-    const int nral1       = 1 + NRAL(InteractionFunction::SETTLE);
-    for (const auto ilists : IListRange(mtop))
+    // Check that we have only identical settle types
+    bool                foundSettle = false;
+    SettleWaterTopology settleTop;
+    real                mOB;
+    real                mHB;
+    const int           nral1 = 1 + NRAL(InteractionFunction::SETTLE);
+    for (const auto& molt : mtop.moltype)
     {
-        const InteractionList& ilist = ilists.list()[InteractionFunction::SETTLE];
+        const InteractionList& ilist = molt.ilist[InteractionFunction::SETTLE];
+        const t_atom*          atoms = molt.atoms.atom;
         for (int i = 0; i < ilist.size(); i += nral1)
         {
-            if (settle_type == -1)
+            const int settleType = ilist.iatoms[i];
+            if (atoms[ilist.iatoms[i + 2]].m != atoms[ilist.iatoms[i + 3]].m
+                || atoms[ilist.iatoms[i + 2]].mB != atoms[ilist.iatoms[i + 3]].mB)
             {
-                settle_type = ilist.iatoms[i];
+                GMX_THROW(InvalidInputError(
+                        "The hydrogens involved in SETTLE need to have indentical masses"));
             }
-            else if (ilist.iatoms[i] != settle_type)
+            if (!foundSettle)
             {
-                gmx_fatal(FARGS,
-                          "The [molecules] section of your topology specifies more than one block "
-                          "of\n"
-                          "a [moleculetype] with a [settles] block. Only one such is allowed.\n"
-                          "If you are trying to partition your solvent into different *groups*\n"
-                          "(e.g. for freezing, T-coupling, etc.), you are using the wrong "
-                          "approach. Index\n"
-                          "files specify groups. Otherwise, you may wish to change the least-used\n"
-                          "block of molecules with SETTLE constraints into 3 normal constraints.");
+                settleTop.mO  = atoms[ilist.iatoms[i + 1]].m;
+                mOB           = atoms[ilist.iatoms[i + 1]].mB;
+                settleTop.mH  = atoms[ilist.iatoms[i + 2]].m;
+                mHB           = molt.atoms.atom[ilist.iatoms[i + 2]].mB;
+                settleTop.dOH = mtop.ffparams.iparams[settleType].settle.doh;
+                settleTop.dHH = mtop.ffparams.iparams[settleType].settle.dhh;
+
+                foundSettle = true;
+            }
+            else if (atoms[ilist.iatoms[i + 1]].m != settleTop.mO || atoms[ilist.iatoms[i + 1]].mB != mOB
+                     || atoms[ilist.iatoms[i + 2]].m != settleTop.mH
+                     || molt.atoms.atom[ilist.iatoms[i + 2]].mB != mHB
+                     || mtop.ffparams.iparams[settleType].settle.doh != settleTop.dOH
+                     || mtop.ffparams.iparams[settleType].settle.dhh != settleTop.dHH)
+            {
+                GMX_THROW(InvalidInputError(
+                        "The [molecules] section of your topology specifies more than one block"
+                        "of a [moleculetype] with a [settles] block which are not identical. "
+                        "Multiple [settles] are only allowed when the masses and SETTLE "
+                        "parameters are identical.\n"
+                        "If you are trying to partition your solvent into different *groups* "
+                        "(e.g. for freezing, T-coupling, etc.), you are using the wrong approach. "
+                        "Index files specify groups. Otherwise, you may wish to change the "
+                        " least-used block of molecules with SETTLE constraints into 3 normal "
+                        "constraints."));
             }
         }
     }
-    GMX_RELEASE_ASSERT(settle_type >= 0, "settle_init called without settles");
+    GMX_RELEASE_ASSERT(foundSettle,
+                       "getSettleTopologyData expects to find at least one settle type");
+
+    return settleTop;
+}
+
+SettleData::SettleData(const gmx_mtop_t& mtop) :
+    useSimd_(std::getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
+{
+    const SettleWaterTopology settleTop = getSettleTopologyData(mtop);
 
     /* We will not initialize the normal SETTLE parameters here yet,
      * since the atom (inv)masses can depend on the integrator and
@@ -192,9 +224,7 @@ SettleData::SettleData(const gmx_mtop_t& mtop) :
      */
     parametersMassWeighted_.mO = -1;
 
-    real dOH              = mtop.ffparams.iparams[settle_type].settle.doh;
-    real dHH              = mtop.ffparams.iparams[settle_type].settle.dhh;
-    parametersAllMasses1_ = settleParameters(1.0, 1.0, 1.0, 1.0, dOH, dHH);
+    parametersAllMasses1_ = settleParameters(1.0, 1.0, 1.0, 1.0, settleTop.dOH, settleTop.dHH);
 }
 
 void SettleData::setConstraints(const InteractionList&    il_settle,

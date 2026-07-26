@@ -92,6 +92,7 @@ struct t_inpfile
         bObsolete_(bObsolete),
         bSet_(bSet),
         bHandledAsKeyValueTree_(bHandledAsKeyValueTree),
+        preserveOutputOrdering_(false),
         name_(std::move(name)),
         value_(std::move(value)),
         inp_count_(inp_count)
@@ -101,6 +102,7 @@ struct t_inpfile
     bool bObsolete_;              /* whether it is an obsolete param value */
     bool bSet_;                   /* whether it it has been read out */
     bool bHandledAsKeyValueTree_; /* whether it it has been handled with key-value machinery */
+    bool preserveOutputOrdering_; /* whether to preserve traditional output ordering and mechanism */
     std::string name_;            /* name of the parameter */
     std::string value_;           /* parameter value string */
     int         inp_count_;       /* number of einps read. Only valid for the first item
@@ -163,6 +165,11 @@ int64_t get_eint64(std::vector<t_inpfile>* inp, const std::string& name, int64_t
 
 double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, WarningHandler* wi);
 double get_ereal(std::vector<t_inpfile>* inp, const std::string& name, double def, WarningHandler* wi);
+
+// Create output-control placeholder entry with preserved count_ for traditional MDP file ordering
+void create_eint_output_placeholder(std::vector<t_inpfile>* inp, const char* name, int def);
+void create_ereal_output_placeholder(std::vector<t_inpfile>* inp, const char* name, double def);
+void create_estring_output_placeholder(std::vector<t_inpfile>* inp, const char* name, const char* def);
 
 const char* get_estr(std::vector<t_inpfile>* inp, const char* name, const char* def);
 const char* get_estr(std::vector<t_inpfile>* inp, const std::string& name, const char* def);

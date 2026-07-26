@@ -962,7 +962,7 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
         auto       kernelFn   = usePBC_ ? packSendBufKernel<true> : packSendBufKernel<false>;
         const auto kernelArgs = prepareGpuKernelArguments(
                 kernelFn, config, &sendBuf, &d_x, &indexMap, &xSendSize_, &coordinateShift);
-        launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
+        launchGpuKernel(kernelFn, config, haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     }
 }
 
@@ -989,7 +989,7 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
         const auto kernelArgs =
                 prepareGpuKernelArguments(kernelFn, config, &d_f, &recvBuf, &indexMap, &fRecvSize_);
 
-        launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+        launchGpuKernel(kernelFn, config, haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
     }
 }
 
@@ -1031,7 +1031,7 @@ void FusedGpuHaloExchange::launchPackXKernel(const matrix box)
                                                       &haloExchangeData_[0].atomOffset);
 
     launchGpuKernel(
-            packNvShmemkernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
+            packNvShmemkernelFn, config, haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     signalReceiverRankXCounter_++;
 #endif
 }
@@ -1062,11 +1062,11 @@ void FusedGpuHaloExchange::launchUnpackFKernel(bool accumulateForces)
                                                       &accumulateForces,
                                                       &d_fGridSync_);
 
-    launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+    launchGpuKernel(kernelFn, config, haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
 
     if (enableFusedForceKernelSync_)
     {
-        cudaStreamSynchronize(haloStream_->stream());
+        cudaStreamSynchronize(haloStream_.stream());
     }
 
     signalReceiverRankFCounter_++;

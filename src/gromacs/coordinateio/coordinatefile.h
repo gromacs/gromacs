@@ -145,8 +145,8 @@
 #ifndef GMX_COORDINATEIO_COORDINATEFILE_H
 #define GMX_COORDINATEIO_COORDINATEFILE_H
 
+#include <filesystem>
 #include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -187,9 +187,9 @@ struct OutputRequirements;
  *                                   OutputAdapters should be registered.
  * \throws    InconsistentInputError When user input and requirements don't match.
  */
-std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t*  top,
-                                                                   const Selection&   sel,
-                                                                   const std::string& filename,
+std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t* top,
+                                                                   const Selection&  sel,
+                                                                   const std::filesystem::path& filename,
                                                                    AtomsDataPtr       atoms,
                                                                    OutputRequirements requirements);
 
@@ -213,7 +213,10 @@ public:
      * \param[in] mtop Topology used to create TNG output. Needs to be valid for longer
      *                 than the object created here.
      */
-    TrajectoryFileOpener(const std::string& name, int filetype, const Selection& sel, const gmx_mtop_t* mtop) :
+    TrajectoryFileOpener(const std::filesystem::path& name,
+                         int                          filetype,
+                         const Selection&             sel,
+                         const gmx_mtop_t*            mtop) :
         outputFileName_(name), outputFile_(nullptr), filetype_(filetype), sel_(sel), mtop_(mtop)
     {
     }
@@ -232,7 +235,7 @@ public:
 
 private:
     //! Name for the new coordinate file.
-    std::string outputFileName_;
+    std::filesystem::path outputFileName_;
 
     //! File pointer to the coordinate file being written.
     t_trxstatus* outputFile_;
@@ -269,11 +272,12 @@ private:
 class TrajectoryFrameWriter
 {
 public:
-    friend std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t* top,
-                                                                              const Selection&  sel,
-                                                                              const std::string& filename,
-                                                                              AtomsDataPtr atoms,
-                                                                              OutputRequirements requirements);
+    friend std::unique_ptr<TrajectoryFrameWriter>
+    createTrajectoryFrameWriter(const gmx_mtop_t*            top,
+                                const Selection&             sel,
+                                const std::filesystem::path& filename,
+                                AtomsDataPtr                 atoms,
+                                OutputRequirements           requirements);
 
     /*! \brief
      * Writes the input frame, after applying any IOutputAdapters.
@@ -297,11 +301,11 @@ private:
      * \param[in] adapters Container of methods that can modify the information written
      *                     to the new file.
      */
-    TrajectoryFrameWriter(const std::string&     name,
-                          int                    filetype,
-                          const Selection&       sel,
-                          const gmx_mtop_t*      mtop,
-                          OutputAdapterContainer adapters) :
+    TrajectoryFrameWriter(const std::filesystem::path& name,
+                          int                          filetype,
+                          const Selection&             sel,
+                          const gmx_mtop_t*            mtop,
+                          OutputAdapterContainer       adapters) :
         file_(name, filetype, sel, mtop), outputAdapters_(std::move(adapters))
     {
     }

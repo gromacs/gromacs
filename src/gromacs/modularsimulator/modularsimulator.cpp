@@ -116,7 +116,8 @@ void ModularSimulator::run()
             .asParagraph()
             .appendText("Using the modular simulator.");
 
-    ModularSimulatorAlgorithmBuilder algorithmBuilder(compat::make_not_null(legacySimulatorData_),
+    ModularSimulatorAlgorithmBuilder algorithmBuilder(deviceStreamManager_,
+                                                      compat::make_not_null(legacySimulatorData_),
                                                       std::move(checkpointDataHolder_));
     addIntegrationElements(&algorithmBuilder);
     auto algorithm = algorithmBuilder.build();
@@ -553,8 +554,10 @@ bool ModularSimulator::isInputCompatible(const MDLogger&                  mdlog,
     return true;
 }
 
-ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
+ModularSimulator::ModularSimulator(const DeviceStreamManager*                deviceStreamManager,
+                                   std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
                                    std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder) :
+    deviceStreamManager_(deviceStreamManager),
     legacySimulatorData_(std::move(legacySimulatorData)),
     checkpointDataHolder_(std::move(checkpointDataHolder))
 {

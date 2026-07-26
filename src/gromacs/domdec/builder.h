@@ -46,7 +46,9 @@
 #define GMX_DOMDEC_BUILDER_H
 
 #include <memory>
+#include <optional>
 
+#include "gromacs/ewald/pme_pp_communication.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -106,10 +108,12 @@ public:
     //! Returns whether this rank computes PME mesh interactions, also returns true when PME is not in use
     bool thisRankHasPmeDuty() const;
 
-    //! \brief Build the resulting DD manager
+    //! Build the resulting DD manager
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
+    //! Get the settings for the manager for PME-PP communication, if used
+    std::optional<PmePpCommSettings> pmePpCommSettings(const gmx_domdec_t& dd) const;
 
 private:
     class Impl;

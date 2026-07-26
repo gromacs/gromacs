@@ -1,4 +1,4 @@
-; This file is identical with regressiontests complex/nbnxn_vsite
+; This file is identical with regressiontests complex/nbnxm_vsite
 
 ; Include forcefield parameters
 #include "amber99.ff/forcefield.itp"

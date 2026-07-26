@@ -44,7 +44,13 @@
 
 #include "config.h"
 
+#include <cstdlib>
+
+#include <array>
+#include <atomic>
+
 #include "gromacs/ewald/pme_pp_communication.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
@@ -101,15 +107,15 @@ void PmePpCommGpu::Impl::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
     int newSize               = pmeCpuForceReceiveBuffer_.size();
     if (useNvshmem_)
     {
+        /* Find the max nAtomsAlloc among all ranks for symmetric force-buffer allocation
+         * and the max number of PP peers per PME rank for symmetric signal allocation.
+         * PME ranks participate in the matching collective from pme_gpu_reinit_atoms. */
+        std::array<int, 2> buf{ newSize, 0 };
 #if GMX_MPI
-        const int size = newSize;
-        MPI_Allreduce(&size, &newSize, 1, MPI_INT, MPI_MAX, comm_);
+        MPI_Allreduce(MPI_IN_PLACE, buf.data(), buf.size(), MPI_INT, MPI_MAX, comm_);
 #endif
-
-        int numPpRanks = 0;
-#if GMX_MPI
-        MPI_Bcast(&numPpRanks, 1, MPI_INT, pmeRank_, comm_);
-#endif
+        newSize              = buf[0];
+        const int numPpRanks = buf[1];
         // symmetric buffer used for synchronization purpose 1 to be used to signal PME to PP rank
         // of put, and numPpRanks is intended to be used for each PP rank buffer consumption
         // completion signal to PME to allow to produce it again. this a collective call.
@@ -127,7 +133,7 @@ void PmePpCommGpu::Impl::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
             &d_pmeForces_, newSize, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_, useNvshmem_);
 
     // This rank will access PME rank memory directly, so needs to receive the remote PME buffer addresses.
-#if GMX_THREAD_MPI
+#if GMX_MPI
     if (GMX_THREAD_MPI)
     {
         // receive device coordinate buffer address from PME rank
@@ -139,7 +145,8 @@ void PmePpCommGpu::Impl::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
                  comm_,
                  MPI_STATUS_IGNORE);
         // send host and device force buffer addresses to PME rank
-        MPI_Send(&d_pmeForces_, sizeof(Float3*), MPI_BYTE, pmeRank_, eCommType_FORCES_GPU_REMOTE_GPU_PTR, comm_);
+        Float3* pmeForcePtr = asRawDevicePointer(d_pmeForces_);
+        MPI_Send(&pmeForcePtr, sizeof(Float3*), MPI_BYTE, pmeRank_, eCommType_FORCES_GPU_REMOTE_GPU_PTR, comm_);
         RVec* pmeCpuForceReceiveBufferData = pmeCpuForceReceiveBuffer_.data();
         MPI_Send(&pmeCpuForceReceiveBufferData,
                  sizeof(RVec*),
@@ -164,11 +171,10 @@ void PmePpCommGpu::Impl::reinit(ArrayRef<RVec> pmeCpuForceReceiveBuffer)
                  comm_,
                  MPI_STATUS_IGNORE);
     }
-
 #endif
 }
 
-void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu)
+void PmePpCommGpu::Impl::receiveForceFromPmeDirectGpu(bool receivePmeForceToGpu)
 {
     // Wait until remote PME task has pushed data, and then enqueue remote event to local stream.
 
@@ -183,6 +189,8 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 
     if (receivePmeForceToGpu)
     {
+        // Peer-to-peer copy
+        //
         // Record event to be enqueued in the GPU local buffer operations, to
         // satisfy dependency on receiving the PME force data before
         // reducing it with the other force contributions.
@@ -196,7 +204,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
     }
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(const bool receivePmeForceToGpu)
 {
 #if GMX_LIB_MPI
@@ -210,8 +218,8 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(const bool receivePmeFor
 
     // The PME rank always sends forces, even when the domain is
     // empty, so each PP rank must always post a receive.
-    Float3* pmeForcePtr =
-            receivePmeForceToGpu ? asMpiPointer(d_pmeForces_) : pmeCpuForceReceiveBuffer_.data();
+    Float3*   pmeForcePtr = receivePmeForceToGpu ? asRawDevicePointer(d_pmeForces_)
+                                                 : pmeCpuForceReceiveBuffer_.data();
     const int recvSize = receivePmeForceToGpu ? d_pmeForcesSize_ : pmeCpuForceReceiveBuffer_.size();
     // Ensure that the two PME force receive buffers were resized
     // consistently, when relevant.
@@ -223,7 +231,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(const bool receivePmeFor
         MPI_Wait(&forceRecvRequest_, MPI_STATUS_IGNORE);
         forceRecvRequestIsActive_ = false;
     }
-    else if (!stageLibMpiGpuCpuComm_)
+    else if (!stageLibMpiGpuCpuComm_ && !(useNvshmem_ && receivePmeForceToGpu))
     {
         MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, eCommType_FORCES_GPU, comm_, MPI_STATUS_IGNORE);
     }
@@ -249,7 +257,7 @@ void PmePpCommGpu::Impl::receiveForceFromPme(const bool receivePmeForceToGpu)
 {
     if (GMX_THREAD_MPI)
     {
-        receiveForceFromPmePeerToPeer(receivePmeForceToGpu);
+        receiveForceFromPmeDirectGpu(receivePmeForceToGpu);
     }
     else
     {
@@ -257,7 +265,42 @@ void PmePpCommGpu::Impl::receiveForceFromPme(const bool receivePmeForceToGpu)
     }
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+void PmePpCommGpu::Impl::sendCoordinatesToPmeDirectGpu(const Float3* sendPtr,
+                                                       const int     sendSize,
+                                                       const bool    sendCoordinatesFromGpu,
+                                                       GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
+{
+    GMX_ASSERT(GpuConfigurationCapabilities::ThreadMpiDirectComm,
+               "Direct GPU communications only supported with CUDA and HIP.");
+    // ensure stream waits until coordinate data is available on device
+    if (coordinatesReadyOnDeviceEvent)
+    {
+        coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
+    }
+
+    // Destination is always a remote device
+    if (sendCoordinatesFromGpu)
+    {
+        // Peer-to-peer copy
+        copyBetweenDeviceBuffers(
+                remotePmeXBuffer_, sendPtr, 0, sendSize, pmePpCommStream_, GpuApiCallBehavior::Async, nullptr);
+    }
+    else
+    {
+        copyToDeviceBuffer(
+                &remotePmeXBuffer_, sendPtr, 0, sendSize, pmePpCommStream_, GpuApiCallBehavior::Async, nullptr);
+    }
+
+#if GMX_MPI
+    // Record and send event to allow PME task to sync to above transfer before commencing force calculations
+    pmeCoordinatesSynchronizer_.markEvent(pmePpCommStream_);
+    GpuEventSynchronizer* pmeSync = &pmeCoordinatesSynchronizer_;
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
+    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, eCommType_COORD_GPU_SYNCHRONIZER, comm_);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
                                                          int           sendSize,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
@@ -290,7 +333,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
 #if GMX_LIB_MPI
         // A non-blocking receive is used so that the data transfer
         // neither blocks nor is blocked by other PP MPI activities.
-        MPI_Irecv(asMpiPointer(d_pmeForces_),
+        MPI_Irecv(asRawDevicePointer(d_pmeForces_),
                   sendSize * DIM,
                   MPI_FLOAT,
                   pmeRank_,
@@ -302,20 +345,6 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
     }
 }
 
-void PmePpCommGpu::Impl::sendCoordinatesToPme(const Float3*         sendPtr,
-                                              int                   sendSize,
-                                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
-                                              bool                  receiveForcesToGpu)
-{
-    if (GMX_THREAD_MPI)
-    {
-        sendCoordinatesToPmePeerToPeer(sendPtr, sendSize, coordinatesReadyOnDeviceEvent);
-    }
-    else
-    {
-        sendCoordinatesToPmeGpuAwareMpi(sendPtr, sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
-    }
-}
 std::optional<DeviceBuffer<Float3>> PmePpCommGpu::Impl::getGpuForceStagingPtr()
 {
     if (d_pmeForcesSize_ > 0)
@@ -371,13 +400,33 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
                                                GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
                                                bool                  receiveForcesToGpu)
 {
-    impl_->sendCoordinatesToPme(
-            asMpiPointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
+    if (GMX_THREAD_MPI)
+    {
+        const bool sendCoordinatesFromGpu = true;
+        impl_->sendCoordinatesToPmeDirectGpu(
+                asRawDevicePointer(sendPtr), sendSize, sendCoordinatesFromGpu, coordinatesReadyOnDeviceEvent);
+    }
+    else
+    {
+        impl_->sendCoordinatesToPmeGpuAwareMpi(
+                asRawDevicePointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
+    }
 }
 
 void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize, bool receiveForcesToGpu)
 {
-    impl_->sendCoordinatesToPme(sendPtr, sendSize, nullptr, receiveForcesToGpu);
+    GpuEventSynchronizer* coordinatesReadyOnDeviceEvent = nullptr;
+    if (GMX_THREAD_MPI)
+    {
+        const bool sendCoordinatesFromGpu = false;
+        impl_->sendCoordinatesToPmeDirectGpu(
+                sendPtr, sendSize, sendCoordinatesFromGpu, coordinatesReadyOnDeviceEvent);
+    }
+    else
+    {
+        impl_->sendCoordinatesToPmeGpuAwareMpi(
+                sendPtr, sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
+    }
 }
 
 std::optional<DeviceBuffer<Float3>> PmePpCommGpu::getGpuForceStagingPtr()

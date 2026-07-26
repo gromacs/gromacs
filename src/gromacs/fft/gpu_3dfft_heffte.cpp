@@ -408,7 +408,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 }
 
 template<typename backend_tag>
-Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte<backend_tag>()
+Gpu3dFft::ImplHeFfte<backend_tag>::~ImplHeFfte()
 {
 #if GMX_GPU_SYCL
     try
@@ -438,7 +438,7 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
     {
         case GMX_FFT_REAL_TO_COMPLEX:
 #if GMX_SYCL_ACPP
-            gmx::syclSubmitWithoutEvent(
+            gmx::syclSubmitWithCghWithoutEvent(
                     pmeRawStream_,
                     [&](sycl::handler& cgh)
                     {
@@ -453,7 +453,7 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
             break;
         case GMX_FFT_COMPLEX_TO_REAL:
 #if GMX_SYCL_ACPP
-            gmx::syclSubmitWithoutEvent(
+            gmx::syclSubmitWithCghWithoutEvent(
                     pmeRawStream_,
                     [&](sycl::handler& cgh)
                     {

@@ -74,6 +74,8 @@ enum class DeviceStreamType : int
     PmePpTransfer,
     //! Stream primarily for update and constraints.
     UpdateAndConstraints,
+    //! Stream used for GPU halo exchange.
+    HaloExchange,
     //! Conventional termination of the enumeration.
     Count
 };

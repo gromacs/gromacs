@@ -54,7 +54,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald.h"
 #include "gromacs/ewald/pme_internal.h"
-#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -179,10 +178,9 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                 
      */
 
     std::vector<real> grid(2 * numAtomTypes * numAtomTypes, 0.0);
-    int               k = 0;
     for (int i = 0; (i < numAtomTypes); i++)
     {
-        for (int j = 0; (j < numAtomTypes); j++, k++)
+        for (int j = 0; (j < numAtomTypes); j++)
         {
             real c6i  = iparams[i * (numAtomTypes + 1)].lj.c6;
             real c12i = iparams[i * (numAtomTypes + 1)].lj.c12;
@@ -563,7 +561,7 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                     f
                     if (gmx::endsWith(tabbfnm[j], patternToFind))
                     {
                         // Finally read the table from the file found
-                        tab[i]    = make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1) - 2);
+                        tab[i] = gmx::make_bonded_table(fplog, tabbfnm[j].c_str(), NRAL(ftype1) - 2);
                         madeTable = true;
                     }
                 }
@@ -617,7 +615,7 @@ static void init_ewald_f_table(const interaction_const_t& ic,
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
      */
-    const real tableScale = ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
+    const real tableScale = gmx::ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
 
     const bool havePerturbedNonbondeds = (ic.softCoreParameters != nullptr);
 
@@ -636,13 +634,14 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
     if (useCoulombTable)
     {
-        *coulombTables = generateEwaldCorrectionTables(
-                tableSize, tableScale, ic.coulomb.ewaldCoeff, v_q_ewald_lr);
+        *coulombTables = gmx::generateEwaldCorrectionTables(
+                tableSize, tableScale, ic.coulomb.ewaldCoeff, gmx::v_q_ewald_lr);
     }
 
     if (useVdwTable)
     {
-        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.vdw.ewaldCoeff, v_lj_ewald_lr);
+        *vdwTables = gmx::generateEwaldCorrectionTables(
+                tableSize, tableScale, ic.vdw.ewaldCoeff, gmx::v_lj_ewald_lr);
     }
 }
 
@@ -683,6 +682,8 @@ void init_forcerec(FILE*                            fplog,
                    const gmx_mtop_t&                mtop,
                    const t_commrec*                 commrec,
                    const gmx_multisim_t*            commMultiSim,
+                   gmx_wallcycle*                   wcycle,
+                   t_nrnb*                          nrnb,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,
@@ -1003,7 +1004,8 @@ void init_forcerec(FILE*                            fplog,
         || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulomb14Q) > 0
         || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulombNonBondedPairs) > 0)
     {
-        forcerec->pairsTable = make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
+        forcerec->pairsTable =
+                gmx::make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
     }
 
     /* Wall stuff */
@@ -1084,7 +1086,10 @@ void init_forcerec(FILE*                            fplog,
                     interactionSelection,
                     commrec->dd,
                     commMultiSim,
-                    fplog);
+                    fplog,
+                    wcycle,
+                    *forcerec,
+                    nrnb);
         }
     }
     else
@@ -1098,7 +1103,10 @@ void init_forcerec(FILE*                            fplog,
                 ListedForces::interactionSelectionAll(),
                 commrec->dd,
                 commMultiSim,
-                fplog);
+                fplog,
+                wcycle,
+                *forcerec,
+                nrnb);
     }
 
     // QM/MM initialization if requested
@@ -1138,11 +1146,7 @@ void init_forcerec(FILE*                            fplog,
     }
 }
 
-t_forcerec::t_forcerec(const bool useGpuPmePpCommunication) :
-    pmeForceReceiveBuffer{ gmx::HostAllocationPolicy{ useGpuPmePpCommunication
-                                                              ? gmx::PinningPolicy::PinnedIfSupported
-                                                              : gmx::PinningPolicy::CannotBePinned } }
-{
-}
+// TODO clean this up as part of #5573
+t_forcerec::t_forcerec(const gmx::HostAllocationPolicy& /* hostAllocationPolicy */) {}
 
 t_forcerec::~t_forcerec() = default;

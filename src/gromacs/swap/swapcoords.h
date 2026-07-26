@@ -63,7 +63,6 @@ struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
-struct swaphistory_t;
 struct t_inputrec;
 class t_state;
 struct t_swapcoords;
@@ -78,6 +77,7 @@ enum class StartingBehavior;
 class IMDModule;
 class LocalAtomSetManager;
 struct MdrunOptions;
+struct swaphistory_t;
 
 /*! \internal
     \brief Information about the computational-electrophysiology module.
@@ -93,8 +93,6 @@ struct SwapCoordinatesModuleInfo
     //! The name of the module
     static constexpr std::string_view sc_name = "swap-coordinates";
 };
-
-} // namespace gmx
 
 class SwapCoords
 {
@@ -126,18 +124,18 @@ public:
  * \param[in] mdrunOptions  Options for mdrun.
  * \param[in] startingBehavior  Describes whether this is a restart appending to output files
  */
-std::unique_ptr<SwapCoords> init_swapcoords(FILE*                     fplog,
-                                            const t_inputrec*         ir,
-                                            const char*               fn,
-                                            const gmx_mtop_t&         mtop,
-                                            const t_state*            globalState,
-                                            ObservablesHistory*       oh,
-                                            const gmx::MpiComm&       mpiComm,
-                                            const gmx_domdec_t*       dd,
-                                            gmx::LocalAtomSetManager* atomSets,
-                                            const gmx_output_env_t*   oenv,
-                                            const gmx::MdrunOptions&  mdrunOptions,
-                                            gmx::StartingBehavior     startingBehavior);
+std::unique_ptr<SwapCoords> init_swapcoords(FILE*                   fplog,
+                                            const t_inputrec*       ir,
+                                            const char*             fn,
+                                            const gmx_mtop_t&       mtop,
+                                            const t_state*          globalState,
+                                            ObservablesHistory*     oh,
+                                            const MpiComm&          mpiComm,
+                                            const gmx_domdec_t*     dd,
+                                            LocalAtomSetManager*    atomSets,
+                                            const gmx_output_env_t* oenv,
+                                            const MdrunOptions&     mdrunOptions,
+                                            StartingBehavior        startingBehavior);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
@@ -155,15 +153,17 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                     fplog,
  *
  * \returns Whether at least one pair of molecules was swapped.
  */
-gmx_bool do_swapcoords(const gmx::MpiComm&      mpiComm,
-                       int64_t                  step,
-                       double                   t,
-                       const t_inputrec*        ir,
-                       SwapCoords*              s,
-                       gmx_wallcycle*           wcycle,
-                       gmx::ArrayRef<gmx::RVec> x,
-                       matrix                   box,
-                       gmx_bool                 bVerbose,
-                       gmx_bool                 bRerun);
+gmx_bool do_swapcoords(const MpiComm&    mpiComm,
+                       int64_t           step,
+                       double            t,
+                       const t_inputrec* ir,
+                       SwapCoords*       s,
+                       gmx_wallcycle*    wcycle,
+                       ArrayRef<RVec>    x,
+                       matrix            box,
+                       gmx_bool          bVerbose,
+                       gmx_bool          bRerun);
+
+} // namespace gmx
 
 #endif

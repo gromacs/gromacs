@@ -39,7 +39,7 @@
 #include <optional>
 #include <vector>
 
-#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -58,19 +58,18 @@ class DispersionCorrection;
 class ListedForces;
 class CpuPpLongRangeNonbondeds;
 struct t_fcdata;
-struct t_forcetable;
 struct interaction_const_t;
 
 namespace gmx
 {
 struct nonbonded_verlet_t;
+struct t_forcetable;
 class DeviceStreamManager;
 class ListedForcesGpu;
 class GpuForceReduction;
 class ForceProviders;
 class MdGpuGraph;
 class StatePropagatorDataGpu;
-class PmePpCommGpu;
 class WholeMoleculeTransform;
 } // namespace gmx
 
@@ -127,14 +126,14 @@ private:
     //! Shift force array for computing the virial, size c_numShiftVectors
     std::vector<gmx::RVec> shiftForces_;
 };
-// NOLINTNEXTLINE (clang-analyzer-optin.performance.Padding)
+// NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct t_forcerec
 {
     // Declare an explicit constructor and destructor, so they can be
     // implemented in a single source file, so that not every source
     // file that includes this one needs to understand how to find the
     // destructors of the objects pointed to by unique_ptr members.
-    t_forcerec(bool useGpuPmePpCommunication);
+    t_forcerec(const gmx::HostAllocationPolicy& hostAllocationPolicy);
     ~t_forcerec();
 
     std::unique_ptr<interaction_const_t> ic;
@@ -184,7 +183,7 @@ struct t_forcerec
     /* Fudge factors */
     real fudgeQQ = 0;
 
-    std::unique_ptr<t_forcetable> pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
+    std::unique_ptr<gmx::t_forcetable> pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
     FreeEnergyPerturbationType efep = FreeEnergyPerturbationType::No;
@@ -202,8 +201,8 @@ struct t_forcerec
     std::unique_ptr<gmx::nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
-    int                                                     nwall = 0;
-    std::vector<std::vector<std::unique_ptr<t_forcetable>>> wall_tab;
+    int                                                          nwall = 0;
+    std::vector<std::vector<std::unique_ptr<gmx::t_forcetable>>> wall_tab;
 
     /* The number of atoms participating in do_force_lowlevel */
     int natoms_force = 0;
@@ -273,16 +272,13 @@ struct t_forcerec
     // TODO: Should not be here. This is here only to pass the pointer around.
     gmx::DeviceStreamManager* deviceStreamManager = nullptr;
 
-    /* For PME-PP GPU communication */
-    std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;
+    //! Manages communication with the partner PME rank, when active
+    std::unique_ptr<gmx::PmePpComm> pmePpComm;
 
     /* For GPU force reduction (on both local and non-local atoms) */
     gmx::EnumerationArray<gmx::AtomLocality, std::unique_ptr<gmx::GpuForceReduction>> gpuForceReduction;
 
     gmx::EnumerationArray<MdGraphEvenOrOddStep, std::unique_ptr<gmx::MdGpuGraph>> mdGraph;
-
-    //! Buffer into which this PP rank receives PME forces, possibly from a GPU
-    gmx::HostVector<gmx::RVec> pmeForceReceiveBuffer;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

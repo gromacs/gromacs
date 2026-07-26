@@ -173,7 +173,7 @@ void initTestOptions(IOptionsContainer* options);
                                                                                                                        \
     static gmx_unused name s_##name##Instance;                                                                         \
                                                                                                                        \
-    void name::initOptions(::gmx::IOptionsContainer* options) //NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
+    void name::initOptions(::gmx::IOptionsContainer* options) // NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
 
 } // namespace test
 } // namespace gmx

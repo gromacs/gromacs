@@ -155,21 +155,35 @@ void XdrSerializer::doReal(real* value)
 {
     if (doublePrecision_)
     {
-        double temp = static_cast<double>(*value);
+        double temp;
+        if (!reading())
+        {
+            temp = static_cast<double>(*value);
+        }
         if (xdr_double(&xdr_, &temp) == 0)
         {
             GMX_THROW(FileIOError("Failed to serialize real(double) value to XDR"));
         }
-        *value = static_cast<real>(temp);
+        if (reading())
+        {
+            *value = static_cast<real>(temp);
+        }
     }
     else
     {
-        float temp = static_cast<float>(*value);
+        float temp;
+        if (!reading())
+        {
+            temp = static_cast<float>(*value);
+        }
         if (xdr_float(&xdr_, &temp) == 0)
         {
             GMX_THROW(FileIOError("Failed to serialize real(float) value to XDR"));
         }
-        *value = static_cast<real>(temp);
+        if (reading())
+        {
+            *value = static_cast<real>(temp);
+        }
     }
 }
 

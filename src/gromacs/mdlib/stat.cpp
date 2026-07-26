@@ -216,15 +216,15 @@ void global_stat(const gmx_global_stat&   gs,
             {
                 if (bSumEkinhOld)
                 {
-                    itc0[j] = add_binr(rb, DIM * DIM, ekind->tcstat[j].ekinh_old[0]);
+                    itc0[j] = add_binMatrix(rb, ekind->tcstat[j].ekinh_old);
                 }
                 if (bEkinAveVel && !bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM * DIM, ekind->tcstat[j].ekinf[0]);
+                    itc1[j] = add_binMatrix(rb, ekind->tcstat[j].ekinf);
                 }
                 else if (!bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM * DIM, ekind->tcstat[j].ekinh[0]);
+                    itc1[j] = add_binMatrix(rb, ekind->tcstat[j].ekinh);
                 }
             }
             /* these probably need to be put into one of these categories */
@@ -336,15 +336,15 @@ void global_stat(const gmx_global_stat&   gs,
             {
                 if (bSumEkinhOld)
                 {
-                    extract_binr(rb, itc0[j], DIM * DIM, ekind->tcstat[j].ekinh_old[0]);
+                    extract_binMatrix(rb, itc0[j], ekind->tcstat[j].ekinh_old);
                 }
                 if (bEkinAveVel && !bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM * DIM, ekind->tcstat[j].ekinf[0]);
+                    extract_binMatrix(rb, itc1[j], ekind->tcstat[j].ekinf);
                 }
                 else if (!bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM * DIM, ekind->tcstat[j].ekinh[0]);
+                    extract_binMatrix(rb, itc1[j], ekind->tcstat[j].ekinh);
                 }
             }
             extract_binr(rb, idedl, 1, &(ekind->dekindl));

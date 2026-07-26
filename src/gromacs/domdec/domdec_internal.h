@@ -88,7 +88,10 @@ struct gmx_domdec_ind_t
     int cell2at0[gmx::sc_maxNumIZones] = {};
     int cell2at1[gmx::sc_maxNumIZones] = {};
     //! @}
-    gmx_domdec_ind_t() {}
+    gmx_domdec_ind_t(const gmx::HostAllocationPolicy& hostAllocationPolicy) :
+        index{ hostAllocationPolicy }
+    {
+    }
 };
 
 //! Things relating to index communication
@@ -506,7 +509,7 @@ struct DDSettings
 // The following suppression suppresses an error: "declaration uses
 // identifier '__i0', which is a reserved identifier" which does not
 // make sense from the code, but is not yet a known clang-tidy bug.
-struct DDRankSetup //NOLINT(bugprone-reserved-identifier,google-readability-braces-around-statements,readability-braces-around-statements)
+struct DDRankSetup // NOLINT(bugprone-reserved-identifier,google-readability-braces-around-statements,readability-braces-around-statements)
 {
     /**< The rank ordering */
     gmx::DdRankOrder rankOrder;
@@ -559,7 +562,7 @@ struct CartesianRankSetup
  * All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
  * unless stated otherwise.
  */
-struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
+struct gmx_domdec_comm_t // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim);
     ~gmx_domdec_comm_t();

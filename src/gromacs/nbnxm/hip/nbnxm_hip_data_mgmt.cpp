@@ -87,7 +87,7 @@ void gpu_free_platform_specific(NbnxmGpu* /* nb */)
 
 int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().prop.multiProcessorCount
+    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext.deviceInfo().prop.multiProcessorCount
                          : 0;
 }
 

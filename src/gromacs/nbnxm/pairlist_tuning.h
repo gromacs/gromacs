@@ -34,7 +34,7 @@
 
 /*! \libinternal \file
  *
- * \brief Declares functions for tuning adjustable parameters for the nbnxn non-bonded search and interaction kernels
+ * \brief Declares functions for tuning adjustable parameters for the nbnxm non-bonded search and interaction kernels
  *
  * \author Berk Hess <hess@kth.se>
  *

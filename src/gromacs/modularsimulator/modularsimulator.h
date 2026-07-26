@@ -53,16 +53,18 @@
 
 #include "gromacs/mdrun/isimulator.h"
 
-struct CheckpointHeaderContents;
 struct t_fcdata;
 struct t_trxframe;
-struct ReplicaExchangeParameters;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct t_inputrec;
 
 namespace gmx
 {
+
+struct CheckpointHeaderContents;
+struct ReplicaExchangeParameters;
+class DeviceStreamManager;
 class MDLogger;
 class ModularSimulatorAlgorithmBuilder;
 class ReadCheckpointDataHolder;
@@ -118,7 +120,8 @@ public:
 
 private:
     //! Constructor
-    ModularSimulator(std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
+    ModularSimulator(const DeviceStreamManager*                deviceStreamManager,
+                     std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
                      std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder);
 
     //! Populate algorithm builder with elements
@@ -127,6 +130,8 @@ private:
     //! Check for disabled functionality (during construction time)
     void checkInputForDisabledFunctionality();
 
+    //! Handle to possible device stream manager
+    const DeviceStreamManager* deviceStreamManager_;
     //! Pointer to legacy simulator data (TODO: Can we avoid using unique_ptr? #3628)
     std::unique_ptr<LegacySimulatorData> legacySimulatorData_;
     //! Input checkpoint data

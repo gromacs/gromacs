@@ -35,6 +35,7 @@
 #define GMX_MDLIB_RBIN_H
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -62,6 +63,7 @@ int add_binr(t_bin* b, int nr, const real r[]);
 int add_binr(t_bin* b, gmx::ArrayRef<const real> r);
 int add_bind(t_bin* b, int nr, const double r[]);
 int add_bind(t_bin* b, gmx::ArrayRef<const double> r);
+int add_binMatrix(t_bin* b, const gmx::Matrix3x3& m);
 /* Add reals to the bin. Returns index */
 
 void sum_bin(t_bin* b, const gmx::MpiComm& mpiComm);
@@ -71,6 +73,7 @@ void extract_binr(t_bin* b, int index, int nr, real r[]);
 void extract_binr(t_bin* b, int index, gmx::ArrayRef<real> r);
 void extract_bind(t_bin* b, int index, int nr, double r[]);
 void extract_bind(t_bin* b, int index, gmx::ArrayRef<double> r);
+void extract_binMatrix(t_bin* b, int index, gmx::Matrix3x3& m);
 /* Extract values from the bin, starting from index (see add_bin) */
 
 #endif

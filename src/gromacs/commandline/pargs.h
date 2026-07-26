@@ -61,6 +61,7 @@ enum
     etINT,
     etINT64,
     etREAL,
+    etDOUBLE,
     etTIME,
     etSTR,
     etBOOL,
@@ -102,8 +103,10 @@ typedef struct
         int* i;
         /** Integer value for etINT64. */
         int64_t* is;
-        /** Real value for etREAL and etTIME. */
+        /** Real value for etREAL. */
         real* r;
+        /** Double value for etDOUBLE and etTIME. */
+        double* d;
         /*! \brief
          * String value for etSTR and etENUM.
          *

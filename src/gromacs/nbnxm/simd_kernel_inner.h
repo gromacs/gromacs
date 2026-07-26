@@ -34,7 +34,7 @@
 
 /* Doxygen gets confused (buggy) about the block in this file in combination with
  * the  namespace prefix, and thinks store is documented here.
- * This will solve itself with the second-generation nbnxn kernels, so for now
+ * This will solve itself with the second-generation nbnxm kernels, so for now
  * we just tell Doxygen to stay out.
  */
 #ifndef DOXYGEN

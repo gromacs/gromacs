@@ -276,8 +276,7 @@ void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader
         }
         _impl->currValues_.clear();
         _impl->currValues_.emplace_back(step * _impl->dt);
-        int k = 1;
-        for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
+        for (int j = 0; j < _impl->nmax; j += _impl->ndim)
         {
             real dist2 = 0.0;
 

@@ -56,6 +56,7 @@
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -71,7 +72,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct pull_t;
 
 namespace gmx
@@ -104,12 +108,10 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     simulationWorkload.haveDynamicBox    = haveDynamicBox;
     simulationWorkload.useCpuNonbonded   = !useGpuForNonbonded;
     simulationWorkload.useGpuNonbonded   = useGpuForNonbonded;
-    simulationWorkload.useCpuNonbondedFE = !useGpuForNonbondedFE;
     simulationWorkload.useGpuNonbondedFE = useGpuForNonbondedFE;
+    simulationWorkload.useCpuNonbondedFE = !useGpuForNonbondedFE;
     simulationWorkload.useGpuForeignNonbondedFE =
-            useGpuForNonbondedFE && inputrec.fepvals->n_lambda > 0
-            && inputrec.fepvals->softcoreFunction == SoftcoreType::Beutler
-            && inputrec.fepvals->sc_alpha != 0;
+            useGpuForNonbondedFE && inputrec.fepvals->n_lambda > 0 && inputrec.fepvals->sc_alpha != 0;
     simulationWorkload.useCpuPme = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft                    = (pmeRunMode == PmeRunMode::GPU);
@@ -172,7 +174,23 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
             && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true)
             && !(haveSyclWithGraphIncompatibleGpuFftLibrary && simulationWorkload.useGpuPmeFft);
 
-    simulationWorkload.useNvshmem = devFlags.enableNvshmem && simulationWorkload.useGpuDirectCommunication;
+    // When PME on a seperate rank is on a CPU, the
+    // DeviceStreamManager does not have a PME stream and thus none of
+    // the infrastructure needed to work alongside GPU-halo-exchange
+    // symmetric allocation can be constructed without changes that
+    // are not worthwhile for supporting this run configuration.
+    const bool separatePmeRankWithCpuPme =
+            simulationWorkload.haveSeparatePmeRank && simulationWorkload.useCpuPme;
+    if (devFlags.enableNvshmem && separatePmeRankWithCpuPme)
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Separate PME rank with PME on CPU is not supported with NVSHMEM runs");
+    }
+    simulationWorkload.useNvshmem = devFlags.enableNvshmem && simulationWorkload.useGpuDirectCommunication
+                                    && !separatePmeRankWithCpuPme;
+
     return simulationWorkload;
 }
 
@@ -184,7 +202,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
 static bool haveSpecialForces(const t_inputrec&          inputrec,
                               const gmx::ForceProviders& forceProviders,
                               const pull_t*              pull_work,
-                              const gmx_edsam*           ed)
+                              const edsam*               ed)
 {
 
     return ((forceProviders.hasForceProvider()) ||                 // forceProviders
@@ -198,7 +216,7 @@ static bool haveSpecialForces(const t_inputrec&          inputrec,
 DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
                                                    const t_forcerec&         fr,
                                                    const pull_t*             pull_work,
-                                                   const gmx_edsam*          ed,
+                                                   const edsam*              ed,
                                                    const t_mdatoms&          mdatoms,
                                                    const SimulationWorkload& simulationWork)
 {
@@ -223,14 +241,10 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     domainWork.haveNonbondedFreeEnergyWork =
             (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
     domainWork.haveCpuNonbondedFreeEnergyWork =
-            domainWork.haveNonbondedFreeEnergyWork
-            && (simulationWork.useCpuNonbondedFE || fr.efep == FreeEnergyPerturbationType::Expanded
-                || inputrec.fepvals->softcoreFunction == SoftcoreType::Gapsys);
+            domainWork.haveNonbondedFreeEnergyWork && simulationWork.useCpuNonbondedFE;
     // Currently no GPU support for gapsys softcore type and expanded ensemble free energy calculations
     domainWork.haveGpuNonbondedFreeEnergyWork =
-            domainWork.haveNonbondedFreeEnergyWork
-            && (simulationWork.useGpuNonbondedFE && fr.efep != FreeEnergyPerturbationType::Expanded
-                && inputrec.fepvals->softcoreFunction != SoftcoreType::Gapsys);
+            domainWork.haveNonbondedFreeEnergyWork && simulationWork.useGpuNonbondedFE;
     // We assume we have local force work if there are CPU
     // force tasks including PME or nonbondeds.
     domainWork.haveCpuLocalForceWork = domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
@@ -246,21 +260,13 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     return domainWork;
 }
 
-/*! \brief Set up force flag struct from the force bitmask.
- *
- * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
- * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
- * \param[in]      step                 The current MD step
- * \param[in]      domainWork           Domain lifetime workload description.
- * \param[in]      simulationWork       Simulation workload description.
- *
- * \returns New Stepworkload description.
- */
 StepWorkload setupStepWorkload(const int                     legacyFlags,
                                ArrayRef<const gmx::MtsLevel> mtsLevels,
                                const int64_t                 step,
+                               const std::optional<bool>     writeCheckpoint,
                                const DomainLifetimeWorkload& domainWork,
-                               const SimulationWorkload&     simulationWork)
+                               const SimulationWorkload&     simulationWork,
+                               const t_inputrec&             inputrec)
 {
     GMX_ASSERT(mtsLevels.empty() || mtsLevels.size() == 2, "Expect 0 or 2 MTS levels");
     const bool computeSlowForces = (mtsLevels.empty() || step % mtsLevels[1].stepFactor == 0);
@@ -301,6 +307,17 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
     // On NS steps, the buffer is cleared in stateGpu->reinit, no need to clear it twice.
     flags.clearGpuFBufferEarly =
             flags.useGpuFHalo && !domainWork.haveCpuLocalForceWork && !flags.doNeighborSearch;
+
+    GMX_ASSERT(!simulationWork.useGpuUpdate || writeCheckpoint.has_value(),
+               "Need a writeCheckpoint value when update is on GPU");
+    const OutputControl& outputControl = inputrec.outputControl;
+    flags.copyXFromGpuForIO =
+            simulationWork.useGpuUpdate
+            && (do_per_step(step, outputControl.nstxout)
+                || do_per_step(step, outputControl.nstxout_compressed) || writeCheckpoint.value());
+    flags.copyVFromGpuForIO = simulationWork.useGpuUpdate
+                              && (do_per_step(step, outputControl.nstvout)
+                                  || (writeCheckpoint.value() && EI_STATE_VELOCITY(inputrec.eI)));
 
     return flags;
 }

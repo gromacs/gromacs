@@ -54,7 +54,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
+} // namespace gmx
 
 /* Data for one foreign lambda, or derivative. */
 typedef struct

@@ -320,7 +320,7 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
         outputGrid = &impl_->realGrid_;
     }
     // Enqueue the 3D FFT work
-    gmx::syclSubmitWithoutEvent(
+    gmx::syclSubmitWithCghWithoutEvent(
             impl_->queue_,
             [&](sycl::handler& cgh)
             {

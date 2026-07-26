@@ -44,6 +44,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         keyvaluetreetransform.cpp
         listoflists.cpp
         logger.cpp
+	matrix.cpp
         message_string_collector.cpp
         mpicomm.cpp
         path.cpp

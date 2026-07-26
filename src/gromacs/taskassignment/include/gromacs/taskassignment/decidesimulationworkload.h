@@ -41,6 +41,7 @@
 #ifndef GMX_TASKASSIGNMENT_DECIDESIMULATIONWORKLOAD_H
 #define GMX_TASKASSIGNMENT_DECIDESIMULATIONWORKLOAD_H
 
+#include <optional>
 #include <vector>
 
 #include "gromacs/mdtypes/inputrec.h"
@@ -50,7 +51,10 @@ enum class PmeRunMode;
 
 struct t_forcerec;
 struct pull_t;
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct t_mdatoms;
 
 namespace gmx
@@ -128,7 +132,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
 DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
                                                    const t_forcerec&         fr,
                                                    const pull_t*             pull_work,
-                                                   const gmx_edsam*          ed,
+                                                   const edsam*              ed,
                                                    const t_mdatoms&          mdatoms,
                                                    const SimulationWorkload& simulationWork);
 
@@ -137,16 +141,21 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
  * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
  * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
  * \param[in]      step                 The current MD step
+ * \param[in]      writeCheckpoint      Whether we will write a checkpoint file at the current step,
+ *                                      a value is required when update is on GPU
  * \param[in]      domainWork           Domain lifetime workload description.
  * \param[in]      simulationWork       Simulation workload description.
+ * \param[in]      inputrec             Input record, needed for access to output intervals.
  *
  * \returns New Stepworkload description.
  */
 StepWorkload setupStepWorkload(int                           legacyFlags,
                                ArrayRef<const gmx::MtsLevel> mtsLevels,
                                int64_t                       step,
+                               std::optional<bool>           writeCheckpoint,
                                const DomainLifetimeWorkload& domainWork,
-                               const SimulationWorkload&     simulationWork);
+                               const SimulationWorkload&     simulationWork,
+                               const t_inputrec&             inputrec);
 
 } // namespace gmx
 

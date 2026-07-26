@@ -107,7 +107,7 @@ template<>
 class EnergyAccumulatorGetter<false, false>
 {
 public:
-    inline gmx_unused EnergyAccumulatorGetter(nbnxn_atomdata_output_t gmx_unused* out) {}
+    inline gmx_unused EnergyAccumulatorGetter(nbnxm_atomdata_output_t gmx_unused* out) {}
 
     inline gmx_unused EnergyAccumulator<false, false>& get() { return s_energyAccumulator; }
 };
@@ -117,7 +117,7 @@ template<>
 class EnergyAccumulatorGetter<false, true>
 {
 public:
-    inline gmx_unused EnergyAccumulatorGetter(nbnxn_atomdata_output_t* out) : out_(*out) {}
+    inline gmx_unused EnergyAccumulatorGetter(nbnxm_atomdata_output_t* out) : out_(*out) {}
 
     inline gmx_unused EnergyAccumulator<false, true>& get()
     {
@@ -125,7 +125,7 @@ public:
     }
 
 private:
-    nbnxn_atomdata_output_t& out_;
+    nbnxm_atomdata_output_t& out_;
 };
 
 //! Specialized EnergyAccumulator getter for multiple energy groups output
@@ -133,7 +133,7 @@ template<>
 class EnergyAccumulatorGetter<true, true>
 {
 public:
-    inline gmx_unused EnergyAccumulatorGetter(nbnxn_atomdata_output_t* out) : out_(*out) {}
+    inline gmx_unused EnergyAccumulatorGetter(nbnxm_atomdata_output_t* out) : out_(*out) {}
 
     inline gmx_unused EnergyAccumulator<true, true>& get()
     {
@@ -141,7 +141,7 @@ public:
     }
 
 private:
-    nbnxn_atomdata_output_t& out_;
+    nbnxm_atomdata_output_t& out_;
 };
 
 } // namespace
@@ -168,11 +168,11 @@ template<KernelLayout         kernelLayout,
          InteractionModifiers vdwModifier,
          LJEwald              ljEwald,
          EnergyOutput         energyOutput>
-void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
-                     const nbnxn_atomdata_t&    nbat,
+void nbnxmKernelSimd(const NbnxmPairlistCpu&    pairlist,
+                     const nbnxm_atomdata_t&    nbat,
                      const interaction_const_t& ic,
                      const rvec*                shift_vec,
-                     nbnxn_atomdata_output_t*   out)
+                     nbnxm_atomdata_output_t*   out)
 {
     constexpr int c_numJClustersPerSimdRegister = (kernelLayout == KernelLayout::r2xMM ? 2 : 1);
 
@@ -213,7 +213,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
     int npair = 0;
 #endif
 
-    const nbnxn_atomdata_t::Params& nbatParams = nbat.params();
+    const nbnxm_atomdata_t::Params& nbatParams = nbat.params();
 
     static_assert(!(haveLJEwaldGeometric && ljCombinationRule == LJCombinationRule::LorentzBerthelot),
                   "Can not have LJ-PME with LB combination rule");
@@ -296,7 +296,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         vdwCutoffSquared = SimdReal(gmx::square(ic.vdw.cutoff));
     }
 
-    const SimdReal minDistanceSquared(c_nbnxnMinDistanceSquared);
+    const SimdReal minDistanceSquared(c_nbnxmMinDistanceSquared);
 
     const real* gmx_restrict q        = nbatParams.q.data();
     const real               facel    = ic.coulomb.epsfac;
@@ -306,11 +306,11 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
     EnergyAccumulator<useEnergyGroups, calculateEnergies>& energyAccumulator =
             EnergyAccumulatorGetter<useEnergyGroups, calculateEnergies>(out).get();
 
-    const nbnxn_cj_t* l_cj = pairlist.cj.list_.data();
+    const nbnxm_cj_t* l_cj = pairlist.cj.list_.data();
 
-    for (const nbnxn_ci_t& ciEntry : pairlist.ci)
+    for (const nbnxm_ci_t& ciEntry : pairlist.ci)
     {
-        const int ish    = (ciEntry.shift & NBNXN_CI_SHIFT);
+        const int ish    = (ciEntry.shift & NBNXM_CI_SHIFT);
         const int ish3   = ish * 3;
         const int cjind0 = ciEntry.cj_ind_start;
         const int cjind1 = ciEntry.cj_ind_end;
@@ -349,9 +349,9 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        const bool do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
-        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0) && haveElectrostatics;
-        const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
+        const bool do_LJ   = ((ciEntry.shift & NBNXM_CI_DO_LJ(0)) != 0);
+        const bool do_coul = ((ciEntry.shift & NBNXM_CI_DO_COUL(0)) != 0) && haveElectrostatics;
+        const bool half_LJ = (((ciEntry.shift & NBNXM_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 
         energyAccumulator.template initICluster<c_iClusterSize>(ci);
 
@@ -462,7 +462,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::Half;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXM_INTERACTION_MASK_ALL)
                 {
 #include "simd_kernel_inner.h"
                     cjind++;
@@ -483,7 +483,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXM_INTERACTION_MASK_ALL)
                 {
 #include "simd_kernel_inner.h"
                     cjind++;
@@ -504,7 +504,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXM_INTERACTION_MASK_ALL)
                 {
 #include "simd_kernel_inner.h"
                     cjind++;

@@ -149,9 +149,6 @@
  * name and path of the executable.  This information is used, e.g., by the
  * error handling code in formatting standard error messages.
  *
- * The header qsort_threadsafe.h provides a guaranteed threadsafe
- * implementation for qsort().
- *
  * \endif
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>

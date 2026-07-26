@@ -76,9 +76,8 @@ struct GpuConfigurationCapabilities
     static constexpr bool PmeSolveNeedsAtLeastFourWarps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running FFT kernels on the device
     static constexpr bool Fft = GMX_GPU
-                                && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_ROCFFT || GMX_GPU_FFT_HIPFFT
-                                    || GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_ONEMATH || GMX_GPU_FFT_VKFFT
-                                    || GMX_GPU_FFT_CUFFT || GMX_GPU_FFT_CLFFT);
+                                && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_ROCFFT || GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_ONEMATH
+                                    || GMX_GPU_FFT_VKFFT || GMX_GPU_FFT_CUFFT || GMX_GPU_FFT_CLFFT);
     //! Whether this configuration supports running bonded kernels on the device
     static constexpr bool Bonded = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device

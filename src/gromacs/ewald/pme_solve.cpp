@@ -317,12 +317,12 @@ int PmeSolve::solveCoulombYZX(const gmx_pme_t& pme,
     gmx_parallel_3dfft_complex_limits(
             pme.gridsCoulomb[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
 
-    const real rxx = pme.recipbox[XX][XX];
-    const real ryx = pme.recipbox[YY][XX];
-    const real ryy = pme.recipbox[YY][YY];
-    const real rzx = pme.recipbox[ZZ][XX];
-    const real rzy = pme.recipbox[ZZ][YY];
-    const real rzz = pme.recipbox[ZZ][ZZ];
+    const real rxx = pme.unitCell.recipbox[XX][XX];
+    const real ryx = pme.unitCell.recipbox[YY][XX];
+    const real ryy = pme.unitCell.recipbox[YY][YY];
+    const real rzx = pme.unitCell.recipbox[ZZ][XX];
+    const real rzy = pme.unitCell.recipbox[ZZ][YY];
+    const real rzz = pme.unitCell.recipbox[ZZ][ZZ];
 
     GMX_ASSERT(rxx != 0.0, "Someone broke the reciprocal box again");
 
@@ -581,12 +581,12 @@ int PmeSolve::solveLJYZX(const gmx_pme_t&              pme,
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(
             grids[0].pfft_setup.get(), complex_order, local_ndata, local_offset, local_size);
-    const real rxx = pme.recipbox[XX][XX];
-    const real ryx = pme.recipbox[YY][XX];
-    const real ryy = pme.recipbox[YY][YY];
-    const real rzx = pme.recipbox[ZZ][XX];
-    const real rzy = pme.recipbox[ZZ][YY];
-    const real rzz = pme.recipbox[ZZ][ZZ];
+    const real rxx = pme.unitCell.recipbox[XX][XX];
+    const real ryx = pme.unitCell.recipbox[YY][XX];
+    const real ryy = pme.unitCell.recipbox[YY][YY];
+    const real rzx = pme.unitCell.recipbox[ZZ][XX];
+    const real rzy = pme.unitCell.recipbox[ZZ][YY];
+    const real rzz = pme.unitCell.recipbox[ZZ][ZZ];
 
     maxkx = (nx + 1) / 2;
     maxky = (ny + 1) / 2;

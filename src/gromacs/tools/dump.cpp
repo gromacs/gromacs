@@ -119,9 +119,17 @@ void list_tpr(const char* fn,
     t_inputrec    ir;
 
     read_tpx_state(fn, tpx.bIr ? &ir : nullptr, &state, tpx.bTop ? &mtop : nullptr);
-    if (tpx.bIr && !bOriginalInputrec)
+
+    // Set up MDModules and OutputControl before any module operations
+    gmx::MDModules mdModules;
+    if (tpx.bIr)
     {
-        MDModules().adjustInputrecBasedOnModules(&ir);
+        if (!bOriginalInputrec)
+        {
+            mdModules.adjustInputrecBasedOnModules(&ir);
+        }
+
+        mdModules.assignOptionsToModules(*ir.params, nullptr, &ir);
     }
 
     if (mdpfn && tpx.bIr)
@@ -486,7 +494,7 @@ void list_ene(const char* fn)
                 printf("%24s  %12s  %12s  %12s\n",
                        "Component",
                        "Energy",
-                       "Av. Energy",
+                       "Sum sq. dev.",
                        "Sum Energy");
                 if (fr->nsum > 0)
                 {
@@ -495,7 +503,7 @@ void list_ene(const char* fn)
                         printf("%24s  %12.5e  %12.5e  %12.5e\n",
                                enm[i].name.c_str(),
                                fr->ener[i].e,
-                               fr->ener[i].eav,
+                               fr->ener[i].sumSqDev,
                                fr->ener[i].esum);
                     }
                 }

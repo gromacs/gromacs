@@ -46,7 +46,7 @@
 
 struct t_fileio;
 
-void gmx_fio_setprecision(struct t_fileio* fio, gmx_bool bDouble);
+void gmx_fio_setprecision(struct t_fileio* fio, gmx_bool fileRealIsDouble);
 /* Select the floating point precision for reading and writing files */
 
 bool gmx_fio_is_double(struct t_fileio* fio);

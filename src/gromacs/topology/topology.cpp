@@ -486,28 +486,46 @@ static void cmp_iparm_AB(FILE*               fp,
     }
 }
 
-static void cmp_cmap(FILE* fp, const gmx_cmap_t* cmap1, const gmx_cmap_t* cmap2, real relativeTolerance, real absoluteTolerance)
+static void cmp_cmap(FILE* fp, const CmapGrids& cmap1, const CmapGrids& cmap2, real relativeTolerance, real absoluteTolerance)
 {
-    int cmap1_ngrid = (cmap1 ? cmap1->cmapdata.size() : 0);
-    int cmap2_ngrid = (cmap2 ? cmap2->cmapdata.size() : 0);
-
-    cmp_int(fp, "cmap ngrid", -1, cmap1_ngrid, cmap2_ngrid);
-
-    if (cmap1 == nullptr || cmap2 == nullptr)
+    cmp_int(fp, "cmap ngrid", -1, cmap1.size(), cmap2.size());
+    if (cmap1.size() != cmap2.size())
     {
+        fprintf(fp,
+                "Cannot compare lists of CMAP grids whose sizes mismatch (%zu and %zu)\n",
+                cmap1.size(),
+                cmap2.size());
+        return;
+    }
+    if (cmap1.empty())
+    {
+        // Nothing further to compare when both lists are empty
         return;
     }
 
-    cmp_int(fp, "cmap gridExtent", -1, cmap1->gridExtent, cmap2->gridExtent);
-    if (cmap1->cmapdata.size() == cmap2->cmapdata.size() && cmap1->gridExtent == cmap2->gridExtent)
+    cmp_int(fp, "cmap gridExtent0", -1, cmap1[0].extent(0), cmap2[0].extent(0));
+    cmp_int(fp, "cmap gridExtent1", -1, cmap1[0].extent(1), cmap2[0].extent(1));
+    if ((cmap1[0].extent(0) != cmap2[0].extent(0)) || (cmap1[0].extent(1) != cmap2[0].extent(1)))
     {
-        for (size_t g = 0; g < cmap1->cmapdata.size(); g++)
-        {
-            fprintf(fp, "comparing cmap %zu\n", g);
+        fprintf(fp, "Cannot compare CMAP grids whose extents mismatch\n");
+        return;
+    }
 
-            for (int i = 0; i < 4 * cmap1->gridExtent * cmap1->gridExtent; i++)
+    for (size_t g = 0; g < cmap1.size(); g++)
+    {
+        fprintf(fp, "comparing CMAP grids %zu\n", g);
+
+        // Compare the 2D grid over the dihedral-angle space for this residue type
+        int i = 0;
+        for (int j = 0; j < cmap1[g].extent(0); ++j)
+        {
+            for (int k = 0; k < cmap1[g].extent(1); ++k)
             {
-                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], relativeTolerance, absoluteTolerance);
+                // Compare the 4 values per CMAP grid element for computing potential and force
+                for (size_t l = 0; l < cmap1[g](j, k).size(); ++l, ++i)
+                {
+                    cmp_real(fp, "", i, cmap1[g](j, k)[l], cmap2[g](j, k)[l], relativeTolerance, absoluteTolerance);
+                }
             }
         }
     }
@@ -538,7 +556,7 @@ static void compareFfparams(FILE*                 fp,
     cmp_int(fp, "atnr", -1, ff1.atnr, ff1.atnr);
     cmp_double(fp, "reppow", -1, ff1.reppow, ff2.reppow, relativeTolerance, absoluteTolerance);
     cmp_real(fp, "fudgeQQ", -1, ff1.fudgeQQ, ff2.fudgeQQ, relativeTolerance, absoluteTolerance);
-    cmp_cmap(fp, &ff1.cmap_grid, &ff2.cmap_grid, relativeTolerance, absoluteTolerance);
+    cmp_cmap(fp, ff1.cmapGrids, ff2.cmapGrids, relativeTolerance, absoluteTolerance);
     for (int i = 0; i < std::min(ff1.numTypes(), ff2.numTypes()); i++)
     {
         std::string buf = gmx::formatString("ffparams->functype[%d]", i);

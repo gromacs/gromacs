@@ -43,8 +43,8 @@
 #ifndef GMX_TRAJECTORYANALYSIS_TOPOLOGYINFORMATION_H
 #define GMX_TRAJECTORYANALYSIS_TOPOLOGYINFORMATION_H
 
+#include <filesystem>
 #include <memory>
-#include <string>
 #include <vector>
 
 #include "gromacs/topology/atoms.h"
@@ -122,7 +122,7 @@ public:
      *
      * \todo This should throw upon error but currently does
      * not. */
-    void fillFromInputFile(const std::string& filename);
+    void fillFromInputFile(const std::filesystem::path& filename);
     /*! \brief Returns the loaded topology, or nullptr if not loaded. */
     gmx_mtop_t* mtop() const { return mtop_.get(); }
     //! Returns the loaded topology fully expanded, or nullptr if no topology is available.
@@ -162,8 +162,8 @@ public:
     void getBox(matrix box) const;
     /*! \brief Returns a name for the topology.
      *
-     * If a full topology was read from a a file, returns the name
-     * it contained, otherwise the empty string. */
+     * If a full topology was read, returns the name
+     * it contained, otherwise nullptr. */
     const char* name() const;
 
     TopologyInformation();

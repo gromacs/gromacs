@@ -71,7 +71,10 @@ gmx_add_cuda_flag_if_supported(NVCC_HAS_STATIC_GLOBAL_TEMPLATE_STUB_FALSE -stati
 # Add warnings
 gmx_add_cuda_flag_if_supported(NVCC_HAS_PTXAS_WARN_DOUBLE_USAGE -Xptxas=-warn-double-usage)
 gmx_add_cuda_flag_if_supported(NVCC_HAS_PTXAS_WERROR -Xptxas=-Werror)
+# CUDA 13 does not like traditional MSVC preprocessor, see https://github.com/NVIDIA/cccl/issues/5171
+if(MSVC AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+    gmx_add_cuda_flag_if_supported(NVCC_HAS_XCOMPILER_ZC_PREPROCESSOR "-Xcompiler=/Zc:preprocessor")
+endif()
 
 # Disable cudafe warnings with nvc++ as a host compiler - warning #177-D
 gmx_add_cuda_flag_if_supported(NVCC_HAS_DIAG_SUPPRESS_177 -diag-suppress=177)
-

@@ -542,7 +542,7 @@ static char** read_topol(const char*                                 infile,
                          gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
                          CombinationRule*             combination_rule,
                          double*                      reppow,
-                         t_gromppopts*                opts,
+                         gmx::t_gromppopts*           opts,
                          real*                        fudgeQQ,
                          std::vector<gmx_molblock_t>* molblock,
                          bool*                        ffParametrizedWithHBondConstraints,
@@ -607,9 +607,6 @@ static char** read_topol(const char*                                 infile,
     VanDerWaalsPotential                          nb_funct = VanDerWaalsPotential::LJ;
 
     *reppow = 12.0; /* Default value for repulsion power     */
-
-    /* Init the number of CMAP torsion angles */
-    interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_ = 0;
 
     bWarn_copy_A_B = bFEP;
 
@@ -839,7 +836,7 @@ static char** read_topol(const char*                                 infile,
                             push_nbt(d, nbparam, atypes, pline, static_cast<int>(nb_funct), wi);
                             break;
 
-                        case Directive::d_implicit_genborn_params: // NOLINT bugprone-branch-clone
+                        case Directive::d_implicit_genborn_params: // NOLINT(bugprone-branch-clone)
                             // Skip this line, so old topologies with
                             // GB parameters can be read.
                             break;
@@ -1244,7 +1241,7 @@ static char** read_topol(const char*                                 infile,
 char** do_top(bool                                                            bVerbose,
               const char*                                                     topfile,
               const std::optional<std::filesystem::path>&                     topppfile,
-              t_gromppopts*                                                   opts,
+              gmx::t_gromppopts*                                              opts,
               bool                                                            bZero,
               t_symtab*                                                       symtab,
               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,

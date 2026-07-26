@@ -8,3 +8,12 @@ Performance improvements
    a space between the colon and number!
 
 
+Improved performance of systems that are inhomogeneous along z
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The non-bonded kernels got very inefficient with systems that are have
+a very inhomogeneous atom distribution along the z-dimension. Now
+all three dimensions are considered when estimating atom density.
+
+:issue:`5622`
+

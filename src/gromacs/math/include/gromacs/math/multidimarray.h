@@ -67,7 +67,7 @@ struct is_resizable<T, std::void_t<decltype(std::declval<T>().resize(size_t(0)))
 
 //! Type has a resize member function callable with size_t argument
 template<typename T>
-// NOLINTNEXTLINE misc-definitions-in-headers
+// NOLINTNEXTLINE(misc-definitions-in-headers)
 constexpr bool is_resizable_v = is_resizable<T>::value;
 } // namespace detail
 

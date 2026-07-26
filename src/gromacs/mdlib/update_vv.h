@@ -104,7 +104,6 @@ enum class StartingBehavior : int;
  * \param[in]  bStopCM           Stop the center of mass motion on this step.
  * \param[in]  bTrotter          Do trotter routines this step.
  * \param[in]  bExchanged        If this is a replica exchange step.
- * \param[out] bSumEkinhOld      Old kinetic energies will need to be summed up.
  * \param[out] saved_conserved_quantity  Place to store the conserved energy.
  * \param[in]  f                 Force buffers.
  * \param[in]  upd               Update object.
@@ -146,7 +145,6 @@ void integrateVVFirstStep(int64_t                   step,
                           bool                      bStopCM,
                           bool                      bTrotter,
                           bool                      bExchanged,
-                          bool*                     bSumEkinhOld,
                           real*                     saved_conserved_quantity,
                           gmx::ForceBuffers*        f,
                           gmx::Update*              upd,
@@ -185,7 +183,6 @@ void integrateVVFirstStep(int64_t                   step,
  * \param[in]  do_log            Do logging on this step.
  * \param[in]  do_ene            Print energies on this step.
  * \param[in]  bGStat            Collect globals this step.
- * \param[out] bSumEkinhOld      Old kinetic energies need to be summed up.
  * \param[in]  f                 Force buffers.
  * \param[in]  cbuf              Buffer to store intermediate coordinates
  * \param[in]  upd               Update object.
@@ -220,7 +217,6 @@ void integrateVVSecondStep(int64_t                   step,
                            bool                      do_log,
                            bool                      do_ene,
                            bool                      bGStat,
-                           bool*                     bSumEkinhOld,
                            gmx::ForceBuffers*        f,
                            std::vector<gmx::RVec>*   cbuf,
                            gmx::Update*              upd,

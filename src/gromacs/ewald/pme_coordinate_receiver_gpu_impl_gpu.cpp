@@ -105,7 +105,7 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
                                "Direct PME-PP communication with threadMPI needs to be supported "
                                "by the backend.");
             // Data will be transferred directly from GPU.
-            void* sendBuf = reinterpret_cast<void*>(asMpiPointer(d_x) + indStart);
+            void* sendBuf = reinterpret_cast<void*>(asRawDevicePointer(d_x) + indStart);
             MPI_Send(&sendBuf,
                      sizeof(void**),
                      MPI_BYTE,
@@ -158,7 +158,7 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpGpuAwareMpi(D
             "launchReceiveCoordinatesFromPpGpuAwareMpi is expected to be called only for Lib-MPI");
 
 #if GMX_MPI
-    MPI_Irecv(asMpiPointer(recvbuf) + numAtoms,
+    MPI_Irecv(asRawDevicePointer(recvbuf) + numAtoms,
               numBytes,
               MPI_BYTE,
               ppRank,

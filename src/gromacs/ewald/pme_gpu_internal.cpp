@@ -50,6 +50,7 @@
 
 #include "config.h"
 
+#include <array>
 #include <list>
 #include <memory>
 #include <string>
@@ -67,7 +68,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
@@ -154,8 +154,6 @@ void pme_gpu_alloc_energy_virial(PmeGpu* pmeGpu)
         allocateDeviceBuffer(&pmeGpu->kernelParams->constants.d_virialAndEnergy[gridIndex],
                              c_virialAndEnergyCount,
                              pmeGpu->archSpecific->deviceContext_);
-        gmx::changePinningPolicy(&pmeGpu->staging.h_virialAndEnergy[gridIndex],
-                                 gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_virialAndEnergy[gridIndex].resize(c_virialAndEnergyCount);
     }
 }
@@ -211,8 +209,6 @@ void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu, const int gridIndex
     if (shouldRealloc)
     {
         /* Reallocate the host buffer */
-        changePinningPolicy(&pmeGpu->staging.h_splineModuli[gridIndex],
-                            gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_splineModuli[gridIndex].resize(newSplineValuesSize);
     }
     for (int i = 0; i < DIM; i++)
@@ -350,9 +346,7 @@ void pme_gpu_realloc_spline_data(PmeGpu* pmeGpu)
     // the host side reallocation
     if (shouldRealloc)
     {
-        changePinningPolicy(&pmeGpu->staging.h_theta, gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_theta.resize(newSplineDataSize);
-        changePinningPolicy(&pmeGpu->staging.h_dtheta, gmx::PinningPolicy::PinnedIfSupported);
         pmeGpu->staging.h_dtheta.resize(newSplineDataSize);
     }
 }
@@ -375,7 +369,6 @@ void pme_gpu_realloc_grid_indices(PmeGpu* pmeGpu)
                            &pmeGpu->archSpecific->gridlineIndicesSize,
                            &pmeGpu->archSpecific->gridlineIndicesSizeAlloc,
                            pmeGpu->archSpecific->deviceContext_);
-    changePinningPolicy(&pmeGpu->staging.h_gridlineIndices, gmx::PinningPolicy::PinnedIfSupported);
     pmeGpu->staging.h_gridlineIndices.resize(newIndicesSize);
 }
 
@@ -1176,25 +1169,18 @@ PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, c
     return output;
 }
 
-void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused box)
+void pme_gpu_update_input_box(PmeGpu* pmeGpu, const real boxVolume, const matrix recipbox)
 {
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
+    GMX_UNUSED_VALUE(pmeGpu);
+    GMX_UNUSED_VALUE(boxVolume);
+    GMX_UNUSED_VALUE(recipbox);
 #else
-    matrix  scaledBox;
-    PmeGpu* pmeGpu = pme->gpu.get();
-    pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     // Set (scaled) box volume to use in GPU kernels
     auto* kernelParamsPtr              = pme_gpu_get_kernel_params_ptr(pmeGpu);
-    kernelParamsPtr->current.boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
+    kernelParamsPtr->current.boxVolume = boxVolume;
     GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0F, "Zero volume of the unit cell");
-
-    // Data in pme object is only needed when
-    // !pme_gpu_settings(pmeGpu).performGPUSolve), but it's simpler to
-    // always use that storage.
-    pme->boxVolume   = kernelParamsPtr->current.boxVolume;
-    matrix& recipBox = pme->recipbox;
-    gmx::invertBoxMatrix(scaledBox, recipBox);
 
     /* Set reciprocal box to use in GPU kernels
      *
@@ -1202,9 +1188,9 @@ void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused
      * Spread uses matrix columns (while solve and gather use rows).
      * There is no particular reason for this; it might be further rethought/optimized for better access patterns.
      */
-    const real newRecipBox[DIM][DIM] = { { recipBox[XX][XX], recipBox[YY][XX], recipBox[ZZ][XX] },
-                                         { 0.0, recipBox[YY][YY], recipBox[ZZ][YY] },
-                                         { 0.0, 0.0, recipBox[ZZ][ZZ] } };
+    const real newRecipBox[DIM][DIM] = { { recipbox[XX][XX], recipbox[YY][XX], recipbox[ZZ][XX] },
+                                         { 0.0, recipbox[YY][YY], recipbox[ZZ][YY] },
+                                         { 0.0, 0.0, recipbox[ZZ][ZZ] } };
     std::memcpy(kernelParamsPtr->current.recipBox, newRecipBox, sizeof(matrix));
 #endif
 }
@@ -1277,13 +1263,13 @@ static void pme_gpu_reinit_grids(PmeGpu* pmeGpu)
  * Copies everything useful from the PME CPU to the PME GPU structure.
  * The goal is to minimize interaction with the PME CPU structure in the GPU code.
  *
- * \param[in] pme         The PME structure.
+ * \param[in,out] pmeGpu      The PME GPU structure.
+ * \param[in]     pme         The PME structure.
  */
-static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
+static void pme_gpu_copy_common_data_from(PmeGpu* pmeGpu, const gmx_pme_t* pme)
 {
     /* TODO: Consider refactoring the CPU PME code to use the same structure,
      * so that this function becomes 2 lines */
-    PmeGpu* pmeGpu               = pme->gpu.get();
     pmeGpu->common->ngrids       = pme->bFEP_q ? 2 : 1;
     pmeGpu->common->epsilon_r    = pme->epsilon_r;
     pmeGpu->common->ewaldcoeff_q = pme->ewaldcoeff_q;
@@ -1337,7 +1323,6 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     pmeGpu->common->nn.insert(pmeGpu->common->nn.end(), pme->nnz.begin(), pme->nnz.end());
     pmeGpu->common->runMode       = pme->runMode;
     pmeGpu->common->isRankPmeOnly = !pme->bPPnode;
-    pmeGpu->common->boxScaler     = pme->boxScaler.get();
     pmeGpu->common->mpiCommX      = pme->mpi_comm_d[0];
     pmeGpu->common->mpiCommY      = pme->mpi_comm_d[1];
     pmeGpu->common->mpiComm       = pme->mpiComm_.comm();
@@ -1363,54 +1348,49 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
     }
 }
 
-
-/*! \libinternal \brief
- * Initializes the PME GPU data at the beginning of the run.
- * TODO: this should become PmeGpu::PmeGpu()
- *
- * \param[in,out] pme            The PME structure.
- * \param[in]     deviceContext  The GPU context.
- * \param[in]     deviceStream   The GPU stream.
- * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside
- *                               (e.g. in unit tests/runner)
- * \param[in]     box            Simulation box
- */
-static void pme_gpu_init(gmx_pme_t*           pme,
-                         const DeviceContext& deviceContext,
-                         const DeviceStream&  deviceStream,
-                         const PmeGpuProgram* pmeGpuProgram,
-                         const matrix         box)
+PmeGpu::PmeGpu(const gmx_pme_t&     pme,
+               const DeviceContext& deviceContext,
+               const DeviceStream&  deviceStream,
+               const PmeGpuProgram* pmeGpuProgram) :
+    hostAllocationPolicy_{ deviceContext, gmx::PinningPolicy::PinnedIfSupported }
 {
-    pme->gpu       = std::make_unique<PmeGpu>();
-    PmeGpu* pmeGpu = pme->gpu.get();
-    changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());
-    pmeGpu->common = std::make_shared<PmeShared>();
+    common = std::make_shared<PmeShared>();
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
     /* A convenience variable. */
-    pmeGpu->settings.useDecomposition = (pme->nnodes != 1);
+    settings.useDecomposition = (pme.nnodes != 1);
     /* TODO: CPU gather with GPU spread is broken due to different theta/dtheta layout. */
-    pmeGpu->settings.performGPUGather = true;
+    settings.performGPUGather = true;
     // By default GPU-side reduction is off (explicitly set here for tests, otherwise reset per-step)
-    pmeGpu->settings.useGpuForceReduction = false;
+    settings.useGpuForceReduction = false;
 
-    pme_gpu_set_testing(pmeGpu, false);
+    pme_gpu_set_testing(this, false);
 
     GMX_ASSERT(pmeGpuProgram != nullptr, "GPU kernels must be already compiled");
-    pmeGpu->programHandle_ = pmeGpuProgram;
+    programHandle_ = pmeGpuProgram;
 
-    pmeGpu->initializedClfftLibrary_ = std::make_unique<gmx::ClfftInitializer>();
+    initializedClfftLibrary_ = std::make_unique<gmx::ClfftInitializer>();
 
-    pme_gpu_init_internal(pmeGpu, deviceContext, deviceStream);
+    pme_gpu_init_internal(this, deviceContext, deviceStream);
 
-    pme_gpu_copy_common_data_from(pme);
-    pme_gpu_alloc_energy_virial(pmeGpu);
+    pme_gpu_copy_common_data_from(this, &pme);
 
-    GMX_ASSERT(pmeGpu->common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
+    staging.h_forces = gmx::PaddedHostVector<gmx::RVec>(hostAllocationPolicy_);
+    for (int gridIndex = 0; gridIndex < common->ngrids; gridIndex++)
+    {
+        staging.h_splineModuli[gridIndex]    = gmx::HostVector<float>(hostAllocationPolicy_);
+        staging.h_virialAndEnergy[gridIndex] = gmx::HostVector<float>(hostAllocationPolicy_);
+    }
+    staging.h_theta           = gmx::HostVector<float>(hostAllocationPolicy_);
+    staging.h_dtheta          = gmx::HostVector<float>(hostAllocationPolicy_);
+    staging.h_gridlineIndices = gmx::HostVector<int>(hostAllocationPolicy_);
 
-    auto* kernelParamsPtr               = pme_gpu_get_kernel_params_ptr(pmeGpu);
-    kernelParamsPtr->constants.elFactor = gmx::c_one4PiEps0 / pmeGpu->common->epsilon_r;
-    pme_gpu_update_input_box(pme, box);
+    pme_gpu_alloc_energy_virial(this);
+
+    GMX_ASSERT(common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
+
+    auto* kernelParamsPtr               = pme_gpu_get_kernel_params_ptr(this);
+    kernelParamsPtr->constants.elFactor = gmx::c_one4PiEps0 / common->epsilon_r;
 }
 
 void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx::IVec* paddedGridSize)
@@ -1426,40 +1406,21 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t*           pme,
-                    const DeviceContext* deviceContext,
-                    const DeviceStream*  deviceStream,
-                    const PmeGpuProgram* pmeGpuProgram,
-                    const bool           useMdGpuGraph,
-                    const matrix         box)
+void pme_gpu_reinit(PmeGpu* pmeGpu, gmx_pme_t* pme, const bool useMdGpuGraph)
 {
-    GMX_ASSERT(pme != nullptr, "Need valid PME object");
+    /* After this call nothing in the GPU code should refer to the gmx_pme_t *pme itself - until the next pme_gpu_reinit */
+    pme_gpu_copy_common_data_from(pmeGpu, pme);
 
-    if (!pme->gpu)
-    {
-        GMX_RELEASE_ASSERT(deviceContext != nullptr,
-                           "Device context can not be nullptr when setting up PME on GPU.");
-        GMX_RELEASE_ASSERT(deviceStream != nullptr,
-                           "Device stream can not be nullptr when setting up PME on GPU.");
-        /* First-time initialization */
-        pme_gpu_init(pme, *deviceContext, *deviceStream, pmeGpuProgram, box);
-    }
-    else
-    {
-        /* After this call nothing in the GPU code should refer to the gmx_pme_t *pme itself - until the next pme_gpu_reinit */
-        pme_gpu_copy_common_data_from(pme);
-    }
-
-    pme->gpu->settings.performGPUFFT   = (pme->gpu->common->runMode == PmeRunMode::GPU);
-    pme->gpu->settings.performGPUSolve = (pme->gpu->common->runMode == PmeRunMode::GPU);
+    pmeGpu->settings.performGPUFFT   = (pmeGpu->common->runMode == PmeRunMode::GPU);
+    pmeGpu->settings.performGPUSolve = (pmeGpu->common->runMode == PmeRunMode::GPU);
 
     /* Reinit active timers */
-    pme_gpu_reinit_timings(pme->gpu.get());
+    pme_gpu_reinit_timings(pmeGpu);
 
-    pme_gpu_reinit_grids(pme->gpu.get());
+    pme_gpu_reinit_grids(pmeGpu);
     // Note: if timing the reinit launch overhead becomes more relevant
     // (e.g. with regular PP-PME re-balancing), we should pass wcycle here.
-    pme_gpu_finish_step(pme, useMdGpuGraph, nullptr);
+    pme_gpu_finish_step(pmeGpu, useMdGpuGraph, nullptr);
 }
 
 PmeGpu::~PmeGpu()
@@ -1498,18 +1459,16 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 
     if (pmeGpu->useNvshmem)
     {
-        // find the max nAtomsAlloc among all the ranks for symmetric forces buffer allocation.
+        /* Find the max nAtomsAlloc among all ranks for symmetric force-buffer allocation
+         * and the max number of PP peers per PME rank for symmetric signal allocation.
+         * PP ranks participate in the matching collective from PmePpCommGpu::Impl::reinit. */
+        std::array<int, 2> buf{ pmeGpu->nAtomsAlloc,
+                                static_cast<int>(pmeGpu->nvshmemParams->ppRanksRef.size()) };
 #if GMX_MPI
-        MPI_Allreduce(
-                &pmeGpu->nAtomsAlloc, &pmeGpu->nvshmemParams->nAtomsAlloc_symmetric, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(MPI_IN_PLACE, buf.data(), buf.size(), MPI_INT, MPI_MAX, pmeGpu->nvshmemParams->mpiCommMySim);
 #endif
-
-        int numPpRanks = pmeGpu->nvshmemParams->ppRanksRef.size();
-#if GMX_MPI
-        int myRank = -1;
-        MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-        MPI_Bcast(&numPpRanks, 1, MPI_INT, myRank, MPI_COMM_WORLD);
-#endif
+        pmeGpu->nvshmemParams->nAtomsAlloc_symmetric = buf[0];
+        const int numPpRanks                         = buf[1];
         // symmetric buffer allocation used for synchronization purpose
         // 1 to be used to signal PME to PP rank of put, and
         // numPpRanks is intended to be used for each PP rank buffer consumption completion
@@ -1528,19 +1487,16 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 
         if (pmeGpu->nvshmemParams->ppRanksFInfo.empty())
         {
-            changePinningPolicy(&pmeGpu->nvshmemParams->ppRanksFInfo, gmx::PinningPolicy::PinnedIfSupported);
             pmeGpu->nvshmemParams->ppRanksFInfo.resize(kernelParamsPtr->ppRanksInfoSize);
         }
 
         // prepare the ppRanksFInfo struct for sending it to gpu.
         int receiverIndex = 0;
+        int startIndex    = 0;
         for (const auto& receiver : pmeGpu->nvshmemParams->ppRanksRef)
         {
-            auto& ppRankFInfo_prev = pmeGpu->nvshmemParams->ppRanksFInfo[receiverIndex - 1];
-            int   startIndex =
-                    receiverIndex ? ppRankFInfo_prev.startAtomOffset + ppRankFInfo_prev.numAtoms : 0;
-
             pmeGpu->nvshmemParams->ppRanksFInfo[receiverIndex] = { receiver.rankId, receiver.numAtoms, startIndex };
+            startIndex += receiver.numAtoms;
             receiverIndex++;
         }
 
@@ -1622,7 +1578,7 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 static CommandEvent* pme_gpu_fetch_timing_event(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 {
     CommandEvent* timingEvent = nullptr;
-    if (pme_gpu_timings_enabled(pmeGpu))
+    if (pme_gpu_timings_enabled(*pmeGpu))
     {
         GMX_ASSERT(pmeStageId < PmeStage::Count, "Wrong PME GPU timing event index");
         timingEvent = pmeGpu->archSpecific->timingEvents[pmeStageId].fetchNextEvent();
@@ -2446,7 +2402,8 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
                     gmx::ArrayRef<PmeAndFftGrids> h_grids,
                     const float                   lambda,
                     gmx_wallcycle*                wcycle,
-                    bool                          computeVirial)
+                    bool                          computeVirial,
+                    bool                          markFReadyEvent)
 {
     GMX_ASSERT(
             pmeGpu->common->ngrids == 1 || pmeGpu->common->ngrids == 2,
@@ -2620,7 +2577,10 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
 
     if (pmeGpu->settings.useGpuForceReduction)
     {
-        pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream_);
+        if (markFReadyEvent)
+        {
+            pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream_);
+        }
     }
     else if (pmeGpu->kernelParams->atoms.nAtoms > 0)
     {
@@ -2676,4 +2636,9 @@ GpuEventSynchronizer* pme_gpu_get_forces_ready_synchronizer(const PmeGpu* pmeGpu
     {
         return nullptr;
     }
+}
+
+const gmx::HostAllocationPolicy* pme_gpu_host_allocation_policy(const PmeGpu* pmeGpu)
+{
+    return &pmeGpu->hostAllocationPolicy_;
 }

@@ -707,7 +707,7 @@ static void dielectric(FILE*                   fmj,
                     yfit[i - ii] = std::log(rtmp);
                 }
 
-                lsq_y_ax_b(ie - ii, xfit, yfit, &sigma, &malt, &err, &rest);
+                gmx::lsq_y_ax_b(ie - ii, xfit, yfit, &sigma, &malt, &err, &rest);
 
                 malt = std::exp(malt);
 
@@ -767,7 +767,7 @@ static void dielectric(FILE*                   fmj,
             yfit[i - bi] = dsp2[i];
         }
 
-        lsq_y_ax_b(ei - bi, xfit, yfit, &sigma, &malt, &err, &rest);
+        gmx::lsq_y_ax_b(ei - bi, xfit, yfit, &sigma, &malt, &err, &rest);
 
         sigma *= 1e12;
         dk_d = calceps(prefactor, md2, 0.5 * malt / prefactorav, corint, eps_rf, TRUE);

@@ -153,6 +153,7 @@ std::map<std::string, GmxapiType> simulationParameterTypeMap()
         { "nstcgsteep", GmxapiType::INT64 },
         { "nbfgscorr", GmxapiType::INT64 },
         { "rtpi", GmxapiType::FLOAT64 },
+        // OutputControl parameters
         { "nstxout", GmxapiType::INT64 },
         { "nstvout", GmxapiType::INT64 },
         { "nstfout", GmxapiType::INT64 },
@@ -197,13 +198,6 @@ std::map<std::string, int t_inputrec::*> int32Params()
         { "niter", &t_inputrec::niter },
         { "nstcgsteep", &t_inputrec::nstcgsteep },
         { "nbfgscorr", &t_inputrec::nbfgscorr },
-        { "nstxout", &t_inputrec::nstxout },
-        { "nstvout", &t_inputrec::nstvout },
-        { "nstfout", &t_inputrec::nstfout },
-        { "nstlog", &t_inputrec::nstlog },
-        { "nstcalcenergy", &t_inputrec::nstcalcenergy },
-        { "nstenergy", &t_inputrec::nstenergy },
-        { "nstxout-compressed", &t_inputrec::nstxout_compressed },
         { "nstlist", &t_inputrec::nstlist },
         //            ...
     };
@@ -227,14 +221,32 @@ template<>
 std::map<std::string, real t_inputrec::*> compatibleRealParams()
 {
     return {
-        { "bd-fric", &t_inputrec::bd_fric },
-        { "emtol", &t_inputrec::em_tol },
-        { "emstep", &t_inputrec::em_stepsize },
-        { "fcstep", &t_inputrec::fc_stepsize },
+        { "bd-fric", &t_inputrec::bd_fric },    { "emtol", &t_inputrec::em_tol },
+        { "emstep", &t_inputrec::em_stepsize }, { "fcstep", &t_inputrec::fc_stepsize },
         { "rtpi", &t_inputrec::rtpi },
-        { "compressed-x-precision", &t_inputrec::x_compression_precision },
         //            ...
 
+    };
+}
+
+// Parameter maps for OutputControl sub-object
+std::map<std::string, int gmx::OutputControl::*> outputControlInt32Params()
+{
+    return {
+        { "nstxout", &gmx::OutputControl::nstxout },
+        { "nstvout", &gmx::OutputControl::nstvout },
+        { "nstfout", &gmx::OutputControl::nstfout },
+        { "nstlog", &gmx::OutputControl::nstlog },
+        { "nstcalcenergy", &gmx::OutputControl::nstcalcenergy },
+        { "nstenergy", &gmx::OutputControl::nstenergy },
+        { "nstxout-compressed", &gmx::OutputControl::nstxout_compressed },
+    };
+}
+
+std::map<std::string, real gmx::OutputControl::*> outputControlRealParams()
+{
+    return {
+        { "compressed-x-precision", &gmx::OutputControl::x_compression_precision },
     };
 }
 
@@ -383,8 +395,18 @@ public:
 
             if (source_)
             {
-                auto memberPointer                    = int32Params().at(key);
-                source_->inputRecord().*memberPointer = value;
+                // Check if it's an OutputControl parameter
+                auto outputControlParams = outputControlInt32Params();
+                if (outputControlParams.find(key) != outputControlParams.end())
+                {
+                    auto memberPointer = outputControlParams.at(key);
+                    source_->inputRecord().outputControl.*memberPointer = value;
+                }
+                else
+                {
+                    auto memberPointer                    = int32Params().at(key);
+                    source_->inputRecord().*memberPointer = value;
+                }
             }
         }
         else
@@ -401,8 +423,18 @@ public:
 
             if (source_)
             {
-                auto memberPointer                    = float64Params().at(key);
-                source_->inputRecord().*memberPointer = value;
+                // Check if it's an OutputControl parameter
+                auto outputControlParams = outputControlRealParams();
+                if (outputControlParams.find(key) != outputControlParams.end())
+                {
+                    auto memberPointer = outputControlParams.at(key);
+                    source_->inputRecord().outputControl.*memberPointer = value;
+                }
+                else
+                {
+                    auto memberPointer                    = float64Params().at(key);
+                    source_->inputRecord().*memberPointer = value;
+                }
             }
         }
         else if (floatParams_.find(key) != floatParams_.end())
@@ -486,6 +518,17 @@ GmxMdParamsImpl::GmxMdParamsImpl(std::shared_ptr<gmxapicompat::TprContents> tprC
         updateParamsContainer(&intParams_, *source_, int32Params());
         updateParamsContainer(&floatParams_, *source_, float32Params());
         updateParamsContainer(&float64Params_, *source_, float64Params());
+
+        // Add OutputControl parameters manually (can't use updateParamsContainer due to nested struct)
+        const auto& outputControl = source_->inputRecord().outputControl;
+        for (const auto& [name, ptr] : outputControlInt32Params())
+        {
+            intParams_[name] = std::make_pair(outputControl.*ptr, true);
+        }
+        for (const auto& [name, ptr] : outputControlRealParams())
+        {
+            float64Params_[name] = std::make_pair(outputControl.*ptr, true);
+        }
     }
 }
 

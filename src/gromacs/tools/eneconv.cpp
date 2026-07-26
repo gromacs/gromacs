@@ -381,16 +381,16 @@ static void update_ee_sum(int         nre,
         {
             for (i = 0; i < nre; i++)
             {
-                ee_sum[i].esum = fr->ener[i].e;
-                ee_sum[i].eav  = 0;
+                ee_sum[i].esum     = fr->ener[i].e;
+                ee_sum[i].sumSqDev = 0;
             }
         }
         else
         {
             for (i = 0; i < nre; i++)
             {
-                ee_sum[i].esum = fr->ener[i].esum;
-                ee_sum[i].eav  = fr->ener[i].eav;
+                ee_sum[i].esum     = fr->ener[i].esum;
+                ee_sum[i].sumSqDev = fr->ener[i].sumSqDev;
             }
         }
         nsteps = fr->nsteps;
@@ -402,9 +402,9 @@ static void update_ee_sum(int         nre,
         {
             for (i = 0; i < nre; i++)
             {
-                ee_sum[i].eav += gmx::square(ee_sum[i].esum / nsum
-                                             - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1))
-                                 * nsum * (nsum + 1);
+                ee_sum[i].sumSqDev += gmx::square(ee_sum[i].esum / nsum
+                                                  - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1))
+                                      * nsum * (nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
         }
@@ -412,10 +412,11 @@ static void update_ee_sum(int         nre,
         {
             for (i = 0; i < fr->nre; i++)
             {
-                ee_sum[i].eav += fr->ener[i].eav
-                                 + gmx::square(ee_sum[i].esum / nsum
-                                               - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
-                                           * nsum * (nsum + fr->nsum) / static_cast<double>(fr->nsum);
+                ee_sum[i].sumSqDev +=
+                        fr->ener[i].sumSqDev
+                        + gmx::square(ee_sum[i].esum / nsum
+                                      - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
+                                  * nsum * (nsum + fr->nsum) / static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
             }
         }
@@ -666,8 +667,8 @@ int gmx_eneconv(int argc, char* argv[])
                     /* Copy the energy sums */
                     for (int i = 0; i < nre; i++)
                     {
-                        fro->ener[i].esum = ee_sum[i].esum;
-                        fro->ener[i].eav  = ee_sum[i].eav;
+                        fro->ener[i].esum     = ee_sum[i].esum;
+                        fro->ener[i].sumSqDev = ee_sum[i].sumSqDev;
                     }
                 }
                 /* We wrote the energies, so reset the counts */
@@ -681,7 +682,7 @@ int gmx_eneconv(int argc, char* argv[])
                         fro->ener[set[kkk]].e *= scalefac;
                         if (fro->nsum > 0)
                         {
-                            fro->ener[set[kkk]].eav *= scalefac * scalefac;
+                            fro->ener[set[kkk]].sumSqDev *= scalefac * scalefac;
                             fro->ener[set[kkk]].esum *= scalefac;
                         }
                     }

@@ -103,7 +103,7 @@ namespace gmx
 namespace
 {
 //! Global library file finder; stores the object set with setLibraryFileFinder().
-const DataFileFinder* g_libFileFinder; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+const DataFileFinder* g_libFileFinder; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 //! Default library file finder if nothing is set.
 const DataFileFinder g_defaultLibFileFinder;
 } // namespace

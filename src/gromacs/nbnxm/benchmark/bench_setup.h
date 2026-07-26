@@ -42,8 +42,8 @@
  * \ingroup module_nbnxm
  */
 
-#ifndef GMX_NBNXN_BENCH_SETUP_H
-#define GMX_NBNXN_BENCH_SETUP_H
+#ifndef GMX_NBNXM_BENCH_SETUP_H
+#define GMX_NBNXM_BENCH_SETUP_H
 
 #include <string>
 

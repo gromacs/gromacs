@@ -61,7 +61,7 @@ static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistTyp
         switch (deviceInfo.deviceVendor)
         {
             /* For Intel, choose 8 for 4x4 clusters, and 32 for 8x8 clusters.
-             * The optimal one depends on the hardware, but we cannot choose c_nbnxnGpuClusterSize
+             * The optimal one depends on the hardware, but we cannot choose c_nbnxmGpuClusterSize
              * at runtime anyway yet. */
             case DeviceVendor::Intel: return sc_gpuParallelExecutionWidth(layoutType);
             case DeviceVendor::PoclCpu: return sc_gpuParallelExecutionWidth(layoutType);
@@ -86,6 +86,12 @@ extern template void launchNbnxmKernelHelper<8, false, false>(NbnxmGpu* nb,const
 extern template void launchNbnxmKernelHelper<8, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 extern template void launchNbnxmKernelHelper<8, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 extern template void launchNbnxmKernelHelper<8, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+#endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_16
+extern template void launchNbnxmKernelHelper<16, false, false>(NbnxmGpu* nb,const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<16, false, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<16, true, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernelHelper<16, true, true>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
 #endif
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
 extern template void launchNbnxmKernelHelper<32, false, false>(NbnxmGpu* nb, const gmx::StepWorkload&  stepWork, const InteractionLocality iloc);
@@ -116,12 +122,15 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
-    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext_->deviceInfo(), sc_layoutType);
+    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext.deviceInfo(), sc_layoutType);
     switch (subGroupSize)
     {
         // Ensure any changes are in sync with device_management_sycl.cpp, nbnxm_sycl_kernel_body.h, and the #if above
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
         case 8: launchNbnxmKernel<8>(nb, stepWork, iloc, doPrune); break;
+#endif
+#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_16
+        case 16: launchNbnxmKernel<16>(nb, stepWork, iloc, doPrune); break;
 #endif
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
         case 32: launchNbnxmKernel<32>(nb, stepWork, iloc, doPrune); break;

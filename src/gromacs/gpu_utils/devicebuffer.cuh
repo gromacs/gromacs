@@ -34,6 +34,8 @@
 #ifndef GMX_GPU_UTILS_DEVICEBUFFER_CUH
 #define GMX_GPU_UTILS_DEVICEBUFFER_CUH
 
+#include <type_traits>
+
 /*! \libinternal \file
  *  \brief Implements the DeviceBuffer type and routines for CUDA.
  *  Should only be included directly by the main DeviceBuffer file devicebuffer.h.
@@ -51,6 +53,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -70,6 +73,10 @@
 template<typename ValueType>
 void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, const DeviceContext& /* deviceContext */)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     cudaError_t stat = cudaMalloc(buffer, numValues * sizeof(ValueType));
     gmx::checkDeviceError(stat, "Allocation of the device buffer failed.");
@@ -88,12 +95,16 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 template<typename ValueType>
 void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer, "needs a buffer pointer");
     if (*buffer)
     {
 #if GMX_NVSHMEM
         // Check if NVSHMEM is initialized, nvshmem_ptr() works only in such case.
-        if (nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED)
+        if (gmx::isNvshmemInitialized())
         {
             // nvshmem_ptr() returns NULL if it is not a NVSHMEM pointer.
             if (nvshmem_ptr(*buffer, nvshmem_my_pe()) != nullptr)
@@ -132,6 +143,11 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                         GpuApiCallBehavior       transferKind,
                         CommandEvent* /*timingEvent*/)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -187,6 +203,11 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                           GpuApiCallBehavior       transferKind,
                           CommandEvent* /*timingEvent*/)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -245,6 +266,11 @@ void copyBetweenDeviceBuffers(ValueType*               destinationDeviceBuffer,
                               GpuApiCallBehavior       transferKind,
                               CommandEvent* gmx_unused timingEvent)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>,
+                  "ValueType cannot be a pointer, should be the type of the data transfer");
+
     if (numValues == 0)
     {
         return;
@@ -292,6 +318,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
                             size_t                   numValues,
                             const DeviceStream&      deviceStream)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<ValueType>, "ValueType of DeviceBuffer cannot be a pointer");
+
     if (numValues == 0)
     {
         return;
@@ -319,6 +349,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
 template<typename T>
 gmx_unused static bool checkDeviceBuffer(DeviceBuffer<T> buffer, gmx_unused int requiredSize)
 {
+    // This assertion relies on the fact that we don't ever use
+    // arrays of device pointers.
+    static_assert(!std::is_pointer_v<T>, "ValueType of DeviceBuffer cannot be a pointer");
+
     GMX_ASSERT(buffer != nullptr, "The device pointer is nullptr");
     return buffer != nullptr;
 }
@@ -397,7 +431,7 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const Device
 }
 
 template<typename ValueType>
-ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
+ValueType* asRawDevicePointer(DeviceBuffer<ValueType>& buffer)
 {
     return buffer;
 }

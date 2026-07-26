@@ -64,18 +64,18 @@ namespace
 {
 
 void appendPlainPairlistCpu(PlainPairlist*          plainPairlist,
-                            const NbnxnPairlistCpu& pairlist,
+                            const NbnxmPairlistCpu& pairlist,
                             const PairlistParams&   params,
                             const real              range,
-                            const nbnxn_atomdata_t& nbat,
+                            const nbnxm_atomdata_t& nbat,
                             ArrayRef<const int>     atomIndices)
 {
     constexpr int                      c_maxClusterSize = 8;
     std::array<int, c_maxClusterSize>  atomI;
     std::array<RVec, c_maxClusterSize> xI;
 
-    ArrayRef<const nbnxn_ci_t> ciList;
-    ArrayRef<const nbnxn_cj_t> cjList;
+    ArrayRef<const nbnxm_ci_t> ciList;
+    ArrayRef<const nbnxm_cj_t> cjList;
     if (params.useDynamicPruning)
     {
         ciList = pairlist.ciOuter;
@@ -93,9 +93,9 @@ void appendPlainPairlistCpu(PlainPairlist*          plainPairlist,
 
     const real rangeSquared = square(range);
 
-    for (const nbnxn_ci_t& iEntry : ciList)
+    for (const nbnxm_ci_t& iEntry : ciList)
     {
-        const int shiftIndex = (iEntry.shift & NBNXN_CI_SHIFT);
+        const int shiftIndex = (iEntry.shift & NBNXM_CI_SHIFT);
 
         // Prefetch the i-atom indices
         for (int i = 0; i < pairlist.na_ci; i++)
@@ -107,7 +107,7 @@ void appendPlainPairlistCpu(PlainPairlist*          plainPairlist,
 
         for (int jClusterIndex = iEntry.cj_ind_start; jClusterIndex < iEntry.cj_ind_end; jClusterIndex++)
         {
-            const nbnxn_cj_t& jEntry = cjList[jClusterIndex];
+            const nbnxm_cj_t& jEntry = cjList[jClusterIndex];
 
             for (int i = 0; i < pairlist.na_ci; i++)
             {
@@ -144,13 +144,13 @@ void appendPlainPairlistCpu(PlainPairlist*          plainPairlist,
 }
 
 void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
-                            const NbnxnPairlistGpu& pairlist,
+                            const NbnxmPairlistGpu& pairlist,
                             const real              range,
-                            const nbnxn_atomdata_t& nbat,
+                            const nbnxm_atomdata_t& nbat,
                             ArrayRef<const int>     atomIndices)
 {
-    constexpr int c_clSize = detail::c_nbnxnGpuClusterSize;
-    constexpr int c_splitClusterSize = detail::c_nbnxnGpuClusterSize / detail::c_nbnxnGpuClusterpairSplit;
+    constexpr int c_clSize = detail::c_nbnxmGpuClusterSize;
+    constexpr int c_splitClusterSize = detail::c_nbnxmGpuClusterSize / detail::c_nbnxmGpuClusterpairSplit;
 
     constexpr int c_numClusterPerCell = sc_gpuNumClusterPerBin(sc_layoutType);
 
@@ -166,7 +166,7 @@ void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
 
     const real rangeSquared = square(range);
 
-    for (const nbnxn_sci_t& iEntry : pairlist.sci)
+    for (const nbnxm_sci_t& iEntry : pairlist.sci)
     {
         // Prefetch the i-atom indices
         for (int i = 0; i < c_numClusterPerCell * c_clSize; i++)
@@ -178,7 +178,7 @@ void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
 
         for (int jPackIndex = iEntry.cjPackedBegin; jPackIndex < iEntry.cjPackedEnd; jPackIndex++)
         {
-            const nbnxn_cj_packed_t& jPack = pairlist.cjPacked.list_[jPackIndex];
+            const nbnxm_cj_packed_t& jPack = pairlist.cjPacked.list_[jPackIndex];
 
             for (int jInPack = 0; jInPack < sc_gpuJgroupSize(sc_layoutType); jInPack++)
             {
@@ -250,7 +250,7 @@ void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
 
 void PairlistSet::appendPlainPairlist(PlainPairlist*          plainPairlist,
                                       const real              range,
-                                      const nbnxn_atomdata_t& nbat,
+                                      const nbnxm_atomdata_t& nbat,
                                       ArrayRef<const int>     atomIndices)
 {
     GMX_RELEASE_ASSERT(range <= params_.rlistOuter, "range should be <= rlistOuter");

@@ -1,4 +1,3 @@
-
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -46,14 +45,13 @@
 
 #include <hdf5.h>
 
-#include "gromacs/fileio/h5md/h5md_error.h"
+#include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -221,8 +219,8 @@ std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hi
             formatString("Failed to read vector of strings attribute: %s", attributeName));
     for (size_t i = 0; i < nelems; i++)
     {
-        values[i] = std::string(buffer.data() + i * stringSize,
-                                strnlen(buffer.data() + i * stringSize, stringSize));
+        values[i] = std::string(buffer.data() + (i * stringSize),
+                                strnlen(buffer.data() + (i * stringSize), stringSize));
     }
     return values;
 }
@@ -333,7 +331,7 @@ std::vector<char> setAttributeStringVector(const hid_t         container,
     }
     else
     {
-        throw FileIOError(formatString("Unsupported string type for attribute: %s", attributeName));
+        GMX_THROW(H5mdError(formatString("Unsupported string type for attribute: %s", attributeName)));
     }
     size_t expectedSize = (maxStrLength + 1) * strCount;
     GMX_H5MD_THROW_UPON_ERROR(
@@ -360,7 +358,7 @@ std::vector<char> setAttributeStringVector(const hid_t         container,
     }
     else
     {
-        throw FileIOError(formatString("Unsupported string type for attribute: %s", attributeName));
+        GMX_THROW(H5mdError(formatString("Unsupported string type for attribute: %s", attributeName)));
     }
     setStringAttributeByBuffer(container, attributeName, strCount, maxStrLength, buffer);
     return std::move(buffer);

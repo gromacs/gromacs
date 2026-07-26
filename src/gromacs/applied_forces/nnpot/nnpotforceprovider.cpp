@@ -190,11 +190,11 @@ NNPotForceProvider::~NNPotForceProvider() {}
 void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput)
 {
     // make sure inputs are available
-    std::vector<RVec> positions;
-    std::vector<RVec> mmPositions;
-    std::vector<real> mmCharges;
-    std::vector<int>  mmIndices;
-    matrix            box;
+    std::vector<RVec>    positions;
+    std::vector<RVec>    mmPositions;
+    std::vector<real>    mmCharges;
+    std::vector<int32_t> mmIndices;
+    matrix               box;
     copy_mat(fInput.box_, box);
     if (params_.modelNeedsInput("atom-positions"))
     {

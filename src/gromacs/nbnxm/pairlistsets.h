@@ -58,27 +58,27 @@ struct t_nrnb;
 
 namespace gmx
 {
+class HostAllocationPolicy;
+template<typename>
+class ListOfLists;
 class PairlistSet;
 enum class PairlistType;
 class PairSearch;
-enum class PinningPolicy;
-template<typename>
-class ListOfLists;
 
 //! Contains sets of pairlists \internal
 class PairlistSets
 {
 public:
     //! Constructor
-    PairlistSets(const PairlistParams& pairlistParams,
-                 bool                  haveMultipleDomains,
-                 int                   minimumIlistCountForGpuBalancing,
-                 PinningPolicy         pinPolicy);
+    PairlistSets(const PairlistParams&       pairlistParams,
+                 bool                        haveMultipleDomains,
+                 int                         minimumIlistCountForGpuBalancing,
+                 const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Construct the pairlist set for the given locality
     void construct(InteractionLocality     iLocality,
                    PairSearch*             pairSearch,
-                   nbnxn_atomdata_t*       nbat,
+                   nbnxm_atomdata_t*       nbat,
                    const ListOfLists<int>& exclusions,
                    bool                    includeAllPairs,
                    int64_t                 step,
@@ -86,7 +86,7 @@ public:
 
     //! Dispatches the dynamic pruning kernel for the given locality
     void dispatchPruneKernel(InteractionLocality     iLocality,
-                             const nbnxn_atomdata_t* nbat,
+                             const nbnxm_atomdata_t* nbat,
                              ArrayRef<const RVec>    shift_vec);
 
     //! Returns the pair list parameters
@@ -136,7 +136,7 @@ public:
     }
 
     //! Returns a plain pairlist containing all pairs in the lists on this domain except for exclusions
-    const PlainPairlist& plainPairlist(real range, const nbnxn_atomdata_t& nbat, ArrayRef<const int> atomIndices);
+    const PlainPairlist& plainPairlist(real range, const nbnxm_atomdata_t& nbat, ArrayRef<const int> atomIndices);
 
 private:
     //! Returns the pair-list set for the given locality

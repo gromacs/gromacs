@@ -52,8 +52,8 @@ namespace gmx
 {
 
 template<KernelLayout kernelLayout>
-void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
-                          const nbnxn_atomdata_t& nbat,
+void nbnxmSimdPruneKernel(NbnxmPairlistCpu*       nbl,
+                          const nbnxm_atomdata_t& nbat,
                           ArrayRef<const RVec>    shiftvec,
                           real                    rlistInner)
 {
@@ -76,11 +76,11 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
     nbl->ci.resize(nbl->ciOuter.size());
     nbl->cj.resize(nbl->cjOuter.size());
 
-    const nbnxn_ci_t* gmx_restrict ciOuter = nbl->ciOuter.data();
-    nbnxn_ci_t* gmx_restrict       ciInner = nbl->ci.data();
+    const nbnxm_ci_t* gmx_restrict ciOuter = nbl->ciOuter.data();
+    nbnxm_ci_t* gmx_restrict       ciInner = nbl->ci.data();
 
-    const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
-    nbnxn_cj_t* gmx_restrict       cjInner = nbl->cj.list_.data();
+    const nbnxm_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
+    nbnxm_cj_t* gmx_restrict       cjInner = nbl->cj.list_.data();
 
     const real* gmx_restrict x = nbat.x().data();
 
@@ -92,7 +92,7 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
     const int nciOuter = nbl->ciOuter.size();
     for (int ciIndex = 0; ciIndex < nciOuter; ciIndex++)
     {
-        const nbnxn_ci_t* gmx_restrict ciEntry = &ciOuter[ciIndex];
+        const nbnxm_ci_t* gmx_restrict ciEntry = &ciOuter[ciIndex];
 
         /* Copy the original list entry to the pruned entry */
         ciInner[nciInner].ci           = ciEntry->ci;
@@ -100,7 +100,7 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
         ciInner[nciInner].cj_ind_start = ncjInner;
 
         /* Extract shift data */
-        const int ish = (ciEntry->shift & NBNXN_CI_SHIFT);
+        const int ish = (ciEntry->shift & NBNXM_CI_SHIFT);
         const int ci  = ciEntry->ci;
 
         const SimdReal iShiftX = SimdReal(shiftvec[ish][XX]);
@@ -217,15 +217,15 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
 }
 
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*       nbl,
-                                                        const nbnxn_atomdata_t& nbat,
+template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxmPairlistCpu*       nbl,
+                                                        const nbnxm_atomdata_t& nbat,
                                                         ArrayRef<const RVec>    shiftvec,
                                                         real                    rlistInner);
 #endif
 
 #if GMX_HAVE_NBNXM_SIMD_4XM
-template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*       nbl,
-                                                       const nbnxn_atomdata_t& nbat,
+template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxmPairlistCpu*       nbl,
+                                                       const nbnxm_atomdata_t& nbat,
                                                        ArrayRef<const RVec>    shiftvec,
                                                        real                    rlistInner);
 #endif

@@ -12,6 +12,7 @@
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2
+#   Cyclecounting: Debug checks enabled
 
 gromacs:oneapi-2025.3-sycl:configure:
   extends:
@@ -24,6 +25,7 @@ gromacs:oneapi-2025.3-sycl:configure:
   variables:
     CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_EXTRA_OPTIONS: -DCMAKE_CXX_FLAGS=-DDEBUG_WCYCLE=1
     COMPILER_MAJOR_VERSION: 2025
 
 gromacs:oneapi-2025.3-sycl:build:

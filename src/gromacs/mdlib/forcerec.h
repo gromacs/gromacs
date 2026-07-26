@@ -51,6 +51,7 @@ struct t_commrec;
 struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
+struct t_nrnb;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -120,6 +121,8 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  * \param[in]  mtop               Molecular topology
  * \param[in]  commrec            Communication structures
  * \param[in]  commMultiSim       Multi-simulation communication, can be nullptr
+ * \param[in]  wcycle             Manages wallcycle counting
+ * \param[in]  nrnb               Manages FLOPs accounting
  * \param[in]  box                Simulation box
  * \param[in]  tabfn              Table potential file for non-bonded interactions
  * \param[in]  tabpfn             Table potential file for pair interactions
@@ -136,6 +139,8 @@ void init_forcerec(FILE*                            fplog,
                    const gmx_mtop_t&                mtop,
                    const t_commrec*                 commrec,
                    const gmx_multisim_t*            commMultiSim,
+                   gmx_wallcycle*                   wcycle,
+                   t_nrnb*                          nrnb,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,

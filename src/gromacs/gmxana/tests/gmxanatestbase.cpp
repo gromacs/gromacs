@@ -82,7 +82,7 @@ void GmxAnaTestBase::runAndCheckResults()
     checkOutputFiles();
 }
 
-void GmxAnaTestBase::selectGroups(const std::initializer_list<const char*> groups)
+void GmxAnaTestBase::selectGroups(std::initializer_list<const char*> groups)
 {
     impl_->selectGroups(groups.begin(), groups.end());
 }

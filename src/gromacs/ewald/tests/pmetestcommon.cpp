@@ -68,7 +68,6 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -78,6 +77,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/test_hardware_environment.h"
@@ -179,13 +179,9 @@ PmePointer pmeInitWrapper(const t_inputrec*    inputRec,
                                                   pmeGpuProgram,
                                                   dummyLogger);
 
-    switch (mode)
+    if (mode == CodePath::GPU)
     {
-        case CodePath::CPU: invertBoxMatrix(boxTemp, pme->recipbox); break;
-
-        case CodePath::GPU: pme_gpu_set_testing(pme->gpu.get(), true); break;
-
-        default: GMX_THROW(InternalError("Test not implemented for this mode"));
+        pme_gpu_set_testing(pme->gpu.get(), true);
     }
 
     return pme;
@@ -205,8 +201,10 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Pin the host buffer and use async memory copies
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
+    MpiComm        mpiComm{ MpiComm::SingleRank{} };
+    gmx_wallcycle* wcycle = nullptr;
     return std::make_unique<StatePropagatorDataGpu>(
-            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(&pme), false, nullptr);
+            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(pme), false, mpiComm, wcycle);
 }
 
 //! PME initialization with atom data
@@ -237,7 +235,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc->setNumAtoms(atomCount);
             gmx_pme_reinit_atoms(pme, atomCount, charges, {});
 
-            stateGpu->reinit(atomCount, atomCount, MPI_COMM_NULL);
+            stateGpu->reinit(atomCount, atomCount);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
                                            gmx::AtomLocality::Local);
             pme_gpu_set_kernelparam_coordinates(pme->gpu.get(), stateGpu->getCoordinates());
@@ -258,8 +256,8 @@ static real* pmeGetRealGridInternal(const gmx_pme_t* pme)
 //! Getting local PME real grid dimensions
 static void pmeGetRealGridSizesInternal(const gmx_pme_t* pme,
                                         CodePath         mode,
-                                        IVec& gridSize,       //NOLINT(google-runtime-references)
-                                        IVec& paddedGridSize) //NOLINT(google-runtime-references)
+                                        IVec& gridSize,       // NOLINT(google-runtime-references)
+                                        IVec& paddedGridSize) // NOLINT(google-runtime-references)
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused;
@@ -287,8 +285,8 @@ static t_complex* pmeGetComplexGridInternal(gmx_pme_t* pme)
 
 //! Getting local PME complex grid dimensions
 static void pmeGetComplexGridSizesInternal(const gmx_pme_t* pme,
-                                           IVec& gridSize,       //NOLINT(google-runtime-references)
-                                           IVec& paddedGridSize) //NOLINT(google-runtime-references)
+                                           IVec& gridSize, // NOLINT(google-runtime-references)
+                                           IVec& paddedGridSize) // NOLINT(google-runtime-references)
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused, complexOrderUnused;
@@ -303,9 +301,9 @@ static void pmeGetComplexGridSizesInternal(const gmx_pme_t* pme,
 template<typename ValueType>
 static void pmeGetGridAndSizesInternal(gmx_pme_t* /*unused*/,
                                        CodePath /*unused*/,
-                                       ValueType*& /*unused*/, //NOLINT(google-runtime-references)
-                                       IVec& /*unused*/,       //NOLINT(google-runtime-references)
-                                       IVec& /*unused*/) = delete; //NOLINT(google-runtime-references)
+                                       ValueType*& /*unused*/, // NOLINT(google-runtime-references)
+                                       IVec& /*unused*/,       // NOLINT(google-runtime-references)
+                                       IVec& /*unused*/) = delete; // NOLINT(google-runtime-references)
 
 //! Getting the PME real grid memory buffer and its sizes
 template<>
@@ -489,11 +487,12 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
         {
             // Variable initialization needs a non-switch scope
             const bool computeEnergyAndVirial = false;
+            const bool markFReadyEvent        = true;
             const real lambdaQ                = 1.0;
             PmeOutput  output = pme_gpu_getOutput(pme, computeEnergyAndVirial, lambdaQ);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
-            pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, nullptr, computeEnergyAndVirial);
+            pme_gpu_gather(pme->gpu.get(), pme->gridsCoulomb, lambdaQ, nullptr, computeEnergyAndVirial, markFReadyEvent);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;

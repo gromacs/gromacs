@@ -942,7 +942,18 @@ void set_dd_cell_sizes(gmx_domdec_t*      dd,
                                 cd.numPulses(),
                                 numPulsesDim);
                     }
-                    cd.ind.resize(numPulsesDim);
+                    // With GPU halo exchange and NVSHMEM, the particle-index buffer
+                    // must be pinned for H2D transfers, which requires a suitable allocation.
+                    //
+                    // The type of cd.ind is std::vector<gmx_domdec_ind_t>, and gmx_domdec_ind_t
+                    // has a HostVector field called index containing that particle-index buffer.
+                    // The constructor of gmx_domdec_ind_t requires a HostAllocationPolicy to use
+                    // when constructing index. Resizing cd.ind requires copy constructing
+                    // objects of type gmx_domdec_ind_t (and thus its index field), and we want
+                    // the pinning status of the index field to be propagated to the copy. So
+                    // dd->hostAllocationPolicy must be constructed so that it propagates upon
+                    // copy construction.
+                    cd.ind.resize(numPulsesDim, dd->hostAllocationPolicy);
                 }
             }
         }

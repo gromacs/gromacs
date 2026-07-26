@@ -73,7 +73,7 @@ static auto reduceKernel(CommandGroupHandler /* cgh */,
 {
     return [=](sycl::id<1> itemIdx)
     {
-        // Set to nbnxnm force, then perhaps accumulate further to it
+        // Set to nbnxmm force, then perhaps accumulate further to it
         Float3 temp = gm_nbnxmForce[gm_cell[itemIdx]];
 
         if constexpr (accumulateForce)

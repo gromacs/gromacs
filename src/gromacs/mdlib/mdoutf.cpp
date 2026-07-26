@@ -156,7 +156,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
     of->bExpanded               = ir->bExpanded;
     of->elamstats               = ir->expandedvals->elamstats;
     of->simulation_part         = ir->simulation_part;
-    of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
+    of->x_compression_precision = static_cast<int>(ir->outputControl.x_compression_precision);
     of->wcycle                  = wcycle;
     of->f_global                = nullptr;
     of->outputProvider          = outputProvider;
@@ -175,7 +175,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
 
         filemode = restartWithAppending ? appendMode : writeMode;
 
-        if (EI_DYNAMICS(ir->eI) && ir->nstxout_compressed > 0)
+        if (EI_DYNAMICS(ir->eI) && ir->outputControl.nstxout_compressed > 0)
         {
             const char* filename;
             filename = ftp2fn(efCOMPRESSED, nfile, fnm);
@@ -195,7 +195,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         }
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
             && (!GMX_FAHCORE
-                && !(EI_DYNAMICS(ir->eI) && ir->nstxout == 0 && ir->nstvout == 0 && ir->nstfout == 0)))
+                && !(EI_DYNAMICS(ir->eI) && ir->outputControl.nstxout == 0
+                     && ir->outputControl.nstvout == 0 && ir->outputControl.nstfout == 0)))
         {
             const char* filename;
             filename = ftp2fn(efTRN, nfile, fnm);
@@ -206,7 +207,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     /* If there is no uncompressed coordinate output and
                        there is compressed TNG output write forces
                        and/or velocities to the TNG file instead. */
-                    if (ir->nstxout != 0 || ir->nstxout_compressed == 0 || !of->tng_low_prec)
+                    if (ir->outputControl.nstxout != 0 || ir->outputControl.nstxout_compressed == 0
+                        || !of->tng_low_prec)
                     {
                         of->fp_trn = gmx_trr_open(filename, filemode);
                     }
@@ -274,7 +276,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
             }
         }
 
-        if (ir->nstfout && cr->dd != nullptr)
+        if (ir->outputControl.nstfout && cr->dd != nullptr)
         {
             snew(of->f_global, top_global.natoms);
         }
@@ -392,38 +394,38 @@ static void write_checkpoint(const char*                     fn,
     edsamhistory_t* edsamhist = observablesHistory->edsamHistory.get();
     int             nED       = (edsamhist ? edsamhist->nED : 0);
 
-    swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
-    SwapType       eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
+    gmx::swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
+    SwapType            eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
 
-    CheckpointHeaderContents headerContents = { CheckPointVersion::UnknownVersion0,
-                                                { 0 },
-                                                { 0 },
-                                                { 0 },
-                                                { 0 },
-                                                GMX_DOUBLE,
-                                                { 0 },
-                                                { 0 },
-                                                eIntegrator,
-                                                simulation_part,
-                                                step,
-                                                t,
-                                                nppnodes,
-                                                { 0 },
-                                                npmenodes,
-                                                state->numAtoms(),
-                                                state->ngtc,
-                                                state->nnhpres,
-                                                state->nhchainlength,
-                                                nlambda,
-                                                state->flags(),
-                                                0,
-                                                0,
-                                                0,
-                                                0,
-                                                0,
-                                                nED,
-                                                eSwapCoords,
-                                                false };
+    gmx::CheckpointHeaderContents headerContents = { gmx::CheckPointVersion::UnknownVersion0,
+                                                     { 0 },
+                                                     { 0 },
+                                                     { 0 },
+                                                     { 0 },
+                                                     GMX_DOUBLE,
+                                                     { 0 },
+                                                     { 0 },
+                                                     eIntegrator,
+                                                     simulation_part,
+                                                     step,
+                                                     t,
+                                                     nppnodes,
+                                                     { 0 },
+                                                     npmenodes,
+                                                     state->numAtoms(),
+                                                     state->ngtc,
+                                                     state->nnhpres,
+                                                     state->nhchainlength,
+                                                     nlambda,
+                                                     state->flags(),
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     0,
+                                                     nED,
+                                                     eSwapCoords,
+                                                     false };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath().string().c_str());
     std::strcpy(headerContents.ftime, timebuf.c_str());

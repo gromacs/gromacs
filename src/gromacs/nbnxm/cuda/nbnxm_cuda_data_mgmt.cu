@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \file
- *  \brief Define CUDA implementation of nbnxn_gpu_data_mgmt.h
+ *  \brief Define CUDA implementation of nbnxm_gpu_data_mgmt.h
  *
  *  \author Szilard Pall <pall.szilard@gmail.com>
  */
@@ -125,7 +125,7 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
     {
         return 0;
     }
-    const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+    const auto& deviceInfo = nb->deviceContext.deviceInfo();
     return getGpuMinCiBalancedFactor(deviceInfo) * deviceInfo.prop.multiProcessorCount;
 }
 

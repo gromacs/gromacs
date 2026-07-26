@@ -799,7 +799,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
 
     comm = dd->comm.get();
 
-    bSepPME = (dd->pme_nodeid >= 0);
+    bSepPME = (dd->numPmeOnlyRanks > 0);
 
     if (dd->ndim == 0 && bSepPME)
     {
@@ -2386,8 +2386,8 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
     orderVector<T>(sort, vectorToSort, fillerValue, *workVector);
 }
 
-//! Returns the sorting order for atoms based on the nbnxn grid order in sort
-static void dd_sort_order_nbnxn(const gmx::nonbonded_verlet_t& nbv, gmx::FastVector<gmx_cgsort_t>* sort)
+//! Returns the sorting order for atoms based on the nbnxm grid order in sort
+static void dd_sort_order_nbnxm(const gmx::nonbonded_verlet_t& nbv, gmx::FastVector<gmx_cgsort_t>* sort)
 {
     gmx::ArrayRef<const int> atomOrder = nbv.getLocalAtomOrder();
 
@@ -2422,7 +2422,7 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     gmx_domdec_sort_t& sortingData = *dd->comm->sort;
 
     // Obtain the sorting order from/as the NBNxM gridding order, including fillers
-    dd_sort_order_nbnxn(*fr->nbv, &sortingData.sorted);
+    dd_sort_order_nbnxm(*fr->nbv, &sortingData.sorted);
 
     // Get the list of old order indices for the new indexing order
     gmx::ArrayRef<const gmx_cgsort_t> sortOrder = sortingData.sorted;
@@ -2614,6 +2614,7 @@ void print_dd_statistics(gmx_domdec_t* dd, const t_inputrec& inputrec, FILE* fpl
 //!\brief TODO Remove fplog when group scheme and charge groups are gone
 void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
+                         const SimulationWorkload& simulationWork,
                          int64_t                   step,
                          gmx_domdec_t*             dd,
                          bool                      bMainState,
@@ -2624,6 +2625,7 @@ void dd_partition_system(FILE*                     fplog,
                          gmx::ImdSession*          imdSession,
                          pull_t*                   pull_work,
                          t_state*                  state_local,
+                         StatePropagatorDataGpu*   stateGpu,
                          gmx::ForceBuffers*        f,
                          gmx::MDAtoms*             mdAtoms,
                          gmx_localtop_t*           top_local,
@@ -2634,13 +2636,19 @@ void dd_partition_system(FILE*                     fplog,
                          gmx_wallcycle*            wcycle,
                          bool                      bVerbose)
 {
-    gmx_ddbox_t ddbox = { 0 };
-    int         ncgindex_set;
-    char        sbuf[22];
+    gmx_ddbox_t        ddbox = { 0 };
+    int                ncgindex_set;
+    char               sbuf[22];
+    gmx_domdec_comm_t* comm = dd->comm.get();
 
     wallcycle_start(wcycle, WallCycleCounter::Domdec);
 
-    gmx_domdec_comm_t* comm = dd->comm.get();
+    bool pmeCycleCountersRequestIsPending = false;
+    if (fr->pmePpComm)
+    {
+        fr->pmePpComm->sendCycleCountersAndStopConditionRequest();
+        pmeCycleCountersRequestIsPending = true;
+    }
 
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
@@ -2699,12 +2707,22 @@ void dd_partition_system(FILE*                     fplog,
         bool bCheckWhetherToTurnDlbOn = dd_dlb_get_should_check_whether_to_turn_dlb_on(dd);
 
         /* Print load every nstlog, first and last step to the log file */
-        bool bLogLoad = ((inputrec.nstlog > 0 && step % inputrec.nstlog == 0) || comm->n_load_collect == 0
+        bool bLogLoad = ((inputrec.outputControl.nstlog > 0 && step % inputrec.outputControl.nstlog == 0)
+                         || comm->n_load_collect == 0
                          || (inputrec.nsteps >= 0
                              && (step + inputrec.nstlist > inputrec.init_step + inputrec.nsteps)));
 
         if (bDoDLB || bLogLoad || bCheckWhetherToTurnDlbOn || bVerbose)
         {
+            if (fr->pmePpComm)
+            {
+                GMX_ASSERT(pmeCycleCountersRequestIsPending,
+                           "The PME cycles must have been requested earlier");
+                const auto pmeCycleCounters = fr->pmePpComm->receiveCycleCountersAndStopCondition();
+                dd_cycles_add_pme(
+                        dd, pmeCycleCounters.cycles, pmeCycleCounters.cyclesMax, pmeCycleCounters.numSteps);
+                pmeCycleCountersRequestIsPending = false;
+            }
             get_load_distribution(dd, wcycle);
             if (DDMAIN(dd))
             {
@@ -3178,26 +3196,9 @@ void dd_partition_system(FILE*                     fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
-    mdAlgorithmsSetupAtomData(dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
+    mdAlgorithmsSetupAtomData(
+            simulationWork, dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr, stateGpu, wcycle);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
-
-    auto* mdatoms = mdAtoms->mdatoms();
-    if (!dd->hasPmeDuty)
-    {
-        /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(dd,
-                                *fr->ic,
-                                mdatoms->nChargePerturbed != 0,
-                                mdatoms->nTypePerturbed != 0,
-                                mdatoms->chargeA,
-                                mdatoms->chargeB,
-                                mdatoms->sqrt_c6A,
-                                mdatoms->sqrt_c6B,
-                                mdatoms->sigmaA,
-                                mdatoms->sigmaB,
-                                dd_pme_maxshift_x(*dd),
-                                dd_pme_maxshift_y(*dd));
-    }
 
     if (dd->atomSets != nullptr)
     {
@@ -3214,6 +3215,20 @@ void dd_partition_system(FILE*                     fplog,
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is true. */
     imdSession->dd_make_local_IMD_atoms(dd);
+
+    /* If we have DLB on, we have already received the counters earlier.
+     * Otherwise, receive them now. This delays the blocking MPI receive
+     * to the latest possible moment, allowing better overlap between DD work
+     * and PP->PME->PP request roundtrip. */
+    if (fr->pmePpComm && pmeCycleCountersRequestIsPending)
+    {
+        const auto pmeCycleCounters = fr->pmePpComm->receiveCycleCountersAndStopCondition();
+        if (wcycle)
+        {
+            dd_cycles_add_pme(
+                    dd, pmeCycleCounters.cycles, pmeCycleCounters.cyclesMax, pmeCycleCounters.numSteps);
+        }
+    }
 
     add_dd_statistics(dd);
 

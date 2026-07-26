@@ -41,15 +41,13 @@
 
 #include "h5md_framedataset.h"
 
+#include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
-
-#include "h5md_error.h"
-#include "h5md_guard.h"
-#include "h5md_util.h" // required for GMX_ASSERT calls
 
 namespace gmx
 {
@@ -146,10 +144,7 @@ H5mdFrameDataSet<ValueType>::H5mdFrameDataSet(H5mdDataSetBase<ValueType>&& dataS
 
 template<typename ValueType>
 H5mdFrameDataSet<ValueType>::H5mdFrameDataSet(const hid_t container, const char* name) :
-    Base(container, name),
-    extentDimsPrimitive_{ Base::dims() },
-    frameDescription_{ extentDimsPrimitive_ },
-    numFrames_{ extentDimsPrimitive_[0] } // FrameDescription would throw above for dims.empty()
+    H5mdFrameDataSet<ValueType>(Base(container, name))
 {
 }
 
@@ -158,9 +153,6 @@ H5mdFrameDataSet<ValueType>::~H5mdFrameDataSet() noexcept = default;
 
 template<typename ValueType>
 H5mdFrameDataSet<ValueType>::H5mdFrameDataSet(H5mdFrameDataSet<ValueType>&&) noexcept = default;
-
-template<typename ValueType>
-H5mdFrameDataSet<ValueType>& H5mdFrameDataSet<ValueType>::operator=(H5mdFrameDataSet<ValueType>&&) noexcept = default;
 
 template<typename ValueType>
 const DataSetDims& H5mdFrameDataSet<ValueType>::frameDims() const
@@ -194,13 +186,7 @@ void H5mdFrameDataSet<ValueType>::readFrame(hsize_t index, ArrayRef<ValueType> v
     const auto [fileDataSpace, fileDataSpaceGuard] =
             makeH5mdDataSpaceGuard(frameDescription_.fileDataSpaceForFrame(index, Base::id()));
 
-    GMX_H5MD_THROW_UPON_ERROR(H5Dread(Base::id(),
-                                      Base::nativeDataType(),
-                                      frameDescription_.memoryDataSpace(),
-                                      fileDataSpace,
-                                      H5P_DEFAULT,
-                                      values.data())
-                                      < 0,
+    GMX_H5MD_THROW_UPON_ERROR(!Base::read(values, frameDescription_.memoryDataSpace(), fileDataSpace),
                               "Error reading frame data.");
 }
 
@@ -234,13 +220,12 @@ void H5mdFrameDataSet<ValueType>::writeNextFrame(ArrayRef<const ValueType> value
     const auto [fileDataSpace, fileDataSpaceGuard] =
             makeH5mdDataSpaceGuard(frameDescription_.fileDataSpaceForFrame(numFrames_, Base::id()));
 
-    if (H5Dwrite(Base::id(), Base::dataType(), frameDescription_.memoryDataSpace(), fileDataSpace, H5P_DEFAULT, values.data())
-        < 0)
+    if (!Base::write(values, frameDescription_.memoryDataSpace(), fileDataSpace))
     {
         // If our write failed we shrink the data set back to its original number of frames before
         // throwing. Ignore any error here, as we are already handling a bigger problem.
         H5Dset_extent(Base::id(), extentForNumFrames(numFrames_).data());
-        GMX_H5MD_THROW_UPON_ERROR(true, "Error writing frame data.");
+        GMX_THROW(H5mdError("Error writing frame data."));
     }
 
     // Only increment frame index if the write was successful.
@@ -282,27 +267,17 @@ void H5mdScalarFrameDataSet<ValueType>::writeNextFrame(const ValueType& value)
 }
 
 template class H5mdFrameDataSet<int32_t>;
-
 template class H5mdFrameDataSet<int64_t>;
-
 template class H5mdFrameDataSet<float>;
-
 template class H5mdFrameDataSet<double>;
-
 template class H5mdFrameDataSet<BasicVector<float>>;
-
 template class H5mdFrameDataSet<BasicVector<double>>;
 
 template class H5mdScalarFrameDataSet<int32_t>;
-
 template class H5mdScalarFrameDataSet<int64_t>;
-
 template class H5mdScalarFrameDataSet<float>;
-
 template class H5mdScalarFrameDataSet<double>;
-
 template class H5mdScalarFrameDataSet<BasicVector<float>>;
-
 template class H5mdScalarFrameDataSet<BasicVector<double>>;
 
 } // namespace gmx

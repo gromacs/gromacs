@@ -47,9 +47,6 @@
 
 #include "gromacs/utility/vectypes.h"
 
-#define GMX_HOST_ATTRIBUTE __host__
-#define GMX_DEVICE_ATTRIBUTE __device__
-#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
 #if !defined(NDEBUG)
 #    define GMX_DEVICE_ASSERT(condition) assert(condition)
 #else

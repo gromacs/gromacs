@@ -48,8 +48,8 @@ struct t_energy
 {
     //! The current energy.
     real e;
-    //! The running average of the energy
-    double eav;
+    //! The sum of squares of the deviation of the energies from the average given by esum/nsum
+    double sumSqDev;
     //! The sum of energies until now.
     double esum;
 };
@@ -61,10 +61,10 @@ struct t_enxframe
     int64_t     step;         /* MD step	                             */
     int64_t     nsteps;       /* The number of steps between frames            */
     double      dt;           /* The MD time step                              */
-    int         nsum;         /* The number of terms for the sums in energyGroupPairTerms      */
+    int         nsum;         /* The number of terms for the sums in ener      */
     int         nre;          /* Number of energies			     */
     int         e_size;       /* Size (in bytes) of energies		     */
-    int         e_alloc;      /* Allocated size (in elements) of energyGroupPairTerms          */
+    int         e_alloc;      /* Allocated size (in elements) of ener          */
     t_energy*   ener;         /* The energies                                  */
     int         nblock;       /* Number of following energy blocks             */
     t_enxblock* block;        /* The blocks                                    */

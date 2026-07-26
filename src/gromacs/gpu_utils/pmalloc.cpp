@@ -43,6 +43,8 @@
 
 #include "gromacs/utility/smalloc.h"
 
+#include "gpu_utils.h"
+
 /*! \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
  *
  * This function is a stub for CPU-only and OpenCL builds.
@@ -87,4 +89,9 @@ void pmallocSetDefaultDeviceContext(const DeviceContext* /*context*/)
 void pmallocClearDefaultDeviceContext()
 {
     // We don't need context because we don't do anything device-specific.
+}
+
+bool isHostMemoryPinned(const void* /* h_ptr */)
+{
+    return false;
 }

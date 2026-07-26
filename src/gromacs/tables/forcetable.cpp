@@ -50,6 +50,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
+namespace gmx
+{
+
 /* All the possible (implemented) table functions */
 enum
 {
@@ -123,14 +126,14 @@ double v_lj_ewald_lr(double beta, double r)
     double br, br2, br4, r6, factor;
     if (r == 0)
     {
-        return gmx::power6(beta) / 6;
+        return power6(beta) / 6;
     }
     else
     {
         br     = beta * r;
         br2    = br * br;
         br4    = br2 * br2;
-        r6     = gmx::power6(r);
+        r6     = power6(r);
         factor = (1.0 - std::exp(-br2) * (1 + br2 + 0.5 * br4)) / r6;
         return factor;
     }
@@ -164,9 +167,9 @@ EwaldCorrectionTables generateEwaldCorrectionTables(const int    numPoints,
     tables.tableF.resize(numPoints);
     tables.tableV.resize(numPoints);
     tables.tableFDV0.resize(numPoints * 4);
-    gmx::ArrayRef<real> table_f    = tables.tableF;
-    gmx::ArrayRef<real> table_v    = tables.tableV;
-    gmx::ArrayRef<real> table_fdv0 = tables.tableFDV0;
+    ArrayRef<real> table_f    = tables.tableF;
+    ArrayRef<real> table_v    = tables.tableV;
+    ArrayRef<real> table_fdv0 = tables.tableFDV0;
 
     /* We need some margin to be able to divide table values by r
      * in the kernel and also to do the integration arithmetics
@@ -365,7 +368,7 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
         real   sc_lj;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        xrc2 = gmx::square(ic.vdw.ewaldCoeff * ic.vdw.cutoff);
+        xrc2 = square(ic.vdw.ewaldCoeff * ic.vdw.cutoff);
         etol = 0.1 * std::exp(-xrc2) * (1 + xrc2 + xrc2 * xrc2 / 2.0);
 
         sc_lj = spline3_table_scale(func_d3, ic.vdw.ewaldCoeff, etol);
@@ -381,14 +384,14 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
     return sc;
 }
 
-static void copy2table(int                         n,
-                       int                         offset,
-                       int                         stride,
-                       gmx::ArrayRef<const double> x,
-                       gmx::ArrayRef<const double> Vtab,
-                       gmx::ArrayRef<const double> Ftab,
-                       real                        scalefactor,
-                       gmx::ArrayRef<real>         dest)
+static void copy2table(int                    n,
+                       int                    offset,
+                       int                    stride,
+                       ArrayRef<const double> x,
+                       ArrayRef<const double> Vtab,
+                       ArrayRef<const double> Ftab,
+                       real                   scalefactor,
+                       ArrayRef<real>         dest)
 {
     /* Use double prec. for the intermediary variables
      * and temporary x/vtab/vtab2 data to avoid unnecessary
@@ -569,10 +572,10 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
     gmx_bool bAllZero, bZeroV, bZeroF;
     double   tabscale;
 
-    nny                               = 2 * ntab + 1;
-    const std::filesystem::path libfn = gmx::findLibraryFile(filename);
-    gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData    = readXvgData(libfn);
-    int                                                            numColumns = xvgData.extent(0);
+    nny                                                             = 2 * ntab + 1;
+    const std::filesystem::path                          libfn      = findLibraryFile(filename);
+    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgData    = readXvgData(libfn);
+    int                                                  numColumns = xvgData.extent(0);
     if (numColumns != nny)
     {
         gmx_fatal(FARGS,
@@ -716,7 +719,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
                         ns,
                         k,
                         libfn.string().c_str(),
-                        gmx::roundToInt64(100 * ssd));
+                        roundToInt64(100 * ssd));
                 if (debug)
                 {
                     fprintf(debug, "%s", buf);
@@ -814,7 +817,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t& ic, g
     }
     if (bPotentialSwitch)
     {
-        ksw = 1.0 / (gmx::power5(rc - r1));
+        ksw = 1.0 / (power5(rc - r1));
     }
     else
     {
@@ -835,9 +838,9 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t& ic, g
             p = reppow;
         }
 
-        A = p * ((p + 1) * r1 - (p + 4) * rc) / (std::pow(rc, p + 2) * gmx::square(rc - r1));
-        B = -p * ((p + 1) * r1 - (p + 3) * rc) / (std::pow(rc, p + 2) * gmx::power3(rc - r1));
-        C = 1.0 / std::pow(rc, p) - A / 3.0 * gmx::power3(rc - r1) - B / 4.0 * gmx::power4(rc - r1);
+        A = p * ((p + 1) * r1 - (p + 4) * rc) / (std::pow(rc, p + 2) * square(rc - r1));
+        B = -p * ((p + 1) * r1 - (p + 3) * rc) / (std::pow(rc, p + 2) * power3(rc - r1));
+        C = 1.0 / std::pow(rc, p) - A / 3.0 * power3(rc - r1) - B / 4.0 * power4(rc - r1);
         if (tp == etabLJ6Shift)
         {
             A = -A;
@@ -875,7 +878,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t& ic, g
                 break;
             case etabLJ6Ewald:
                 Vcut = -rc6 * std::exp(-ewclj * ewclj * rc2)
-                       * (1 + ewclj * ewclj * rc2 + gmx::power4(ewclj) * rc2 * rc2 / 2);
+                       * (1 + ewclj * ewclj * rc2 + power4(ewclj) * rc2 * rc2 / 2);
                 break;
             case etabLJ12:
                 /* Repulsion */
@@ -943,10 +946,10 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t& ic, g
             }
             else
             {
-                swi = 1 - 10 * gmx::power3(r - r1) * ksw * gmx::square(rc - r1)
-                      + 15 * gmx::power4(r - r1) * ksw * (rc - r1) - 6 * gmx::power5(r - r1) * ksw;
-                swi1 = -30 * gmx::square(r - r1) * ksw * gmx::square(rc - r1)
-                       + 60 * gmx::power3(r - r1) * ksw * (rc - r1) - 30 * gmx::power4(r - r1) * ksw;
+                swi = 1 - 10 * power3(r - r1) * ksw * square(rc - r1)
+                      + 15 * power4(r - r1) * ksw * (rc - r1) - 6 * power5(r - r1) * ksw;
+                swi1 = -30 * square(r - r1) * ksw * square(rc - r1)
+                       + 60 * power3(r - r1) * ksw * (rc - r1) - 30 * power4(r - r1) * ksw;
             }
         }
         else /* not really needed, but avoids compiler warnings... */
@@ -1011,9 +1014,9 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t& ic, g
                 break;
             case etabLJ6Ewald:
                 Vtab = -r6 * std::exp(-ewclj * ewclj * r2)
-                       * (1 + ewclj * ewclj * r2 + gmx::power4(ewclj) * r2 * r2 / 2);
+                       * (1 + ewclj * ewclj * r2 + power4(ewclj) * r2 * r2 / 2);
                 Ftab = 6.0 * Vtab / r
-                       - r6 * std::exp(-ewclj * ewclj * r2) * gmx::power5(ewclj) * ewclj * r2 * r2 * r;
+                       - r6 * std::exp(-ewclj * ewclj * r2) * power5(ewclj) * ewclj * r2 * r2 * r;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1283,7 +1286,7 @@ make_tables(FILE* fp, const interaction_const_t& ic, const char* fn, real rtab, 
                           fn,
                           rtab);
             }
-            table->numTablePoints = gmx::roundToInt(rtab * td[0].tabscale);
+            table->numTablePoints = roundToInt(rtab * td[0].tabscale);
         }
         table->scale = td[0].tabscale;
         nx0          = td[0].nx0;
@@ -1374,10 +1377,10 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle)
         /* Convert the table from degrees to radians */
         for (i = 0; i < td.nx; i++)
         {
-            td.x[i] *= gmx::c_deg2Rad;
-            td.f[i] *= gmx::c_rad2Deg;
+            td.x[i] *= c_deg2Rad;
+            td.f[i] *= c_rad2Deg;
         }
-        td.tabscale *= gmx::c_rad2Deg;
+        td.tabscale *= c_rad2Deg;
     }
     tab.n     = td.nx;
     tab.scale = td.tabscale;
@@ -1432,3 +1435,5 @@ t_forcetable::t_forcetable(enum TableInteraction interaction, enum TableFormat f
 }
 
 t_forcetable::~t_forcetable() = default;
+
+} // namespace gmx

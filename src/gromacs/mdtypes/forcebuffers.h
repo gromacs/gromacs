@@ -142,7 +142,7 @@ private:
  * forces for use with multiple time stepping.
  * More buffers can be added when needed. Those should also be added
  * to ForceBuffersView.
- * The force buffer (not forceMtsCombined) can be pinned for efficient transfer to/from GPUs.
+ * The force buffer (not forceMtsCombined) can be allocated for efficient transfer to/from GPUs.
  * All access happens through the ForceBuffersView object.
  */
 class ForceBuffers
@@ -151,12 +151,12 @@ public:
     //! Constructor, creates an empty force buffer with pinning not active and no MTS force buffer
     ForceBuffers();
 
-    /*! \brief Constructor, with options for using the MTS force buffer and the pinning policy
+    /*! \brief Constructor, with options for using the MTS force buffer and the host allocation policy
      *
-     * \param[in] useForceMtsCombined  Whether to enable use of the forceMtsCombined buffer
-     * \param[in] pinningPolicy        The pinning policy for the force (not MTS) buffer
+     * \param[in] useForceMtsCombined   Whether to enable use of the forceMtsCombined buffer
+     * \param[in] hostAllocationPolicy  The host allocation policy for the force (not MTS) buffer
      */
-    ForceBuffers(bool useForceMtsCombined, PinningPolicy pinningPolicy);
+    ForceBuffers(bool useForceMtsCombined, HostAllocationPolicy hostAllocationPolicy);
 
     //! Copy constructor deleted, but could be implemented
     ForceBuffers(const ForceBuffers& o) = delete;
@@ -166,7 +166,9 @@ public:
 
     ~ForceBuffers();
 
-    //! Copy assignment operator, sets the pinning policy to CannotBePinned
+    /*! \brief Copy assignment operator.
+     *
+     * Preserves the host-allocation pinning policy */
     ForceBuffers& operator=(ForceBuffers const& o);
 
     //! Move assignment operator, deleted but could be implemented

@@ -55,8 +55,8 @@ struct gmx_domdec_t;
 struct gmx_wallcycle;
 class DeviceContext;
 class DeviceStream;
+class DeviceStreamManager;
 class GpuEventSynchronizer;
-struct t_commrec;
 
 namespace gmx
 {
@@ -93,20 +93,23 @@ public:
      * \param [in]    dimIndex                 the dimension index for this instance
      * \param [in]    mpi_comm_mysim           communicator used for simulation
      * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
+     * \param [in]    haloStream               GPU device stream to use.
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
-     * \param [in]    wcycle                   The wallclock counter
      */
     GpuHaloExchange(gmx_domdec_t*        dd,
                     int                  dimIndex,
                     MPI_Comm             mpi_comm_mysim,
                     MPI_Comm             mpi_comm_mysim_world,
+                    const DeviceStream&  haloStream,
                     const DeviceContext& deviceContext,
-                    int                  pulse,
-                    gmx_wallcycle*       wcycle);
+                    int                  pulse);
     ~GpuHaloExchange();
     GpuHaloExchange(GpuHaloExchange&& source) noexcept;
     GpuHaloExchange& operator=(GpuHaloExchange&& source) noexcept;
+
+    //! Finish the construction once \c wcycle is available
+    void addWallcycleCounters(gmx_wallcycle* wcycle);
 
     /*! \brief
      *
@@ -156,13 +159,16 @@ public:
     GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&       dd,
                                  const DeviceContext&      context,
                                  const DeviceStream&       stream,
+                                 const DeviceStream&       haloStream,
+                                 const std::optional<int>& rankOfControlledPmeRank,
                                  const std::optional<int>& peerRank,
-                                 gmx_wallcycle*            wcycle,
                                  MPI_Comm                  mpi_comm_mygroup,
                                  MPI_Comm                  mpi_comm_mysim_world);
 
     ~GpuHaloExchangeNvshmemHelper();
 
+    //! Finish the construction once \c wcycle is available
+    void addWallcycleCounters(gmx_wallcycle* wcycle);
     /*! \brief Re-initialize after domain repartitioning */
     void reinit();
     //! Return the sync buffer
@@ -181,7 +187,7 @@ public:
     std::unique_ptr<int> fusedPpHaloExchange_;
 #endif
     // Fused pass-through API (defined in gpuhaloexchange_impl_gpu.cpp)
-    void                  reinitAllHaloExchanges(const t_commrec&   cr,
+    void                  reinitAllHaloExchanges(gmx_domdec_t*      dd,
                                                  DeviceBuffer<RVec> d_coordinatesBuffer,
                                                  DeviceBuffer<RVec> d_forcesBuffer);
     GpuEventSynchronizer* launchAllCoordinateExchanges(const matrix          box,
@@ -207,6 +213,12 @@ private:
     DeviceBuffer<uint64_t> d_ppHaloExSyncBase_;
     //! Device stream
     const DeviceStream& stream_;
+
+    //! Data structures used on PP ranks to implement symmetric allocations
+    //! \{
+    //! Rank of partner PME rank controlled by this PP rank, if any
+    std::optional<int> rankOfControlledPmeRank_;
+    //! \}
 
     //! Data structures used on PME-only ranks to implement symmetric allocations
     /*! \{ */

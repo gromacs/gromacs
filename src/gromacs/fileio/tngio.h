@@ -55,7 +55,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
+} // namespace gmx
 /*! \brief Open a TNG trajectory file
  *
  * \param filename   Name of file to open
@@ -82,7 +82,7 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t tng, const gmx_mtop_t* mtop);
  *
  * \param tng   Valid handle to a TNG trajectory
  * \param mtop  Global topology
- * \param ir    Input settings (for writing frequencies)
+ * \param ir    Input settings (includes output control)
  */
 void gmx_tng_prepare_md_writing(gmx_tng_trajectory_t tng, const gmx_mtop_t* mtop, const t_inputrec* ir);
 
@@ -97,7 +97,7 @@ void gmx_tng_set_compression_precision(gmx_tng_trajectory_t tng, real prec);
  *
  * \param tng   Valid handle to a TNG trajectory
  * \param mtop  Global topology
- * \param ir    Input settings (for writing frequencies)
+ * \param ir    Input settings (includes output control)
  */
 void gmx_tng_prepare_low_prec_writing(gmx_tng_trajectory_t tng, const gmx_mtop_t* mtop, const t_inputrec* ir);
 

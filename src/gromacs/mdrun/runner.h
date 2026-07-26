@@ -67,7 +67,6 @@
 
 struct gmx_multisim_t;
 struct gmx_output_env_t;
-struct ReplicaExchangeParameters;
 struct t_fileio;
 
 namespace gmx
@@ -112,12 +111,12 @@ class Mdrunner
 public:
     /*! \brief Builder class to manage object creation.
      *
-     * This class is a member of gmx::Mdrunner so that it can initialize
-     * private members of gmx::Mdrunner.
+     * This class is a member of Mdrunner so that it can initialize
+     * private members of Mdrunner.
      *
-     * It is non-trivial to establish an initialized gmx::Mdrunner invariant,
+     * It is non-trivial to establish an initialized Mdrunner invariant,
      * so objects can be obtained by clients using a Builder or a move.
-     * Clients cannot default initialize or copy gmx::Mdrunner.
+     * Clients cannot default initialize or copy Mdrunner.
      */
     class BuilderImplementation;
 
@@ -161,7 +160,7 @@ public:
      * \param restraint MD restraint potential to apply
      * \param name User-friendly plain-text name to uniquely identify the puller
      *
-     * This implementation attaches an object providing the gmx::IRestraintPotential
+     * This implementation attaches an object providing the IRestraintPotential
      * interface.
      * \todo Mdrunner should fetch such resources from the SimulationContext
      * rather than offering this public interface.
@@ -328,7 +327,7 @@ private:
 };
 
 /*! \libinternal
- * \brief Build a gmx::Mdrunner.
+ * \brief Build a Mdrunner.
  *
  * Client code (such as `gmx mdrun`) uses this builder to get an initialized Mdrunner.
  *
@@ -402,7 +401,7 @@ public:
     //! \}
 
     /*!
-     * \brief Get ownership of an initialized gmx::Mdrunner.
+     * \brief Get ownership of an initialized Mdrunner.
      *
      * After build() is called, the Builder object should not be used
      * again. It is an error to call build without first calling all builder
@@ -415,7 +414,7 @@ public:
     Mdrunner build();
 
     /*!
-     * \brief Supply the result of hardware detection to the gmx::Mdrunner
+     * \brief Supply the result of hardware detection to the Mdrunner
      *
      * \param hwinfo  Non-owning not-null handle to result of hardware detection.
      *

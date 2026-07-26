@@ -1,4 +1,4 @@
-Used version 1.3.1 from https://github.com/DTolm/VkFFT
+Used version 1.3.4 from https://github.com/DTolm/VkFFT
 Which is licensed as below
 
 Copyright (c) 2020 - present Dmitrii Tolmachev
@@ -23,3 +23,10 @@ SOFTWARE.
 
 Fixed several uses of PRIu64 for PRId64 when used with a signed integer to
 report grid sizes after kernel-launch errors.
+
+Cherry-picked upstream pull-request https://github.com/DTolm/VkFFT/pull/227
+to fix object lifetime management with Metal backend.
+
+Cherry-picked upstream formatting fix 9dd4480f8b094cf25bdb4372b422b590568869ea.
+
+Trivial warning fixes in vkFFT_CompileKernel.h (cast) and vkFFT_R2R.h (comment syntax).

@@ -69,7 +69,10 @@
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_enfrot;
 struct gmx_multisim_t;
 class history_t;
@@ -82,6 +85,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                            bool                        isVerbose,
                            FILE*                       fplog,
                            const t_commrec*            cr,
+                           const DeviceStreamManager*  deviceStreamManager,
                            const t_inputrec*           inputrec,
                            const MDModulesNotifiers&   mdModulesNotifiers,
                            const MDAtoms*              mdAtoms,
@@ -98,8 +102,9 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     shellfc_(init_shell_flexcon(fplog,
                                 globalTopology,
                                 constr ? constr->numFlexibleConstraints() : 0,
-                                inputrec->nstcalcenergy,
+                                inputrec->outputControl.nstcalcenergy,
                                 haveDDAtomOrdering(*cr),
+                                deviceStreamManager,
                                 runScheduleWork->simulationWork)),
     doShellFC_(shellfc_ != nullptr),
     nextNSStep_(-1),
@@ -196,13 +201,18 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
         {
             fr_->listedForcesGpu->updateHaveInteractions(localTopology_->idef);
         }
-        gmx_edsam* ed                = nullptr; // disabled
+        edsam* ed                    = nullptr; // disabled
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
                 *inputrec_, *fr_, pull_work_, ed, *mdAtoms_->mdatoms(), runScheduleWork_->simulationWork);
     }
 
-    runScheduleWork_->stepWork = setupStepWorkload(
-            flags, inputrec_->mtsLevels, step, runScheduleWork_->domainWork, runScheduleWork_->simulationWork);
+    runScheduleWork_->stepWork = setupStepWorkload(flags,
+                                                   inputrec_->mtsLevels,
+                                                   step,
+                                                   {},
+                                                   runScheduleWork_->domainWork,
+                                                   runScheduleWork_->simulationWork,
+                                                   *inputrec_);
 
     /* The coordinates (x) are shifted (to get whole molecules)
      * in do_force.
@@ -262,8 +272,8 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     else
     {
         // Disabled functionality
-        Awh*       awh = nullptr;
-        gmx_edsam* ed  = nullptr;
+        Awh*   awh = nullptr;
+        edsam* ed  = nullptr;
 
         auto v = statePropagatorData_->velocitiesView();
 
@@ -347,7 +357,8 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                     EnergyData*                             energyData,
                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                     GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-                                    ObservablesReducer* /*observablesReducer*/)
+                                    ObservablesReducer* /*observablesReducer*/,
+                                    const DeviceStreamManager* deviceStreamManager)
 {
     const bool isVerbose = legacySimulatorData->mdrunOptions_.verbose;
     return builderHelper->storeElement(
@@ -357,6 +368,7 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                            isVerbose,
                                            legacySimulatorData->fpLog_,
                                            legacySimulatorData->cr_,
+                                           deviceStreamManager,
                                            legacySimulatorData->inputRec_,
                                            legacySimulatorData->mdModulesNotifiers_,
                                            legacySimulatorData->mdAtoms_,

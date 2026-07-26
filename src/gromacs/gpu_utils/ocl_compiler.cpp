@@ -216,7 +216,7 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
  * behavior by defining GMX_OCL_FILE_PATH environment variable.
  *
  * \param[in] sourceRelativePath    Relative path to the kernel or other file in the source tree,
- *                                  from src, e.g. "gromacs/mdlib/nbnxn_ocl" for NB kernels.
+ *                                  from src, e.g. "gromacs/mdlib/nbnxm_ocl" for NB kernels.
  * \return OS-normalized path string to the folder storing OpenCL source file
  *
  * \throws std::bad_alloc    if out of memory.

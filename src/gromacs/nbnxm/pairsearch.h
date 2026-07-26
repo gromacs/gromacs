@@ -73,13 +73,13 @@ namespace gmx
 {
 class AtomPairlist;
 class DomdecZones;
+class HostAllocationPolicy;
 struct PairsearchWork;
 enum class PairlistType;
 class UpdateGroupsCog;
-enum class PinningPolicy : int;
 
 //! Local cycle count struct for profiling \internal
-class nbnxn_cycle_t
+class nbnxm_cycle_t
 {
 public:
     //! Start counting cycles
@@ -143,10 +143,10 @@ struct SearchCycleCounting
     //! The number of times pairsearching has been performed, local+non-local count as 1
     int searchCount_ = 0;
     //! The set of cycle counters
-    nbnxn_cycle_t cc_[enbsCCnr];
+    nbnxm_cycle_t cc_[enbsCCnr];
 };
 
-// TODO: Move nbnxn_search_work_t definition to its own file
+// TODO: Move nbnxm_search_work_t definition to its own file
 
 //! Thread-local work struct, contains working data for Grid \internal
 struct PairsearchWork
@@ -172,7 +172,7 @@ struct PairsearchWork
     std::unique_ptr<AtomPairlist> nbl_fep;
 
     //! Counter for thread-local cycles
-    nbnxn_cycle_t cycleCounter;
+    nbnxm_cycle_t cycleCounter;
 
     //! Buffer to avoid cache pollution
     gmx_cache_protect_t cp1;
@@ -194,7 +194,7 @@ public:
                    ArrayRef<const int32_t> atomInfo,
                    ArrayRef<const RVec>    x,
                    const int*              move,
-                   nbnxn_atomdata_t*       nbat)
+                   nbnxm_atomdata_t*       nbat)
     {
         cycleCounting_.start(enbsCCgrid);
 
@@ -220,7 +220,7 @@ public:
                          ArrayRef<const std::pair<int, int>> cells,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,
-                         nbnxn_atomdata_t*                   nbat);
+                         nbnxm_atomdata_t*                   nbat);
 
     /*! \brief Constructor
      *
@@ -232,17 +232,17 @@ public:
      * \param[in] haveFep                  Tells whether non-bonded interactions are perturbed
      * \param[in] localAtomOrderMatchesNbnxmOrder  Whether the local atom order should match the NBNxM order
      * \param[in] maxNumThreads            The maximum number of threads used in the search
-     * \param[in] pinningPolicy            Sets the pinning policy for all buffers used on the GPU
+     * \param[in] hostAllocationPolicy     Sets the host allocation policy for all buffers used with the GPU
      */
-    PairSearch(PbcType            pbcType,
-               bool               doTestParticleInsertion,
-               const IVec*        numDDCells,
-               const DomdecZones* zones,
-               PairlistType       pairlistType,
-               bool               haveFep,
-               bool               localAtomOrderMatchesNbnxmOrder,
-               int                maxNumThreads,
-               PinningPolicy      pinningPolicy);
+    PairSearch(PbcType                     pbcType,
+               bool                        doTestParticleInsertion,
+               const IVec*                 numDDCells,
+               const DomdecZones*          zones,
+               PairlistType                pairlistType,
+               bool                        haveFep,
+               bool                        localAtomOrderMatchesNbnxmOrder,
+               int                         maxNumThreads,
+               const HostAllocationPolicy& hostAllocationPolicy);
 
     //! Sets the order of the local atoms to the order grid atom ordering
     void setLocalAtomOrder() { gridSet_.setLocalAtomOrder(); }

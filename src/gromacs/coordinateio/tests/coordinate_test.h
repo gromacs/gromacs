@@ -80,7 +80,7 @@ namespace test
  * \throws InconsistentInputError When builder can not create the CoordinateFile.
  * \returns unique_ptr to new CoordinateFile object.
  */
-inline TrajectoryFrameWriterPointer createMinimalTrajectoryFrameWriter(const std::string& filename,
+inline TrajectoryFrameWriterPointer createMinimalTrajectoryFrameWriter(const std::filesystem::path& filename,
                                                                        const TopologyInformation& topology,
                                                                        const Selection& selection,
                                                                        OutputRequirements requirements)

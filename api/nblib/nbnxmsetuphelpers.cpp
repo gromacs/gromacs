@@ -112,10 +112,10 @@ void checkKernelSetupSimd(const SimdKernels nbnxmSimd)
     }
     // Check SIMD support
     if ((nbnxmSimd != SimdKernels::SimdNo && !GMX_SIMD)
-#ifndef GMX_NBNXN_SIMD_4XN
+#ifndef GMX_NBNXM_SIMD_4XN
         || nbnxmSimd == SimdKernels::Simd4XM
 #endif
-#ifndef GMX_NBNXN_SIMD_2XNN
+#ifndef GMX_NBNXM_SIMD_2XNN
         || nbnxmSimd == SimdKernels::Simd2XMM
 #endif
     )
@@ -130,7 +130,7 @@ gmx::NbnxmKernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bo
 
     gmx::NbnxmKernelSetup kernelSetup;
 
-    // The int enum options.nbnxnSimd is set up to match Nbnxm::KernelType + 1
+    // The int enum options.nbnxmSimd is set up to match Nbnxm::KernelType + 1
     kernelSetup.kernelType = translateBenchmarkEnum(nbnxmSimd);
 
     // The plain-C kernel does not support analytical ewald correction
@@ -308,20 +308,21 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t           n
                 "The size of the non-bonded parameter matrix does not match numParticleTypes");
     }
 
-    const auto pinPolicy  = gmx::PinningPolicy::CannotBePinned;
-    const int  numThreads = options.numOpenMPThreads;
+    const gmx::HostAllocationPolicy hostAllocationPolicy{};
+    const int                       numThreads = options.numOpenMPThreads;
 
     gmx::NbnxmKernelSetup kernelSetup =
             createKernelSetupCPU(options.nbnxmSimd, options.useTabulatedEwaldCorr);
 
     gmx::PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, 0, pinPolicy);
-    auto pairSearch   = std::make_unique<gmx::PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
+    auto pairlistSets =
+            std::make_unique<gmx::PairlistSets>(pairlistParams, false, 0, hostAllocationPolicy);
+    auto pairSearch = std::make_unique<gmx::PairSearch>(
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, hostAllocationPolicy);
 
     // Needs to be called with the number of unique ParticleTypes
-    auto atomData = std::make_unique<gmx::nbnxn_atomdata_t>(pinPolicy,
+    auto atomData = std::make_unique<gmx::nbnxm_atomdata_t>(hostAllocationPolicy,
                                                             gmx::MDLogger(),
                                                             kernelSetup.kernelType,
                                                             std::nullopt,
@@ -350,7 +351,8 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           n
                 "The size of the non-bonded parameter matrix does not match numParticleTypes");
     }
 
-    const auto pinPolicy = gmx::PinningPolicy::PinnedIfSupported;
+    const gmx::HostAllocationPolicy hostAllocationPolicy{ deviceStreamManager.context(),
+                                                          gmx::PinningPolicy::PinnedIfSupported };
 
     gmx::NbnxmKernelSetup kernelSetup = createKernelSetupGPU(options.useTabulatedEwaldCorr);
 
@@ -358,11 +360,11 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           n
             kernelSetup.kernelType, gmx::PairlistType::Hierarchical8x8x8, false, options.pairlistCutoff, false);
 
 
-    // nbnxn_atomdata is always initialized with 1 thread if the GPU is used
+    // nbnxm_atomdata is always initialized with 1 thread if the GPU is used
     constexpr int numThreadsInit = 1;
     // multiple energy groups are not supported on the GPU
     constexpr int numEnergyGroups = 1;
-    auto          atomData        = std::make_unique<gmx::nbnxn_atomdata_t>(pinPolicy,
+    auto          atomData        = std::make_unique<gmx::nbnxm_atomdata_t>(hostAllocationPolicy,
                                                             gmx::MDLogger(),
                                                             kernelSetup.kernelType,
                                                             std::nullopt,
@@ -378,9 +380,17 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           n
     // minimum iList count for GPU balancing
     int iListCount = gmx::gpu_min_ci_balanced(nbnxmGpu);
 
-    auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, iListCount, pinPolicy);
-    auto pairSearch = std::make_unique<gmx::PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, options.numOpenMPThreads, pinPolicy);
+    auto pairlistSets = std::make_unique<gmx::PairlistSets>(
+            pairlistParams, false, iListCount, hostAllocationPolicy);
+    auto pairSearch = std::make_unique<gmx::PairSearch>(PbcType::Xyz,
+                                                        false,
+                                                        nullptr,
+                                                        nullptr,
+                                                        pairlistParams.pairlistType,
+                                                        false,
+                                                        false,
+                                                        options.numOpenMPThreads,
+                                                        hostAllocationPolicy);
 
     // Put everything together
     auto nbv = std::make_unique<gmx::nonbonded_verlet_t>(

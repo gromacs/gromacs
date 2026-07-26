@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
@@ -66,7 +67,7 @@ TEST(VirialsTest, computeVirialTensorWorks)
     std::vector<Vec3> forces = { { 2, 1, 2 }, { 4, 3, 4 } };
     std::vector<Vec3> shiftForces(gmx::c_numShiftVectors, Vec3(0.0, 1.0, 0.0));
     Box               box(1, 2, 3);
-    t_forcerec        forcerec{ false };
+    t_forcerec        forcerec{ gmx::HostAllocationPolicy{} };
     updateForcerec(&forcerec, box.legacyMatrix());
     std::vector<Vec3> shiftVectors(gmx::c_numShiftVectors);
     // copy shift vectors from ForceRec

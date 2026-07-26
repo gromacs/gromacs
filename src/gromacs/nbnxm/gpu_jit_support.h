@@ -50,8 +50,8 @@ namespace gmx
 
 struct NbnxmGpu;
 
-/*! \brief Handles any JIT compilation of nbnxn kernels for the selected device */
-void nbnxn_gpu_compile_kernels(NbnxmGpu gmx_unused* nb);
+/*! \brief Handles any JIT compilation of nbnxm kernels for the selected device */
+void nbnxm_gpu_compile_kernels(NbnxmGpu gmx_unused* nb);
 
 } // namespace gmx
 

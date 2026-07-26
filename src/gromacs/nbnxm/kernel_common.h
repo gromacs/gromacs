@@ -45,7 +45,7 @@
 #define GMX_NBXNM_KERNEL_COMMON_H
 
 #include "gromacs/utility/vectypes.h"
-/* nbnxn_atomdata_t and nbnxn_pairlist_t could be forward declared, but that requires modifications in all SIMD kernel files */
+/* nbnxm_atomdata_t and nbnxm_pairlist_t could be forward declared, but that requires modifications in all SIMD kernel files */
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/real.h"
 
@@ -64,11 +64,11 @@ enum class EwaldExclusionType : int;
 
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */
-typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu&    nbl,
-                              const nbnxn_atomdata_t&    nbat,
+typedef void(NbnxmKernelFunc)(const NbnxmPairlistCpu&    nbl,
+                              const nbnxm_atomdata_t&    nbat,
                               const interaction_const_t& ic,
                               const rvec*                shift_vec,
-                              nbnxn_atomdata_output_t*   out);
+                              nbnxm_atomdata_output_t*   out);
 
 //! \brief Lookup function for Coulomb kernel type
 CoulombKernelType getCoulombKernelType(EwaldExclusionType     ewaldExclusionType,
@@ -111,7 +111,7 @@ void clear_fshift(real* fshift);
 
 /*! \brief Reduces the collected energy terms over the pair-lists/threads.
  */
-void reduce_energies_over_lists(const nbnxn_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc);
+void reduce_energies_over_lists(const nbnxm_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc);
 
 } // namespace gmx
 

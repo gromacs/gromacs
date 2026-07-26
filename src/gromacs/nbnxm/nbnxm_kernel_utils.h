@@ -53,7 +53,8 @@ namespace gmx
 {
 
 //! \brief Convert \p sigma and \p epsilon VdW parameters to \c c6,c12 pair.
-static inline GMX_ALWAYS_INLINE Float2 convertSigmaEpsilonToC6C12(const float sigma, const float epsilon)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE Float2 convertSigmaEpsilonToC6C12(const float sigma,
+                                                                          const float epsilon)
 {
     const float sigma2 = sigma * sigma;
     const float sigma6 = sigma2 * sigma2 * sigma2;
@@ -65,15 +66,15 @@ static inline GMX_ALWAYS_INLINE Float2 convertSigmaEpsilonToC6C12(const float si
 
 //! \brief Calculate force and energy for a pair of atoms, VdW force-switch flavor.
 template<bool doCalcEnergies, bool calcFr>
-static inline GMX_ALWAYS_INLINE void ljForceSwitch(const shift_consts_t dispersionShift,
-                                                   const shift_consts_t repulsionShift,
-                                                   const float          rVdwSwitch,
-                                                   const float          c6,
-                                                   const float          c12,
-                                                   const float          rInv,
-                                                   const float          r2,
-                                                   float*               f,
-                                                   float*               eLJ)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE void ljForceSwitch(const shift_consts_t dispersionShift,
+                                                           const shift_consts_t repulsionShift,
+                                                           const float          rVdwSwitch,
+                                                           const float          c6,
+                                                           const float          c12,
+                                                           const float          rInv,
+                                                           const float          r2,
+                                                           float*               f,
+                                                           float*               eLJ)
 {
     /* force switch constants */
     const float dispShiftV2 = dispersionShift.c2;
@@ -110,9 +111,9 @@ static inline GMX_ALWAYS_INLINE void ljForceSwitch(const shift_consts_t dispersi
 
 //! \brief Fetch C6 grid contribution coefficients and return the product of these.
 template<gmx::VdwType vdwType>
-static inline GMX_ALWAYS_INLINE float calculateLJEwaldC6Grid(const Float2* a_nbfpComb,
-                                                             const int     typeI,
-                                                             const int     typeJ)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE float calculateLJEwaldC6Grid(const Float2* a_nbfpComb,
+                                                                     const int     typeI,
+                                                                     const int     typeJ)
 {
     if constexpr (vdwType == gmx::VdwType::EwaldGeom)
     {
@@ -137,17 +138,17 @@ static inline GMX_ALWAYS_INLINE float calculateLJEwaldC6Grid(const Float2* a_nbf
 
 //! Calculate LJ-PME grid force contribution with geometric or LB combination rule.
 template<bool doCalcEnergies, gmx::VdwType vdwType>
-static inline GMX_ALWAYS_INLINE void ljEwaldComb(const Float2* a_nbfpComb,
-                                                 const float   sh_lj_ewald,
-                                                 const int     typeI,
-                                                 const int     typeJ,
-                                                 const float   r2,
-                                                 const float   r2Inv,
-                                                 const float   lje_coeff2,
-                                                 const float   lje_coeff6_6,
-                                                 const float   int_bit,
-                                                 float*        fInvR,
-                                                 float*        eLJ)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE void ljEwaldComb(const Float2* a_nbfpComb,
+                                                         const float   sh_lj_ewald,
+                                                         const int     typeI,
+                                                         const int     typeJ,
+                                                         const float   r2,
+                                                         const float   r2Inv,
+                                                         const float   lje_coeff2,
+                                                         const float   lje_coeff6_6,
+                                                         const float   int_bit,
+                                                         float*        fInvR,
+                                                         float*        eLJ)
 {
     const float c6grid = calculateLJEwaldC6Grid<vdwType>(a_nbfpComb, typeI, typeJ);
 
@@ -170,12 +171,12 @@ static inline GMX_ALWAYS_INLINE void ljEwaldComb(const Float2* a_nbfpComb,
 
 /*! \brief Apply potential switch. */
 template<bool doCalcEnergies, bool calcFr>
-static inline GMX_ALWAYS_INLINE void ljPotentialSwitch(const switch_consts_t vdwSwitch,
-                                                       const float           rVdwSwitch,
-                                                       const float           rInv,
-                                                       const float           r2,
-                                                       float*                f,
-                                                       float*                eLJ)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE void ljPotentialSwitch(const switch_consts_t vdwSwitch,
+                                                               const float           rVdwSwitch,
+                                                               const float           rInv,
+                                                               const float           r2,
+                                                               float*                f,
+                                                               float*                eLJ)
 {
     /* potential switch constants */
     const float switchV3 = vdwSwitch.c3;
@@ -212,7 +213,7 @@ static inline GMX_ALWAYS_INLINE void ljPotentialSwitch(const switch_consts_t vdw
 }
 
 /*! \brief Calculate analytical Ewald correction term. */
-static inline GMX_ALWAYS_INLINE float pmeCorrF(const float z2)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE float pmeCorrF(const float z2)
 {
     constexpr float FN6 = -1.7357322914161492954e-8F;
     constexpr float FN5 = 1.4703624142580877519e-6F;
@@ -248,9 +249,9 @@ static inline GMX_ALWAYS_INLINE float pmeCorrF(const float z2)
 }
 
 /*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
-static inline GMX_ALWAYS_INLINE float interpolateCoulombForceR(const float* a_coulombTab,
-                                                               const float  coulombTabScale,
-                                                               const float  r)
+static inline GMX_DEVICE_FUNC_ATTRIBUTE float interpolateCoulombForceR(const float* a_coulombTab,
+                                                                       const float  coulombTabScale,
+                                                                       const float  r)
 {
     const float normalized = coulombTabScale * r;
     const int   index      = static_cast<int>(normalized);

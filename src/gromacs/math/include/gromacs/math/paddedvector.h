@@ -259,6 +259,19 @@ public:
         storage_(std::exchange(o.storage_, {})), unpaddedEnd_(o.unpaddedEnd_)
     {
     }
+    /*! \brief Copy constructor using \c alloc for the new vector.
+     *
+     * Note that \c alloc is another instance of the same allocator
+     * type as used for \c PaddedVector. This makes sense e.g. for
+     * stateful allocators such as HostAllocator used in
+     * PaddedHostVector. */
+    PaddedVector(const PaddedVector& o, const Allocator& alloc) :
+        storage_(alloc), unpaddedEnd_(begin())
+    {
+        auto unpaddedSize = o.size();
+        resizeWithPadding(unpaddedSize);
+        std::copy(o.begin(), o.end(), storage_.begin());
+    }
     /*! \brief Move constructor using \c alloc for the new vector.
      *
      * Note that \c alloc is another instance of the same allocator
@@ -424,6 +437,6 @@ private:
 // TODO These are hacks to avoid littering gmx:: all over code that is
 // almost all destined to move into the gmx namespace at some point.
 // An alternative would be about 20 files with using statements.
-using gmx::PaddedVector; //NOLINT(google-global-names-in-headers)
+using gmx::PaddedVector; // NOLINT(google-global-names-in-headers)
 
 #endif

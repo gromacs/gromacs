@@ -2146,7 +2146,7 @@ static void analyze_static(gmx_sel_evaluate_t* data, const SelectionTreeElementP
                     make_static(sel);
                 }
             }
-            else if (bDoMinMax)
+            else if (bDoMinMax && g)
             {
                 gmx_ana_index_copy(sel->cdata->gmax, g, true);
             }

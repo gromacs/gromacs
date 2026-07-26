@@ -47,13 +47,13 @@
 #include <utility>
 
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/matrix.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/matrix.h"
 #include "gromacs/utility/vectypes.h"
 
 #include "langevintestdata.h"
@@ -76,7 +76,7 @@ void LangevinHostTestRunner::integrate(LangevinTestData* testData, int numSteps)
 
     gmx_omp_nthreads_set(ModuleMultiThread::Update, 1);
 
-    Matrix3x3 parrinelloRahmanM{ 0. };
+    Matrix3x3 parrinelloRahmanM;
 
     for (int step = 0; step < numSteps; step++)
     {

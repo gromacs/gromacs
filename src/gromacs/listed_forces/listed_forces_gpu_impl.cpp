@@ -169,7 +169,7 @@ ListedForcesGpu::~ListedForcesGpu() = default;
 
 void ListedForcesGpu::updateHaveInteractions(const InteractionDefinitions& /*idef*/) {}
 
-void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxnAtomOrder */,
+void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxmAtomOrder */,
                                                              const InteractionDefinitions& /* idef */,
                                                              NBAtomDataGpu* /* nbnxmAtomDataGpu */)
 {

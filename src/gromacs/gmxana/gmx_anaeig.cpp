@@ -1292,9 +1292,28 @@ int gmx_anaeig(int argc, char* argv[])
         }
 
         neig2 = std::min(nvec2, DIM * natoms2);
-        if (neig2 != neig1)
+
+        if (OverlapFile != nullptr)
         {
-            gmx_fatal(FARGS, "Dimensions in the eigenvector files don't match");
+            // If the user specified -over on the command line, then calculate the subspace overlap
+            // of the eigenvectors in file -v2 with eigenvectors -first to -last in file -v.
+            // In this case, the number of eigenvectors in the two files may be different,
+            // but the number of atoms in both files needs to be the same.
+            if (natoms2 != natoms)
+            {
+                gmx_fatal(FARGS,
+                          "Number of atoms in the two eigenvector files don't match. "
+                          "File 1 has %d atoms, while File 2 has %d atoms.",
+                          natoms,
+                          natoms2);
+            }
+        }
+        else
+        {
+            if (neig2 != neig1)
+            {
+                gmx_fatal(FARGS, "Dimensions in the eigenvector files don't match");
+            }
         }
     }
     else

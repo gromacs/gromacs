@@ -48,29 +48,29 @@
 
 namespace gmx
 {
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistCpu;
+struct nbnxm_atomdata_t;
+struct NbnxmPairlistCpu;
 template<typename>
 class ArrayRef;
 
-/*! \brief Prune a single NbnxnPairlistCpu entry with distance \p rlistInner
+/*! \brief Prune a single NbnxmPairlistCpu entry with distance \p rlistInner
  *
  * Reads a cluster pairlist \p nbl->ciOuter, \p nbl->cjOuter and writes
  * all cluster pairs within \p rlistInner to \p nbl->ci, \p nbl->cj.
  */
 template<NbnxmKernelType>
-void nbnxmRefPruneKernel(NbnxnPairlistCpu*       nbl,
-                         const nbnxn_atomdata_t* nbat,
+void nbnxmRefPruneKernel(NbnxmPairlistCpu*       nbl,
+                         const nbnxm_atomdata_t* nbat,
                          ArrayRef<const RVec>    shiftvec,
                          real                    rlistInner);
 
-extern template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu4x4_PlainC>(NbnxnPairlistCpu* nbl,
-                                                                         const nbnxn_atomdata_t* nbat,
+extern template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu4x4_PlainC>(NbnxmPairlistCpu* nbl,
+                                                                         const nbnxm_atomdata_t* nbat,
                                                                          ArrayRef<const RVec> shiftvec,
                                                                          real rlistInner);
 
-extern template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu1x1_PlainC>(NbnxnPairlistCpu* nbl,
-                                                                         const nbnxn_atomdata_t* nbat,
+extern template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu1x1_PlainC>(NbnxmPairlistCpu* nbl,
+                                                                         const nbnxm_atomdata_t* nbat,
                                                                          ArrayRef<const RVec> shiftvec,
                                                                          real rlistInner);
 

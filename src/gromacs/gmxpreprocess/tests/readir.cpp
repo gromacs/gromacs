@@ -135,7 +135,7 @@ public:
                WriteMdpHeader::no,
                &wi);
 
-        check_ir(inputMdpFilename.c_str(), mdModules_.notifiers(), &ir_, &opts_, &wi);
+        check_ir(inputMdpFilename.c_str(), &mdModules_, &ir_, &opts_, &wi);
         // Now check
         bool failure = warning_errors_exist(wi);
         EXPECT_EQ(failure, expectError);
@@ -369,6 +369,8 @@ TEST_F(GetIrTest, MissingTransformationCoordExpression)
     runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
 }
 
+#endif // HAVE_MUPARSER
+
 TEST_F(GetIrTest, lambdaOverOneCheck_SC_And_ExactlyAsManyStep)
 {
     // 1e5 steps and delta lambda 1e-5, should not warn (exactly right)
@@ -545,9 +547,6 @@ TEST_F(GetIrTest, AcceptsFmmOptions)
                                    "fmm-fmsolvr-sparse = no" };
     runTest(joinStrings(inputMdpFile, "\n"));
 }
-
-
-#endif // HAVE_MUPARSER
 
 } // namespace test
 } // namespace gmx

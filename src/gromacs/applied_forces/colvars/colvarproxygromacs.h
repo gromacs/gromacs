@@ -139,8 +139,11 @@ public:
     //! Request to set the units used internally by Colvars
     int set_unit_system(std::string const& unitsIn, bool colvarsDefined) override;
 
+    using colvarproxy::init_atom; // Acknowledge an unimplemented overload to avoid compiler warnings
     //! Initialize colvars atom from GROMACS topology
     int init_atom(int atomNumber) override;
+
+    using colvarproxy::check_atom_id; // Acknowledge an unimplemented overload to avoid compiler warnings
     /*! \brief Check if atom belongs to the global index of atoms
      *  \param[in] atomNumber Colvars index of the atom to check
      */

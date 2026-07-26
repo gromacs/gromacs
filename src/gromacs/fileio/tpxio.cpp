@@ -58,6 +58,7 @@
 #include <bitset>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -199,8 +200,9 @@ enum tpxv
     tpxv_RefScaleMultipleCOMs, /**< Add multiple COM groups for refcoord-scale */
     tpxv_InputHistogramCounts, /**< Provide input histogram counts for current expanded ensemble state */
     tpxv_NNPotIFuncType,       /**< Add interaction function type for neural network potential */
-    tpxv_AwhHistogramTolerance, /**< Add AWH histogram tolerance */
-    tpxv_Count                  /**< the total number of tpxv versions */
+    tpxv_AwhHistogramTolerance,       /**< Add AWH histogram tolerance */
+    tpxv_OutputControlInKeyValueTree, /**< Move output control parameters to key-value tree */
+    tpxv_Count                        /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -1107,6 +1109,25 @@ static void do_legacy_efield(gmx::ISerializer* serializer, gmx::KeyValueTreeObje
     }
 }
 
+//! Helper to read an int from serializer and add to key-value tree
+static void doIntToKvt(gmx::ISerializer*               serializer,
+                       gmx::KeyValueTreeObjectBuilder* builder,
+                       const std::string&              key)
+{
+    int value;
+    serializer->doInt(&value);
+    builder->addValue<int>(key, value);
+}
+
+//! Helper to read a real from serializer and add to key-value tree
+static void doRealToKvt(gmx::ISerializer*               serializer,
+                        gmx::KeyValueTreeObjectBuilder* builder,
+                        const std::string&              key)
+{
+    real value;
+    serializer->doReal(&value);
+    builder->addValue<real>(key, value);
+}
 
 static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_version)
 {
@@ -1192,14 +1213,30 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         serializer->doReal(&ir->ensembleTemperature);
     }
 
-    if (file_version >= tpxv_Pre96Version67)
+    // Create outputControlObj early to handle nstcalcenergy in the same way as other fields
+    // For old TPR files, these are serialized directly and we populate paramsObj here
+    // For new TPR files, they're in the serialized key-value tree (read later)
+    std::optional<gmx::KeyValueTreeObjectBuilder> outputControlObj;
+    if (file_version < tpxv_OutputControlInKeyValueTree)
     {
-        serializer->doInt(&ir->nstcalcenergy);
+        outputControlObj = paramsObj.addObject("output-control");
     }
-    else
+
+    // Read nstcalcenergy for backward compatibility with old TPR files
+    // In new TPR files, this is part of OutputControl in the key-value tree
+    // Keep a local copy since it's used as default for nsttcouple/nstpcouple in very old files
+    int nstcalcenergy = 1; // default for very old files
+    if (file_version >= tpxv_Pre96Version67 && file_version < tpxv_OutputControlInKeyValueTree)
     {
-        ir->nstcalcenergy = 1;
+        serializer->doInt(&nstcalcenergy);
+        outputControlObj->addValue<int>("nstcalcenergy", nstcalcenergy);
     }
+    else if (file_version < tpxv_OutputControlInKeyValueTree)
+    {
+        // Very old files (before tpxv_Pre96Version67) - use default
+        outputControlObj->addValue<int>("nstcalcenergy", nstcalcenergy);
+    }
+
     if (file_version >= tpxv_Pre96Version81)
     {
         serializer->doEnumAsInt(&ir->cutoff_scheme);
@@ -1237,12 +1274,18 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
 
     serializer->doInt(&ir->nbfgscorr);
 
-    serializer->doInt(&ir->nstlog);
-    serializer->doInt(&ir->nstxout);
-    serializer->doInt(&ir->nstvout);
-    serializer->doInt(&ir->nstfout);
-    serializer->doInt(&ir->nstenergy);
-    serializer->doInt(&ir->nstxout_compressed);
+    // Read remaining output control fields from old format (nstlog through x-compression-precision)
+    if (file_version < tpxv_OutputControlInKeyValueTree)
+    {
+        doIntToKvt(serializer, &*outputControlObj, "nstlog");
+        doIntToKvt(serializer, &*outputControlObj, "nstxout");
+        doIntToKvt(serializer, &*outputControlObj, "nstvout");
+        doIntToKvt(serializer, &*outputControlObj, "nstfout");
+        doIntToKvt(serializer, &*outputControlObj, "nstenergy");
+        doIntToKvt(serializer, &*outputControlObj, "nstxout-compressed");
+    }
+
+    // init_t and delta_t are NOT part of OutputControl but come between output control fields
     if (file_version >= tpxv_Pre96Version59)
     {
         serializer->doDouble(&ir->init_t);
@@ -1255,7 +1298,12 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         serializer->doReal(&rdum);
         ir->delta_t = rdum;
     }
-    serializer->doReal(&ir->x_compression_precision);
+
+    // Now read x_compression_precision (the last output control field) and add to key-value tree
+    if (file_version < tpxv_OutputControlInKeyValueTree)
+    {
+        doRealToKvt(serializer, &*outputControlObj, "x-compression-precision");
+    }
     if (file_version >= tpxv_Pre96Version81)
     {
         serializer->doReal(&ir->verletbuf_tol);
@@ -1417,7 +1465,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     }
     else
     {
-        ir->nsttcouple = ir->nstcalcenergy;
+        ir->nsttcouple = nstcalcenergy;
     }
     serializer->doEnumAsInt(&ir->pressureCouplingOptions.epc);
     serializer->doEnumAsInt(&ir->pressureCouplingOptions.epct);
@@ -1427,7 +1475,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     }
     else
     {
-        ir->pressureCouplingOptions.nstpcouple = ir->nstcalcenergy;
+        ir->pressureCouplingOptions.nstpcouple = nstcalcenergy;
     }
     serializer->doReal(&ir->pressureCouplingOptions.tau_p);
     serializer->doRvec(&ir->pressureCouplingOptions.ref_p[XX]);
@@ -2681,34 +2729,32 @@ static void do_symtab(gmx::ISerializer* serializer, t_symtab* symtab)
     }
 }
 
-static void do_cmap(gmx::ISerializer* serializer, gmx_cmap_t* cmap_grid)
+static void do_cmap(gmx::ISerializer* serializer, CmapGrids* cmapGrids)
 {
 
-    int ngrid = cmap_grid->cmapdata.size();
+    int ngrid = cmapGrids->size();
     serializer->doInt(&ngrid);
-    serializer->doInt(&cmap_grid->gridExtent);
-
-    int gs    = cmap_grid->gridExtent;
-    int nelem = gs * gs;
+    int gridExtent = cmapGrids->empty() ? 0 : (*cmapGrids)[0].extent(0);
+    serializer->doInt(&gridExtent);
 
     if (serializer->reading())
     {
-        cmap_grid->cmapdata.resize(ngrid);
+        cmapGrids->resize(ngrid);
 
-        for (int i = 0; i < ngrid; i++)
+        for (auto& grid : *cmapGrids)
         {
-            cmap_grid->cmapdata[i].cmap.resize(4 * nelem);
+            grid.resize(gridExtent, gridExtent);
         }
     }
 
-    for (int i = 0; i < ngrid; i++)
+    for (auto& grid : *cmapGrids)
     {
-        for (int j = 0; j < nelem; j++)
+        for (std::array<real, 4>& gridElement : grid)
         {
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4]);
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4 + 1]);
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4 + 2]);
-            serializer->doReal(&cmap_grid->cmapdata[i].cmap[j * 4 + 3]);
+            for (real& value : gridElement)
+            {
+                serializer->doReal(&value);
+            }
         }
     }
 }
@@ -2852,12 +2898,11 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
 
     if (file_version >= tpxv_Pre96Version65)
     {
-        do_cmap(serializer, &mtop->ffparams.cmap_grid);
+        do_cmap(serializer, &mtop->ffparams.cmapGrids);
     }
     else
     {
-        mtop->ffparams.cmap_grid.gridExtent = 0;
-        mtop->ffparams.cmap_grid.cmapdata.clear();
+        mtop->ffparams.cmapGrids.clear();
     }
 
     do_groups(serializer, &mtop->groups, &(mtop->symtab));

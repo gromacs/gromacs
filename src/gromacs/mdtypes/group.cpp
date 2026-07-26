@@ -45,7 +45,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/smalloc.h"
 
 gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTemperature,
                                const EnsembleTemperatureSetting ensembleTemperatureSetting,
@@ -71,9 +70,9 @@ gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTempera
         tcstatGroup.ekinscalef_nhc = 1.0;
     }
 
-    snew(ekin_work_alloc, nthreads_);
-    snew(ekin_work, nthreads_);
-    snew(dekindl_work, nthreads_);
+    ekin_work_alloc.resize(nthreads_);
+    ekin_work.resize(nthreads_);
+    dekindl_work.resize(nthreads_);
 
     if (haveBoxDeformation_)
     {
@@ -93,13 +92,14 @@ gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTempera
              * buffer on both sides to avoid cache pollution.
              */
             const int ngtc = numTemperatureCouplingGroups();
-            snew(ekin_work_alloc[thread], ngtc + 2 * EKIN_WORK_BUFFER_SIZE);
-            ekin_work[thread] = ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
+            ekin_work_alloc[thread].resize(ngtc + 2 * EKIN_WORK_BUFFER_SIZE);
+            ekin_work[thread] = gmx::arrayRefFromArray(
+                    ekin_work_alloc[thread].data() + EKIN_WORK_BUFFER_SIZE, ngtc);
             /* Nasty hack so we can have the per-thread accumulation
              * variable for dekindl in the same thread-local cache lines
              * as the per-thread accumulation tensors for ekin[fh],
              * because they are accumulated in the same loop. */
-            dekindl_work[thread] = &(ekin_work[thread][ngtc][0][0]);
+            dekindl_work[thread] = &ekin_work[thread][ngtc][0][0];
 
             if (haveBoxDeformation)
             {
@@ -110,15 +110,4 @@ gmx_ekindata_t::gmx_ekindata_t(gmx::ArrayRef<const real>        referenceTempera
     }
 
     cosacc.cos_accel = cosineAcceleration;
-}
-
-gmx_ekindata_t::~gmx_ekindata_t()
-{
-    for (int i = 0; i < nthreads_; i++)
-    {
-        sfree(ekin_work_alloc[i]);
-    }
-    sfree(ekin_work_alloc);
-    sfree(ekin_work);
-    sfree(dekindl_work);
 }

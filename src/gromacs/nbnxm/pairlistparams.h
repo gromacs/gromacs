@@ -67,7 +67,7 @@ static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListTyp
 };
 
 /*! \internal
- * \brief The setup for generating and pruning the nbnxn pair list.
+ * \brief The setup for generating and pruning the nbnxm pair list.
  *
  * Without dynamic pruning rlistOuter=rlistInner.
  */

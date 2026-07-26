@@ -328,12 +328,6 @@ bool pme_gpu_mixed_mode_supports_input(const t_inputrec& ir, std::string* error)
  */
 PmeRunMode pme_run_mode(const gmx_pme_t* pme);
 
-/*! \libinternal \brief
- * Return the pinning policy appropriate for this build configuration
- * for relevant buffers used for PME task on this rank (e.g. running
- * on a GPU). */
-gmx::PinningPolicy pme_get_pinning_policy();
-
 /*! \brief
  * Tells if PME is enabled to run on GPU (not necessarily active at the moment).
  * \todo This is a rather static data that should be managed by the hardware assignment manager.
@@ -364,7 +358,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_use_nvshmem(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  *
  * \param[in]  pme  The PME data structure.
  */
-GPU_FUNC_QUALIFIER int pme_gpu_get_block_size(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
+GPU_FUNC_QUALIFIER int pme_gpu_get_block_size(const gmx_pme_t& GPU_FUNC_ARGUMENT(pme))
         GPU_FUNC_TERM_WITH_RETURN(0);
 
 // The following functions are all the PME GPU entry points,
@@ -385,7 +379,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_reset_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT
  * \returns                     The gmx_wallclock_gpu_pme_t structure.
  */
 GPU_FUNC_QUALIFIER std::optional<gmx_wallclock_gpu_pme_t>
-pme_gpu_get_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(std::nullopt);
+pme_gpu_get_timings(const gmx_pme_t& GPU_FUNC_ARGUMENT(pme)) GPU_FUNC_TERM_WITH_RETURN(std::nullopt);
 
 /* The main PME GPU functions */
 
@@ -443,11 +437,13 @@ pme_gpu_launch_complex_transforms(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
  * \param[in] wcycle            The wallclock counter.
  * \param[in] lambdaQ           The Coulomb lambda to use when calculating the results.
  * \param[in] computeVirial     Whether this is a virial step.
+ * \param[in] markFReadyEvent   Whether the f_ready_synchronizer should be marked after the kernel.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
                                               real           GPU_FUNC_ARGUMENT(lambdaQ),
-                                              bool GPU_FUNC_ARGUMENT(computeVirial)) GPU_FUNC_TERM;
+                                              bool           GPU_FUNC_ARGUMENT(computeVirial),
+                                              bool GPU_FUNC_ARGUMENT(markFReadyEvent) = true) GPU_FUNC_TERM;
 
 /*! \brief
  * Attempts to complete PME GPU tasks.
@@ -500,14 +496,14 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t* GPU_FUNC_ARGUMENT(pme
  *
  * Clears the internal grid and energy/virial buffers; it is not safe to start
  * the PME computation without calling this.
- * Note that unlike in the nbnxn module, the force buffer does not need clearing.
+ * Note that unlike in the nbnxm module, the force buffer does not need clearing.
  *
- * \param[in] pme                            The PME data structure.
+ * \param[in,out] pmeGpu                     The PME GPU data structure.
  * \param[in] gpuGraphWithSeparatePmeRank    Whether MD GPU Graph with separate PME rank is in use.
  * \param[in] wcycle                         The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_finish_step(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
-                                            bool GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
+GPU_FUNC_QUALIFIER void pme_gpu_finish_step(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
+                                            bool    GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
                                             gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief Set pointer to device copy of coordinate data.

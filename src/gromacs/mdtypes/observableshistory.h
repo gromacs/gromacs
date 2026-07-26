@@ -57,7 +57,10 @@
 class energyhistory_t;
 class PullHistory;
 struct edsamhistory_t;
+namespace gmx
+{
 struct swaphistory_t;
+} // namespace gmx
 
 /*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
  */
@@ -73,7 +76,7 @@ struct ObservablesHistory
     std::unique_ptr<edsamhistory_t> edsamHistory;
 
     //! Ion/water position swapping history
-    std::unique_ptr<swaphistory_t> swapHistory;
+    std::unique_ptr<gmx::swaphistory_t> swapHistory;
 
     ObservablesHistory();
 

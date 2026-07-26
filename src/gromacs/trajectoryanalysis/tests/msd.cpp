@@ -69,7 +69,9 @@
 
 #include "moduletest.h"
 
-namespace gmx::test
+namespace gmx
+{
+namespace test
 {
 
 namespace
@@ -352,4 +354,5 @@ TEST_F(MsdModuleTest, notEnoughPointsForFitErrorEstimate)
 
 } // namespace
 
-} // namespace gmx::test
+} // namespace test
+} // namespace gmx

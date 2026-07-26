@@ -63,9 +63,9 @@ TEST(H5mdDisabledTest, H5mdThrowsWhenHdf5IsDisabled)
     TestFileManager       fileManager;
     std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
 
-    EXPECT_THROW_GMX(H5md(filename, H5mdFileMode::Read), gmx::NotImplementedError);
-    EXPECT_THROW_GMX(H5md(filename, H5mdFileMode::Write), gmx::NotImplementedError);
-    EXPECT_THROW_GMX(H5md(filename, H5mdFileMode::Append), gmx::NotImplementedError);
+    EXPECT_THROW_GMX(H5md(filename, H5mdFileMode::Read), NotImplementedError);
+    EXPECT_THROW_GMX(H5md(filename, H5mdFileMode::Write), NotImplementedError);
+    EXPECT_THROW_GMX(H5md(filename, H5mdFileMode::Append), NotImplementedError);
 }
 
 } // namespace

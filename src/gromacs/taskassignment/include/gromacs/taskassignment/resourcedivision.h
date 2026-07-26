@@ -62,7 +62,6 @@ class MpiComm;
 class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
-} // namespace gmx
 
 /*! \brief Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -79,7 +78,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
                      bool                 pmeOnGpu,
                      const t_inputrec*    inputrec,
                      const gmx_mtop_t&    mtop,
-                     const gmx::MDLogger& mdlog,
+                     const MDLogger&      mdlog,
                      bool                 doMembed);
 
 /*! \brief Check if the number of OpenMP threads is within reasonable range
@@ -91,8 +90,8 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
  */
 void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         bool                 willUsePhysicalGpu,
-                                        const gmx::MpiComm*  mpiCommMySim,
-                                        const gmx::MDLogger& mdlog);
+                                        const MpiComm*       mpiCommMySim,
+                                        const MDLogger&      mdlog);
 
 /*! \brief Checks what our hardware options are based on how Gromacs was compiled
  *  and user-set options
@@ -103,11 +102,11 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
  *  \param[in]      nPmeRanks                 Number of PME ranks
  *  \param[in]      inputrec                  The input record, should point to a valid object when \p isSimulationMainRank = true
  *  */
-void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
-                                   gmx_hw_opt_t*        hw_opt,
-                                   bool                 isSimulationMainRank,
-                                   int                  nPmeRanks,
-                                   const t_inputrec*    inputrec);
+void checkAndUpdateHardwareOptions(const MDLogger&   mdlog,
+                                   gmx_hw_opt_t*     hw_opt,
+                                   bool              isSimulationMainRank,
+                                   int               nPmeRanks,
+                                   const t_inputrec* inputrec);
 
 /*! \brief Check, and if necessary update, the number of OpenMP threads requested
  *
@@ -115,15 +114,12 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
  */
 void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
                                              const gmx_hw_info_t&  hwinfo,
-                                             const gmx::MpiComm&   mpiCommMySim,
+                                             const MpiComm&        mpiCommMySim,
                                              const gmx_multisim_t* ms,
                                              int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,
                                              const gmx_mtop_t&     mtop,
                                              const t_inputrec&     inputrec);
-
-namespace gmx
-{
 
 /*! \brief Warns for oversubscribing the hardware threads, when that is the case
  */

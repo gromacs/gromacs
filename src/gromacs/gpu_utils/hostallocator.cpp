@@ -41,11 +41,8 @@
 
 #include "hostallocator.h"
 
-#include <cstddef>
-
-#include <memory>
-
-#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/gmxassert.h"
@@ -54,8 +51,17 @@
 namespace gmx
 {
 
-HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy,
-                                           const bool    propagateDuringContainerCopyConstruction) :
+HostAllocationPolicy::HostAllocationPolicy() = default;
+
+HostAllocationPolicy::HostAllocationPolicy(const bool propagateDuringContainerCopyConstruction) :
+    propagateDuringContainerCopyConstruction_(propagateDuringContainerCopyConstruction)
+{
+}
+
+HostAllocationPolicy::HostAllocationPolicy(const DeviceContext& deviceContext,
+                                           PinningPolicy        pinningPolicy,
+                                           const bool propagateDuringContainerCopyConstruction) :
+    context_(&deviceContext),
     pinningPolicy_(pinningPolicy),
     propagateDuringContainerCopyConstruction_(propagateDuringContainerCopyConstruction)
 {
@@ -72,7 +78,7 @@ void* HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
         void* p;
-        pmalloc(&p, bytes);
+        pmalloc(&p, bytes, &context());
         return p;
     }
     else
@@ -90,12 +96,40 @@ void HostAllocationPolicy::free(void* buffer) const noexcept
     }
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
-        pfree(buffer);
+        pfree(buffer, &context());
     }
     else
     {
         AlignedAllocationPolicy::free(buffer);
     }
+}
+
+bool HostAllocationPolicy::operator==(const HostAllocationPolicy& b) const
+{
+    // Currently GROMACS only uses one context per rank, so the
+    // context is always equal when valid, but it can be null.
+    return (this->context_ == b.context_) && (this->pinningPolicy() == b.pinningPolicy());
+}
+
+const DeviceContext& HostAllocationPolicy::context() const
+{
+    GMX_RELEASE_ASSERT(
+            context_ != nullptr,
+            "Cannot return a DeviceContext from a HostAllocationPolicy that was not made with one");
+    return *context_;
+}
+
+HostAllocationPolicy makeHostAllocationPolicy(const bool                 pinBuffers,
+                                              const DeviceStreamManager* deviceStreamManager,
+                                              const bool propagateDuringContainerCopyConstruction)
+{
+    GMX_RELEASE_ASSERT(!pinBuffers || deviceStreamManager != nullptr,
+                       "Must have a valid deviceStreamManager to allocate to use GPU transfers");
+    return pinBuffers && deviceStreamManager
+                   ? HostAllocationPolicy{ deviceStreamManager->context(),
+                                           PinningPolicy::PinnedIfSupported,
+                                           propagateDuringContainerCopyConstruction }
+                   : HostAllocationPolicy{};
 }
 
 } // namespace gmx

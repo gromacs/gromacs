@@ -80,6 +80,16 @@ namespace gmx
 class MpiComm;
 }
 
+//! PME unit-cell state after applying any Ewald wall scaling.
+struct PmeUnitCell
+{
+    matrix recipbox;
+    real   boxVolume;
+};
+
+//! Returns PME unit-cell state from a simulation box after applying Ewald wall scaling.
+PmeUnitCell makePmeUnitCell(const EwaldBoxZScaler& boxScaler, const matrix box);
+
 //! The number of grids for LJ-PME with LB combination rules
 static constexpr int sc_numGridsLJLB = 7;
 
@@ -354,7 +364,7 @@ struct pme_solve_work_t;
 
 /*! \brief Main PME data structure */
 struct gmx_pme_t
-{ //NOLINT(clang-analyzer-optin.performance.Padding)
+{ // NOLINT(clang-analyzer-optin.performance.Padding)
     //! Constructor, can be called with nullptr, in that case a single rank comm is used
     gmx_pme_t(const gmx::MpiComm* mpiComm);
 
@@ -454,8 +464,7 @@ struct gmx_pme_t
     std::vector<real> fshz;
 
     std::vector<PmeAtomComm> atc; /* Indexed on decomposition index */
-    matrix                   recipbox;
-    real                     boxVolume;
+    PmeUnitCell              unitCell;
     // The B-spline moduli coefficients
     std::array<std::vector<real>, DIM> bsp_mod;
     /* Buffers to store data for local atoms for L-B combination rule

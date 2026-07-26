@@ -41,7 +41,6 @@ if(GMX_USE_HDF5)
         h5md.cpp
         h5md_attribute.cpp
         h5md_datasetbase.cpp
-        h5md_error.cpp
         h5md_fixeddataset.cpp
         h5md_framedataset.cpp
         h5md_group.cpp
@@ -49,6 +48,7 @@ if(GMX_USE_HDF5)
         h5md_particleblock.cpp
         h5md_timedatablock.cpp
         h5md_topologyutils.cpp
+        exceptions.cpp
     )
 
     target_include_directories(h5md SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})

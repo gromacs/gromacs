@@ -83,9 +83,9 @@ size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId);
  *
  * \param[out] fplog                 Open file pointer for log output
  * \param[in]  kernelRelativePath    Relative path to the kernel in the source tree,
- *                                   e.g. "src/gromacs/mdlib/nbnxn_ocl" for NB kernels.
+ *                                   e.g. "src/gromacs/mdlib/nbnxm_ocl" for NB kernels.
  * \param[in]  kernelBaseFilename    The name of the kernel source file to compile, e.g.
- *                                   "nbnxn_ocl_kernels.cl"
+ *                                   "nbnxm_ocl_kernels.cl"
  * \param[in]  extraDefines          Preprocessor defines required by the calling code,
  *                                   e.g. for configuring the kernels
  * \param[in]  context               OpenCL context on the device to compile for

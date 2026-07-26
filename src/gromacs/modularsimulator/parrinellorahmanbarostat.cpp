@@ -76,7 +76,6 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     offset_(offset),
     couplingTimePeriod_(couplingTimePeriod),
     initStep_(initStep),
-    mu_{ 0 },
     boxRel_{ { 0 } },
     boxVelocity_{ { 0 } },
     statePropagatorData_(statePropagatorData),
@@ -201,7 +200,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
 
 void ParrinelloRahmanBarostat::elementSetup()
 {
-    if (!propagatorCallback_ || scalingTensor_ == nullptr || scalingTensor_->asConstView().rank() == 0)
+    if (!propagatorCallback_ || scalingTensor_ == nullptr)
     {
         throw MissingElementConnectionError(
                 "Parrinello-Rahman barostat was not connected to a propagator.\n"
@@ -356,6 +355,7 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/,
         Offset               offset,
         const PropagatorTag& propagatorTag)
 {

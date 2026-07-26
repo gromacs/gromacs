@@ -137,9 +137,11 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
         // 1/2 dt between checkpoint (top of the loop) and trajectory (full time step state)
         trajectoryMatchSettings.velocitiesComparison = ComparisonConditions::NoComparison;
     }
-    const TrajectoryTolerances trajectoryTolerances{
-        defaultRealTolerance(), defaultRealTolerance(), defaultRealTolerance(), defaultRealTolerance()
-    };
+    const TrajectoryTolerances trajectoryTolerances{ defaultRealTolerance(),
+                                                     defaultRealTolerance(),
+                                                     defaultRealTolerance(),
+                                                     defaultRealTolerance(),
+                                                     defaultRealTolerance() };
 
     const auto mdpFieldValues =
             prepareMdpFieldValues(simulationName, integrator, temperatureCoupling, pressureCoupling);

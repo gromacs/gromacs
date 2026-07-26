@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="BONDS">
+    <Real Name="Epot ">0.033872970053074256</Real>
+    <Real Name="dVdlambda ">0.18373804457817416</Real>
+    <Sequence Name="Forces">
+      <Int Name="Length">4</Int>
+      <Vector>
+        <Real Name="X">2.0956632202441519</Real>
+        <Real Name="Y">0.29048797112295205</Real>
+        <Real Name="Z">-2.3654020505726097</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.3254539746781848</Real>
+        <Real Name="Y">2.571451425009974</Real>
+        <Real Name="Z">0.96576745538351583</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.3825051434812465</Real>
+        <Real Name="Y">-2.5484373006406154</Real>
+        <Real Name="Z">-0.94118105115350525</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.1527143890472136</Real>
+        <Real Name="Y">-0.31350209549231067</Real>
+        <Real Name="Z">2.3408156463425991</Real>
+      </Vector>
+    </Sequence>
+    <Shift-Forces Name="Shift-forces">
+      <Vector Name="Central">
+        <Real Name="X">0</Real>
+        <Real Name="Y">0</Real>
+        <Real Name="Z">0</Real>
+      </Vector>
+    </Shift-Forces>
+  </FunctionType>
+</ReferenceData>
+

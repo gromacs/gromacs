@@ -55,8 +55,6 @@ struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
 struct pull_t;
-struct ReplicaExchangeParameters;
-class SwapCoords;
 struct t_commrec;
 struct t_forcerec;
 struct t_filenm;
@@ -66,9 +64,11 @@ class t_state;
 
 namespace gmx
 {
+struct ReplicaExchangeParameters;
 enum class StartingBehavior;
 class BoxDeformation;
 class Constraints;
+class SwapCoords;
 class MdrunScheduleWorkload;
 class IMDOutputProvider;
 struct MDModulesNotifiers;

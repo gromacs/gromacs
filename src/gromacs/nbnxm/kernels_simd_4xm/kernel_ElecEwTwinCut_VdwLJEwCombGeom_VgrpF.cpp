@@ -36,7 +36,7 @@
  * kernel type 4xm.
  */
 
-/* Some target architectures compile kernels for only some NBNxN
+/* Some target architectures compile kernels for only some NBNxM
  * kernel flavours, but the code is generated before the target
  * architecture is known. So compilation is conditional upon
  * KernelLayout::r4xM, so that this file reduces to a stub
@@ -58,11 +58,11 @@ template void nbnxmKernelSimd<KernelLayout::r4xM,
                               LJCombinationRule::None,
                               InteractionModifiers::PotShift,
                               LJEwald::CombGeometric,
-                              EnergyOutput::GroupPairs>(const NbnxnPairlistCpu&    pairlist,
-                                                        const nbnxn_atomdata_t&    nbat,
+                              EnergyOutput::GroupPairs>(const NbnxmPairlistCpu&    pairlist,
+                                                        const nbnxm_atomdata_t&    nbat,
                                                         const interaction_const_t& ic,
                                                         const rvec*                shift_vec,
-                                                        nbnxn_atomdata_output_t*   out);
+                                                        nbnxm_atomdata_output_t*   out);
 
 } // namespace gmx
 

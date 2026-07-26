@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares nbnxn hip helper functions
+ * Declares nbnxm hip helper functions
  *
  * \ingroup module_nbnxm
  */

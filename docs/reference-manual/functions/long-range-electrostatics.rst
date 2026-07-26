@@ -58,10 +58,10 @@ cut-off. This shift is also applied with PME.
 In the log file and energy file that :ref:`gmx mdrun` outputs the EWALD/PME
 energy contributions are reported in two terms. The term ``Coulomb (SR)``
 contains the :math:`V_\mathrm{dir}` with the constant shift applied minus
-the reciprocal contribution for excluded atom pairs. The term ``Coul. recip.``
-contains the reciprocal sum :math:`V_{\mathrm{rec}}`, including contributions
-of excluded atoms pairs, plus the charge correction :math:`V_0` plus an
-optional surface correction term that depends on the system dipole.
+the reciprocal contribution for excluded atom pairs, as well as the charge
+correction :math:`V_0`. The term ``Coul. recip.`` contains the reciprocal sum
+:math:`V_{\mathrm{rec}}`, including contributions of excluded atoms pairs,
+plus an optional surface correction term that depends on the system dipole.
 
 Using Ewald
 ^^^^^^^^^^^

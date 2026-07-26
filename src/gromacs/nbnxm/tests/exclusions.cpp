@@ -72,7 +72,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vec.h"
@@ -96,32 +95,26 @@ namespace
  * Note that this function returns a unique pointer, because parts of
  * PairlistSet currently can not be copied.
  */
-std::pair<std::unique_ptr<nbnxn_atomdata_t>, std::unique_ptr<PairlistSet>>
+std::pair<std::unique_ptr<nbnxm_atomdata_t>, std::unique_ptr<PairlistSet>>
 diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 {
-    const gmx::MDLogger emptyLogger;
+    const HostAllocationPolicy hostAllocationPolicy{};
+    const MDLogger             emptyLogger;
 
-    MpiComm mpiComm(MpiComm::SingleRank{});
-
-    gmx_omp_nthreads_init(emptyLogger, mpiComm, false, 1, 1, 1, 1, false);
+    // Force single-thread execution
+    static constexpr int sc_numThreads = 1;
+    gmx_omp_nthreads_set(ModuleMultiThread::Pairsearch, sc_numThreads);
+    gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, sc_numThreads);
 
     const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
     GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, 1, PinningPolicy::CannotBePinned);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, sc_numThreads, hostAllocationPolicy);
 
     std::vector<real> nbfp{ 0.0_real, 0.0_real };
 
-    std::unique_ptr<nbnxn_atomdata_t> nbat =
-            std::make_unique<nbnxn_atomdata_t>(gmx::PinningPolicy::CannotBePinned,
-                                               emptyLogger,
-                                               kernelType,
-                                               std::nullopt,
-                                               LJCombinationRule::None,
-                                               nbfp,
-                                               false,
-                                               1,
-                                               1);
+    std::unique_ptr<nbnxm_atomdata_t> nbat = std::make_unique<nbnxm_atomdata_t>(
+            hostAllocationPolicy, emptyLogger, kernelType, std::nullopt, LJCombinationRule::None, nbfp, false, 1, 1);
 
     std::vector<gmx::RVec> coords(numAtoms, { 1.0_real, 1.0_real, 1.0_real });
 
@@ -147,7 +140,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
                       nbat.get());
 
     std::unique_ptr<PairlistSet> pairlistSet =
-            std::make_unique<PairlistSet>(pairlistParams, PinningPolicy::CannotBePinned);
+            std::make_unique<PairlistSet>(pairlistParams, hostAllocationPolicy);
 
     std::vector<PairsearchWork> searchWork(1);
 
@@ -182,14 +175,14 @@ public:
         std::tie(nbat_, pairlistSet_) = diagonalPairlist(kernelType, numAtoms_);
     }
 
-    const NbnxnPairlistCpu& pairlist() const { return pairlistSet_->cpuLists()[0]; }
+    const NbnxmPairlistCpu& pairlist() const { return pairlistSet_->cpuLists()[0]; }
 
     int iClusterSize_;
     int jClusterSize_;
     int numAtoms_;
 
 private:
-    std::unique_ptr<nbnxn_atomdata_t> nbat_;
+    std::unique_ptr<nbnxm_atomdata_t> nbat_;
     std::unique_ptr<PairlistSet>      pairlistSet_;
 };
 

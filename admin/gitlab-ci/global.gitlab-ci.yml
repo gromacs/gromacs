@@ -85,6 +85,12 @@
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
 
+# Base definitions for tests using GPU aware MPI
+.use-gpu-aware-mpi-test:base:
+  variables:
+    # We expect those tests to be able to use a GPU aware MPI library,
+    # so we tell our tests to fail if the underlying MPI is not GPU aware
+    GMX_TEST_GPU_AWARE_MPI_IS_AVAILABLE: 1
 
 # Base definition for using oneAPI.
 .use-oneapi:base:
@@ -117,6 +123,7 @@
 .use-impi-gpu-aware-test:base:
   extends:
     - .use-impi-test:base
+    - .use-gpu-aware-mpi-test:base
   variables:
     # Activate GPU-aware MPI. This is only required for suitable
     # multi-rank runs, but doing it here checks it is OK everywhere.

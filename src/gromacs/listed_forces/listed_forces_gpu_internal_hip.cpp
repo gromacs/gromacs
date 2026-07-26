@@ -83,8 +83,8 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
 {
     GMX_DEVICE_ASSERT(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
-    float     vtot_loc     = 0.0F;
-    float     vtotElec_loc = 0.0F; // Used only for InteractionFunction::LennardJones14
+    float     vtot_loc     = 0.0f;
+    float     vtotElec_loc = 0.0f; // Used only for InteractionFunction::LennardJones14
 
     extern __shared__ float3 sm_dynamicShmem[];
     float3*                  sm_fShiftLoc = sm_dynamicShmem;
@@ -96,7 +96,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
     {
         if (threadIdx.x < c_numShiftVectors)
         {
-            sm_fShiftLoc[threadIdx.x] = make_float3(0.0F, 0.0F, 0.0F);
+            sm_fShiftLoc[threadIdx.x] = make_float3(0.0f, 0.0f, 0.0f);
         }
         __syncthreads();
     }

@@ -240,7 +240,6 @@ FirstOrderPressureCoupling::FirstOrderPressureCoupling(int                  coup
     couplingTimeStep_(couplingTimeStep),
     couplingFrequency_(couplingFrequency),
     couplingOffset_(couplingOffset),
-    boxScalingMatrix_{ 0 },
     boxRel_{ { 0 } },
     conservedEnergyContribution_(0),
     previousStepConservedEnergyContribution_(0),
@@ -266,6 +265,7 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/,
         int                               offset,
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy)
 {

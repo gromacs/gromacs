@@ -62,6 +62,7 @@
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/gpu_utils/capabilities.h"
+#include "gromacs/gpu_utils/device_context.h"
 #if GMX_GPU
 #    include "gromacs/gpu_utils/device_stream.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
@@ -140,6 +141,7 @@ bool valueIsCommonOnAllRanks(const GpuAwareMpiStatus status, const MpiComm& comm
 
 /*! \brief Perform GPU halo exchange, including required setup and data transfers
  *
+ * \param [in] testDevice     The "home" device for this rank
  * \param [in] dd             Domain decomposition object
  * \param [in] box            Box matrix
  * \param [in] h_x            Atom coordinate data array on host
@@ -148,21 +150,17 @@ bool valueIsCommonOnAllRanks(const GpuAwareMpiStatus status, const MpiComm& comm
  * \returns A collection of messages explaining why the halo exchange
  * needs to be skipped, which is empty when the halo exchange was run.
  */
-MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
+MessageStringCollector
+gpuHalo(const TestDevice* testDevice, gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
 {
     MessageStringCollector errorReasons;
 #if GMX_GPU
     // get communicator
-    const MpiComm& mpiComm = dd->mpiComm();
-    // Set up GPU hardware environment and assign this MPI rank to a device
-    const int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
-    const TestDevice* testDevice =
-            getTestHardwareEnvironment()->getTestDeviceList()[mpiComm.rank() % numDevices].get();
-    const DeviceContext&     deviceContext = testDevice->deviceContext();
-    const DeviceInformation& deviceInfo    = testDevice->deviceInfo();
-    const GpuAwareMpiStatus  status        = deviceInfo.gpuAwareMpiStatus;
-    deviceContext.activate();
-    DeviceStream deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+    const MpiComm&          mpiComm       = dd->mpiComm();
+    const DeviceContext&    deviceContext = testDevice->deviceContext();
+    const GpuAwareMpiStatus status        = testDevice->deviceInfo().gpuAwareMpiStatus;
+    DeviceStream            deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+    DeviceStream            haloStream(deviceContext, DeviceStreamPriority::High, false);
 
     if (GMX_LIB_MPI)
     {
@@ -185,8 +183,6 @@ MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h
         return errorReasons;
     }
 
-    // pin memory if possible
-    changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU buffer and copy input data from host
     DeviceBuffer<RVec> d_x;
     int                d_x_size       = -1;
@@ -214,7 +210,7 @@ MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
             gpuHaloExchange[d].push_back(GpuHaloExchange(
-                    dd, d, mpiComm.comm(), mpiComm.comm(), deviceContext, pulse, nullptr));
+                    dd, d, mpiComm.comm(), mpiComm.comm(), haloStream, deviceContext, pulse));
         }
     }
 
@@ -238,6 +234,7 @@ MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h
 
     freeDeviceBuffer(&d_x);
 #else
+    GMX_UNUSED_VALUE(testDevice);
     GMX_UNUSED_VALUE(dd);
     GMX_UNUSED_VALUE(box);
     GMX_UNUSED_VALUE(h_x);
@@ -303,15 +300,17 @@ void define2dRankTopology(const int rank, const int /* size */, gmx_domdec_t* dd
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define1dHaloWith1Pulse(const int rank,
                             const int /* size */,
                             gmx_domdec_t*                  dd,
+                            const HostAllocationPolicy&    hostAllocationPolicy,
                             std::vector<gmx_domdec_ind_t>* indvec)
 {
     gmx::HostVector<int> indexvec;
-    gmx_domdec_ind_t     ind;
+    gmx_domdec_ind_t     ind(hostAllocationPolicy);
 
     dd->ndim     = 1;
     int nzone    = 1;
@@ -341,15 +340,17 @@ void define1dHaloWith1Pulse(const int rank,
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define1dHaloWith2Pulses(const int rank,
                              const int /* size */,
                              gmx_domdec_t*                  dd,
+                             const HostAllocationPolicy&    hostAllocationPolicy,
                              std::vector<gmx_domdec_ind_t>* indvec)
 {
     gmx::HostVector<int> indexvec;
-    gmx_domdec_ind_t     ind;
+    gmx_domdec_ind_t     ind(hostAllocationPolicy);
 
     dd->ndim     = 1;
     int nzone    = 1;
@@ -391,15 +392,17 @@ void define1dHaloWith2Pulses(const int rank,
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define2dHaloWith1PulseInEachDim(const int rank,
                                      const int /*size*/,
                                      gmx_domdec_t*                  dd,
+                                     const HostAllocationPolicy&    hostAllocationPolicy,
                                      std::vector<gmx_domdec_ind_t>* indvec)
 {
     gmx::HostVector<int> indexvec;
-    gmx_domdec_ind_t     ind;
+    gmx_domdec_ind_t     ind(hostAllocationPolicy);
 
     dd->ndim  = 2;
     int nzone = 1;
@@ -433,15 +436,17 @@ void define2dHaloWith1PulseInEachDim(const int rank,
  *
  * \param [in]  rank    Rank within MPI communicator
  * \param [out] dd      Domain decomposition object
+ * \param [in]  hostAllocationPolicy  Policy about pinning a HostVector
  * \param [out] indvec  Vector of index vectors
  */
 void define2dHaloWith2PulsesInDim1(const int rank,
                                    const int /* size */,
                                    gmx_domdec_t*                  dd,
+                                   const HostAllocationPolicy&    hostAllocationPolicy,
                                    std::vector<gmx_domdec_ind_t>* indvec)
 {
     HostVector<int>  indexvec;
-    gmx_domdec_ind_t ind;
+    gmx_domdec_ind_t ind(hostAllocationPolicy);
 
     dd->ndim  = 2;
     int nzone = 1;
@@ -581,7 +586,7 @@ struct HaloExchangeTestParameters
     //! The DD topology setup function to use
     void (*domainTopologySetupFunction)(int, int, gmx_domdec_t*);
     //! The DD pulse-structure setup function to use
-    void (*pulseSetupFunction)(int, int, gmx_domdec_t*, std::vector<gmx_domdec_ind_t>*);
+    void (*pulseSetupFunction)(int, int, gmx_domdec_t*, const HostAllocationPolicy&, std::vector<gmx_domdec_ind_t>*);
     //! The results-checking funciton to use
     void (*checkResults)(const RVec*, const gmx_domdec_t*, const int);
 };
@@ -594,9 +599,11 @@ struct HaloExchangeTestParameters
 class HaloExchangeTestData
 {
 public:
-    HaloExchangeTestData(const HaloExchangeTestParameters& parameters) :
+    HaloExchangeTestData(const HaloExchangeTestParameters& parameters,
+                         const HostAllocationPolicy&       hostAllocationPolicy) :
         dd_{ mpiComm_, ir_, parameters.ddDims },
-        numAtomsTotal_{ parameters.numHomeAtoms + parameters.numHaloAtoms }
+        numAtomsTotal_{ parameters.numHomeAtoms + parameters.numHaloAtoms },
+        h_x_(numAtomsTotal_, hostAllocationPolicy)
     {
         dd_.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm_);
         dd_.unitCellInfo.haveScrewPBC = false;
@@ -606,7 +613,12 @@ public:
         dd_.comm->atomRanges = atomRanges;
 
         parameters.domainTopologySetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_);
-        parameters.pulseSetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_, &indvec_);
+        // Note that with NVSHMEM and GPU halo exchange (only), the
+        // transfer of per-pulse particle-index parameters requires a
+        // suitable HostAllocationPolicy.  That code path is not
+        // actually tested here, but the necessary setup is done in
+        // all build configurations as bonus test coverage.
+        parameters.pulseSetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_, hostAllocationPolicy, &indvec_);
     }
     //! MPI communicator
     MpiComm mpiComm_{ MPI_COMM_WORLD };
@@ -619,7 +631,7 @@ public:
     //! Total number of atoms known to each domain
     int numAtomsTotal_;
     //! Position coordinates
-    HostVector<RVec> h_x_{ static_cast<size_t>(numAtomsTotal_) };
+    HostVector<RVec> h_x_;
 };
 
 //! Test fixture for halo exchange
@@ -634,12 +646,37 @@ TEST_P(HaloExchangeTest, WithParametersOnCpu)
 {
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    HaloExchangeTestData data(GetParam());
+    HostAllocationPolicy hostAllocationPolicy;
+    HaloExchangeTestData data(GetParam(), hostAllocationPolicy);
     const int            numHomeAtoms = GetParam().numHomeAtoms;
     initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
     dd_move_x(&data.dd_, box_, static_cast<ArrayRef<RVec>>(data.h_x_), nullptr);
     GetParam().checkResults(data.h_x_.data(), &data.dd_, numHomeAtoms);
 }
+
+namespace
+{
+
+/*! \brief Get a DeviceContext on the GPU for this rank.
+ *
+ * With thread-MPI and sometimes with library-MPI all ranks can see
+ * all devices and should select one fairly, based on the MPI rank. But
+ * if a library-MPI rank can only see one GPU, assume that is ours and
+ * use it. Otherwise a valid GPU is always returned, but no attempt is
+ * made to assign devices like mdrun does. */
+TestDevice* getGpuToUse()
+{
+    const int   numDevices     = getTestHardwareEnvironment()->getTestDeviceList().size();
+    const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
+    if (GMX_LIB_MPI && numDevices == 1)
+    {
+        return testDeviceList[0].get();
+    }
+    MpiComm mpiComm{ MPI_COMM_WORLD };
+    return testDeviceList[mpiComm.rank() % numDevices].get();
+}
+
+} // namespace
 
 TEST_P(HaloExchangeTest, WithParametersOnGpu)
 {
@@ -658,10 +695,17 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
         GTEST_SKIP() << "No GPUs detected";
     }
 
-    HaloExchangeTestData data(GetParam());
+    // Set up GPU hardware environment and assign this MPI rank to a device
+    const TestDevice*    testDevice    = getGpuToUse();
+    const DeviceContext& deviceContext = testDevice->deviceContext();
+    deviceContext.activate();
+
+    HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+    HaloExchangeTestData data(GetParam(), hostAllocationPolicy);
     const int            numHomeAtoms = GetParam().numHomeAtoms;
     initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
-    MessageStringCollector skipReasons = gpuHalo(&data.dd_, box_, &data.h_x_, data.numAtomsTotal_);
+    MessageStringCollector skipReasons =
+            gpuHalo(testDevice, &data.dd_, box_, &data.h_x_, data.numAtomsTotal_);
     if (skipReasons.isEmpty())
     {
         // Halo exchange ran, so check the results

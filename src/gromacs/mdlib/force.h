@@ -47,7 +47,10 @@
 #include "gromacs/utility/vectypes.h"
 
 class DDBalanceRegionHandler;
-struct gmx_edsam;
+namespace gmx
+{
+struct edsam;
+}
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct SimulationGroups;
@@ -132,7 +135,7 @@ void do_force(FILE*                         log,
               VirtualSitesHandler*          vsite,
               rvec                          mu_tot,
               double                        t,
-              gmx_edsam*                    ed,
+              edsam*                        ed,
               CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
               const DDBalanceRegionHandler& ddBalanceRegionHandler);
 

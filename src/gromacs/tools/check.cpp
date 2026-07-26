@@ -166,7 +166,7 @@ static void comp_trx(const gmx_output_env_t* oenv, const char* fn1, const char* 
     {
         do
         {
-            comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol);
+            gmx::comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol);
 
             for (i = 0; i < 2; i++)
             {

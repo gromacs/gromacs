@@ -92,9 +92,7 @@ if (GMX_LIB_MPI)
     elseif (MPI_CXX_VERSION VERSION_LESS 3.0)
         message(FATAL_ERROR "MPI version 3.0 or higher is required. Please update your MPI library.")
     endif ()
-    #TODO(#3672, #3776): These should be acquired through the MPI::MPI_CXX target.
-    include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
-    list(APPEND GMX_COMMON_LIBRARIES ${MPI_CXX_LIBRARIES})
+    list(APPEND GMX_COMMON_LIBRARIES MPI::MPI_CXX)
 endif ()
 
 # Identify particular MPI implementations of interest (for compatibility checks).

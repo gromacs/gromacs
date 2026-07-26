@@ -42,6 +42,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/localtopology.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -54,6 +55,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
@@ -69,16 +71,19 @@ namespace gmx
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
-                               const t_inputrec&    inputrec,
-                               const gmx_mtop_t&    top_global,
-                               gmx_localtop_t*      top,
-                               t_forcerec*          fr,
-                               ForceBuffers*        force,
-                               MDAtoms*             mdAtoms,
-                               Constraints*         constr,
-                               VirtualSitesHandler* vsite,
-                               gmx_shellfc_t*       shellfc)
+void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
+                               gmx_domdec_t*             dd,
+                               const t_inputrec&         inputrec,
+                               const gmx_mtop_t&         top_global,
+                               gmx_localtop_t*           top,
+                               t_forcerec*               fr,
+                               ForceBuffers*             force,
+                               MDAtoms*                  mdAtoms,
+                               Constraints*              constr,
+                               VirtualSitesHandler*      vsite,
+                               shellfc_t*                shellfc,
+                               StatePropagatorDataGpu*   stateGpu,
+                               gmx_wallcycle*            wcycle)
 {
     int numAtomIndex;
     int numHomeAtoms;
@@ -142,13 +147,73 @@ void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
         listedForces.setup(top->idef, fr->natoms_force, fr->listedForcesGpu != nullptr, mdatoms->cVCM);
     }
 
-    if ((usingPme(fr->ic->coulomb.type) || usingLJPme(fr->ic->vdw.type)) && thisRankHasPmeDuty(dd))
+    if (usingPme(fr->ic->coulomb.type) || usingLJPme(fr->ic->vdw.type))
     {
-        /* This handles the PP+PME rank case where fr->pmedata is valid.
-         * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
-         */
-        const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
-        gmx_pme_reinit_atoms(fr->pmedata.get(), numPmeAtoms, mdatoms->chargeA, mdatoms->chargeB);
+        if (!fr->pmePpComm)
+        {
+            // This handles the PP+PME rank case where fr->pmedata is valid.
+            // For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
+            const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
+            gmx_pme_reinit_atoms(fr->pmedata.get(), numPmeAtoms, mdatoms->chargeA, mdatoms->chargeB);
+        }
+        else
+        {
+            // PP rank partnered with a PME-only rank
+
+            // Send the charges and/or c6/sigmas to the PME-only rank
+            // and prepare for PP-rank operations.
+            fr->pmePpComm->sendParameters(dd_numHomeAtoms(*dd),
+                                          mdatoms->nChargePerturbed != 0,
+                                          mdatoms->nTypePerturbed != 0,
+                                          mdatoms->chargeA,
+                                          mdatoms->chargeB,
+                                          mdatoms->sqrt_c6A,
+                                          mdatoms->sqrt_c6B,
+                                          mdatoms->sigmaA,
+                                          mdatoms->sigmaB,
+                                          dd_pme_maxshift_x(*dd),
+                                          dd_pme_maxshift_y(*dd));
+        }
+    }
+
+    // Note that this must follow the call to send parameters to the
+    // PME-only rank, so that it can do the symmetric reallocation
+    // within stateGpu for NVSHMEM at the same time on all ranks.
+    if (needStateGpu(simulationWork))
+    {
+        // Does global communication and symmetric reallocation with NVSHMEM
+        stateGpu->reinit(mdatoms->homenr,
+                         simulationWork.havePpDomainDecomposition ? dd_numAtomsZones(*dd) : mdatoms->homenr);
+    }
+
+    // Now that the number of halo-exchange pulses is determined and
+    // stateGpu is updated, the halo exchange objects can
+    // be constructed and/or updated.
+    if (simulationWork.useGpuHaloExchange)
+    {
+        GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
+                           "GPU device manager has to be initialized to use GPU "
+                           "halo exchange.");
+        // When using NVSHMEM, we use the PP rank which receives
+        // virial and energy from PME rank to send the data about
+        // the number of halo-exchange pulses to the PME rank.
+        std::optional<int> rankOfControlledPmeRank;
+        if (simulationWork.useNvshmem && simulationWork.haveSeparatePmeRank)
+        {
+            // When there is a separate PME rank, only one PP rank
+            // controls it, and that PP rank returns a valid value
+            // here.
+            rankOfControlledPmeRank = fr->pmePpComm->rankOfControlledPmeRank();
+        }
+        // Does global communication and symmetric reallocation.
+        // Might be doing the initial construction.
+        constructOrUpdateGpuHaloExchange(dd,
+                                         *fr->deviceStreamManager,
+                                         simulationWork.useNvshmem,
+                                         rankOfControlledPmeRank,
+                                         stateGpu->getCoordinates(),
+                                         stateGpu->getForces(),
+                                         wcycle);
     }
 
     if (constr)

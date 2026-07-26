@@ -47,9 +47,9 @@
          Please keep it that way. */
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static gmx::EnumerationArray<TimeControl, std::optional<real>> timecontrol = { std::nullopt,
-                                                                               std::nullopt,
-                                                                               std::nullopt };
+static gmx::EnumerationArray<TimeControl, std::optional<real>> g_timecontrol = { std::nullopt,
+                                                                                 std::nullopt,
+                                                                                 std::nullopt };
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex g_timeControlMutex;
@@ -57,17 +57,17 @@ static std::mutex g_timeControlMutex;
 std::optional<real> timeValue(TimeControl tcontrol)
 {
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    return timecontrol[tcontrol];
+    return g_timecontrol[tcontrol];
 }
 
 void setTimeValue(TimeControl tcontrol, real value)
 {
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    timecontrol[tcontrol].emplace(value);
+    g_timecontrol[tcontrol].emplace(value);
 }
 
 void unsetTimeValue(TimeControl tcontrol)
 {
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    timecontrol[tcontrol].reset();
+    g_timecontrol[tcontrol].reset();
 }

@@ -220,6 +220,32 @@ bool canUseGpusForNonbonded(const t_inputrec& ir, const bool doRerun, std::strin
     return errorReasons.isEmpty();
 }
 
+bool canUseGpusForNonbondedFe(const t_inputrec& ir, std::string* error)
+{
+    MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("Nonbonded free energy interactions on GPUs are not supported:");
+    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    errorReasons.appendIf(!GpuConfigurationCapabilities::NonbondedFE,
+                          "Only CUDA GPU backend supported.");
+    if (ir.fepvals->softcoreFunction != SoftcoreType::Beutler)
+    {
+        errorReasons.append("Only Beutler softcore function supported.");
+    }
+
+    if (ir.efep == FreeEnergyPerturbationType::Expanded)
+    {
+        errorReasons.append("Expanded-ensemble simulation is not supported.");
+    }
+
+    errorReasons.finishContext();
+    if (error != nullptr)
+    {
+        *error = errorReasons.toString();
+    }
+    return errorReasons.isEmpty();
+}
+
 static bool canUseGpusForPme(const bool        useGpuForNonbonded,
                              const TaskTarget  pmeTarget,
                              const TaskTarget  pmeFftTarget,
@@ -459,7 +485,9 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
     return gpusWereDetected;
 }
 
-bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget nonBondedFeTarget)
+bool decideWhetherToUseGpusForNonbondedFE(const bool        useGpuForNonbonded,
+                                          TaskTarget        nonBondedFeTarget,
+                                          const t_inputrec& inputrec)
 {
     if (nonBondedFeTarget == TaskTarget::Cpu)
     {
@@ -479,19 +507,20 @@ bool decideWhetherToUseGpusForNonbondedFE(bool useGpuForNonbonded, TaskTarget no
         return false;
     }
 
-    if (nonBondedFeTarget == TaskTarget::Gpu)
+    std::string message;
+    if (!canUseGpusForNonbondedFe(inputrec, &message))
     {
-        if (!GpuConfigurationCapabilities::NonbondedFE)
+        if (!message.empty() && nonBondedFeTarget == TaskTarget::Gpu)
         {
-            GMX_THROW(NotImplementedError(
-                    "Nonbonded free energy tasks were required to run on GPUs, but currently it is "
-                    "only implemented in CUDA build. Use a CUDA visible device or run these "
-                    "calculations on the CPU."));
+            GMX_THROW(InconsistentInputError(message));
         }
-        return true;
+        return false;
     }
 
-    return false;
+    // This feature is pending validation, so require the
+    // user to explicitly opt in. Once validated, return
+    // true so that mdrun can put FE on GPU in auto mode.
+    return (nonBondedFeTarget == TaskTarget::Gpu);
 }
 
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,

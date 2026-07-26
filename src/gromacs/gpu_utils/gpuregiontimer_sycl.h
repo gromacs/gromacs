@@ -76,7 +76,7 @@ public:
     /*! \brief Should be called after the region end. */
     inline void closeTimingRegion(const DeviceStream& /*unused*/) {}
     /*! \brief Returns the last measured region timespan (in milliseconds) and calls \c reset(). */
-    // NOLINTNEXTLINE readability-convert-member-functions-to-static
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     inline double getLastRangeTime() { return 0; }
     /*! \brief Resets the internal state, releasing the used handles, if any. */
     inline void reset() {}

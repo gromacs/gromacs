@@ -117,7 +117,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     const int       j    = pair.j;
 
     // Mass-scaled Lagrange multiplier
-    float lagrangeScaled = 0.0F;
+    float lagrangeScaled = 0.0f;
 
     float targetLength;
     float inverseMassi;
@@ -134,14 +134,14 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     // Everything computed for these dummies will be equal to zero
     if (isDummyThread)
     {
-        targetLength    = 0.0F;
-        inverseMassi    = 0.0F;
-        inverseMassj    = 0.0F;
-        sqrtReducedMass = 0.0F;
+        targetLength    = 0.0f;
+        inverseMassi    = 0.0f;
+        inverseMassj    = 0.0f;
+        sqrtReducedMass = 0.0f;
 
-        xi = make_float3(0.0F, 0.0F, 0.0F);
-        xj = make_float3(0.0F, 0.0F, 0.0F);
-        rc = make_float3(0.0F, 0.0F, 0.0F);
+        xi = make_float3(0.0f, 0.0f, 0.0f);
+        xj = make_float3(0.0f, 0.0f, 0.0f);
+        rc = make_float3(0.0f, 0.0f, 0.0f);
     }
     else
     {
@@ -216,7 +216,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     {
         // Making sure that all sm_rhs are saved before they are accessed in a loop below
         __syncthreads();
-        float mvb = 0.0F;
+        float mvb = 0.0f;
 
         for (int n = 0; n < coupledConstraintsCount; n++)
         {
@@ -241,8 +241,8 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         if (haveValidConstraintGroup)
         {
             const float3 corr = -tmp * inverseMassi;
-            sm_xpi[tid]       = make_float4(xi.x, xi.y, xi.z, 0.f);
-            sm_corr[tid]      = make_float4(corr.x, corr.y, corr.z, 0.f);
+            sm_xpi[tid]       = make_float4(xi.x, xi.y, xi.z, 0.0f);
+            sm_corr[tid]      = make_float4(corr.x, corr.y, corr.z, 0.0f);
         }
 
         __syncthreads();
@@ -262,7 +262,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
                 // update the coordinates to lds
                 for (int gc = 0; gc <= constraintGroupSize; gc++)
                 {
-                    sm_xpi[tid + gc] = make_float4(xi.x, xi.y, xi.z, 0.f);
+                    sm_xpi[tid + gc] = make_float4(xi.x, xi.y, xi.z, 0.0f);
                 }
             }
             else if (!haveValidConstraintGroup)
@@ -297,12 +297,12 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
         const float3 dx2   = pbcDxAiuc(pbcAiuc, xi, xj);
         const float  len2  = targetLength * targetLength;
-        const float  dlen2 = 2.0F * len2 - gmxDeviceNorm2(dx2);
+        const float  dlen2 = 2.0f * len2 - gmxDeviceNorm2(dx2);
 
         // TODO A little bit more effective but slightly less readable version of the below would be:
         //      float proj = sqrtReducedMass*(targetLength - (dlen2 > 0.0f ? 1.0f : 0.0f)*dlen2*__frsqrt_rn(dlen2));
         float proj;
-        if (dlen2 > 0.0F)
+        if (dlen2 > 0.0f)
         {
             proj = sqrtReducedMass * (targetLength - dlen2 * __frsqrt_rn(dlen2));
         }
@@ -346,13 +346,13 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
             if (haveValidConstraintGroup)
             {
                 const float3 corr = -tmp * inverseMassi;
-                sm_corr[tid]      = make_float4(corr.x, corr.y, corr.z, 0.f);
+                sm_corr[tid]      = make_float4(corr.x, corr.y, corr.z, 0.0f);
             }
             __syncthreads();
 
             if (haveGroupedConstraints)
             {
-                const float3 sumI = make_float3(0.f, 0.f, 0.f);
+                const float3 sumI = make_float3(0.0f, 0.0f, 0.0f);
                 for (int gc = 0; gc <= constraintGroupSize; gc++)
                 {
                     const float4 r_corr = sm_corr[tid + gc];
@@ -361,7 +361,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
                 // update the coordinates to lds
                 for (int gc = 0; gc <= constraintGroupSize; gc++)
                 {
-                    sm_xpi[tid + gc] = make_float4(xi.x, xi.y, xi.z, 0.f);
+                    sm_xpi[tid + gc] = make_float4(xi.x, xi.y, xi.z, 0.0f);
                 }
             }
             else if (!haveValidConstraintGroup)

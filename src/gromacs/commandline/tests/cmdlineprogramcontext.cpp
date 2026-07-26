@@ -69,6 +69,10 @@
 #    define TEST_SYMLINKS
 #endif
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -151,3 +155,5 @@ TEST_F(CommandLineProgramContextTest, FindsBinaryFromRelativeSymLink)
 #endif
 
 } // namespace
+} // namespace test
+} // namespace gmx

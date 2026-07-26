@@ -158,7 +158,7 @@ private:
          *
          * \returns True if a frame was read, otherwise false.
          *
-         * \throws gmx::FileIOError if \p position, \p velocity or \p force data is given
+         * \throws H5mdError if \p position, \p velocity or \p force data is given
          *     but the corresponding data set has not been created, or if the size of
          *     the data buffers do not match the number of atoms of the system.
          */
@@ -187,7 +187,7 @@ public:
      *
      * \param[in] fileName    Name of the file to open. The same as the file path.
      * \param[in] mode        The mode to open the file.
-     * \throws FileIOError if fileName is specified and the file cannot be opened.
+     * \throws H5mdError if fileName is specified and the file cannot be opened.
      */
     H5md(const std::filesystem::path& fileName, H5mdFileMode mode);
 
@@ -208,16 +208,17 @@ public:
     hid_t fileid() const;
 
     /*! \brief Write all unwritten data to the file.
-     * \param[in] throwExceptionUponError Whether to throw an exception if an error occurs.
+     * \tparam throwExceptionUponError Whether to throw an exception if an error occurs.
      * Assumes a valid file_ identifier.
-     * \throws FileIOError If there were errors during flushing (and throwExceptionUponError is true).
+     * \throws H5mdError If there were errors during flushing (and throwExceptionUponError is true).
      */
-    void flush(bool throwExceptionUponError = true);
+    template<bool throwExceptionUponError = true>
+    void flush();
 
     /*! \brief Set up the file from input data.
      *
-     * \param[in] topology    Topology data of system.
-     * \param[in] inputRecord Simulation parameters.
+     * \param[in] topology     Topology data of system.
+     * \param[in] inputRecord  Simulation parameters.
      */
     void setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord);
 
@@ -242,7 +243,7 @@ public:
      * \param[in] restartingFromStep Step which we are restarting the simulation from
      * \param[in] numParticles       Number of particles in system
      *
-     * \throws gmx::FileIOError if the existing file contents are not
+     * \throws H5mdError if the existing file contents are not
      * for a system of \p numParticles.
      */
     void setupFromExistingFileForAppending(int64_t restartingFromStep, int64_t numParticles);
@@ -265,7 +266,7 @@ public:
      * \param[in] step          Simulation step for frame.
      * \param[in] time          Simulation time for frame.
      *
-     * \throws gmx::FileIOError if \p position, \p velocity or \p force data is given
+     * \throws H5mdError if \p position, \p velocity or \p force data is given
      *     but the corresponding data set has not been created, or if the size of
      *     the data buffers do not match the number of atoms of the system.
      */
@@ -282,7 +283,7 @@ private:
      * \param[in] topology         Molecular topology for the simulated system.
      * \param[in] selectionIndices Global indices for all atoms in the group.
      * \param[in] selectionName    Name of group.
-     * \param[in] inputRecord      Simulation input record.
+     * \param[in] inputRecord      Simulation input record (includes output control).
      */
     void setupParticleBlockForGroup(const gmx_mtop_t&   topology,
                                     ArrayRef<const int> selectionIndices,
@@ -296,7 +297,7 @@ private:
      *                                 restarting from.
      * \param[in] expectedNumParticles (Optional) Expected number of particles of block in file.
      *
-     * \throws gmx::FileIOError if \p expectedNumParticles is given and the contents of the existing
+     * \throws H5mdError if \p expectedNumParticles is given and the contents of the existing
      * particle block does not match it.
      */
     void setupParticleBlockForGroupFromExistingFile(const std::string&     selectionName,

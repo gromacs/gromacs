@@ -50,7 +50,6 @@ namespace gmx
 {
 class MpiComm;
 class ObservablesReducerBuilder;
-} // namespace gmx
 
 /*! \internal \file
  * \brief Has responsibility for checking that the sum of the local number
@@ -71,9 +70,9 @@ public:
      * \param[in]    mtop             Global system topology
      * \param[in]    observablesReducerBuilder  Handle to builder for ObservablesReducer
      */
-    ExclusionChecker(const gmx::MpiComm&             mpiComm,
-                     const gmx_mtop_t&               mtop,
-                     gmx::ObservablesReducerBuilder* observablesReducerBuilder);
+    ExclusionChecker(const MpiComm&             mpiComm,
+                     const gmx_mtop_t&          mtop,
+                     ObservablesReducerBuilder* observablesReducerBuilder);
     //! Destructor
     ~ExclusionChecker();
     //! Move constructor
@@ -92,5 +91,7 @@ private:
     class Impl;
     std::unique_ptr<Impl> impl_;
 };
+
+} // namespace gmx
 
 #endif

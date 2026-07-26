@@ -424,7 +424,7 @@ SelectionEvaluator::SelectionEvaluator() {}
  * This is the only function that user code should call if they want to
  * evaluate a selection for a new frame.
  */
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void SelectionEvaluator::evaluate(SelectionCollection* coll, t_trxframe* fr, t_pbc* pbc)
 {
     gmx_ana_selcollection_t* sc = &coll->impl_->sc_;
@@ -470,7 +470,7 @@ void SelectionEvaluator::evaluate(SelectionCollection* coll, t_trxframe* fr, t_p
  * \param[in,out] coll  The selection collection to evaluate.
  * \param[in]     nframes Total number of frames.
  */
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void SelectionEvaluator::evaluateFinal(SelectionCollection* coll, int nframes)
 {
     gmx_ana_selcollection_t* sc = &coll->impl_->sc_;
@@ -740,6 +740,16 @@ void _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t*                    
         _gmx_selvalue_setstore_alloc(&sel->child->child->v, sel->v.u.ptr, sel->child->child->v.nalloc);
         sel->child->evaluate(data, sel->child, g);
     }
+    else
+    {
+        /* For g == nullptr, recompute the inner numeric expression */
+        if (sel->child->child != nullptr && (sel->v.type == INT_VALUE || sel->v.type == REAL_VALUE)
+            && (sel->child->child->type == SEL_EXPRESSION) && sel->child->child->evaluate != nullptr)
+        {
+            sel->child->child->evaluate(data, sel->child->child, g);
+        }
+    }
+
     sel->v.nr = sel->child->v.nr;
     if (sel->u.param)
     {

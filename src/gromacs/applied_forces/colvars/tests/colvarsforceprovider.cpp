@@ -85,6 +85,10 @@ enum class PbcType : int;
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class ColvarsForceProviderTest : public ::testing::Test
 {
@@ -395,4 +399,6 @@ TEST_F(ColvarsForceProviderTest, CalculateForcesAlanine)
     done_atom(&atoms_);
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

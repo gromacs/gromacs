@@ -236,7 +236,8 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
-        ObservablesReducer* /*observablesReducer*/)
+        ObservablesReducer* /*observablesReducer*/,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     return builderHelper->storeElement(std::make_unique<ConstraintsElement<variable>>(
             legacySimulatorData->constr_,

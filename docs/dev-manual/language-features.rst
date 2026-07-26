@@ -201,6 +201,14 @@ a release.
   use ``auto`` with lengthy types, such as iterators or lambdas, where
   specifying the type explicitly would reduce readability. If in doubt, avoid
   using ``auto``.
+* When writing a class, put common infrastructure like constructors, destructors,
+  move and copy operations first, then public member functions, then private
+  member functions, and finally private data. Newly written classes should not
+  have public data.
+* Prefer storing handles (ie. pointers, references) to common "constant"
+  infrastructure objects like ``MpiComm`` and ``gmx_wallcycle``, even if they are
+  small and fast to copy. We want modules to have consistent usage patterns,
+  be easy to debug, and (where possible) to depend only on type names.
 
 
 .. |linkref1| replace:: `c++ guidelines <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines>`__
@@ -258,10 +266,6 @@ GPU API considerations
 
 * Write OpenCL as C (specifically, C99) code. Using C++ in OpenCL kernels
   is not well supported.
-* Keep in mind that some combinations of CUDA and GCC do not handle the C++17 properly.
-  This causes minor issues like the need to use ``std::is_same::value``
-  (supported in C++14) instead of ``std::is_same_v`` (added in C++17)
-  in the glue code. This is caught by our CI.
 * Use SYCL 2020 standard. The vendor-specific extensions and backend-specific
   code can be used when needed for performance, but a reasonable fallback
   must be provided for all other supported targets.

@@ -43,13 +43,13 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
         clfftinitializer.cpp
         device_availability.cpp
         device_stream_manager.cpp
-        pinnedmemorychecker.cpp
         
     GPU_CPP_SOURCE_FILES
         device_buffer.cpp
         gpueventsynchronizer.cpp
         hostallocator.cpp
         typecasts.cpp
+        pinnedmemorychecker.cpp
 
     CUDA_CU_SOURCE_FILES
         devicetransfers.cu

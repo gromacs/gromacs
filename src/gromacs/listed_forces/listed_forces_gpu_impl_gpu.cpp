@@ -92,7 +92,10 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
                             const DeviceContext&  deviceContext,
                             const DeviceStream&   deviceStream,
                             gmx_wallcycle*        wcycle) :
-    deviceContext_(deviceContext), deviceStream_(deviceStream)
+    deviceContext_(deviceContext),
+    deviceStream_(deviceStream),
+    vTot_{ static_cast<int>(InteractionFunction::Count),
+           HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported } }
 {
     GMX_RELEASE_ASSERT(numEnergyGroupsForListedForces == 1,
                        "Only a single energy group is supported with listed forces on GPU");
@@ -107,6 +110,13 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
 
     wcycle_ = wcycle;
 
+    // Fill the array with host memory than can be pinned when allocated
+    const HostAllocationPolicy hostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported };
+    for (HostInteractionList& list : iLists_)
+    {
+        list.iatoms = HostVector<int>(0, hostAllocationPolicy);
+    }
+
     allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), deviceContext_);
     // This could be an async transfer (if the source is pinned), so
     // long as it uses the same stream as the kernels and we are happy
@@ -118,7 +128,6 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
                        deviceStream_,
                        GpuApiCallBehavior::Sync,
                        nullptr);
-    vTot_.resize(static_cast<int>(InteractionFunction::Count));
     allocateDeviceBuffer(&d_vTot_, static_cast<int>(InteractionFunction::Count), deviceContext_);
     clearDeviceBufferAsync(&d_vTot_, 0, static_cast<int>(InteractionFunction::Count), deviceStream_);
 
@@ -186,13 +195,13 @@ static bool fTypeHasPerturbedEntries(const InteractionDefinitions& idef, int fTy
     return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[fType] != ilist.size());
 }
 
-//! Converts \p src with atom indices in state order to \p dest in nbnxn order
-static void convertIlistToNbnxnOrder(const InteractionList& src,
+//! Converts \p src with atom indices in state order to \p dest in nbnxm order
+static void convertIlistToNbnxmOrder(const InteractionList& src,
                                      HostInteractionList*   dest,
                                      int                    numAtomsPerInteraction,
-                                     ArrayRef<const int>    nbnxnAtomOrder)
+                                     ArrayRef<const int>    nbnxmAtomOrder)
 {
-    GMX_ASSERT(src.empty() || !nbnxnAtomOrder.empty(), "We need the nbnxn atom order");
+    GMX_ASSERT(src.empty() || !nbnxmAtomOrder.empty(), "We need the nbnxm atom order");
 
     dest->iatoms.resize(src.size());
 
@@ -202,7 +211,7 @@ static void convertIlistToNbnxnOrder(const InteractionList& src,
         dest->iatoms[i] = src.iatoms[i];
         for (int a = 0; a < numAtomsPerInteraction; a++)
         {
-            dest->iatoms[i + 1 + a] = nbnxnAtomOrder[src.iatoms[i + 1 + a]];
+            dest->iatoms[i + 1 + a] = nbnxmAtomOrder[src.iatoms[i + 1 + a]];
         }
     }
 }
@@ -254,7 +263,7 @@ void ListedForcesGpu::Impl::updateHaveInteractions(const InteractionDefinitions&
  *  (thread index) of each interaction type are stored in kernelParams_. Pointers to the relevant
  *  data structures on the GPU are also stored in kernelParams_.
  */
-void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
+void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxmAtomOrder,
                                                                    const InteractionDefinitions& idef,
                                                                    DeviceBuffer<Float4> d_xqPtr,
                                                                    DeviceBuffer<RVec>   d_fPtr,
@@ -277,7 +286,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
         {
             haveGpuInteractions = true;
 
-            convertIlistToNbnxnOrder(idef.il[ft], &iList, NRAL(fType), nbnxnAtomOrder);
+            convertIlistToNbnxmOrder(idef.il[ft], &iList, NRAL(fType), nbnxmAtomOrder);
         }
         else
         {
@@ -432,12 +441,12 @@ void ListedForcesGpu::updateHaveInteractions(const InteractionDefinitions& idef)
     impl_->updateHaveInteractions(idef);
 }
 
-void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
+void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxmAtomOrder,
                                                              const InteractionDefinitions& idef,
                                                              NBAtomDataGpu* nbnxmAtomDataGpu)
 {
     impl_->updateInteractionListsAndDeviceBuffers(
-            nbnxnAtomOrder, idef, nbnxmAtomDataGpu->xq, nbnxmAtomDataGpu->f, nbnxmAtomDataGpu->fShift);
+            nbnxmAtomOrder, idef, nbnxmAtomDataGpu->xq, nbnxmAtomDataGpu->f, nbnxmAtomDataGpu->fShift);
 }
 
 void ListedForcesGpu::setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc)

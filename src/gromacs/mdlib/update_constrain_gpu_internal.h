@@ -47,7 +47,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/math/matrix.h"
+#include "gromacs/utility/matrix.h"
 
 class GpuEventSynchronizer;
 

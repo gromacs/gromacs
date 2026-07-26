@@ -42,11 +42,13 @@
 #ifndef GMX_MDRUNUTILITY_FREEENERGY_H
 #define GMX_MDRUNUTILITY_FREEENERGY_H
 
-struct ReplicaExchangeParameters;
 struct t_inputrec;
 
 namespace gmx
 {
+
+struct ReplicaExchangeParameters;
+
 
 /*! \brief Compute the period at which FEP calculation is performed
  *
@@ -54,7 +56,7 @@ namespace gmx
  * `nstdhdl` with the periods specified by expanded ensemble,
  * replica exchange, and AWH.
  *
- * \param inputrec      The input record
+ * \param inputrec      The input record (contains outputControl)
  * \param replExParams  The replica exchange parameters
  * \return              The period required by the involved algorithms
  */

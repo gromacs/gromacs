@@ -132,7 +132,7 @@ static gmx_unused uint32_t getImask(const bool maskOutSubDiagonal, const int ci,
         const int     diff  = ci - cj * ratio;
 
         return (maskOutSubDiagonal && diff >= 0 && diff < ratio ? sc_diagonalMask[diff]
-                                                                : NBNXN_INTERACTION_MASK_ALL);
+                                                                : NBNXM_INTERACTION_MASK_ALL);
     }
     else
     {
@@ -144,7 +144,7 @@ static gmx_unused uint32_t getImask(const bool maskOutSubDiagonal, const int ci,
         const int     diff  = cj - ci * ratio;
 
         return (maskOutSubDiagonal && diff >= 0 && diff < ratio ? sc_diagonalMask[diff]
-                                                                : NBNXN_INTERACTION_MASK_ALL);
+                                                                : NBNXM_INTERACTION_MASK_ALL);
     }
 }
 

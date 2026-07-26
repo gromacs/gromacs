@@ -291,6 +291,12 @@ void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n)
     }
 }
 
+void pr_matrix3x3(FILE* fp, int indent, const char* title, const gmx::Matrix3x3& matrix3x3)
+{
+    pr_rvecs(fp, indent, title, reinterpret_cast<const rvec*>(&matrix3x3), DIM);
+}
+
+
 void prRVecs(FILE* fp, int indent, const char* title, gmx::ArrayRef<const gmx::RVec> vec)
 {
     pr_rvecs(fp, indent, title, as_rvec_array(vec.data()), vec.size());

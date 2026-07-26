@@ -188,7 +188,7 @@ void cacheBondForNBlocks(const BondPairs&               bonds,
         for (const auto& bond : bonds)
         {
             // Compute the global index of the first molecule in this block
-            auto offset = globalOffset + n * atomsPerMol;
+            auto offset = globalOffset + (n * atomsPerMol);
             // Applied a selection on atom indices if any
             if (selectedAtomsIndexMap.has_value())
             {
@@ -231,7 +231,7 @@ void mtopFromMolType(gmx_mtop_t* mtop, const gmx_moltype_t& sourceMolType)
 
 } // namespace detail
 
-IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t>& selectedIndices)
+IndexMap mapSelectionToInternalIndices(const ArrayRef<const int32_t> selectedIndices)
 {
     IndexMap selectedAtomsIndexMap;
     for (size_t i = 0; i < selectedIndices.size(); ++i)
@@ -478,8 +478,7 @@ void writeBonds(const gmx_mtop_t& topology, const hid_t baseContainer, const std
         const BondPairs bonds = deduceBondsFromMolecule(molType);
         if (selectedAtomsIndexMap.has_value())
         {
-            cacheBondForNBlocks(
-                    bonds, &systemBonds, numMols, numAtoms, selectedAtomsIndexMap.value(), globalOffset);
+            cacheBondForNBlocks(bonds, &systemBonds, numMols, numAtoms, selectedAtomsIndexMap, globalOffset);
         }
         else
         {
@@ -522,7 +521,7 @@ void writeDisulfideBonds(const gmx_mtop_t&              topology,
         if (selectedAtomsIndexMap.has_value())
         {
             cacheBondForNBlocks(
-                    disulfideBonds, &systemBonds, numMols, numAtoms, selectedAtomsIndexMap.value(), globalOffset);
+                    disulfideBonds, &systemBonds, numMols, numAtoms, selectedAtomsIndexMap, globalOffset);
         }
         else
         {

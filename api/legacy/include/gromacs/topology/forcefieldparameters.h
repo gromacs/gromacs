@@ -60,9 +60,9 @@ struct gmx_ffparams_t
     int                              atnr = 0; /**< The number of non-bonded atom types */
     std::vector<InteractionFunction> functype; /**< The function type per type */
     std::vector<t_iparams>           iparams;  /**< Force field parameters per type */
-    double     reppow  = 0;                    /**< The repulsion power for VdW: C12*r^-reppow   */
-    real       fudgeQQ = 0;                    /**< The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t cmap_grid;                      /**< The dihedral correction maps                 */
+    double    reppow  = 0;                     /**< The repulsion power for VdW: C12*r^-reppow   */
+    real      fudgeQQ = 0;                     /**< The scaling factor for Coulomb 1-4: f*q1*q2  */
+    CmapGrids cmapGrids;                       /**< The dihedral correction maps                 */
 };
 
 void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* ffparams, gmx_bool bShowNumbers);

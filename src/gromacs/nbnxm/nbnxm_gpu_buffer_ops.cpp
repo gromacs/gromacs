@@ -45,6 +45,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
@@ -62,39 +63,30 @@
 namespace gmx
 {
 
-void nbnxn_gpu_x_to_nbat_x(const Grid&           grid,
-                           NbnxmGpu*             nb,
+void nbnxm_gpu_x_to_nbat_x(NbnxmGpu*             nb,
                            DeviceBuffer<RVec>    d_x,
                            GpuEventSynchronizer* xReadyOnDevice,
-                           const AtomLocality    locality,
-                           int                   gridId,
-                           int                   numColumnsMax,
-                           bool                  mustInsertNonLocalDependency)
+                           const AtomLocality    locality)
 {
     GMX_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL) || bool(GMX_GPU_HIP),
                "NBNXM X buffer operations only supported in CUDA, SYCL and HIP");
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+    GMX_ASSERT(nb, "Need a valid nbnxm_gpu object");
     InteractionLocality interactionLoc = atomToInteractionLocality(locality);
 
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
 
-    // Only insert wait on the first iteration of the loop.
     if (xReadyOnDevice != nullptr)
     {
         xReadyOnDevice->enqueueWaitEvent(deviceStream);
     }
 
-    // avoid empty kernel launch, skip to inserting stream dependency
-    if (grid.numBins() != 0)
+    if (nb->xToXqLaunchParams[interactionLoc].maxNumAtomsPerCell > 0)
     {
         GMX_ASSERT(d_x, "Need a valid device pointer");
-        launchNbnxmKernelTransformXToXq(grid, nb, d_x, deviceStream, numColumnsMax, gridId);
+        launchNbnxmKernelTransformXToXq(nb->xToXqLaunchParams[interactionLoc], nb, d_x, deviceStream);
     }
 
-    if (mustInsertNonLocalDependency)
-    {
-        nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
-    }
+    nbnxmInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
 } // namespace gmx

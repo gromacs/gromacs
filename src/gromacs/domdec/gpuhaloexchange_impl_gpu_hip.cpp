@@ -149,7 +149,7 @@ void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)
         const auto kernelArgs = prepareGpuKernelArguments(
                 kernelFn, config, &sendBuf, &d_x, &indexMap, &xSendSize_, &coordinateShift);
 
-        launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
+        launchGpuKernel(kernelFn, config, haloStream_, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     }
 }
 
@@ -177,7 +177,7 @@ void GpuHaloExchange::Impl::launchUnpackFKernel(bool accumulateForces)
         const auto kernelArgs =
                 prepareGpuKernelArguments(kernelFn, config, &d_f, &recvBuf, &indexMap, &fRecvSize_);
 
-        launchGpuKernel(kernelFn, config, *haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+        launchGpuKernel(kernelFn, config, haloStream_, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
     }
 }
 

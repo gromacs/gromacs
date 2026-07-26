@@ -173,7 +173,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
     // Calculate the initial half step temperature, and save the ekinh_old
     for (int i = 0; (i < inputrec_->opts.ngtc); i++)
     {
-        copy_mat(energyData_->ekindata()->tcstat[i].ekinh, energyData_->ekindata()->tcstat[i].ekinh_old);
+        energyData_->ekindata()->tcstat[i].ekinh_old = energyData_->ekindata()->tcstat[i].ekinh;
     }
 
     // Clean up after pre-step use of compute()
@@ -211,9 +211,10 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
         }
 
         const bool doEnergy = step == energyReductionStep_;
+        const bool doVirial = step == virialReductionStep_;
         int        flags    = (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
-                    | (needComReduction ? CGLO_STOPCM : 0) | CGLO_TEMPERATURE | CGLO_PRESSURE
-                    | CGLO_CONSTRAINT;
+                    | (needComReduction ? CGLO_STOPCM : 0) | CGLO_TEMPERATURE
+                    | (doVirial ? (CGLO_PRESSURE | CGLO_CONSTRAINT) : 0);
 
         // Since we're already communicating at this step, we
         // can propagate intra-simulation signals. Note that
@@ -321,7 +322,6 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     energyData_->pressure(step),
                     signaller,
                     lastbox,
-                    energyData_->needToSumEkinhOld(),
                     flags,
                     step,
                     observablesReducer_);
@@ -396,7 +396,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper*              globalCommunicationHelper,
-        ObservablesReducer*                     observablesReducer)
+        ObservablesReducer*                     observablesReducer,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     ComputeGlobalsElement* element = builderHelper->storeElement(
             std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
@@ -430,7 +431,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper*              globalCommunicationHelper,
-        ObservablesReducer*                     observablesReducer)
+        ObservablesReducer*                     observablesReducer,
+        const DeviceStreamManager* /*deviceStreamManager*/)
 {
     // We allow this element to be added multiple times to the call list, but we only want one
     // actual element built

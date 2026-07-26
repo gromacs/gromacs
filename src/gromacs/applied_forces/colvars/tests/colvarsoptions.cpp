@@ -80,6 +80,10 @@ enum class PbcType : int;
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 static const std::string colvarsConfig = "colvars_sample.dat";
 
@@ -313,4 +317,6 @@ TEST_F(ColvarsOptionsTest, RetrieveEdrFilename)
 }
 #endif // GMX_HAVE_COLVARS
 
+} // namespace
+} // namespace test
 } // namespace gmx

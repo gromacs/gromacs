@@ -122,7 +122,7 @@ void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchroni
 #    if GMX_MPI
             // send event to rank 0
             MPI_Send(&event,
-                     sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
+                     sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
                      MPI_BYTE,
                      0,
                      0,
@@ -135,7 +135,7 @@ void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchroni
             GpuEventSynchronizer* eventToEnqueue;
 #    if GMX_MPI
             MPI_Recv(&eventToEnqueue,
-                     sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
+                     sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
                      MPI_BYTE,
                      remotePpRank,
                      0,

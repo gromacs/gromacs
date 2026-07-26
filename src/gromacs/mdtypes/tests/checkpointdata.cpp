@@ -60,7 +60,9 @@
 
 #include "testutils/testfilemanager.h"
 
-namespace gmx::test
+namespace gmx
+{
+namespace test
 {
 namespace
 {
@@ -517,4 +519,5 @@ TEST_F(CheckpointDataTest, EmptyVectorTest)
 }
 
 } // namespace
-} // namespace gmx::test
+} // namespace test
+} // namespace gmx

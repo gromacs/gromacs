@@ -86,6 +86,9 @@
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
+namespace gmx
+{
+
 namespace
 {
 /*! \brief Identifies the type of ED: none, normal ED, flooding. */
@@ -254,9 +257,9 @@ typedef struct edpar
 } t_edpar;
 
 
-struct gmx_edsam
+struct edsam
 {
-    ~gmx_edsam();
+    ~edsam();
     //! The type of ED
     EssentialDynamicsType eEDtype = EssentialDynamicsType::None;
     //! output file pointer
@@ -264,7 +267,7 @@ struct gmx_edsam
     std::vector<t_edpar> edpar;
     gmx_bool             bFirst = false;
 };
-gmx_edsam::~gmx_edsam()
+edsam::~edsam()
 {
     if (edo)
     {
@@ -302,22 +305,19 @@ struct t_ed_buffer
     struct t_do_radcon*  do_radcon;
 };
 
-namespace gmx
-{
 class EssentialDynamics::Impl
 {
 public:
-    // TODO: move all fields from gmx_edsam here and remove gmx_edsam
-    gmx_edsam essentialDynamics_;
+    // TODO: move all fields from edsam here and remove edsam
+    edsam essentialDynamics_;
 };
 EssentialDynamics::EssentialDynamics() : impl_(new Impl) {}
 EssentialDynamics::~EssentialDynamics() = default;
 
-gmx_edsam* EssentialDynamics::getLegacyED()
+edsam* EssentialDynamics::getLegacyED()
 {
     return &impl_->essentialDynamics_;
 }
-} // namespace gmx
 
 /* Function declarations */
 static void fit_to_reference(rvec* xcoll, rvec transvec, matrix rotmat, t_edpar* edi);
@@ -333,9 +333,9 @@ namespace
  * The standard case would be a single ED data set, though. */
 std::vector<t_edpar> read_edi_file(const char* fn, int nr_mdatoms);
 } // namespace
-static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam& ed, edsamhistory_t* EDstate);
-static void init_edsamstate(const gmx_edsam& ed, edsamhistory_t* EDstate);
-static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oenv);
+static void crosscheck_edi_file_vs_checkpoint(const edsam& ed, edsamhistory_t* EDstate);
+static void init_edsamstate(const edsam& ed, edsamhistory_t* EDstate);
+static void write_edo_legend(edsam* ed, int nED, const gmx_output_env_t* oenv);
 /* End function declarations */
 
 /* Define formats for the column width in the output file */
@@ -644,7 +644,7 @@ static void rmfit(int nat, rvec* xcoll, const rvec transvec, matrix rotmat)
 
     /* Remove rotation.
      * The inverse rotation is described by the transposed rotation matrix */
-    transpose(rotmat, tmat);
+    ::transpose(rotmat, tmat);
     rotate_x(xcoll, nat, tmat);
 
     /* Remove translation */
@@ -1000,7 +1000,7 @@ static void do_single_flood(FILE*                          edo,
 
     /* Rotate forces back so that they correspond to the given structure and not to the fitted one */
     /* Each node rotates back its local forces */
-    transpose(rotmat, tmat);
+    ::transpose(rotmat, tmat);
     rotate_x(edi->flood.forces_cartesian, edi->sav.nr_loc, tmat);
 
     /* Finally add forces to the main force variable */
@@ -1036,7 +1036,7 @@ void do_flood(const gmx::MpiComm&            mpiComm,
               const t_inputrec&              ir,
               gmx::ArrayRef<const gmx::RVec> coords,
               gmx::ArrayRef<gmx::RVec>       force,
-              gmx_edsam*                     ed,
+              edsam*                         ed,
               const matrix                   box,
               int64_t                        step,
               bool                           bNS)
@@ -1066,7 +1066,7 @@ void do_flood(const gmx::MpiComm&            mpiComm,
 
 /* Called by init_edi, configure some flooding related variables and structures,
  * print headers to output files */
-static void init_flood(t_edpar* edi, gmx_edsam* ed, real dt)
+static void init_flood(t_edpar* edi, edsam* ed, real dt)
 {
     int i;
 
@@ -1278,7 +1278,7 @@ static void bc_ed_vecs(const gmx::MpiComm& mpiComm, t_eigvec* ev, int length)
 
 /* Broadcasts the ED / flooding data to other nodes
  * and allocates memory where needed */
-static void broadcast_ed_data(const gmx::MpiComm& mpiComm, gmx_edsam* ed)
+static void broadcast_ed_data(const gmx::MpiComm& mpiComm, edsam* ed)
 {
     /* Main lets the other nodes know if its ED only or also flooding */
     gmx_bcast(sizeof(ed->eEDtype), &(ed->eEDtype), mpiComm.comm());
@@ -1983,7 +1983,7 @@ static real rmsd_from_structure(rvec* x,           /* The positions under consid
 }
 
 
-void dd_make_local_ed_indices(gmx_domdec_t* dd, struct gmx_edsam* ed)
+void dd_make_local_ed_indices(gmx_domdec_t* dd, struct edsam* ed)
 {
     if (ed->eEDtype != EssentialDynamicsType::None)
     {
@@ -2407,7 +2407,7 @@ static void copyEvecReference(t_eigvec* floodvecs, real* initialReferenceProject
 
 /* Call on MAIN only. Check whether the essential dynamics / flooding
  * groups of the checkpoint file are consistent with the provided .edi file. */
-static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam& ed, edsamhistory_t* EDstate)
+static void crosscheck_edi_file_vs_checkpoint(const edsam& ed, edsamhistory_t* EDstate)
 {
     if (nullptr == EDstate->nref || nullptr == EDstate->nav)
     {
@@ -2461,7 +2461,7 @@ static void crosscheck_edi_file_vs_checkpoint(const gmx_edsam& ed, edsamhistory_
  * c) in any case, for subsequent checkpoint writing, we set the pointers in
  * edsamstate to the x_old arrays, which contain the correct PBC representation of
  * all ED structures at the last time step. */
-static void init_edsamstate(const gmx_edsam& ed, edsamhistory_t* EDstate)
+static void init_edsamstate(const edsam& ed, edsamhistory_t* EDstate)
 {
     snew(EDstate->old_sref_p, EDstate->nED);
     snew(EDstate->old_sav_p, EDstate->nED);
@@ -2532,7 +2532,7 @@ static void nice_legend_evec(std::vector<std::string>* setname,
 
 
 /* Makes a legend for the xvg output file. Call on MAIN only! */
-static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oenv)
+static void write_edo_legend(edsam* ed, int nED, const gmx_output_env_t* oenv)
 {
     int                      n_flood, n_edsam;
     std::vector<std::string> setname;
@@ -3077,7 +3077,7 @@ void do_edsam(const t_inputrec*        ir,
               gmx::ArrayRef<gmx::RVec> coords,
               gmx::ArrayRef<gmx::RVec> velocities,
               const matrix             box,
-              gmx_edsam*               ed)
+              edsam*                   ed)
 {
     int    i, iupdate = 500;
     matrix rotmat;         /* rotation matrix */
@@ -3267,3 +3267,5 @@ void do_edsam(const t_inputrec*        ir,
 
     ed->bFirst = FALSE;
 }
+
+} // namespace gmx

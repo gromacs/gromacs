@@ -84,6 +84,7 @@ namespace gmx
 {
 struct nonbonded_verlet_t;
 class PmeLoadBalancing;
+class PmePpComm;
 
 /*! \brief Reset signals
  *
@@ -156,6 +157,7 @@ public:
                        const MDLogger&          mdlog,
                        FILE*                    fplog,
                        const t_commrec*         cr,
+                       const PmePpComm*         pmePpComm,
                        nonbonded_verlet_t*      nbv,
                        t_nrnb*                  nrnb,
                        const gmx_pme_t*         pme,
@@ -165,7 +167,8 @@ public:
     {
         if (simulationNeedsReset_)
         {
-            if (resetCountersImpl(step, step_rel, mdlog, fplog, cr, nbv, nrnb, pme, pme_loadbal, wcycle, walltime_accounting))
+            if (resetCountersImpl(
+                        step, step_rel, mdlog, fplog, cr, pmePpComm, nbv, nrnb, pme, pme_loadbal, wcycle, walltime_accounting))
             {
                 // need to reset the counters only once
                 simulationNeedsReset_ = false;
@@ -184,6 +187,7 @@ private:
                            const MDLogger&          mdlog,
                            FILE*                    fplog,
                            const t_commrec*         cr,
+                           const PmePpComm*         pmePpComm,
                            nonbonded_verlet_t*      nbv,
                            t_nrnb*                  nrnb,
                            const gmx_pme_t*         pme,
