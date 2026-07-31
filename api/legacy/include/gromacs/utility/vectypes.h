@@ -132,6 +132,22 @@ public:
     {
         return x_[XX] != right[XX] || x_[YY] != right[YY] || x_[ZZ] != right[ZZ];
     }
+    /*! \brief Return whether this vector is lexicographically less than another
+     *
+     * This is necessary for use in std::map, which is (only) used in testing.
+     */
+    constexpr bool operator<(const BasicVector<ValueType>& right) const
+    {
+        if (x_[XX] != right[XX])
+        {
+            return x_[XX] < right[XX];
+        }
+        if (x_[YY] != right[YY])
+        {
+            return x_[YY] < right[YY];
+        }
+        return x_[ZZ] < right[ZZ];
+    }
     //! Allow inplace addition for BasicVector
     constexpr BasicVector<ValueType>& operator+=(const BasicVector<ValueType>& right)
     {
