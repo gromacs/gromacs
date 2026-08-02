@@ -461,7 +461,8 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
                                         nind,
                                         ind,
                                         status->numCifModelsWritten + 1,
-                                        status->numCifModelsWritten == 0);
+                                        status->numCifModelsWritten == 0,
+                                        gc);
             status->numCifModelsWritten++;
             break;
         case efG96:
@@ -636,7 +637,8 @@ int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)
                                         fr->natoms,
                                         allIndex.data(),
                                         status->numCifModelsWritten + 1,
-                                        status->numCifModelsWritten == 0);
+                                        status->numCifModelsWritten == 0,
+                                        gc);
             status->numCifModelsWritten++;
             break;
         }

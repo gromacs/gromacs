@@ -67,4 +67,8 @@ chemical-component identifiers (up to 5 characters) are preserved on a
 read/write round trip. Multi-model ``.cif`` files can be read and written as
 trajectories, for example with :ref:`gmx trjconv`.
 
+With the ``-conect`` option of :ref:`gmx editconf` and :ref:`gmx trjconv`, atom
+connectivity is written as ``struct_conn`` records, the mmCIF counterpart of the
+PDB ``LINK`` and ``SSBOND`` records, and read back again.
+
 :issue:`4753`

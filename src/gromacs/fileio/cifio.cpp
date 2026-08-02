@@ -42,10 +42,12 @@
 #include <cstring>
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -255,6 +257,13 @@ std::string realToStr(real value, const char* fmt)
     return buf;
 }
 
+//! The chain identifier written for residue \p resind ('A' when it is unset).
+char chainId(const t_atoms* atoms, int resind)
+{
+    const char chainCh = atoms->resinfo[resind].chainid;
+    return (chainCh == 0 || chainCh == ' ') ? 'A' : chainCh;
+}
+
 //! Build the 16 atom_site field values for atom \p i (column order as written below).
 std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rvec x[], int modelNr)
 {
@@ -262,13 +271,7 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
     const std::string resnm  = *atoms->resinfo[resind].name;
     const std::string atomnm = *atoms->atomname[i];
     const std::string seqStr = std::to_string(atoms->resinfo[resind].nr);
-
-    char chainCh = atoms->resinfo[resind].chainid;
-    if (chainCh == 0 || chainCh == ' ')
-    {
-        chainCh = 'A';
-    }
-    const std::string chainStr(1, chainCh);
+    const std::string chainStr(1, chainId(atoms, resind));
 
     const char*       elem   = atoms->atom[i].elem;
     const std::string symbol = (elem[0] != '\0') ? std::string(elem) : std::string("?");
@@ -315,6 +318,336 @@ const std::vector<const char*>& atomSiteColumns()
     return columns;
 }
 
+//! Format \p value as a CIF token, quoting it when it holds a space.
+std::string cifToken(const std::string& value)
+{
+    std::string tok = value.empty() ? std::string(".") : value;
+    if (tok.find(' ') != std::string::npos)
+    {
+        tok.insert(tok.begin(), '\'');
+        tok.push_back('\'');
+    }
+    return tok;
+}
+
+//! Add \p rows to \p block as a loop named \p category; does nothing when empty.
+void addLoopTable(Block&                                       block,
+                  const char*                                  category,
+                  const std::vector<const char*>&              columns,
+                  const std::vector<std::vector<std::string>>& rows)
+{
+    if (rows.empty())
+    {
+        return;
+    }
+    ISTable& table = block.AddTable(category);
+    for (const char* col : columns)
+    {
+        table.AddColumn(col);
+    }
+    for (const std::vector<std::string>& row : rows)
+    {
+        table.AddRow(row);
+    }
+}
+
+//! Stream \p rows to \p out as a loop named \p category; does nothing when empty.
+void writeLoop(FILE*                                        out,
+               const char*                                  category,
+               const std::vector<const char*>&              columns,
+               const std::vector<std::vector<std::string>>& rows)
+{
+    if (rows.empty())
+    {
+        return;
+    }
+    std::fprintf(out, "loop_\n");
+    for (const char* col : columns)
+    {
+        std::fprintf(out, "_%s.%s\n", category, col);
+    }
+    for (const std::vector<std::string>& row : rows)
+    {
+        for (size_t k = 0; k < row.size(); k++)
+        {
+            std::fprintf(out, "%s%s", cifToken(row[k]).c_str(), (k + 1 < row.size()) ? " " : "\n");
+        }
+    }
+    std::fprintf(out, "#\n");
+}
+
+/*! \name Connectivity and cis-peptide annotation
+ *
+ * The PDB CONECT record has no mmCIF counterpart at all (every field maps to
+ * "n.a." in the wwPDB PDB/PDBx correspondence). Connectivity is instead expressed
+ * by struct_conn, onto which the PDB LINK and SSBOND records map, so that is what
+ * the bonds of a gmx_conect are written as. Writing every bond, rather than only
+ * those not implied by the chemical component dictionary, goes beyond how the PDB
+ * uses struct_conn; it is done deliberately so that -conect means the same thing
+ * for mmCIF as for PDB output, where GROMACS likewise writes every bond.
+ * \{
+ */
+
+//! The struct_conn column names, in the order produced by buildStructConnRows().
+const std::vector<const char*>& structConnColumns()
+{
+    static const std::vector<const char*> columns = { "id",
+                                                      "conn_type_id",
+                                                      "ptnr1_label_asym_id",
+                                                      "ptnr1_label_comp_id",
+                                                      "ptnr1_label_seq_id",
+                                                      "ptnr1_label_atom_id",
+                                                      "pdbx_ptnr1_label_alt_id",
+                                                      "pdbx_ptnr1_PDB_ins_code",
+                                                      "ptnr1_auth_asym_id",
+                                                      "ptnr1_auth_comp_id",
+                                                      "ptnr1_auth_seq_id",
+                                                      "ptnr1_symmetry",
+                                                      "ptnr2_label_asym_id",
+                                                      "ptnr2_label_comp_id",
+                                                      "ptnr2_label_seq_id",
+                                                      "ptnr2_label_atom_id",
+                                                      "pdbx_ptnr2_label_alt_id",
+                                                      "pdbx_ptnr2_PDB_ins_code",
+                                                      "ptnr2_auth_asym_id",
+                                                      "ptnr2_auth_comp_id",
+                                                      "ptnr2_auth_seq_id",
+                                                      "ptnr2_symmetry",
+                                                      "pdbx_dist_value" };
+    return columns;
+}
+
+//! The struct_conn_type column names.
+const std::vector<const char*>& structConnTypeColumns()
+{
+    static const std::vector<const char*> columns = { "id", "criteria", "reference" };
+    return columns;
+}
+
+/*! \brief Append the eleven fields describing bond partner \p i to \p row.
+ *
+ * The LINK/SSBOND correspondence points at the auth_* chain, residue name and
+ * residue number and at the label_ atom name; the label_ chain, residue name and
+ * residue number are written as well because deposited entries carry both and
+ * readers differ in which they use. Both sets repeat what buildAtomSiteRow()
+ * writes for the same atom, so the pointers resolve by construction.
+ */
+void appendConnPartner(std::vector<std::string>* row, const t_atoms* atoms, int i)
+{
+    const int         resind = atoms->atom[i].resind;
+    const std::string comp   = *atoms->resinfo[resind].name;
+    const std::string asym(1, chainId(atoms, resind));
+    const std::string seq = std::to_string(atoms->resinfo[resind].nr);
+
+    row->push_back(asym);
+    row->push_back(comp);
+    row->push_back(seq);
+    row->push_back(*atoms->atomname[i]);
+    // atom_site holds neither alternate locations nor insertion codes, so there
+    // is nothing for these two to point at.
+    row->emplace_back(".");
+    row->emplace_back("?");
+    row->push_back(asym);
+    row->push_back(comp);
+    row->push_back(seq);
+    row->emplace_back("1_555");
+}
+
+//! Whether atom \p i is a cysteine-like SG sulfur, i.e. a disulfide candidate.
+bool isThiolSulfur(const t_atoms* atoms, int i)
+{
+    if (std::strcmp(*atoms->atomname[i], "SG") != 0)
+    {
+        return false;
+    }
+    // The element is only known when the caller filled it in; when it is, it has
+    // to agree, so that an atom merely named SG is not mistaken for a sulfur.
+    const char* elem = atoms->atom[i].elem;
+    return elem[0] == '\0' || std::strcmp(elem, "S") == 0;
+}
+
+/*! \brief Whether some residue holds two written atoms of the same name.
+ *
+ * struct_conn addresses atoms by name rather than by atom_site.id, so such a
+ * name makes every connection to it ambiguous. Atoms of one residue are
+ * contiguous, so one pass over the written atoms finds these.
+ */
+bool hasAmbiguousAtomNames(const t_atoms* atoms, const std::vector<bool>& written)
+{
+    std::vector<std::string> names;
+    int                      currentResind = -1;
+    for (int i = 0; i < atoms->nr; i++)
+    {
+        if (!written[i])
+        {
+            continue;
+        }
+        const int resind = atoms->atom[i].resind;
+        if (resind != currentResind)
+        {
+            names.clear();
+            currentResind = resind;
+        }
+        const std::string name = *atoms->atomname[i];
+        if (std::find(names.begin(), names.end(), name) != names.end())
+        {
+            return true;
+        }
+        names.push_back(name);
+    }
+    return false;
+}
+
+/*! \brief The struct_conn rows for the bonds of \p conect.
+ *
+ * Bonds with an end outside the \p nindex atoms selected by \p index are left
+ * out, so that the records only ever point at atoms that were written. The
+ * connection types actually used are returned through \p connTypes, for the
+ * accompanying struct_conn_type table.
+ */
+std::vector<std::vector<std::string>> buildStructConnRows(const t_atoms*            atoms,
+                                                          const rvec                x[],
+                                                          int                       nindex,
+                                                          const int                 index[],
+                                                          gmx_conect_t*             conect,
+                                                          std::vector<std::string>* connTypes)
+{
+    std::vector<std::vector<std::string>> rows;
+    const int                             numBonds = gmx_conect_nconect(conect);
+    if (numBonds == 0)
+    {
+        return rows;
+    }
+
+    std::vector<bool> written(atoms->nr, false);
+    for (int ii = 0; ii < nindex; ii++)
+    {
+        written[index[ii]] = true;
+    }
+
+    int numCovale = 0;
+    int numDisulf = 0;
+    for (int b = 0; b < numBonds; b++)
+    {
+        int ai = 0;
+        int aj = 0;
+        gmx_conect_get(conect, b, &ai, &aj);
+        if (ai < 0 || ai >= atoms->nr || aj < 0 || aj >= atoms->nr || !written[ai] || !written[aj])
+        {
+            continue;
+        }
+
+        const bool disulfide = isThiolSulfur(atoms, ai) && isThiolSulfur(atoms, aj);
+
+        std::vector<std::string> row;
+        row.reserve(structConnColumns().size());
+        row.push_back(disulfide ? "disulf" + std::to_string(++numDisulf)
+                                : "covale" + std::to_string(++numCovale));
+        row.emplace_back(disulfide ? "disulf" : "covale");
+        appendConnPartner(&row, atoms, ai);
+        appendConnPartner(&row, atoms, aj);
+        row.push_back(realToStr(10.0 * std::sqrt(distance2(x[ai], x[aj])), "%.3f"));
+        rows.push_back(std::move(row));
+    }
+
+    if (numCovale > 0)
+    {
+        connTypes->emplace_back("covale");
+    }
+    if (numDisulf > 0)
+    {
+        connTypes->emplace_back("disulf");
+    }
+    if (!rows.empty() && hasAmbiguousAtomNames(atoms, written))
+    {
+        std::fprintf(stderr,
+                     "WARNING: some residues hold several atoms with the same name. mmCIF "
+                     "struct_conn records identify atoms by name, so the connectivity written "
+                     "for those residues is ambiguous.\n");
+    }
+    return rows;
+}
+
+//! How struct_conn addresses one atom: chain, residue number and atom name.
+std::string connectionKey(const std::string& asym, const std::string& seq, const std::string& atom)
+{
+    return asym + '|' + seq + '|' + atom;
+}
+
+//! Value of \p primary at row \p row, falling back to \p fallback when it is null.
+const std::string& preferredCell(const std::vector<std::string>& primary,
+                                 const std::vector<std::string>& fallback,
+                                 size_t                          row)
+{
+    const std::string& value = cell(primary, row);
+    return isCifNull(value) ? cell(fallback, row) : value;
+}
+
+/*! \brief Add the bonds listed in the struct_conn table of \p block to \p conect.
+ *
+ * The LINK and SSBOND correspondence points at the auth_ chain and residue number
+ * and at the label_ atom name, but files in the wild do not all fill the same
+ * subset, so the other set of items is used as a fallback. Records naming atoms
+ * that were not read, such as those of a further model, are counted and reported.
+ */
+void readStructConn(CifFile* cif, const std::string& block, const t_atoms* atoms, int numAtoms, gmx_conect_t* conect)
+{
+    ISTable* structConn = cif->GetBlock(block).GetTablePtr("struct_conn");
+    if (structConn == nullptr)
+    {
+        return;
+    }
+
+    // Where the atoms that were read sit, keyed as struct_conn addresses them.
+    std::map<std::string, int> atomIndex;
+    for (int i = 0; i < numAtoms; i++)
+    {
+        const t_resinfo& resinfo = atoms->resinfo[atoms->atom[i].resind];
+        atomIndex.emplace(connectionKey(std::string(1, resinfo.chainid),
+                                        std::to_string(resinfo.nr),
+                                        *atoms->atomname[i]),
+                          i);
+    }
+
+    const std::vector<std::string> authAsym1  = getColumn(structConn, "ptnr1_auth_asym_id");
+    const std::vector<std::string> labelAsym1 = getColumn(structConn, "ptnr1_label_asym_id");
+    const std::vector<std::string> authSeq1   = getColumn(structConn, "ptnr1_auth_seq_id");
+    const std::vector<std::string> labelSeq1  = getColumn(structConn, "ptnr1_label_seq_id");
+    const std::vector<std::string> labelAtom1 = getColumn(structConn, "ptnr1_label_atom_id");
+    const std::vector<std::string> authAtom1  = getColumn(structConn, "ptnr1_auth_atom_id");
+    const std::vector<std::string> authAsym2  = getColumn(structConn, "ptnr2_auth_asym_id");
+    const std::vector<std::string> labelAsym2 = getColumn(structConn, "ptnr2_label_asym_id");
+    const std::vector<std::string> authSeq2   = getColumn(structConn, "ptnr2_auth_seq_id");
+    const std::vector<std::string> labelSeq2  = getColumn(structConn, "ptnr2_label_seq_id");
+    const std::vector<std::string> labelAtom2 = getColumn(structConn, "ptnr2_label_atom_id");
+    const std::vector<std::string> authAtom2  = getColumn(structConn, "ptnr2_auth_atom_id");
+
+    int numUnresolved = 0;
+    for (unsigned int r = 0; r < structConn->GetNumRows(); r++)
+    {
+        const auto first  = atomIndex.find(connectionKey(preferredCell(authAsym1, labelAsym1, r),
+                                                        preferredCell(authSeq1, labelSeq1, r),
+                                                        preferredCell(labelAtom1, authAtom1, r)));
+        const auto second = atomIndex.find(connectionKey(preferredCell(authAsym2, labelAsym2, r),
+                                                         preferredCell(authSeq2, labelSeq2, r),
+                                                         preferredCell(labelAtom2, authAtom2, r)));
+        if (first == atomIndex.end() || second == atomIndex.end())
+        {
+            numUnresolved++;
+            continue;
+        }
+        gmx_conect_add(conect, first->second, second->second);
+    }
+    if (numUnresolved > 0)
+    {
+        std::fprintf(stderr,
+                     "WARNING: %d struct_conn record(s) name atoms that were not read; they are "
+                     "ignored\n",
+                     numUnresolved);
+    }
+}
+//! \}
+
 } // namespace
 
 void CifIO::read(const std::filesystem::path& infile,
@@ -323,7 +656,8 @@ void CifIO::read(const std::filesystem::path& infile,
                  t_atoms*                     atoms,
                  rvec                         x[],
                  PbcType*                     pbcType,
-                 matrix                       box)
+                 matrix                       box,
+                 gmx_conect_t*                conect)
 {
     if (pbcType != nullptr)
     {
@@ -460,6 +794,11 @@ void CifIO::read(const std::filesystem::path& infile,
 
     readCell(cif.get(), block, pbcType, box);
 
+    if (conect != nullptr)
+    {
+        readStructConn(cif.get(), block, atoms, natom, conect);
+    }
+
     if (name != nullptr)
     {
         *name = gmx_strdup(readEntryId(cif.get(), block).c_str());
@@ -480,7 +819,8 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
                          PbcType                      pbcType,
                          const matrix                 box,
                          int                          nindex,
-                         const int                    index[])
+                         const int                    index[],
+                         gmx_conect_t*                conect)
 {
     const std::string entryId = (title != nullptr && title[0] != '\0') ? title : "gromacs";
 
@@ -546,6 +886,21 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
         sym.AddRow(std::vector<std::string>{ entryId, "P 1", "1" });
     }
 
+    // Connectivity and cis peptide annotation precede the coordinates, as they
+    // do in deposited entries.
+    std::vector<std::string> connTypes;
+    addLoopTable(block,
+                 "struct_conn",
+                 structConnColumns(),
+                 buildStructConnRows(atoms, x, nindex, index, conect, &connTypes));
+    std::vector<std::vector<std::string>> connTypeRows;
+    connTypeRows.reserve(connTypes.size());
+    for (const std::string& type : connTypes)
+    {
+        connTypeRows.push_back(std::vector<std::string>{ type, ".", "." });
+    }
+    addLoopTable(block, "struct_conn_type", structConnTypeColumns(), connTypeRows);
+
     // atom_site loop.
     ISTable& atomSite = block.AddTable("atom_site");
     for (const char* col : atomSiteColumns())
@@ -565,14 +920,15 @@ void CifIO::write(const std::filesystem::path& outfile,
                   const t_atoms*               atoms,
                   const rvec                   x[],
                   PbcType                      pbcType,
-                  const matrix                 box)
+                  const matrix                 box,
+                  gmx_conect_t*                conect)
 {
     std::vector<int> index(atoms->nr);
     for (int i = 0; i < atoms->nr; i++)
     {
         index[i] = i;
     }
-    writeIndexed(outfile, title, atoms, x, pbcType, box, atoms->nr, index.data());
+    writeIndexed(outfile, title, atoms, x, pbcType, box, atoms->nr, index.data(), conect);
 }
 
 //! Internal state behind CifIO's opaque CifTrajectory handle (see cifio.h).
@@ -681,7 +1037,8 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
                                  int            nindex,
                                  const int      index[],
                                  int            modelNr,
-                                 bool           writeHeader)
+                                 bool           writeHeader,
+                                 gmx_conect_t*  conect)
 {
     if (writeHeader)
     {
@@ -717,6 +1074,21 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
                          beta,
                          gamma);
         }
+        // Connectivity does not change from frame to frame, so it is written once,
+        // before the atom_site loop that the remaining frames are appended to.
+        std::vector<std::string> connTypes;
+        writeLoop(out,
+                  "struct_conn",
+                  structConnColumns(),
+                  buildStructConnRows(atoms, x, nindex, index, conect, &connTypes));
+        std::vector<std::vector<std::string>> connTypeRows;
+        connTypeRows.reserve(connTypes.size());
+        for (const std::string& type : connTypes)
+        {
+            connTypeRows.push_back(std::vector<std::string>{ type, ".", "." });
+        }
+        writeLoop(out, "struct_conn_type", structConnTypeColumns(), connTypeRows);
+
         std::fprintf(out, "loop_\n");
         for (const char* col : atomSiteColumns())
         {
@@ -728,13 +1100,7 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
         const std::vector<std::string> row = buildAtomSiteRow(atoms, index[ii], x, modelNr);
         for (size_t k = 0; k < row.size(); k++)
         {
-            std::string tok = row[k].empty() ? std::string(".") : row[k];
-            if (tok.find(' ') != std::string::npos)
-            {
-                tok.insert(tok.begin(), '\'');
-                tok.push_back('\'');
-            }
-            std::fprintf(out, "%s%s", tok.c_str(), (k + 1 < row.size()) ? " " : "\n");
+            std::fprintf(out, "%s%s", cifToken(row[k]).c_str(), (k + 1 < row.size()) ? " " : "\n");
         }
     }
 }

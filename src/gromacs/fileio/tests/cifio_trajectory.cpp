@@ -47,12 +47,15 @@
 #include <cstdio>
 
 #include <array>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/cifio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -170,6 +173,71 @@ TEST_F(CifTrajectoryIoTest, WriteReadTwoModelsRoundTrips)
     // No more models.
     EXPECT_FALSE(CifIO::readTrajectoryFrame(handle, &fr));
 
+    CifIO::closeTrajectory(handle);
+    sfree(fr.x);
+}
+
+TEST_F(CifTrajectoryIoTest, ConnectivityIsWrittenOnceForAllModels)
+{
+    const std::string cifFile = fileManager_.getTemporaryFilePath("conn_traj.cif").string();
+    const std::array<int, c_numAtoms> index     = { 0, 1, 2 };
+    const int                         numModels = 3;
+
+    gmx_conect conect = gmx_conect_init();
+    gmx_conect_add(conect, 0, 1);
+    gmx_conect_add(conect, 1, 2);
+
+    FILE* out = std::fopen(cifFile.c_str(), "w");
+    ASSERT_NE(out, nullptr);
+    for (int m = 0; m < numModels; ++m)
+    {
+        const auto x = modelCoords(m);
+        CifIO::writeTrajectoryFrame(out,
+                                    "traj",
+                                    &atoms_,
+                                    as_rvec_array(x.data()),
+                                    box_,
+                                    c_numAtoms,
+                                    index.data(),
+                                    /*modelNr*/ m + 1,
+                                    /*writeHeader*/ m == 0,
+                                    conect);
+    }
+    std::fclose(out);
+    gmx_conect_done(conect);
+
+    // The connectivity does not change between models, so it is written with the
+    // header only; the atom_site loop that follows stays open for all models.
+    std::ifstream     stream(cifFile);
+    std::stringstream buffer;
+    buffer << stream.rdbuf();
+    const std::string content = buffer.str();
+
+    int numLoopHeaders = 0;
+    for (size_t pos = content.find("_struct_conn.id"); pos != std::string::npos;
+         pos        = content.find("_struct_conn.id", pos + 1))
+    {
+        numLoopHeaders++;
+    }
+    EXPECT_EQ(numLoopHeaders, 1) << content;
+    EXPECT_NE(content.find("covale1"), std::string::npos) << content;
+    EXPECT_NE(content.find("covale2"), std::string::npos) << content;
+
+    // The models are still readable afterwards.
+    CifTrajectory* handle = CifIO::openTrajectory(cifFile);
+    ASSERT_NE(handle, nullptr);
+    EXPECT_EQ(CifIO::trajectoryNumAtoms(handle), c_numAtoms);
+    t_trxframe fr;
+    clear_trxframe(&fr, TRUE);
+    snew(fr.x, c_numAtoms);
+    for (int m = 0; m < numModels; ++m)
+    {
+        SCOPED_TRACE("model " + std::to_string(m));
+        ASSERT_TRUE(CifIO::readTrajectoryFrame(handle, &fr));
+        const auto expected = modelCoords(m);
+        EXPECT_NEAR(fr.x[0][XX], expected[0][XX], 1e-3);
+    }
+    EXPECT_FALSE(CifIO::readTrajectoryFrame(handle, &fr));
     CifIO::closeTrajectory(handle);
     sfree(fr.x);
 }

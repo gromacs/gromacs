@@ -875,6 +875,10 @@ void gmx_conect_done(gmx_conect conect)
 {
     gmx_conect_t* gc = conect;
 
+    if (gc == nullptr)
+    {
+        return;
+    }
     sfree(gc->conect);
     sfree(gc);
 }
@@ -905,6 +909,23 @@ void gmx_conect_add(gmx_conect conect, int ai, int aj)
         gc->conect[gc->nconect - 1].ai = ai;
         gc->conect[gc->nconect - 1].aj = aj;
     }
+}
+
+int gmx_conect_nconect(gmx_conect conect)
+{
+    const gmx_conect_t* gc = conect;
+
+    return (gc != nullptr) ? gc->nconect : 0;
+}
+
+void gmx_conect_get(gmx_conect conect, int i, int* ai, int* aj)
+{
+    const gmx_conect_t* gc = conect;
+
+    GMX_RELEASE_ASSERT(gc != nullptr, "Need a valid conect structure");
+    GMX_RELEASE_ASSERT(i >= 0 && i < gc->nconect, "Connection index out of range");
+    *ai = gc->conect[i].ai;
+    *aj = gc->conect[i].aj;
 }
 
 int read_pdbfile(FILE*      in,

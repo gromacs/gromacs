@@ -179,6 +179,12 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj);
 void gmx_conect_add(gmx_conect conect, int ai, int aj);
 /* Add a connection between ai and aj (numbered from 0 to natom-1) */
 
+int gmx_conect_nconect(gmx_conect conect);
+/* Return the number of connections stored */
+
+void gmx_conect_get(gmx_conect conect, int i, int* ai, int* aj);
+/* Return the atoms (numbered from 0 to natom-1) of connection i */
+
 //! DEPRECATED Generate a conect structure from a list of interaction definitions */
 gmx_conect gmx_conect_generate(const t_idef& idef);
 
@@ -189,6 +195,6 @@ gmx_conect gmx_conect_init();
 /* Initiate data structure */
 
 void gmx_conect_done(gmx_conect gc);
-/* Free memory */
+/* Free the connections and the structure itself; gc may be nullptr */
 
 #endif /* GMX_FILEIO_PDBIO_H */

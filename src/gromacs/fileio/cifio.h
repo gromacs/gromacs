@@ -62,6 +62,12 @@ struct t_symtab;
 struct t_trxframe;
 //! Opaque parsed-mmCIF trajectory handle; defined in cifio.cpp.
 struct CifTrajectory;
+/*! \brief Bond list, as used for PDB CONECT records; defined in pdbio.cpp.
+ *
+ * Declared here rather than including pdbio.h so that this header stays
+ * self-contained. The pdbio.h typedef \c gmx_conect is a pointer to this type,
+ * so callers can pass their gmx_conect unchanged. */
+struct gmx_conect_t;
 
 /*! \brief Reader/writer for mmCIF/PDBx structure files.
  *
@@ -79,6 +85,9 @@ public:
      * back to \c _struct.title / \c _database_2.database_code) is duplicated
      * into it with gmx_strdup(). The caller must have sized \p atoms and \p x
      * for the atom count returned by countAtoms().
+     *
+     * If \p conect is not nullptr, the bonds listed in \c struct_conn are added
+     * to it, mirroring how read_pdbfile() collects CONECT records.
      */
     static void read(const std::filesystem::path& infile,
                      t_symtab*                    symtab,
@@ -86,20 +95,30 @@ public:
                      t_atoms*                     atoms,
                      rvec                         x[],
                      PbcType*                     pbcType,
-                     matrix                       box);
+                     matrix                       box,
+                     gmx_conect_t*                conect = nullptr);
 
     //! Count the atoms (first model only) in an mmCIF/PDBx file.
     static void countAtoms(const std::filesystem::path& infile, int* natoms);
 
-    //! Write all atoms of \p atoms to an mmCIF/PDBx file.
+    /*! \brief Write all atoms of \p atoms to an mmCIF/PDBx file.
+     *
+     * \p conect may be nullptr; see writeIndexed() for what it adds.
+     */
     static void write(const std::filesystem::path& outfile,
                       const char*                  title,
                       const t_atoms*               atoms,
                       const rvec                   x[],
                       PbcType                      pbcType,
-                      const matrix                 box);
+                      const matrix                 box,
+                      gmx_conect_t*                conect = nullptr);
 
-    //! Write the \p nindex atoms selected by \p index to an mmCIF/PDBx file.
+    /*! \brief Write the \p nindex atoms selected by \p index to an mmCIF/PDBx file.
+     *
+     * When \p conect is not nullptr, its bonds are written as a \c struct_conn
+     * loop (the mmCIF counterpart of the PDB LINK and SSBOND records). Bonds to
+     * atoms outside \p index are skipped.
+     */
     static void writeIndexed(const std::filesystem::path& outfile,
                              const char*                  title,
                              const t_atoms*               atoms,
@@ -107,7 +126,8 @@ public:
                              PbcType                      pbcType,
                              const matrix                 box,
                              int                          nindex,
-                             const int                    index[]);
+                             const int                    index[],
+                             gmx_conect_t*                conect = nullptr);
 
     /*! \name Trajectory (multi-model) I/O
      *
@@ -132,9 +152,11 @@ public:
     static void closeTrajectory(CifTrajectory* handle);
 
     /*! \brief Stream one model (frame) of \p nindex atoms to \p out.
-     * When \p writeHeader is true the data block, optional cell and the
-     * atom_site loop header are written first; \p modelNr is the 1-based
-     * pdbx_PDB_model_num for this frame. */
+     * When \p writeHeader is true the data block, optional cell, the optional
+     * \c struct_conn connectivity of \p conect and the atom_site loop header are
+     * written first; \p modelNr is the 1-based pdbx_PDB_model_num for this frame.
+     * Connectivity does not change between frames, so \p conect is only used
+     * when \p writeHeader is true. */
     static void writeTrajectoryFrame(FILE*          out,
                                      const char*    title,
                                      const t_atoms* atoms,
@@ -143,7 +165,8 @@ public:
                                      int            nindex,
                                      const int      index[],
                                      int            modelNr,
-                                     bool           writeHeader);
+                                     bool           writeHeader,
+                                     gmx_conect_t*  conect = nullptr);
     //! \}
 };
 

@@ -47,6 +47,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/fileio/cifio.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
@@ -738,7 +739,8 @@ int gmx_editconf(int argc, char* argv[])
                  FALSE,
                  etBOOL,
                  { &bCONECT },
-                 "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a "
+                 "Add connectivity records to a [REF].pdb[ref] (CONECT) or [REF].cif[ref] "
+                        "([TT]struct_conn[tt]) file when written. Can only be done when a "
                         "topology (tpr file) is present" }
     };
 #define NPA asize(pa)
@@ -823,11 +825,17 @@ int gmx_editconf(int argc, char* argv[])
         printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
         bGrasp = FALSE;
     }
-    if ((bGrasp || bCONECT) && (outftp != efPDB))
+    if (bGrasp && (outftp != efPDB))
     {
         gmx_fatal(FARGS,
                   "Output file should be a .pdb file"
-                  " when using the -grasp or -conect options\n");
+                  " when using the -grasp option\n");
+    }
+    if (bCONECT && (outftp != efPDB) && (outftp != efCIF))
+    {
+        gmx_fatal(FARGS,
+                  "Output file should be a .pdb or .cif file"
+                  " when using the -conect option\n");
     }
     if ((bMead || bGrasp || bCONECT) && inftp != efTPR)
     {
@@ -1291,7 +1299,7 @@ int gmx_editconf(int argc, char* argv[])
                    "to use a cubic box instead, or why not try a dodecahedron today?\n");
         }
     }
-    /* We have already checked that the output is a pdb file and the input a tpr file */
+    /* We have already checked that the output is a pdb or cif file and the input a tpr file */
     if (bCONECT)
     {
         conect = gmx_conect_generate(*mtop);
@@ -1330,6 +1338,11 @@ int gmx_editconf(int argc, char* argv[])
             out = gmx_ffopen(outfile, "w");
             write_pdbfile_indexed(out, name, &atoms, x, pbcType, box, ' ', 1, isize, index, conect, FALSE);
             gmx_ffclose(out);
+        }
+        else if (outftp == efCIF)
+        {
+            /* Bypass write_sto_conf_indexed(), which cannot pass on connectivity */
+            CifIO::writeIndexed(outfile, name, &atoms, x, pbcType, box, isize, index, conect);
         }
         else
         {
@@ -1405,6 +1418,11 @@ int gmx_editconf(int argc, char* argv[])
                               visbox);
             }
             gmx_ffclose(out);
+        }
+        else if (outftp == efCIF)
+        {
+            /* Bypass write_sto_conf(), which cannot pass on connectivity */
+            CifIO::write(outfile, name, &atoms, x, pbcType, box, conect);
         }
         else
         {
