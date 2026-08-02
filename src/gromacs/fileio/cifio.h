@@ -117,7 +117,9 @@ public:
      *
      * When \p conect is not nullptr, its bonds are written as a \c struct_conn
      * loop (the mmCIF counterpart of the PDB LINK and SSBOND records). Bonds to
-     * atoms outside \p index are skipped.
+     * atoms outside \p index are skipped. Cis peptide bonds found in the written
+     * coordinates are annotated in \c struct_mon_prot_cis independently of
+     * \p conect.
      */
     static void writeIndexed(const std::filesystem::path& outfile,
                              const char*                  title,

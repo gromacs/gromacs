@@ -351,6 +351,23 @@ std::string readFile(const std::string& fileName)
     return buffer.str();
 }
 
+/*! \brief The value written for \p item in \p content.
+ *
+ * A table of a single row is written as item/value pairs rather than as a loop,
+ * so the value is the token that follows the item name.
+ */
+std::string cifItemValue(const std::string& content, const std::string& item)
+{
+    const size_t itemPos = content.find(item);
+    if (itemPos == std::string::npos)
+    {
+        return "";
+    }
+    const size_t valuePos = content.find_first_not_of(" \t", itemPos + item.size());
+    const size_t endPos   = content.find_first_of(" \t\n\r", valuePos);
+    return content.substr(valuePos, endPos - valuePos);
+}
+
 //! A two-residue peptide whose omega dihedral is cis (0) or trans (180 degrees).
 std::vector<ConnectivityAtomSpec> peptideSpec(bool cis)
 {
@@ -467,6 +484,37 @@ TEST(CifConnectivityTest, WithoutConnectivityNothingIsWritten)
 
     const std::string content = readFile(cifFile);
     EXPECT_EQ(content.find("_struct_conn."), std::string::npos) << content;
+    EXPECT_EQ(content.find("_struct_mon_prot_cis."), std::string::npos) << content;
+}
+
+TEST(CifCisPeptideTest, CisPeptideIsAnnotated)
+{
+    TestFileManager       fileManager;
+    ConnectivityStructure structure(peptideSpec(/*cis*/ true));
+    const std::string     cifFile = fileManager.getTemporaryFilePath("cis.cif").string();
+
+    CifIO::write(cifFile, "cis", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
+
+    const std::string content = readFile(cifFile);
+    ASSERT_NE(content.find("_struct_mon_prot_cis.pdbx_omega_angle"), std::string::npos) << content;
+    // The annotated pair is ALA 1 followed by PRO 2, at an omega of 0 degrees.
+    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.auth_comp_id"), "ALA") << content;
+    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.auth_seq_id"), "1") << content;
+    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.pdbx_auth_comp_id_2"), "PRO") << content;
+    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.pdbx_auth_seq_id_2"), "2") << content;
+    EXPECT_NEAR(std::strtod(cifItemValue(content, "_struct_mon_prot_cis.pdbx_omega_angle").c_str(), nullptr), 0.0, 1e-6)
+            << content;
+}
+
+TEST(CifCisPeptideTest, TransPeptideIsNotAnnotated)
+{
+    TestFileManager       fileManager;
+    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
+    const std::string     cifFile = fileManager.getTemporaryFilePath("trans.cif").string();
+
+    CifIO::write(cifFile, "trans", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
+
+    const std::string content = readFile(cifFile);
     EXPECT_EQ(content.find("_struct_mon_prot_cis."), std::string::npos) << content;
 }
 

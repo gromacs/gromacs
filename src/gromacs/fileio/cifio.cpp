@@ -385,6 +385,9 @@ void writeLoop(FILE*                                        out,
  * those not implied by the chemical component dictionary, goes beyond how the PDB
  * uses struct_conn; it is done deliberately so that -conect means the same thing
  * for mmCIF as for PDB output, where GROMACS likewise writes every bond.
+ *
+ * The related CISPEP record maps onto struct_mon_prot_cis, which is written from
+ * the coordinates alone and therefore needs no connectivity.
  * \{
  */
 
@@ -564,6 +567,141 @@ std::vector<std::vector<std::string>> buildStructConnRows(const t_atoms*        
                      "WARNING: some residues hold several atoms with the same name. mmCIF "
                      "struct_conn records identify atoms by name, so the connectivity written "
                      "for those residues is ambiguous.\n");
+    }
+    return rows;
+}
+
+//! The struct_mon_prot_cis column names, in the order produced by buildCisPeptideRows().
+const std::vector<const char*>& structMonProtCisColumns()
+{
+    static const std::vector<const char*> columns = { "pdbx_id",
+                                                      "label_comp_id",
+                                                      "label_asym_id",
+                                                      "label_seq_id",
+                                                      "label_alt_id",
+                                                      "pdbx_PDB_ins_code",
+                                                      "auth_comp_id",
+                                                      "auth_asym_id",
+                                                      "auth_seq_id",
+                                                      "pdbx_label_comp_id_2",
+                                                      "pdbx_label_asym_id_2",
+                                                      "pdbx_label_seq_id_2",
+                                                      "pdbx_PDB_ins_code_2",
+                                                      "pdbx_auth_comp_id_2",
+                                                      "pdbx_auth_asym_id_2",
+                                                      "pdbx_auth_seq_id_2",
+                                                      "pdbx_PDB_model_num",
+                                                      "pdbx_omega_angle" };
+    return columns;
+}
+
+/*! \brief The dihedral angle p1-p2-p3-p4 in degrees, in (-180, 180].
+ *
+ * Computed here rather than with dih_angle(), which lives in the listed_forces
+ * module that fileio does not depend on.
+ */
+real dihedralDegrees(const rvec p1, const rvec p2, const rvec p3, const rvec p4)
+{
+    rvec b1, b2, b3, n1, n2, m1, unitB2;
+    rvec_sub(p2, p1, b1);
+    rvec_sub(p3, p2, b2);
+    rvec_sub(p4, p3, b3);
+    cprod(b1, b2, n1);
+    cprod(b2, b3, n2);
+    svmul(1.0 / norm(b2), b2, unitB2);
+    cprod(n1, unitB2, m1);
+    return gmx::c_rad2Deg * std::atan2(iprod(m1, n2), iprod(n1, n2));
+}
+
+/*! \brief The struct_mon_prot_cis rows for the peptide bonds in cis conformation.
+ *
+ * A peptide bond is recognised by residues r and r+1 of one chain holding the
+ * backbone atoms CA and C, resp. N and CA, at a plausible C-N bond distance;
+ * requiring those names is what distinguishes a peptide from anything else, so
+ * no residue type database is needed. Only atoms among the \p nindex atoms
+ * selected by \p index are considered, so a bond cannot be annotated across a
+ * gap in the selection.
+ */
+std::vector<std::vector<std::string>>
+buildCisPeptideRows(const t_atoms* atoms, const rvec x[], int nindex, const int index[])
+{
+    //! Largest |omega| (degrees) still called cis, as used by the wwPDB.
+    constexpr real c_maxCisOmega = 30.0;
+    //! Largest plausible peptide C-N bond length (nm); longer means a chain break.
+    constexpr real c_maxPeptideBondLength = 0.2;
+
+    std::vector<std::vector<std::string>> rows;
+    if (atoms->nres < 2)
+    {
+        return rows;
+    }
+
+    // Backbone atoms of each residue, restricted to the written selection.
+    std::vector<int> backboneN(atoms->nres, -1);
+    std::vector<int> backboneCa(atoms->nres, -1);
+    std::vector<int> backboneC(atoms->nres, -1);
+    for (int ii = 0; ii < nindex; ii++)
+    {
+        const int   i      = index[ii];
+        const int   resind = atoms->atom[i].resind;
+        const char* name   = *atoms->atomname[i];
+        if (std::strcmp(name, "N") == 0 && backboneN[resind] < 0)
+        {
+            backboneN[resind] = i;
+        }
+        else if (std::strcmp(name, "CA") == 0 && backboneCa[resind] < 0)
+        {
+            backboneCa[resind] = i;
+        }
+        else if (std::strcmp(name, "C") == 0 && backboneC[resind] < 0)
+        {
+            backboneC[resind] = i;
+        }
+    }
+
+    for (int r = 0; r + 1 < atoms->nres; r++)
+    {
+        const int caPrev = backboneCa[r];
+        const int cPrev  = backboneC[r];
+        const int nNext  = backboneN[r + 1];
+        const int caNext = backboneCa[r + 1];
+        if (caPrev < 0 || cPrev < 0 || nNext < 0 || caNext < 0
+            || chainId(atoms, r) != chainId(atoms, r + 1)
+            || distance2(x[cPrev], x[nNext]) > c_maxPeptideBondLength * c_maxPeptideBondLength)
+        {
+            continue;
+        }
+        const real omega = dihedralDegrees(x[caPrev], x[cPrev], x[nNext], x[caNext]);
+        if (std::abs(omega) >= c_maxCisOmega)
+        {
+            continue;
+        }
+
+        const std::string comp1 = *atoms->resinfo[r].name;
+        const std::string asym1(1, chainId(atoms, r));
+        const std::string seq1  = std::to_string(atoms->resinfo[r].nr);
+        const std::string comp2 = *atoms->resinfo[r + 1].name;
+        const std::string asym2(1, chainId(atoms, r + 1));
+        const std::string seq2 = std::to_string(atoms->resinfo[r + 1].nr);
+
+        rows.push_back(std::vector<std::string>{ std::to_string(rows.size() + 1),
+                                                 comp1,
+                                                 asym1,
+                                                 seq1,
+                                                 ".",
+                                                 "?",
+                                                 comp1,
+                                                 asym1,
+                                                 seq1,
+                                                 comp2,
+                                                 asym2,
+                                                 seq2,
+                                                 "?",
+                                                 comp2,
+                                                 asym2,
+                                                 seq2,
+                                                 "1",
+                                                 realToStr(omega, "%.2f") });
     }
     return rows;
 }
@@ -900,6 +1038,10 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
         connTypeRows.push_back(std::vector<std::string>{ type, ".", "." });
     }
     addLoopTable(block, "struct_conn_type", structConnTypeColumns(), connTypeRows);
+    addLoopTable(block,
+                 "struct_mon_prot_cis",
+                 structMonProtCisColumns(),
+                 buildCisPeptideRows(atoms, x, nindex, index));
 
     // atom_site loop.
     ISTable& atomSite = block.AddTable("atom_site");
@@ -1076,6 +1218,9 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
         }
         // Connectivity does not change from frame to frame, so it is written once,
         // before the atom_site loop that the remaining frames are appended to.
+        // The cis peptide annotation of struct_mon_prot_cis is per model and is
+        // deliberately not written here: the atom_site loop stays open until the
+        // last frame, so no further loop can follow it.
         std::vector<std::string> connTypes;
         writeLoop(out,
                   "struct_conn",
