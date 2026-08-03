@@ -117,6 +117,8 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 
 static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
+    // Barrier to ensure all earlier stores are visible. Only for ARM, no-op on x86_64
+    tMPI_Atomic_memory_barrier();
     x->lock = 0;
 }
 

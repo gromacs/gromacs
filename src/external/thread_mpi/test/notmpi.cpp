@@ -167,20 +167,22 @@ int main(int argc, char *argv[])
 #elif defined(THREAD_WINDOWS)
     /* Windows threads here */
     {
-        DWORD *th;
+        HANDLE *th;
 
-        th = (DWORD*)malloc(sizeof(DWORD)*n);
+        th = (HANDLE*)malloc(sizeof(HANDLE)*n);
 
         for (i = 1; i < n; i++)
         {
-            CreateThread(NULL, 0, thread_starter, (void*)(id_array+i), 0, th+i);
+            th[i] = CreateThread(NULL, 0, thread_starter, (void*)(id_array+i), 0, NULL);
         }
         thread_fn(id_array+0);
 
         for (i = 1; i < n; i++)
         {
-            WaitForSingleObject(th+i, INFINITE);
+            WaitForSingleObject(th[i], INFINITE);
+            CloseHandle(th[i]);
         }
+        free(th);
     }
 #endif
 
