@@ -103,4 +103,7 @@ make_gridindex_to_localindex(int n, int local_start, int local_range, bool check
 
 void set_grid_alignment(int* pmegrid_nz, int pme_order);
 
+//! Returns the z-size of the local PME grid including overlap and SIMD alignment padding.
+int pmeGridAlignedZSize(int nkz, int pmeOrder);
+
 #endif

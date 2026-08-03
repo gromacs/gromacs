@@ -17,6 +17,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix PME heap buffer overflow with multiple PME ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+When the local PME grid required SIMD padding in the z dimension,
+major-dimension overlap communication could write beyond its communication
+buffer. This could corrupt memory or crash ``mdrun`` when PME used multiple
+PME ranks, most readily with ``pme-order = 5``.
+
+:issue:`5669`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

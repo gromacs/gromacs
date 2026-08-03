@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/ewald/pme_grid.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringcompare.h"
 
@@ -117,6 +118,31 @@ TEST_F(SeparatePmeRanksPermittedTest, EmptyDisableReasonText)
 
     // Expect that reasonsWhyDisabled works with empty reason
     EXPECT_TRUE(separatePmeRanksPermitted_.reasonsWhyDisabled().empty());
+}
+
+TEST(PmeGridOverlapTest, UsesAlignedZStrideForMajorOverlapBuffer)
+{
+    constexpr int pmeOrder  = 5;
+    constexpr int gridY     = 120;
+    constexpr int gridZ     = 121;
+    constexpr int minorRank = 1;
+
+    const int unalignedGridZ = gridZ + pmeOrder - 1;
+    const int alignedGridZ   = pmeGridAlignedZSize(gridZ, pmeOrder);
+    if (alignedGridZ == unalignedGridZ)
+    {
+        GTEST_SKIP() << "PME z grid alignment is not active in this build";
+    }
+
+    const int gridYBlockSize = (gridY + minorRank - 1) / minorRank + pmeOrder;
+    const int maxLocalGridY  = gridYBlockSize - 1;
+
+    const int oldBufferSize      = pmeOrder * gridYBlockSize * unalignedGridZ;
+    const int requiredBufferSize = pmeOrder * maxLocalGridY * alignedGridZ;
+    const int fixedBufferSize    = pmeOrder * gridYBlockSize * alignedGridZ;
+
+    EXPECT_GT(requiredBufferSize, oldBufferSize);
+    EXPECT_LE(requiredBufferSize, fixedBufferSize);
 }
 
 } // namespace test
