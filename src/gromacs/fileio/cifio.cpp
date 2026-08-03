@@ -264,7 +264,7 @@ char chainId(const t_atoms* atoms, int resind)
     return (chainCh == 0 || chainCh == ' ') ? 'A' : chainCh;
 }
 
-//! Build the 16 atom_site field values for atom \p i (column order as written below).
+//! Build the 18 atom_site field values for atom \p i (column order as written below).
 std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rvec x[], int modelNr)
 {
     const int         resind = atoms->atom[i].resind;
@@ -277,6 +277,7 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
     const std::string symbol = (elem[0] != '\0') ? std::string(elem) : std::string("?");
 
     std::string groupPdb = "ATOM";
+    std::string altLoc   = ".";
     real        occup    = 1.0;
     real        bfac     = 0.0;
     if (atoms->pdbinfo != nullptr)
@@ -284,14 +285,22 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
         groupPdb = (atoms->pdbinfo[i].type == PdbRecordType::Hetatm) ? "HETATM" : "ATOM";
         occup    = atoms->pdbinfo[i].occup;
         bfac     = atoms->pdbinfo[i].bfac;
+        if (atoms->pdbinfo[i].altloc != 0 && atoms->pdbinfo[i].altloc != ' ')
+        {
+            altLoc = std::string(1, atoms->pdbinfo[i].altloc);
+        }
     }
 
     return std::vector<std::string>{ groupPdb,
                                      std::to_string(i + 1),
                                      symbol,
                                      atomnm,
+                                     altLoc,
                                      resnm,
                                      chainStr,
+                                     // GROMACS has no notion of an mmCIF entity and writes
+                                     // no entity category, so there is nothing to point at.
+                                     ".",
                                      seqStr,
                                      coordToStr(x[i][XX]),
                                      coordToStr(x[i][YY]),
@@ -304,12 +313,18 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
                                      std::to_string(modelNr) };
 }
 
-//! The atom_site column names, in the order produced by buildAtomSiteRow().
+/*! \brief The atom_site column names, in the order produced by buildAtomSiteRow().
+ *
+ * label_alt_id and label_entity_id carry nothing GROMACS knows about, but readers
+ * are entitled to expect them: gemmi, for one, reads no atoms at all from a file
+ * that leaves them out.
+ */
 const std::vector<const char*>& atomSiteColumns()
 {
     static const std::vector<const char*> columns = { "group_PDB",     "id",
                                                       "type_symbol",   "label_atom_id",
-                                                      "label_comp_id", "label_asym_id",
+                                                      "label_alt_id",  "label_comp_id",
+                                                      "label_asym_id", "label_entity_id",
                                                       "label_seq_id",  "Cartn_x",
                                                       "Cartn_y",       "Cartn_z",
                                                       "occupancy",     "B_iso_or_equiv",

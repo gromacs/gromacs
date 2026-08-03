@@ -487,6 +487,43 @@ TEST(CifConnectivityTest, WithoutConnectivityNothingIsWritten)
     EXPECT_EQ(content.find("_struct_mon_prot_cis."), std::string::npos) << content;
 }
 
+TEST(CifAtomSiteTest, AlternateLocationAndEntityColumnsAreWritten)
+{
+    TestFileManager       fileManager;
+    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
+    const std::string     cifFile = fileManager.getTemporaryFilePath("altloc.cif").string();
+
+    structure.atoms()->pdbinfo[1].altloc = 'B';
+    CifIO::write(cifFile, "altloc", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
+
+    // Readers are entitled to both columns; gemmi reads no atoms without them.
+    const std::string content = readFile(cifFile);
+    EXPECT_NE(content.find("_atom_site.label_alt_id"), std::string::npos) << content;
+    EXPECT_NE(content.find("_atom_site.label_entity_id"), std::string::npos) << content;
+
+    // The alternate location survives the round trip; the reader has always
+    // looked for label_alt_id, only the writer did not produce it.
+    int natoms = 0;
+    CifIO::countAtoms(cifFile, &natoms);
+    ASSERT_EQ(natoms, structure.numAtoms());
+    t_symtab symtab;
+    open_symtab(&symtab);
+    t_atoms atoms;
+    init_t_atoms(&atoms, natoms, TRUE);
+    rvec* x = nullptr;
+    snew(x, natoms);
+    matrix  box;
+    PbcType pbcType = PbcType::Unset;
+    CifIO::read(cifFile, &symtab, nullptr, &atoms, x, &pbcType, box);
+
+    EXPECT_EQ(atoms.pdbinfo[1].altloc, 'B');
+    EXPECT_EQ(atoms.pdbinfo[0].altloc, ' ');
+
+    sfree(x);
+    done_atom(&atoms);
+    done_symtab(&symtab);
+}
+
 TEST(CifCisPeptideTest, CisPeptideIsAnnotated)
 {
     TestFileManager       fileManager;
