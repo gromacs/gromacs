@@ -182,12 +182,12 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
         }
 
         // Check that the sum of numa domains is the total processor count
-        int processorsinNumaNudes = 0;
+        int processorsInNumaNodes = 0;
         for (const auto& n : hwTop.machine().numa.nodes)
         {
-            processorsinNumaNudes += n.processingUnits.size();
+            processorsInNumaNodes += n.processingUnits.size();
         }
-        EXPECT_EQ(processorsinNumaNudes, hwTop.machine().logicalProcessors.size());
+        EXPECT_EQ(processorsInNumaNodes, hwTop.machine().logicalProcessors.size());
 
         // Check that every processor is in a numa domain (i.e., that they are unique)
         std::vector<int> v(hwTop.machine().logicalProcessors.size());
@@ -202,8 +202,8 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
                 v[idx] = 1;
             }
         }
-        int uniqueProcessorsinNumaNudes = std::count(v.begin(), v.end(), 1);
-        EXPECT_EQ(uniqueProcessorsinNumaNudes, hwTop.machine().logicalProcessors.size());
+        int uniqueProcessorsInNumaNodes = std::count(v.begin(), v.end(), 1);
+        EXPECT_EQ(uniqueProcessorsInNumaNodes, hwTop.machine().logicalProcessors.size());
 
         // We must have some memory in a numa node
         for (const auto& n : hwTop.machine().numa.nodes)

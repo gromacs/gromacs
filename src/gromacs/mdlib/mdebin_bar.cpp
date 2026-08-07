@@ -222,7 +222,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
         /* We write raw data.
            Raw data consists of 3 subblocks: an int metadata block
            with type and derivative index, a foreign lambda block
-           and and the data itself */
+           and the data itself */
         add_subblocks_enxblock(blk, 3);
 
         blk->id = enxDH;

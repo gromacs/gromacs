@@ -62,7 +62,7 @@ TEST(EnsembleBoundingPotentialPlugin, ForceCalc)
         return restraint.calculate(a, b, t).force;
     };
 
-    // Atoms should be driven towards each other when above maxDist and and away under minDist.
+    // Atoms should be driven towards each other when above maxDist and away under minDist.
     force = calculateForce(e1, static_cast<real>(3) * e1, 0.001);
     ASSERT_LT(force[0], 0.) << " where force is (" << force[0] << ", " << force[1] << ", "
                             << force[2] << ")\n";

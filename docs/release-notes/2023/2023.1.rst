@@ -147,7 +147,7 @@ Added support for new cuFFTMp interface
 """""""""""""""""""""""""""""""""""""""
 
 The interface to the cuFFTMp library has changed with its latest
-release in the the NVIDIA HPC SDK version 23.3, which is required for
+release in the NVIDIA HPC SDK version 23.3, which is required for
 NVIDIA Hopper GPU support. We have now added default support to the
 new interface, while retaining support for the legacy interface.
 
@@ -163,4 +163,3 @@ a work-around is documented for the convenience of a user who was not
 intending to use MPI.
 
 :issue:`4699`
-

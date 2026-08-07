@@ -202,7 +202,7 @@ Default values are available from the top level ``variables`` definition in
 Many of the mix-in / template jobs provide additional or overriding definitions.
 Other variables may be set when making final job definitions.
 
-Variables may control the behvior of GitLab-CI (those beginning with ``CI_``),
+Variables may control the behavior of GitLab-CI (those beginning with ``CI_``),
 GitLab Runner and supporting infrastructure, or may be used by job definitions,
 or passed along to the environment of executed commands.
 

@@ -109,7 +109,7 @@ std::vector<RVec> coordinates()
 
 /*! \brief Coordinates for \p moleculeType() made whole
  *
- * These coordinates assume the the periodic image for the molecule
+ * These coordinates assume the periodic image for the molecule
  * is chosen the same as the first connected atom.
  */
 std::vector<RVec> coordinatesWhole()

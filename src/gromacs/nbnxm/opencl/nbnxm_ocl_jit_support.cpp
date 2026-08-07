@@ -180,7 +180,7 @@ void nbnxm_gpu_compile_kernels(NbnxmGpu* nb)
          * in include files outside the opencl as macros, to avoid
          * including those files in the plain-C JIT compilation that happens
          * at runtime.
-         * Note that we need to re-add the the suffix to the floating point literals
+         * Note that we need to re-add the suffix to the floating point literals
          * passed the to the kernel to avoid type ambiguity.
          */
         extraDefines += gmx::formatString(

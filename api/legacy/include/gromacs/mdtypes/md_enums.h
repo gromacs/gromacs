@@ -219,7 +219,7 @@ enum class PressureCouplingType : int
 //! String corresponding to pressure coupling type
 const char* enumValueToString(PressureCouplingType enumValue);
 
-//! \\brief Cutoff scheme
+//! \brief Cutoff scheme
 enum class CutoffScheme : int
 {
     Verlet,

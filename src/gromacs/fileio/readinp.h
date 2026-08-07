@@ -100,8 +100,8 @@ struct t_inpfile
     }
     int  count_;                  /* sort order for output  */
     bool bObsolete_;              /* whether it is an obsolete param value */
-    bool bSet_;                   /* whether it it has been read out */
-    bool bHandledAsKeyValueTree_; /* whether it it has been handled with key-value machinery */
+    bool bSet_;                   /* whether it has been read out */
+    bool bHandledAsKeyValueTree_; /* whether it has been handled with key-value machinery */
     bool preserveOutputOrdering_; /* whether to preserve traditional output ordering and mechanism */
     std::string name_;            /* name of the parameter */
     std::string value_;           /* parameter value string */

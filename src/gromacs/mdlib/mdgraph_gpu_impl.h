@@ -113,8 +113,7 @@ public:
     void createExecutableGraph(bool forceGraphReinstantiation);
 
     /*! \brief Launch graph corresponding to MD step
-     * \param [inout] xUpdatedOnDeviceEvent  Event marked when coordinates have been updated o\
-n device
+     * \param [inout] xUpdatedOnDeviceEvent  Event marked when coordinates have been updated on device
      */
     void launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceEvent);
 

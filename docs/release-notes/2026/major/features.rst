@@ -15,10 +15,12 @@ The (`Colvars <https://colvars.github.io>`_) library for enhanced sampling simul
 in |Gromacs| has been updated to version 2025-10-13.
 
 This update brings many improvements, including:
+
 - performance improvements for moving frame of reference calculations
 - improved OPES implementation
 - improved moving restraint logic, allowing for moving harmonic walls
 - more flexible definitions of grids on CVs
+
 A complete list of changes can be found `here <https://gitlab.com/gromacs/gromacs/-/merge_requests/5397>`_.
 
 For documentation see :ref:`this section <colvars>`

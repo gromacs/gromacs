@@ -103,7 +103,7 @@ bool threadMpiTestRunner(std::function<void()> testBody);
  * When you do the above, the following will happen:
  *  - The test will get compiled only if thread-MPI or real MPI is enabled.
  *  - The test will get executed only when the specified condition on
- *    the the number of ranks is satisfied.
+ *    the number of ranks is satisfied.
  *  - If you are using real MPI, the whole test binary is run under
  *    MPI and test execution across the processes is synchronized
  *    (GMX_MPI_TEST() actually has no effect in this case, the

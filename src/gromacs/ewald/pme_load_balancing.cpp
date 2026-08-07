@@ -340,8 +340,8 @@ static Cutoffs getCutoffs(const t_inputrec&          ir,
     cutoffs.rbufInner_coulomb = nbv.pairlistInnerRadius() - ic.coulomb.cutoff;
     cutoffs.rbufInner_vdw     = nbv.pairlistInnerRadius() - ic.vdw.cutoff;
 
-    /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
-     * can't always usedd as it's not available with separate PME ranks.
+    /* Scale box with Ewald wall factor; note that pmedata->boxScaler
+     * can't always be used as it's not available with separate PME ranks.
      */
     EwaldBoxZScaler boxScaler(inputrecPbcXY2Walls(&ir), ir.wall_ewald_zfac);
     boxScaler.scaleBox(box, cutoffs.startBox);

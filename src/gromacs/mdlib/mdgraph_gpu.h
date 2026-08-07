@@ -70,7 +70,7 @@ public:
      *  we can associate the start and end points of the recording
      *  with a single stream, while allowing all participating streams
      *  to fork and join. We also associate a separate graph with even
-     *  and odd MD steps for 2 reasons: to cater for the the alternate
+     *  and odd MD steps for 2 reasons: to cater for the alternate
      *  non-bonded prune scheme (where local and non-local buffers
      *  are pruned on alternate steps); and to also allow the extra
      *  artificial GPU-side synchronizations to be overlapped with

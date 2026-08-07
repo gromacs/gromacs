@@ -21,11 +21,11 @@ here referred to as coordinate for short, i.e. a function of the system configur
 The bias is coupled to the system by a bias potential: either in the form of an harmonic ("umbrella") potential
 Monte-Carlo (MC) "jumping" around the current coordinate value, or as a smooth convolution of the umbrellas.
 
-The AWH module is organizes as follows:
+The AWH module is organized as follows:
 The Awh class is the interface between the outside and inside of the module.
 The Awh class contains one or more BiasCoupledToSystem objects.
 The BiasCoupledToSystem class takes care of the reaction coordinate input
-and force output for the single Bias object it containts.
+and force output for the single Bias object it contains.
 The Bias class is a container and wrapper for a object BiasState + helpers.
 All computation takes place in the BiasState object and its sub-classes.
 The Bias class also contains a BiasWriter object that takes care of i/o.
@@ -67,4 +67,3 @@ All energy type variables are explicitly documented to be in units of kT.
 Also the checkpoint and energy file data is in units of kT. The analysis
 tool will by default convert energies to kJ/mol, but there is also
 a kT option.
-

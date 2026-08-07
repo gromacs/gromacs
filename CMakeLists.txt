@@ -446,7 +446,7 @@ gmx_c_flags()
 # in gmxCFlags nor are SIMD or MPI related.
 #
 # TODO These variables should be consolidated into
-# EXTRA_COMPILER_FLAGS so that we we don't perpetrate bugs where
+# EXTRA_COMPILER_FLAGS so that we don't perpetrate bugs where
 # things that work in C compilation (e.g. merging from old branches)
 # might not also work for C++ compilation.
 set(EXTRA_C_FLAGS "")

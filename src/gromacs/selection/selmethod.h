@@ -43,7 +43,7 @@
  * to implement the callbacks.
  *
  *
- * \section selmethods_define \c gmx_ana_selmethod_t data structure
+ * \section selmethods_define gmx_ana_selmethod_t data structure
  *
  * An example \c gmx_ana_selmethod_t definition could look like this:
  *

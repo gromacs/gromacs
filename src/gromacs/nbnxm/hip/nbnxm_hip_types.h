@@ -110,7 +110,7 @@ struct NbnxmGpu
 
     //! true when a pair-list transfer has been done at this step
     EnumerationArray<InteractionLocality, bool> didPairlistH2D = { { false } };
-    //! true when we we did pruning on this step
+    //! true when we did pruning on this step
     EnumerationArray<InteractionLocality, bool> didPrune = { { false } };
     //! true when we did rolling pruning (at the previous step)
     EnumerationArray<InteractionLocality, bool> didRollingPrune = { { false } };

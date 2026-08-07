@@ -139,7 +139,7 @@ Improved documentation
 Approaches for reducing overhead for GPU runs are now documented.
 
 The available wallcycle counters and subcounters reported in the
-md.log files are now listed and and explained in the user guide, along
+md.log files are now listed and explained in the user guide, along
 with how to enable reporting of the subcounters.
 
 Several install-guide sections have been improved, including those for

@@ -116,7 +116,7 @@ using IndexArray = std::array<int, N>;
 
 /*! \brief encodes the number of integers needed to represent N-center interactions
  *
- *  number of indices to store is the the number of interaction center
+ *  number of indices to store is the number of interaction center
  *  plus 1 index for the interaction parameter lookup
  */
 template<class Interaction>

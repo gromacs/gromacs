@@ -222,7 +222,7 @@ public:
             g_referenceData[rank_].reset();
         }
     }
-    //! Callback after all the tests in the the test case have run
+    //! Callback after all the tests in the test case have run
     void OnTestProgramEnd(const ::testing::UnitTest& /*unused*/) override
     {
         // Could be used e.g. to free internal buffers

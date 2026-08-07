@@ -84,7 +84,7 @@ using EnergyContribution = std::function<real(Step, Time)>;
  * The EnergyData owns the EnergyObject,
  * the tensors for the different virials and the pressure as well as
  * the total dipole vector. It has a member class which is part of the
- * simulator loop and and is responsible
+ * simulator loop and is responsible
  * for saving energy data and writing it to trajectory.
  *
  * The EnergyData offers an interface to add virial contributions,

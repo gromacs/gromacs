@@ -129,9 +129,9 @@ private:
         int numAtomsForDensity_;
         //! The number of interactions to correct for, usually num. atoms/2
         real numCorrections_;
-        //! Average C6 coefficient for for topology A/B ([0]/[1])
+        //! Average C6 coefficient for topology A/B ([0]/[1])
         std::array<real, 2> avcsix_;
-        //! Average C12 coefficient for for topology A/B ([0]/[1])
+        //! Average C12 coefficient for topology A/B ([0]/[1])
         std::array<real, 2> avctwelve_;
     };
 

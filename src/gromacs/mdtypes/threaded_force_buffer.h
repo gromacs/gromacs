@@ -186,7 +186,7 @@ private:
     //! Free-energy dV/dl output
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl_;
 
-    // Disallow copy and assign, remove this we we get rid of f_
+    // Disallow copy and assign, remove this we get rid of f_
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ThreadForceBuffer);
 };
 

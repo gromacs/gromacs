@@ -750,7 +750,7 @@ void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo)
         {
             // Trying to use a device from e.g. an OpenCL backend
             // leads to weird crashes when addresses are used out of
-            // context. That should only happen when the the LevelZero
+            // context. That should only happen when the LevelZero
             // backend was unavailable *and* the user forced GROMACS to
             // treat Intel MPI as GPU aware.
             GMX_THROW(

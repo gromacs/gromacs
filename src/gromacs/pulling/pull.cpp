@@ -399,7 +399,7 @@ real max_pull_distance2(const pull_coord_work_t& pcrd, const t_pbc& pbc)
 
     if (pull_coordinate_is_directional(pcrd.params_))
     {
-        /* Directional pulling along along direction pcrd.vec.
+        /* Directional pulling along direction pcrd.vec.
          * Calculating the exact maximum distance is complex and bug-prone.
          * So we take a safe approach by not allowing distances that
          * are larger than half the distance between unit cell faces

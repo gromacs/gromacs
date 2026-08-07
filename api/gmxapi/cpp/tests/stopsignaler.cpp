@@ -229,7 +229,7 @@ TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
 
         const int           nstlist  = 1;
         constexpr const int maxsteps = nstlist * 2 + 1;
-        // This test is meaningless if the the simulation ends early without a signal.
+        // This test is meaningless if the simulation ends early without a signal.
         static_assert(
                 maxsteps < nsteps,
                 "Simulation is already scheduled to end before it can receive a stop signal.");

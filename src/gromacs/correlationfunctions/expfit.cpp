@@ -438,7 +438,7 @@ static void initiate_fit_params(int eFitFn, double params[])
                 GMX_ASSERT(params[2] >= 0, "parameters should be >= 0");
                 /* In order to maintain params[2] >= params[0] in the final
                  * result, we fit the difference between the two, that is
-                 * params[2]-params[0] and in the add add in params[0]
+                 * params[2]-params[0] and in the add in params[0]
                  * again.
                  */
                 params[2] = std::max(std::fabs(params[2]) - params[0], params[0]);
