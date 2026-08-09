@@ -16,7 +16,6 @@
 using std::string;
 using std::vector;
 using std::find_if;
-using std::bind2nd;
 
 using std::ostream;
 
@@ -53,7 +52,8 @@ bool GenCont::IsInVector(const string& element,
   const vector<string>& contVector, const Char::eCompareType compareType)
 {
     vector<string>::const_iterator where = find_if(contVector.begin(),
-      contVector.end(), bind2nd(StringEqualTo(compareType), element));
+      contVector.end(),
+      [&](const string& s) { return StringEqualTo(compareType)(s, element); });
  
     return (where != contVector.end());
 }

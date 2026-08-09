@@ -77,9 +77,17 @@ class CharLess
  ** This class is equal_to functor for generic character. It supports the
  ** following compare types: case-sensitive and case-insensitive.
  */
-class CharEqualTo : public std::binary_function<char, char, bool>
+class CharEqualTo
 {
   public:
+    // These type aliases were formerly inherited from
+    // std::binary_function<char, char, bool>, which was deprecated in C++11
+    // and removed in C++17. They are provided directly for backward
+    // compatibility with any code that referred to them.
+    typedef char first_argument_type;
+    typedef char second_argument_type;
+    typedef bool result_type;
+
     CharEqualTo(Char::eCompareType compareType = Char::eCASE_SENSITIVE);
 
     CharEqualTo& operator=(const CharEqualTo& in);
@@ -93,9 +101,14 @@ class CharEqualTo : public std::binary_function<char, char, bool>
 };
 
 
-class WhiteSpace : public std::unary_function<char, bool>
+class WhiteSpace
 {
   public:
+    // Formerly inherited from std::unary_function<char, bool> (deprecated in
+    // C++11, removed in C++17); kept as direct aliases for compatibility.
+    typedef char argument_type;
+    typedef bool result_type;
+
     bool operator()(const char c) const;
     bool operator()(const char c1, const char c2) const;
 };
@@ -133,10 +146,15 @@ class StringLess
  ** This class is equal_to functor for generic strings. It supports the
  ** following compare types: case-sensitive, case-insensitive and as-integer.
  */
-class StringEqualTo : public std::binary_function<std::string, std::string,
-  bool>
+class StringEqualTo
 {
   public:
+    // Formerly inherited from std::binary_function<std::string, std::string,
+    // bool> (deprecated in C++11, removed in C++17); kept as direct aliases.
+    typedef std::string first_argument_type;
+    typedef std::string second_argument_type;
+    typedef bool result_type;
+
     StringEqualTo(Char::eCompareType compareType = Char::eCASE_SENSITIVE);
 
     StringEqualTo& operator=(const StringEqualTo& in);

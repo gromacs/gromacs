@@ -21,7 +21,6 @@ using std::out_of_range;
 using std::runtime_error;
 using std::not_equal_to;
 using std::equal_to;
-using std::not1;
 using std::lexicographical_compare;
 using std::find_if;
 using std::remove_copy_if;
@@ -30,7 +29,6 @@ using std::remove_if;
 using std::unique;
 using std::transform;
 using std::back_inserter;
-using std::bind2nd;
 using std::string;
 using std::ios;
 using std::istringstream;
@@ -443,7 +441,7 @@ bool String::IsScientific(const string& number)
 {
     // Find exponent letter
     string::const_iterator expIter = find_if(number.begin(), number.end(),
-      bind2nd(CharEqualTo(Char::eCASE_INSENSITIVE), 'E'));
+      [](char c) { return CharEqualTo(Char::eCASE_INSENSITIVE)(c, 'E'); });
 
     if (expIter == number.end())
         return (false);
@@ -457,7 +455,7 @@ string::const_iterator String::GetExpValue(int& expValue,
 {
     // Find exponent letter
     string::const_iterator expIter = find_if(beg, end,
-      bind2nd(CharEqualTo(Char::eCASE_INSENSITIVE), 'E'));
+      [](char c) { return CharEqualTo(Char::eCASE_INSENSITIVE)(c, 'E'); });
 
     if (expIter == end)
     {
@@ -479,12 +477,12 @@ void String::GetMantissa(string& mantissa, int& addExpValue,
 
     // Find the first non-zero digit.
     string::const_iterator firstNonZeroIter = find_if(beg, end,
-      bind2nd(not_equal_to<char>(), '0'));
+      [](char c) { return c != '0'; });
 
     if (*firstNonZeroIter == '.')
     {
         firstNonZeroIter = find_if(firstNonZeroIter + 1, end,
-          bind2nd(not_equal_to<char>(), '0'));
+          [](char c) { return c != '0'; });
     }
 
     if (firstNonZeroIter == end)
@@ -506,16 +504,16 @@ void String::GetMantissa(string& mantissa, int& addExpValue,
 
     // Find the period
     string::const_iterator dotIter = find_if(beg, end,
-      bind2nd(equal_to<char>(), '.'));
+      [](char c) { return c == '.'; });
 
     mantissa.push_back(*firstNonZeroIter);
     mantissa.push_back('.');
     remove_copy_if(firstNonZeroIter + 1, end, back_inserter(mantissa),
-      bind2nd(equal_to<char>(), '.'));
+      [](char c) { return c == '.'; });
 
     // Strip trailing zeros from mantissa (from the end to the period)
     string::reverse_iterator lastNonZeroRevIter = find_if(mantissa.rbegin(),
-      mantissa.rend(), bind2nd(not_equal_to<char>(), '0'));
+      mantissa.rend(), [](char c) { return c != '0'; });
 
     string::iterator lastNonZeroNormIter(lastNonZeroRevIter.base());
 
@@ -547,7 +545,7 @@ void String::ScientificNumberToFixed(string& fixed, const bool isPositive,
         fixed.push_back('.');
         fixed.append(abs(exponent) - 1, '0');
         remove_copy_if(mantissa.begin(), mantissa.end(),
-          back_inserter(fixed), bind2nd(equal_to<char>(), '.'));
+          back_inserter(fixed), [](char c) { return c == '.'; });
     }
     else
     {
@@ -609,7 +607,7 @@ bool String::IsEqual(const string& firstString, const string& secondString,
 void String::StripLeadingWs(string& resString)
 {
     string::iterator nonWhiteIter = find_if(resString.begin(),
-      resString.end(), not1(WhiteSpace()));
+      resString.end(), [](char c) { return !WhiteSpace()(c); });
 
     resString.erase(resString.begin(), nonWhiteIter);
 }
@@ -618,7 +616,7 @@ void String::StripLeadingWs(string& resString)
 void String::StripTrailingWs(string& resString)
 {
     string::reverse_iterator nonWhiteRevIter = find_if(resString.rbegin(),
-      resString.rend(), not1(WhiteSpace()));
+      resString.rend(), [](char c) { return !WhiteSpace()(c); });
 
     string::iterator nonWhiteIter = nonWhiteRevIter.base();
 

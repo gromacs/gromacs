@@ -1,6 +1,7 @@
 # GROMACS-owned build for a trimmed subset of the RCSB mmCIF Dictionary Suite.
 #
-# Upstream: https://github.com/rcsb/cpp-dict-pack  (mmcif-dict-suite v2.500).
+# Upstream: https://github.com/rcsb/cpp-dict-pack (see UPDATING.md for the
+# per-module commits this copy is pinned to).
 # Upstream ships a heavyweight build (flex/bison code generation plus network
 # download and compilation of the mmCIF dictionaries). GROMACS only needs the
 # CIF/PDBx *file* parser and writer, so this file builds a single static library
@@ -84,37 +85,52 @@ target_include_directories(mmcif SYSTEM PUBLIC
 # and silence its (many) warnings so it does not pollute the GROMACS build.
 set_target_properties(mmcif PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel|IntelLLVM")
-    target_compile_options(mmcif PRIVATE -w)
-elseif(MSVC)
-    target_compile_options(mmcif PRIVATE /w)
-endif()
+# Ask the compiler whether it takes the flag rather than matching compiler IDs,
+# which would have to grow for AppleClang, NVHPC and anything added later. This
+# target mixes C and C++ sources, so each language is probed and set separately.
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+function(mmcif_suppress_warnings_for_language LANGUAGE)
+    foreach(candidate "-w" "/w")
+        # A cache variable name cannot hold the flag verbatim.
+        string(REGEX REPLACE "[^A-Za-z0-9]" "_" sanitized "${candidate}")
+        set(supported "MMCIF_${LANGUAGE}_ACCEPTS${sanitized}")
+        if(LANGUAGE STREQUAL "C")
+            check_c_compiler_flag("${candidate}" ${supported})
+        else()
+            check_cxx_compiler_flag("${candidate}" ${supported})
+        endif()
+        if(${supported})
+            target_compile_options(mmcif PRIVATE
+                $<$<COMPILE_LANGUAGE:${LANGUAGE}>:${candidate}>)
+            return()
+        endif()
+    endforeach()
+endfunction()
+
+mmcif_suppress_warnings_for_language(C)
+mmcif_suppress_warnings_for_language(CXX)
 
 # ---------------------------------------------------------------------------
-# WORKAROUNDS for defects in the vendored RCSB sources.
+# WORKAROUND for a defect in the vendored RCSB sources.
 #
-# The two settings below work around problems that live in the upstream RCSB
-# code, not in GROMACS. They are TEMPORARY: the intent is to submit fixes to
-# the upstream project (https://github.com/rcsb/cpp-dict-pack); if/when those
-# are accepted and this vendored copy is updated, remove these workarounds.
-# See UPDATING.md ("Local workarounds") for details.
+# The Clang static analyzer (GMX_CLANG_ANALYZER) reports harmless dead stores in
+# this third-party code, which fails the analyzer CI job. Those stores are
+# annotated in the sources with [[clang::suppress]] (grep for it under
+# modules/); a compiler-flag bypass is not possible because the analyzer build
+# compiles with g++ -- which rejects Clang-only analyzer flags -- while only the
+# analysis pass is Clang, and both share the compile command.
 #
-# 1. GenString.C/.h and GenCont.C use std::bind2nd / std::not1, deprecated in
-#    C++11 and removed from the standard library in C++17. libstdc++ still
-#    offers them as an extension, but libc++ does not once the TU is compiled
-#    as C++17+, so a C++20 GROMACS build fails to compile this library. Build
-#    just this vendored target as C++14, where the binders still exist
-#    everywhere; it is a standalone static library, so its language standard is
-#    independent of the rest of GROMACS.
-set_target_properties(mmcif PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
-#
-# 2. The Clang static analyzer (GMX_CLANG_ANALYZER) reports harmless dead stores
-#    in this third-party code, which fails the analyzer CI job. Those stores are
-#    annotated in the sources with [[clang::suppress]] (grep for it under
-#    modules/); a compiler-flag bypass is not possible because the analyzer
-#    build compiles with g++ -- which rejects Clang-only analyzer flags -- while
-#    only the analysis pass is Clang, and both share the compile command.
+# This is TEMPORARY: fixes are submitted upstream
+# (https://github.com/rcsb/cpp-dict-pack); if/when they are accepted and this
+# vendored copy is updated, remove the annotations. See UPDATING.md ("Local
+# patches") for details, including the source patch that replaced the
+# C++17-removed std::bind2nd / std::not1 binders this target used to need a
+# C++14 build for.
 # ---------------------------------------------------------------------------
 
-# Keep the target out of IDE clutter alongside the other bundled externals.
+# Group this target under "External" in IDEs that show target folders, so it
+# does not clutter the list of GROMACS targets. GROMACS does not yet do this
+# for its other bundled externals.
 set_target_properties(mmcif PROPERTIES FOLDER "External")
