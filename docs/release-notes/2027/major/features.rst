@@ -61,11 +61,11 @@ Reading and writing of mmCIF/PDBx structure and trajectory files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 |Gromacs| tools can now read and write structures in the mmCIF/PDBx format
-(``.cif``), the primary distribution format of the wwPDB. Extended PDB entry
-identifiers (the ``pdb_########`` form, up to 12 characters) and expanded
-chemical-component identifiers (up to 5 characters) are preserved on a
-read/write round trip. Multi-model ``.cif`` files can be read and written as
-trajectories, for example with :ref:`gmx trjconv`.
+(``.cif``), the primary distribution format of the wwPDB. This covers entries
+that the legacy PDB format cannot express, including extended entry identifiers
+(the ``pdb_########`` form, up to 12 characters) and chemical-component
+identifiers of up to 5 characters. Multi-model ``.cif`` files can be read and
+written as trajectories, for example with :ref:`gmx trjconv`.
 
 With the ``-conect`` option of :ref:`gmx editconf` and :ref:`gmx trjconv`, atom
 connectivity is written as ``struct_conn`` records, the mmCIF counterpart of the
@@ -73,5 +73,9 @@ PDB ``LINK`` and ``SSBOND`` records, and read back again. Cis peptide bonds foun
 in the coordinates are annotated in ``struct_mon_prot_cis``; this is a geometric
 annotation of the structure at hand, which for a simulation snapshot may differ
 from the records of the entry it started from.
+
+mmCIF allows chain identifiers of more than one character, while |Gromacs| stores
+a single character. Such identifiers are truncated to their first character, and
+a warning naming them is printed.
 
 :issue:`4753`

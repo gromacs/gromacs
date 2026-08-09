@@ -17,3 +17,14 @@ different hydrogen naming schemes, such as original AMBER/IUPAC names for
 methylene hydrogens, to work without naming-specific code paths or command-line
 options.
 
+``-w`` now displays more file types, and falls back to other viewers
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The ``-w`` option can now display ``.cif`` and ``.gro`` files, neither of which
+had a viewer before. Every file type it handles now lists several viewers rather
+than one: the viewer used previously is still preferred, and an alternative is
+chosen only when that one is not installed, so ``-w`` now works on machines where
+it used to fail. Structures are shown with PyMOL, ChimeraX, Jmol or VMD, plots
+with Grace, and images and PostScript with the common desktop viewers. The
+``GMX_VIEW_`` environment variables continue to override the choice.
+
