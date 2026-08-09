@@ -514,8 +514,8 @@ gmx_bool parse_common_args(int*               argc,
         if (isFlagSet(PCA_CAN_VIEW))
         {
             options.addOption(gmx::BooleanOption("w").store(&bView).description(
-                    "View output [REF].xvg[ref], [REF].xpm[ref], "
-                    "[REF].eps[ref] and [REF].pdb[ref] files"));
+                    "View output [REF].xvg[ref], [REF].xpm[ref], [REF].eps[ref], "
+                    "[REF].pdb[ref], [REF].cif[ref] and [REF].gro[ref] files"));
         }
 
         bool bXvgr = false;

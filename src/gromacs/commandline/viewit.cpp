@@ -49,35 +49,154 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/path.h"
 
-static constexpr std::array<int, 6> canViewFileType = { 0, efEPS, efXPM, efXVG, efPDB, efCIF };
-
-static constexpr int numberOfPossibleFiles = canViewFileType.size();
-
-static int can_view(int ftp)
+//! A program that can display a file, and how to tell whether it is installed.
+struct Viewer
 {
-    for (int i = 1; i < numberOfPossibleFiles; i++)
+    //! Command line that views the file.
+    const char* command;
+    /*! \brief Executable whose presence decides whether \c command can run.
+     *
+     * Defaults to the first word of \c command, which is the right test unless
+     * the command wraps the real viewer in another program, as
+     * "xterm -e rasmol" does.
+     */
+    const char* program = nullptr;
+};
+
+/*! \name Viewers for each file type, most preferred first.
+ *
+ * The viewer GROMACS has always used for a type heads its list, so that anyone
+ * who has it keeps getting it. The alternatives only take effect on machines
+ * where the established viewer is absent and \c -w therefore used to fail.
+ * \{
+ */
+static constexpr std::array<Viewer, 5> c_epsViewers = {
+    { { "ghostview" }, { "gv" }, { "evince" }, { "okular" }, { "xdg-open" } }
+};
+static constexpr std::array<Viewer, 4> c_xpmViewers = {
+    { { "display" }, { "eog" }, { "feh" }, { "xdg-open" } },
+};
+//! GMX_USE_XMGR still forces xmgr ahead of all of these; see do_view() below.
+static constexpr std::array<Viewer, 4> c_xvgViewers = {
+    { { "xmgrace" }, { "grace" }, { "qtgrace" }, { "xmgr" } }
+};
+//! RasMol is driven from a terminal, so test for RasMol, not the xterm wrapping it.
+static constexpr std::array<Viewer, 5> c_pdbViewers = {
+    { { "xterm -e rasmol", "rasmol" }, { "pymol" }, { "chimerax" }, { "jmol" }, { "vmd" } }
+};
+static constexpr std::array<Viewer, 3> c_cifViewers = {
+    { { "pymol" }, { "chimerax" }, { "jmol" } },
+};
+static constexpr std::array<Viewer, 4> c_groViewers = {
+    { { "pymol" }, { "chimerax" }, { "jmol" }, { "vmd" } },
+};
+//! \}
+
+/*! \brief A file type do_view() can display, and the viewers that display it.
+ *
+ * Pairing the file type with its viewers means the two cannot fall out of step,
+ * as separate parallel arrays indexed by the same number did.
+ */
+struct ViewerForFileType
+{
+    //! The file type, as enumerated in filetypes.h.
+    int fileType;
+    //! The viewers that can display it, most preferred first.
+    gmx::ArrayRef<const Viewer> viewers;
+};
+
+//! The file types that do_view() knows how to display.
+static const std::array<ViewerForFileType, 6> c_viewerForFileType = {
+    { { efEPS, c_epsViewers },
+      { efXPM, c_xpmViewers },
+      { efXVG, c_xvgViewers },
+      { efPDB, c_pdbViewers },
+      { efCIF, c_cifViewers },
+      { efGRO, c_groViewers } },
+};
+
+//! Whether the program \p viewer needs is installed.
+static bool viewerIsAvailable(const Viewer& viewer)
+{
+    if (viewer.command == nullptr)
     {
-        if (ftp == canViewFileType[i])
+        return false;
+    }
+
+    std::string program;
+    if (viewer.program != nullptr)
+    {
+        program = viewer.program;
+    }
+    else
+    {
+        program                 = viewer.command;
+        const size_t firstSpace = program.find(' ');
+        if (firstSpace != std::string::npos)
         {
-            return i;
+            program.resize(firstSpace);
         }
     }
 
-    return 0;
+    std::error_code errorCode;
+    if (program.find('/') != std::string::npos)
+    {
+        return std::filesystem::is_regular_file(program, errorCode);
+    }
+    for (const std::filesystem::path& directory : gmx::getSystemExecutablePaths())
+    {
+        if (std::filesystem::is_regular_file(directory / program, errorCode))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*! \brief Return how to view \p ftp, or nullptr if there is no way to view it.
+ *
+ * Prefers a viewer that is actually installed. If none of them is, returns the
+ * most preferred one anyway, so that the user is told about a viewer we do
+ * suggest rather than nothing at all.
+ */
+static const Viewer* findViewer(int ftp)
+{
+    for (const ViewerForFileType& entry : c_viewerForFileType)
+    {
+        if (entry.fileType != ftp)
+        {
+            continue;
+        }
+        for (const Viewer& viewer : entry.viewers)
+        {
+            if (viewerIsAvailable(viewer))
+            {
+                return &viewer;
+            }
+        }
+        return entry.viewers.empty() ? nullptr : &entry.viewers.front();
+    }
+
+    return nullptr;
+}
+
+static bool can_view(int ftp)
+{
+    return findViewer(ftp) != nullptr;
 }
 
 void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
 {
-    std::array<const char*, 5> viewProgram = {
-        nullptr, "ghostview", "display", nullptr, "xterm -e rasmol"
-    };
     char        buf[STRLEN], env[STRLEN];
     const char* cmd;
-    int         ftp, n;
+    int         ftp;
 
     if (output_env_get_view(oenv) && fn)
     {
@@ -101,25 +220,29 @@ void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
                         }
                         else
                         {
-                            cmd = "xmgrace";
+                            // xmgrace heads the efXVG entries, so this still
+                            // selects it whenever it is installed.
+                            const Viewer* viewer = findViewer(ftp);
+                            cmd = (viewer != nullptr) ? viewer->command : "xmgrace";
                         }
                     }
                     break;
                 default:
-                    if ((n = can_view(ftp)))
-                    {
-                        if (!(cmd = std::getenv(env)))
-                        {
-                            cmd = viewProgram[n];
-                        }
-                    }
-                    else
+                {
+                    const Viewer* viewer = findViewer(ftp);
+                    if (viewer == nullptr)
                     {
                         fprintf(stderr, "Don't know how to view file %s", fn);
                         return;
                     }
+                    if (!(cmd = std::getenv(env)))
+                    {
+                        cmd = viewer->command;
+                    }
+                    break;
+                }
             }
-            if (std::strlen(cmd))
+            if (cmd != nullptr && std::strlen(cmd))
             {
                 sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
                 fprintf(stderr, "Executing '%s'\n", buf);
