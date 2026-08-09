@@ -46,6 +46,7 @@
 
 #include "gromacs/fileio/cifio.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -59,6 +60,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/math/units.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -380,6 +382,24 @@ std::vector<ConnectivityAtomSpec> peptideSpec(bool cis)
              { "CA", "PRO", 2, 'A', "C", { 0.208, caNextY, 0.0 } } };
 }
 
+/*! \brief The peptide of peptideSpec(), twisted to a signed omega of \p omegaDeg.
+ *
+ * CA(1) sits along +y from the C-N bond, and CA(2) is rotated about that bond
+ * by omega, which by the IUPAC convention is the dihedral angle itself. The
+ * cis and trans fixtures above lie at 0 and 180 degrees, where the sign of
+ * omega cannot be observed at all, so they cannot catch a sign error.
+ */
+std::vector<ConnectivityAtomSpec> twistedPeptideSpec(real omegaDeg)
+{
+    const real omega   = omegaDeg * gmx::c_deg2Rad;
+    const real caNextY = static_cast<real>(0.125 * std::cos(omega));
+    const real caNextZ = static_cast<real>(0.125 * std::sin(omega));
+    return { { "CA", "ALA", 1, 'A', "C", { -0.075, 0.125, 0.0 } },
+             { "C", "ALA", 1, 'A', "C", { 0.0, 0.0, 0.0 } },
+             { "N", "PRO", 2, 'A', "N", { 0.133, 0.0, 0.0 } },
+             { "CA", "PRO", 2, 'A', "C", { 0.208, caNextY, caNextZ } } };
+}
+
 //! Two SG sulfurs that form a disulfide bridge, and a plain carbon bonded to one.
 std::vector<ConnectivityAtomSpec> disulfideSpec()
 {
@@ -541,6 +561,28 @@ TEST(CifCisPeptideTest, CisPeptideIsAnnotated)
     EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.pdbx_auth_seq_id_2"), "2") << content;
     EXPECT_NEAR(std::strtod(cifItemValue(content, "_struct_mon_prot_cis.pdbx_omega_angle").c_str(), nullptr), 0.0, 1e-6)
             << content;
+}
+
+TEST(CifCisPeptideTest, OmegaAngleKeepsItsSign)
+{
+    // The cis and trans fixtures sit at 0 and 180 degrees, where negating omega
+    // changes nothing, so only a twisted peptide can catch a sign error -- one
+    // that would otherwise flip every pdbx_omega_angle GROMACS writes.
+    TestFileManager fileManager;
+    for (const real omegaDeg : { real(-20.0), real(20.0) })
+    {
+        ConnectivityStructure structure(twistedPeptideSpec(omegaDeg));
+        const std::string     cifFile =
+                fileManager.getTemporaryFilePath(omegaDeg < 0 ? "omega_neg.cif" : "omega_pos.cif").string();
+
+        CifIO::write(cifFile, "omega", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
+
+        const std::string content = readFile(cifFile);
+        ASSERT_NE(content.find("_struct_mon_prot_cis.pdbx_omega_angle"), std::string::npos) << content;
+        const double written = std::strtod(
+                cifItemValue(content, "_struct_mon_prot_cis.pdbx_omega_angle").c_str(), nullptr);
+        EXPECT_NEAR(written, omegaDeg, 0.01) << "omega " << omegaDeg << " in " << content;
+    }
 }
 
 TEST(CifCisPeptideTest, TransPeptideIsNotAnnotated)

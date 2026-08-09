@@ -44,7 +44,9 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"
@@ -54,14 +56,23 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 
-// RCSB mmCIF library (bundled under src/external/mmcif-dict-suite-*). Kept
+// RCSB mmCIF library (bundled under src/external/mmcif-dict-suite). Kept
 // strictly inside this translation unit so that cifio.h stays free of any
 // third-party types.
+//
+// Note that its accessors are not const-qualified: CifFile::GetBlock(),
+// Block::GetTablePtr(), ISTable::IsColumnPresent() and ISTable::GetColumn()
+// all need a non-const object even though none of them modifies the file.
+// The reading code below therefore has to hold non-const pointers throughout,
+// however read-only its intent.
 #include "CifFile.h"
 #include "CifFileUtil.h"
 #include "ISTable.h"
@@ -71,7 +82,7 @@ namespace
 {
 
 //! Values used by mmCIF to denote an unknown ('?') or inapplicable ('.') item.
-bool isCifNull(const std::string& s)
+bool isCifNull(std::string_view s)
 {
     return s.empty() || s == "?" || s == ".";
 }
@@ -87,11 +98,20 @@ std::vector<std::string> getColumn(ISTable* table, const std::string& name)
     return col;
 }
 
-//! Value of column \p col at row \p row, or empty string if the column is absent.
-const std::string& cell(const std::vector<std::string>& col, size_t row)
+//! Value of column \p col at row \p row, or an empty view if the column is absent.
+std::string_view cell(gmx::ArrayRef<const std::string> col, size_t row)
 {
-    static const std::string empty;
-    return (row < col.size()) ? col[row] : empty;
+    return (row < col.size()) ? std::string_view(col[row]) : std::string_view();
+}
+
+/*! \brief Value of column \p col at row \p row as a null-terminated C string.
+ *
+ * The C library conversion functions and the symbol table need a terminated
+ * string, which a std::string_view cannot promise. An absent column yields "".
+ */
+const char* cellCstr(gmx::ArrayRef<const std::string> col, size_t row)
+{
+    return (row < col.size()) ? col[row].c_str() : "";
 }
 
 /*! \brief Row indices of the atom_site table that belong to the first model.
@@ -122,11 +142,22 @@ ISTable* parseFirstBlock(const std::filesystem::path& infile,
                          std::string*                 blockName)
 {
     CifFile* raw = ParseCifSimple(infile.string());
-    if (raw == nullptr)
-    {
-        gmx_fatal(FARGS, "Could not parse mmCIF file %s", infile.string().c_str());
-    }
+    // ParseCifSimple() always hands back a file object, even for input it could
+    // not make sense of: what went wrong is reported in the parsing diagnostics.
+    GMX_RELEASE_ASSERT(raw != nullptr, "ParseCifSimple() should always return a file");
+    // Take ownership before anything below can throw.
     cifOwner.reset(raw);
+    const std::string& diagnostics = raw->GetParsingDiags();
+    const std::string  fileName    = infile.string();
+    if (diagnostics.find("ERROR") != std::string::npos)
+    {
+        GMX_THROW(gmx::InvalidInputError("Could not parse mmCIF file " + fileName + "\n" + diagnostics));
+    }
+    if (!diagnostics.empty())
+    {
+        // Not fatal, but the file is not clean and that should not pass unnoticed.
+        std::fprintf(stderr, "WARNING: while parsing %s:\n%s", fileName.c_str(), diagnostics.c_str());
+    }
     if (raw->GetNumBlocks() == 0)
     {
         return nullptr;
@@ -167,23 +198,51 @@ void cellToBox(double a, double b, double c, double alpha, double beta, double g
     }
 }
 
-//! Read the unit cell of \p block into \p box / \p pbcType (no-op if absent).
-void readCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix box)
+/*! \brief Read the unit cell of \p block into \p box / \p pbcType.
+ *
+ * Returns whether a usable cell was found, and touches \p box and \p pbcType
+ * only when it was. Callers must therefore have set them to their no-box
+ * defaults beforehand: an mmCIF file legitimately carries no cell at all (an
+ * NMR ensemble, for one), so that is reported by returning false rather than
+ * treated as an error. A cell that is present but unusable does warn, since
+ * unlike an absent one it means the file is malformed.
+ */
+bool readCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix box)
 {
     ISTable* cellTable = cif->GetBlock(block).GetTablePtr("cell");
     if (cellTable == nullptr || cellTable->GetNumRows() == 0)
     {
-        return;
+        return false;
     }
     auto get = [cellTable](const char* name) -> std::string
     { return cellTable->IsColumnPresent(name) ? (*cellTable)(0, name) : std::string(); };
-    const std::string a = get("length_a");
-    const std::string b = get("length_b");
-    const std::string c = get("length_c");
-    if (isCifNull(a) || isCifNull(b) || isCifNull(c))
+
+    const std::string lengths[DIM] = { get("length_a"), get("length_b"), get("length_c") };
+    double            edge[DIM];
+    for (int d = 0; d < DIM; d++)
     {
-        return;
+        if (isCifNull(lengths[d]))
+        {
+            // '?' and '.' say the edge is unknown or does not apply, which is
+            // the file declining to give a cell rather than getting it wrong.
+            return false;
+        }
+        // Otherwise a value that is not a positive number means the file is
+        // broken, so reject it instead of letting strtod() turn it into a
+        // zero-volume box that later code would take at face value.
+        char* endOfNumber = nullptr;
+        edge[d]           = std::strtod(lengths[d].c_str(), &endOfNumber);
+        if (endOfNumber == lengths[d].c_str() || edge[d] <= 0.0)
+        {
+            std::fprintf(stderr,
+                         "WARNING: mmCIF cell gives no usable length_%c (\"%s\"), so no box is "
+                         "read from this file\n",
+                         static_cast<char>('a' + d),
+                         lengths[d].c_str());
+            return false;
+        }
     }
+
     auto angle = [&get](const char* name) -> double
     {
         const std::string v = get(name);
@@ -191,18 +250,13 @@ void readCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix b
     };
     if (box != nullptr)
     {
-        cellToBox(std::strtod(a.c_str(), nullptr),
-                  std::strtod(b.c_str(), nullptr),
-                  std::strtod(c.c_str(), nullptr),
-                  angle("angle_alpha"),
-                  angle("angle_beta"),
-                  angle("angle_gamma"),
-                  box);
+        cellToBox(edge[XX], edge[YY], edge[ZZ], angle("angle_alpha"), angle("angle_beta"), angle("angle_gamma"), box);
     }
     if (pbcType != nullptr)
     {
         *pbcType = PbcType::Xyz;
     }
+    return true;
 }
 
 //! Extract the (possibly extended) PDB entry ID / title of \p block.
@@ -244,17 +298,7 @@ std::string readEntryId(CifFile* cif, const std::string& block)
 //! Format a coordinate (nm) as an Angstrom mmCIF value.
 std::string coordToStr(real xNm)
 {
-    char buf[32];
-    std::snprintf(buf, sizeof(buf), "%.3f", 10.0 * xNm);
-    return buf;
-}
-
-//! Format a real with the given precision.
-std::string realToStr(real value, const char* fmt)
-{
-    char buf[32];
-    std::snprintf(buf, sizeof(buf), fmt, value);
-    return buf;
+    return gmx::formatString("%.3f", 10.0 * xNm);
 }
 
 //! The chain identifier written for residue \p resind ('A' when it is unset).
@@ -305,8 +349,8 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
                                      coordToStr(x[i][XX]),
                                      coordToStr(x[i][YY]),
                                      coordToStr(x[i][ZZ]),
-                                     realToStr(occup, "%.2f"),
-                                     realToStr(bfac, "%.2f"),
+                                     gmx::formatString("%.2f", occup),
+                                     gmx::formatString("%.2f", bfac),
                                      seqStr,
                                      resnm,
                                      chainStr,
@@ -346,10 +390,10 @@ std::string cifToken(const std::string& value)
 }
 
 //! Add \p rows to \p block as a loop named \p category; does nothing when empty.
-void addLoopTable(Block&                                       block,
-                  const char*                                  category,
-                  const std::vector<const char*>&              columns,
-                  const std::vector<std::vector<std::string>>& rows)
+void addLoopTable(Block&                                        block,
+                  const char*                                   category,
+                  gmx::ArrayRef<const char* const>              columns,
+                  gmx::ArrayRef<const std::vector<std::string>> rows)
 {
     if (rows.empty())
     {
@@ -367,10 +411,10 @@ void addLoopTable(Block&                                       block,
 }
 
 //! Stream \p rows to \p out as a loop named \p category; does nothing when empty.
-void writeLoop(FILE*                                        out,
-               const char*                                  category,
-               const std::vector<const char*>&              columns,
-               const std::vector<std::vector<std::string>>& rows)
+void writeLoop(FILE*                                         out,
+               const char*                                   category,
+               gmx::ArrayRef<const char* const>              columns,
+               gmx::ArrayRef<const std::vector<std::string>> rows)
 {
     if (rows.empty())
     {
@@ -564,7 +608,7 @@ std::vector<std::vector<std::string>> buildStructConnRows(const t_atoms*        
         row.emplace_back(disulfide ? "disulf" : "covale");
         appendConnPartner(&row, atoms, ai);
         appendConnPartner(&row, atoms, aj);
-        row.push_back(realToStr(10.0 * std::sqrt(distance2(x[ai], x[aj])), "%.3f"));
+        row.push_back(gmx::formatString("%.3f", 10.0 * std::sqrt(distance2(x[ai], x[aj]))));
         rows.push_back(std::move(row));
     }
 
@@ -617,15 +661,7 @@ const std::vector<const char*>& structMonProtCisColumns()
  */
 real dihedralDegrees(const rvec p1, const rvec p2, const rvec p3, const rvec p4)
 {
-    rvec b1, b2, b3, n1, n2, m1, unitB2;
-    rvec_sub(p2, p1, b1);
-    rvec_sub(p3, p2, b2);
-    rvec_sub(p4, p3, b3);
-    cprod(b1, b2, n1);
-    cprod(b2, b3, n2);
-    svmul(1.0 / norm(b2), b2, unitB2);
-    cprod(n1, unitB2, m1);
-    return gmx::c_rad2Deg * std::atan2(iprod(m1, n2), iprod(n1, n2));
+    return gmx::c_rad2Deg * gmx_dihedral_angle(p1, p2, p3, p4);
 }
 
 /*! \brief The struct_mon_prot_cis rows for the peptide bonds in cis conformation.
@@ -716,23 +752,26 @@ buildCisPeptideRows(const t_atoms* atoms, const rvec x[], int nindex, const int 
                                                  asym2,
                                                  seq2,
                                                  "1",
-                                                 realToStr(omega, "%.2f") });
+                                                 gmx::formatString("%.2f", omega) });
     }
     return rows;
 }
 
 //! How struct_conn addresses one atom: chain, residue number and atom name.
-std::string connectionKey(const std::string& asym, const std::string& seq, const std::string& atom)
+std::string connectionKey(std::string_view asym, std::string_view seq, std::string_view atom)
 {
-    return asym + '|' + seq + '|' + atom;
+    std::string key;
+    key.reserve(asym.size() + seq.size() + atom.size() + 2);
+    key.append(asym).append(1, '|').append(seq).append(1, '|').append(atom);
+    return key;
 }
 
 //! Value of \p primary at row \p row, falling back to \p fallback when it is null.
-const std::string& preferredCell(const std::vector<std::string>& primary,
-                                 const std::vector<std::string>& fallback,
-                                 size_t                          row)
+std::string_view preferredCell(gmx::ArrayRef<const std::string> primary,
+                               gmx::ArrayRef<const std::string> fallback,
+                               size_t                           row)
 {
-    const std::string& value = cell(primary, row);
+    const std::string_view value = cell(primary, row);
     return isCifNull(value) ? cell(fallback, row) : value;
 }
 
@@ -874,75 +913,98 @@ void CifIO::read(const std::filesystem::path& infile,
 
     const std::vector<unsigned int> rows = firstModelRows(atomSite);
 
-    int         natom     = 0;
-    int         chainnum  = 0;
-    std::string prevChain = cell(chain, rows.empty() ? 0 : rows[0]);
+    int              natom     = 0;
+    int              chainnum  = 0;
+    std::string_view prevChain = cell(chain, rows.empty() ? 0 : rows[0]);
+    // mmCIF permits chain identifiers of more than one character, while t_resinfo
+    // stores a single char, so collect whatever has to be truncated and report it
+    // once rather than per atom.
+    std::set<std::string> truncatedChains;
     for (unsigned int r : rows)
     {
         if (natom >= atoms->nr)
         {
-            gmx_fatal(FARGS,
-                      "\nFound more atoms in mmCIF file %s than expected (%d)",
-                      infile.string().c_str(),
-                      atoms->nr);
+            GMX_THROW(gmx::InconsistentInputError(
+                    gmx::formatString("Found more atoms in mmCIF file %s than the %d expected",
+                                      infile.string().c_str(),
+                                      atoms->nr)));
         }
 
-        const std::string& chainStr = cell(chain, r);
+        const std::string_view chainStr = cell(chain, r);
         if (natom > 0 && chainStr != prevChain)
         {
             chainnum++;
         }
         prevChain = chainStr;
 
-        const std::string&  resnm   = cell(resName, r);
-        const int           resnr   = std::atoi(cell(seq, r).c_str());
-        const std::string&  ins     = cell(insCode, r);
-        const unsigned char resic   = isCifNull(ins) ? ' ' : static_cast<unsigned char>(ins[0]);
-        const char          chainid = chainStr.empty() ? ' ' : chainStr[0];
+        const char*            resnm   = cellCstr(resName, r);
+        const int              resnr   = std::atoi(cellCstr(seq, r));
+        const std::string_view ins     = cell(insCode, r);
+        const unsigned char    resic   = isCifNull(ins) ? ' ' : static_cast<unsigned char>(ins[0]);
+        const char             chainid = chainStr.empty() ? ' ' : chainStr[0];
+        if (chainStr.size() > 1)
+        {
+            truncatedChains.emplace(chainStr);
+        }
 
         // Start a new residue on any change of number, insertion code or name.
         if (natom == 0 || atoms->resinfo[atoms->atom[natom - 1].resind].nr != resnr
             || atoms->resinfo[atoms->atom[natom - 1].resind].ic != resic
-            || std::strcmp(*atoms->resinfo[atoms->atom[natom - 1].resind].name, resnm.c_str()) != 0)
+            || std::strcmp(*atoms->resinfo[atoms->atom[natom - 1].resind].name, resnm) != 0)
         {
             atoms->atom[natom].resind = (natom == 0) ? 0 : atoms->atom[natom - 1].resind + 1;
             atoms->nres               = atoms->atom[natom].resind + 1;
-            t_atoms_set_resinfo(atoms, natom, symtab, resnm.c_str(), resnr, resic, chainnum, chainid);
+            t_atoms_set_resinfo(atoms, natom, symtab, resnm, resnr, resic, chainnum, chainid);
         }
         else
         {
             atoms->atom[natom].resind = atoms->atom[natom - 1].resind;
         }
 
-        const std::string& elem       = cell(element, r);
-        atoms->atomname[natom]        = put_symtab(symtab, cell(atomName, r).c_str());
+        const char* elem              = cellCstr(element, r);
+        atoms->atomname[natom]        = put_symtab(symtab, cellCstr(atomName, r));
         atoms->atom[natom].m          = 0.0;
         atoms->atom[natom].q          = 0.0;
         atoms->atom[natom].atomnumber = 0;
-        std::strncpy(atoms->atom[natom].elem, elem.c_str(), sizeof(atoms->atom[natom].elem) - 1);
+        std::strncpy(atoms->atom[natom].elem, elem, sizeof(atoms->atom[natom].elem) - 1);
         atoms->atom[natom].elem[sizeof(atoms->atom[natom].elem) - 1] = '\0';
 
-        x[natom][XX] = std::strtod(cell(cartnX, r).c_str(), nullptr) * 0.1;
-        x[natom][YY] = std::strtod(cell(cartnY, r).c_str(), nullptr) * 0.1;
-        x[natom][ZZ] = std::strtod(cell(cartnZ, r).c_str(), nullptr) * 0.1;
+        x[natom][XX] = std::strtod(cellCstr(cartnX, r), nullptr) * 0.1;
+        x[natom][YY] = std::strtod(cellCstr(cartnY, r), nullptr) * 0.1;
+        x[natom][ZZ] = std::strtod(cellCstr(cartnZ, r), nullptr) * 0.1;
 
         if (atoms->pdbinfo != nullptr)
         {
-            const std::string& group_r = cell(group, r);
-            const std::string& alt     = cell(altLoc, r);
+            const std::string_view group_r = cell(group, r);
+            const std::string_view alt     = cell(altLoc, r);
             atoms->pdbinfo[natom].type =
                     (group_r == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
-            atoms->pdbinfo[natom].atomnr = std::atoi(cell(serial, r).c_str());
+            atoms->pdbinfo[natom].atomnr = std::atoi(cellCstr(serial, r));
             atoms->pdbinfo[natom].altloc = isCifNull(alt) ? ' ' : alt[0];
             std::strncpy(atoms->pdbinfo[natom].atomnm,
-                         cell(atomName, r).c_str(),
+                         cellCstr(atomName, r),
                          sizeof(atoms->pdbinfo[natom].atomnm) - 1);
             atoms->pdbinfo[natom].atomnm[sizeof(atoms->pdbinfo[natom].atomnm) - 1] = '\0';
-            atoms->pdbinfo[natom].occup        = std::strtod(cell(occCol, r).c_str(), nullptr);
-            atoms->pdbinfo[natom].bfac         = std::strtod(cell(bfacCol, r).c_str(), nullptr);
+            atoms->pdbinfo[natom].occup        = std::strtod(cellCstr(occCol, r), nullptr);
+            atoms->pdbinfo[natom].bfac         = std::strtod(cellCstr(bfacCol, r), nullptr);
             atoms->pdbinfo[natom].bAnisotropic = FALSE;
         }
         natom++;
+    }
+
+    if (!truncatedChains.empty())
+    {
+        std::string list;
+        for (const std::string& id : truncatedChains)
+        {
+            list += (list.empty() ? "" : ", ") + id;
+        }
+        std::fprintf(stderr,
+                     "WARNING: mmCIF chain identifiers longer than one character (%s) were "
+                     "truncated to their first character, because that is all GROMACS stores. "
+                     "Chains that differ only beyond it can no longer be told apart by "
+                     "identifier.\n",
+                     list.c_str());
     }
 
     readCell(cif.get(), block, pbcType, box);
@@ -1025,12 +1087,12 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
             cell.AddColumn(col);
         }
         cell.AddRow(std::vector<std::string>{ entryId,
-                                              realToStr(10.0 * a, "%.3f"),
-                                              realToStr(10.0 * b, "%.3f"),
-                                              realToStr(10.0 * c, "%.3f"),
-                                              realToStr(alpha, "%.2f"),
-                                              realToStr(beta, "%.2f"),
-                                              realToStr(gamma, "%.2f") });
+                                              gmx::formatString("%.3f", 10.0 * a),
+                                              gmx::formatString("%.3f", 10.0 * b),
+                                              gmx::formatString("%.3f", 10.0 * c),
+                                              gmx::formatString("%.2f", alpha),
+                                              gmx::formatString("%.2f", beta),
+                                              gmx::formatString("%.2f", gamma) });
 
         ISTable& sym = block.AddTable("symmetry");
         sym.AddColumn("entry_id");
@@ -1137,9 +1199,7 @@ CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
     }
     traj->natoms = traj->modelRows.empty() ? 0 : static_cast<int>(traj->modelRows[0].size());
 
-    PbcType pt = PbcType::No;
-    readCell(traj->cif.get(), block, &pt, traj->box);
-    traj->haveBox = (pt != PbcType::No);
+    traj->haveBox = readCell(traj->cif.get(), block, nullptr, traj->box);
 
     return traj.release();
 }
@@ -1161,9 +1221,9 @@ bool CifIO::readTrajectoryFrame(CifTrajectory* traj, t_trxframe* fr)
     for (int i = 0; i < n; i++)
     {
         const unsigned int r = rows[i];
-        fr->x[i][XX]         = std::strtod(cell(traj->cartnX, r).c_str(), nullptr) * 0.1;
-        fr->x[i][YY]         = std::strtod(cell(traj->cartnY, r).c_str(), nullptr) * 0.1;
-        fr->x[i][ZZ]         = std::strtod(cell(traj->cartnZ, r).c_str(), nullptr) * 0.1;
+        fr->x[i][XX]         = std::strtod(cellCstr(traj->cartnX, r), nullptr) * 0.1;
+        fr->x[i][YY]         = std::strtod(cellCstr(traj->cartnY, r), nullptr) * 0.1;
+        fr->x[i][ZZ]         = std::strtod(cellCstr(traj->cartnZ, r), nullptr) * 0.1;
     }
     fr->bX = TRUE;
     if (traj->haveBox)

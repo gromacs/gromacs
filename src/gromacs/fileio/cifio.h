@@ -36,7 +36,7 @@
  * Reading and writing of macromolecular structures in the mmCIF/PDBx format.
  *
  * This module wraps the RCSB mmCIF parser (bundled under
- * src/external/mmcif-dict-suite-*) to import/export the \c atom_site records
+ * src/external/mmcif-dict-suite) to import/export the \c atom_site records
  * of an mmCIF/PDBx file into/from a GROMACS ::t_atoms structure, and to extract
  * the (possibly extended, > 4 character) PDB entry ID.
  *
