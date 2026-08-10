@@ -37,6 +37,42 @@ using std::hex;
 using std::setw;
 using std::setfill;
 
+//  Replacements for the std::bind2nd() / std::not1() calls that C++17 removed.
+//  Written as named functors rather than lambdas so that this file still
+//  compiles as C++98, which is the default mode of the GCC 4.8 that CentOS 7
+//  ships. Valid unchanged from C++98 through C++20.
+namespace {
+
+class CharIsExponent
+{
+  public:
+    bool operator()(const char c) const
+    {
+        return CharEqualTo(Char::eCASE_INSENSITIVE)(c, 'E');
+    }
+};
+
+class CharIsNotZero
+{
+  public:
+    bool operator()(const char c) const { return c != '0'; }
+};
+
+class CharIsPeriod
+{
+  public:
+    bool operator()(const char c) const { return c == '.'; }
+};
+
+class CharIsNotWhiteSpace
+{
+  public:
+    bool operator()(const char c) const { return !WhiteSpace()(c); }
+};
+
+}  // namespace
+
+
 
 char Char::ToLower(const char c)
 {
@@ -441,7 +477,7 @@ bool String::IsScientific(const string& number)
 {
     // Find exponent letter
     string::const_iterator expIter = find_if(number.begin(), number.end(),
-      [](char c) { return CharEqualTo(Char::eCASE_INSENSITIVE)(c, 'E'); });
+      CharIsExponent());
 
     if (expIter == number.end())
         return (false);
@@ -455,7 +491,7 @@ string::const_iterator String::GetExpValue(int& expValue,
 {
     // Find exponent letter
     string::const_iterator expIter = find_if(beg, end,
-      [](char c) { return CharEqualTo(Char::eCASE_INSENSITIVE)(c, 'E'); });
+      CharIsExponent());
 
     if (expIter == end)
     {
@@ -477,12 +513,12 @@ void String::GetMantissa(string& mantissa, int& addExpValue,
 
     // Find the first non-zero digit.
     string::const_iterator firstNonZeroIter = find_if(beg, end,
-      [](char c) { return c != '0'; });
+      CharIsNotZero());
 
     if (*firstNonZeroIter == '.')
     {
         firstNonZeroIter = find_if(firstNonZeroIter + 1, end,
-          [](char c) { return c != '0'; });
+          CharIsNotZero());
     }
 
     if (firstNonZeroIter == end)
@@ -504,16 +540,16 @@ void String::GetMantissa(string& mantissa, int& addExpValue,
 
     // Find the period
     string::const_iterator dotIter = find_if(beg, end,
-      [](char c) { return c == '.'; });
+      CharIsPeriod());
 
     mantissa.push_back(*firstNonZeroIter);
     mantissa.push_back('.');
     remove_copy_if(firstNonZeroIter + 1, end, back_inserter(mantissa),
-      [](char c) { return c == '.'; });
+      CharIsPeriod());
 
     // Strip trailing zeros from mantissa (from the end to the period)
     string::reverse_iterator lastNonZeroRevIter = find_if(mantissa.rbegin(),
-      mantissa.rend(), [](char c) { return c != '0'; });
+      mantissa.rend(), CharIsNotZero());
 
     string::iterator lastNonZeroNormIter(lastNonZeroRevIter.base());
 
@@ -545,7 +581,7 @@ void String::ScientificNumberToFixed(string& fixed, const bool isPositive,
         fixed.push_back('.');
         fixed.append(abs(exponent) - 1, '0');
         remove_copy_if(mantissa.begin(), mantissa.end(),
-          back_inserter(fixed), [](char c) { return c == '.'; });
+          back_inserter(fixed), CharIsPeriod());
     }
     else
     {
@@ -607,7 +643,7 @@ bool String::IsEqual(const string& firstString, const string& secondString,
 void String::StripLeadingWs(string& resString)
 {
     string::iterator nonWhiteIter = find_if(resString.begin(),
-      resString.end(), [](char c) { return !WhiteSpace()(c); });
+      resString.end(), CharIsNotWhiteSpace());
 
     resString.erase(resString.begin(), nonWhiteIter);
 }
@@ -616,7 +652,7 @@ void String::StripLeadingWs(string& resString)
 void String::StripTrailingWs(string& resString)
 {
     string::reverse_iterator nonWhiteRevIter = find_if(resString.rbegin(),
-      resString.rend(), [](char c) { return !WhiteSpace()(c); });
+      resString.rend(), CharIsNotWhiteSpace());
 
     string::iterator nonWhiteIter = nonWhiteRevIter.base();
 

@@ -19,6 +19,29 @@ using std::find_if;
 
 using std::ostream;
 
+//  Replacement for the std::bind2nd() call that C++17 removed, as a named
+//  functor so the file still compiles as C++98 (see GenString.C).
+namespace {
+
+class StringEqualToValue
+{
+  public:
+    StringEqualToValue(const Char::eCompareType compareType, const std::string& value)
+      : _compareType(compareType), _value(value) {}
+
+    bool operator()(const std::string& s) const
+    {
+        return StringEqualTo(_compareType)(s, _value);
+    }
+
+  private:
+    Char::eCompareType _compareType;
+    std::string        _value;
+};
+
+}  // namespace
+
+
 
 ostream& operator<<(ostream& out, const vector<string>& contVector)
 {
@@ -53,7 +76,7 @@ bool GenCont::IsInVector(const string& element,
 {
     vector<string>::const_iterator where = find_if(contVector.begin(),
       contVector.end(),
-      [&](const string& s) { return StringEqualTo(compareType)(s, element); });
+      StringEqualToValue(compareType, element));
  
     return (where != contVector.end());
 }
