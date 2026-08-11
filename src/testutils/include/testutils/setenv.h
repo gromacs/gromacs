@@ -33,8 +33,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Helper functions to have identical behavior of setenv and unsetenv
- * on Unix and Windows systems.
+ * Helper class to handle environment variables in tests.
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \inlibraryapi
@@ -44,16 +43,29 @@
 #ifndef GMX_TESTUTILS_SETENV_H
 #define GMX_TESTUTILS_SETENV_H
 
+#include <optional>
+#include <string>
+
 namespace gmx
 {
 namespace test
 {
 
-//! Polyfiller to make setenv work on Windows
-int gmxSetenv(const char* name, const char* value, const bool overwrite);
+class GmxEnvGuard
+{
+public:
+    GmxEnvGuard(const char* envVar, const char* newValue);
+    ~GmxEnvGuard();
+    GmxEnvGuard& operator=(const GmxEnvGuard&) = delete;
+    GmxEnvGuard(const GmxEnvGuard&)            = delete;
+    GmxEnvGuard& operator=(GmxEnvGuard&&)      = delete;
+    GmxEnvGuard(GmxEnvGuard&&)                 = delete;
 
-//! Polyfiller to make unsetenv work on Windows
-int gmxUnsetenv(const char* name);
+
+private:
+    std::string                envVar_;
+    std::optional<std::string> oldValue_;
+};
 
 } // namespace test
 } // namespace gmx

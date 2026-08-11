@@ -45,37 +45,68 @@
 
 #include <cstdlib>
 
+#include "gromacs/utility/gmxassert.h"
+
 namespace gmx
 {
 namespace test
 {
 
-int gmxSetenv(const char* name, const char* value, const bool overwrite)
+namespace
+{
+
+//! Polyfiller to make setenv work on Windows
+void gmxSetenv(const char* name, const char* value)
 {
 #if GMX_NATIVE_WINDOWS
-    if (!overwrite)
-    {
-        size_t size  = 0;
-        int    error = getenv_s(&size, nullptr, 0, name);
-        if (error != 0 || size != 0)
-        {
-            return error;
-        }
-    }
-    return _putenv_s(name, value);
+    int result = _putenv_s(name, value);
 #else
-    return setenv(name, value, static_cast<int>(overwrite));
+    static constexpr int sc_overwrite = 1;
+    int                  result       = setenv(name, value, sc_overwrite);
 #endif
+    GMX_RELEASE_ASSERT(result == 0, "Failed to set environment variable");
 }
 
-int gmxUnsetenv(const char* name)
+//! Polyfiller to make unsetenv work on Windows
+void gmxUnsetenv(const char* name)
 {
 #if GMX_NATIVE_WINDOWS
-    return _putenv_s(name, "");
+    int result = _putenv_s(name, "");
 #else
-    return unsetenv(name);
+    int result = unsetenv(name);
 #endif
+    GMX_RELEASE_ASSERT(result == 0, "Failed to unset environment variable");
 }
+} // namespace
+
+GmxEnvGuard::GmxEnvGuard(const char* const envVar, const char* const newValue)
+{
+    GMX_RELEASE_ASSERT(envVar != nullptr, "Can't have null here");
+    const char* oldValue = std::getenv(envVar);
+    envVar_              = envVar;
+    oldValue_            = oldValue ? std::make_optional<std::string>(oldValue) : std::nullopt;
+    if (newValue)
+    {
+        gmxSetenv(envVar, newValue);
+    }
+    else
+    {
+        gmxUnsetenv(envVar);
+    }
+}
+
+GmxEnvGuard::~GmxEnvGuard()
+{
+    if (oldValue_.has_value())
+    {
+        gmxSetenv(envVar_.c_str(), oldValue_->c_str());
+    }
+    else
+    {
+        gmxUnsetenv(envVar_.c_str());
+    }
+}
+
 
 } // namespace test
 } // namespace gmx

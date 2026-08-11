@@ -271,36 +271,22 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runner_.setMaxWarn(maxNumWarnings);
     runGrompp(&runner_);
 
-    // Backup current state of both environment variables and unset them
-    const char* environmentVariableBackupOn  = std::getenv(envVariableModSimOn.c_str());
-    const char* environmentVariableBackupOff = std::getenv(envVariableModSimOff.c_str());
-    gmxUnsetenv(envVariableModSimOn.c_str());
-    gmxUnsetenv(envVariableModSimOff.c_str());
-
+    // Unset externally-set env. variables
+    GmxEnvGuard disableModSimOff(envVariableModSimOff.c_str(), nullptr);
+    GmxEnvGuard disableModSimOn(envVariableModSimOn.c_str(), nullptr);
     // Do first mdrun
     runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName.string();
     runner_.edrFileName_                     = simulator1EdrFileName.string();
     runMdrun(&runner_);
 
-    // Set tested environment variable
-    const bool overWriteEnvironmentVariable = true;
-    gmxSetenv(environmentVariable.c_str(), "ON", overWriteEnvironmentVariable);
-
-    // Do second mdrun
-    runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName.string();
-    runner_.edrFileName_                     = simulator2EdrFileName.string();
-    runMdrun(&runner_);
-
-    // Unset tested environment variable
-    gmxUnsetenv(environmentVariable.c_str());
-    // Reset both environment variables to leave further tests undisturbed
-    if (environmentVariableBackupOn != nullptr)
     {
-        gmxSetenv(environmentVariable.c_str(), environmentVariableBackupOn, overWriteEnvironmentVariable);
-    }
-    if (environmentVariableBackupOff != nullptr)
-    {
-        gmxSetenv(environmentVariable.c_str(), environmentVariableBackupOff, overWriteEnvironmentVariable);
+        // Set tested environment variable
+        GmxEnvGuard setModSimFlag(environmentVariable.c_str(), "ON");
+
+        // Do second mdrun
+        runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName.string();
+        runner_.edrFileName_                     = simulator2EdrFileName.string();
+        runMdrun(&runner_);
     }
 
     // Compare simulation results

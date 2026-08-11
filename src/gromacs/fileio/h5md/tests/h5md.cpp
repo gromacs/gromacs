@@ -225,20 +225,16 @@ TEST_F(H5mdIoTest, SetupFileFromInputWritesMetadataGroup)
 //! \brief Test fixture which unsets author-related environment variables for each test
 class H5mdAuthorGroupTest : public H5mdTestBase
 {
-public:
-    H5mdAuthorGroupTest()
-    {
-        gmxUnsetenv("GMX_AUTHOR_NAME");
-        gmxUnsetenv("GMX_AUTHOR_EMAIL");
-    }
+    gmx::test::GmxEnvGuard disableAuthorName_{ "GMX_AUTHOR_NAME", nullptr };
+    gmx::test::GmxEnvGuard disableAuthorEmail_{ "GMX_AUTHOR_EMAIL", nullptr };
 };
 
 TEST_F(H5mdAuthorGroupTest, AuthorNameAndEmailIsSetFromEnvironmentVariable)
 {
-    constexpr char authorName[]  = "Alvar Aalto";
-    constexpr char authorEmail[] = "noreply@gromacs.org";
-    gmxSetenv("GMX_AUTHOR_NAME", authorName, false);
-    gmxSetenv("GMX_AUTHOR_EMAIL", authorEmail, false);
+    constexpr char         authorName[]  = "Alvar Aalto";
+    constexpr char         authorEmail[] = "noreply@gromacs.org";
+    gmx::test::GmxEnvGuard envAuthorName{ "GMX_AUTHOR_NAME", authorName };
+    gmx::test::GmxEnvGuard envAuthorEmail{ "GMX_AUTHOR_EMAIL", authorEmail };
 
     gmx_mtop_t mtop;
     mtop.natoms = 1;
@@ -282,8 +278,8 @@ TEST_F(H5mdAuthorGroupTest, AuthorEmailDefaultsToNotBeingSet)
 
 TEST_F(H5mdAuthorGroupTest, EmptyAuthorNameAndEmailVariablesAreWrittenAsEmptyStrings)
 {
-    gmxSetenv("GMX_AUTHOR_NAME", "", false);
-    gmxSetenv("GMX_AUTHOR_EMAIL", "", false);
+    gmx::test::GmxEnvGuard envAuthorName{ "GMX_AUTHOR_NAME", "" };
+    gmx::test::GmxEnvGuard envAuthorEmail{ "GMX_AUTHOR_EMAIL", "" };
 
     gmx_mtop_t mtop;
     mtop.natoms = 1;

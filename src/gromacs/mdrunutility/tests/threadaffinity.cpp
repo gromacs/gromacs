@@ -44,6 +44,7 @@
 
 #include "gromacs/hardware/hw_info.h"
 
+#include "testutils/setenv.h"
 #include "testutils/testfilemanager.h"
 
 #include "threadaffinitytest.h"

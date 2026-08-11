@@ -231,12 +231,10 @@ TEST_P(DumpingVectorsTest, CanDumpRvecIdentically)
     testModernFunction(dumpRvecArrayRefWrapper, testArrayRef, "output");
     {
         SCOPED_TRACE("In long format");
-        const bool overWriteEnvironmentVariable = true;
-        gmxSetenv("GMX_PRINT_LONGFORMAT", "1", overWriteEnvironmentVariable);
-        const bool testingLongFormat = true;
+        GmxEnvGuard envGuard("GMX_PRINT_LONGFORMAT", "1");
+        const bool  testingLongFormat = true;
         testLegacyFunction(pr_rvecs_wrapper, rvecPtr, testArrayRef.size(), "long format", testingLongFormat);
         testModernFunction(dumpRvecArrayRefWrapper, testArrayRef, "long format", testingLongFormat);
-        gmxUnsetenv("GMX_PRINT_LONGFORMAT");
     }
 }
 

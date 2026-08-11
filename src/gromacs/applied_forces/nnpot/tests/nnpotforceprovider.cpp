@@ -200,10 +200,8 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
             if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
             {
                 SCOPED_TRACE("Check construction on default NVIDIA GPU");
-                const bool overWriteEnvironmentVariable = true;
-                gmxSetenv("GMX_NN_DEVICE", "cuda", overWriteEnvironmentVariable);
+                auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "cuda");
                 EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_));
-                gmxUnsetenv("GMX_NN_DEVICE");
                 break; // Only test one GPU until we have a better way to hande device selection
             }
         }
@@ -240,10 +238,8 @@ TEST_F(NNPotForceProviderTest, CanCalculateForces)
         if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
         {
             SCOPED_TRACE("Check calculate forces on default NVIDIA GPU");
-            const bool overWriteEnvironmentVariable = true;
-            gmxSetenv("GMX_NN_DEVICE", "cuda", overWriteEnvironmentVariable);
+            auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "cuda");
             testCalculateForces(data);
-            gmxUnsetenv("GMX_NN_DEVICE");
             break; // Only test one GPU until we have a better way to hande device selection
         }
     }
