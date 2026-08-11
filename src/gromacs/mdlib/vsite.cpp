@@ -2409,8 +2409,15 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
                 }
 
                 /* Spread the vsites that spread locally only */
-                spreadForceWrapper(
-                        x, f, virialHandling, fshift_t, tData.dxdf, false, iparams_, &tData.ilist, pbc_null);
+                spreadForceWrapper(x,
+                                   f,
+                                   virialHandling,
+                                   fshift_t,
+                                   tData.dxdf,
+                                   !tData.useInterdependentTask,
+                                   iparams_,
+                                   &tData.ilist,
+                                   pbc_null);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
