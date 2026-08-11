@@ -125,7 +125,7 @@ TEST_P(PlumedRun, PlumedSees)
     {
         std::string plumed_string;
 
-        plumed_string += "DUMPATOMS PRECISION=10  ATOMS=@mdatoms FILE=" + plumedxyz.string() + "\n";
+        plumed_string += "DUMPATOMS PRECISION=17  ATOMS=@mdatoms FILE=" + plumedxyz.string() + "\n";
         plumed_string += "c: CELL\n";
         plumed_string += "PRINT ARG=c.* FILE=" + cell_data.string() + "\n";
         plumed_string += "t1: TIME\n";
