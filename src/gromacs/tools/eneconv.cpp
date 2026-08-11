@@ -489,20 +489,21 @@ int gmx_eneconv(int argc, char* argv[])
     };
 
 #define NFILE asize(fnm)
-    gmx_bool bWrite;
-    // We would like these and begin, end to be double, but t_pargs doesn't support that yet
-    static real     delta_t = 0.0, toffset = 0, scalefac = 1;
+    gmx_bool        bWrite;
+    static double   delta_t  = 0.0;
+    static double   toffset  = 0;
+    static real     scalefac = 1;
     static gmx_bool bSetTime = FALSE;
     static gmx_bool bSort = TRUE, bError = TRUE;
-    static real     begin     = -1;
-    static real     end       = -1;
+    static double   begin     = -1;
+    static double   end       = -1;
     gmx_bool        remove_dh = FALSE;
 
     t_pargs pa[] = {
-        { "-b", FALSE, etREAL, { &begin }, "First time to use" },
-        { "-e", FALSE, etREAL, { &end }, "Last time to use" },
-        { "-dt", FALSE, etREAL, { &delta_t }, "Only write out frame when t MOD dt = offset" },
-        { "-offset", FALSE, etREAL, { &toffset }, "Time offset for [TT]-dt[tt] option" },
+        { "-b", FALSE, etTIME, { &begin }, "First time to use" },
+        { "-e", FALSE, etTIME, { &end }, "Last time to use" },
+        { "-dt", FALSE, etTIME, { &delta_t }, "Only write out frame when t MOD dt = offset" },
+        { "-offset", FALSE, etTIME, { &toffset }, "Time offset for [TT]-dt[tt] option" },
         { "-settime", FALSE, etBOOL, { &bSetTime }, "Change starting time interactively" },
         { "-sort", FALSE, etBOOL, { &bSort }, "Sort energy files (not frames)" },
         { "-rmdh", FALSE, etBOOL, { &remove_dh }, "Remove free energy block data" },
