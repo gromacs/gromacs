@@ -183,7 +183,7 @@ if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
         # All modified files were in src/external/ - create empty output for downstream processing
         touch $tmpdir/clang-tidy.out
     fi
-    awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-warnings.out
+    awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^[[:space:]]*$/d' > $tmpdir/clang-tidy-warnings.out
     grep '\berror:' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
     if [ -s $tmpdir/clang-tidy-errors.out ]; then
         echo "Running of clang-tidy failed. Check output below for errors:"
