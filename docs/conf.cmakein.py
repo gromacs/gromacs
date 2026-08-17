@@ -392,7 +392,7 @@ if tags.has("do_latex"):
         # The paper size ('letterpaper' or 'a4paper').
         "papersize": "a4paper",
         # The font size ('10pt', '11pt' or '12pt').
-        "pointsize": "11",
+        "pointsize": "11pt",
         # Additional stuff for the LaTeX preamble.
         # The tocdepth setting is needed to overwrite the default value set by Sphinx
         # to get a more detailed toctree in the pdf version of the manual.
