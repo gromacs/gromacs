@@ -1166,7 +1166,6 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
             'sphinx-copybutton' \
             'sphinx_inline_tabs' \
             'sphinxcontrib-autoprogram' \
-            'sphinxcontrib-plantuml>=0.14' \
             'versioningit>=2' \
             'wheel'"""
     )

@@ -22,7 +22,6 @@ Pygments>=2.2.0
 Sphinx>=4
 sphinx-copybutton
 sphinx_inline_tabs
-sphinxcontrib-plantuml>=0.14
 # Python package requirements for complete testing of gmxapi functionality.
 build
 flake8>=3.7.7

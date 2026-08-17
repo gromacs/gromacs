@@ -10,4 +10,3 @@ sphinx-argparse
 sphinx-copybutton
 sphinx_inline_tabs
 sphinxcontrib-autoprogram
-sphinxcontrib-plantuml>=0.14
