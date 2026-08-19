@@ -164,27 +164,26 @@ void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box)
 
 static void read_cryst1(char* line, PbcType* pbcType, matrix box)
 {
-#define SG_SIZE 11
-    char    sa[12], sb[12], sc[12], sg[SG_SIZE + 1], ident;
-    double  fa, fb, fc, alpha, beta, gamma, cosa, cosb, cosg, sing;
-    int     syma, symb, symc;
-    PbcType pbcTypeFile;
+    char   sa[12], sb[12], sc[12];
+    double alpha, beta, gamma;
 
     sscanf(line, "%*s%s%s%s%lf%lf%lf", sa, sb, sc, &alpha, &beta, &gamma);
 
-    pbcTypeFile = PbcType::Unset;
+    PbcType pbcTypeFile = PbcType::Unset;
     if (std::strlen(line) >= 55)
     {
-        std::strncpy(sg, line + 55, SG_SIZE);
-        sg[SG_SIZE] = '\0';
-        ident       = ' ';
-        syma        = 0;
-        symb        = 0;
-        symc        = 0;
+        constexpr int c_sgSize = 11;
+        char          sg[c_sgSize + 1];
+        std::strncpy(sg, line + 55, c_sgSize);
+        sg[c_sgSize] = '\0';
+        char ident   = ' ';
+        int  syma    = 0;
+        int  symb    = 0;
+        int  symc    = 0;
         sscanf(sg, "%c %d %d %d", &ident, &syma, &symb, &symc);
         if (ident == 'P' && syma == 1 && symb <= 1 && symc <= 1)
         {
-            fc          = std::strtod(sc, nullptr) * 0.1;
+            double fc   = std::strtod(sc, nullptr) * 0.1;
             pbcTypeFile = (fc > 0 ? PbcType::Xyz : PbcType::XY);
         }
         if (ident == 'P' && syma == 21 && symb == 1 && symc == 1)
@@ -192,6 +191,15 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
             pbcTypeFile = PbcType::Screw;
         }
     }
+
+    if (pbcTypeFile == PbcType::Xyz && std::strtod(sa, nullptr) == 1
+        && std::strtod(sb, nullptr) == 1 && std::strtod(sc, nullptr) == 1)
+    {
+        // A unit-cell with P=1 and dimensions 1 Angstrom signals no PBC.
+        // According to spec, the angles should all be 90 degrees, but ignoring that is harmless.
+        pbcTypeFile = PbcType::No;
+    }
+
     if (pbcType)
     {
         *pbcType = pbcTypeFile;
@@ -199,17 +207,23 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
 
     if (box)
     {
-        fa = std::strtod(sa, nullptr) * 0.1;
-        fb = std::strtod(sb, nullptr) * 0.1;
-        fc = std::strtod(sc, nullptr) * 0.1;
+        clear_mat(box);
+    }
+
+    if (box && pbcTypeFile != PbcType::Unset && pbcTypeFile != PbcType::No)
+    {
+        double fa = std::strtod(sa, nullptr) * 0.1;
+        double fb = std::strtod(sb, nullptr) * 0.1;
+        double fc = std::strtod(sc, nullptr) * 0.1;
         if (pbcTypeFile == PbcType::Screw)
         {
             fa *= 0.5;
         }
-        clear_mat(box);
         box[XX][XX] = fa;
         if ((alpha != 90.0) || (beta != 90.0) || (gamma != 90.0))
         {
+            double cosa;
+            double cosb;
             if (alpha != 90.0)
             {
                 cosa = std::cos(alpha * gmx::c_deg2Rad);
@@ -226,6 +240,8 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
             {
                 cosb = 0;
             }
+            double cosg;
+            double sing;
             if (gamma != 90.0)
             {
                 cosg = std::cos(gamma * gmx::c_deg2Rad);
