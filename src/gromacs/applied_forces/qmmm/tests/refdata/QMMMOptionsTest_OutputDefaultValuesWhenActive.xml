@@ -6,8 +6,10 @@
 qmmm-cp2k-active         = true
 ; Index group with QM atoms
 qmmm-cp2k-qmgroup        = System
-; DFT functional for QM calculations
+; Method for QM calculations
 qmmm-cp2k-qmmethod       = PBE
+; QM/MM electrostatic coupling scheme for tight-binding methods
+qmmm-cp2k-dftb-electrostatic-coupling = point-charge
 ; QM charge
 qmmm-cp2k-qmcharge       = 0
 ; QM multiplicity

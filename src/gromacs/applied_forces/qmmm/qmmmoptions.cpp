@@ -81,12 +81,13 @@ std::string moduleName()
  * \note Changing this strings will break .tpr backwards compatibility
  */
 //! \{
-const std::string c_activeTag_              = "active";
-const std::string c_qmGroupTag_             = "qmgroup";
-const std::string c_qmChargeTag_            = "qmcharge";
-const std::string c_qmMultTag_              = "qmmultiplicity";
-const std::string c_qmMethodTag_            = "qmmethod";
-const std::string c_qmUserInputFileNameTag_ = "qmfilenames";
+const std::string c_activeTag_                = "active";
+const std::string c_qmGroupTag_               = "qmgroup";
+const std::string c_qmChargeTag_              = "qmcharge";
+const std::string c_qmMultTag_                = "qmmultiplicity";
+const std::string c_qmMethodTag_              = "qmmethod";
+const std::string c_electrostaticCouplingTag_ = "dftb-electrostatic-coupling";
+const std::string c_qmUserInputFileNameTag_   = "qmfilenames";
 //! \}
 
 /*! \brief This tags for parameters which will be generated during grompp
@@ -162,6 +163,8 @@ void QMMMOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
             rules, stringIdentityTransform, QMMMModuleInfo::sc_name, c_qmGroupTag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, QMMMModuleInfo::sc_name, c_qmMethodTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, QMMMModuleInfo::sc_name, c_electrostaticCouplingTag_);
     addMdpTransformFromString<int>(rules, &fromStdString<int>, QMMMModuleInfo::sc_name, c_qmChargeTag_);
     addMdpTransformFromString<int>(rules, &fromStdString<int>, QMMMModuleInfo::sc_name, c_qmMultTag_);
     addMdpTransformFromString<std::string>(
@@ -182,13 +185,21 @@ void QMMMOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
                 builder, QMMMModuleInfo::sc_name, c_qmGroupTag_, "; Index group with QM atoms");
         addMdpOutputValue(builder, QMMMModuleInfo::sc_name, c_qmGroupTag_, groupString_);
 
-        // QM method (DFT functional), default PBE
-        addMdpOutputComment(builder,
-                            QMMMModuleInfo::sc_name,
-                            c_qmMethodTag_,
-                            "; DFT functional for QM calculations");
+        // QM method, default PBE
+        addMdpOutputComment(
+                builder, QMMMModuleInfo::sc_name, c_qmMethodTag_, "; Method for QM calculations");
         addMdpOutputValue<std::string>(
                 builder, QMMMModuleInfo::sc_name, c_qmMethodTag_, c_qmmmQMMethodNames[parameters_.qmMethod_]);
+
+        addMdpOutputComment(builder,
+                            QMMMModuleInfo::sc_name,
+                            c_electrostaticCouplingTag_,
+                            "; QM/MM electrostatic coupling scheme for tight-binding methods");
+        addMdpOutputValue<std::string>(
+                builder,
+                QMMMModuleInfo::sc_name,
+                c_electrostaticCouplingTag_,
+                c_qmmmElectrostaticCouplingNames[parameters_.electrostaticCoupling_]);
 
         // QM charge, default 0
         addMdpOutputComment(builder, QMMMModuleInfo::sc_name, c_qmChargeTag_, "; QM charge");
@@ -217,6 +228,9 @@ void QMMMOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(EnumOption<QMMMQMMethod>(c_qmMethodTag_.c_str())
                               .enumValue(c_qmmmQMMethodNames)
                               .store(&parameters_.qmMethod_));
+    section.addOption(EnumOption<QMMMElectrostaticCoupling>(c_electrostaticCouplingTag_.c_str())
+                              .enumValue(c_qmmmElectrostaticCouplingNames)
+                              .store(&parameters_.electrostaticCoupling_));
     section.addOption(StringOption(c_qmUserInputFileNameTag_.c_str()).store(&parameters_.qmFileNameBase_));
     section.addOption(IntegerOption(c_qmChargeTag_.c_str()).store(&parameters_.qmCharge_));
     section.addOption(IntegerOption(c_qmMultTag_.c_str()).store(&parameters_.qmMultiplicity_));

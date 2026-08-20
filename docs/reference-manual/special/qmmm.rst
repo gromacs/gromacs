@@ -116,11 +116,22 @@ Supported QM methods
 The QM method is chosen with :mdp:`qmmm-cp2k-qmmethod` in the :ref:`mdp` file.
 Currently the following QM methods are supported:
 
-#. :mdp-value:`qmmm-cp2k-qmmethod=PBE` - DFT using PBE functional and DZVP-MOLOPT basis set.
-#. :mdp-value:`qmmm-cp2k-qmmethod=BLYP` - DFT using BLYP functional and DZVP-MOLOPT basis set.
+#. DFT using the PBE, BLYP, PBE0, B3LYP, CAM-B3LYP, or wB97X functional, with
+   optional D3 dispersion corrections where available.
+#. :mdp-value:`qmmm-cp2k-qmmethod=SCC-DFTB` using CP2K's bundled ``DFTB/scc``
+   parameters for C, H, N, O, P, S, and Zn, except for the P--Zn pair.
+#. :mdp-value:`qmmm-cp2k-qmmethod=GFN1-xTB` and
+   :mdp-value:`qmmm-cp2k-qmmethod=GFN2-xTB` through CP2K's tblite interface.
 
-That list will be updated with a new methods once they are tested and included into the
-interface.
+The generated periodic SCC-DFTB and xTB inputs use the short-range regularized
+``POINT_CHARGE`` coupling in CP2K by default. The
+:mdp:`qmmm-cp2k-dftb-electrostatic-coupling` option can select GEEP (Gauss) MM charges
+instead. The QM/MM periodic electrostatics use SPME with ``ALPHA 0.35`` and
+box-dependent FFT-friendly mesh sizes. Classical MM electrostatics remain in
+GROMACS, so the generated CP2K MM Poisson section disables its Ewald sum. CP2K
+must be built with tblite support for the GFN1-xTB and GFN2-xTB methods, and
+GEEP (Gauss) tight-binding coupling requires CP2K 2027.1 or higher to support that method.
+Other DFTB parameter sets can be used by providing a custom CP2K input file.
 
 Providing your own CP2K input file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -157,7 +168,5 @@ with the ``.out`` extension.
 Future developments
 ^^^^^^^^^^^^^^^^^^^
 
-support of additional DFT methods will be added in the future, as well as semi-empirical and
-DFTB description of the QM subsystem will be allowed. Support of the multiple
-time-stepping approach to speed-up simulation will be added. Excited state simulations
-will be implemented with TD-DFT description of the wavefunction.
+Support of the multiple time-stepping approach to speed-up simulation will be added. 
+Excited state simulations will be implemented with TD-DFT description of the wavefunction.

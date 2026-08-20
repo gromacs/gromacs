@@ -65,6 +65,18 @@ namespace test
 namespace
 {
 
+size_t countOccurrences(const std::string& text, const std::string& substring)
+{
+    size_t count    = 0;
+    size_t position = 0;
+    while ((position = text.find(substring, position)) != std::string::npos)
+    {
+        ++count;
+        position += substring.size();
+    }
+    return count;
+}
+
 //! Base fixture providing common setup for QMMM input generator tests
 class QMMMInputGeneratorTestBase
 {
@@ -138,6 +150,81 @@ TEST_F(QMMMInputGeneratorTest, TwoWatersPBEWithLink)
     checker.checkString(inpGen.generateCP2KPdb(), "PDB");
 }
 
+TEST_F(QMMMInputGeneratorTest, GeneratesPeriodicXtbElectrostaticsFromBox)
+{
+    initParameters2WatersNoLink(QMMMQMMethod::GFN2_XTB);
+    matrix anisotropicBox = { { 2.01, 0.0, 0.0 }, { 0.0, 2.51, 0.0 }, { 0.0, 0.0, 3.01 } };
+    copy_mat(anisotropicBox, box_);
+
+    const QMMMInputGenerator inputGenerator(parameters_, pbc_, box_, q_, coords_);
+    const std::string        input = inputGenerator.generateCP2KInput();
+
+    EXPECT_NE(input.find("METHOD GFN2"), std::string::npos);
+    EXPECT_NE(input.find("ECOUPL POINT_CHARGE"), std::string::npos);
+    EXPECT_NE(input.find("CENTER SETUP_ONLY"), std::string::npos);
+    EXPECT_EQ(countOccurrences(input, "EWALD_TYPE NONE"), 1);
+    EXPECT_EQ(countOccurrences(input, "EWALD_TYPE SPME"), 1);
+    EXPECT_EQ(countOccurrences(input, "ALPHA 0.35"), 1);
+    EXPECT_EQ(countOccurrences(input, "GMAX 24 27 32"), 1);
+    EXPECT_EQ(input.find("ECOUPL GAUSS"), std::string::npos);
+    EXPECT_EQ(input.find("BASIS_SET_FILE_NAME"), std::string::npos);
+    EXPECT_EQ(input.find("POTENTIAL_FILE_NAME"), std::string::npos);
+    EXPECT_EQ(input.find("XC_FUNCTIONAL"), std::string::npos);
+}
+
+TEST_F(QMMMInputGeneratorTest, GeneratesPeriodicSccDftbElectrostatics)
+{
+    initParameters2WatersNoLink(QMMMQMMethod::SCC_DFTB);
+
+    const QMMMInputGenerator inputGenerator(parameters_, pbc_, box_, q_, coords_);
+    const std::string        input = inputGenerator.generateCP2KInput();
+
+    EXPECT_NE(input.find("METHOD DFTB"), std::string::npos);
+    EXPECT_NE(input.find("SELF_CONSISTENT TRUE"), std::string::npos);
+    EXPECT_NE(input.find("PARAM_FILE_NAME scc_parameter"), std::string::npos);
+    EXPECT_NE(input.find("PARAM_FILE_PATH DFTB/scc"), std::string::npos);
+    EXPECT_NE(input.find("EPS_SCF 1.0E-10"), std::string::npos);
+    EXPECT_NE(input.find("ECOUPL POINT_CHARGE"), std::string::npos);
+    EXPECT_NE(input.find("CENTER SETUP_ONLY"), std::string::npos);
+    EXPECT_EQ(countOccurrences(input, "EWALD_TYPE NONE"), 1);
+    EXPECT_EQ(countOccurrences(input, "EWALD_TYPE SPME"), 1);
+    EXPECT_EQ(input.find("ECOUPL GAUSS"), std::string::npos);
+    EXPECT_EQ(input.find("BASIS_SET_FILE_NAME"), std::string::npos);
+    EXPECT_EQ(input.find("POTENTIAL_FILE_NAME"), std::string::npos);
+    EXPECT_EQ(input.find("XC_FUNCTIONAL"), std::string::npos);
+}
+
+TEST_F(QMMMInputGeneratorTest, GeneratesPeriodicGaussianTightBindingElectrostatics)
+{
+    const std::array<std::pair<QMMMQMMethod, const char*>, 3> methods = {
+        { { QMMMQMMethod::SCC_DFTB, "METHOD DFTB" },
+          { QMMMQMMethod::GFN1_XTB, "METHOD GFN1" },
+          { QMMMQMMethod::GFN2_XTB, "METHOD GFN2" } }
+    };
+
+    for (const auto& [method, methodInput] : methods)
+    {
+        SCOPED_TRACE(methodInput);
+        initParameters2WatersNoLink(method);
+        parameters_.electrostaticCoupling_ = QMMMElectrostaticCoupling::Gauss;
+        matrix anisotropicBox = { { 2.01, 0.0, 0.0 }, { 0.0, 2.51, 0.0 }, { 0.0, 0.0, 3.01 } };
+        copy_mat(anisotropicBox, box_);
+
+        const QMMMInputGenerator inputGenerator(parameters_, pbc_, box_, q_, coords_);
+        const std::string        input = inputGenerator.generateCP2KInput();
+
+        EXPECT_NE(input.find(methodInput), std::string::npos);
+        EXPECT_NE(input.find("ECOUPL GAUSS"), std::string::npos);
+        EXPECT_NE(input.find("NOCOMPATIBILITY"), std::string::npos);
+        EXPECT_NE(input.find("USE_GEEP_LIB 12"), std::string::npos);
+        EXPECT_EQ(countOccurrences(input, "EWALD_TYPE NONE"), 1);
+        EXPECT_EQ(countOccurrences(input, "EWALD_TYPE SPME"), 1);
+        EXPECT_EQ(countOccurrences(input, "ALPHA 0.35"), 1);
+        EXPECT_EQ(countOccurrences(input, "GMAX 24 27 32"), 1);
+        EXPECT_EQ(input.find("ECOUPL POINT_CHARGE"), std::string::npos);
+    }
+}
+
 //! Test parameters for QM method tests
 struct QMMethodTestParam
 {
@@ -177,7 +264,10 @@ INSTANTIATE_TEST_SUITE_P(
                           QMMethodTestParam{ QMMMQMMethod::PBE0_D3, "TwoWatersPBE0D3NoLink" },
                           QMMethodTestParam{ QMMMQMMethod::CAM_B3LYP, "TwoWatersCAMB3LYPNoLink" },
                           QMMethodTestParam{ QMMMQMMethod::WB97X, "TwoWatersWB97XNoLink" },
-                          QMMethodTestParam{ QMMMQMMethod::WB97X_D3, "TwoWatersWB97XD3NoLink" }),
+                          QMMethodTestParam{ QMMMQMMethod::WB97X_D3, "TwoWatersWB97XD3NoLink" },
+                          QMMethodTestParam{ QMMMQMMethod::SCC_DFTB, "TwoWatersSccDftbNoLink" },
+                          QMMethodTestParam{ QMMMQMMethod::GFN1_XTB, "TwoWatersGFN1XtbNoLink" },
+                          QMMethodTestParam{ QMMMQMMethod::GFN2_XTB, "TwoWatersGFN2XtbNoLink" }),
         [](const ::testing::TestParamInfo<QMMethodTestParam>& TestInfo)
         { return TestInfo.param.name; });
 

@@ -9,6 +9,7 @@
   <Int Name="QM charge">0</Int>
   <Int Name="QM multiplicity">1</Int>
   <Int Name="QM method">0</Int>
+  <Int Name="Electrostatic coupling">0</Int>
   <Vector Name="QM Translation">
     <Real Name="X">0</Real>
     <Real Name="Y">0</Real>

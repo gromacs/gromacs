@@ -3645,10 +3645,37 @@ For further details about QM/MM interface implementation follow :ref:`qmmm`.
 
       DFT using wB97X-D3 range-separated functional with built-in D3 dispersion correction and 6-31G* basis set.
 
+   .. mdp-value:: SCC-DFTB
+
+      Self-consistent-charge DFTB using CP2K's bundled ``DFTB/scc`` parameters.
+      The bundled parameters support C, H, N, O, P, S, and Zn, except for the P--Zn pair.
+
+   .. mdp-value:: GFN1-xTB
+
+      GFN1-xTB through CP2K's tblite interface.
+
+   .. mdp-value:: GFN2-xTB
+
+      GFN2-xTB through CP2K's tblite interface.
+
    .. mdp-value:: INPUT
 
       Provide an external input file for CP2K when running :ref:`gmx grompp` with the ``-qmi`` command-line option.
       External input files are subject to the limitations that are described in :ref:`qmmm`.
+
+.. mdp:: qmmm-cp2k-dftb-electrostatic-coupling
+
+   (point-charge) Electrostatic QM/MM coupling scheme for tight-binding methods in CP2K.
+
+   .. mdp-value:: point-charge
+
+      Periodic QM/MM electrostatics through short-range regularized point charges
+      with smooth particle mesh Ewald (SPME). 
+
+   .. mdp-value:: gauss
+
+      Periodic QM/MM electrostatics through GEEP (Gauss) MM charges 
+      with smooth particle mesh Ewald (SPME). This requires a CP2K 2027.1 or higher.
 
 .. mdp:: qmmm-cp2k-qmcharge
 

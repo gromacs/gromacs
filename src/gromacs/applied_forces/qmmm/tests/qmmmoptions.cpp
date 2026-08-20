@@ -42,6 +42,7 @@
 
 #include "gromacs/applied_forces/qmmm/qmmmoptions.h"
 
+#include <array>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -86,14 +87,23 @@ public:
         return mdpValueBuilder.build();
     }
 
-    static KeyValueTreeObject qmmmBuildMethodInputMdpValues()
+    static KeyValueTreeObject qmmmBuildMethodMdpValues(const std::string& method)
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
         mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-active",
                                               std::string("true"));
-        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-qmmethod",
-                                              std::string("INPUT"));
+        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-qmmethod", method);
+        return mdpValueBuilder.build();
+    }
+
+    static KeyValueTreeObject qmmmBuildCouplingMdpValues(const std::string& coupling)
+    {
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(QMMMModuleInfo::sc_name) + "-dftb-electrostatic-coupling", coupling);
         return mdpValueBuilder.build();
     }
 
@@ -149,6 +159,8 @@ TEST_F(QMMMOptionsTest, DefaultParameters)
     checker.checkInteger(defaultParameters.qmCharge_, "QM charge");
     checker.checkInteger(defaultParameters.qmMultiplicity_, "QM multiplicity");
     checker.checkInteger(static_cast<int>(defaultParameters.qmMethod_), "QM method");
+    checker.checkInteger(static_cast<int>(defaultParameters.electrostaticCoupling_),
+                         "Electrostatic coupling");
     checker.checkVector(defaultParameters.qmTrans_, "QM Translation");
     checker.checkVector(defaultParameters.qmBox_[0], "QM Box Vector 1");
     checker.checkVector(defaultParameters.qmBox_[1], "QM Box Vector 2");
@@ -164,6 +176,39 @@ TEST_F(QMMMOptionsTest, OptionSetsActive)
     EXPECT_FALSE(qmmmOptions.parameters().active_);
     test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
     EXPECT_TRUE(qmmmOptions.parameters().active_);
+}
+
+TEST_F(QMMMOptionsTest, ParsesTightBindingMethods)
+{
+    const std::array<std::pair<const char*, QMMMQMMethod>, 3> methods = {
+        { { "SCC-DFTB", QMMMQMMethod::SCC_DFTB },
+          { "GFN1-xTB", QMMMQMMethod::GFN1_XTB },
+          { "GFN2-xTB", QMMMQMMethod::GFN2_XTB } }
+    };
+
+    for (const auto& [name, method] : methods)
+    {
+        SCOPED_TRACE(name);
+        QMMMOptions qmmmOptions;
+        test::fillOptionsFromMdpValues(qmmmBuildMethodMdpValues(name), &qmmmOptions);
+        EXPECT_EQ(qmmmOptions.parameters().qmMethod_, method);
+    }
+}
+
+TEST_F(QMMMOptionsTest, ParsesElectrostaticCouplings)
+{
+    const std::array<std::pair<const char*, QMMMElectrostaticCoupling>, 2> couplings = {
+        { { "point-charge", QMMMElectrostaticCoupling::PointCharge },
+          { "gauss", QMMMElectrostaticCoupling::Gauss } }
+    };
+
+    for (const auto& [name, coupling] : couplings)
+    {
+        SCOPED_TRACE(name);
+        QMMMOptions qmmmOptions;
+        test::fillOptionsFromMdpValues(qmmmBuildCouplingMdpValues(name), &qmmmOptions);
+        EXPECT_EQ(qmmmOptions.parameters().electrostaticCoupling_, coupling);
+    }
 }
 
 TEST_F(QMMMOptionsTest, OutputNoDefaultValuesWhenInactive)
@@ -291,7 +336,7 @@ TEST_F(QMMMOptionsTest, CP2KInputProcessing)
 {
     // Set qmmm-active = true and qmmm-qmmethod = INPUT
     QMMMOptions qmmmOptions;
-    test::fillOptionsFromMdpValues(qmmmBuildMethodInputMdpValues(), &qmmmOptions);
+    test::fillOptionsFromMdpValues(qmmmBuildMethodMdpValues("INPUT"), &qmmmOptions);
 
     // Path to the sample CP2K input file
     std::string cp2kInput =

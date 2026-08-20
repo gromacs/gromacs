@@ -74,6 +74,9 @@ enum class QMMMQMMethod
     CAM_B3LYP_D3, //!< DFT with CAM-B3LYP functional and D3 dispersion correction
     WB97X,        //!< DFT with WB97X functional
     WB97X_D3,     //!< DFT with WB97X functional and D3 dispersion correction
+    SCC_DFTB,     //!< Self-consistent-charge density-functional tight binding
+    GFN1_XTB,     //!< Semi-empirical GFN1-xTB through CP2K's tblite interface
+    GFN2_XTB,     //!< Semi-empirical GFN2-xTB through CP2K's tblite interface
     INPUT,        //!< User provides suitable input file for QM package
     Count
 };
@@ -91,7 +94,23 @@ static const EnumerationArray<QMMMQMMethod, const char*> c_qmmmQMMethodNames = {
                                                                                    "CAM-B3LYP-D3",
                                                                                    "WB97X",
                                                                                    "WB97X-D3",
+                                                                                   "SCC-DFTB",
+                                                                                   "GFN1-xTB",
+                                                                                   "GFN2-xTB",
                                                                                    "INPUT" } };
+
+//! Enumerator for the QM/MM electrostatic coupling generated for tight-binding CP2K
+enum class QMMMElectrostaticCoupling
+{
+    PointCharge, //!< Use CP2K's POINT_CHARGE coupling
+    Gauss, //!< Use CP2K's GAUSS coupling also known as GEEP (Gaussian Electrostatic Embedding Potential)
+    Count
+};
+
+//! Names of the supported QM/MM electrostatic coupling modes for tight-binding methods in CP2K
+static const EnumerationArray<QMMMElectrostaticCoupling, const char*> c_qmmmElectrostaticCouplingNames = {
+    { "point-charge", "gauss" }
+};
 
 //! symbols of the elements in periodic table
 const std::vector<std::string> periodic_system = {
@@ -129,6 +148,8 @@ struct QMMMParameters
     int qmMultiplicity_ = 1;
     //! Method used for QM calculation (default DFT with PBE functional)
     QMMMQMMethod qmMethod_ = QMMMQMMethod::PBE;
+    //! Electrostatic QM/MM coupling generated for tight-binding methods in CP2K (default PointCharge)
+    QMMMElectrostaticCoupling electrostaticCoupling_ = QMMMElectrostaticCoupling::PointCharge;
     /*! \brief String containing name of the CP2K files (*.inp, *.out, *.pdb)
      * default value empty, means will be deduced from *.tpr name during mdrun
      */
