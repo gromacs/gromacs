@@ -41,6 +41,7 @@
 #include "gmxpre.h"
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -48,6 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
@@ -421,6 +423,41 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
 };
 
 INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppCmapDirectiveTest, testing::ValuesIn(cmapValidInputOutput));
+
+TEST(GmxcppTest, LongIfdefBlockDoesNotOverflowStack)
+{
+    TestFileManager       fileManager;
+    std::filesystem::path topPath = fileManager.getTemporaryFilePath("long_ifdef.top");
+    {
+        std::ofstream file(topPath);
+        file << "before_ifdef\n";
+        file << "#ifdef NOT_DEFINED\n";
+        for (int i = 0; i < 100000; ++i)
+        {
+            file << "skipped line " << i << "\n";
+        }
+        file << "#else\n";
+        file << "in_else_branch\n";
+        file << "#endif\n";
+        file << "after_ifdef\n";
+    }
+
+    gmx_cpp_t handle = nullptr;
+    ASSERT_EQ(cpp_open_file(topPath, &handle, nullptr), eCPP_OK);
+    char buf[1024];
+
+    ASSERT_EQ(cpp_read_line(&handle, sizeof(buf), buf), eCPP_OK);
+    EXPECT_STREQ(buf, "before_ifdef");
+
+    ASSERT_EQ(cpp_read_line(&handle, sizeof(buf), buf), eCPP_OK);
+    EXPECT_STREQ(buf, "in_else_branch");
+
+    ASSERT_EQ(cpp_read_line(&handle, sizeof(buf), buf), eCPP_OK);
+    EXPECT_STREQ(buf, "after_ifdef");
+
+    EXPECT_EQ(cpp_read_line(&handle, sizeof(buf), buf), eCPP_EOF);
+    cpp_done(handle);
+}
 
 } // namespace
 } // namespace test

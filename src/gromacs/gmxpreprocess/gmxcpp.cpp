@@ -529,125 +529,125 @@ static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const
 /* Return one whole line from the file into buf which holds at most n
    characters, for subsequent processing. Returns integer status. This
    routine also does all the "intelligent" work like processing cpp
-   directives and so on. Note that often the routine is called
-   recursively and no cpp directives are printed. */
+   directives and so on. Directives and ifdeffed-out lines are skipped. */
 int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
 {
-    gmx_cpp_t handle = *handlep;
-    int       status;
-    bool      bEOF;
+    while (true)
+    {
+        gmx_cpp_t handle = *handlep;
 
-    if (!handle)
-    {
-        return eCPP_INVALID_HANDLE;
-    }
-    if (!handle->fp)
-    {
-        return eCPP_FILE_NOT_OPEN;
-    }
-
-    bEOF = (std::feof(handle->fp) != 0);
-    if (!bEOF)
-    {
-        /* Read the actual line now. */
-        if (fgets2(buf, n - 1, handle->fp) == nullptr)
+        if (!handle)
         {
-            /* Recheck EOF, since we could have been at the end before
-             * the fgets2 call, but we need to read past the end to know.
-             */
-            bEOF = (std::feof(handle->fp) != 0);
-            if (!bEOF)
+            return eCPP_INVALID_HANDLE;
+        }
+        if (!handle->fp)
+        {
+            return eCPP_FILE_NOT_OPEN;
+        }
+
+        bool bEOF = (std::feof(handle->fp) != 0);
+        if (!bEOF)
+        {
+            /* Read the actual line now. */
+            if (fgets2(buf, n - 1, handle->fp) == nullptr)
             {
-                /* Something strange happened, fgets returned NULL,
-                 * but we are not at EOF. Maybe wrong line endings?
+                /* Recheck EOF, since we could have been at the end before
+                 * the fgets2 call, but we need to read past the end to know.
                  */
-                return eCPP_UNKNOWN;
-            }
-        }
-    }
-
-    if (bEOF)
-    {
-        if (handle->parent == nullptr)
-        {
-            return eCPP_EOF;
-        }
-        cpp_close_file(handlep);
-        *handlep = handle->parent;
-        delete handle;
-        return cpp_read_line(handlep, n, buf);
-    }
-    else
-    {
-        handle->line = buf;
-        handle->line_nr++;
-    } /* Now we've read a line! */
-
-    /* Process directives if this line contains one */
-    std::string dname;
-    std::string dval;
-    if (find_directive(buf, &dname, &dval))
-    {
-        status = process_directive(handlep, dname, dval);
-        if (status != eCPP_OK)
-        {
-            return status;
-        }
-        /* Don't print lines with directives, go on to the next */
-        return cpp_read_line(handlep, n, buf);
-    }
-
-    /* Check whether we're not ifdeffed out. The order of this statement
-       is important. It has to come after #ifdef, #else and #endif, but
-       anything else should be ignored. */
-    if (is_ifdeffed_out(handle->ifdefs))
-    {
-        return cpp_read_line(handlep, n, buf);
-    }
-
-    /* Check whether we have any defines that need to be replaced. Note
-       that we have to use a best fit algorithm, rather than first come
-       first go. We do this by sorting the defines on length first, and
-       then on alphabetical order. */
-    for (t_define& define : *handle->defines)
-    {
-        if (!define.def.empty())
-        {
-            int         nn  = 0;
-            const char* ptr = buf;
-            while ((ptr = strstrw(ptr, define.name.c_str())) != nullptr)
-            {
-                nn++;
-                ptr += std::strlen(define.name.c_str());
-            }
-            if (nn > 0)
-            {
-                // Need to erase  unmatched define in original handle
-                gmx_cpp_t root = handle;
-                while (root->parent != nullptr)
+                bEOF = (std::feof(handle->fp) != 0);
+                if (!bEOF)
                 {
-                    root = root->parent;
+                    /* Something strange happened, fgets returned NULL,
+                     * but we are not at EOF. Maybe wrong line endings?
+                     */
+                    return eCPP_UNKNOWN;
                 }
-                root->unmatched_defines.erase(define.name);
-
-                std::string name;
-                const char* ptr1 = buf;
-                const char* ptr2;
-                while ((ptr2 = strstrw(ptr1, define.name.c_str())) != nullptr)
-                {
-                    name.append(ptr1, ptr2 - ptr1);
-                    name += define.def;
-                    ptr1 = ptr2 + define.name.size();
-                }
-                name += ptr1;
-                GMX_RELEASE_ASSERT(name.size() < static_cast<size_t>(n),
-                                   "The line should fit in buf");
-                std::strcpy(buf, name.c_str());
             }
         }
-    }
 
-    return eCPP_OK;
+        if (bEOF)
+        {
+            if (handle->parent == nullptr)
+            {
+                return eCPP_EOF;
+            }
+            cpp_close_file(handlep);
+            *handlep = handle->parent;
+            delete handle;
+            continue;
+        }
+        else
+        {
+            handle->line = buf;
+            handle->line_nr++;
+        } /* Now we've read a line! */
+
+        /* Process directives if this line contains one */
+        std::string dname;
+        std::string dval;
+        if (find_directive(buf, &dname, &dval))
+        {
+            int status = process_directive(handlep, dname, dval);
+            if (status != eCPP_OK)
+            {
+                return status;
+            }
+            /* Don't print lines with directives, go on to the next */
+            continue;
+        }
+
+        /* Check whether we're not ifdeffed out. The order of this statement
+           is important. It has to come after #ifdef, #else and #endif, but
+           anything else should be ignored. */
+        if (is_ifdeffed_out(handle->ifdefs))
+        {
+            continue;
+        }
+
+        /* Check whether we have any defines that need to be replaced. Note
+           that we have to use a best fit algorithm, rather than first come
+           first go. We do this by sorting the defines on length first, and
+           then on alphabetical order. */
+        for (t_define& define : *handle->defines)
+        {
+            if (!define.def.empty())
+            {
+                int         nn  = 0;
+                const char* ptr = buf;
+                while ((ptr = strstrw(ptr, define.name.c_str())) != nullptr)
+                {
+                    nn++;
+                    ptr += std::strlen(define.name.c_str());
+                }
+                if (nn > 0)
+                {
+                    // Need to erase  unmatched define in original handle
+                    gmx_cpp_t root = handle;
+                    while (root->parent != nullptr)
+                    {
+                        root = root->parent;
+                    }
+                    root->unmatched_defines.erase(define.name);
+
+                    std::string name;
+                    const char* ptr1 = buf;
+                    const char* ptr2;
+                    while ((ptr2 = strstrw(ptr1, define.name.c_str())) != nullptr)
+                    {
+                        name.append(ptr1, ptr2 - ptr1);
+                        name += define.def;
+                        ptr1 = ptr2 + define.name.size();
+                    }
+                    name += ptr1;
+                    GMX_RELEASE_ASSERT(name.size() < static_cast<size_t>(n),
+                                       "The line should fit in buf");
+                    std::strcpy(buf, name.c_str());
+                }
+            }
+        }
+
+        return eCPP_OK;
+    }
 }
 
 std::filesystem::path cpp_cur_file(const gmx_cpp_t* handlep)

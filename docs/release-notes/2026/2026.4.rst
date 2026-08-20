@@ -29,6 +29,14 @@ PME ranks, most readily with ``pme-order = 5``.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix stack overflow in ``grompp`` with large ifdef blocks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A recursion was replaced with a plain loop to avoid ``gmx grompp``
+crashing with large ifdef blocks.
+
+:issue:`5683`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
