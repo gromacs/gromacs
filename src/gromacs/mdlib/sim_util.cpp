@@ -732,24 +732,27 @@ static void computeSpecialForces(FILE*                fplog,
  * \param[in]  stepWork             Step schedule flags
  * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in]  lambdaQ              The Coulomb lambda of the current state.
- * \param[in]  useMdGpuGraph        Whether MD GPU Graph is in use.
  * \param[in]  wcycle               The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t*                pmedata,
                                       const matrix              box,
                                       const SimulationWorkload& simulationWork,
-                                      const StepWorkload&       stepWork,
+                                      const PmeStepWorkload&    stepWork,
                                       GpuEventSynchronizer*     xReadyOnDevice,
                                       const real                lambdaQ,
-                                      bool                      useMdGpuGraph,
                                       gmx_wallcycle*            wcycle)
 {
     wallcycle_start(wcycle, WallCycleCounter::PmeGpuMesh);
     pme_gpu_prepare_computation(pmedata, box, simulationWork.haveDynamicBox, stepWork);
     bool                      useGpuDirectComm         = false;
     PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
-    pme_gpu_launch_spread(
-            pmedata, xReadyOnDevice, wcycle, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu, useMdGpuGraph);
+    pme_gpu_launch_spread(pmedata,
+                          xReadyOnDevice,
+                          wcycle,
+                          lambdaQ,
+                          useGpuDirectComm,
+                          pmeCoordinateReceiverGpu,
+                          simulationWork.useMdGpuGraph);
     wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
 }
 
@@ -762,14 +765,14 @@ static inline void launchPmeGpuSpread(gmx_pme_t*                pmedata,
  * \param[in]  wcycle         The wallcycle structure
  * \param[in]  stepWork       Step schedule flags
  */
-static void launchPmeGpuFftAndGather(gmx_pme_t*          pmedata,
-                                     const real          lambdaQ,
-                                     gmx_wallcycle*      wcycle,
-                                     const StepWorkload& stepWork)
+static void launchPmeGpuFftAndGather(gmx_pme_t*             pmedata,
+                                     const real             lambdaQ,
+                                     gmx_wallcycle*         wcycle,
+                                     const PmeStepWorkload& stepWork)
 {
     wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
     pme_gpu_launch_complex_transforms(pmedata, wcycle, stepWork);
-    pme_gpu_launch_gather(pmedata, wcycle, lambdaQ, stepWork.computeVirial);
+    pme_gpu_launch_gather(pmedata, wcycle, lambdaQ, stepWork.computeEnergyAndVirial);
     wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
 }
 
@@ -784,12 +787,12 @@ static void launchPmeGpuFftAndGather(gmx_pme_t*          pmedata,
  * \param[out] enerd           The output energies
  * \param[in]  lambdaQ         The Coulomb lambda to use when calculating the results.
  */
-static void pmeGpuWaitAndReduce(gmx_pme_t*          pme,
-                                const StepWorkload& stepWork,
-                                gmx_wallcycle*      wcycle,
-                                ForceWithVirial*    forceWithVirial,
-                                gmx_enerdata_t*     enerd,
-                                const real          lambdaQ)
+static void pmeGpuWaitAndReduce(gmx_pme_t*             pme,
+                                const PmeStepWorkload& stepWork,
+                                gmx_wallcycle*         wcycle,
+                                ForceWithVirial*       forceWithVirial,
+                                gmx_enerdata_t*        enerd,
+                                const real             lambdaQ)
 {
     wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
 
@@ -837,8 +840,13 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t*       nbv,
             wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
             GpuTaskCompletion completionType =
                     (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
-            isPmeGpuDone = pme_gpu_try_finish_task(
-                    pmedata, stepWork, wcycle, &forceOutputsPme->forceWithVirial(), enerd, lambdaQ, completionType);
+            isPmeGpuDone = pme_gpu_try_finish_task(pmedata,
+                                                   PmeStepWorkload{ stepWork },
+                                                   wcycle,
+                                                   &forceOutputsPme->forceWithVirial(),
+                                                   enerd,
+                                                   lambdaQ,
+                                                   completionType);
             wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
         }
 
@@ -1563,6 +1571,8 @@ void do_force(FILE*                         fplog,
 
     const StepWorkload& stepWork = runScheduleWork.stepWork;
 
+    const PmeStepWorkload pmeStepWork{ stepWork };
+
     const bool pmeSendCoordinatesFromGpu =
             simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
 
@@ -1726,10 +1736,9 @@ void do_force(FILE*                         fplog,
         launchPmeGpuSpread(fr->pmedata.get(),
                            box,
                            simulationWork,
-                           stepWork,
+                           pmeStepWork,
                            localXReadyOnDevice,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
-                           simulationWork.useMdGpuGraph,
                            wcycle);
     }
 
@@ -1798,7 +1807,7 @@ void do_force(FILE*                         fplog,
         launchPmeGpuFftAndGather(fr->pmedata.get(),
                                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                                  wcycle,
-                                 stepWork);
+                                 pmeStepWork);
     }
 
     /* Communicate coordinates and sum dipole if necessary */
@@ -2233,7 +2242,7 @@ void do_force(FILE*                         fplog,
         if (stepWork.haveGpuPmeOnThisRank)
         {
             pmeGpuWaitAndReduce(fr->pmedata.get(),
-                                stepWork,
+                                pmeStepWork,
                                 wcycle,
                                 &forceOutMtsLevel1->forceWithVirial(),
                                 enerd,
@@ -2452,7 +2461,7 @@ void do_force(FILE*                         fplog,
     if (!alternateGpuWait && stepWork.haveGpuPmeOnThisRank && !needEarlyPmeResults)
     {
         pmeGpuWaitAndReduce(fr->pmedata.get(),
-                            stepWork,
+                            pmeStepWork,
                             wcycle,
                             &forceOutMtsLevel1->forceWithVirial(),
                             enerd,

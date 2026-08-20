@@ -92,7 +92,7 @@ public:
     //! Whether force buffer ops are done on the GPU this step
     bool useGpuFBufferOps = false;
     //! Whether PME forces are reduced with other contributions on the GPU this step
-    bool useGpuPmeFReduction = false; // TODO: add this flag to the internal PME GPU data structures too
+    bool useGpuPmeFReduction = false;
     //! Whether GPU coordinates halo exchange is active this step
     bool useGpuXHalo = false;
     //! Whether GPU forces halo exchange is active this step

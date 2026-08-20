@@ -134,10 +134,10 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
     }
 }
 
-void pme_gpu_prepare_computation(gmx_pme_t*               pme,
-                                 const matrix             box,
-                                 const bool               updateBox,
-                                 const gmx::StepWorkload& stepWork)
+void pme_gpu_prepare_computation(gmx_pme_t*                  pme,
+                                 const matrix                box,
+                                 const bool                  updateBox,
+                                 const gmx::PmeStepWorkload& stepWork)
 {
     GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(pme->nnodes > 0, "");
@@ -189,12 +189,12 @@ void pme_gpu_launch_spread(gmx_pme_t*                     pme,
                    wcycle);
 }
 
-void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, const gmx::StepWorkload& stepWork)
+void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, const gmx::PmeStepWorkload& stepWork)
 {
     PmeGpu*     pmeGpu   = pme->gpu.get();
     const auto& settings = pmeGpu->settings;
     // There's no support for computing energy without virial, or vice versa
-    const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
+    const bool computeEnergyAndVirial = stepWork.computeEnergyAndVirial;
 
     if (!settings.performGPUFFT)
     {
@@ -292,13 +292,13 @@ static void pme_gpu_reduce_outputs(const bool            computeEnergyAndVirial,
     wallcycle_stop(wcycle, WallCycleCounter::PmeGpuFReduction);
 }
 
-bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
-                             const gmx::StepWorkload& stepWork,
-                             gmx_wallcycle*           wcycle,
-                             gmx::ForceWithVirial*    forceWithVirial,
-                             gmx_enerdata_t*          enerd,
-                             const real               lambdaQ,
-                             GpuTaskCompletion        completionKind)
+bool pme_gpu_try_finish_task(gmx_pme_t*                  pme,
+                             const gmx::PmeStepWorkload& stepWork,
+                             gmx_wallcycle*              wcycle,
+                             gmx::ForceWithVirial*       forceWithVirial,
+                             gmx_enerdata_t*             enerd,
+                             const real                  lambdaQ,
+                             GpuTaskCompletion           completionKind)
 {
     GMX_ASSERT(pme->gpu, "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(!pme->gpu->settings.useGpuForceReduction,
@@ -336,7 +336,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
     }
     pme_gpu_update_timings(pme->gpu.get());
     // There's no support for computing energy without virial, or vice versa
-    const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
+    const bool computeEnergyAndVirial = stepWork.computeEnergyAndVirial;
     PmeOutput  output                 = pme_gpu_getOutput(
             pme, computeEnergyAndVirial, pme->gpu->common->ngrids > 1 ? lambdaQ : 1.0);
     wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmeGather);
@@ -373,15 +373,15 @@ PmeOutput pme_gpu_wait_finish_task(gmx_pme_t*     pme,
 }
 
 // This is used when not using the alternate-waiting reduction
-void pme_gpu_wait_and_reduce(gmx_pme_t*               pme,
-                             const gmx::StepWorkload& stepWork,
-                             gmx_wallcycle*           wcycle,
-                             gmx::ForceWithVirial*    forceWithVirial,
-                             gmx_enerdata_t*          enerd,
-                             const real               lambdaQ)
+void pme_gpu_wait_and_reduce(gmx_pme_t*                  pme,
+                             const gmx::PmeStepWorkload& stepWork,
+                             gmx_wallcycle*              wcycle,
+                             gmx::ForceWithVirial*       forceWithVirial,
+                             gmx_enerdata_t*             enerd,
+                             const real                  lambdaQ)
 {
     // There's no support for computing energy without virial, or vice versa
-    const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
+    const bool computeEnergyAndVirial = stepWork.computeEnergyAndVirial;
     PmeOutput  output                 = pme_gpu_wait_finish_task(
             pme, computeEnergyAndVirial, pme->gpu->common->ngrids > 1 ? lambdaQ : 1.0, wcycle);
     GMX_ASSERT(pme->gpu->settings.useGpuForceReduction == !output.haveForceOutput_,

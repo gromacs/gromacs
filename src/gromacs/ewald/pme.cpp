@@ -137,6 +137,22 @@
 
 struct gmx_parallel_3dfft;
 
+gmx::PmeStepWorkload::PmeStepWorkload(const StepWorkload& stepWork) :
+    computeEnergyAndVirial(stepWork.computeEnergy || stepWork.computeVirial),
+    computeForces(stepWork.computeForces),
+    useGpuPmeFReduction(stepWork.useGpuPmeFReduction)
+{
+}
+
+gmx::PmeOnlySimulationWorkload::PmeOnlySimulationWorkload(const SimulationWorkload& simulationWork) :
+    useGpu(simulationWork.useGpuPme),
+    useGpuPmePpCommunication(simulationWork.useGpuPmePpCommunication),
+    useNvshmem(simulationWork.useNvshmem),
+    useGpuHaloExchange(simulationWork.useGpuHaloExchange),
+    useMdGpuGraph(simulationWork.useMdGpuGraph)
+{
+}
+
 bool pme_gpu_supports_build(std::string* error)
 {
     gmx::MessageStringCollector errorReasons;
@@ -1296,7 +1312,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                real                           lambda_lj,
                real*                          dvdlambda_q,
                real*                          dvdlambda_lj,
-               const gmx::StepWorkload&       stepWork)
+               const gmx::PmeStepWorkload&    stepWork)
 {
     GMX_ASSERT(pme->runMode == PmeRunMode::CPU,
                "gmx_pme_do should not be called on the GPU PME run.");
@@ -1358,8 +1374,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
     std::array<PmeOutput, 2> output; // The second is used for the B state with FEP
 
-    // There's no support for computing energy without virial, or vice versa
-    const bool computeEnergyAndVirial = (stepWork.computeEnergy || stepWork.computeVirial);
+    const bool computeEnergyAndVirial = stepWork.computeEnergyAndVirial;
     for (gmx_pme_t::GridsRef& gridsRef : pme->gridsRefs)
     {
         gmx::ArrayRef<const real> coefficient;

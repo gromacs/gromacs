@@ -57,11 +57,11 @@ struct gmx_wallclock_gpu_pme_t;
 struct gmx_pme_t;
 struct gmx_wallcycle;
 
-enum class PmeRunMode;
 namespace gmx
 {
 class DeviceStreamManager;
-}
+class PmeOnlySimulationWorkload;
+} // namespace gmx
 
 /*! \brief Called on the ranks that do PME exclusively
  *
@@ -77,10 +77,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
                                                    gmx_wallcycle*             wcycle,
                                                    gmx_walltime_accounting_t  walltime_accounting,
                                                    t_inputrec*                ir,
-                                                   PmeRunMode                 runMode,
-                                                   bool useGpuPmePpCommunication,
-                                                   bool useNvshmem,
-                                                   bool useGpuHaloExchange,
+                                                   const gmx::PmeOnlySimulationWorkload& simulationWork,
                                                    const gmx::DeviceStreamManager* deviceStreamManager);
 
 #endif

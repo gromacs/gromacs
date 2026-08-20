@@ -2421,6 +2421,7 @@ int Mdrunner::mdrunner()
         else
         {
             /* do PME only */
+            const PmeOnlySimulationWorkload pmeOnlySimulationWork(runScheduleWork.simulationWork);
             walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Pme));
             pmeGpuTimings = gmx_pmeonly(std::move(pmedata),
                                         *cr->dd,
@@ -2428,10 +2429,7 @@ int Mdrunner::mdrunner()
                                         wcycle.get(),
                                         walltime_accounting,
                                         inputrec.get(),
-                                        pmeRunMode,
-                                        runScheduleWork.simulationWork.useGpuPmePpCommunication,
-                                        runScheduleWork.simulationWork.useNvshmem,
-                                        runScheduleWork.simulationWork.useGpuHaloExchange,
+                                        pmeOnlySimulationWork,
                                         deviceStreamManager.get());
         }
 

@@ -2095,7 +2095,7 @@ void LegacySimulator::do_md()
                 pme_gpu_prepare_computation(fr_->pmedata.get(),
                                             state_->box,
                                             simulationWork.haveDynamicBox,
-                                            runScheduleWork_->stepWork);
+                                            PmeStepWorkload{ runScheduleWork_->stepWork });
             }
         }
 

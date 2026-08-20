@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringcompare.h"
 
@@ -118,6 +119,48 @@ TEST_F(SeparatePmeRanksPermittedTest, EmptyDisableReasonText)
     // Expect that reasonsWhyDisabled works with empty reason
     EXPECT_TRUE(separatePmeRanksPermitted_.reasonsWhyDisabled().empty());
 }
+TEST(PmeStepWorkloadTest, ConvertsRelevantStepWork)
+{
+    StepWorkload stepWork;
+    EXPECT_FALSE(PmeStepWorkload{ stepWork }.computeEnergyAndVirial);
+
+    stepWork.computeEnergy = true;
+    EXPECT_TRUE(PmeStepWorkload{ stepWork }.computeEnergyAndVirial);
+
+    stepWork.computeEnergy       = false;
+    stepWork.computeVirial       = true;
+    stepWork.computeForces       = true;
+    stepWork.useGpuPmeFReduction = true;
+    const PmeStepWorkload pmeWork{ stepWork };
+
+    EXPECT_TRUE(pmeWork.computeEnergyAndVirial);
+    EXPECT_TRUE(pmeWork.computeForces);
+    EXPECT_TRUE(pmeWork.useGpuPmeFReduction);
+}
+
+TEST(PmeOnlySimulationWorkloadTest, ConvertsRelevantSimulationWork)
+{
+    SimulationWorkload simulationWork;
+    simulationWork.useGpuPmePpCommunication = true;
+    simulationWork.useNvshmem               = true;
+    simulationWork.useGpuHaloExchange       = true;
+    simulationWork.useMdGpuGraph            = true;
+    simulationWork.useGpuPme                = true;
+    simulationWork.useGpuPmeFft             = false;
+
+    const PmeOnlySimulationWorkload pmeWork{ simulationWork };
+
+    EXPECT_TRUE(pmeWork.useGpu);
+    EXPECT_TRUE(pmeWork.useGpuPmePpCommunication);
+    EXPECT_TRUE(pmeWork.useNvshmem);
+    EXPECT_TRUE(pmeWork.useGpuHaloExchange);
+    EXPECT_TRUE(pmeWork.useMdGpuGraph);
+
+    simulationWork.useGpuPme = false;
+    const PmeOnlySimulationWorkload cpuPmeWork{ simulationWork };
+    EXPECT_FALSE(cpuPmeWork.useGpu);
+}
+
 
 } // namespace test
 
