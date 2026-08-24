@@ -116,7 +116,10 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
 
     if (options.mpiComm_->isParallel())
     {
-        plumed_->cmd("setMPIComm", options.mpiComm_->comm());
+        /* PLUMED reads this argument as an MPI_Comm*, so it must be handed the
+           address of a communicator rather than the communicator itself. */
+        MPI_Comm plumedComm = options.mpiComm_->comm();
+        plumed_->cmd("setMPIComm", &plumedComm);
     }
 
     plumed_->cmd("setNatoms", options.natoms_);

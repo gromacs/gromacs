@@ -26,6 +26,15 @@ PME ranks, most readily with ``pme-order = 5``.
 
 :issue:`5669`
 
+Fixed MPI-parallel ``mdrun -plumed`` aborting at startup
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Any MPI-parallel run using PLUMED aborted at startup with ``MPI_ERR_COMM``:
+PLUMED reads the ``setMPIComm`` argument as a pointer, but the communicator
+was passed by value. Only 2026 was affected.
+
+:issue:`5671`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
