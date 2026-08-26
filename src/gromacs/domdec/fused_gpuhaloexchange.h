@@ -90,12 +90,12 @@ public:
      *
      * \param [in] haloStream           GPU device stream for halo exchange
      * \param [in] deviceContext        GPU device context
-     * \param [in] mpi_comm_mysim       MPI communicator used for simulation
+     * \param [in] mpiCommPpGroup       MPI communicator used for PP group (null on PME ranks)
      * \param [in] mpi_comm_mysim_world MPI communicator involving PP + PME
      */
     FusedGpuHaloExchange(const DeviceStream&  haloStream,
                          const DeviceContext& deviceContext,
-                         MPI_Comm             mpi_comm_mysim,
+                         MPI_Comm             mpiCommPpGroup,
                          MPI_Comm             mpi_comm_mysim_world);
     /*! \brief Destructor. */
     ~FusedGpuHaloExchange();
@@ -278,8 +278,8 @@ private:
     //! Event triggered when force halo has been launched
     GpuEventSynchronizer forceHaloLaunched_;
     // MPI communicator used for symmetric allocations sizing (NVSHMEM path)
-    //! MPI communicator used for simulation
-    MPI_Comm mpi_comm_mysim_ = MPI_COMM_NULL;
+    //! MPI communicator used for PP ranks
+    MPI_Comm mpiCommPpGroup_ = MPI_COMM_NULL;
     //! MPI communicator involving PP + PME.
     MPI_Comm mpi_comm_mysim_world_ = MPI_COMM_NULL;
 
@@ -297,7 +297,6 @@ private:
     //! capacity for all pulses extent in unified recv buffer
     int unifiedRecvCapacity_ = -1;
 
-private:
     /*! \brief Backend-specific function for launching coordinate packing and send kernel. */
     void launchPackXKernel(const matrix box);
     /*! \brief Backend-specific function for launching force unpacking and recv kernel. */

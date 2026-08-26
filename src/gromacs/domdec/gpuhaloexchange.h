@@ -91,7 +91,7 @@ public:
      *
      * \param [inout] dd                       domdec structure
      * \param [in]    dimIndex                 the dimension index for this instance
-     * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    mpiCommPpGroup           MPI communicator used for PP group (null on PME ranks)
      * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
      * \param [in]    haloStream               GPU device stream to use.
      * \param [in]    deviceContext            GPU device context
@@ -99,7 +99,7 @@ public:
      */
     GpuHaloExchange(gmx_domdec_t*        dd,
                     int                  dimIndex,
-                    MPI_Comm             mpi_comm_mysim,
+                    MPI_Comm             mpiCommPpGroup,
                     MPI_Comm             mpi_comm_mysim_world,
                     const DeviceStream&  haloStream,
                     const DeviceContext& deviceContext,

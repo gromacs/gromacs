@@ -164,7 +164,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     const gmx_domdec_comm_t& comm = *dd_->comm;
 
     // Common plan for this dim/pulse
-    const auto plan = computeHaloPlan(comm, dimIndex_, pulse_, mpi_comm_mysim_, sendRankX_, recvRankX_);
+    const auto plan = computeHaloPlan(comm, dimIndex_, pulse_, mpiCommPpGroup_, sendRankX_, recvRankX_);
     ind_            = plan.ind;
     receiveInPlace_ = plan.receiveInPlace;
     numHomeAtoms_   = comm.atomRanges.numHomeAtoms();
@@ -232,7 +232,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
                      MPI_BYTE,
                      sendRankX_,
                      0,
-                     mpi_comm_mysim_,
+                     mpiCommPpGroup_,
                      MPI_STATUS_IGNORE);
 
         // Force buffer:
@@ -247,7 +247,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
                      MPI_BYTE,
                      sendRankF_,
                      0,
-                     mpi_comm_mysim_,
+                     mpiCommPpGroup_,
                      MPI_STATUS_IGNORE);
     }
 #endif
@@ -275,7 +275,7 @@ void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynch
                  MPI_BYTE,
                  sendRankX_,
                  0,
-                 mpi_comm_mysim_,
+                 mpiCommPpGroup_,
                  MPI_STATUS_IGNORE);
     remoteCoordinatesReadyOnDeviceEvent->enqueueWaitEvent(haloStream_);
 #else
@@ -447,10 +447,10 @@ void GpuHaloExchange::Impl::communicateHaloDataGpuAwareMpi(Float3* sendPtr,
     MPI_Request request;
 
     // recv remote data into halo region
-    MPI_Irecv(recvPtr + recvOffset, recvSize * DIM, MPI_FLOAT, recvRank, 0, mpi_comm_mysim_, &request);
+    MPI_Irecv(recvPtr + recvOffset, recvSize * DIM, MPI_FLOAT, recvRank, 0, mpiCommPpGroup_, &request);
 
     // send data to remote halo region
-    MPI_Send(sendPtr + sendOffset, sendSize * DIM, MPI_FLOAT, sendRank, 0, mpi_comm_mysim_);
+    MPI_Send(sendPtr + sendOffset, sendSize * DIM, MPI_FLOAT, sendRank, 0, mpiCommPpGroup_);
 
     MPI_Wait(&request, MPI_STATUS_IGNORE);
 #else
@@ -481,8 +481,8 @@ void GpuHaloExchange::Impl::communicateHaloCoordinatesOutOfPlace(DeviceBuffer<Fl
             h_outOfPlaceSendBuffer_.data(), &d_sendPtr, 0, sendSize, haloStream_, GpuApiCallBehavior::Async, nullptr);
     haloStream_.synchronize();
     // exchange host staging buffers with MPI
-    MPI_Irecv(h_outOfPlaceRecvBuffer_.data(), recvSize * DIM, MPI_FLOAT, recvRank, 0, mpi_comm_mysim_, &request);
-    MPI_Send(h_outOfPlaceSendBuffer_.data(), sendSize * DIM, MPI_FLOAT, sendRank, 0, mpi_comm_mysim_);
+    MPI_Irecv(h_outOfPlaceRecvBuffer_.data(), recvSize * DIM, MPI_FLOAT, recvRank, 0, mpiCommPpGroup_, &request);
+    MPI_Send(h_outOfPlaceSendBuffer_.data(), sendSize * DIM, MPI_FLOAT, sendRank, 0, mpiCommPpGroup_);
     MPI_Wait(&request, MPI_STATUS_IGNORE);
     // copy sections of staging receive buffer, in turn, to final locations in device memory
     int stageBufIndex = 0;
@@ -532,8 +532,8 @@ void GpuHaloExchange::Impl::communicateHaloForcesOutOfPlace(DeviceBuffer<Float3>
     }
     haloStream_.synchronize();
     // exchange host staging buffers with MPI
-    MPI_Irecv(h_outOfPlaceRecvBuffer_.data(), recvSize * DIM, MPI_FLOAT, recvRank, 0, mpi_comm_mysim_, &request);
-    MPI_Send(h_outOfPlaceSendBuffer_.data(), sendSize * DIM, MPI_FLOAT, sendRank, 0, mpi_comm_mysim_);
+    MPI_Irecv(h_outOfPlaceRecvBuffer_.data(), recvSize * DIM, MPI_FLOAT, recvRank, 0, mpiCommPpGroup_, &request);
+    MPI_Send(h_outOfPlaceSendBuffer_.data(), sendSize * DIM, MPI_FLOAT, sendRank, 0, mpiCommPpGroup_);
     MPI_Wait(&request, MPI_STATUS_IGNORE);
     // copy entire host staging receive buffer to device memory receive buffer
     copyToDeviceBuffer(
@@ -584,7 +584,7 @@ void GpuHaloExchange::Impl::communicateHaloDataPeerToPeer(Float3*  sendPtr,
                  MPI_BYTE,
                  recvRank,
                  0,
-                 mpi_comm_mysim_,
+                 mpiCommPpGroup_,
                  MPI_STATUS_IGNORE);
 
     haloDataTransferRemote->enqueueWaitEvent(haloStream_);
@@ -612,7 +612,7 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::getForcesReadyOnDeviceEvent()
 /*! \brief Create GpuHaloExchange object */
 GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
                             int                  dimIndex,
-                            MPI_Comm             mpi_comm_mysim,
+                            MPI_Comm             mpiCommPpGroup,
                             MPI_Comm             mpi_comm_mysim_world,
                             const DeviceStream&  haloStream,
                             const DeviceContext& deviceContext,
@@ -626,7 +626,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
     usePBC_(dd->ci[dd->dim[dimIndex]] == 0),
     haloXDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
     haloFDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
-    mpi_comm_mysim_(mpi_comm_mysim),
+    mpiCommPpGroup_(mpiCommPpGroup),
     mpi_comm_mysim_world_(mpi_comm_mysim_world),
     deviceContext_(deviceContext),
     haloStream_(haloStream),
@@ -661,12 +661,12 @@ GpuHaloExchange::Impl::~Impl()
 
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t*        dd,
                                  int                  dimIndex,
-                                 MPI_Comm             mpi_comm_mysim,
+                                 MPI_Comm             mpiCommPpGroup,
                                  MPI_Comm             mpi_comm_mysim_world_,
                                  const DeviceStream&  haloStream,
                                  const DeviceContext& deviceContext,
                                  int                  pulse) :
-    impl_(new Impl(dd, dimIndex, mpi_comm_mysim, mpi_comm_mysim_world_, haloStream, deviceContext, pulse))
+    impl_(new Impl(dd, dimIndex, mpiCommPpGroup, mpi_comm_mysim_world_, haloStream, deviceContext, pulse))
 {
 }
 
@@ -723,8 +723,10 @@ GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  
     wcycle_(nullptr)
 {
 #if GMX_NVSHMEM
-    fusedPpHaloExchange_ = std::make_unique<gmx::FusedGpuHaloExchange>(
-            haloStream, context_, mpi_comm_mygroup, mpi_comm_mysim_world);
+    bool     thisIsPmeOnlyRank = peerRank.has_value();
+    MPI_Comm mpiCommPpGroup    = thisIsPmeOnlyRank ? MPI_COMM_NULL : mpi_comm_mygroup;
+    fusedPpHaloExchange_       = std::make_unique<gmx::FusedGpuHaloExchange>(
+            haloStream, context_, mpiCommPpGroup, mpi_comm_mysim_world);
 #else
     GMX_UNUSED_VALUE(haloStream);
     GMX_UNUSED_VALUE(mpi_comm_mygroup);

@@ -82,7 +82,7 @@ inline bool is_sufficiently_aligned(const void* ptr)
 
 FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceStream&  haloStream,
                                            const DeviceContext& deviceContext,
-                                           MPI_Comm             mpi_comm_mysim,
+                                           MPI_Comm             mpiCommPpGroup,
                                            MPI_Comm             mpi_comm_mysim_world) :
     haloStream_(haloStream),
     deviceContext_(deviceContext),
@@ -91,7 +91,7 @@ FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceStream&  haloStream,
     signalReceiverRankFCounter_(0),
     enableFusedForceKernelSync_(false),
     haloExchangeData_{ HostAllocationPolicy{ deviceContext_, PinningPolicy::PinnedIfSupported } },
-    mpi_comm_mysim_(mpi_comm_mysim),
+    mpiCommPpGroup_(mpiCommPpGroup),
     mpi_comm_mysim_world_(mpi_comm_mysim_world)
 {
     enableFusedForceKernelSync_ = (getenv("GMX_ENABLE_NVSHMEM_FORCE_HALO_SYNC") != nullptr);
@@ -297,7 +297,7 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
         for (int pulse = 0; pulse < cd.numPulses(); pulse++)
         {
             const auto plan =
-                    computeHaloPlan(comm, dimIndex, pulse, mpi_comm_mysim_, sendRankX, recvRankX);
+                    computeHaloPlan(comm, dimIndex, pulse, mpiCommPpGroup_, sendRankX, recvRankX);
             const int               atomOffset = plan.atomOffset;
             const int               xSendSize  = plan.xSendSize;
             const int               xRecvSize  = plan.xRecvSize;
@@ -344,7 +344,7 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
                          MPI_BYTE,
                          sendRankX,
                          0,
-                         mpi_comm_mysim_,
+                         mpiCommPpGroup_,
                          MPI_STATUS_IGNORE);
 
 #endif
