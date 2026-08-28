@@ -1301,7 +1301,7 @@ int ITTable::WriteObject(Serializer* ser, int& size)
     unsigned int unused = 0;
     _ttable.Write(ser, unused);
 
-    [[clang::suppress]] unused = ser->WriteUInt32(_orient);
+    ser->WriteUInt32(_orient);
 
     return ret;
 

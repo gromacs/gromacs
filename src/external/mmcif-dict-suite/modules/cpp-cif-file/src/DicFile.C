@@ -384,7 +384,7 @@ int DicFile::WriteFormatted(ostream& cifo, TableFile* ddl, ISTable* formatP)
       {
 	//itemtblddl->GetCell(itemName,string("name"),listOutItem[0]);
         itemName = (*itemtblddl)(listOutItem[0], "name");
-	[[clang::suppress]] cattbl2=block.GetTablePtr(TableNames[l]);
+	block.GetTablePtr(TableNames[l]);
 	CifString::GetItemFromCifItem(item2, itemName);
 	listcat2.clear();
 	listcat2.push_back(item2);
@@ -525,7 +525,7 @@ int DicFile::WriteFormatted(ostream& cifo, TableFile* ddl, ISTable* formatP)
 	            cattbl2->GetRow(listOutcat2[j]);
 	          for (unsigned int i=0; i< numColumn; i++)
                   {
-	            [[clang::suppress]] ilen=_PrintItemValue(cifo, rowValues[i], linePos,eNONE,cwidth[i]); 
+	            _PrintItemValue(cifo, rowValues[i], linePos,eNONE,cwidth[i]); 
 	          }
 	          if (linePos != 0) cifo << endl;
 	        }
@@ -660,7 +660,7 @@ int DicFile::WriteFormatted(ostream& cifo, TableFile* ddl, ISTable* formatP)
 	                for (unsigned int i=0; i< numColumn; i++)
                         {
 		
-		          [[clang::suppress]] ilen=_PrintItemValue(cifo, rowValues[i], linePos,eNONE,cwidth[i]); 
+		          _PrintItemValue(cifo, rowValues[i], linePos,eNONE,cwidth[i]); 
 	                }
 	                if (linePos != 0) cifo << endl;
 	              }

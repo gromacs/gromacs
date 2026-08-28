@@ -220,7 +220,6 @@ void Serializer::ReadUInt32s(vector<UInt32>& UInt32s, const UInt32 index)
         {
             if (bytesRead < wordsToRead*UINT32_SIZE)
             {
-                [[clang::suppress]] numWords = 0;
                 throw FileException("Reading less that than needed for UInt32s",
                   "Serializer::ReadUInt32s");
             }

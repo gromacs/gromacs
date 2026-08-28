@@ -459,7 +459,6 @@ int CifParentChild::CheckParentChild(Block& block, ISTable& catTable,
             vector<string> childKeyNonEmptyItems;
 #ifdef JW_HACK
             vector<string> skippedParKeyItems;
-            [[clang::suppress]] iKeyDif=0;
             allowMissing=false;
 #endif
             for (unsigned int keyI = 0; keyI < comboKeys.size(); ++keyI)

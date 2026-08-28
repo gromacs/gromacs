@@ -112,24 +112,6 @@ endfunction()
 mmcif_suppress_warnings_for_language(C)
 mmcif_suppress_warnings_for_language(CXX)
 
-# ---------------------------------------------------------------------------
-# WORKAROUND for a defect in the vendored RCSB sources.
-#
-# The Clang static analyzer (GMX_CLANG_ANALYZER) reports harmless dead stores in
-# this third-party code, which fails the analyzer CI job. Those stores are
-# annotated in the sources with [[clang::suppress]] (grep for it under
-# modules/); a compiler-flag bypass is not possible because the analyzer build
-# compiles with g++ -- which rejects Clang-only analyzer flags -- while only the
-# analysis pass is Clang, and both share the compile command.
-#
-# This is TEMPORARY: fixes are submitted upstream
-# (https://github.com/rcsb/cpp-dict-pack); if/when they are accepted and this
-# vendored copy is updated, remove the annotations. See UPDATING.md ("Local
-# patches") for details, including the source patch that replaced the
-# C++17-removed std::bind2nd / std::not1 binders this target used to need a
-# C++14 build for.
-# ---------------------------------------------------------------------------
-
 # Group this target under "External" in IDEs that show target folders, so it
 # does not clutter the list of GROMACS targets. GROMACS does not yet do this
 # for its other bundled externals.

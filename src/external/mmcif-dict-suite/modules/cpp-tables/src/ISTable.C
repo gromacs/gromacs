@@ -1979,17 +1979,17 @@ int ISTable::WriteObjectV9(Serializer* ser, int& size)
 
     UInt32 firstIndex = ser->WriteString(_version);
 
-    [[clang::suppress]] UInt32 currIndex = ser->WriteString(_name);
+    ser->WriteString(_name);
 
-    [[clang::suppress]] currIndex = ser->WriteUInt32(_ittables.size());
+    ser->WriteUInt32(_ittables.size());
 
     int unused = 0;
     for (unsigned int tableI = 0; tableI < _ittables.size(); ++tableI)
         _ittables[tableI].Write(ser, unused);
 
-    [[clang::suppress]] currIndex = ser->WriteUInt32(_colCaseSense);
+    ser->WriteUInt32(_colCaseSense);
 
-    currIndex = ser->WriteUInt32(_colNames.size());
+    UInt32 currIndex = ser->WriteUInt32(_colNames.size());
 
     if (_colNames.empty())
     {
@@ -1998,23 +1998,23 @@ int ISTable::WriteObjectV9(Serializer* ser, int& size)
         return (firstIndex);
     }
 
-    [[clang::suppress]] currIndex = ser->WriteStrings(_colNames.get_vector());
+    ser->WriteStrings(_colNames.get_vector());
 
-    [[clang::suppress]] currIndex = ser->WriteUInt32s(_precision);
+    ser->WriteUInt32s(_precision);
 
     string optsToWrite(_colNames.size(), ' ');
     for (unsigned int j = 0; j < _colNames.size(); ++j)
     {
         optsToWrite[j] = _compare_opts[j];
     }
-    [[clang::suppress]] currIndex = ser->WriteString(optsToWrite);
+    ser->WriteString(optsToWrite);
 
     num = _indexNames.size();
     currIndex = ser->WriteUInt32(num);
 
     if (num != 0)
     {
-        [[clang::suppress]] currIndex = ser->WriteStrings(_indexNames);
+        ser->WriteStrings(_indexNames);
 
         currIndex = ser->WriteUInt32s(_unique);
 
@@ -2641,7 +2641,7 @@ int ISTable::GetObjectV2(UInt32 index, Serializer* ser) {
 
   if ((version==3) || (version==4))
   {
-    [[clang::suppress]] num = ser->ReadUInt32(index);index++;
+    ser->ReadUInt32(index);index++;
     vector<UInt32> kToGet;
     ser->ReadUInt32s(kToGet, index);index++;
     kToGet.clear();
@@ -2650,7 +2650,7 @@ int ISTable::GetObjectV2(UInt32 index, Serializer* ser) {
   unsigned int numColumns = ser->ReadUInt32(index); index++;
   unsigned int numRows    = ser->ReadUInt32(index); index++;
   //EnlargeRowMap(numRows);
-  unsigned int numDels = ser->ReadUInt32(index); index++;
+  ser->ReadUInt32(index); index++;
 
   // _colAlloc field is next. It is ignored since it is not used with
   // this version of ISTable
@@ -2803,7 +2803,6 @@ int ISTable::GetObjectV2(UInt32 index, Serializer* ser) {
   }
 
    // Correct the members
-  [[clang::suppress]] numRows -= numDels;
 
   // EnlargeRowMap(numRows);
 

@@ -990,11 +990,9 @@ void TableFile::_ReadFileIndexVersion0()
 
     vector<string> tableIds;
     _f->ReadStrings(tableIds, where);
-    [[clang::suppress]] numTables = tableIds.size();
 
     vector<string> tableNames;
     _f->ReadStrings(tableNames, where + 1);
-    [[clang::suppress]] numTables = tableNames.size();
 
     vector<string> tableBlockNames;
     _f->ReadStrings(tableBlockNames, where + 2);

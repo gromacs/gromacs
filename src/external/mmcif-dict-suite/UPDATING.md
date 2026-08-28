@@ -11,12 +11,17 @@ below — not a release number — identify what is here:
 
 | module              | commit    | date       |
 | ------------------- | --------- | ---------- |
-| `cpp-common`        | `0048354` | 2023-08-16 |
-| `cpp-tables`        | `d9d336c` | 2021-09-01 |
+| `cpp-common`        | `6d05a1f` | 2026-08-28 |
+| `cpp-tables`        | `2882714` | 2026-08-28 |
 | `cc-regex`          | `28b88be` | 2011-09-28 |
-| `cpp-cif-file`      | `d01a5c7` | 2024-06-20 |
+| `cpp-cif-file`      | `a160c96` | 2026-08-28 |
 | `cpp-cif-file-util` | `607d488` | 2022-05-17 |
 | `cpp-cif-parser`    | `874d19b` | 2018-01-10 |
+
+Those six commits are exactly what `cpp-dict-pack` pins as submodules at its
+`b227176`, which is suite version **2.50.11**, so this copy corresponds to that
+upstream release. The per-module commits above remain the authoritative record,
+since only a subset of the suite is vendored here.
 
 ## What is vendored, and what is not
 
@@ -40,14 +45,19 @@ offline, this is a **trimmed** copy:
 
 ## Local patches
 
-These sources are **not pristine upstream**. Both changes below are submitted
-upstream, so a refresh that already contains them must drop the local copy
-rather than re-apply it.
+**None.** These sources are pristine upstream, file for file.
 
-| change | where | upstream |
-| ------ | ----- | -------- |
-| Replaced `std::bind2nd` / `std::not1` and the `std::unary_function` / `std::binary_function` bases, removed from the standard library in C++17, with type aliases and lambdas. Needed because `cifio.cpp` includes `GenString.h` transitively and is compiled as C++17+. | `cpp-common`: `GenString.h`, `GenString.C`, `GenCont.C` | rcsb/cpp-common#1 |
-| Annotated 17 harmless `deadcode.DeadStores` with `[[clang::suppress]]` for the Clang-analyzer CI job (see `CMakeLists.txt` for why a build flag cannot do this). | `git grep '\[\[clang::suppress\]\]' modules/` | rcsb/cpp-tables#1, rcsb/cpp-cif-file#2 |
+Two changes were carried here while they were in review upstream: replacing the
+`std::bind2nd` / `std::not1` binders and the `std::unary_function` /
+`std::binary_function` bases that C++17 removed, and annotating harmless
+`deadcode.DeadStores` for the Clang-analyzer CI job. Both were accepted upstream
+(rcsb/cpp-common#1, rcsb/cpp-tables#1, rcsb/cpp-cif-file#2) and the commits pinned
+above contain them, so the local copies have been dropped. Upstream fixed the dead
+stores by removing the redundant assignments rather than by annotating them, so no
+`[[clang::suppress]]` remains anywhere under `modules/`.
+
+Keep it this way: if a defect is found here, fix it upstream and refresh, rather
+than patching in place.
 
 ## Updating to newer upstream versions
 
@@ -59,9 +69,10 @@ refresh:
    and overwrite the vendored `modules/<m>/{include,src}` files with it (keep only
    the files already vendored — the trimmed set — unless a new one is required to
    compile). Update the commit table above.
-2. Re-check the local patches listed above: build with libc++ at C++17/20 and run
-   `scan-build`; drop whatever the new sources no longer need, and (re)add only
-   what they still require.
+2. Verify the new sources need nothing added on top: build with libc++ at
+   C++17/20 and run `scan-build`. If something does turn out to be needed, fix it
+   upstream first and vendor the result, so that "Local patches" above stays
+   empty.
 3. Regenerate the committed parser sources **only if** the flex/bison grammar
    (`modules/cpp-cif-parser/src/*.l`, `*.y`) changed:
 
