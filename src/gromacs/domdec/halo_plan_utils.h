@@ -37,7 +37,7 @@
  */
 #pragma once
 
-#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "domdec_struct.h"
 
@@ -54,7 +54,7 @@ struct HaloPlan
     int xSendSize = 0;
     //! recv copy size for X for this haloPlan
     int xRecvSize = 0;
-    //! flag on whether the recieve for this halo exchange is performed in-place
+    //! flag on whether the receive for this halo exchange is performed in-place
     bool receiveInPlace = true;
     //! The indices to communicate for this halo exchange
     const gmx_domdec_ind_t* ind = nullptr;
@@ -63,7 +63,7 @@ struct HaloPlan
 HaloPlan computeHaloPlan(const gmx_domdec_comm_t& comm,
                          int                      dimIndex,
                          int                      pulse,
-                         MPI_Comm                 mpiCommMySim,
+                         const MpiComm&           mpiCommGroup,
                          int                      sendRankX,
                          int                      recvRankX);
 

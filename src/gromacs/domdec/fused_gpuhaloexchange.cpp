@@ -296,8 +296,7 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(gmx_domdec_t*          dd,
 
         for (int pulse = 0; pulse < cd.numPulses(); pulse++)
         {
-            const auto plan =
-                    computeHaloPlan(comm, dimIndex, pulse, mpiCommPpGroup_, sendRankX, recvRankX);
+            const auto plan = computeHaloPlan(comm, dimIndex, pulse, dd->mpiComm(), sendRankX, recvRankX);
             const int               atomOffset = plan.atomOffset;
             const int               xSendSize  = plan.xSendSize;
             const int               xRecvSize  = plan.xRecvSize;

@@ -90,7 +90,7 @@ namespace gmx
 HaloPlan computeHaloPlan(const gmx_domdec_comm_t& comm,
                          int                      dimIndex,
                          int                      pulse,
-                         MPI_Comm                 mpiCommMySim,
+                         const MpiComm&           mpiCommGroup,
                          int                      sendRankX,
                          int                      recvRankX)
 {
@@ -131,11 +131,11 @@ HaloPlan computeHaloPlan(const gmx_domdec_comm_t& comm,
                  MPI_BYTE,
                  recvRankX,
                  0,
-                 mpiCommMySim,
+                 mpiCommGroup.comm(),
                  MPI_STATUS_IGNORE);
     plan.xRecvSize = xRecv;
 #else
-    GMX_UNUSED_VALUE(mpiCommMySim);
+    GMX_UNUSED_VALUE(mpiCommGroup);
     GMX_UNUSED_VALUE(sendRankX);
     GMX_UNUSED_VALUE(recvRankX);
     plan.xRecvSize = plan.xSendSize;
@@ -164,7 +164,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     const gmx_domdec_comm_t& comm = *dd_->comm;
 
     // Common plan for this dim/pulse
-    const auto plan = computeHaloPlan(comm, dimIndex_, pulse_, mpiCommPpGroup_, sendRankX_, recvRankX_);
+    const auto plan = computeHaloPlan(comm, dimIndex_, pulse_, dd_->mpiComm(), sendRankX_, recvRankX_);
     ind_            = plan.ind;
     receiveInPlace_ = plan.receiveInPlace;
     numHomeAtoms_   = comm.atomRanges.numHomeAtoms();
