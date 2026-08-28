@@ -2520,15 +2520,11 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
             kernelParamsPtr->current.scale = 1.0 - lambda;
         }
 
-#if GMX_NVSHMEM
         kernelParamsPtr->isVirialStep = computeVirial;
         if (!computeVirial && pmeGpu->useNvshmem)
         {
             kernelParamsPtr->forcesReadyNvshmemFlagsCounter++;
         }
-#else
-        GMX_UNUSED_VALUE(computeVirial);
-#endif
 
         const auto kernelArgs = [&]()
         {
