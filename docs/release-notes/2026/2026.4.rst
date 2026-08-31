@@ -46,6 +46,15 @@ crashing with large ifdef blocks.
 
 :issue:`5683`
 
+Increased precision of time processing in ``gmx eneconv``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+All internal time processing in ``gmx eneconv`` now preserves the full double
+precision of the time stamps. This avoids picking of incorrect frames when
+times are large and intervals are small.
+
+:issue:`5219`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

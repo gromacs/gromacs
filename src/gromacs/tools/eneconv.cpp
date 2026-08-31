@@ -129,7 +129,7 @@ static int* select_it(int nre, gmx_enxnm_t* nm, int* nset)
     return set;
 }
 
-static void sort_files(gmx::ArrayRef<std::string> files, real* settime)
+static void sort_files(gmx::ArrayRef<std::string> files, double* settime)
 {
     for (gmx::Index i = 0; i < files.ssize(); i++)
     {
@@ -143,7 +143,7 @@ static void sort_files(gmx::ArrayRef<std::string> files, real* settime)
         }
         if (minidx != i)
         {
-            real timeswap   = settime[i];
+            double timeswap = settime[i];
             settime[i]      = settime[minidx];
             settime[minidx] = timeswap;
             std::string tmp = files[i];
@@ -154,12 +154,12 @@ static void sort_files(gmx::ArrayRef<std::string> files, real* settime)
 }
 
 
-static int scan_ene_files(const std::vector<std::string>& files, real* readtime, real* timestep, int* nremax)
+static int scan_ene_files(const std::vector<std::string>& files, double* readtime, double* timestep, int* nremax)
 {
     /* Check number of energy terms and start time of all files */
     int          nre, nremin = 0, nresav = 0;
     ener_file_t  in;
-    real         t1, t2;
+    double       t1, t2;
     char         inputstring[STRLEN];
     gmx_enxnm_t* enm;
     t_enxframe*  fr;
@@ -229,8 +229,8 @@ static int scan_ene_files(const std::vector<std::string>& files, real* readtime,
 
 
 static void edit_files(gmx::ArrayRef<std::string> files,
-                       real*                      readtime,
-                       real*                      settime,
+                       double*                    readtime,
+                       double*                    settime,
                        int*                       cont_type,
                        gmx_bool                   bSetTime,
                        gmx_bool                   bSort)
@@ -474,7 +474,7 @@ int gmx_eneconv(int argc, char* argv[])
     int               noutfr;
     int               nre, nremax, this_nre, kkk, nset, *set = nullptr;
     double            last_t;
-    real *            readtime, *settime, timestep, tadjust;
+    double *          readtime, *settime, timestep, tadjust;
     char              buf[22], buf2[22];
     int*              cont_type;
     gmx_bool          bNewFile, bFirst, bNewOutput;
@@ -490,7 +490,8 @@ int gmx_eneconv(int argc, char* argv[])
     };
 
 #define NFILE asize(fnm)
-    gmx_bool        bWrite;
+    gmx_bool bWrite;
+    // We would like these and begin, end to be double, but t_pargs doesn't support that yet
     static real     delta_t = 0.0, toffset = 0, scalefac = 1;
     static gmx_bool bSetTime = FALSE;
     static gmx_bool bSort = TRUE, bError = TRUE;
@@ -574,7 +575,7 @@ int gmx_eneconv(int argc, char* argv[])
         }
 
         /* start reading from the next file */
-        while ((fro->t <= (settime[f + 1] + GMX_REAL_EPS)) && do_enx(in, fr))
+        while (fro->t <= settime[f + 1] * (1 + GMX_DOUBLE_EPS) && do_enx(in, fr))
         {
             if (bNewFile)
             {
@@ -602,8 +603,8 @@ int gmx_eneconv(int argc, char* argv[])
             fro->step = lastfilestep + fr->step - startstep_file;
             fro->t    = tadjust + fr->t;
 
-            bWrite = ((begin < 0 || (fro->t >= begin - GMX_REAL_EPS))
-                      && (end < 0 || (fro->t <= end + GMX_REAL_EPS))
+            bWrite = ((begin < 0 || (fro->t >= begin * (1 - GMX_DOUBLE_EPS)))
+                      && (end < 0 || (fro->t <= end * (1 + GMX_DOUBLE_EPS)))
                       && (fro->t <= settime[f + 1] + 0.5 * timestep));
 
             if (debug)
@@ -619,14 +620,14 @@ int gmx_eneconv(int argc, char* argv[])
 
             if (bError)
             {
-                if ((end > 0) && (fro->t > end + GMX_REAL_EPS))
+                if (end > 0 && fro->t > end * (1 + GMX_DOUBLE_EPS))
                 {
                     f = files.size();
                     break;
                 }
             }
 
-            if (fro->t >= begin - GMX_REAL_EPS)
+            if (fro->t >= begin * (1 - GMX_DOUBLE_EPS))
             {
                 if (bFirst)
                 {
@@ -639,7 +640,7 @@ int gmx_eneconv(int argc, char* argv[])
             }
 
             /* determine if we should write it */
-            if (bWrite && (delta_t == 0 || bRmod(fro->t, toffset, delta_t)))
+            if (bWrite && (delta_t == 0 || bRmod_fd(fro->t, toffset, delta_t, TRUE)))
             {
                 laststep = fro->step;
                 last_t   = fro->t;
