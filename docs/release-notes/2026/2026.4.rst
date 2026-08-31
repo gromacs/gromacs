@@ -78,3 +78,13 @@ Fixed SYCL build with HeFFTe
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Updated DOI to the preprint describing AMBER14SB and AMBER19SB conversion and validation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+AMBER14SB and AMBER19SB force field :ref:`itp` files contained a placeholder
+link the preprint describing the conversion and validation steps. Now that the
+preprint is uploaded on ChemRxiv, the placeholder was replaced with the DOI of
+the preprint, `doi:10.26434/chemrxiv.15006112/v1 <https://doi.org/10.26434/chemrxiv.15006112/v1>`_.
+
+:issue:`5690`
