@@ -29,6 +29,7 @@ gromacs:clang-14-cuda.12.1:release:configure:
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CUDA_TARGET_COMPUTE=75"
 
 gromacs:clang-14-cuda.12.1:release:build:
   extends:
@@ -87,4 +88,3 @@ gromacs:clang-14-cuda.12.1:release:regressiontest:
   needs:
     - job: gromacs:clang-14-cuda.12.1:release:build
     - job: regressiontests:package
-

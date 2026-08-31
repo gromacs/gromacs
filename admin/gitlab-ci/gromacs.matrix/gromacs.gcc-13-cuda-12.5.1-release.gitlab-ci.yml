@@ -29,6 +29,7 @@ gromacs:gcc-13-cuda-12.5.1:release:configure:
     RELEASE_BUILD_DIR: release-builds-gcc
     CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_REGRESSIONTEST_OPTIONS: ""
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CUDA_TARGET_COMPUTE=75"
   dependencies:
     - archive:package
     - regressiontests:package
