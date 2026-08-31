@@ -602,8 +602,9 @@ void ModularSimulator::readCheckpointToTrxFrame(t_trxframe*               fr,
                        "written by modular simulator.");
     fr->bStep = true;
     fr->step = int64_to_int(checkpointHeaderContents.step, "conversion of checkpoint to trajectory");
-    fr->bTime = true;
-    fr->time  = checkpointHeaderContents.t;
+    fr->bTime        = true;
+    fr->timeIsDouble = true;
+    fr->time         = checkpointHeaderContents.t;
 
     fr->bAtoms = false;
 

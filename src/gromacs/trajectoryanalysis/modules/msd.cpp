@@ -754,7 +754,7 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
 
         // We only store the frame for the future if it's a restart per -trestart.
 
-        if (bRmod_fd(time, t0_, trestart_, false))
+        if (bRmod_fd(time, t0_, trestart_, frame.timeIsDouble))
         {
             msdData.frames.emplace_back(
                     std::make_pair(frameNumber, std::vector(coords.begin(), coords.end())));

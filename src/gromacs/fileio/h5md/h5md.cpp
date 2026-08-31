@@ -592,6 +592,10 @@ bool H5md::readNextFrame(t_trxframe* frame, const std::string& selectionName)
     // TODO: This should be read from the file
     frame->bPrec = false;
     frame->prec  = 0.0;
+    // TODO: Due to current limitations, time is currently always read from double
+    // precision data sets, but after this is addressed we need to read this from
+    // the open file. See #5474.
+    frame->timeIsDouble = true;
 
     TrajectoryReadCursor& readCursor = particleBlocks_.at(selectionName);
     if (readCursor.nextFrameContents(

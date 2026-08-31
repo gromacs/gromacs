@@ -304,17 +304,18 @@ float trx_get_time_of_final_frame(t_trxstatus* status)
 
 void clear_trxframe(t_trxframe* fr, gmx_bool bFirst)
 {
-    fr->not_ok    = 0;
-    fr->bStep     = FALSE;
-    fr->bTime     = FALSE;
-    fr->bLambda   = FALSE;
-    fr->bFepState = FALSE;
-    fr->bAtoms    = FALSE;
-    fr->bPrec     = FALSE;
-    fr->bX        = FALSE;
-    fr->bV        = FALSE;
-    fr->bF        = FALSE;
-    fr->bBox      = FALSE;
+    fr->not_ok       = 0;
+    fr->bStep        = FALSE;
+    fr->bTime        = FALSE;
+    fr->timeIsDouble = false;
+    fr->bLambda      = FALSE;
+    fr->bFepState    = FALSE;
+    fr->bAtoms       = FALSE;
+    fr->bPrec        = FALSE;
+    fr->bX           = FALSE;
+    fr->bV           = FALSE;
+    fr->bF           = FALSE;
+    fr->bBox         = FALSE;
     if (bFirst)
     {
         fr->natoms    = -1;
@@ -702,10 +703,11 @@ static gmx_bool gmx_next_frame(t_trxstatus* status, t_trxframe* fr)
 
     if (gmx_trr_read_frame_header(status->fio, &sh, &bOK))
     {
-        fr->natoms    = sh.natoms;
-        fr->bStep     = TRUE;
-        fr->step      = sh.step;
-        fr->bTime     = TRUE;
+        fr->natoms = sh.natoms;
+        fr->bStep  = TRUE;
+        fr->step   = sh.step;
+        fr->bTime  = TRUE;
+        fr->timeIsDouble = (std::is_same_v<decltype(sh.t), double> && gmx_fio_is_double(status->fio));
         fr->time      = static_cast<double>(sh.t);
         fr->bLambda   = TRUE;
         fr->bFepState = TRUE;
@@ -792,10 +794,11 @@ static gmx_bool pdb_next_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
     step      = std::strstr(title, " step= ");
     fr->bStep = ((step != nullptr) && sscanf(step + 7, "%" SCNd64, &fr->step) == 1);
 
-    dbl       = 0.0;
-    time      = std::strstr(title, " t= ");
-    fr->bTime = ((time != nullptr) && sscanf(time + 4, "%lf", &dbl) == 1);
-    fr->time  = dbl;
+    dbl              = 0.0;
+    time             = std::strstr(title, " t= ");
+    fr->bTime        = ((time != nullptr) && sscanf(time + 4, "%lf", &dbl) == 1);
+    fr->timeIsDouble = true;
+    fr->time         = dbl;
 
     if (na == 0)
     {
@@ -879,14 +882,15 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                     }
                     initcount(status);
                 }
-                bRet      = (read_next_xtc(
+                bRet             = (read_next_xtc(
                                 status->fio, fr->natoms, &fr->step, &timeAsReal, fr->box, fr->x, &fr->prec, &bOK)
                         != 0);
-                fr->bPrec = (bRet && fr->prec > 0);
-                fr->bStep = bRet;
-                fr->bTime = bRet;
-                fr->bX    = bRet;
-                fr->bBox  = bRet;
+                fr->bPrec        = (bRet && fr->prec > 0);
+                fr->bStep        = bRet;
+                fr->bTime        = bRet;
+                fr->timeIsDouble = false;
+                fr->bX           = bRet;
+                fr->bBox         = bRet;
                 if (bRet)
                 {
                     fr->time = static_cast<double>(timeAsReal);
@@ -1036,12 +1040,13 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             }
             else
             {
-                fr->bPrec = (fr->prec > 0);
-                fr->bStep = TRUE;
-                fr->bTime = TRUE;
-                fr->bX    = TRUE;
-                fr->bBox  = TRUE;
-                fr->time  = static_cast<double>(timeAsReal);
+                fr->bPrec        = (fr->prec > 0);
+                fr->bStep        = TRUE;
+                fr->bTime        = TRUE;
+                fr->timeIsDouble = false;
+                fr->bX           = TRUE;
+                fr->bBox         = TRUE;
+                fr->time         = static_cast<double>(timeAsReal);
                 printcount(*status, oenv, fr->time, FALSE);
             }
             bFirst = FALSE;

@@ -396,8 +396,9 @@ gmx_bool gro_next_x_or_v(FILE* status, t_trxframe* fr)
         p += 2;
         if (sscanf(p, "%lf", &tt) == 1)
         {
-            fr->time  = tt;
-            fr->bTime = TRUE;
+            fr->time         = tt;
+            fr->timeIsDouble = true;
+            fr->bTime        = TRUE;
         }
         else
         {

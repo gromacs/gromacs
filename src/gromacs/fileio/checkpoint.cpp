@@ -3068,16 +3068,17 @@ void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe*
         return;
     }
 
-    fr->natoms    = state.numAtoms();
-    fr->bStep     = TRUE;
-    fr->step      = int64_to_int(headerContents.step, "conversion of checkpoint to trajectory");
-    fr->bTime     = TRUE;
-    fr->time      = headerContents.t;
-    fr->bLambda   = TRUE;
-    fr->lambda    = state.lambda[FreeEnergyPerturbationCouplingType::Fep];
-    fr->fep_state = state.fep_state;
-    fr->bAtoms    = FALSE;
-    fr->bX        = state.hasEntry(StateEntry::X);
+    fr->natoms       = state.numAtoms();
+    fr->bStep        = TRUE;
+    fr->step         = int64_to_int(headerContents.step, "conversion of checkpoint to trajectory");
+    fr->bTime        = TRUE;
+    fr->timeIsDouble = true;
+    fr->time         = headerContents.t;
+    fr->bLambda      = TRUE;
+    fr->lambda       = state.lambda[FreeEnergyPerturbationCouplingType::Fep];
+    fr->fep_state    = state.fep_state;
+    fr->bAtoms       = FALSE;
+    fr->bX           = state.hasEntry(StateEntry::X);
     if (fr->bX)
     {
         fr->x = makeRvecArray(state.x, state.numAtoms());

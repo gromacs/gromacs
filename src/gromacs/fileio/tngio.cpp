@@ -1597,8 +1597,9 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
     fr->bStep = TRUE;
 
     // Convert the time to ps
-    fr->time  = frameTime / gmx::c_pico;
-    fr->bTime = (frameTime > 0);
+    fr->time         = frameTime / gmx::c_pico;
+    fr->bTime        = (frameTime > 0);
+    fr->timeIsDouble = true;
 
     /* Update the data in the wrapper */
     gmx_tng_input->lastStepDataIsValid = true;

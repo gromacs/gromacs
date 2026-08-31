@@ -237,22 +237,23 @@ static std::unique_ptr<gmx_mtop_t> read_mtop_for_tng(const char* tps_file,
 //! Do a deep copy of \c input and store in (pre-allocated) \c copy
 static void copyTrxframeDeeply(const t_trxframe& input, t_trxframe* copy)
 {
-    copy->not_ok    = input.not_ok;
-    copy->natoms    = input.natoms;
-    copy->bStep     = input.bStep;
-    copy->step      = input.step;
-    copy->bTime     = input.bTime;
-    copy->time      = input.time;
-    copy->bLambda   = input.bLambda;
-    copy->bFepState = input.bFepState;
-    copy->lambda    = input.lambda;
-    copy->fep_state = input.fep_state;
-    copy->bPrec     = input.bPrec;
-    copy->prec      = input.prec;
-    copy->bX        = input.bX;
-    copy->bV        = input.bV;
-    copy->bF        = input.bF;
-    copy->bAtoms    = input.bAtoms;
+    copy->not_ok       = input.not_ok;
+    copy->natoms       = input.natoms;
+    copy->bStep        = input.bStep;
+    copy->step         = input.step;
+    copy->bTime        = input.bTime;
+    copy->timeIsDouble = input.timeIsDouble;
+    copy->time         = input.time;
+    copy->bLambda      = input.bLambda;
+    copy->bFepState    = input.bFepState;
+    copy->lambda       = input.lambda;
+    copy->fep_state    = input.fep_state;
+    copy->bPrec        = input.bPrec;
+    copy->prec         = input.prec;
+    copy->bX           = input.bX;
+    copy->bV           = input.bV;
+    copy->bF           = input.bF;
+    copy->bAtoms       = input.bAtoms;
     if (input.bAtoms)
     {
         done_atom(copy->atoms);
@@ -297,6 +298,7 @@ static void swapFrames(t_trxframe* a, t_trxframe* b)
     std::swap(a->bStep, b->bStep);
     std::swap(a->step, b->step);
     std::swap(a->bTime, b->bTime);
+    std::swap(a->timeIsDouble, b->timeIsDouble);
     std::swap(a->time, b->time);
     std::swap(a->bLambda, b->bLambda);
     std::swap(a->bFepState, b->bFepState);

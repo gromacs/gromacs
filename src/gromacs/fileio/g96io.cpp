@@ -291,8 +291,9 @@ int read_g96_conf(FILE* fp, const std::filesystem::path& infile, char** name, t_
         {
             if (!fr->bTime && !fr->bX)
             {
-                fr->bStep = bTime;
-                fr->bTime = bTime;
+                fr->bStep        = bTime;
+                fr->bTime        = bTime;
+                fr->timeIsDouble = true;
                 do
                 {
                     bFinished = (fgets2(line, STRLEN, fp) == nullptr);
@@ -391,7 +392,7 @@ void write_g96_conf(FILE* out, const char* title, const t_trxframe* fr, int nind
     if (fr->bStep || fr->bTime)
     {
         /* Officially the time format is %15.9, which is not enough for 10 ns */
-        fprintf(out, "TIMESTEP\n%15" PRId64 "%15.6f\nEND\n", fr->step, fr->time);
+        fprintf(out, "TIMESTEP\n%15" PRId64 "%15.6lf\nEND\n", fr->step, fr->time);
     }
     if (fr->bX)
     {

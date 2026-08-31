@@ -255,8 +255,9 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t* vmdplugin, t_trxframe* fr)
     matrix_convert(fr->box, vec, angle);
     if (vmdplugin->api->abiversion > 10)
     {
-        fr->bTime = TRUE;
-        fr->time  = ts.physical_time;
+        fr->bTime        = TRUE;
+        fr->time         = ts.physical_time;
+        fr->timeIsDouble = std::is_same_v<decltype(ts.physical_time), double>;
     }
     else
     {
