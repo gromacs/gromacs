@@ -213,7 +213,15 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
     // Spline values
     using Theta = StaticLocalStorage<float, atomsPerBlock * DIM * order>;
     // Reduction of partial force contributions
+#if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER >= 20260000
+    // Work around the compiler bug discussed in CMPLRLLVM-74953 and
+    // issue #5688. This allocates some extra shared local memory that
+    // is unused when splines are in fact not calculated, but that
+    // only happens in unit tests.
+    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, true>;
+#else
     using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, computeSplines>;
+#endif
     // These declarations must be made on the host
     auto sm_gridlineIndicesHostStorage = GridLineIndices::makeHostStorage(cgh);
     auto sm_thetaHostStorage           = Theta::makeHostStorage(cgh);

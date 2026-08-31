@@ -35,6 +35,21 @@ was passed by value. Only 2026 was affected.
 
 :issue:`5671`
 
+Worked around SYCL miscompilation in PME by oneAPI 2026.x
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With all oneAPI versions 2026.x (and until a fix arrives), the SYCL
+PME GPU gather kernel on sufficiently large systems is affected by a
+miscompilation that causes a crash. Earlier oneAPI versions are not
+affected. Results are correct if mdrun does not crash.
+
+The issue is now worked around by always allocating some per-workgroup
+shared local memory, which can be more than is strictly required, but
+which is unlikely to affect performance noticeably.
+
+:issue:`5688`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
