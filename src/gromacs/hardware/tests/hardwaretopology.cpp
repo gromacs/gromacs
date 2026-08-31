@@ -175,6 +175,11 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
 
     if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Full)
     {
+        if (GMX_USE_HWLOC)
+        {
+            // See #5623
+            GTEST_SKIP() << "This test makes wrong assumptions about topology provided by hwloc";
+        }
         // Check that numa node id corresponds to rank
         for (std::size_t i = 0; i < hwTop.machine().numa.nodes.size(); i++)
         {

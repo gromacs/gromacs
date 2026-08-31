@@ -939,10 +939,14 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
         }
     }
 
+    const int pmeGridAlignedNz  = pmeGridAlignedZSize(pme->nkz, pme->pme_order);
+    const int majorOverlapYSize = gmx::divideRoundUp(pme->nky, pme->nnodes_minor) + pme->pme_order;
+
     /* For non-divisible grid we need pme_order iso pme_order-1 */
-    /* In sum_qgrid_dd x overlap is copied in place: take padding into account.
-     * y is always copied through a buffer: we don't need padding in z,
-     * but we do need the overlap in x because of the communication order.
+    /* In sum_qgrid_dd x overlap is copied through a contiguous buffer using the
+     * aligned local z stride. y is copied through an offset buffer and only
+     * needs the physical z grid size, but it does need the overlap in x
+     * because of the communication order.
      */
     init_overlap_comm(&pme->overlap[0],
                       pme->pme_order,
@@ -950,8 +954,7 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
                       pme->nnodes_major,
                       pme->nodeid_major,
                       pme->nkx,
-                      (gmx::divideRoundUp(pme->nky, pme->nnodes_minor) + pme->pme_order)
-                              * (pme->nkz + pme->pme_order - 1));
+                      majorOverlapYSize * pmeGridAlignedNz);
 
     /* Along overlap dim 1 we can send in multiple pulses in sum_fftgrid_dd.
      * We do this with an offset buffer of equal size, so we need to allocate
@@ -984,9 +987,8 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
      */
     pme->pmegrid_nx = pme->overlap[0].s2g1[pme->nodeid_major] - pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_ny = pme->overlap[1].s2g1[pme->nodeid_minor] - pme->overlap[1].s2g0[pme->nodeid_minor];
-    pme->pmegrid_nz_base = pme->nkz;
-    pme->pmegrid_nz      = pme->pmegrid_nz_base + pme->pme_order - 1;
-    set_grid_alignment(&pme->pmegrid_nz, pme->pme_order);
+    pme->pmegrid_nz_base  = pme->nkz;
+    pme->pmegrid_nz       = pmeGridAlignedNz;
     pme->pmegrid_start_ix = pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
     pme->pmegrid_start_iz = 0;

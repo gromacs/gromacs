@@ -17,8 +17,43 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix PME heap buffer overflow with multiple PME ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+When the local PME grid required SIMD padding in the z dimension,
+major-dimension overlap communication could write beyond its communication
+buffer. This could corrupt memory or crash ``mdrun`` when PME used multiple
+PME ranks, most readily with ``pme-order = 5``.
+
+:issue:`5669`
+
+Fixed MPI-parallel ``mdrun -plumed`` aborting at startup
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Any MPI-parallel run using PLUMED aborted at startup with ``MPI_ERR_COMM``:
+PLUMED reads the ``setMPIComm`` argument as a pointer, but the communicator
+was passed by value. Only 2026 was affected.
+
+:issue:`5671`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix stack overflow in ``grompp`` with large ifdef blocks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A recursion was replaced with a plain loop to avoid ``gmx grompp``
+crashing with large ifdef blocks.
+
+:issue:`5683`
+
+Increased precision of time processing in ``gmx eneconv``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+All internal time processing in ``gmx eneconv`` now preserves the full double
+precision of the time stamps. This avoids picking of incorrect frames when
+times are large and intervals are small.
+
+:issue:`5219`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

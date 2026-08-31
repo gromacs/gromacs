@@ -132,14 +132,16 @@ enum class ThreadsPerAtom : int
  * smaller block/workgroup sizes, depending on device capabilities.
  */
 
-//! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
+//! Spreading max block width in warps picked among powers of 2 (2, 4, 8) for max. occupancy and
+//! min. runtime in most cases Tested on A100, H100, B200
 constexpr int c_spreadMaxWarpsPerBlock = 8;
 
-//! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max.
-//! occupancy and min. runtime (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
+//! Solving max block width in warps picked among powers of 2 (8, 16) for max. occupancy and min.
+//! runtime in most cases Tested on A100, H100, B200
 constexpr int c_solveMaxWarpsPerBlock = 8;
 
-//! Gathering max block width in warps - picked empirically among 2, 4, 8, 16 for max. occupancy and min. runtime
+//! Gathering max block width in warps picked among powers of 2 (2, 4) for max. occupancy and min.
+//! runtime in most cases Tested on A100, H100, B200
 constexpr int c_gatherMaxWarpsPerBlock = 4;
 
 #if GMX_GPU_CUDA
@@ -161,7 +163,7 @@ static constexpr int c_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock * warp_
 //! Gathering max block size in threads
 static constexpr int c_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * warp_size;
 //! Gathering min blocks per CUDA multiprocessor (determined empirically to give best performance)
-#    if GMX_PTX_ARCH >= 800
+#    if GMX_PTX_ARCH >= 800 && GMX_CUDA_MAX_THREADS_PER_MP >= 1536
 static constexpr int c_gatherMinBlocksPerMP = 12;
 #    else
 static constexpr int c_gatherMinBlocksPerMP = GMX_CUDA_MAX_THREADS_PER_MP / c_gatherMaxThreadsPerBlock;

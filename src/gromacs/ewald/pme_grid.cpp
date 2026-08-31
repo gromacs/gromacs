@@ -558,6 +558,13 @@ void set_grid_alignment(int gmx_unused* pmegrid_nz, int gmx_unused pme_order)
 #endif
 }
 
+int pmeGridAlignedZSize(const int nkz, const int pmeOrder)
+{
+    int pmegridNz = nkz + pmeOrder - 1;
+    set_grid_alignment(&pmegridNz, pmeOrder);
+    return pmegridNz;
+}
+
 static void pmegrid_init(pmegrid_t*           grid,
                          int                  cx,
                          int                  cy,
