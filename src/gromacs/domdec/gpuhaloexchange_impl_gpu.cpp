@@ -828,23 +828,11 @@ void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int totalNumPulses)
     // buffer to max val.
     if (ppHaloExPerSyncBufSize_ < totalNumPulses)
     {
-        // Initialize the signalling buffer with max value.
         ppHaloExPerSyncBufSize_ = totalNumPulses;
-
-        // TODO host allocation should be minimized by making this a
-        // member variable
-        gmx::HostVector<uint64_t> hostBuffer(
-                {}, gmx::HostAllocationPolicy(context_, gmx::PinningPolicy::PinnedIfSupported));
-        hostBuffer.resize(totalSyncBufSize, ~0);
-        // TODO replace this D2H with cudaMemsetAsync
-        copyToDeviceBuffer<uint64_t>(&d_ppHaloExSyncBase_,
-                                     hostBuffer.data(),
-                                     0,
-                                     static_cast<size_t>(totalSyncBufSize),
-                                     stream_,
-                                     GpuApiCallBehavior::Async,
-                                     nullptr);
 #if GMX_NVSHMEM
+        cudaError_t stat = cudaMemsetAsync(
+                d_ppHaloExSyncBase_, 0xFF, totalSyncBufSize * sizeof(uint64_t), stream_.stream());
+        CU_RET_ERR(stat, "Initializing the PP halo exchange NVSHMEM signal buffer failed");
         nvshmemx_sync_all_on_stream(stream_.stream());
 #endif
     }
