@@ -171,8 +171,8 @@ TEST_F(H5mdStringFrameDataSetBuilderTest, StringDSetWithDefaultFrameNumber)
         const auto dataSet =
                 H5mdDataSetBase<std::string>(this->fileid(), "DataSetWithVariableLength");
 
-        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
-        EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType()));
+        EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
+        EXPECT_TRUE(H5Tis_variable_str(dataSet.storedDataType()));
         EXPECT_EQ(dataSetSize(this->fileid(), "DataSetWithVariableLength"), 0)
                 << "Default number of frames should be 0";
         EXPECT_EQ(dataSetCapacity(this->fileid(), "DataSetWithVariableLength"), H5S_UNLIMITED)
@@ -187,8 +187,8 @@ TEST_F(H5mdStringFrameDataSetBuilderTest, StringDSetWithDefaultFrameNumber)
                         .withMaxStringLength(10)
                         .build();
 
-        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
-        EXPECT_EQ(H5Tget_size(dataSet.dataType()), 10);
+        EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
+        EXPECT_EQ(H5Tget_size(dataSet.storedDataType()), 10);
         EXPECT_EQ(dataSetSize(this->fileid(), "DataSetWithMaxLength"), 0)
                 << "Default number of frames should be 0";
         EXPECT_EQ(dataSetCapacity(this->fileid(), "DataSetWithMaxLength"), H5S_UNLIMITED)
@@ -210,8 +210,8 @@ TEST_F(H5mdStringFrameDataSetBuilderTest, StringDataSetWithMaxFrames)
                         .withMaxNumFrames(numFrames)
                         .build();
 
-        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
-        EXPECT_EQ(H5Tget_size(dataSet.dataType()), 10);
+        EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
+        EXPECT_EQ(H5Tget_size(dataSet.storedDataType()), 10);
         EXPECT_EQ(dataSetSize(this->fileid(), "DataSetWithMaxLength"), numFrames)
                 << "Default number of frames should be 0";
         EXPECT_EQ(dataSetCapacity(this->fileid(), "DataSetWithMaxLength"), numFrames)
@@ -228,8 +228,8 @@ TEST_F(H5mdStringFrameDataSetBuilderTest, StringDataSetWithMaxFrames)
                         .withMaxNumFrames(numFrames)
                         .build();
 
-        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
-        EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType()));
+        EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
+        EXPECT_TRUE(H5Tis_variable_str(dataSet.storedDataType()));
         EXPECT_EQ(dataSetSize(this->fileid(), "DataSetWithVariableLength"), numFrames)
                 << "Default number of frames should be 0";
         EXPECT_EQ(dataSetCapacity(this->fileid(), "DataSetWithVariableLength"), numFrames)
@@ -241,7 +241,7 @@ TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, DataTypeIsCorrect)
 {
     const H5mdDataSetBase<TypeParam> dataSet =
             H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
-    EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.dataType()));
+    EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.storedDataType()));
 }
 
 TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, DefaultDimsIs1d)

@@ -78,23 +78,23 @@ static hid_t openDataSet(const hid_t container, const char* name)
 /*! \brief Verify that the data set is consistent for its templated \c ValueType.
  *
  * Verifies:
- * 1. That the base primitive of ValueType matches the internal HDF5 data set \p nativeDataType.
+ * 1. That the base primitive of ValueType matches the internal HDF5 data set \p storedDataType.
  * 2. That the primitive data set dimensions \p dims can store values of the templated \c ValueType.
  *
- * \param[in] nativeDataType Native data type of data set.
+ * \param[in] storedDataType Data type of data set.
  * \param[in] dims           Primitive dimensions of data set.
  *
  * \throws H5mdError if there is an inconsistency.
  */
 template<typename ValueType>
-static void verifyDataSetConsistency(const hid_t nativeDataType, const DataSetDims& dims)
+static void verifyDataSetConsistency(const hid_t storedDataType, const DataSetDims& dims)
 {
     if constexpr (std::is_same_v<ValueType, BasicVector<float>>)
     {
         GMX_H5MD_THROW_UPON_ERROR(dims.empty() || dims.back() != DIM,
                                   "Could not open data set: inner dimension of data set must = 3 "
                                   "for BasicVector<float>");
-        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<float>(nativeDataType),
+        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<float>(storedDataType),
                                   "Could not open data set: compiled type parameter does not match "
                                   "the primitive type of the data set");
     }
@@ -103,13 +103,13 @@ static void verifyDataSetConsistency(const hid_t nativeDataType, const DataSetDi
         GMX_H5MD_THROW_UPON_ERROR(dims.empty() || dims.back() != DIM,
                                   "Could not open data set: inner dimension of data set must = 3 "
                                   "for BasicVector<double>");
-        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<double>(nativeDataType),
+        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<double>(storedDataType),
                                   "Could not open data set: compiled type parameter does not match "
                                   "the primitive type of the data set");
     }
     else
     {
-        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<ValueType>(nativeDataType),
+        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<ValueType>(storedDataType),
                                   "Could not open data set: compiled type parameter does not match "
                                   "the primitive type of the data set");
     }
@@ -162,12 +162,12 @@ static bool checkBufferSize(const ArrayRef<const ValueType> values,
 template<typename ValueType>
 H5mdDataSetBase<ValueType>::H5mdDataSetBase(const hid_t dataSetHandle) :
     dataSet_{ dataSetHandle },
-    dataType_{ H5Dget_type(dataSet_) },
-    nativeDataType_{ H5Tget_native_type(dataType_, H5T_DIR_DEFAULT) },
+    storedDataType_{ H5Dget_type(dataSet_) },
+    nativeDataType_{ H5Tget_native_type(storedDataType_, H5T_DIR_DEFAULT) },
     numDims_{ getNumDims(dataSet_) }
 {
     GMX_H5MD_THROW_UPON_INVALID_HID(dataSet_, "Invalid handle to data set.");
-    verifyDataSetConsistency<ValueType>(dataType_, dims());
+    verifyDataSetConsistency<ValueType>(storedDataType_, dims());
 }
 
 template<typename ValueType>
@@ -191,9 +191,9 @@ hid_t H5mdDataSetBase<ValueType>::id() const
 }
 
 template<typename ValueType>
-hid_t H5mdDataSetBase<ValueType>::dataType() const
+hid_t H5mdDataSetBase<ValueType>::storedDataType() const
 {
-    return dataType_;
+    return storedDataType_;
 }
 
 template<typename ValueType>
@@ -257,17 +257,11 @@ bool H5mdDataSetBase<ValueType>::write(const ArrayRef<const ValueType> values,
 }
 
 template class H5mdDataSetBase<int32_t>;
-
 template class H5mdDataSetBase<int64_t>;
-
 template class H5mdDataSetBase<float>;
-
 template class H5mdDataSetBase<double>;
-
 template class H5mdDataSetBase<BasicVector<float>>;
-
 template class H5mdDataSetBase<BasicVector<double>>;
-
 template class H5mdDataSetBase<std::string>;
 
 } // namespace gmx

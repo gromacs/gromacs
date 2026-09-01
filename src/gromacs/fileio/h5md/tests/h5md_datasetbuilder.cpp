@@ -208,7 +208,7 @@ TEST_P(PrimitiveType, Works)
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataSet.dataType()))
+        EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataSet.storedDataType()))
                 << "Incorrect data type in data set";
 
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
@@ -277,7 +277,7 @@ TEST_P(BasicVectorType, Works)
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
+        EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.storedDataType()))
                 << "Incorrect data type in data set";
 
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
@@ -457,8 +457,8 @@ TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
 
         // Check data type
         const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withMaxLength");
-        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
-        EXPECT_EQ(H5Tget_size(dataSet.dataType()), 256)
+        EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
+        EXPECT_EQ(H5Tget_size(dataSet.storedDataType()), 256)
                 << "Data type should be fixed size string with length 256";
     }
 
@@ -472,8 +472,8 @@ TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
 
         // Check data type
         const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withVariableLength");
-        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
-        EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType()))
+        EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
+        EXPECT_TRUE(H5Tis_variable_str(dataSet.storedDataType()))
                 << "Data type should be variable length string";
     }
 }
@@ -483,7 +483,8 @@ TEST_F(H5mdDataSetBuilderTest, NoThrowForDefaultStringType)
     EXPECT_NO_THROW_GMX(
             H5mdDataSetBuilder<std::string>(fileid(), "NoMaxLength").withDimension({ 0 }).build());
     const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "NoMaxLength");
-    EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType())) << "By default, use variable length string";
+    EXPECT_TRUE(H5Tis_variable_str(dataSet.storedDataType()))
+            << "By default, use variable length string";
 }
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForNonPositiveMaxStringLength)

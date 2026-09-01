@@ -82,20 +82,20 @@ TYPED_TEST(H5mdDataSetBaseTest, DataTypesAreCorrect)
 
     if constexpr (std::is_same_v<TypeParam, BasicVector<float>>)
     {
-        EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()));
+        EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.storedDataType()));
     }
     else if constexpr (std::is_same_v<TypeParam, BasicVector<double>>)
     {
-        EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.dataType()));
+        EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.storedDataType()));
     }
     else
     {
-        EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.dataType()));
+        EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.storedDataType()));
     }
 
     // Since we are creating the data type in this test the native data type
     // will always match the stored data type, so this will always return >0.
-    EXPECT_GT(H5Tequal(dataSet.nativeDataType(), dataSet.dataType()), 0)
+    EXPECT_GT(H5Tequal(dataSet.nativeDataType(), dataSet.storedDataType()), 0)
             << "Native data type does not match data type";
 }
 
@@ -109,7 +109,7 @@ TYPED_TEST(H5mdDataSetBaseTest, DestructorClosesHandles)
         H5mdDataSetBase<TypeParam> dataSet =
                 H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
         dataSetHandle        = dataSet.id();
-        dataTypeHandle       = dataSet.dataType();
+        dataTypeHandle       = dataSet.storedDataType();
         nativeDataTypeHandle = dataSet.nativeDataType();
 
         ASSERT_TRUE(handleIsValid(dataSetHandle))
@@ -139,17 +139,17 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetWorksForWriteModeFiles)
         const H5mdDataSetBase<TypeParam> dataSet(this->fileid(), dataSetName);
         if constexpr (std::is_same_v<TypeParam, BasicVector<float>>)
         {
-            EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
+            EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.storedDataType()))
                     << "Data types must match after opening";
         }
         else if constexpr (std::is_same_v<TypeParam, BasicVector<double>>)
         {
-            EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.dataType()))
+            EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.storedDataType()))
                     << "Data types must match after opening";
         }
         else
         {
-            EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.dataType()))
+            EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.storedDataType()))
                     << "Data types must match after opening";
         }
     }
@@ -172,17 +172,17 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetWorksForReadOnlyFiles)
         const H5mdDataSetBase<TypeParam> dataSet(file.fileid(), dataSetName);
         if constexpr (std::is_same_v<TypeParam, BasicVector<float>>)
         {
-            EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
+            EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.storedDataType()))
                     << "Data types must match after opening";
         }
         else if constexpr (std::is_same_v<TypeParam, BasicVector<double>>)
         {
-            EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.dataType()))
+            EXPECT_TRUE(valueTypeIsDataType<double>(dataSet.storedDataType()))
                     << "Data types must match after opening";
         }
         else
         {
-            EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.dataType()))
+            EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataSet.storedDataType()))
                     << "Data types must match after opening";
         }
     }

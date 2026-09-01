@@ -83,9 +83,9 @@ inline std::vector<std::string> readFixedStringDataset(hid_t baseContainer, cons
 
     // Read the data from the dataset
     int               nrStrings = static_cast<int>(dataset.dims()[0]);
-    int               strLength = H5Tget_size(dataset.dataType());
+    int               strLength = H5Tget_size(dataset.storedDataType());
     std::vector<char> buffer(nrStrings * strLength, '\0');
-    if (H5Dread(dataset.id(), dataset.dataType(), memSpace, dataSpace, H5P_DEFAULT, buffer.data()) < 0)
+    if (H5Dread(dataset.id(), dataset.storedDataType(), memSpace, dataSpace, H5P_DEFAULT, buffer.data()) < 0)
     {
         GMX_THROW(H5mdError("Failed to read string data from dataset."));
     }
