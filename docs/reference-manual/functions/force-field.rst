@@ -138,9 +138,9 @@ AMBER
 
 -  AMBERGS \ :ref:`117 <refGarcia2002>`
 
--  AMBER14SB \ :ref:`197 <refMaier2015>`
+-  AMBER14SB \ :ref:`197 <refMaier2015>`, :ref:`199 <refMiletic2026>`
 
--  AMBER19SB \ :ref:`198 <refTian2020>`
+-  AMBER19SB \ :ref:`198 <refTian2020>`, :ref:`199 <refMiletic2026>`
 
 Dihedrals
 ^^^^^^^^^

@@ -322,8 +322,16 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
     // Coordinates prefetch cache
     using Coordinates = StaticLocalStorage<Float3, atomsPerBlock>;
     // Reduction of partial force contributions
-    using Forces      = StaticLocalStorage<Float3, atomsPerBlock>;
+    using Forces = StaticLocalStorage<Float3, atomsPerBlock>;
+#if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER >= 20260000
+    // Work around the compiler bug discussed in CMPLRLLVM-74953 and
+    // issue #5688. This allocates some extra shared local memory that
+    // is unused when splines are in fact recalculated, but that
+    // should have little effect on performance.
+    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, true>;
+#else
     using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, readGlobal>;
+#endif
     // These declarations must be made on the host
     auto sm_gridlineIndicesHostStorage = GridLineIndices::makeHostStorage(cgh);
     auto sm_thetaHostStorage           = Theta::makeHostStorage(cgh);
