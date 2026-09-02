@@ -44,8 +44,10 @@
 #include <cstring>
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/confio.h"
@@ -94,18 +96,18 @@ struct gmx_output_env_t;
 
 struct t_trxstatus
 {
-    int  flags; /* flags for read_first/next_frame  */
-    int  currentFrame;
-    real t0;                 /* time of the first frame, needed  *
-                              * for skipping frames with -dt     */
-    real                 tf; /* internal frame time              */
-    t_trxframe*          xframe;
-    t_fileio*            fio;
-    gmx_tng_trajectory_t tng;
-    gmx::H5md*           h5md;
-    int                  fileType;
-    int                  natoms;
-    char*                persistent_line; /* Persistent line for reading g96 trajectories */
+    int  flags        = 0; /* flags for read_first/next_frame  */
+    int  currentFrame = -1;
+    real t0           = 0;                 /* time of the first frame, needed  *
+                                            * for skipping frames with -dt     */
+    real                       tf     = 0; /* internal frame time              */
+    t_trxframe*                xframe = nullptr;
+    t_fileio*                  fio    = nullptr;
+    gmx_tng_trajectory_t       tng    = nullptr;
+    std::unique_ptr<gmx::H5md> h5md;
+    int                        fileType = efNR;
+    int                        natoms   = 0;
+    std::vector<char>          persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
@@ -186,21 +188,6 @@ static void initcount(t_trxstatus* status)
 {
     status->currentFrame = -1;
 }
-
-static void status_init(t_trxstatus* status)
-{
-    status->flags           = 0;
-    status->xframe          = nullptr;
-    status->fio             = nullptr;
-    status->currentFrame    = -1;
-    status->t0              = 0;
-    status->tf              = 0;
-    status->persistent_line = nullptr;
-    status->tng             = nullptr;
-    status->h5md            = nullptr;
-    status->fileType        = efNR;
-}
-
 
 int nframes_read(t_trxstatus* status)
 {
@@ -499,10 +486,8 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
     {
         gmx_incons("Sorry, can only prepare for TNG output.");
     }
-    t_trxstatus* out;
-    snew(out, 1);
-    status_init(out);
-    out->fileType = efTNG;
+    t_trxstatus* out = new t_trxstatus;
+    out->fileType    = efTNG;
 
     if (in != nullptr)
     {
@@ -655,12 +640,10 @@ void close_trx(t_trxstatus* status)
         return;
     }
     gmx_tng_close(&status->tng);
-    delete status->h5md;
     if (status->fio)
     {
         gmx_fio_close(status->fio);
     }
-    sfree(status->persistent_line);
 #if GMX_USE_PLUGINS
     delete status->vmdplugin;
 #endif
@@ -668,7 +651,7 @@ void close_trx(t_trxstatus* status)
      * but the read_first_x/read_next_x functions are deprecated anyhow.
      * read_first_frame/read_next_frame and close_trx should be used.
      */
-    sfree(status);
+    delete status;
 }
 
 void done_trx_xframe(t_trxstatus* status)
@@ -679,14 +662,12 @@ void done_trx_xframe(t_trxstatus* status)
 
 t_trxstatus* open_trx(const std::filesystem::path& outfile, const char* filemode)
 {
-    t_trxstatus* stat;
     if (filemode[0] != 'w' && filemode[0] != 'a' && filemode[1] != '+')
     {
         gmx_fatal(FARGS, "Sorry, write_trx can only write");
     }
 
-    snew(stat, 1);
-    status_init(stat);
+    t_trxstatus* stat = new t_trxstatus;
 
     // Note this has probably never worked with TNG files
     stat->fio      = gmx_fio_open(outfile, filemode);
@@ -864,7 +845,8 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             case efG96:
             {
                 t_symtab* symtab = nullptr;
-                read_g96_conf(gmx_fio_getfp(status->fio), {}, nullptr, fr, symtab, status->persistent_line);
+                read_g96_conf(
+                        gmx_fio_getfp(status->fio), {}, nullptr, fr, symtab, status->persistent_line.data());
                 bRet = (fr->natoms > 0);
                 break;
             }
@@ -972,10 +954,8 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
 
     bFirst = TRUE;
 
-    snew((*status), 1);
+    *status = new t_trxstatus;
 
-    status_init(*status);
-    initcount(*status);
     (*status)->flags    = flags;
     (*status)->fileType = fn2ftp(fn);
 
@@ -986,7 +966,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     }
     else if (efH5MD == (*status)->fileType)
     {
-        (*status)->h5md = new gmx::H5md(fn, gmx::H5mdFileMode('r'));
+        (*status)->h5md = std::make_unique<gmx::H5md>(fn, gmx::H5mdFileMode('r'));
         (*status)->h5md->setupFromExistingFile();
     }
     else if ((*status)->fileType != efCPT)
@@ -1005,13 +985,13 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
         case efG96:
         {
             /* Can not rewind a compressed file, so open it twice */
-            if (!(*status)->persistent_line)
+            if ((*status)->persistent_line.empty())
             {
                 /* allocate the persistent line */
-                snew((*status)->persistent_line, STRLEN + 1);
+                (*status)->persistent_line.resize(STRLEN + 1);
             }
             t_symtab* symtab = nullptr;
-            read_g96_conf(gmx_fio_getfp(fio), fn, nullptr, fr, symtab, (*status)->persistent_line);
+            read_g96_conf(gmx_fio_getfp(fio), fn, nullptr, fr, symtab, (*status)->persistent_line.data());
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
             if (flags & (TRX_READ_X | TRX_NEED_X))
