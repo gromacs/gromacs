@@ -8,3 +8,9 @@ Removed functionality
    a space between the colon and number!
 
 
+Support for version 1 of the hardware locality library ``hwloc`` is removed
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Building with ``-DGMX_HWLOC=ON`` now requires ``hwloc`` 2.0 or later,
+which has been supported in |Gromacs| for several years.
+

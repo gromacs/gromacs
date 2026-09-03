@@ -393,7 +393,6 @@ if(HWLOC_INCLUDE_DIRS)
     else()
         set(HWLOC_VERSION ${HWLOC_HEADER_VERSION} CACHE STRING "HWLOC library version")
     endif()
-    set(GMX_HWLOC_API_VERSION ${HWLOC_API_VERSION} CACHE STRING "HWLOC API version during configuration time")
 endif()
 
 include(FindPackageHandleStandardArgs)
@@ -401,4 +400,4 @@ find_package_handle_standard_args(HWLOC
                                   REQUIRED_VARS HWLOC_LIBRARIES HWLOC_INCLUDE_DIRS
                                   VERSION_VAR HWLOC_VERSION)
 
-mark_as_advanced(HWLOC_INCLUDE_DIRS HWLOC_LIBRARIES HWLOC_VERSION GMX_HWLOC_API_VERSION)
+mark_as_advanced(HWLOC_INCLUDE_DIRS HWLOC_LIBRARIES HWLOC_VERSION)

@@ -244,33 +244,9 @@ HardwareTopology::SupportLevel parseCpuInfo(HardwareTopology::Machine* machine)
 
 #if GMX_USE_HWLOC
 
-#    if HWLOC_API_VERSION < 0x00010b00
-#        define HWLOC_OBJ_PACKAGE HWLOC_OBJ_SOCKET
-#        define HWLOC_OBJ_NUMANODE HWLOC_OBJ_NODE
+#    if HWLOC_API_VERSION < 0x00020000
+#        error "GROMACS requires hwloc-2.x or later, but version 1.x headers were found"
 #    endif
-
-// Preprocessor variable for if hwloc api is version 1.x.x or 2.x.x
-#    if HWLOC_API_VERSION >= 0x00020000
-#        define GMX_HWLOC_API_VERSION_IS_2XX 1
-#        if GMX_HWLOC_API_VERSION < 0x00020000
-#            error "HWLOC library major version set during configuration is 1, but currently using version 2 headers"
-#        endif
-#    else
-#        define GMX_HWLOC_API_VERSION_IS_2XX 0
-#        if GMX_HWLOC_API_VERSION >= 0x00020000
-#            error "HWLOC library major version set during configuration is 2, but currently using version 1 headers"
-#        endif
-#    endif
-
-// Compatibility function for accessing hwloc_obj_t object memory with different API versions of hwloc
-std::size_t getHwLocObjectMemory(const hwloc_obj* obj)
-{
-#    if GMX_HWLOC_API_VERSION_IS_2XX
-    return obj->total_memory;
-#    else
-    return obj->memory.total_memory;
-#    endif
-}
 
 /*! \brief Return vector of all descendants of a given type in hwloc topology
  *
@@ -436,9 +412,9 @@ bool parseHwLocCache(hwloc_topology_t topo, HardwareTopology::Machine* machine)
  *  \param machine Pointer to the machine structure in the HardwareTopology
  *                 class, where numa information will be filled.
  *
- *  Hwloc should virtually always be able to detect numa information, but if
- *  there is only a single numa node in the system it is not reported at all.
- *  In this case we create a single numa node covering all cores.
+ *  Hwloc should virtually always be able to detect numa information, since
+ *  hwloc-2.x assigns a numa node to the machine even when the hardware does
+ *  not report any.
  *
  *  This function uses the basic package/core/processing unit information detected by
  *  parseHwLocPackagesCoresProcessingUnits(), which means that routine must have
@@ -462,18 +438,13 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
         for (std::size_t i = 0; i < hwlocNumaNodes.size(); i++)
         {
             machine->numa.nodes[i].id     = hwlocNumaNodes[i]->logical_index;
-            machine->numa.nodes[i].memory = getHwLocObjectMemory(hwlocNumaNodes[i]);
+            machine->numa.nodes[i].memory = hwlocNumaNodes[i]->total_memory;
 
             machine->numa.nodes[i].processingUnits.clear();
 
-            // Get list of PUs in this numa node. Get from numa node if v1.x.x, get from numa node's parent if 2.x.x
-#    if GMX_HWLOC_API_VERSION_IS_2XX
+            // Numa nodes are not part of the main tree, so get the list of PUs from the parent
             std::vector<const hwloc_obj*> hwlocPUs =
                     getHwLocDescendantsByType(topo, hwlocNumaNodes[i]->parent, HWLOC_OBJ_PU);
-#    else
-            std::vector<const hwloc_obj*> hwlocPUs =
-                    getHwLocDescendantsByType(topo, hwlocNumaNodes[i], HWLOC_OBJ_PU);
-#    endif
             for (const auto& pu : hwlocPUs)
             {
                 machine->numa.nodes[i].processingUnits.push_back(pu->logical_index);
@@ -495,13 +466,13 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
                 machine->packages[pkgRank].cores[coreRank].numaNodeId = i;
             }
         }
-        // Getting the distance matrix
-#    if GMX_HWLOC_API_VERSION_IS_2XX
-        // with hwloc api v. 2.x.x, distances are no longer directly accessible. Need to retrieve and release hwloc_distances_s object
-        // In addition, there can now be multiple types of distances, ie latency, bandwidth. We look only for latency, but have to check
-        // if multiple distance matrices are returned.
+        // Getting the distance matrix.
+        // Distances are not directly accessible; we need to retrieve and release a
+        // hwloc_distances_s object. In addition, there can be multiple types of distances,
+        // ie latency, bandwidth. We look only for latency, but have to check if multiple
+        // distance matrices are returned.
 
-        // If only 1 numa node exists, the v2.x.x hwloc api won't have a distances matrix, set manually
+        // If only 1 numa node exists, hwloc won't have a distances matrix, so set it manually
         if (hwlocNumaNodes.size() == 1)
         {
             machine->numa.relativeLatency = { { 1.0 } };
@@ -535,8 +506,8 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
             hwloc_distances_release(topo, dist);
         }
 
-        // hwloc-2.x provides latencies as integers, but to make things more similar to the case of
-        // a single numa node as well as hwloc-1.x, we rescale to relative floating-point values and
+        // hwloc provides latencies as integers, but to make things more similar to the
+        // case of a single numa node we rescale to relative floating-point values and
         // also set the largest relative latency value.
 
         // find smallest value in matrix
@@ -560,72 +531,13 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
         }
         machine->numa.baseLatency = 1.0; // latencies still do not have any units in hwloc-2.x
         machine->numa.maxRelativeLatency = maxLatency / minLatency;
-
-#    else  // GMX_HWLOC_API_VERSION_IS_2XX == false, hwloc api is 1.x.x
-        const int depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
-        const struct hwloc_distances_s* dist = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
-        if (dist != nullptr && dist->nbobjs == hwlocNumaNodes.size())
-        {
-            machine->numa.baseLatency        = dist->latency_base;
-            machine->numa.maxRelativeLatency = dist->latency_max;
-            machine->numa.relativeLatency.resize(dist->nbobjs);
-            for (std::size_t i = 0; i < dist->nbobjs; i++)
-            {
-                machine->numa.relativeLatency[i].resize(dist->nbobjs);
-                for (std::size_t j = 0; j < dist->nbobjs; j++)
-                {
-                    machine->numa.relativeLatency[i][j] = dist->latency[i * dist->nbobjs + j];
-                }
-            }
-        }
-        else
-        {
-            topologyOk = false;
-        }
-#    endif // end GMX_HWLOC_API_VERSION_IS_2XX == false
     }
     else
-    // Deals with the case of no numa nodes found.
-#    if GMX_HWLOC_API_VERSION_IS_2XX
-    // If the hwloc version is 2.x.x, and there is no numa node, something went wrong
     {
+        // No numa node found at all, which means something went wrong, since
+        // hwloc-2.x assigns a numa node to the machine by default.
         topologyOk = false;
     }
-#    else
-    {
-        // No numa nodes found. Use the entire machine as a numa node.
-        // Note that this should only be the case with hwloc api v 1.x.x,
-        // a numa node is assigned to the machine by default in v 2.x.x
-        const hwloc_obj* const hwlocMachine = hwloc_get_next_obj_by_type(topo, HWLOC_OBJ_MACHINE, nullptr);
-
-        if (hwlocMachine != nullptr)
-        {
-            machine->numa.nodes.resize(1);
-            machine->numa.nodes[0].id        = 0;
-            machine->numa.nodes[0].memory    = hwlocMachine->memory.total_memory;
-            machine->numa.baseLatency        = 10;
-            machine->numa.maxRelativeLatency = 1;
-            machine->numa.relativeLatency    = { { 1.0 } };
-
-            for (auto& l : machine->logicalProcessors)
-            {
-                machine->numa.nodes[0].processingUnits.push_back(l.puId);
-                l.numaNodeId = 0;
-            }
-            for (auto& s : machine->packages)
-            {
-                for (auto& c : s.cores)
-                {
-                    c.numaNodeId = 0;
-                }
-            }
-        }
-        else
-        {
-            topologyOk = false;
-        }
-    }
-#    endif // end if not GMX_HWLOC_API_VERSION_IS_2XX
     if (!topologyOk)
     {
         machine->numa.nodes.clear();
@@ -648,7 +560,6 @@ bool parseHwLocDevices(hwloc_topology_t topo, HardwareTopology::Machine* machine
 
     for (const auto& p : pcidevs)
     {
-#    if GMX_HWLOC_API_VERSION_IS_2XX
         const hwloc_obj* ancestor = nullptr;
         // Numa nodes not directly part of tree. Walk up the tree until we find an ancestor with a numa node
         hwloc_obj_t parent = p->parent;
@@ -660,11 +571,6 @@ bool parseHwLocDevices(hwloc_topology_t topo, HardwareTopology::Machine* machine
         {
             ancestor = parent->memory_first_child;
         }
-#    else  // GMX_HWLOC_API_VERSION_IS_2XX = false, api v 1.x.x
-        // numa nodes are normal part of tree, can use hwloc ancestor function
-        const hwloc_obj* const ancestor =
-                hwloc_get_ancestor_obj_by_type(topo, HWLOC_OBJ_NUMANODE, const_cast<hwloc_obj_t>(p));
-#    endif // end if GMX_HWLOC_API_VERSION_IS_2XX
         int numaId;
         if (ancestor != nullptr)
         {
@@ -715,17 +621,10 @@ HardwareTopology::SupportLevel parseHwLoc(HardwareTopology::Machine* machine, bo
     }
 
     // Flags to look for io devices
-#    if GMX_HWLOC_API_VERSION_IS_2XX
     GMX_RELEASE_ASSERT(
             (hwloc_get_api_version() >= 0x20000),
             "Mismatch between hwloc headers and library, using v2 headers with v1 library");
     hwloc_topology_set_io_types_filter(topo, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
-#    else
-    GMX_RELEASE_ASSERT(
-            (hwloc_get_api_version() < 0x20000),
-            "Mismatch between hwloc headers and library, using v1 headers with v2 library");
-    hwloc_topology_set_flags(topo, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
-#    endif
 
     if (hwloc_topology_load(topo) != 0 || hwloc_get_root_obj(topo) == nullptr)
     {
