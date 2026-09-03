@@ -45,6 +45,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -158,9 +159,10 @@ int gmx_saltbr(int argc, char* argv[])
     rvec*             x;
     matrix            box;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -175,7 +177,7 @@ int gmx_saltbr(int argc, char* argv[])
         snew(nWithin[i], ncg);
     }
 
-    read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     teller = 0;
     time   = nullptr;

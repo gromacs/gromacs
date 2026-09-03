@@ -255,7 +255,12 @@ static void get_dih_props(t_xrama* xr, const t_idef* idef, int mult)
 }
 
 
-t_topology* init_rama(gmx_output_env_t* oenv, const char* infile, const char* topfile, t_xrama* xr, int mult)
+t_topology* init_rama(gmx_output_env_t*       oenv,
+                      const gmx::TimeControl& timeControl,
+                      const char*             infile,
+                      const char*             topfile,
+                      t_xrama*                xr,
+                      int                     mult)
 {
     t_topology* top;
     real        t;
@@ -265,7 +270,7 @@ t_topology* init_rama(gmx_output_env_t* oenv, const char* infile, const char* to
     /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
     get_dih(xr, &(top->atoms));
     get_dih_props(xr, &(top->idef), mult);
-    xr->natoms = read_first_x(oenv, &xr->traj, infile, &t, &(xr->x), xr->box);
+    xr->natoms = read_first_x(oenv, &xr->traj, infile, &t, &(xr->x), xr->box, &timeControl);
     xr->idef   = &(top->idef);
     xr->oenv   = oenv;
 

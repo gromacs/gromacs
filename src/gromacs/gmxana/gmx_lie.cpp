@@ -46,6 +46,7 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -171,12 +172,13 @@ int gmx_lie(int argc, char* argv[])
     real              lie;
     double            lieaver = 0, lieav2 = 0;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = { { efEDR, "-f", "ener", ffREAD }, { efXVG, "-o", "lie", ffWRITE } };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -191,7 +193,7 @@ int gmx_lie(int argc, char* argv[])
             ftp2fn(efXVG, NFILE, fnm), "LIE free energy estimate", "Time (ps)", "DGbind (kJ/mol)", oenv);
     while (do_enx(fp, fr))
     {
-        ct = check_times(fr->t);
+        ct = check_times(fr->t, timeControl);
         if (ct == 0)
         {
             lie = calc_lie(ld, fr->ener, lie_lj, lie_qq, fac_lj, fac_qq);

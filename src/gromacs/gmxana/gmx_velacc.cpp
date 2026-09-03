@@ -45,6 +45,7 @@
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -222,6 +223,7 @@ int gmx_velacc(int argc, char* argv[])
     real**            c1;
     real*             normm = nullptr;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = { { efTRN, "-f", nullptr, ffREAD },
                        { efTPS, nullptr, nullptr, ffOPTRD },
@@ -235,7 +237,7 @@ int gmx_velacc(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -274,7 +276,7 @@ int gmx_velacc(int argc, char* argv[])
         c1[i] = nullptr;
     }
 
-    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_V);
+    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, &timeControl, TRX_NEED_V);
     t0 = fr.time;
 
     n_alloc = 0;

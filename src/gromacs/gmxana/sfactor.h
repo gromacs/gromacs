@@ -48,6 +48,11 @@ typedef struct structure_factor structure_factor_t;
 
 typedef struct reduced_atom reduced_atom_t;
 
+namespace gmx
+{
+struct TimeControl;
+} // namespace gmx
+
 int* create_indexed_atom_type(reduced_atom_t* atm, int size);
 
 void compute_structure_factor(structure_factor_t* sft,
@@ -90,7 +95,8 @@ int do_scattering_intensity(const char*             fnTPS,
                             real                    end_q,
                             real                    energy,
                             int                     ng,
-                            const gmx_output_env_t* oenv);
+                            const gmx_output_env_t* oenv,
+                            const gmx::TimeControl& timeControl);
 
 t_complex*** rc_tensor_allocation(int x, int y, int z);
 

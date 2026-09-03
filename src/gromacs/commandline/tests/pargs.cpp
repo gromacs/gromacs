@@ -49,6 +49,7 @@
 #include <cstdint>
 
 #include <filesystem>
+#include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -56,6 +57,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -68,6 +70,7 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/testmatchers.h"
 
 struct gmx_output_env_t;
 
@@ -90,7 +93,7 @@ public:
         efEmptyValue
     };
 
-    ParseCommonArgsTest() : oenv_(nullptr), fileCount_(0) {}
+    ParseCommonArgsTest() : oenv_(nullptr), timeControl_(nullptr), fileCount_(0) {}
     ~ParseCommonArgsTest() override { output_env_done(oenv_); }
 
     int nfile() const { return fileCount_; }
@@ -98,8 +101,19 @@ public:
     void parseFromArgs(unsigned long flags, gmx::ArrayRef<t_filenm> fnm, gmx::ArrayRef<t_pargs> pa)
     {
         fileCount_ = fnm.size();
-        bool bOk   = parse_common_args(
-                &args_.argc(), args_.argv(), flags, fnm.size(), fnm.data(), pa.size(), pa.data(), 0, nullptr, 0, nullptr, &oenv_);
+        bool bOk   = parse_common_args(&args_.argc(),
+                                     args_.argv(),
+                                     flags,
+                                     fnm.size(),
+                                     fnm.data(),
+                                     pa.size(),
+                                     pa.data(),
+                                     0,
+                                     nullptr,
+                                     0,
+                                     nullptr,
+                                     &oenv_,
+                                     timeControl_.get());
         EXPECT_TRUE(bOk);
     }
     void parseFromArray(gmx::ArrayRef<const char* const> cmdline,
@@ -127,14 +141,20 @@ public:
         return filename.string();
     }
 
+    // Initialize the time control pointer (not-nullptr will be passed to parse_common_args).
+    void enableTimeControl() { timeControl_ = std::make_unique<TimeControl>(); }
+    // Return a borrowed handle to the time control.
+    const TimeControl* timeControl() const { return timeControl_.get(); }
+
     // This must be a member that persists until the end of the test,
     // because string arguments are not duplicated in the output.
     CommandLine args_;
 
 private:
-    gmx_output_env_t*          oenv_;
-    size_t                     fileCount_;
-    gmx::test::TestFileManager tempFiles_;
+    gmx_output_env_t*            oenv_;
+    std::unique_ptr<TimeControl> timeControl_;
+    size_t                       fileCount_;
+    gmx::test::TestFileManager   tempFiles_;
 };
 
 /********************************************************************
@@ -525,6 +545,49 @@ TEST_F(ParseCommonArgsTest, CanKeepUnknownArgs)
     EXPECT_STREQ(cmdline[4], args_.arg(3));
     EXPECT_STREQ(cmdline[9], args_.arg(4));
     EXPECT_STREQ(cmdline[11], args_.arg(5));
+}
+
+TEST_F(ParseCommonArgsTest, TimeControlAsNullPtrWithFlagIsDeathHorror)
+{
+    const char* const cmdline[] = { "test", "-b", "501.0", "-e", "-.5", "-dt", "1.5" };
+    GMX_ASSERT_DEATH_IF_SUPPORTED(parseFromArray(cmdline, PCA_CAN_TIME, {}, {}), "timeControl");
+}
+
+TEST_F(ParseCommonArgsTest, TimeControlAsNullPtrWithoutFlag)
+{
+    const char* const cmdline[] = { "test" };
+    parseFromArray(cmdline, 0, {}, {});
+    ASSERT_EQ(timeControl(), nullptr);
+}
+
+TEST_F(ParseCommonArgsTest, DefaultTimeControlWithoutFlag)
+{
+    const char* const cmdline[] = { "test", "-b", "501.0", "-e", "-.5", "-dt", "1.5" };
+    enableTimeControl();
+    parseFromArray(cmdline, PCA_NOEXIT_ON_ARGS, {}, {});
+    EXPECT_FALSE(timeControl()->begin.has_value());
+    EXPECT_FALSE(timeControl()->end.has_value());
+    EXPECT_FALSE(timeControl()->delta.has_value());
+}
+
+TEST_F(ParseCommonArgsTest, DefaultTimeControlWithFlag)
+{
+    const char* const cmdline[] = { "test" };
+    enableTimeControl();
+    parseFromArray(cmdline, PCA_CAN_TIME, {}, {});
+    EXPECT_FALSE(timeControl()->begin.has_value());
+    EXPECT_FALSE(timeControl()->end.has_value());
+    EXPECT_FALSE(timeControl()->delta.has_value());
+}
+
+TEST_F(ParseCommonArgsTest, SetTimeControl)
+{
+    const char* const cmdline[] = { "test", "-b", "5.1", "-e", "-.5", "-dt", "1.5" };
+    enableTimeControl();
+    parseFromArray(cmdline, PCA_CAN_TIME, {}, {});
+    EXPECT_THAT(timeControl()->begin, ::testing::Optional(5.1));
+    EXPECT_THAT(timeControl()->end, ::testing::Optional(-0.5));
+    EXPECT_THAT(timeControl()->delta, ::testing::Optional(1.5));
 }
 
 } // namespace

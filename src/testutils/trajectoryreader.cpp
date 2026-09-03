@@ -127,7 +127,7 @@ bool TrajectoryFrameReader::readNextFrame()
         t_trxstatus* trajectoryFile;
         int          flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
         nextFrameExists_   = read_first_frame(
-                oenvGuard_.get(), &trajectoryFile, filename_, trxframeGuard_.get(), flags);
+                oenvGuard_.get(), &trajectoryFile, filename_, trxframeGuard_.get(), nullptr, flags);
         if (!trajectoryFile)
         {
             GMX_THROW(FileIOError("Could not open trajectory file " + filename_.string() + " for reading"));

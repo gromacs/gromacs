@@ -60,6 +60,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -550,6 +551,7 @@ int gmx_awh(int argc, char* argv[])
     t_inputrec        ir;
     t_enxframe*       frame;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_filenm  fnm[] = { { efEDR, "-f", nullptr, ffREAD },
                         { efTPR, "-s", nullptr, ffREAD },
@@ -567,7 +569,8 @@ int gmx_awh(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -604,7 +607,7 @@ int gmx_awh(int argc, char* argv[])
 
         if (haveFrame)
         {
-            timeCheck = check_times(frame->t);
+            timeCheck = check_times(frame->t, timeControl);
 
             if (timeCheck == 0)
             {

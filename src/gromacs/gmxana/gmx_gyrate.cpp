@@ -49,6 +49,7 @@
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -247,6 +248,7 @@ int gmx_gyrate(int argc, char* argv[])
     int                        j, m, gnx, nam, mol;
     int*                       index;
     gmx_output_env_t*          oenv;
+    gmx::TimeControl           timeControl;
     gmx_rmpbc_t                gpbc = nullptr;
     std::array<std::string, 4> leg  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
     std::array<std::string, 4> legI = { "Itot", "I1", "I2", "I3" };
@@ -264,7 +266,7 @@ int gmx_gyrate(int argc, char* argv[])
     ppa    = add_acf_pargs(&npargs, pa);
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -308,7 +310,7 @@ int gmx_gyrate(int argc, char* argv[])
     }
     nam = gnx / nmol;
 
-    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
     snew(x_s, natoms);
 
     j  = 0;

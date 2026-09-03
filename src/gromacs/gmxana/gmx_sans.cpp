@@ -46,6 +46,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -148,6 +149,7 @@ int gmx_sans(int argc, char* argv[])
     gmx_radial_distribution_histogram_t *prframecurrent = nullptr, *pr = nullptr;
     gmx_static_structurefactor_t *       sqframecurrent = nullptr, *sq = nullptr;
     gmx_output_env_t*                    oenv;
+    gmx::TimeControl                     timeControl;
 
     std::array<t_filenm, 8> filenames = { { { efTPR, "-s", nullptr, ffREAD },
                                             { efTRX, "-f", nullptr, ffREAD },
@@ -164,7 +166,7 @@ int gmx_sans(int argc, char* argv[])
     nthreads = gmx_omp_get_max_threads();
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -243,7 +245,7 @@ int gmx_sans(int argc, char* argv[])
         gmx_rmpbc_apply(gpbc, top->atoms.nr, box, x);
     }
 
-    natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
+    natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box, &timeControl);
     if (natoms != top->atoms.nr)
     {
         fprintf(stderr,

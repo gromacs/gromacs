@@ -52,6 +52,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -504,7 +505,8 @@ static void project(const char*             trajfile,
                     int                     noutvec,
                     int*                    outvec,
                     gmx_bool                bSplit,
-                    const gmx_output_env_t* oenv)
+                    const gmx_output_env_t* oenv,
+                    const gmx::TimeControl& timeControl)
 {
     FILE*        xvgrout = nullptr;
     int          nat, i, j, d, v, vec, nfr, nframes = 0, snew_size, frame;
@@ -550,7 +552,7 @@ static void project(const char*             trajfile,
         snew_size = 0;
         nfr       = 0;
         nframes   = 0;
-        nat       = read_first_x(oenv, &status, trajfile, &t, &xread, box);
+        nat       = read_first_x(oenv, &status, trajfile, &t, &xread, box, &timeControl);
         if (nat > atoms->nr)
         {
             gmx_fatal(FARGS,
@@ -1150,6 +1152,7 @@ int gmx_anaeig(int argc, char* argv[])
     double**          xvgdata;
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = {
         { efTRN, "-v", "eigenvec", ffREAD },      { efTRN, "-v2", "eigenvec2", ffOPTRD },
@@ -1163,8 +1166,19 @@ int gmx_anaeig(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
+                           NFILE,
+                           fnm,
+                           NPA,
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -1593,7 +1607,8 @@ int gmx_anaeig(int argc, char* argv[])
                 noutvec,
                 outvec,
                 bSplit,
-                oenv);
+                oenv,
+                timeControl);
     }
 
     if (OverlapFile)

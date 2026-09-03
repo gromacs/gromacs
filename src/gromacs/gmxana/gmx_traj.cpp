@@ -50,6 +50,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -695,6 +696,7 @@ int gmx_traj(int argc, char* argv[])
     char         sffmt[STRLEN];
     std::array<std::string, 6> box_leg = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
     gmx_output_env_t*          oenv;
+    gmx::TimeControl           timeControl;
 
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },       { efTPS, nullptr, nullptr, ffREAD },
@@ -719,7 +721,8 @@ int gmx_traj(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -928,7 +931,7 @@ int gmx_traj(int argc, char* argv[])
         std::exit(0);
     }
 
-    read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
+    read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, &timeControl, flags);
 
 
     if ((bOV || bOF) && fn2ftp(ftp2fn(efTRX, NFILE, fnm)) == efXTC)

@@ -64,6 +64,10 @@
 #include "gromacs/utility/vecdump.h"
 #include "gromacs/utility/vectypes.h"
 
+namespace gmx
+{
+struct TimeControl;
+} // namespace gmx
 struct gmx_output_env_t;
 
 void print_one(const gmx_output_env_t* oenv,
@@ -823,7 +827,8 @@ void read_ang_dih(const char*             trj_fn,
                   real**                  trans_frac,
                   real**                  aver_angle,
                   real*                   dih[],
-                  const gmx_output_env_t* oenv)
+                  const gmx_output_env_t* oenv,
+                  const gmx::TimeControl& timeControl)
 {
     struct t_pbc* pbc;
     t_trxstatus*  status;
@@ -838,7 +843,7 @@ void read_ang_dih(const char*             trj_fn,
 
     snew(pbc, 1);
     gmx::sfree_guard pbcGuard(pbc);
-    read_first_x(oenv, &status, trj_fn, &t, &x, box);
+    read_first_x(oenv, &status, trj_fn, &t, &x, box, &timeControl);
 
     if (bAngles)
     {

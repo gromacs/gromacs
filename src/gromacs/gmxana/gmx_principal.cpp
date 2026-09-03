@@ -44,6 +44,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -102,6 +103,7 @@ int gmx_principal(int argc, char* argv[])
     FILE*                    fmoi;
     matrix                   axes, box;
     gmx_output_env_t*        oenv;
+    gmx::TimeControl         timeControl;
     gmx_rmpbc_t              gpbc = nullptr;
     std::vector<std::string> legend;
 
@@ -122,7 +124,8 @@ int gmx_principal(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -168,7 +171,7 @@ int gmx_principal(int argc, char* argv[])
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
-    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
 

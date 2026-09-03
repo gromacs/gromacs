@@ -233,7 +233,7 @@ TEST_P(TrxReadFrameTest, ReadTrajectoryFromSimulationDataBase)
     output_env_init_default(&oenv);
 
     ASSERT_TRUE(read_first_frame(
-            oenv, &status, fileManager_.getInputFilePath(GetParam()), fr, TRX_READ_X | TRX_READ_V | TRX_READ_F));
+            oenv, &status, fileManager_.getInputFilePath(GetParam()), fr, nullptr, TRX_READ_X | TRX_READ_V | TRX_READ_F));
     checker.checkInteger(fr->natoms, "natoms");
 
     int frame = 0;

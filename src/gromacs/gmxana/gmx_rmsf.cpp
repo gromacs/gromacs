@@ -48,6 +48,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -280,6 +281,7 @@ int gmx_rmsf(int argc, char* argv[])
     gmx_rmpbc_t gpbc = nullptr;
 
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     std::array<std::string, 2> leg = { "MD", "X-Ray" };
 
@@ -291,7 +293,7 @@ int gmx_rmsf(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -357,7 +359,7 @@ int gmx_rmsf(int argc, char* argv[])
         sub_xcm(xref, isize, index, top.atoms.atom, xcm, FALSE);
     }
 
-    natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natom = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     if (bFit)
     {

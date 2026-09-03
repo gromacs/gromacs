@@ -77,7 +77,12 @@ typedef struct
     gmx_output_env_t* oenv;
 } t_xrama;
 
-t_topology* init_rama(gmx_output_env_t* oenv, const char* infile, const char* topfile, t_xrama* xr, int mult);
+t_topology* init_rama(gmx_output_env_t*       oenv,
+                      const gmx::TimeControl& timeControl,
+                      const char*             infile,
+                      const char*             topfile,
+                      t_xrama*                xr,
+                      int                     mult);
 
 gmx_bool new_data(t_xrama* xr);
 

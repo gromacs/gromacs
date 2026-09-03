@@ -50,6 +50,7 @@
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
@@ -286,6 +287,7 @@ int gmx_dielectric(int argc, char* argv[])
                        { efXVG, "-c", "cole", ffWRITE } };
 #define NFILE asize(fnm)
     gmx_output_env_t*          oenv;
+    gmx::TimeControl           timeControl;
     int                        i, j, nx, ny, nxtail, eFitFn, nfitparm;
     real                       dt, integral, fitintegral, fac, rffac;
     double*                    fitparms;
@@ -332,7 +334,7 @@ int gmx_dielectric(int argc, char* argv[])
     };
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }

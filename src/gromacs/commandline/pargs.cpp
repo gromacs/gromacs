@@ -464,7 +464,8 @@ gmx_bool parse_common_args(int*               argc,
                            const char**       desc,
                            int                nbugs,
                            const char**       bugs,
-                           gmx_output_env_t** oenv)
+                           gmx_output_env_t** oenv,
+                           gmx::TimeControl*  timeControl)
 {
     // Lambda function to test the (local) Flags parameter against a bit mask.
     auto isFlagSet = [Flags](unsigned long bits) { return (Flags & bits) == bits; };
@@ -569,27 +570,21 @@ gmx_bool parse_common_args(int*               argc,
         /* Extract Time info from arguments */
         if (bBeginTimeSet)
         {
-            setTimeValue(TimeControl::Begin, tbegin);
-        }
-        else
-        {
-            unsetTimeValue(TimeControl::Begin);
+            GMX_RELEASE_ASSERT(timeControl != nullptr,
+                               "TimeControl* must be valid for PCA_CAN_BEGIN or PCA_CAN_TIME");
+            timeControl->begin = tbegin;
         }
         if (bEndTimeSet)
         {
-            setTimeValue(TimeControl::End, tend);
-        }
-        else
-        {
-            unsetTimeValue(TimeControl::End);
+            GMX_RELEASE_ASSERT(timeControl != nullptr,
+                               "TimeControl* must be valid for PCA_CAN_END or PCA_CAN_TIME");
+            timeControl->end = tend;
         }
         if (bDtSet)
         {
-            setTimeValue(TimeControl::Delta, tdelta);
-        }
-        else
-        {
-            unsetTimeValue(TimeControl::Delta);
+            GMX_RELEASE_ASSERT(timeControl != nullptr,
+                               "TimeControl* must be valid for PCA_CAN_DT or PCA_CAN_TIME");
+            timeControl->delta = tdelta;
         }
 
         adapter.copyValues();

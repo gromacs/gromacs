@@ -40,6 +40,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/units.h"
@@ -173,6 +174,7 @@ int gmx_spatial(int argc, char* argv[])
     int64_t           tot;
     double            norm;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm fnm[] = { { efTPS, nullptr, nullptr, ffREAD }, /* this is for the topology */
@@ -183,8 +185,19 @@ int gmx_spatial(int argc, char* argv[])
 
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_TIME | PCA_CAN_VIEW,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           asize(bugs),
+                           bugs,
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -199,7 +212,7 @@ int gmx_spatial(int argc, char* argv[])
     get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nidxp, &indexp, &grpnmp);
 
     /* The first time we read data is a little special */
-    read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, flags);
+    read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, &timeControl, flags);
     natoms = fr.natoms;
 
     /* Memory Allocation */

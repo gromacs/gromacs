@@ -2464,7 +2464,7 @@ int gmx_tune_pme(int argc, char* argv[])
     seconds = gmx_gettime();
 
     if (!parse_common_args(
-                &argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

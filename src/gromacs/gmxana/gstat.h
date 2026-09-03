@@ -41,6 +41,11 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+struct TimeControl;
+} // namespace gmx
+
 /* must correspond with 'leg' g_chi.c:727 */
 enum
 {
@@ -186,7 +191,8 @@ void read_ang_dih(const char*             trj_fn,
                   real**                  trans_frac,
                   real**                  aver_angle,
                   real*                   dih[],
-                  const gmx_output_env_t* oenv);
+                  const gmx_output_env_t* oenv,
+                  const gmx::TimeControl& timeControl);
 /*
  * Read a trajectory and calculate angles and dihedrals.
  *

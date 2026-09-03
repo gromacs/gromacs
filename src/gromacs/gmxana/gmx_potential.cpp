@@ -46,6 +46,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -170,7 +171,8 @@ static void calc_potential(const char*             fn,
                            gmx_bool                bCorrect,
                            int                     cb,
                            int                     ce,
-                           const gmx_output_env_t* oenv)
+                           const gmx_output_env_t* oenv,
+                           const gmx::TimeControl& timeControl)
 {
     rvec*        x0;     /* coordinates without pbc */
     matrix       box;    /* box (3x3) */
@@ -188,7 +190,7 @@ static void calc_potential(const char*             fn,
     double       averageBoxSize;
     gmx_rmpbc_t  gpbc = nullptr;
 
-    if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
+    if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box, &timeControl)) == 0)
     {
         gmx_fatal(FARGS, "Could not read coordinates from statusfile\n");
     }
@@ -543,6 +545,7 @@ int gmx_potential(int argc, char* argv[])
 
     };
     gmx_output_env_t*  oenv;
+    gmx::TimeControl   timeControl;
     static int         axis        = 2; /* normal to memb. default z  */
     static const char* axtitle     = "Z";
     static int         nslices     = 10; /* nr of slices defined       */
@@ -628,8 +631,19 @@ int gmx_potential(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           asize(bugs),
+                           bugs,
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -687,7 +701,8 @@ int gmx_potential(int argc, char* argv[])
                    bCorrect,
                    cb,
                    ce,
-                   oenv);
+                   oenv,
+                   timeControl);
 
     std::vector<std::string> names;
     names.resize(ngrps);

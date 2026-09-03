@@ -36,45 +36,24 @@
 
 #include <optional>
 
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
+namespace gmx
+{
 
 /*! \brief
  * Controls when to start and stop reading trajectory data from files.
  */
-enum class TimeControl : int
+struct TimeControl
 {
-    //! Control setting of start time.
-    Begin,
-    //! Control setting of final time.
-    End,
-    //! Control setting of time step.
-    Delta,
-    //! Maximum number.
-    Count
+    //! \brief Start time.
+    std::optional<double> begin;
+
+    //! \brief End time (inclusive).
+    std::optional<double> end;
+
+    //! \brief Time step.
+    std::optional<double> delta;
 };
 
-//! Return time value if one is set.
-std::optional<real> timeValue(TimeControl tcontrol);
-
-/*! \brief
- * Set time value to \p value and set internal state to true.
- *
- * Be aware that this sets the global state of the binary that persists
- * as long as the executable is in memory.
- * To return internal state to its original value, use the unset function.
- *
- * \param[in] tcontrol TimeControl value to change setting for.
- * \param[in] value    The time value to set.
- */
-void setTimeValue(TimeControl tcontrol, real value);
-
-/*! \brief
- * Return time value to initial state.
- *
- * Ensures that internal state for \p tcontrol is the same as before
- * using setTimeValue. Useful for combining several tools together.
- */
-void unsetTimeValue(TimeControl tcontrol);
+} // namespace gmx
 
 #endif

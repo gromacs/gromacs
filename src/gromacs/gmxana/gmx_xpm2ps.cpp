@@ -1546,7 +1546,7 @@ int gmx_xpm2ps(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

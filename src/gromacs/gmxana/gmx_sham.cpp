@@ -1150,7 +1150,7 @@ int gmx_sham(int argc, char* argv[])
 
     npargs = asize(pa);
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

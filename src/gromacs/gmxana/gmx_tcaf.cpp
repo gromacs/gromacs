@@ -47,6 +47,7 @@
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -363,6 +364,7 @@ int gmx_tcaf(int argc, char* argv[])
     int               nkc, nk, ntc;
     real**            tc;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = { { efTRN, "-f", nullptr, ffREAD },      { efTPS, nullptr, nullptr, ffOPTRD },
                        { efNDX, nullptr, nullptr, ffOPTRD },  { efXVG, "-ot", "transcur", ffOPTWR },
@@ -377,7 +379,7 @@ int gmx_tcaf(int argc, char* argv[])
     ppa    = add_acf_pargs(&npargs, pa);
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -433,7 +435,8 @@ int gmx_tcaf(int argc, char* argv[])
         sysmass += top.atoms.atom[i].m;
     }
 
-    bool ok = read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_X | TRX_NEED_V);
+    bool ok = read_first_frame(
+            oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, &timeControl, TRX_NEED_X | TRX_NEED_V);
     if (!ok)
     {
         gmx_fatal(FARGS,

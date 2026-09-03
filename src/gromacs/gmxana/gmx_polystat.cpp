@@ -48,6 +48,7 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -159,6 +160,7 @@ int gmx_polystat(int argc, char* argv[])
 
     t_topology*                top;
     gmx_output_env_t*          oenv;
+    gmx::TimeControl           timeControl;
     PbcType                    pbcType;
     int                        isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
     char*                      grpname;
@@ -193,7 +195,8 @@ int gmx_polystat(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -283,7 +286,7 @@ int gmx_polystat(int argc, char* argv[])
         outi = nullptr;
     }
 
-    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     snew(gyr, DIM);
     snew(gyr_all, DIM);

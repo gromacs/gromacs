@@ -57,6 +57,7 @@
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
@@ -633,6 +634,7 @@ int gmx_trjconv(int argc, char* argv[])
     const char*  outf_ext  = nullptr;
     char         top_title[256], timestr[32], stepstr[32], filemode[5];
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },     { efTRO, "-o", nullptr, ffWRITE },
                        { efTPS, nullptr, nullptr, ffOPTRD }, { efNDX, nullptr, nullptr, ffOPTRD },
@@ -651,7 +653,8 @@ int gmx_trjconv(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -896,7 +899,7 @@ int gmx_trjconv(int argc, char* argv[])
                 t_trxstatus* temporaryStatus;
                 clear_trxframe(&temporaryFrame, true);
                 /* no index file, so read natoms from TRX */
-                if (!read_first_frame(oenv, &temporaryStatus, in_file, &temporaryFrame, TRX_DONT_SKIP))
+                if (!read_first_frame(oenv, &temporaryStatus, in_file, &temporaryFrame, &timeControl, TRX_DONT_SKIP))
                 {
                     gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
                 }
@@ -994,7 +997,7 @@ int gmx_trjconv(int argc, char* argv[])
         }
 
         /* open trx file for reading */
-        bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
+        bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, &timeControl, flags);
         if (fr.bPrec)
         {
             fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1 / fr.prec);

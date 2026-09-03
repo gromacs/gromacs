@@ -53,6 +53,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xdr_datatype.h"
@@ -1309,7 +1310,8 @@ static void fec(const char*                      ene2fn,
                 gmx::ArrayRef<const std::string> leg,
                 enerdata_t*                      edat,
                 double                           time[],
-                const gmx_output_env_t*          oenv)
+                const gmx_output_env_t*          oenv,
+                const gmx::TimeControl&          timeControl)
 {
     std::array<std::string, 2> ravgleg = { "\\8D\\4E = E\\sB\\N-E\\sA\\N",
                                            "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
@@ -1344,7 +1346,7 @@ static void fec(const char*                      ene2fn,
 
             if (bCont)
             {
-                timecheck = check_times(fr->t);
+                timecheck = check_times(fr->t, timeControl);
             }
 
         } while (bCont && (timecheck < 0));
@@ -1861,6 +1863,7 @@ int gmx_energy(int argc, char* argv[])
     std::vector<std::string> leg;
     char                     buf[256];
     gmx_output_env_t*        oenv;
+    gmx::TimeControl         timeControl;
     int                      dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
 
     t_filenm fnm[] = {
@@ -1877,8 +1880,19 @@ int gmx_energy(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
+                           NFILE,
+                           fnm,
+                           npargs,
+                           ppa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv,
+                           &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -2029,7 +2043,7 @@ int gmx_energy(int argc, char* argv[])
             bCont = do_enx(fp, &(frame[NEXT]));
             if (bCont)
             {
-                timecheck = check_times(frame[NEXT].t);
+                timecheck = check_times(frame[NEXT].t, timeControl);
             }
         } while (bCont && (timecheck < 0));
 
@@ -2266,7 +2280,7 @@ int gmx_energy(int argc, char* argv[])
     }
     if (opt2bSet("-f2", NFILE, fnm))
     {
-        fec(opt2fn("-f2", NFILE, fnm), opt2fn("-ravg", NFILE, fnm), reftemp, nset, set, leg, &edat, time, oenv);
+        fec(opt2fn("-f2", NFILE, fnm), opt2fn("-ravg", NFILE, fnm), reftemp, nset, set, leg, &edat, time, oenv, timeControl);
     }
     // Clean up!
     done_enerdata_t(nset, &edat);

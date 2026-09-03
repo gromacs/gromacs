@@ -515,7 +515,7 @@ int gmx_genion(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv, nullptr))
     {
         if (oenv != nullptr)
         {

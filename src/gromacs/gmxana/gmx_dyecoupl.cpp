@@ -42,6 +42,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -86,6 +87,7 @@ int gmx_dyecoupl(int argc, char* argv[])
     static gmx_bool   bPBCdist = FALSE, bNormHist = FALSE;
     int               histbins = 50;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     real              R0 = -1;
 
     t_pargs pa[] = {
@@ -148,7 +150,8 @@ int gmx_dyecoupl(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -212,7 +215,7 @@ int gmx_dyecoupl(int argc, char* argv[])
     /* open trx file for reading */
     flags           = 0;
     flags           = flags | TRX_READ_X;
-    bHaveFirstFrame = read_first_frame(oenv, &status, in_trajfile, &fr, flags);
+    bHaveFirstFrame = read_first_frame(oenv, &status, in_trajfile, &fr, &timeControl, flags);
 
     if (bHaveFirstFrame)
     {

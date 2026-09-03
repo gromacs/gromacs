@@ -44,6 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
@@ -119,6 +120,7 @@ int gmx_filter(int argc, char* argv[])
     real              flen, *filt, sum, *t;
     rvec              xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },
@@ -129,7 +131,7 @@ int gmx_filter(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -196,7 +198,8 @@ int gmx_filter(int argc, char* argv[])
     snew(x, nffr);
     snew(box, nffr);
 
-    nat = read_first_x(oenv, &in, opt2fn("-f", NFILE, fnm), &(t[nffr - 1]), &(x[nffr - 1]), box[nffr - 1]);
+    nat = read_first_x(
+            oenv, &in, opt2fn("-f", NFILE, fnm), &(t[nffr - 1]), &(x[nffr - 1]), box[nffr - 1], &timeControl);
     snew(ind, nat);
     for (i = 0; i < nat; i++)
     {

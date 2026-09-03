@@ -940,7 +940,7 @@ int gmx_make_edi(int argc, char* argv[])
     edi_params.outfrq     = 100;
     edi_params.slope      = 0.0;
     edi_params.maxedsteps = 0;
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

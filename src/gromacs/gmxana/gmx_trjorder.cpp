@@ -45,6 +45,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -153,6 +154,7 @@ int gmx_trjorder(int argc, char* argv[])
     int               i, j, d, *isize, isize_ref      = 0, isize_sol;
     int               sa, sr, *swi, **index, *ind_ref = nullptr, *ind_sol;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffREAD },
                                 { efTPS, nullptr, nullptr, ffREAD },
                                 { efNDX, nullptr, nullptr, ffOPTRD },
@@ -161,7 +163,7 @@ int gmx_trjorder(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -189,7 +191,7 @@ int gmx_trjorder(int argc, char* argv[])
         ind_sol   = index[0];
     }
 
-    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
     if (natoms > top.atoms.nr)
     {
         gmx_fatal(FARGS, "Number of atoms in the run input file is larger than in the trajectory");

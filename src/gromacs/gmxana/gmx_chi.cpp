@@ -56,6 +56,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
@@ -1430,6 +1431,7 @@ int gmx_chi(int argc, char* argv[])
     gmx_bool          bDo_rt, bDo_oh, bDo_ot, bDo_jc;
     real              dt = 0, traj_t_ns;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     int    nactdih, nf;
     real **dih, *trans_frac, *aver_angle, *time;
@@ -1456,7 +1458,7 @@ int gmx_chi(int argc, char* argv[])
     ppa    = add_acf_pargs(&npargs, pa);
     gmx::sfree_guard ppaGuard(ppa);
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv, &timeControl))
     {
         return 0;
     }
@@ -1551,7 +1553,8 @@ int gmx_chi(int argc, char* argv[])
                  &trans_frac,
                  &aver_angle,
                  dih,
-                 oenv);
+                 oenv,
+                 timeControl);
     gmx::sfree_guard timeGuard(time);
     gmx::sfree_guard transFracGuard(trans_frac);
     gmx::sfree_guard averAngleGuard(aver_angle);

@@ -44,6 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/nrama.h"
@@ -81,20 +82,21 @@ int gmx_rama(int argc, char* argv[])
     FILE*             out;
     t_xrama*          xr;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffREAD },
                                 { efTPR, nullptr, nullptr, ffREAD },
                                 { efXVG, nullptr, "rama", ffWRITE } };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, 0, nullptr, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, 0, nullptr, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
 
 
     snew(xr, 1);
-    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPR, NFILE, fnm), xr, 3);
+    init_rama(oenv, timeControl, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPR, NFILE, fnm), xr, 3);
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Ramachandran Plot", "Phi", "Psi", oenv);
     xvgr_line_props(out, 0, elNone, ecFrank, oenv);

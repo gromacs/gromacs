@@ -47,6 +47,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/functions.h"
@@ -145,6 +146,7 @@ int gmx_densmap(int argc, char* argv[])
     int               nlev = 51;
     t_rgb             rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     const char*       label[] = { "x (nm)", "y (nm)", "z (nm)" };
     t_filenm          fnm[]   = { { efTRX, "-f", nullptr, ffREAD },
                                   { efTPS, nullptr, nullptr, ffOPTRD },
@@ -157,7 +159,7 @@ int gmx_densmap(int argc, char* argv[])
     npargs = asize(pa);
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -243,7 +245,7 @@ int gmx_densmap(int argc, char* argv[])
             break;
     }
 
-    read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     if (!bRadial)
     {

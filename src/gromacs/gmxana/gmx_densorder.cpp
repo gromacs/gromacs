@@ -49,6 +49,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -137,7 +138,8 @@ static void density_in_time(const char*             fn,
                             int                     axis,
                             gmx_bool                bCenter,
                             gmx_bool                bps1d,
-                            const gmx_output_env_t* oenv)
+                            const gmx_output_env_t* oenv,
+                            const gmx::TimeControl& timeControl)
 
 {
     /*
@@ -181,7 +183,7 @@ static void density_in_time(const char*             fn,
         default: gmx_fatal(FARGS, "Invalid axes. Terminating\n");
     }
 
-    if (read_first_x(oenv, &status, fn, &t, &x0, box) == 0)
+    if (read_first_x(oenv, &status, fn, &t, &x0, box, &timeControl) == 0)
     {
         gmx_fatal(FARGS, "Could not read coordinates from file"); /* Open trajectory for read*/
     }
@@ -737,6 +739,7 @@ int gmx_densorder(int argc, char* argv[])
      */
 
     gmx_output_env_t*  oenv;
+    gmx::TimeControl   timeControl;
     t_topology*        top;
     char**             grpname;
     PbcType            pbcType;
@@ -807,7 +810,7 @@ int gmx_densorder(int argc, char* argv[])
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -844,7 +847,8 @@ int gmx_densorder(int argc, char* argv[])
                     axis,
                     bCenter,
                     b1d,
-                    oenv);
+                    oenv,
+                    timeControl);
 
     if (ftorder > 0)
     {

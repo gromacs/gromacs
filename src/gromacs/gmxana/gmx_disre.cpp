@@ -56,6 +56,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -771,6 +772,7 @@ int gmx_disre(int argc, char* argv[])
     FILE*                    fplog;
     gmx_output_env_t*        oenv;
     gmx_rmpbc_t              gpbc = nullptr;
+    gmx::TimeControl         timeControl;
 
     t_filenm fnm[] = { { efTPR, nullptr, nullptr, ffREAD }, { efTRX, "-f", nullptr, ffREAD },
                        { efXVG, "-ds", "drsum", ffWRITE },  { efXVG, "-da", "draver", ffWRITE },
@@ -781,7 +783,7 @@ int gmx_disre(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -864,7 +866,7 @@ int gmx_disre(int argc, char* argv[])
                 nullptr,
                 FALSE);
 
-    int natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    int natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
     snew(f, 5 * natoms);
 
     std::optional<t_cluster_ndx> clust;

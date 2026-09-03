@@ -51,6 +51,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -293,6 +294,7 @@ int gmx_dos(int argc, char* argv[])
     double            rho, dt, Vsum, V, tmass, dostot, dos2;
     real **           c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     gmx_fft_t         fft;
     double            cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
     double            wCdiff, wSdiff, wAdiff, wEdiff;
@@ -347,7 +349,7 @@ int gmx_dos(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -383,7 +385,7 @@ int gmx_dos(int argc, char* argv[])
         c1[i] = nullptr;
     }
 
-    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_V);
+    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, &timeControl, TRX_NEED_V);
     t0 = fr.time;
 
     n_alloc = 0;

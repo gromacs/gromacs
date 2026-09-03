@@ -98,9 +98,10 @@ struct t_trxstatus
 {
     int  flags        = 0; /* flags for read_first/next_frame  */
     int  currentFrame = -1;
-    real t0           = 0;                 /* time of the first frame, needed  *
-                                            * for skipping frames with -dt     */
-    real                       tf     = 0; /* internal frame time              */
+    real t0           = 0;                  /* time of the first frame, needed  *
+                                             * for skipping frames with -dt     */
+    real                       tf = 0;      /* internal frame time              */
+    gmx::TimeControl           timeControl; /* time control for read_first/next_frame */
     t_trxframe*                xframe = nullptr;
     t_fileio*                  fio    = nullptr;
     gmx_tng_trajectory_t       tng    = nullptr;
@@ -129,9 +130,9 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool compareTimesAsDouble)
 
 
 /* This routine checks if the read-in time is correct or not;
- * returns -1 if t<tbegin or t MOD dt = t0,
- *          0 if tbegin <= t <=tend+margin,
- *          1 if t>tend
+ * returns -1 if t < timeControl.begin or t MOD timeControl.delta == t0,
+ *          0 if timeControl.begin <= t <= timeControl.end + margin,
+ *          1 if t > timeControl.end
  * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
  * tp and tpp should be the time of the previous frame and the one before.
  * The mod is done with single or double precision accuracy depending
@@ -139,16 +140,16 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool compareTimesAsDouble)
  * a double-precision build of GROMACS is reading a file written in
  * double precision.
  */
-static int check_times2(real t, real t0, gmx_bool compareTimesAsDouble)
+static int check_times2(real t, real t0, const gmx::TimeControl& timeControl, gmx_bool compareTimesAsDouble)
 {
     GMX_ASSERT(GMX_DOUBLE || !compareTimesAsDouble,
                "Only a double-precision build can compare times as double");
     int r;
 
     r              = -1;
-    auto startTime = timeValue(TimeControl::Begin);
-    auto endTime   = timeValue(TimeControl::End);
-    auto deltaTime = timeValue(TimeControl::Delta);
+    auto startTime = timeControl.begin;
+    auto endTime   = timeControl.end;
+    auto deltaTime = timeControl.delta;
     if ((!startTime.has_value() || (t >= startTime.value()))
         && (!endTime.has_value() || (t <= endTime.value())))
     {
@@ -179,9 +180,9 @@ static int check_times2(real t, real t0, gmx_bool compareTimesAsDouble)
     return r;
 }
 
-int check_times(real t)
+int check_times(real t, const gmx::TimeControl& timeControl)
 {
-    return check_times2(t, t, FALSE);
+    return check_times2(t, t, timeControl, FALSE);
 }
 
 static void initcount(t_trxstatus* status)
@@ -835,7 +836,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
     {
         clear_trxframe(fr, FALSE);
 
-        auto startTime = timeValue(TimeControl::Begin);
+        auto startTime = status->timeControl.begin;
         switch (status->fileType)
         {
             case efTRR: bRet = gmx_next_frame(status, fr); break;
@@ -909,7 +910,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
             bSkip        = FALSE;
             if (!bMissingData)
             {
-                ct = check_times2(fr->time, status->t0, compareTimesAsDouble);
+                ct = check_times2(fr->time, status->t0, status->timeControl, compareTimesAsDouble);
                 if (ct == 0 || ((status->flags & TRX_DONT_SKIP) && ct < 0))
                 {
                     printcount(status, oenv, fr->time, FALSE);
@@ -944,6 +945,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                       t_trxstatus**                status,
                       const std::filesystem::path& fn,
                       t_trxframe*                  fr,
+                      const gmx::TimeControl*      timeControl,
                       int                          flags)
 {
     t_fileio* fio = nullptr;
@@ -958,6 +960,10 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
 
     (*status)->flags    = flags;
     (*status)->fileType = fn2ftp(fn);
+    if (timeControl != nullptr)
+    {
+        (*status)->timeControl = *timeControl;
+    }
 
     if (efTNG == (*status)->fileType)
     {
@@ -1103,13 +1109,13 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     (*status)->tf = fr->time;
 
     /* Return FALSE if we read a frame that's past the set ending time. */
-    if (!bFirst && (!(flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
+    if (!bFirst && (!(flags & TRX_DONT_SKIP) && check_times(fr->time, (*status)->timeControl) > 0))
     {
         (*status)->t0 = fr->time;
         return FALSE;
     }
 
-    if (bFirst || (!(flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
+    if (bFirst || (!(flags & TRX_DONT_SKIP) && check_times(fr->time, (*status)->timeControl) < 0))
     {
         /* Read a frame when no frame was read or the first was skipped */
         if (!read_next_frame(oenv, *status, fr))
@@ -1134,11 +1140,12 @@ int read_first_x(const gmx_output_env_t*      oenv,
                  const std::filesystem::path& fn,
                  real*                        t,
                  rvec**                       x,
-                 matrix                       box)
+                 matrix                       box,
+                 const gmx::TimeControl*      timeControl)
 {
     t_trxframe fr;
 
-    read_first_frame(oenv, status, fn, &fr, TRX_NEED_X);
+    read_first_frame(oenv, status, fn, &fr, timeControl, TRX_NEED_X);
 
     snew((*status)->xframe, 1);
     (*(*status)->xframe) = fr;

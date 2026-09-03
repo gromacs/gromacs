@@ -60,6 +60,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -2543,6 +2544,7 @@ int gmx_hbond(int argc, char* argv[])
     ivec                                                    ngrid;
     unsigned char*                                          datable;
     gmx_output_env_t*                                       oenv;
+    gmx::TimeControl                                        timeControl;
     int                                                     actual_nThreads;
     gmx_bool                                                bEdge_yjj, bEdge_xjj;
 
@@ -2555,7 +2557,7 @@ int gmx_hbond(int argc, char* argv[])
     ppa    = add_acf_pargs(&npargs, pa);
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -2764,7 +2766,7 @@ int gmx_hbond(int argc, char* argv[])
     }
 
     /* Analyze trajectory */
-    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
     if (natoms > top.atoms.nr)
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)", top.atoms.nr, natoms);

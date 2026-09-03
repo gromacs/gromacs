@@ -1109,8 +1109,8 @@ void LegacySimulator::do_tpi()
 
     t_trxstatus* status;
     t_trxframe   rerun_fr;
-    bool         isNotLastFrame =
-            read_first_frame(oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, TRX_NEED_X);
+    bool         isNotLastFrame = read_first_frame(
+            oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, nullptr, TRX_NEED_X);
     int frame = 0;
 
     if (rerun_fr.natoms - (insertIntoCavity ? gmx::ssize(massesDefiningCavity) : 0)

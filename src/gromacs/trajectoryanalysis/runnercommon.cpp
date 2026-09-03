@@ -142,6 +142,7 @@ public:
     //! Used to store the status variable from read_first_frame().
     t_trxstatus*      status_;
     gmx_output_env_t* oenv_;
+    gmx::TimeControl  timeControl_;
 };
 
 
@@ -224,7 +225,7 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
 
     if (hasTrajectory())
     {
-        if (!read_first_frame(oenv_, &status_, trjfile_.c_str(), fr, frflags))
+        if (!read_first_frame(oenv_, &status_, trjfile_.c_str(), fr, &timeControl_, frflags))
         {
             GMX_THROW(FileIOError("Could not read coordinates from trajectory"));
         }
@@ -413,15 +414,15 @@ void TrajectoryAnalysisRunnerCommon::optionsFinished()
 
     if (impl_->bStartTimeSet_)
     {
-        setTimeValue(TimeControl::Begin, impl_->startTime_);
+        impl_->timeControl_.begin = impl_->startTime_;
     }
     if (impl_->bEndTimeSet_)
     {
-        setTimeValue(TimeControl::End, impl_->endTime_);
+        impl_->timeControl_.end = impl_->endTime_;
     }
     if (impl_->bDeltaTimeSet_)
     {
-        setTimeValue(TimeControl::Delta, impl_->deltaTime_);
+        impl_->timeControl_.delta = impl_->deltaTime_;
     }
 }
 

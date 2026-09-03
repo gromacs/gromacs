@@ -53,6 +53,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/cluster_methods.h"
@@ -188,6 +189,7 @@ static rvec** read_whole_trj(const char*             fn,
                              matrix**                boxes,
                              int**                   frameindices,
                              const gmx_output_env_t* oenv,
+                             const gmx::TimeControl& timeControl,
                              gmx_bool                bPBC,
                              gmx_rmpbc_t             gpbc)
 {
@@ -202,7 +204,7 @@ static rvec** read_whole_trj(const char*             fn,
     max_nf           = 0;
     xx               = nullptr;
     *time            = nullptr;
-    natom            = read_first_x(oenv, &status, fn, &t, &x, box);
+    natom            = read_first_x(oenv, &status, fn, &t, &x, box, &timeControl);
     i                = 0;
     int clusterIndex = 0;
     do
@@ -927,6 +929,7 @@ int gmx_cluster(int argc, char* argv[])
     static int   M = 10, P = 3;
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
+    gmx::TimeControl  timeControl;
 
     t_pargs pa[] = {
         { "-dista", FALSE, etBOOL, { &bRMSdist }, "Use RMSD of distances instead of RMS deviation" },
@@ -1028,7 +1031,8 @@ int gmx_cluster(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -1191,7 +1195,8 @@ int gmx_cluster(int argc, char* argv[])
         /* Loop over first coordinate file */
         fn = opt2fn("-f", NFILE, fnm);
 
-        xx = read_whole_trj(fn, isize, index, skip, &nf, &time, &boxes, &frameindices, oenv, bPBC, gpbc);
+        xx = read_whole_trj(
+                fn, isize, index, skip, &nf, &time, &boxes, &frameindices, oenv, timeControl, bPBC, gpbc);
         output_env_conv_times(oenv, nf, time);
         if (!bRMSdist || bAnalyze)
         {

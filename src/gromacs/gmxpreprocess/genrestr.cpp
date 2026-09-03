@@ -164,7 +164,8 @@ int gmx_genrestr(int argc, char* argv[])
                        { efNDX, "-of", "freeze", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, 0, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

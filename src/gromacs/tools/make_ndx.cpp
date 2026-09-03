@@ -1466,7 +1466,7 @@ int gmx_make_ndx(int argc, char* argv[])
                                 { efNDX, "-o", nullptr, ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

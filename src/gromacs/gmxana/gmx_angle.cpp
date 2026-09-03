@@ -45,6 +45,7 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/angle_correction.h"
@@ -196,11 +197,12 @@ int gmx_g_angle(int argc, char* argv[])
     int               npargs;
     t_pargs*          ppa;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -310,7 +312,8 @@ int gmx_g_angle(int argc, char* argv[])
                  &trans_frac,
                  &aver_angle,
                  dih,
-                 oenv);
+                 oenv,
+                 timeControl);
 
     dt = (time[nframes - 1] - time[0]) / (nframes - 1);
 

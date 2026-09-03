@@ -51,6 +51,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
@@ -192,6 +193,7 @@ int gmx_covar(int argc, char* argv[])
     real*             eigenvectors;
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
@@ -203,7 +205,7 @@ int gmx_covar(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -322,7 +324,7 @@ int gmx_covar(int argc, char* argv[])
 
     fprintf(stderr, "Calculating the average structure ...\n");
     nframes0 = 0;
-    nat      = read_first_x(oenv, &status, trxfile, &t, &xread, box);
+    nat      = read_first_x(oenv, &status, trxfile, &t, &xread, box, &timeControl);
     if (nat != atoms->nr)
     {
         fprintf(stderr,
@@ -376,7 +378,7 @@ int gmx_covar(int argc, char* argv[])
             static_cast<int>(ndim),
             static_cast<int>(ndim));
     nframes = 0;
-    nat     = read_first_x(oenv, &status, trxfile, &t, &xread, box);
+    nat     = read_first_x(oenv, &status, trxfile, &t, &xread, box, &timeControl);
     tstart  = t;
     do
     {

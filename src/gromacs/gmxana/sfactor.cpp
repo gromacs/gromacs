@@ -452,7 +452,8 @@ extern int do_scattering_intensity(const char*             fnTPS,
                                    real                    end_q,
                                    real                    energy,
                                    int                     ng,
-                                   const gmx_output_env_t* oenv)
+                                   const gmx_output_env_t* oenv,
+                                   const gmx::TimeControl& timeControl)
 {
     int               i, *isize, flags = TRX_READ_X, **index_atp;
     t_trxstatus*      status;
@@ -502,7 +503,7 @@ extern int do_scattering_intensity(const char*             fnTPS,
     }
 
     /* The first time we read data is a little special */
-    read_first_frame(oenv, &status, fnTRX, &fr, flags);
+    read_first_frame(oenv, &status, fnTRX, &fr, &timeControl, flags);
 
     sf->total_n_atoms = fr.natoms;
 

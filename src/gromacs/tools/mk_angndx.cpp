@@ -308,7 +308,8 @@ int gmx_mk_angndx(int argc, char* argv[])
     t_filenm fnm[] = { { efTPR, nullptr, nullptr, ffREAD }, { efNDX, nullptr, "angle", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

@@ -1169,7 +1169,7 @@ int gmx_pme_error(int argc, char* argv[])
     PCA_Flags = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(
-                &argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

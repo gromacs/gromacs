@@ -98,7 +98,8 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
                            desc.data(),
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           nullptr))
     {
         return 0;
     }

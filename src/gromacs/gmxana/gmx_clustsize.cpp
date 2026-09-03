@@ -46,6 +46,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -93,7 +94,8 @@ static void clust_size(const char*             ndx,
                        t_rgb                   rmid,
                        t_rgb                   rhi,
                        int                     ndf,
-                       const gmx_output_env_t* oenv)
+                       const gmx_output_env_t* oenv,
+                       const gmx::TimeControl& timeControl)
 {
     FILE *       fp, *gp, *hp, *tp;
     int*         index = nullptr;
@@ -126,7 +128,7 @@ static void clust_size(const char*             ndx,
     hp             = xvgropen(mcl, "Max cluster size", timeLabel, "#molecules", oenv);
     tp             = xvgropen(tempf, "Temperature of largest cluster", timeLabel, "T (K)", oenv);
 
-    if (!read_first_frame(oenv, &status, trx, &fr, TRX_NEED_X | TRX_READ_V))
+    if (!read_first_frame(oenv, &status, trx, &fr, &timeControl, TRX_NEED_X | TRX_READ_V))
     {
         gmx_file(trx);
     }
@@ -537,6 +539,7 @@ int gmx_clustsize(int argc, char* argv[])
     rvec     rhi     = { 0.0, 0.0, 1.0 };
 
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_pargs pa[] = {
         { "-cut",
@@ -587,8 +590,19 @@ int gmx_clustsize(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           NPA,
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -626,7 +640,8 @@ int gmx_clustsize(int argc, char* argv[])
                rgblo,
                rgbhi,
                ndf,
-               oenv);
+               oenv,
+               timeControl);
 
     output_env_done(oenv);
 

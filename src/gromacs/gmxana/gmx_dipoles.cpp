@@ -54,6 +54,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -824,7 +825,8 @@ static void do_dip(const t_topology*       top,
                    int                     nslices,
                    const char*             axtitle,
                    const char*             slabfn,
-                   const gmx_output_env_t* oenv)
+                   const gmx_output_env_t* oenv,
+                   const gmx::TimeControl& timeControl)
 {
     std::array<std::string, 4> leg_mtot = { "M\\sx \\N", "M\\sy \\N", "M\\sz \\N", "|M\\stot \\N|" };
     std::array<std::string, 3> leg_eps     = { "epsilon", "G\\sk", "g\\sk" };
@@ -1046,7 +1048,7 @@ static void do_dip(const t_topology*       top,
             bCont = read_mu_from_enx(fmu, iVol, iMu, mu_t, &volume, &t, nre, fr);
             if (bCont)
             {
-                timecheck = check_times(t);
+                timecheck = check_times(t, timeControl);
                 if (timecheck < 0)
                 {
                     teller++;
@@ -1066,7 +1068,7 @@ static void do_dip(const t_topology*       top,
     }
     else
     {
-        natom = read_first_x(oenv, &status, fn, &t, &x, box);
+        natom = read_first_x(oenv, &status, fn, &t, &x, box, &timeControl);
     }
 
     /* Calculate spacing for dipole bin (simple histogram) */
@@ -1401,7 +1403,7 @@ static void do_dip(const t_topology*       top,
         {
             bCont = read_next_x(oenv, status, &t, x, box);
         }
-        timecheck = check_times(t);
+        timecheck = check_times(t, timeControl);
     } while (bCont && (timecheck == 0));
 
     gmx_rmpbc_done(gpbc);
@@ -1624,6 +1626,7 @@ int gmx_dipoles(int argc, char* argv[])
     int               skip = 0, nFA = 0, nFB = 0, ncos = 1;
     int               nlevels = 20, ndegrees = 90;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     t_pargs           pa[] = {
         { "-mu", FALSE, etREAL, { &mu_aver }, "dipole of a single molecule (in Debye)" },
         { "-mumax", FALSE, etREAL, { &mu_max }, "max dipole in Debye (for histogram)" },
@@ -1722,7 +1725,7 @@ int gmx_dipoles(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         sfree(ppa);
         return 0;
@@ -1824,7 +1827,8 @@ int gmx_dipoles(int argc, char* argv[])
            nslices,
            axtitle,
            opt2fn("-slab", NFILE, fnm),
-           oenv);
+           oenv,
+           timeControl);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-autoscale xy -nxy");
     do_view(oenv, opt2fn("-eps", NFILE, fnm), "-autoscale xy -nxy");

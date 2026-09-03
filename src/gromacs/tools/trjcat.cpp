@@ -98,7 +98,7 @@ static void scan_trj_files(ArrayRef<const std::string> files,
 
     for (Index i = 0; i < files.ssize(); i++)
     {
-        ok = read_first_frame(oenv, &status, files[i].c_str(), &fr, FLAGS);
+        ok = read_first_frame(oenv, &status, files[i].c_str(), &fr, nullptr, FLAGS);
 
         if (!ok)
         {
@@ -349,7 +349,7 @@ static void do_demux(ArrayRef<const std::string> inFiles,
     t      = -1;
     for (Index i = 0; i < inFiles.ssize(); i++)
     {
-        read_first_frame(oenv, &(fp_in[i]), inFiles[i].c_str(), &(trx[i]), TRX_NEED_X);
+        read_first_frame(oenv, &(fp_in[i]), inFiles[i].c_str(), &(trx[i]), nullptr, TRX_NEED_X);
         if (natoms == -1)
         {
             natoms     = trx[i].natoms;
@@ -523,7 +523,7 @@ int gmx_trjcat(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }
@@ -718,7 +718,7 @@ int gmx_trjcat(int argc, char* argv[])
         {
             t_fileio* stfio;
 
-            if (!read_first_frame(oenv, &status, out_file, &fr, FLAGS))
+            if (!read_first_frame(oenv, &status, out_file, &fr, nullptr, FLAGS))
             {
                 gmx_fatal(FARGS, "Reading first frame from %s", out_file);
             }
@@ -855,7 +855,7 @@ int gmx_trjcat(int argc, char* argv[])
             {
                 timestep = timest[i];
             }
-            read_first_frame(oenv, &status, inFilesEdited[i].c_str(), &fr, FLAGS);
+            read_first_frame(oenv, &status, inFilesEdited[i].c_str(), &fr, nullptr, FLAGS);
             if (!fr.bTime)
             {
                 fr.time = 0;

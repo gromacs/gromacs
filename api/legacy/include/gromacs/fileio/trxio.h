@@ -50,7 +50,8 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
+struct TimeControl;
+} // namespace gmx
 /* a dedicated status type contains fp, etc. */
 typedef struct t_trxstatus t_trxstatus;
 
@@ -192,11 +193,11 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool compareTimesAsDouble);
 #    define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)
 #endif
 
-int check_times(real t);
-/* This routine checkes if the read-in time is correct or not;
- * returns -1 if t<tbegin,
- *          0 if tbegin <= t <=tend,
- *          1 if t>tend
+int check_times(real t, const gmx::TimeControl& timeControl);
+/* This routine checks if the read-in time is correct or not;
+ * returns -1 if t < timeControl.begin,
+ *          0 if timeControl.begin <= t <= timeControl.end,
+ *          1 if t > timeControl.end
  */
 
 
@@ -223,11 +224,13 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
                       t_trxstatus**                status,
                       const std::filesystem::path& fn,
                       struct t_trxframe*           fr,
+                      const gmx::TimeControl*      timeControl,
                       int                          flags);
 /* Read the first frame which is in accordance with flags, which are
  * defined further up in this file.
  * Memory will be allocated for flagged entries.
- * The flags are copied to fr for subsequent calls to read_next_frame.
+ * The flags and timeControl are copied to status for subsequent calls
+ * to read_next_frame.
  * Returns true when succeeded, false otherwise.
  */
 
@@ -242,7 +245,8 @@ int read_first_x(const gmx_output_env_t*      oenv,
                  const std::filesystem::path& fn,
                  real*                        t,
                  rvec**                       x,
-                 matrix                       box);
+                 matrix                       box,
+                 const gmx::TimeControl*      timeControl);
 /* These routines read first coordinates and box, and allocates
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.

@@ -42,6 +42,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/sfactor.h"
 #include "gromacs/utility/arraysize.h"
@@ -70,6 +71,7 @@ int gmx_saxs(int argc, char* argv[])
 #define NPA asize(pa)
     const char *      fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
@@ -79,7 +81,7 @@ int gmx_saxs(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -94,7 +96,7 @@ int gmx_saxs(int argc, char* argv[])
     fnNDX = ftp2fn_null(efNDX, NFILE, fnm);
 
     do_scattering_intensity(
-            fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm), fnTRX, fnDAT, start_q, end_q, energy, ngroups, oenv);
+            fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm), fnTRX, fnDAT, start_q, end_q, energy, ngroups, oenv, timeControl);
 
     please_cite(stdout, "Cromer1968a");
 

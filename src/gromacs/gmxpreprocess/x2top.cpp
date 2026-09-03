@@ -483,7 +483,7 @@ int gmx_x2top(int argc, char* argv[])
     };
 
     if (!parse_common_args(
-                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv, nullptr))
     {
         return 0;
     }

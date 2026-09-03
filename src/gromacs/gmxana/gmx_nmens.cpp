@@ -123,7 +123,7 @@ int gmx_nmens(int argc, char* argv[])
                        { efTRO, "-o", "ensemble", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

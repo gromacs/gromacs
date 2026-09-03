@@ -162,7 +162,8 @@ static void comp_trx(const gmx_output_env_t* oenv, const char* fn1, const char* 
     fprintf(stderr, "Comparing trajectory files %s and %s\n", fn1, fn2);
     for (i = 0; i < 2; i++)
     {
-        b[i] = read_first_frame(oenv, &status[i], fn[i], &fr[i], TRX_READ_X | TRX_READ_V | TRX_READ_F);
+        b[i] = read_first_frame(
+                oenv, &status[i], fn[i], &fr[i], nullptr, TRX_READ_X | TRX_READ_V | TRX_READ_F);
     }
 
     if (b[0] && b[1])
@@ -357,7 +358,7 @@ static void chk_trj(const gmx_output_env_t* oenv, const char* fn, const char* tp
     last.bF      = 0;
     last.bBox    = 0;
 
-    read_first_frame(oenv, &status, fn, &fr, TRX_READ_X | TRX_READ_V | TRX_READ_F);
+    read_first_frame(oenv, &status, fn, &fr, nullptr, TRX_READ_X | TRX_READ_V | TRX_READ_F);
 
     do
     {
@@ -844,7 +845,8 @@ int gmx_check(int argc, char* argv[])
                                       "until the Pressure." }
     };
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

@@ -473,7 +473,8 @@ void LegacySimulator::do_rerun()
     rerun_fr.natoms = 0;
     if (isMainRank)
     {
-        isLastStep = !read_first_frame(oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, TRX_NEED_X);
+        isLastStep = !read_first_frame(
+                oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, nullptr, TRX_NEED_X);
         if (rerun_fr.natoms != topGlobal_.natoms)
         {
             gmx_fatal(FARGS,

@@ -48,6 +48,7 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/cmat.h"
@@ -288,7 +289,8 @@ static void calc_tetra_order_parm(const char*             fnNDX,
                                   int                     slice_dim,
                                   const char*             sgslfn,
                                   const char*             skslfn,
-                                  const gmx_output_env_t* oenv)
+                                  const gmx_output_env_t* oenv,
+                                  const gmx::TimeControl& timeControl)
 {
     FILE *       fpsg = nullptr, *fpsk = nullptr;
     t_topology   top;
@@ -322,7 +324,7 @@ static void calc_tetra_order_parm(const char*             fnNDX,
     get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
 
     /* Analyze trajectory */
-    natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
+    natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box, &timeControl);
     if (natoms > top.atoms.nr)
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)", top.atoms.nr, natoms);
@@ -419,7 +421,8 @@ static void calc_order(const char*                     fn,
                        gmx_bool                        distcalc,
                        const char*                     radfn,
                        real***                         distvals,
-                       const gmx_output_env_t*         oenv)
+                       const gmx_output_env_t*         oenv,
+                       const gmx::TimeControl&         timeControl)
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
@@ -454,7 +457,7 @@ static void calc_order(const char*                     fn,
     /* Initiate the pbc structure */
     std::memset(&pbc, 0, sizeof(pbc));
 
-    if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
+    if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box, &timeControl)) == 0)
     {
         gmx_fatal(FARGS, "Could not read coordinates from statusfile\n");
     }
@@ -875,7 +878,8 @@ static void write_bfactors(t_filenm*                       fnm,
                            real**                          order,
                            const t_topology*               top,
                            real**                          distvals,
-                           gmx_output_env_t*               oenv)
+                           gmx_output_env_t*               oenv,
+                           const gmx::TimeControl&         timeControl)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -888,7 +892,7 @@ static void write_bfactors(t_filenm*                       fnm,
     const int ngrps = gmx::ssize(indexGroups) - 2;
 
     nout = nslices * ngrps;
-    read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_NEED_X);
+    read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, &timeControl, TRX_NEED_X);
 
     close_trx(status);
     frout        = fr;
@@ -1028,9 +1032,21 @@ int gmx_order(int argc, char* argv[])
     real**            distvals = nullptr;
     const char *      sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           asize(bugs),
+                           bugs,
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -1085,7 +1101,8 @@ int gmx_order(int argc, char* argv[])
                               axis,
                               opt2fn("-Sgsl", NFILE, fnm),
                               opt2fn("-Sksl", NFILE, fnm),
-                              oenv);
+                              oenv,
+                              timeControl);
         /* view xvgr files */
         do_view(oenv, opt2fn("-Sg", NFILE, fnm), nullptr);
         do_view(oenv, opt2fn("-Sk", NFILE, fnm), nullptr);
@@ -1153,7 +1170,8 @@ int gmx_order(int argc, char* argv[])
                    distcalc,
                    opt2fn_null("-nr", NFILE, fnm),
                    &distvals,
-                   oenv);
+                   oenv,
+                   timeControl);
 
         if (radial)
         {
@@ -1182,7 +1200,7 @@ int gmx_order(int argc, char* argv[])
             }
             else
             {
-                write_bfactors(fnm, NFILE, indexGroups, nslices, slOrder, top, distvals, oenv);
+                write_bfactors(fnm, NFILE, indexGroups, nslices, slOrder, top, distvals, oenv, timeControl);
             }
         }
 

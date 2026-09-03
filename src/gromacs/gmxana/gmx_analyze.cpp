@@ -1178,7 +1178,7 @@ int gmx_analyze(int argc, char* argv[])
     ppa    = add_acf_pargs(&npargs, pa);
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         sfree(ppa);
         return 0;

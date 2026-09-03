@@ -47,6 +47,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/binsearch.h"
@@ -273,18 +274,19 @@ static void find_tetra_order_grid(t_topology top,
 /*Determines interface from tetrahedral order parameter in box with specified binwidth.  */
 /*Outputs interface positions(bins), the number of timeframes, and the number of surface-mesh points in xy*/
 
-static void calc_tetra_order_interface(const char*       fnNDX,
-                                       const char*       fnTPS,
-                                       const char*       fnTRX,
-                                       real              binw,
-                                       int               tblock,
-                                       int*              nframes,
-                                       int*              nslicex,
-                                       int*              nslicey,
-                                       real              sgang1,
-                                       real              sgang2,
-                                       real****          intfpos,
-                                       gmx_output_env_t* oenv)
+static void calc_tetra_order_interface(const char*             fnNDX,
+                                       const char*             fnTPS,
+                                       const char*             fnTRX,
+                                       real                    binw,
+                                       int                     tblock,
+                                       int*                    nframes,
+                                       int*                    nslicex,
+                                       int*                    nslicey,
+                                       real                    sgang1,
+                                       real                    sgang2,
+                                       real****                intfpos,
+                                       gmx_output_env_t*       oenv,
+                                       const gmx::TimeControl& timeControl)
 {
     FILE *       fpsg = nullptr, *fpsk = nullptr;
     t_topology   top;
@@ -325,7 +327,7 @@ static void calc_tetra_order_interface(const char*       fnNDX,
     get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
 
     /* Analyze trajectory */
-    natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
+    natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box, &timeControl);
     if (natoms > top.atoms.nr)
     {
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)", top.atoms.nr, natoms);
@@ -654,9 +656,10 @@ int gmx_hydorder(int argc, char* argv[])
     /*Filenames*/
     const char *      ndxfnm, *tpsfnm, *trxfnm;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -707,7 +710,7 @@ int gmx_hydorder(int argc, char* argv[])
         gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", intfn.ssize());
     }
     calc_tetra_order_interface(
-            ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices, &yslices, sg1, sg2, &intfpos, oenv);
+            ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices, &yslices, sg1, sg2, &intfpos, oenv, timeControl);
     writesurftoxpms(intfpos, frames, xslices, yslices, binwidth, intfn, nlevels);
 
     if (bFourier)

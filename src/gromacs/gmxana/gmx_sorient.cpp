@@ -46,6 +46,7 @@
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -183,6 +184,7 @@ int gmx_sorient(int argc, char* argv[])
     };
 
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     static gmx_bool   bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
     static real       rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
     t_pargs           pa[] = {
@@ -207,7 +209,7 @@ int gmx_sorient(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -249,7 +251,7 @@ int gmx_sorient(int argc, char* argv[])
     }
 
     /* initialize reading trajectory:                         */
-    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     rmin2 = gmx::square(rmin);
     rmax2 = gmx::square(rmax);

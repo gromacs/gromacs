@@ -3168,7 +3168,7 @@ int gmx_wham(int argc, char* argv[])
     opt.stepUpdateContrib     = 100;
 
     if (!parse_common_args(
-                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &opt.oenv))
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &opt.oenv, nullptr))
     {
         return 0;
     }

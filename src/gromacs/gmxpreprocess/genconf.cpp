@@ -168,7 +168,7 @@ int gmx_genconf(int argc, char* argv[])
     };
 
     if (!parse_common_args(
-                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv, nullptr))
     {
         return 0;
     }
@@ -210,7 +210,7 @@ int gmx_genconf(int argc, char* argv[])
 
     if (bTRX)
     {
-        if (!read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &frame, TRX_NEED_X))
+        if (!read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &frame, nullptr, TRX_NEED_X))
         {
             gmx_fatal(FARGS, "Could not read trajectory %s", ftp2fn(efTRX, NFILE, fnm));
         }

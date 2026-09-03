@@ -48,6 +48,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -237,10 +238,11 @@ int gmx_mdmat(int argc, char* argv[])
     int*              tot_n;
     matrix            box = { { 0 } };
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     gmx_rmpbc_t       gpbc = nullptr;
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -316,7 +318,7 @@ int gmx_mdmat(int argc, char* argv[])
         snew(totmdmat[i], nres);
     }
 
-    trxnat = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    trxnat = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
 
     nframes = 0;
 

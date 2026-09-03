@@ -914,11 +914,11 @@ void cont_status(const char*                                 slog,
                             "Velocities generated: "
                             "ignoring velocities in input trajectory");
         }
-        read_first_frame(oenv, &fp, slog, &fr, TRX_NEED_X);
+        read_first_frame(oenv, &fp, slog, &fr, nullptr, TRX_NEED_X);
     }
     else
     {
-        read_first_frame(oenv, &fp, slog, &fr, TRX_NEED_X | TRX_NEED_V);
+        read_first_frame(oenv, &fp, slog, &fr, nullptr, TRX_NEED_X | TRX_NEED_V);
 
         if (!fr.bV)
         {
@@ -935,7 +935,7 @@ void cont_status(const char*                                 slog,
             close_trx(fp);
             /* Search for a frame without velocities */
             bReadVel = false;
-            read_first_frame(oenv, &fp, slog, &fr, TRX_NEED_X);
+            read_first_frame(oenv, &fp, slog, &fr, nullptr, TRX_NEED_X);
         }
     }
 
@@ -2219,7 +2219,8 @@ int gmx_grompp(int argc, char* argv[])
     };
 
     /* Parse the command line */
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, nullptr))
     {
         return 0;
     }

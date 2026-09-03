@@ -51,6 +51,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xdr_datatype.h"
@@ -432,6 +433,7 @@ int gmx_nmr(int argc, char* argv[])
     std::vector<std::string> pairleg, odtleg, otenleg, leg;
     const char*              orinst_sub = "@ subtitle \"instantaneous\"\n";
     gmx_output_env_t*        oenv;
+    gmx::TimeControl         timeControl;
     t_enxblock*              blk_disre = nullptr;
     int                      ndisre    = 0;
 
@@ -451,8 +453,19 @@ int gmx_nmr(int argc, char* argv[])
     int npargs;
 
     npargs = asize(pa);
-    if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
+                           NFILE,
+                           fnm,
+                           npargs,
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -644,7 +657,7 @@ int gmx_nmr(int argc, char* argv[])
             bCont = do_enx(fp, &fr);
             if (bCont)
             {
-                timecheck = check_times(fr.t);
+                timecheck = check_times(fr.t, timeControl);
             }
         } while (bCont && (timecheck < 0));
 

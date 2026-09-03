@@ -48,6 +48,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -749,6 +750,7 @@ int gmx_rmsdist(int argc, char* argv[])
     static gmx_bool   bSumH    = TRUE;
     static gmx_bool   bPBC     = TRUE;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
 
     t_pargs pa[] = {
         { "-nlevels", FALSE, etINT, { &nlevels }, "Discretize RMS in this number of levels" },
@@ -771,7 +773,7 @@ int gmx_rmsdist(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv, &timeControl))
     {
         return 0;
     }
@@ -851,7 +853,7 @@ int gmx_rmsdist(int argc, char* argv[])
     }
 
     /*do a first step*/
-    read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
+    read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box, &timeControl);
     teller = 0;
 
     do

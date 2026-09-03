@@ -50,6 +50,7 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/rgb.h"
+#include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/cmat.h"
@@ -242,6 +243,7 @@ int gmx_rms(int argc, char* argv[])
     char *   gn_fit, **gn_rms;
     t_rgb    rlo, rhi;
     gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
     gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm fnm[] = {
@@ -265,7 +267,8 @@ int gmx_rms(int argc, char* argv[])
                            desc,
                            0,
                            nullptr,
-                           &oenv))
+                           &oenv,
+                           &timeControl))
     {
         return 0;
     }
@@ -482,7 +485,7 @@ int gmx_rms(int argc, char* argv[])
     }
 
     /* read first frame */
-    natoms_trx = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
+    natoms_trx = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box, &timeControl);
     if (natoms_trx != top.atoms.nr)
     {
         fprintf(stderr, "\nWARNING: topology has %d atoms, whereas trajectory has %d\n", top.atoms.nr, natoms_trx);
@@ -717,7 +720,7 @@ int gmx_rms(int argc, char* argv[])
 
         fprintf(stderr, "\nWill read second trajectory file\n");
         snew(mat_x2, NFRAME);
-        natoms_trx2 = read_first_x(oenv, &status, opt2fn("-f2", NFILE, fnm), &t, &x, box);
+        natoms_trx2 = read_first_x(oenv, &status, opt2fn("-f2", NFILE, fnm), &t, &x, box, &timeControl);
         if (natoms_trx2 != natoms_trx)
         {
             gmx_fatal(FARGS,
