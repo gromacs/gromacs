@@ -41,6 +41,8 @@
 
 #include "h5md_datasetbase.h"
 
+#include <algorithm>
+
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
@@ -157,6 +159,151 @@ static bool checkBufferSize(const ArrayRef<const ValueType> values,
     return numValues == numPointsIn(memoryDataSpace) && numValues == numPointsIn(fileDataSpace);
 }
 
+template<typename ValueType>
+static bool reclaimMemory(const ArrayRef<ValueType> values,
+                          const hid_t               memoryDataType,
+                          const hid_t               dataSpace,
+                          const hid_t               dataSet)
+{
+    // Only try to reclaim memory if any was allocated, otherwise
+    // H5Dvlen_reclaim always returns an error
+    if (values.empty())
+    {
+        return true;
+    }
+
+    if (handleIsValid(dataSpace))
+    {
+        return H5Dvlen_reclaim(memoryDataType, dataSpace, H5P_DEFAULT, values.data()) >= 0;
+    }
+    else if (dataSpace == H5S_ALL)
+    {
+        // If the data space is H5S_ALL we free the whole set
+        const auto [fullDataSpace, fullDataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+        return H5Dvlen_reclaim(memoryDataType, fullDataSpace, H5P_DEFAULT, values.data()) >= 0;
+    }
+    else
+    {
+        GMX_THROW(H5mdError("Invalid data space handle: cannot reclaim memory"));
+    }
+}
+
+static bool readFixedLengthStringsFromDataSet(const hid_t           dataSet,
+                                              const hid_t           nativeDataType,
+                                              const hid_t           memoryDataSpace,
+                                              const hid_t           fileDataSpace,
+                                              ArrayRef<std::string> stringValues)
+{
+    // Get the maximum string size (including the terminating '\0')
+    const size_t      maxStringLength = H5Tget_size(nativeDataType);
+    std::vector<char> readBuffer(stringValues.size() * maxStringLength);
+
+    const bool readWasSuccessful =
+            H5Dread(dataSet, nativeDataType, memoryDataSpace, fileDataSpace, H5P_DEFAULT, readBuffer.data())
+            >= 0;
+
+    if (readWasSuccessful)
+    {
+        int i = 0;
+        // HDF5 packs the data for fixed-length strings evenly, so iterate
+        // over all strings using maxStringLength as the window.
+        for (auto startOfString = readBuffer.cbegin(); startOfString < readBuffer.cend();
+             startOfString += maxStringLength)
+        {
+            const auto endOfString = std::find(startOfString, startOfString + maxStringLength, '\0');
+            stringValues[i].assign(startOfString, endOfString);
+            ++i;
+        }
+    }
+
+    return readWasSuccessful;
+}
+
+static bool readVariableLengthStringsFromDataSet(const hid_t           dataSet,
+                                                 const hid_t           nativeDataType,
+                                                 const hid_t           memoryDataSpace,
+                                                 const hid_t           fileDataSpace,
+                                                 ArrayRef<std::string> stringValues)
+{
+    // For variable-length strings the HDF5 read operation expects a pointer-to-char-pointers,
+    // each of which it will allocate memory for and then read the string data into.
+    // We use a scope guard to reclaim any memory that has been allocated after processing.
+    std::vector<char*> readBufferPointers(stringValues.size(), nullptr);
+    const auto         readBufferPointersGuard = sg::make_scope_guard(
+            [&]()
+            {
+                GMX_H5MD_THROW_UPON_ERROR(
+                        !reclaimMemory(makeArrayRef(readBufferPointers), nativeDataType, memoryDataSpace, dataSet),
+                        "Cannot reclaim memory after reading variable-size strings");
+            });
+
+    const bool readWasSuccessful = H5Dread(dataSet,
+                                           nativeDataType,
+                                           memoryDataSpace,
+                                           fileDataSpace,
+                                           H5P_DEFAULT,
+                                           readBufferPointers.data())
+                                   >= 0;
+    if (readWasSuccessful)
+    {
+        for (int i = 0; i < gmx::ssize(stringValues); ++i)
+        {
+            stringValues[i].assign(readBufferPointers[i]);
+        }
+    }
+    return readWasSuccessful;
+}
+
+static bool writeFixedLengthStringsToDataSet(const hid_t                 dataSet,
+                                             const hid_t                 nativeDataType,
+                                             const hid_t                 memoryDataSpace,
+                                             const hid_t                 fileDataSpace,
+                                             ArrayRef<const std::string> stringsToWrite)
+{
+    // Get the maximum string size (including the terminating '\0')
+    const size_t maxStringLength = H5Tget_size(nativeDataType);
+
+    std::vector<char> writeBuffer(stringsToWrite.size() * maxStringLength);
+    for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
+    {
+        // maxStringLength includes room for the terminating '\0' character, so
+        // strncpy will always have room for all normal characters and
+        // perhaps also write some null characters, relying on the
+        // default initialization of the vector above to provide the
+        // null for strings with maxStringLength-1 normal characters.
+        std::strncpy(writeBuffer.data() + (i * maxStringLength),
+                     stringsToWrite[i].c_str(),
+                     maxStringLength - 1);
+        GMX_ASSERT(writeBuffer[((i + 1) * maxStringLength) - 1] == '\0',
+                   "String must be null terminated");
+    }
+
+    return H5Dwrite(
+                   dataSet, nativeDataType, memoryDataSpace, fileDataSpace, H5P_DEFAULT, writeBuffer.data())
+           >= 0;
+}
+
+static bool writeVariableLengthStringsToDataSet(const hid_t                 dataSet,
+                                                const hid_t                 nativeDataType,
+                                                const hid_t                 memoryDataSpace,
+                                                const hid_t                 fileDataSpace,
+                                                ArrayRef<const std::string> stringsToWrite)
+{
+    std::vector<const char*> writeBufferPointers(stringsToWrite.size(), nullptr);
+    for (hsize_t i = 0; i < stringsToWrite.size(); ++i)
+    {
+        writeBufferPointers[i] = stringsToWrite[i].c_str();
+    }
+
+    return H5Dwrite(dataSet,
+                    nativeDataType,
+                    memoryDataSpace,
+                    fileDataSpace,
+                    H5P_DEFAULT,
+                    writeBufferPointers.data())
+           >= 0;
+}
+
 } // namespace
 
 template<typename ValueType>
@@ -217,18 +364,25 @@ bool H5mdDataSetBase<ValueType>::read(const ArrayRef<ValueType> values,
                                       const hid_t               memoryDataSpace,
                                       const hid_t               fileDataSpace) const
 {
+    GMX_ASSERT(checkBufferSize(makeConstArrayRef(values), memoryDataSpace, fileDataSpace, dataSet_),
+               "Number of points in container of values to read into must "
+               "be equal to used hyperslab selection in memory and file");
+
     if constexpr (std::is_same_v<ValueType, std::string>)
     {
-        // TODO: Fixed- and variable-string i/o is currently implemented
-        // specifically for H5mdFixedDataSet. This should be unified within
-        // this class once more testing is in place.
-        GMX_THROW(NotImplementedError("std::string I/O not implemented for H5mdDataSetBase"));
+        if (H5Tis_variable_str(this->nativeDataType()) > 0)
+        {
+            return readVariableLengthStringsFromDataSet(
+                    this->id(), this->nativeDataType(), memoryDataSpace, fileDataSpace, values);
+        }
+        else
+        {
+            return readFixedLengthStringsFromDataSet(
+                    this->id(), this->nativeDataType(), memoryDataSpace, fileDataSpace, values);
+        }
     }
     else
     {
-        GMX_ASSERT(checkBufferSize(makeConstArrayRef(values), memoryDataSpace, fileDataSpace, dataSet_),
-                   "Number of points in container of values to read into must "
-                   "be equal to used hyperslab selection in memory and file");
         return H5Dread(dataSet_, nativeDataType_, memoryDataSpace, fileDataSpace, H5P_DEFAULT, values.data())
                >= 0;
     }
@@ -239,18 +393,25 @@ bool H5mdDataSetBase<ValueType>::write(const ArrayRef<const ValueType> values,
                                        const hid_t                     memoryDataSpace,
                                        const hid_t                     fileDataSpace) const
 {
+    GMX_ASSERT(checkBufferSize(values, memoryDataSpace, fileDataSpace, dataSet_),
+               "Number of points in container of values to read into must "
+               "be equal to used hyperslab selection in memory and file");
+
     if constexpr (std::is_same_v<ValueType, std::string>)
     {
-        // TODO: Fixed- and variable-string i/o is currently implemented
-        // specifically for H5mdFixedDataSet. This should be unified within
-        // this class once more testing is in place.
-        GMX_THROW(NotImplementedError("std::string I/O not implemented for H5mdDataSetBase"));
+        if (H5Tis_variable_str(this->nativeDataType()) > 0)
+        {
+            return writeVariableLengthStringsToDataSet(
+                    this->id(), this->nativeDataType(), memoryDataSpace, fileDataSpace, values);
+        }
+        else
+        {
+            return writeFixedLengthStringsToDataSet(
+                    this->id(), this->nativeDataType(), memoryDataSpace, fileDataSpace, values);
+        }
     }
     else
     {
-        GMX_ASSERT(checkBufferSize(values, memoryDataSpace, fileDataSpace, dataSet_),
-                   "Number of points in container of values to read into must "
-                   "be equal to used hyperslab selection in memory and file");
         return H5Dwrite(dataSet_, nativeDataType_, memoryDataSpace, fileDataSpace, H5P_DEFAULT, values.data())
                >= 0;
     }

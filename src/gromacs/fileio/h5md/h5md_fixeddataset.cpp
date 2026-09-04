@@ -42,7 +42,6 @@
 #include "h5md_fixeddataset.h"
 
 #include "gromacs/fileio/h5md/exceptions.h"
-#include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
@@ -103,79 +102,6 @@ static hsize_t numValuesInDataSet(const DataSetDims& dims)
     return numValues;
 }
 
-static void readVariableSizeStringsFromDataSet(const hid_t           dataSet,
-                                               const hid_t           nativeDataType,
-                                               ArrayRef<std::string> stringValues)
-{
-    // For variable-length strings the HDF5 read operation expects a pointer-to-char-pointers,
-    // each of which it will allocate memory for and then read the string data into.
-    // We use a scope guard to reclaim any memory that has been allocated after processing.
-    std::vector<char*> readBufferPointers(stringValues.size(), nullptr);
-    const auto         readBufferPointersGuard = sg::make_scope_guard(
-            [&]()
-            {
-                // Only try to reclaim memory if any was allocated, otherwise
-                // H5Dvlen_reclaim always returns an error
-                if (!readBufferPointers.empty())
-                {
-                    const auto [dataSpace, dataSpaceGuard] =
-                            makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-                    GMX_H5MD_THROW_UPON_ERROR(
-                            H5Dvlen_reclaim(
-                                    nativeDataType, dataSpace, H5P_DEFAULT, readBufferPointers.data())
-                                    < 0,
-                            "Cannot reclaim memory after reading variable-size strings");
-                }
-            });
-
-    GMX_H5MD_THROW_UPON_ERROR(
-            H5Dread(dataSet, nativeDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, readBufferPointers.data()) < 0,
-            "Error writing data.");
-    for (int i = 0; i < gmx::ssize(stringValues); ++i)
-    {
-        stringValues[i].assign(readBufferPointers[i]);
-    }
-}
-
-static void writeFixedSizeStringsToDataSet(const hid_t                 dataSet,
-                                           const hid_t                 nativeDataType,
-                                           ArrayRef<const std::string> stringsToWrite)
-{
-    // Get the maximum string size (including the terminating '\0')
-    const size_t      maxStringSize = H5Tget_size(nativeDataType);
-    std::vector<char> writeBuffer(stringsToWrite.size() * maxStringSize);
-    for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
-    {
-        // maxStringSize includes room for the terminating '\0' character, so
-        // strncpy will always have room for all normal characters and
-        // perhaps also write some null characters, relying on the
-        // default initialization of the vector above to provide the
-        // null for strings with maxStringSize-1 normal characters.
-        std::strncpy(writeBuffer.data() + (i * maxStringSize), stringsToWrite[i].c_str(), maxStringSize - 1);
-        GMX_ASSERT(writeBuffer[((i + 1) * maxStringSize) - 1] == '\0',
-                   "String must be null terminated");
-    }
-
-    GMX_H5MD_THROW_UPON_ERROR(
-            H5Dwrite(dataSet, nativeDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer.data()) < 0,
-            "Error writing data.");
-}
-
-static void writeVariableSizeStringsToDataSet(const hid_t                 dataSet,
-                                              const hid_t                 nativeDataType,
-                                              ArrayRef<const std::string> stringsToWrite)
-{
-    std::vector<const char*> writeBufferPointers(stringsToWrite.size(), nullptr);
-    for (hsize_t i = 0; i < stringsToWrite.size(); ++i)
-    {
-        writeBufferPointers[i] = stringsToWrite[i].c_str();
-    }
-
-    GMX_H5MD_THROW_UPON_ERROR(
-            H5Dwrite(dataSet, nativeDataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBufferPointers.data()) < 0,
-            "Error writing data.");
-}
-
 template<typename ValueType>
 H5mdFixedDataSet<ValueType>::H5mdFixedDataSet(H5mdDataSetBase<ValueType>&& dataSet) :
     Base{ std::move(dataSet) },
@@ -214,21 +140,7 @@ void H5mdFixedDataSet<ValueType>::readData(ArrayRef<ValueType> data) const
                          static_cast<unsigned long long>(numValues_),
                          data.size()));
 
-    if constexpr (std::is_same_v<ValueType, std::string>)
-    {
-        if (H5Tis_variable_str(this->nativeDataType()) > 0)
-        {
-            readVariableSizeStringsFromDataSet(this->id(), this->nativeDataType(), data);
-        }
-        else
-        {
-            throw NotImplementedError("Reading fixed-size string data is not implemented");
-        }
-    }
-    else
-    {
-        GMX_H5MD_THROW_UPON_ERROR(!Base::read(data, H5S_ALL, H5S_ALL), "Error reading data.");
-    }
+    GMX_H5MD_THROW_UPON_ERROR(!Base::read(data, H5S_ALL, H5S_ALL), "Error reading data.");
 }
 
 template<typename ValueType>
@@ -241,21 +153,7 @@ void H5mdFixedDataSet<ValueType>::writeData(ArrayRef<const ValueType> data) cons
                          static_cast<unsigned long long>(numValues_),
                          data.size()));
 
-    if constexpr (std::is_same_v<ValueType, std::string>)
-    {
-        if (H5Tis_variable_str(this->nativeDataType()) > 0)
-        {
-            writeVariableSizeStringsToDataSet(this->id(), this->nativeDataType(), data);
-        }
-        else
-        {
-            writeFixedSizeStringsToDataSet(this->id(), this->nativeDataType(), data);
-        }
-    }
-    else
-    {
-        GMX_H5MD_THROW_UPON_ERROR(!Base::write(data, H5S_ALL, H5S_ALL), "Error writing data.");
-    }
+    GMX_H5MD_THROW_UPON_ERROR(!Base::write(data, H5S_ALL, H5S_ALL), "Error writing data.");
 }
 
 template class H5mdFixedDataSet<int32_t>;

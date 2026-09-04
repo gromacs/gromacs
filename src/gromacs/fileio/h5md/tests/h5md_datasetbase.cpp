@@ -349,6 +349,198 @@ INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderValidDims,
                          ::testing::ValuesIn(g_dataSetDimsToTest),
                          nameOfTest);
 
+/******************************************************************************
+ * TEST SUITE FOR READING AND WRITING STRINGS                                 *
+ *                                                                            *
+ * This suite is parametrized to run over both variable and fixed-size string *
+ * data sets, ensuring that both kinds pass string-specific tests.            *
+ ******************************************************************************/
+
+// Maximum length for variable-size strings in these tests
+static constexpr size_t sc_maxVariableStringLength = 4096;
+
+//! \brief Type of string data set with fixed max string size, or nullopt for variable-string data sets.
+struct StringDataSetType
+{
+    //!< Fixed-size of string (includes terminating '\0')
+    std::optional<size_t> maxStringLength;
+};
+
+//! \brief Test fixture for an open H5md file with string data sets
+class H5mdDataSetBaseStringTest : public H5mdTestBase, public ::testing::WithParamInterface<StringDataSetType>
+{
+public:
+    //! \brief Create and return a data set for the current string test parameter.
+    H5mdDataSetBase<std::string> createDataSet(const DataSetDims& dims)
+    {
+        H5mdDataSetBuilder<std::string> builder = H5mdDataSetBuilder<std::string>(this->fileid(), name_);
+        builder.withDimension(dims);
+
+        isFixedStringDataSet_ = GetParam().maxStringLength.has_value();
+        if (isFixedStringDataSet_)
+        {
+            const size_t maxStringLength = GetParam().maxStringLength.value();
+            builder.withMaxStringLength(maxStringLength);
+        }
+
+        return builder.build();
+    }
+
+    bool isFixedStringDataSet_;
+
+    const char* name_ = "testDataSet";
+};
+
+//! \brief Helper function for GTest to print size parameter.
+void PrintTo(const StringDataSetType& param, std::ostream* os)
+{
+    if (param.maxStringLength.has_value())
+    {
+        *os << "FixedLength(" << param.maxStringLength.value() << ")";
+    }
+    else
+    {
+        *os << "VariableLength";
+    }
+}
+
+//! \brief Helper function for GTest to construct test names.
+static std::string nameOfStringTest(const ::testing::TestParamInfo<StringDataSetType>& info)
+{
+    if (info.param.maxStringLength.has_value())
+    {
+        return formatString("FixedLengthString%lu", info.param.maxStringLength.value());
+    }
+    else
+    {
+        return "VariableLengthString";
+    }
+}
+
+TEST_P(H5mdDataSetBaseStringTest, FullDataSetIo)
+{
+    // Maximum string size (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
+
+    constexpr int                nx = 3, ny = 2, nz = 4;
+    const DataSetDims            dims    = { nx, ny, nz };
+    H5mdDataSetBase<std::string> dataSet = createDataSet(dims);
+
+    std::vector<std::string> stringsToWrite;
+    stringsToWrite.reserve(nx * ny * nz);
+    for (int i = 0; i < nx; ++i)
+    {
+        for (int j = 0; j < ny; ++j)
+        {
+            for (int k = 0; k < nz; ++k)
+            {
+                stringsToWrite.push_back(formatString("%d.%d.%d", i, j, k));
+            }
+        }
+    }
+
+    ASSERT_TRUE(dataSet.write(stringsToWrite, H5S_ALL, H5S_ALL)) << "Could not write string data";
+
+    std::vector<std::string> readBuffer(stringsToWrite.size());
+    ASSERT_TRUE(dataSet.read(readBuffer, H5S_ALL, H5S_ALL)) << "Could not read string data";
+
+    for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
+    {
+        // Compare testMaxStringLength - 1 characters to account for the terminating '\0'
+        ASSERT_EQ(readBuffer[i], stringsToWrite[i].substr(0, testMaxStringLength - 1));
+    }
+}
+
+TEST_P(H5mdDataSetBaseStringTest, RandomAccessRead)
+{
+    // Maximum string size (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
+
+    constexpr int                nx = 3, ny = 2, nz = 4;
+    const DataSetDims            dims    = { nx, ny, nz };
+    H5mdDataSetBase<std::string> dataSet = createDataSet(dims);
+
+    // Write easily identifiable strings to each point in the data set
+    std::vector<std::string> stringsToWrite;
+    stringsToWrite.reserve(nx * ny * nz);
+    for (int i = 0; i < nx; ++i)
+    {
+        for (int j = 0; j < ny; ++j)
+        {
+            for (int k = 0; k < nz; ++k)
+            {
+                stringsToWrite.push_back(formatString("%d.%d.%d", i, j, k));
+            }
+        }
+    }
+    dataSet.write(stringsToWrite, H5S_ALL, H5S_ALL);
+
+    // Define a set of points to read
+    constexpr hsize_t                             numPoints = 4;
+    std::array<std::array<hsize_t, 3>, numPoints> coords    = {
+        { { 0, 0, 0 }, { 2, 1, 3 }, { 1, 1, 1 }, { 1, 1, 2 } }
+    };
+    const auto [memoryDataSpace, memoryDataSpaceGuard] =
+            makeH5mdDataSpaceGuard(H5Screate_simple(1, &numPoints, nullptr));
+    // Define in-file selection for points
+    const auto [fileDataSpace, fileDataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
+    H5Sselect_elements(
+            fileDataSpace, H5S_SELECT_SET, numPoints, reinterpret_cast<const hsize_t*>(coords.data()));
+
+    std::vector<std::string> readBuffer(numPoints);
+    ASSERT_TRUE(dataSet.read(readBuffer, memoryDataSpace, fileDataSpace))
+            << "Could not read string data from points";
+    // Compare testMaxStringLength - 1 characters to account for the terminating '\0'
+    EXPECT_EQ(readBuffer[0], stringsToWrite[0].substr(0, testMaxStringLength - 1));
+    EXPECT_EQ(readBuffer[1], stringsToWrite[23].substr(0, testMaxStringLength - 1));
+    EXPECT_EQ(readBuffer[2], stringsToWrite[13].substr(0, testMaxStringLength - 1));
+    EXPECT_EQ(readBuffer[3], stringsToWrite[14].substr(0, testMaxStringLength - 1));
+}
+
+TEST_P(H5mdDataSetBaseStringTest, RandomAccessWrite)
+{
+    // Maximum string size (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
+
+    const DataSetDims            dims    = { 5, 4 };
+    H5mdDataSetBase<std::string> dataSet = createDataSet(dims);
+
+    constexpr hsize_t                             numPoints = 4;
+    std::array<std::array<hsize_t, 2>, numPoints> coords    = {
+        { { 0, 0 }, { 4, 3 }, { 2, 1 }, { 2, 2 } },
+    };
+    std::array<std::string, numPoints> stringsToWrite = { "0.0", "4.3", "2.1", "2.2" };
+    const auto [memoryDataSpace, memoryDataSpaceGuard] =
+            makeH5mdDataSpaceGuard(H5Screate_simple(1, &numPoints, nullptr));
+
+    // Define in-file selection for points
+    const auto [fileDataSpace, fileDataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
+    H5Sselect_elements(
+            fileDataSpace, H5S_SELECT_SET, numPoints, reinterpret_cast<const hsize_t*>(coords.data()));
+
+    ASSERT_TRUE(dataSet.write(stringsToWrite, memoryDataSpace, fileDataSpace))
+            << "Could not write string data to points";
+    std::vector<std::string> readBuffer(numPoints);
+    dataSet.read(readBuffer, memoryDataSpace, fileDataSpace);
+    // Compare testMaxStringLength - 1 characters to account for the terminating '\0'
+    EXPECT_EQ(readBuffer[0], stringsToWrite[0].substr(0, testMaxStringLength - 1));
+    EXPECT_EQ(readBuffer[1], stringsToWrite[1].substr(0, testMaxStringLength - 1));
+    EXPECT_EQ(readBuffer[2], stringsToWrite[2].substr(0, testMaxStringLength - 1));
+    EXPECT_EQ(readBuffer[3], stringsToWrite[3].substr(0, testMaxStringLength - 1));
+}
+
+const StringDataSetType g_stringDataSetTypes[] = {
+    { std::nullopt }, // variable-size string
+    // { 0 }, HDF5 cannot have fixed-size 0 strings!
+    { 1 }, // fixed-size 1 string (empty, since we need space for '\0')
+    { 2 }, // fixed-size 2 string (single character)
+    { 16 } // fixed-size 16 string
+};
+INSTANTIATE_TEST_SUITE_P(H5mdDataSetBaseTest,
+                         H5mdDataSetBaseStringTest,
+                         ::testing::ValuesIn(g_stringDataSetTypes),
+                         nameOfStringTest);
+
 } // namespace
 } // namespace test
 } // namespace gmx

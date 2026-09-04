@@ -52,6 +52,7 @@
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -63,47 +64,6 @@ namespace test
 {
 namespace
 {
-
-//! \brief Helper function to read fixed-size strings from a data set.
-//
-// Added for testing. Remove once read methods are properly implemented
-// in \c H5mdFixedDataSet.
-std::vector<std::string> readFixedSizeStringData(const hid_t container, const char* name)
-{
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(H5Dopen(container, name, H5P_DEFAULT));
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-
-    // Get the maximum string size (including the terminating '\0')
-    const size_t maxStringSize = H5Tget_size(dataType);
-
-    // Get the total number of values in data set
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    const int            numDims           = H5Sget_simple_extent_ndims(dataSpace);
-    std::vector<hsize_t> dims(numDims, 0);
-    H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr);
-    int numValues = 1;
-    for (const hsize_t d : dims)
-    {
-        numValues *= d;
-    }
-
-    std::vector<char> readBuffer(numValues * maxStringSize);
-
-    GMX_H5MD_THROW_UPON_ERROR(
-            H5Dread(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, readBuffer.data()) < 0,
-            "Error writing data.");
-
-    std::vector<std::string> stringValues;
-    stringValues.reserve(numValues);
-    auto startOfNextString = readBuffer.cbegin();
-    for (int i = 0; i < numValues; ++i)
-    {
-        stringValues.emplace_back(startOfNextString,
-                                  std::find(startOfNextString, startOfNextString + maxStringSize, '\0'));
-        startOfNextString += maxStringSize;
-    }
-    return stringValues;
-}
 
 //! \brief Helper struct to parametrize tests for combinations of dimensions, max dimensions and chunk dimensions.
 struct TestDimensions
@@ -249,9 +209,8 @@ TEST_P(WithDims, WriteDataWorksForFixedSizeStrings)
 
     dataSet.writeData(stringsToWrite);
 
-    // TODO: Once fixed-size string reading is implemented this test should
-    // be updated to use it.
-    const std::vector<std::string> readStrings = readFixedSizeStringData(fileid(), "testDataSet");
+    std::vector<std::string> readStrings(stringsToWrite.size());
+    dataSet.readData(readStrings);
     for (hsize_t i = 0; i < dataSet.numValues(); ++i)
     {
         EXPECT_EQ(readStrings[i], stringsToWrite[i]);
@@ -440,18 +399,8 @@ TEST_P(StringTypes, Size1StringsWork)
     std::vector<std::string> stringsToWrite(dataSet.numValues(), "A");
     dataSet.writeData(stringsToWrite);
 
-    std::vector<std::string> readBuffer;
-    if (isFixedStringDataSet_)
-    {
-        // TODO: Once fixed-size string reading is implemented this test should
-        // be updated to use it.
-        readBuffer = readFixedSizeStringData(fileid(), name_);
-    }
-    else
-    {
-        readBuffer.resize(dataSet.numValues());
-        dataSet.readData(readBuffer);
-    }
+    std::vector<std::string> readBuffer(dataSet.numValues());
+    dataSet.readData(readBuffer);
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
@@ -470,18 +419,8 @@ TEST_P(StringTypes, EmptyStringsWork)
     std::vector<std::string> stringsToWrite(dataSet.numValues(), "");
     dataSet.writeData(stringsToWrite);
 
-    std::vector<std::string> readBuffer;
-    if (isFixedStringDataSet_)
-    {
-        // TODO: Once fixed-size string reading is implemented this test should
-        // be updated to use it.
-        readBuffer = readFixedSizeStringData(fileid(), name_);
-    }
-    else
-    {
-        readBuffer.resize(dataSet.numValues());
-        dataSet.readData(readBuffer);
-    }
+    std::vector<std::string> readBuffer(dataSet.numValues());
+    dataSet.readData(readBuffer);
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
@@ -524,18 +463,8 @@ TEST_P(StringTypes, ExactFixedSizeLengthWorks)
     }
     dataSet.writeData(stringsToWrite);
 
-    std::vector<std::string> readBuffer;
-    if (isFixedStringDataSet_)
-    {
-        // TODO: Once fixed-size string reading is implemented this test should
-        // be updated to use it.
-        readBuffer = readFixedSizeStringData(fileid(), name_);
-    }
-    else
-    {
-        readBuffer.resize(dataSet.numValues());
-        dataSet.readData(readBuffer);
-    }
+    std::vector<std::string> readBuffer(dataSet.numValues());
+    dataSet.readData(readBuffer);
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
@@ -555,18 +484,8 @@ TEST_P(StringTypes, LongStringsAreTrimmedToMaxSize)
             dataSet.numValues(), "A long string which should be trimmed when written as fixed-size");
     dataSet.writeData(stringsToWrite);
 
-    std::vector<std::string> readBuffer;
-    if (isFixedStringDataSet_)
-    {
-        // TODO: Once fixed-size string reading is implemented this test should
-        // be updated to use it.
-        readBuffer = readFixedSizeStringData(fileid(), name_);
-    }
-    else
-    {
-        readBuffer.resize(dataSet.numValues());
-        dataSet.readData(readBuffer);
-    }
+    std::vector<std::string> readBuffer(dataSet.numValues());
+    dataSet.readData(readBuffer);
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
@@ -590,18 +509,8 @@ TEST_P(StringTypes, WritingOverwritesOldData)
     std::vector<std::string> finalStrings(dataSet.numValues(), "A");
     dataSet.writeData(finalStrings);
 
-    std::vector<std::string> readBuffer;
-    if (isFixedStringDataSet_)
-    {
-        // TODO: Once fixed-size string reading is implemented this test should
-        // be updated to use it.
-        readBuffer = readFixedSizeStringData(fileid(), name_);
-    }
-    else
-    {
-        readBuffer.resize(dataSet.numValues());
-        dataSet.readData(readBuffer);
-    }
+    std::vector<std::string> readBuffer(dataSet.numValues());
+    dataSet.readData(readBuffer);
 
     for (int i = 0; i < gmx::ssize(finalStrings); ++i)
     {
@@ -632,18 +541,8 @@ TEST_P(StringTypes, DifferentCharacterSets)
 
     dataSet.writeData(stringsToWrite);
 
-    std::vector<std::string> readBuffer;
-    if (isFixedStringDataSet_)
-    {
-        // TODO: Once fixed-size string reading is implemented this test should
-        // be updated to use it.
-        readBuffer = readFixedSizeStringData(fileid(), name_);
-    }
-    else
-    {
-        readBuffer.resize(dataSet.numValues());
-        dataSet.readData(readBuffer);
-    }
+    std::vector<std::string> readBuffer(dataSet.numValues());
+    dataSet.readData(readBuffer);
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
