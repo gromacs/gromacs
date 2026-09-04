@@ -323,15 +323,6 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
     using Coordinates = StaticLocalStorage<Float3, atomsPerBlock>;
     // Reduction of partial force contributions
     using Forces = StaticLocalStorage<Float3, atomsPerBlock>;
-#if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER >= 20260000
-    // Work around the compiler bug discussed in CMPLRLLVM-74953 and
-    // issue #5688. This allocates some extra shared local memory that
-    // is unused when splines are in fact recalculated, but that
-    // should have little effect on performance.
-    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, true>;
-#else
-    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, readGlobal>;
-#endif
     // These declarations must be made on the host
     auto sm_gridlineIndicesHostStorage = GridLineIndices::makeHostStorage(cgh);
     auto sm_thetaHostStorage           = Theta::makeHostStorage(cgh);
@@ -339,7 +330,6 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
     auto sm_coefficientsHostStorage    = Coefficients::makeHostStorage(cgh);
     auto sm_coordinatesHostStorage     = Coordinates::makeHostStorage(cgh);
     auto sm_forcesHostStorage          = Forces::makeHostStorage(cgh);
-    auto sm_fractCoordsHostStorage     = FractCoords::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
@@ -355,7 +345,6 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
         typename Coefficients::DeviceStorage    sm_coefficientsDeviceStorage;
         typename Coordinates::DeviceStorage     sm_coordinatesDeviceStorage;
         typename Forces::DeviceStorage          sm_forcesDeviceStorage;
-        typename FractCoords::DeviceStorage     sm_fractCoordsDeviceStorage;
         // Extract the valid pointer to local storage
         sycl::local_ptr<int> sm_gridlineIndices = GridLineIndices::get_pointer(
                 sm_gridlineIndicesHostStorage, sm_gridlineIndicesDeviceStorage);
@@ -368,8 +357,6 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
                 Coordinates::get_pointer(sm_coordinatesHostStorage, sm_coordinatesDeviceStorage);
         sycl::local_ptr<Float3> sm_forces =
                 Forces::get_pointer(sm_forcesHostStorage, sm_forcesDeviceStorage);
-        sycl::local_ptr<float> sm_fractCoords =
-                FractCoords::get_pointer(sm_fractCoordsHostStorage, sm_fractCoordsDeviceStorage);
 
         SYCL_ASSERT(blockSize == itemIdx.get_local_range().size());
         /* These are the atom indices - for the shared and global memory */
@@ -466,7 +453,6 @@ auto pmeGatherKernel(CommandGroupHandler cgh,
                     sm_theta,
                     sm_dtheta,
                     sm_gridlineIndices,
-                    sm_fractCoords,
                     itemIdx);
             sycl::group_barrier(itemIdx.get_sub_group());
         }

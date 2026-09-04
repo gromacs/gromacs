@@ -212,21 +212,10 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
     using Coefficients = StaticLocalStorage<float, atomsPerBlock>;
     // Spline values
     using Theta = StaticLocalStorage<float, atomsPerBlock * DIM * order>;
-    // Reduction of partial force contributions
-#if defined(__INTEL_LLVM_COMPILER) && __INTEL_LLVM_COMPILER >= 20260000
-    // Work around the compiler bug discussed in CMPLRLLVM-74953 and
-    // issue #5688. This allocates some extra shared local memory that
-    // is unused when splines are in fact not calculated, but that
-    // only happens in unit tests.
-    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, true>;
-#else
-    using FractCoords = StaticLocalStorage<float, atomsPerBlock * DIM, computeSplines>;
-#endif
     // These declarations must be made on the host
     auto sm_gridlineIndicesHostStorage = GridLineIndices::makeHostStorage(cgh);
     auto sm_thetaHostStorage           = Theta::makeHostStorage(cgh);
     auto sm_coefficientsHostStorage    = Coefficients::makeHostStorage(cgh);
-    auto sm_fractCoordsHostStorage     = FractCoords::makeHostStorage(cgh);
 
     return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
@@ -278,8 +267,6 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
         {
             // SYCL-TODO: Use prefetching? Issue #4153.
             const Float3 atomX = gm_coordinates[atomIndexGlobal];
-            // This declaration works on the device.
-            typename FractCoords::DeviceStorage sm_fractCoordsDeviceStorage;
             calculateSplines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal, numGrids, subGroupSize>(
                     atomIndexOffset,
                     atomX,
@@ -297,7 +284,6 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
                     sm_theta,
                     nullptr,
                     sm_gridlineIndices,
-                    FractCoords::get_pointer(sm_fractCoordsHostStorage, sm_fractCoordsDeviceStorage),
                     itemIdx);
             sycl::group_barrier(itemIdx.get_sub_group());
         }

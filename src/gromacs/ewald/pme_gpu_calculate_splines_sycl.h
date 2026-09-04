@@ -213,7 +213,6 @@ static inline void pmeGpuStageAtomData(sycl::local_ptr<T>              sm_destin
  * \param[out] sm_theta               Atom spline values in the local memory.
  * \param[out] sm_dtheta              Derivatives of atom spline values in the local memory.
  * \param[out] sm_gridlineIndices     Atom gridline indices in the local memory.
- * \param[out] sm_fractCoords         Fractional coordinates in the local memory.
  * \param[in]  itemIdx                SYCL thread ID.
  */
 
@@ -234,7 +233,6 @@ static inline void calculateSplines(const int                           atomInde
                                     sycl::local_ptr<float>              sm_theta,
                                     sycl::local_ptr<float>              sm_dtheta,
                                     sycl::local_ptr<int>                sm_gridlineIndices,
-                                    sycl::local_ptr<float>              sm_fractCoords,
                                     sycl::nd_item<3>                    itemIdx)
 {
     static_assert(numGrids == 1 || numGrids == 2);
@@ -266,6 +264,8 @@ static inline void calculateSplines(const int                           atomInde
     /* we have 4 threads per atom, but can only use 3 here for the dimensions */
     if (localCheck)
     {
+        float fractCoord = 0.0F; // Fractional coordinate
+
         /* Indices interpolation */
         if (orderIndex == 0)
         {
@@ -300,13 +300,13 @@ static inline void calculateSplines(const int                           atomInde
             t    = (t + shift) * n;
             tInt = static_cast<int>(t);
             SYCL_ASSERT(sharedMemoryIndex < atomsPerBlock * DIM);
-            sm_fractCoords[sharedMemoryIndex] = t - tInt;
+            fractCoord = t - tInt;
             tableIndex += tInt;
             SYCL_ASSERT(tInt >= 0);
             SYCL_ASSERT(tInt < c_pmeNeighborUnitcellCount * n);
 
             // TODO: Issue #4153: use shared table for both parameters to share the fetch, as index is always same.
-            sm_fractCoords[sharedMemoryIndex] += gm_fractShiftsTable[tableIndex];
+            fractCoord += gm_fractShiftsTable[tableIndex];
             sm_gridlineIndices[sharedMemoryIndex] = gm_gridlineIndicesTable[tableIndex];
             if constexpr (writeGlobal)
             {
@@ -320,7 +320,7 @@ static inline void calculateSplines(const int                           atomInde
         /* With FEP (numGrids == 2), we might have 0 charge in state A, but !=0 in state B, so we always calculate splines */
         if (numGrids == 2 || chargeCheck)
         {
-            const float dr = sm_fractCoords[sharedMemoryIndex];
+            const float dr = fractCoord;
             assertIsFinite(dr);
 
             /* dr is relative offset from lower cell limit */

@@ -207,9 +207,6 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
     float* __restrict__ gm_dtheta        = kernelParams.atoms.d_dtheta;
     int* __restrict__ gm_gridlineIndices = kernelParams.atoms.d_gridlineIndices;
 
-    /* Fractional coordinates */
-    __shared__ float sm_fractCoords[atomsPerBlock * DIM];
-
     /* Thread index w.r.t. block */
     const int threadLocalId =
             (threadIdx.z * (blockDim.x * blockDim.y)) + (threadIdx.y * blockDim.x) + threadIdx.x;
@@ -236,8 +233,9 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
     /* we have 4 threads per atom, but can only use 3 here for the dimensions */
     if (localCheck)
     {
-        /* Indices interpolation */
+        float fractCoord = 0.0F; // Fractional coordinate
 
+        /* Indices interpolation */
         if (orderIndex == 0)
         {
             int   tableIndex = 0;
@@ -278,15 +276,14 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             t    = (t + shift) * n;
             tInt = static_cast<const int>(t);
             GMX_DEVICE_ASSERT(sharedMemoryIndex < atomsPerBlock * DIM);
-            sm_fractCoords[sharedMemoryIndex] = t - tInt;
+            fractCoord = t - tInt;
             tableIndex += tInt;
             GMX_DEVICE_ASSERT(tInt >= 0);
             GMX_DEVICE_ASSERT(tInt < c_pmeNeighborUnitcellCount * n);
 
             // TODO have shared table for both parameters to share the fetch, as index is always same?
             // TODO compare texture/LDG performance
-            sm_fractCoords[sharedMemoryIndex] +=
-                    fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable, tableIndex);
+            fractCoord += fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable, tableIndex);
             sm_gridlineIndices[sharedMemoryIndex] =
                     fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable, tableIndex);
             if constexpr (writeGlobal)
@@ -305,7 +302,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             float div;
             int o = orderIndex; // This is an index that is set once for PME_GPU_PARALLEL_SPLINE == 1
 
-            const float dr = sm_fractCoords[sharedMemoryIndex];
+            const float dr = fractCoord;
             GMX_DEVICE_ASSERT(isfinite(dr));
 
             /* dr is relative offset from lower cell limit */
