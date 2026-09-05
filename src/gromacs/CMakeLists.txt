@@ -377,6 +377,17 @@ set_source_files_properties(hardware/simd_support.cpp PROPERTIES COMPILE_FLAGS
     "-DGMX_SIMD_ENUM_VALUE=\"${GMX_SIMD_ENUM_VALUE}\""
     )
 
+# Work around a crash in the Intel LLVM compiler (icpx, observed with oneAPI
+# 2026.0 and .1) while optimizing make_local_bondeds_excls().
+# Drop just this file to -O2 for the affected configuration. See #5636
+if (CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "2026.0" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_LESS "2027.0")
+    set_source_files_properties(domdec/localtopology.cpp PROPERTIES COMPILE_OPTIONS
+        "$<$<CONFIG:RelWithAssert>:-O2>"
+        )
+endif()
+
 target_link_libraries(libgromacs
                       PRIVATE
                       ${GMX_EXTRA_LIBRARIES}

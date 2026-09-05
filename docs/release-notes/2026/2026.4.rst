@@ -76,6 +76,19 @@ Fixes that affect portability
 Fixed SYCL build with HeFFTe
 """"""""""""""""""""""""""""
 
+Work around icpx compiler crash in localtopology.cpp at RelWithAssert
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Intel LLVM compiler (icpx, observed with oneAPI 2026.0) segfaults in
+its frontend while optimizing ``make_local_bondeds_excls()`` in
+``domdec/localtopology.cpp`` at ``-O3`` with assertions enabled
+(RelWithAssert configuration). The file is now compiled at ``-O2`` when
+building with IntelLLVM 2026.x in RelWithAssert mode; this has no meaningful
+performance impact as the file contains domain-decomposition setup code,
+not hot kernels.
+
+:issue:`5636`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
