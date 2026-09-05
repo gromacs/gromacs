@@ -46,8 +46,6 @@
 
 #include "gromacs/fileio/cifio.h"
 
-#include <cmath>
-#include <cstdlib>
 #include <cstring>
 
 #include <filesystem>
@@ -60,7 +58,6 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/math/units.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -353,51 +350,16 @@ std::string readFile(const std::string& fileName)
     return buffer.str();
 }
 
-/*! \brief The value written for \p item in \p content.
- *
- * A table of a single row is written as item/value pairs rather than as a loop,
- * so the value is the token that follows the item name.
- */
-std::string cifItemValue(const std::string& content, const std::string& item)
+//! A two-residue peptide, with its omega dihedral in the trans conformation.
+std::vector<ConnectivityAtomSpec> peptideSpec()
 {
-    const size_t itemPos = content.find(item);
-    if (itemPos == std::string::npos)
-    {
-        return "";
-    }
-    const size_t valuePos = content.find_first_not_of(" \t", itemPos + item.size());
-    const size_t endPos   = content.find_first_of(" \t\n\r", valuePos);
-    return content.substr(valuePos, endPos - valuePos);
-}
-
-//! A two-residue peptide whose omega dihedral is cis (0) or trans (180 degrees).
-std::vector<ConnectivityAtomSpec> peptideSpec(bool cis)
-{
-    // CA(1)-C(1)-N(2)-CA(2) with the C-N bond along x. Both CA on the same side
-    // of that bond is cis, opposite sides is trans.
-    const real caNextY = cis ? 0.125 : -0.125;
+    // CA(1)-C(1)-N(2)-CA(2) with the C-N bond along x, the two CA on opposite
+    // sides of that bond.
+    const real caNextY = -0.125;
     return { { "CA", "ALA", 1, 'A', "C", { -0.075, 0.125, 0.0 } },
              { "C", "ALA", 1, 'A', "C", { 0.0, 0.0, 0.0 } },
              { "N", "PRO", 2, 'A', "N", { 0.133, 0.0, 0.0 } },
              { "CA", "PRO", 2, 'A', "C", { 0.208, caNextY, 0.0 } } };
-}
-
-/*! \brief The peptide of peptideSpec(), twisted to a signed omega of \p omegaDeg.
- *
- * CA(1) sits along +y from the C-N bond, and CA(2) is rotated about that bond
- * by omega, which by the IUPAC convention is the dihedral angle itself. The
- * cis and trans fixtures above lie at 0 and 180 degrees, where the sign of
- * omega cannot be observed at all, so they cannot catch a sign error.
- */
-std::vector<ConnectivityAtomSpec> twistedPeptideSpec(real omegaDeg)
-{
-    const real omega   = omegaDeg * gmx::c_deg2Rad;
-    const real caNextY = static_cast<real>(0.125 * std::cos(omega));
-    const real caNextZ = static_cast<real>(0.125 * std::sin(omega));
-    return { { "CA", "ALA", 1, 'A', "C", { -0.075, 0.125, 0.0 } },
-             { "C", "ALA", 1, 'A', "C", { 0.0, 0.0, 0.0 } },
-             { "N", "PRO", 2, 'A', "N", { 0.133, 0.0, 0.0 } },
-             { "CA", "PRO", 2, 'A', "C", { 0.208, caNextY, caNextZ } } };
 }
 
 //! Two SG sulfurs that form a disulfide bridge, and a plain carbon bonded to one.
@@ -411,7 +373,7 @@ std::vector<ConnectivityAtomSpec> disulfideSpec()
 TEST(CifConnectivityTest, RoundTripPreservesBonds)
 {
     TestFileManager       fileManager;
-    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
+    ConnectivityStructure structure(peptideSpec());
     const std::string     cifFile = fileManager.getTemporaryFilePath("conn.cif").string();
 
     gmx_conect written = gmx_conect_init();
@@ -472,7 +434,7 @@ TEST(CifConnectivityTest, DisulfideBondIsTypedAsSuch)
 TEST(CifConnectivityTest, BondsToUnselectedAtomsAreDropped)
 {
     TestFileManager       fileManager;
-    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
+    ConnectivityStructure structure(peptideSpec());
     const std::string     cifFile = fileManager.getTemporaryFilePath("subset.cif").string();
 
     gmx_conect conect = gmx_conect_init();
@@ -497,20 +459,19 @@ TEST(CifConnectivityTest, BondsToUnselectedAtomsAreDropped)
 TEST(CifConnectivityTest, WithoutConnectivityNothingIsWritten)
 {
     TestFileManager       fileManager;
-    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
+    ConnectivityStructure structure(peptideSpec());
     const std::string     cifFile = fileManager.getTemporaryFilePath("plain.cif").string();
 
     CifIO::write(cifFile, "plain", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
 
     const std::string content = readFile(cifFile);
     EXPECT_EQ(content.find("_struct_conn."), std::string::npos) << content;
-    EXPECT_EQ(content.find("_struct_mon_prot_cis."), std::string::npos) << content;
 }
 
 TEST(CifAtomSiteTest, AlternateLocationAndEntityColumnsAreWritten)
 {
     TestFileManager       fileManager;
-    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
+    ConnectivityStructure structure(peptideSpec());
     const std::string     cifFile = fileManager.getTemporaryFilePath("altloc.cif").string();
 
     structure.atoms()->pdbinfo[1].altloc = 'B';
@@ -542,59 +503,6 @@ TEST(CifAtomSiteTest, AlternateLocationAndEntityColumnsAreWritten)
     sfree(x);
     done_atom(&atoms);
     done_symtab(&symtab);
-}
-
-TEST(CifCisPeptideTest, CisPeptideIsAnnotated)
-{
-    TestFileManager       fileManager;
-    ConnectivityStructure structure(peptideSpec(/*cis*/ true));
-    const std::string     cifFile = fileManager.getTemporaryFilePath("cis.cif").string();
-
-    CifIO::write(cifFile, "cis", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
-
-    const std::string content = readFile(cifFile);
-    ASSERT_NE(content.find("_struct_mon_prot_cis.pdbx_omega_angle"), std::string::npos) << content;
-    // The annotated pair is ALA 1 followed by PRO 2, at an omega of 0 degrees.
-    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.auth_comp_id"), "ALA") << content;
-    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.auth_seq_id"), "1") << content;
-    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.pdbx_auth_comp_id_2"), "PRO") << content;
-    EXPECT_EQ(cifItemValue(content, "_struct_mon_prot_cis.pdbx_auth_seq_id_2"), "2") << content;
-    EXPECT_NEAR(std::strtod(cifItemValue(content, "_struct_mon_prot_cis.pdbx_omega_angle").c_str(), nullptr), 0.0, 1e-6)
-            << content;
-}
-
-TEST(CifCisPeptideTest, OmegaAngleKeepsItsSign)
-{
-    // The cis and trans fixtures sit at 0 and 180 degrees, where negating omega
-    // changes nothing, so only a twisted peptide can catch a sign error -- one
-    // that would otherwise flip every pdbx_omega_angle GROMACS writes.
-    TestFileManager fileManager;
-    for (const real omegaDeg : { real(-20.0), real(20.0) })
-    {
-        ConnectivityStructure structure(twistedPeptideSpec(omegaDeg));
-        const std::string     cifFile =
-                fileManager.getTemporaryFilePath(omegaDeg < 0 ? "omega_neg.cif" : "omega_pos.cif").string();
-
-        CifIO::write(cifFile, "omega", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
-
-        const std::string content = readFile(cifFile);
-        ASSERT_NE(content.find("_struct_mon_prot_cis.pdbx_omega_angle"), std::string::npos) << content;
-        const double written = std::strtod(
-                cifItemValue(content, "_struct_mon_prot_cis.pdbx_omega_angle").c_str(), nullptr);
-        EXPECT_NEAR(written, omegaDeg, 0.01) << "omega " << omegaDeg << " in " << content;
-    }
-}
-
-TEST(CifCisPeptideTest, TransPeptideIsNotAnnotated)
-{
-    TestFileManager       fileManager;
-    ConnectivityStructure structure(peptideSpec(/*cis*/ false));
-    const std::string     cifFile = fileManager.getTemporaryFilePath("trans.cif").string();
-
-    CifIO::write(cifFile, "trans", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
-
-    const std::string content = readFile(cifFile);
-    EXPECT_EQ(content.find("_struct_mon_prot_cis."), std::string::npos) << content;
 }
 
 } // namespace

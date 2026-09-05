@@ -445,32 +445,6 @@ static inline real gmx_angle(const rvec a, const rvec b)
     return std::atan2(wlen, s);
 }
 
-/* Calculate the dihedral angle, in radians and in the range [-pi, pi], between
- * the plane through p1-p2-p3 and the plane through p2-p3-p4.
- *
- * Built from gmx_angle() so that it inherits its accuracy close to 0 and pi,
- * and so that it performs no division: points that coincide give 0 rather than
- * a NaN. dih_angle() in listed_forces computes the same quantity, but applies
- * periodic boundary conditions and also returns the intermediate vectors and
- * shift indices that force evaluation needs, so it is not usable where only
- * the angle itself is wanted.
- */
-static inline real gmx_dihedral_angle(const rvec p1, const rvec p2, const rvec p3, const rvec p4)
-{
-    rvec r_ij, r_kj, r_kl, m, n;
-
-    rvec_sub(p1, p2, r_ij);
-    rvec_sub(p3, p2, r_kj);
-    rvec_sub(p3, p4, r_kl);
-
-    cprod(r_ij, r_kj, m);
-    cprod(r_kj, r_kl, n);
-
-    real sign = (iprod(r_ij, n) < 0.0) ? -1.0 : 1.0;
-
-    return sign * gmx_angle(m, n);
-}
-
 static inline double gmx_angle_between_dvecs(const dvec a, const dvec b)
 {
     dvec   w;

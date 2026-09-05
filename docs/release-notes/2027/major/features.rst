@@ -69,10 +69,7 @@ written as trajectories, for example with :ref:`gmx trjconv`.
 
 With the ``-conect`` option of :ref:`gmx editconf` and :ref:`gmx trjconv`, atom
 connectivity is written as ``struct_conn`` records, the mmCIF counterpart of the
-PDB ``LINK`` and ``SSBOND`` records, and read back again. Cis peptide bonds found
-in the coordinates are annotated in ``struct_mon_prot_cis``; this is a geometric
-annotation of the structure at hand, which for a simulation snapshot may differ
-from the records of the entry it started from.
+PDB ``LINK`` and ``SSBOND`` records, and read back again.
 
 mmCIF allows chain identifiers of more than one character, while |Gromacs| stores
 a single character. Such identifiers are truncated to their first character, and

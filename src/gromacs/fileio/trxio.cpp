@@ -111,7 +111,7 @@ struct t_trxstatus
     int                        natoms   = 0;
     std::vector<char>          persistent_line; /* Persistent line for reading g96 trajectories */
     CifTrajectory* cifReader = nullptr; /* Parsed multi-model mmCIF being read frame by frame */
-    int numCifModelsWritten = 0; /* Number of models already streamed to an mmCIF trajectory */
+    int numCifModelsWritten  = 0; /* Number of models already streamed to an mmCIF trajectory */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
