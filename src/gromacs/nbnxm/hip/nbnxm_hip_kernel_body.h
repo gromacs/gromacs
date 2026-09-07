@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
+#include "gromacs/nbnxm/nbnxm_kernel_utils.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -497,8 +498,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                             }
                             if constexpr (props.vdwFSwitch)
                             {
-                                ljForceSwitch<doCalcEnergies>(
-                                        dispersionShift, repulsionShift, c6c12, rVdwSwitch, rInv, r2, &fInvR, &energyLJPair);
+                                ljForceSwitch<doCalcEnergies, true>(
+                                        dispersionShift, repulsionShift, rVdwSwitch, c6, c12, rInv, r2, &fInvR, &energyLJPair);
                             }
                             if constexpr (props.vdwEwald)
                             {
@@ -516,7 +517,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                             } // (props.vdwEwald)
                             if constexpr (props.vdwPSwitch)
                             {
-                                ljPotentialSwitch<doCalcEnergies>(
+                                ljPotentialSwitch<doCalcEnergies, false>(
                                         vdwSwitch, rVdwSwitch, rInv, r2, &fInvR, &energyLJPair);
                             }
                             if constexpr (props.elecEwaldTwin)
