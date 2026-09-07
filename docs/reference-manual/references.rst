@@ -2750,3 +2750,15 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+
+.. raw:: html
+
+   <div id="refIn-Chul1999">
+
+.. _refIn-Chul1999:
+
+:sup:`200` In-Chul, Y., and , Berkowitz, M. L. "Ewald summation for systems with slab geometry", *J. Chem. Phys.* **111**, 3155-3162 (1999).
+
+.. raw:: html
+
+   </div>

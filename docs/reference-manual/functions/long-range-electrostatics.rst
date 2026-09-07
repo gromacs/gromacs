@@ -191,3 +191,24 @@ runs.
 optimization, and |Gromacs| also includes a special tool,
 :ref:`gmx tune_pme`, which automates the process of selecting
 the optimal number of PME-only ranks.
+
+Boundary conditions
+~~~~~~~~~~~~~~~~~~~
+
+Ewald and PME use so-called tin-foil boundary conditions at infinity. This
+means that it is assumed that a perfectly conducting sphere surrounds the system
+as the limit to infinite periodic images is taken. This effectively means that
+there is no penalty to creating a net dipole in the unit cell. Such a dipole
+interacts favourably with its periodic images. This usually does not create
+issues, unless an electric field is used, as this also interacts favourably
+with the net dipole. |Gromacs| supports the option to set the dielectric
+permitivity of the boundary at infinity. This adds a cost to creating a net
+dipole.
+
+One might want to simulate with 2D periodicity, for example when interfaces
+are involved. Ewald summation and PME are 3D periodic in nature, so strictly
+speaking not suitable for 2D periodicity. However, |Gromacs| supports a simple
+correction which removes the net dipole-dipole interaction along the
+z-dimension :ref:`200 <refIn-Chul1999>`. It is recommended to surround the
+system by double its size of vacuum space along z. This is done by default
+when selecting this correction.
