@@ -230,22 +230,37 @@ __global__ void nbfeKernel(const NBAtomDataGpu atdat, const NBParamGpu nbparam, 
     AmdFastBuffer<const int> gm_jjnr{ feplist.jjnr };
     AmdFastBuffer<const int> gm_shift{ feplist.shift };
 
-    float* gm_e_lj     = nullptr;
-    float* gm_e_el     = nullptr;
-    float* gm_dvdl_lj  = nullptr;
-    float* gm_dvdl_el  = nullptr;
-    int    lambdaPower = 0;
+    float* gm_e_lj    = nullptr;
+    float* gm_e_el    = nullptr;
+    float* gm_dvdl_lj = nullptr;
+    float* gm_dvdl_el = nullptr;
     float  dLambdaFactor[2];
     float  softcoreDlFactorCoul[2];
     float  softcoreDlFactorVdw[2];
 
+    /* The lambdaPower-dependent transform of softcoreLambdaFactorCoul/Vdw must be
+     * applied unconditionally so the force-only and force-and-energy flavors
+     * produce identical forces. softcoreLambdaFactorCoul/Vdw are used in the
+     * force computation (rPInvC/rPInvV) regardless of CALC_ENERGIES.
+     */
+    const int lambdaPower = nbparam.lambdaPower;
+
+    for (int k = 0; k < 2; k++)
+    {
+        softcoreLambdaFactorCoul[k] =
+                (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[k]) * (1.0F - lambdaFactorCoul[k])
+                                  : (1.0F - lambdaFactorCoul[k]));
+        softcoreLambdaFactorVdw[k] =
+                (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[k]) * (1.0F - lambdaFactorVdw[k])
+                                  : (1.0F - lambdaFactorVdw[k]));
+    }
+
     if constexpr (doCalcEnergies)
     {
-        gm_e_lj     = atdat.eLJ;
-        gm_e_el     = atdat.eElec;
-        gm_dvdl_lj  = atdat.dvdlLJ;
-        gm_dvdl_el  = atdat.dvdlElec;
-        lambdaPower = nbparam.lambdaPower;
+        gm_e_lj    = atdat.eLJ;
+        gm_e_el    = atdat.eElec;
+        gm_dvdl_lj = atdat.dvdlLJ;
+        gm_dvdl_el = atdat.dvdlElec;
 
         dLambdaFactor[0] = -1.0F;
         dLambdaFactor[1] = 1.0F;
@@ -254,14 +269,8 @@ __global__ void nbfeKernel(const NBAtomDataGpu atdat, const NBParamGpu nbparam, 
 
         for (int k = 0; k < 2; k++)
         {
-            softcoreLambdaFactorCoul[k] =
-                    (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[k]) * (1.0F - lambdaFactorCoul[k])
-                                      : (1.0F - lambdaFactorCoul[k]));
             softcoreDlFactorCoul[k] = dLambdaFactor[k] * lambdaPower / softcoreRPower
                                       * (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[k]) : 1.0F);
-            softcoreLambdaFactorVdw[k] =
-                    (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[k]) * (1.0F - lambdaFactorVdw[k])
-                                      : (1.0F - lambdaFactorVdw[k]));
             softcoreDlFactorVdw[k] = dLambdaFactor[k] * lambdaPower / softcoreRPower
                                      * (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[k]) : 1.0F);
         }
