@@ -114,7 +114,6 @@ struct PmeGpuProgramImpl
     PmeKernelHandle splineKernelSingle;
     PmeKernelHandle splineKernelThPerAtom4Single;
     PmeKernelHandle spreadKernelSingle;
-    PmeKernelHandle spreadKernelThPerAtom4Single;
     PmeKernelHandle splineAndSpreadKernelSingle;
     PmeKernelHandle splineAndSpreadKernelThPerAtom4Single;
     PmeKernelHandle splineAndSpreadKernelWriteSplinesSingle;
@@ -122,7 +121,6 @@ struct PmeGpuProgramImpl
     PmeKernelHandle splineKernelDual;
     PmeKernelHandle splineKernelThPerAtom4Dual;
     PmeKernelHandle spreadKernelDual;
-    PmeKernelHandle spreadKernelThPerAtom4Dual;
     PmeKernelHandle splineAndSpreadKernelDual;
     PmeKernelHandle splineAndSpreadKernelThPerAtom4Dual;
     PmeKernelHandle splineAndSpreadKernelWriteSplinesDual;

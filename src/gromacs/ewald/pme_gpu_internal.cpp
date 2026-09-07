@@ -1329,7 +1329,7 @@ static void pme_gpu_copy_common_data_from(PmeGpu* pmeGpu, const gmx_pme_t* pme)
 }
 
 /*! \libinternal \brief
- * uses heuristics to select the best performing PME gather and scatter kernels
+ * uses heuristics to select the best performing PME spread and gather kernels
  *
  * \param[in,out] pmeGpu         The PME GPU structure.
  */
@@ -1453,6 +1453,10 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
     const bool haveToRealloc   = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
     pmeGpu->nAtomsAlloc        = nAtomsNewPadded;
 
+    // We need to select the correct kernel before doing any of the calculations that depend
+    // on the kernel choice, otherwise we might be operating on outdated values below.
+    pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
+
     const auto atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
     const int  nWarps       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
     pmeGpu->archSpecific->splineCountActive = DIM * nWarps * atomsPerWarp * pmeGpu->common->pme_order;
@@ -1565,7 +1569,6 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
         // re-alloc not needed but resizing is needed if nAtoms changed
         pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
     }
-    pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
 }
 
 /*! \internal \brief
@@ -1748,14 +1751,8 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
     {
         if (threadsPerAtom == ThreadsPerAtom::Order)
         {
-            if (numGrids == 2)
-            {
-                kernelPtr = pmeGpu->programHandle_->impl_->spreadKernelThPerAtom4Dual;
-            }
-            else
-            {
-                kernelPtr = pmeGpu->programHandle_->impl_->spreadKernelThPerAtom4Single;
-            }
+            GMX_RELEASE_ASSERT(kernelPtr,
+                               "Spread-only kernel requires ThreadsPerAtom::OrderSquared");
         }
         else
         {

@@ -152,7 +152,6 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     splineKernelSingle                                = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared>;
     splineKernelThPerAtom4Single                      = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>;
     spreadKernelSingle                                = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared>;
-    spreadKernelThPerAtom4Single                      = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>;
     splineAndSpreadKernelDual                         = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared>;
     splineAndSpreadKernelThPerAtom4Dual               = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::Order>;
     splineAndSpreadKernelWriteSplinesDual             = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>;
@@ -160,7 +159,6 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     splineKernelDual                                  = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>;
     splineKernelThPerAtom4Dual                        = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>;
     spreadKernelDual                                  = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>;
-    spreadKernelThPerAtom4Dual                        = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>;
     gatherKernelSingle                                = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::OrderSquared>;
     gatherKernelThPerAtom4Single                      = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::Order>;
     gatherKernelReadSplinesSingle                     = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared>;

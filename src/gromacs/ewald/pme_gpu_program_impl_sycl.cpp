@@ -88,15 +88,26 @@ static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
     }
 }
 
-#define INSTANTIATE_SPREAD_2(                                                                      \
-        order, computeSplines, spreadCharges, numGrids, writeGlobal, threadsPerAtom, subGroupSize) \
-    extern template class PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, true, true, numGrids, writeGlobal, threadsPerAtom, subGroupSize>;
-
-#define INSTANTIATE_SPREAD(order, numGrids, threadsPerAtom, subGroupSize)                   \
-    INSTANTIATE_SPREAD_2(order, true, true, numGrids, true, threadsPerAtom, subGroupSize);  \
-    INSTANTIATE_SPREAD_2(order, true, false, numGrids, true, threadsPerAtom, subGroupSize); \
-    INSTANTIATE_SPREAD_2(order, false, true, numGrids, true, threadsPerAtom, subGroupSize); \
-    INSTANTIATE_SPREAD_2(order, true, true, numGrids, false, threadsPerAtom, subGroupSize);
+// clang-format off
+/* Help document which template field means what
+extern template class PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom,               subGroupSize>;
+*/
+#define INSTANTIATE_SPREAD(order, subGroupSize)                                                                                                                        \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::Order,        subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, false,          true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::Order,        subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, false,          true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+extern template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::OrderSquared, subGroupSize>; \
+    // clang-format on
 
 #define INSTANTIATE_GATHER_2(order, numGrids, readGlobal, threadsPerAtom, subGroupSize) \
     extern template class PmeGatherKernel<order, true, true, numGrids, readGlobal, threadsPerAtom, subGroupSize>;
@@ -122,7 +133,7 @@ static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
     extern template class PmeSolveKernel<GridOrdering::YZX, true, c_stateB, subGroupSize>;
 
 #define INSTANTIATE(order, subGroupSize)        \
-    INSTANTIATE_X(SPREAD, order, subGroupSize); \
+    INSTANTIATE_SPREAD(order, subGroupSize);    \
     INSTANTIATE_X(GATHER, order, subGroupSize); \
     INSTANTIATE_SOLVE(subGroupSize);
 
@@ -154,8 +165,6 @@ static void setKernelPointers(struct PmeGpuProgramImpl* pmeGpuProgram)
             new PmeSplineAndSpreadKernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order, subGroupSize>();
     pmeGpuProgram->spreadKernelSingle =
             new PmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared, subGroupSize>();
-    pmeGpuProgram->spreadKernelThPerAtom4Single =
-            new PmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order, subGroupSize>();
     pmeGpuProgram->splineAndSpreadKernelDual =
             new PmeSplineAndSpreadKernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared, subGroupSize>();
     pmeGpuProgram->splineAndSpreadKernelThPerAtom4Dual =
@@ -170,8 +179,6 @@ static void setKernelPointers(struct PmeGpuProgramImpl* pmeGpuProgram)
             new PmeSplineAndSpreadKernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order, subGroupSize>();
     pmeGpuProgram->spreadKernelDual =
             new PmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared, subGroupSize>();
-    pmeGpuProgram->spreadKernelThPerAtom4Dual =
-            new PmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order, subGroupSize>();
     pmeGpuProgram->gatherKernelSingle =
             new PmeGatherKernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::OrderSquared, subGroupSize>();
     pmeGpuProgram->gatherKernelThPerAtom4Single =
@@ -237,7 +244,6 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     delete splineKernelSingle;
     delete splineKernelThPerAtom4Single;
     delete spreadKernelSingle;
-    delete spreadKernelThPerAtom4Single;
     delete splineAndSpreadKernelSingle;
     delete splineAndSpreadKernelThPerAtom4Single;
     delete splineAndSpreadKernelWriteSplinesSingle;
@@ -245,7 +251,6 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     delete splineKernelDual;
     delete splineKernelThPerAtom4Dual;
     delete spreadKernelDual;
-    delete spreadKernelThPerAtom4Dual;
     delete splineAndSpreadKernelDual;
     delete splineAndSpreadKernelThPerAtom4Dual;
     delete splineAndSpreadKernelWriteSplinesDual;

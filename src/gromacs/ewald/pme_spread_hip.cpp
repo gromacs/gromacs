@@ -177,6 +177,10 @@ template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wr
 LAUNCH_BOUNDS_EXACT_SINGLE(sc_spreadMaxThreadsPerBlock<parallelExecutionWidth>)
 __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParams kernelParams)
 {
+    static_assert(computeSplines or threadsPerAtom == ThreadsPerAtom::OrderSquared,
+                  "Loading splines from global memory is supported only with order-squared threads "
+                  "per atom");
+
     constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
     constexpr int atomsPerBlock = sc_spreadMaxThreadsPerBlock<parallelExecutionWidth> / threadsPerAtomValue;
     // Number of atoms processed by a single warp in spread and gather
@@ -308,22 +312,26 @@ __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParams kernelParams)
  */
 CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
 
-#define INSTANTIATE_3(order, computeSplines, spreadCharges, numGrids, writeGlobal, threadsPerAtom, parallelExecutionWidth)                     \
-    template __global__ void                                                                                                                   \
-    pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, true, true, numGrids, writeGlobal, threadsPerAtom, parallelExecutionWidth>( \
-            PmeGpuKernelParams kernelParams);
-
-#define INSTANTIATE_2(order, numGrids, threadsPerAtom, parallelExecutionWidth)                 \
-    INSTANTIATE_3(order, true, true, numGrids, true, threadsPerAtom, parallelExecutionWidth);  \
-    INSTANTIATE_3(order, true, false, numGrids, true, threadsPerAtom, parallelExecutionWidth); \
-    INSTANTIATE_3(order, false, true, numGrids, true, threadsPerAtom, parallelExecutionWidth); \
-    INSTANTIATE_3(order, true, true, numGrids, false, threadsPerAtom, parallelExecutionWidth);
-
-#define INSTANTIATE(order, parallelExecutionWidth)                                 \
-    INSTANTIATE_2(order, 1, ThreadsPerAtom::Order, parallelExecutionWidth);        \
-    INSTANTIATE_2(order, 1, ThreadsPerAtom::OrderSquared, parallelExecutionWidth); \
-    INSTANTIATE_2(order, 2, ThreadsPerAtom::Order, parallelExecutionWidth);        \
-    INSTANTIATE_2(order, 2, ThreadsPerAtom::OrderSquared, parallelExecutionWidth);
+// clang-format off
+/* Help document which template field means what
+template __global__ void pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom,               parallelExecutionWidth>(PmeGpuKernelParams);
+*/
+#define INSTANTIATE(order, parallelExecutionWidth)                                                                                                                                                      \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, false,          true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, false,          true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+    // clang-format on
 
 INSTANTIATE(4, 32);
 INSTANTIATE(4, 64);

@@ -89,17 +89,26 @@ template<int order, bool wrapX, bool wrapY, int nGrids, bool readGlobal, Threads
 __global__ void pmeGatherKernel(PmeGpuKernelParams kernelParams);
 
 
-#define INSTANTIATE_SPREAD_2(                                                                                                                  \
-        order, computeSplines, spreadCharges, numGrids, writeGlobal, threadsPerAtom, parallelExecutionWidth)                                   \
-    extern template __global__ void                                                                                                            \
-    pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, true, true, numGrids, writeGlobal, threadsPerAtom, parallelExecutionWidth>( \
-            PmeGpuKernelParams kernelParams);
-
-#define INSTANTIATE_SPREAD(order, numGrids, threadsPerAtom, parallelExecutionWidth)                   \
-    INSTANTIATE_SPREAD_2(order, true, true, numGrids, true, threadsPerAtom, parallelExecutionWidth);  \
-    INSTANTIATE_SPREAD_2(order, true, false, numGrids, true, threadsPerAtom, parallelExecutionWidth); \
-    INSTANTIATE_SPREAD_2(order, false, true, numGrids, true, threadsPerAtom, parallelExecutionWidth); \
-    INSTANTIATE_SPREAD_2(order, true, true, numGrids, false, threadsPerAtom, parallelExecutionWidth);
+// clang-format off
+/* Help document which template field means what
+extern template __global__ void pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom,               parallelExecutionWidth>(PmeGpuKernelParams);
+*/
+#define INSTANTIATE_SPREAD(order, parallelExecutionWidth)                                                                                                                        \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, false,          true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::Order,        parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, false,          true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+extern template __global__ void pmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::OrderSquared, parallelExecutionWidth>(PmeGpuKernelParams); \
+    // clang-format on
 
 #define INSTANTIATE_GATHER_2(order, numGrids, readGlobal, threadsPerAtom, parallelExecutionWidth)                                     \
     extern template __global__ void pmeGatherKernel<order, true, true, numGrids, readGlobal, threadsPerAtom, parallelExecutionWidth>( \
@@ -134,7 +143,7 @@ __global__ void pmeGatherKernel(PmeGpuKernelParams kernelParams);
             PmeGpuKernelParams kernelParams);
 
 #define INSTANTIATE(order, parallelExecutionWidth)        \
-    INSTANTIATE_X(SPREAD, order, parallelExecutionWidth); \
+    INSTANTIATE_SPREAD(order, parallelExecutionWidth);    \
     INSTANTIATE_X(GATHER, order, parallelExecutionWidth); \
     INSTANTIATE_SOLVE(parallelExecutionWidth);
 
@@ -163,8 +172,6 @@ static void setKernelPointersAndParams(struct PmeGpuProgramImpl* pmeGpuProgram)
             pmeSplineAndSpreadKernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order, parallelExecutionWidth>;
     pmeGpuProgram->spreadKernelSingle =
             pmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared, parallelExecutionWidth>;
-    pmeGpuProgram->spreadKernelThPerAtom4Single =
-            pmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order, parallelExecutionWidth>;
     pmeGpuProgram->splineAndSpreadKernelDual =
             pmeSplineAndSpreadKernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared, parallelExecutionWidth>;
     pmeGpuProgram->splineAndSpreadKernelThPerAtom4Dual =
@@ -179,8 +186,6 @@ static void setKernelPointersAndParams(struct PmeGpuProgramImpl* pmeGpuProgram)
             pmeSplineAndSpreadKernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order, parallelExecutionWidth>;
     pmeGpuProgram->spreadKernelDual =
             pmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared, parallelExecutionWidth>;
-    pmeGpuProgram->spreadKernelThPerAtom4Dual =
-            pmeSplineAndSpreadKernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order, parallelExecutionWidth>;
     pmeGpuProgram->gatherKernelSingle =
             pmeGatherKernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::OrderSquared, parallelExecutionWidth>;
     pmeGpuProgram->gatherKernelThPerAtom4Single =

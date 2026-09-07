@@ -57,6 +57,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_gpu_constants.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -148,11 +149,12 @@ const std::unordered_map<std::string, TestSystem> c_testSystems = {
  * - particle system (coordinates and charges)
  * - PME hardware context index
  * - spline/spread/fused option
+ * - ThreadsPerAtom settings
  *
  * TODO: consider inclusion of local grid offsets/sizes or PME nodes
  * counts to test the PME DD
  */
-typedef std::tuple<std::string, int, IVec, std::string, int, SplineAndSpreadOptions> SplineAndSpreadInputParameters;
+typedef std::tuple<std::string, int, IVec, std::string, int, SplineAndSpreadOptions, ThreadsPerAtom> SplineAndSpreadInputParameters;
 
 /*! \brief Help GoogleTest name our test cases
  *
@@ -189,6 +191,15 @@ std::string nameOfTest(const testing::TestParamInfo<SplineAndSpreadInputParamete
     return testName;
 }
 
+const char* enumValueToString(ThreadsPerAtom enumValue)
+{
+    static constexpr gmx::EnumerationArray<ThreadsPerAtom, const char*> s_strings = {
+        "Order",
+        "OrderSquared",
+    };
+    return s_strings[enumValue];
+}
+
 const char* enumValueToString(SplineAndSpreadOptions enumValue)
 {
     static constexpr gmx::EnumerationArray<SplineAndSpreadOptions, const char*> s_strings = {
@@ -213,10 +224,11 @@ std::string fullNameOfTest(const testing::TestParamInfo<SplineAndSpreadInputPara
     // about the hardware context and all following text from the name
     // of the file used for refdata.
     const int hardwareContextIndex = std::get<4>(info.param);
-    return formatString("WorksOn_%s_%s_%s",
+    return formatString("WorksOn_%s_%s_%s_%s",
                         makeHardwareContextName(hardwareContextIndex).c_str(),
                         testName.c_str(),
-                        enumValueToString(std::get<5>(info.param)));
+                        enumValueToString(std::get<5>(info.param)),
+                        enumValueToString(std::get<6>(info.param)));
 }
 
 /*! \brief Test fixture for testing both atom spline parameter computation and charge spreading.
@@ -259,8 +271,10 @@ public:
         std::string            boxName, testSystemName;
         int                    contextIndex;
         SplineAndSpreadOptions option;
+        ThreadsPerAtom         threadsPerAtom;
 
-        std::tie(boxName, pmeOrder, gridSize, testSystemName, contextIndex, option) = parameters_;
+        std::tie(boxName, pmeOrder, gridSize, testSystemName, contextIndex, option, threadsPerAtom) =
+                parameters_;
         Matrix3x3                box         = c_inputBoxes.at(boxName);
         const CoordinatesVector& coordinates = c_testSystems.at(testSystemName).coordinates;
         const ChargesVector&     charges     = c_testSystems.at(testSystemName).charges;
@@ -283,6 +297,30 @@ public:
         {
             GTEST_SKIP() << messages.toString();
         }
+        if (codePath == CodePath::CPU && threadsPerAtom == ThreadsPerAtom::Order)
+        {
+            GTEST_SKIP() << "No need for changing order option for CPU code path";
+        }
+        if (codePath == CodePath::GPU && GMX_GPU_OPENCL && threadsPerAtom == ThreadsPerAtom::Order)
+        {
+            GTEST_SKIP() << "ThreadsPerAtom::Order not supported by OpenCL";
+        }
+        if (threadsPerAtom == ThreadsPerAtom::Order && option == SplineAndSpreadOptions::SpreadOnly)
+        {
+            GTEST_SKIP() << "Testing PME spread without computing splines is supported only with "
+                            "ThreadsPerAtom::OrderSquared";
+            // With ThreadsPerAtom::OrderSquared there's
+            // coincidentally always enough threads on all supported
+            // hardware for staging spline theta values from global
+            // memory into shared local memory, so that the spread
+            // kernel works (because order >= DIM). That's useful for
+            // testing spread in isolation from the spline calculation
+            // with ThreadsPerAtom::OrderSquared. Supporting that
+            // testing also with ThreadsPerAtom::Order requires
+            // changes to kernel code whose complexity is not
+            // worthwhile.
+        }
+
         pmeTestHardwareContext.activate();
         SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
 
@@ -313,12 +351,30 @@ public:
                                                      pmeTestHardwareContext.deviceStream())
                         : nullptr;
 
+        // Work around the way we test spread-kernel configurations
+        // intended for use with many particles in unit tests with few
+        // particles while calling the same pme_gpu_spread() function
+        // as mdrun. This call must come after construction and before
+        // "atom init" of PME GPU. It would probably be better overall
+        // to separate testing-only paths from pme_gpu_spread().
+        if (threadsPerAtom == ThreadsPerAtom::Order)
+        {
+            pmeResetMinSplineRecalculationAtomCount(pme.get());
+        }
+
         pmeInitAtoms(pme.get(), stateGpu.get(), codePath, coordinates, charges);
 
         const bool computeSplines = (option == SplineAndSpreadOptions::SplineOnly)
                                     || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
         const bool spreadCharges = (option == SplineAndSpreadOptions::SpreadOnly)
                                    || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
+
+        if (codePath == CodePath::GPU)
+        {
+            ASSERT_EQ(threadsPerAtom, pme->gpu->settings.threadsPerAtom)
+                    << "Ensure we are testing the intended code, particularly with "
+                       "ThreadsPerAtom::Order";
+        }
 
         if (!computeSplines)
         {
@@ -421,6 +477,10 @@ const auto c_inputBoxNames = ::testing::Values("rect", "tric");
 const auto c_inputGridNames = ::testing::Values("first", "second");
 //! Moved out from instantiations for readability
 const auto c_inputTestSystemNames = ::testing::Values("1 atom", "2 atoms", "13 atoms");
+//! Moved out from instantiations for readability
+const std::array<ThreadsPerAtom, 2> c_inputThreadsPerAtomValues = { ThreadsPerAtom::Order,
+                                                                    ThreadsPerAtom::OrderSquared };
+
 
 } // namespace
 
@@ -435,7 +495,8 @@ void registerDynamicalPmeSplineSpreadTests(const Range<int> hardwareContextIndex
             ::testing::Range(*hardwareContextIndexRange.begin(), *hardwareContextIndexRange.end()),
             ::testing::Values(SplineAndSpreadOptions::SplineOnly,
                               SplineAndSpreadOptions::SpreadOnly,
-                              SplineAndSpreadOptions::SplineAndSpreadUnified));
+                              SplineAndSpreadOptions::SplineAndSpreadUnified),
+            ::testing::ValuesIn(c_inputThreadsPerAtomValues));
     gmx::test::registerTests<SplineAndSpreadTest, SplineAndSpreadTestBody, decltype(testCombinations)>(
             "Pme_SplineAndSpreadTest", nameOfTest, fullNameOfTest, testCombinations);
 }

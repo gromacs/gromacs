@@ -571,6 +571,11 @@ static int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int
             result    = getSplineParamIndex<fixedOrder, 8>(indexBase, dimIndex, splineIndex);
             break;
 
+        case 16:
+            indexBase = getSplineParamIndexBase<fixedOrder, 16>(warpIndex, atomWarpIndex);
+            result    = getSplineParamIndex<fixedOrder, 16>(indexBase, dimIndex, splineIndex);
+            break;
+
         default:
             GMX_THROW(NotImplementedError(
                     formatString("Test function call not unrolled for atomsPerWarp = %d in "
@@ -1028,6 +1033,11 @@ ArrayRef<const PmeTestHardwareContext> getPmeTestHardwareContexts()
         }
     }
     return s_pmeTestHardwareContexts;
+}
+
+void pmeResetMinSplineRecalculationAtomCount(gmx_pme_t* pme)
+{
+    pme->gpu->minParticleCountToRecalculateSplines = 0;
 }
 
 void registerTestsDynamically()

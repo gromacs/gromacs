@@ -223,6 +223,9 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
         {
             return;
         }
+        static_assert(computeSplines or threadsPerAtom == ThreadsPerAtom::OrderSquared,
+                      "Loading splines from global memory is supported only with order-squared "
+                      "threads per atom");
 
         // These declarations work on the device.
         typename GridLineIndices::DeviceStorage sm_gridlineIndicesDeviceStorage;
@@ -425,20 +428,26 @@ void PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY
  */
 CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
 
-#define INSTANTIATE_3(order, computeSplines, spreadCharges, numGrids, writeGlobal, threadsPerAtom, subGroupSize) \
-    template class PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, true, true, numGrids, writeGlobal, threadsPerAtom, subGroupSize>;
-
-#define INSTANTIATE_2(order, numGrids, threadsPerAtom, subGroupSize)                 \
-    INSTANTIATE_3(order, true, true, numGrids, true, threadsPerAtom, subGroupSize);  \
-    INSTANTIATE_3(order, true, false, numGrids, true, threadsPerAtom, subGroupSize); \
-    INSTANTIATE_3(order, false, true, numGrids, true, threadsPerAtom, subGroupSize); \
-    INSTANTIATE_3(order, true, true, numGrids, false, threadsPerAtom, subGroupSize);
-
-#define INSTANTIATE(order, subGroupSize)                                 \
-    INSTANTIATE_2(order, 1, ThreadsPerAtom::Order, subGroupSize);        \
-    INSTANTIATE_2(order, 1, ThreadsPerAtom::OrderSquared, subGroupSize); \
-    INSTANTIATE_2(order, 2, ThreadsPerAtom::Order, subGroupSize);        \
-    INSTANTIATE_2(order, 2, ThreadsPerAtom::OrderSquared, subGroupSize);
+// clang-format off
+/* Help document which template field means what
+template class PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom,               subGroupSize>;
+*/
+#define INSTANTIATE(order, subGroupSize)                                                                                                                        \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::Order,        subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, false,          true,          true,  true,  1,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  1,        false,       ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::Order,        subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::Order,        subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           false,         true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, false,          true,          true,  true,  2,        true,        ThreadsPerAtom::OrderSquared, subGroupSize>; \
+template class PmeSplineAndSpreadKernel<order, true,           true,          true,  true,  2,        false,       ThreadsPerAtom::OrderSquared, subGroupSize>; \
+    // clang-format on
 
 #if GMX_SYCL_DPCPP || GMX_ACPP_HAVE_GENERIC_TARGET
 INSTANTIATE(4, 16); // TODO: Choose best value, Issue #4153.
