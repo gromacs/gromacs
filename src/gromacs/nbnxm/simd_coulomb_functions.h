@@ -143,12 +143,22 @@ public:
     //! Returns the self energy
     inline real selfEnergy() const { return selfEnergy_; }
 
+    /*! \brief Returns the force
+     *
+     * \param[in] rSquaredV   The distance squared
+     * \param[in] dummyRInvV  Not used
+     * \param[in] rInvExclV   1/r, should be 0 for pairs beyond the cut-off and for excluded pairs
+     * \param[in] withinCutoffV  Mask which tells whether pairs are within the cut-off
+     */
     template<int nR>
     gmx_inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
                                               const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
                                               const std::array<SimdReal, nR>&            rInvExclV,
                                               const std::array<SimdBool, nR>& withinCutoffV)
     {
+        /* Note that the Ewald correction force is 0 at r=0, so we can mask pairs beyond the cut-off
+         * by setting r^2 to zero.
+         */
         const auto brsqV = genArr<nR>(
                 [&](int i) { return betaSquared_ * selectByMask(rSquaredV[i], withinCutoffV[i]); });
 
@@ -157,15 +167,26 @@ public:
         return genArr<nR>([&](int i) { return fma(ewcorrV[i], brsqV[i], rInvExclV[i]); });
     }
 
-    //! Computes the Coulomb force and the correction energy for the Ewald reciprocal part
+    /*! \brief Computes the Coulomb force and the Ewald reciprocal pot correction energy
+     *
+     * \param[in] rSquaredV      The distance squared
+     * \param[in] dummyRInvV     Not used
+     * \param[in] rInvExclV      1/r, should be 0 for pairs beyond the cut-off and for excluded pairs
+     * \param[in] withinCutoffV  Mask which tells whether pairs are within the cut-off
+     * \param[out] forceV        Force, does not need to be masked for cut-off and exclusions
+     * \param[out] correctionEnergyV  Ewald correction energy, needs to be masked for cut-off
+     */
     template<int nR, std::size_t energySize>
-    gmx_inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&   rSquaredV,
-                                             const std::array<SimdReal, nR>&   rInvV,
-                                             const std::array<SimdReal, nR>&   rInvExclV,
+    gmx_inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&            rSquaredV,
+                                             const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
+                                             const std::array<SimdReal, nR>&            rInvExclV,
                                              const std::array<SimdBool, nR>&   withinCutoffV,
                                              std::array<SimdReal, nR>&         forceV,
                                              std::array<SimdReal, energySize>& correctionEnergyV)
     {
+        /* Note that the Ewald correction force is 0 at r=0, so we can mask pairs beyond the cut-off
+         * by setting r^2 to zero.
+         */
         const auto brsqV = genArr<nR>(
                 [&](int i) { return betaSquared_ * selectByMask(rSquaredV[i], withinCutoffV[i]); });
 
@@ -175,8 +196,6 @@ public:
 
         correctionEnergyV =
                 genArr<nR>([&](int i) { return beta_ * pmePotentialCorrection(brsqV[i]); });
-
-        GMX_UNUSED_VALUE(rInvV);
     }
 
 private:
@@ -208,14 +227,23 @@ public:
     //! Returns the self energy
     inline real selfEnergy() const { return selfEnergy_; }
 
-    //! Returns the force
+    /*! \brief Returns the force
+     *
+     * \param[in] rSquaredV  The distance squared
+     * \param[in] rInvV      1/r, should be 0 for pairs beyond the cut-off
+     * \param[in] rInvExclV  1/r, should be 0 for pairs beyond the cut-off and for excluded pairs
+     * \param[in] withinCutoffV  Mask which tells whether pairs are within the cut-off
+     */
     template<int nR>
     gmx_inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>& rSquaredV,
                                               const std::array<SimdReal, nR>& rInvV,
                                               const std::array<SimdReal, nR>& rInvExclV,
                                               const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
     {
-        /* We use separate registers for r for tabulated Ewald and LJ to keep the code simpler */
+        /* Note that we compute r as rSquaredV * rInvV, where rInvV=0 for pairs beyond the cut-off.
+         * As the Ewald correction force is zero for r=0, we do not need to mask
+         * the force for pairs beyond the cut-off.
+         */
         const auto rV = genArr<nR>([&](int i) { return rSquaredV[i] * rInvV[i]; });
 
         /* Convert r to scaled table units */
@@ -266,7 +294,15 @@ public:
         return forceV;
     }
 
-    //! Computes the Coulomb force and the Ewald reciprocal pot correction energy
+    /*! \brief Computes the Coulomb force and the Ewald reciprocal pot correction energy
+     *
+     * \param[in] rSquaredV      The distance squared
+     * \param[in] rInvV          1/r, should be 0 for pairs beyond the cut-off
+     * \param[in] rInvExclV      1/r, should be 0 for pairs beyond the cut-off and for excluded pairs
+     * \param[in] withinCutoffV  Not used
+     * \param[out] forceV        Force, does not need to be masked for cut-off and exclusions
+     * \param[out] correctionEnergyV  Ewald correction energy, needs to be masked for cut-off
+     */
     template<int nR, std::size_t energySize>
     gmx_inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>& rSquaredV,
                                              const std::array<SimdReal, nR>& rInvV,
@@ -275,7 +311,10 @@ public:
                                              std::array<SimdReal, nR>&         forceV,
                                              std::array<SimdReal, energySize>& correctionEnergyV)
     {
-        /* We use separate registers for r for tabulated Ewald and LJ to keep the code simpler */
+        /* Note that we compute r as rSquaredV * rInvV, where rInvV=0 for pairs beyond the cut-off.
+         * As the Ewald correction force is zero for r=0, we do not need to mask
+         * the force for pairs beyond the cut-off.
+         */
         const auto rV = genArr<nR>([&](int i) { return rSquaredV[i] * rInvV[i]; });
 
         /* Convert r to scaled table units */
