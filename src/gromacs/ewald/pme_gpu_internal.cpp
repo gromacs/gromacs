@@ -1358,8 +1358,9 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
     if (gmx::GpuConfigurationCapabilities::PmeSupportsThreadsPerAtomOrder
         && pmeGpu->kernelParams->atoms.nAtoms > pmeGpu->minParticleCountToRecalculateSplines)
     {
-        pmeGpu->settings.threadsPerAtom     = ThreadsPerAtom::Order;
-        pmeGpu->settings.recalculateSplines = true;
+        pmeGpu->settings.threadsPerAtom = ThreadsPerAtom::Order;
+        pmeGpu->settings.recalculateSplines =
+                deviceUsesRecalculateSplines(pmeGpu->archSpecific->deviceContext_.deviceInfo());
     }
     else
     {

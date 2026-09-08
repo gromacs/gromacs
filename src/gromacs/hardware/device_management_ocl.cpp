@@ -743,3 +743,9 @@ gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& de
         return gmx::PairlistType::Hierarchical8x8x8;
     }
 }
+
+bool deviceUsesRecalculateSplines(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of non-implemented method in OpenCL");
+    return false;
+}

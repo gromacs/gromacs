@@ -767,3 +767,8 @@ gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& de
         default: return gmx::PairlistType::Count;
     }
 }
+
+bool deviceUsesRecalculateSplines(const DeviceInformation& /* deviceInfo */)
+{
+    return true;
+}
