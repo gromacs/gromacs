@@ -373,3 +373,9 @@ gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& de
     return deviceInfo.supportedSubGroupSizes[0] == 64 ? gmx::PairlistType::Hierarchical8x8x8_nosplit
                                                       : gmx::PairlistType::Hierarchical8x8x8;
 }
+
+bool deviceUsesRecalculateSplines(const DeviceInformation& deviceInfo)
+{
+    // We use the large register pool as a proxy for CDNA
+    return deviceInfo.deviceHasLargeRegisterPool;
+}

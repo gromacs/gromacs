@@ -317,4 +317,7 @@ int maximumGridSize(const DeviceInformation& deviceInfo);
  */
 gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& deviceInfo);
 
+//! Get information if device benefits from recalculating splines during PME
+bool deviceUsesRecalculateSplines(const DeviceInformation& deviceInfo);
+
 #endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

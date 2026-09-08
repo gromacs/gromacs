@@ -93,3 +93,9 @@ gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& /*
 {
     return gmx::PairlistType::Count;
 }
+
+bool deviceUsesRecalculateSplines(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
+    return false;
+}

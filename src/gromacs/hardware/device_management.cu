@@ -488,3 +488,8 @@ gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& /*
     // only one kernel type supported for CUDA devices.
     return gmx::PairlistType::Hierarchical8x8x8;
 }
+
+bool deviceUsesRecalculateSplines(const DeviceInformation& /* deviceInfo */)
+{
+    return true;
+}
