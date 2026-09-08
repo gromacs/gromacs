@@ -31,14 +31,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-gmx_add_unit_test(RandomUnitTests random-test
+gmx_add_unit_test(RandomUnitTests random-test HARDWARE_DETECTION
     CPP_SOURCE_FILES
         exponentialdistribution.cpp
         gammadistribution.cpp
         normaldistribution.cpp
         seed.cpp
         tabulatednormaldistribution.cpp
-        threefry.cpp
         uniformintdistribution.cpp
         uniformrealdistribution.cpp
+    GPU_CPP_SOURCE_FILES
+        threefry.cpp
         )

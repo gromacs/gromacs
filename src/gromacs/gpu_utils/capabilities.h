@@ -102,6 +102,8 @@ struct GpuConfigurationCapabilities
                                              || (GMX_GPU_SYCL && GMX_USE_Heffte)
                                              || (GMX_GPU_HIP && GMX_USE_Heffte);
     static constexpr bool TwoDPmeDecomposition = PmeDecomposition && GMX_GPU_CUDA;
+    //! Whether we support running the threefry random number generator on the device.
+    static constexpr bool Threefry = GMX_GPU && !GMX_GPU_OPENCL;
 };
 CLANG_DIAGNOSTIC_RESET
 

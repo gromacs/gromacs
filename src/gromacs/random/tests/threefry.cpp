@@ -35,11 +35,14 @@
  * \brief Tests for the ThreeFry random engine
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \ingroup module_random
  */
 #include "gmxpre.h"
 
 #include "gromacs/random/threefry.h"
+
+#include "config.h"
 
 #include <cstdint>
 
@@ -48,11 +51,27 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
+#include "testutils/hardware_test_fixture.h"
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "threefrytestinputs.h"
+
+#if GMX_GPU && !GMX_GPU_OPENCL
+#    include "gromacs/gpu_utils/device_context.h"
+#    include "gromacs/gpu_utils/device_stream.h"
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/gputraits.h"
+#    if GMX_GPU_SYCL
+#        include "gromacs/gpu_utils/gmxsycl.h"
+#    endif
+#endif
 
 namespace gmx
 {
@@ -61,94 +80,217 @@ namespace test
 namespace
 {
 
-class ThreeFry2x64Test : public ::testing::TestWithParam<std::vector<uint64_t>>
+#if GMX_GPU && !GMX_GPU_OPENCL
+
+#    if GMX_GPU_CUDA || GMX_GPU_HIP
+
+template<unsigned int rounds>
+GMX_KERNEL_ATTRIBUTE void setupDeviceRngKeys(gmx::ThreeFry2x64General<rounds, 0>* d_rng,
+                                             uint64_t                             key0,
+                                             uint64_t                             key1)
+{
+    new (d_rng) gmx::ThreeFry2x64General<rounds, 0>(key0, key1);
+}
+
+template<unsigned int rounds>
+GMX_KERNEL_ATTRIBUTE void restartDeviceRng(gmx::ThreeFry2x64General<rounds, 0>* d_rng, uint64_t ctr0, uint64_t ctr1)
+{
+    d_rng->restart(ctr0, ctr1);
+}
+
+template<unsigned int rounds>
+GMX_KERNEL_ATTRIBUTE void nextDeviceRng(gmx::ThreeFry2x64General<rounds, 0>* d_rng,
+                                        uint64_t* __restrict__ gm_result)
+{
+    *gm_result = (*d_rng)();
+}
+
+#    elif GMX_GPU_SYCL
+
+template<unsigned int rounds>
+class ThreeFrySetupKernel;
+template<unsigned int rounds>
+class ThreeFryRestartKernel;
+template<unsigned int rounds>
+class ThreeFryNextKernel;
+
+#    endif
+
+/*! \brief Run a known-answer ThreeFry test on GPU. */
+template<unsigned int rounds>
+void runKnownAnswerGpu(const DeviceContext&   deviceContext,
+                       const DeviceStream&    deviceStream,
+                       uint64_t               ctr0,
+                       uint64_t               ctr1,
+                       uint64_t               key0,
+                       uint64_t               key1,
+                       std::vector<uint64_t>& result)
+{
+    DeviceBuffer<gmx::ThreeFry2x64General<rounds, 0>> rng;
+    DeviceBuffer<uint64_t>                            d_result;
+    allocateDeviceBuffer(&rng, 1, deviceContext);
+    allocateDeviceBuffer(&d_result, 1, deviceContext);
+
+#    if GMX_GPU_CUDA || GMX_GPU_HIP
+    {
+        KernelLaunchConfig kernelLaunchConfig;
+
+        auto       kernelPtr = setupDeviceRngKeys<rounds>;
+        const auto kernelArgs =
+                prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig, &rng, &key0, &key1);
+        launchGpuKernel(kernelPtr,
+                        kernelLaunchConfig,
+                        deviceStream,
+                        nullptr,
+                        "test_threefry_setup_device_rng_keys_kernel",
+                        kernelArgs);
+    }
+    {
+        KernelLaunchConfig kernelLaunchConfig;
+
+        auto       kernelPtr = restartDeviceRng<rounds>;
+        const auto kernelArgs =
+                prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig, &rng, &ctr0, &ctr1);
+        launchGpuKernel(
+                kernelPtr, kernelLaunchConfig, deviceStream, nullptr, "test_threefry_restart_kernel", kernelArgs);
+    }
+    for (int i = 0; i < 2; ++i)
+    {
+        KernelLaunchConfig kernelLaunchConfig;
+
+        auto kernelPtr = nextDeviceRng<rounds>;
+        const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig, &rng, &d_result);
+        launchGpuKernel(
+                kernelPtr, kernelLaunchConfig, deviceStream, nullptr, "test_threefry_next_kernel", kernelArgs);
+
+        uint64_t h_result;
+        copyFromDeviceBuffer(&h_result, &d_result, 0, 1, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+        result.push_back(h_result);
+    }
+#    elif GMX_GPU_SYCL
+    using Rng   = gmx::ThreeFry2x64General<rounds, 0>;
+    Rng* gm_rng = rng.get_pointer();
+    deviceStream.stream().submit(
+            [&](sycl::handler& cgh) {
+                cgh.single_task<ThreeFrySetupKernel<rounds>>([=]() { new (gm_rng) Rng(key0, key1); });
+            });
+    deviceStream.stream().submit(
+            [&](sycl::handler& cgh) {
+                cgh.single_task<ThreeFryRestartKernel<rounds>>([=]() { gm_rng->restart(ctr0, ctr1); });
+            });
+    for (int i = 0; i < 2; ++i)
+    {
+        uint64_t* gm_dest = d_result.get_pointer();
+        deviceStream.stream().submit(
+                [&](sycl::handler& cgh)
+                { cgh.single_task<ThreeFryNextKernel<rounds>>([=]() { *gm_dest = (*gm_rng)(); }); });
+
+        uint64_t h_result;
+        copyFromDeviceBuffer(&h_result, &d_result, 0, 1, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+        result.push_back(h_result);
+    }
+#    endif
+
+    freeDeviceBuffer(&rng);
+    freeDeviceBuffer(&d_result);
+}
+
+#endif // GMX_GPU && !GMX_GPU_OPENCL
+
+using ThreeFryKnownAnswersTestHelper =
+        HardwareAndExecutionTestHelper<ThreeFryKnownAnswerInput, std::tuple<>>;
+
+static const auto sc_knownAnswerInputFormatters = std::make_tuple(
+        useString,
+        [](uint64_t ctr0) { return formatString("%zu", ctr0).substr(0, 3); },
+        [](uint64_t ctr1) { return formatString("%zu", ctr1).substr(0, 3); },
+        [](uint64_t key0) { return formatString("%zu", key0).substr(0, 3); },
+        [](uint64_t key1) { return formatString("%zu", key1).substr(0, 3); });
+
+static const NameOfTestFromTuple<ThreeFryKnownAnswersTestHelper::DynamicParameters> sc_knownAnswersTestNamer =
+        ThreeFryKnownAnswersTestHelper::testNamer(sc_knownAnswerInputFormatters, std::make_tuple());
+
+/*! \brief Test fixture for ThreeFry known-answer tests on CPU and GPU. */
+class ThreeFryKnownAnswersTest : public HardwareTestFixture<ThreeFryKnownAnswersTestHelper>
+{
+protected:
+    ThreeFryKnownAnswersTest() : HardwareTestFixture(sc_knownAnswerInputFormatters) {}
+
+    /*! \brief Run a known-answer test on the selected hardware. */
+    template<unsigned int rounds>
+    void runKnownAnswerTest(const char* sequenceName);
+};
+
+template<unsigned int rounds>
+void ThreeFryKnownAnswersTest::runKnownAnswerTest(const char* sequenceName)
+{
+    TestReferenceChecker&      testChecker         = checker();
+    const TestHardwareContext* testHardwareContext = hardwareContext();
+    auto [inputName, ctr0, ctr1, key0, key1, _]    = GetParam();
+
+    SCOPED_TRACE(formatString("Testing %sUsing%uRounds on %s with input %s",
+                              sequenceName,
+                              rounds,
+                              hardwareContext()->description().c_str(),
+                              inputName.c_str()));
+
+    std::vector<uint64_t> result;
+
+    if (testHardwareContext->isGpuTest())
+    {
+#if GMX_GPU && !GMX_GPU_OPENCL
+        testHardwareContext->activate();
+        runKnownAnswerGpu<rounds>(*testHardwareContext->deviceContext(),
+                                  *testHardwareContext->deviceStream(),
+                                  ctr0,
+                                  ctr1,
+                                  key0,
+                                  key1,
+                                  result);
+#else
+        GMX_THROW(gmx::InternalError("GPU hardware context with no test code"));
+#endif
+    }
+    else
+    {
+        gmx::ThreeFry2x64General<rounds, 0> rng(key0, key1);
+        rng.restart(ctr0, ctr1);
+        result.push_back(rng());
+        result.push_back(rng());
+    }
+
+    testChecker.checkSequence(result.begin(), result.end(), sequenceName);
+}
+
+TEST_P(ThreeFryKnownAnswersTest, Default)
+{
+    runKnownAnswerTest<20>("ThreeFry2x64");
+}
+
+TEST_P(ThreeFryKnownAnswersTest, Fast)
+{
+    runKnownAnswerTest<13>("ThreeFry2x64Fast");
+}
+
+TEST_P(ThreeFryKnownAnswersTest, Using40Rounds)
+{
+    runKnownAnswerTest<40>("ThreeFry2x64Using40Rounds");
+}
+
+INSTANTIATE_TEST_SUITE_P(AllHardware,
+                         ThreeFryKnownAnswersTest,
+                         ::testing::ConvertGenerator(
+                                 ::testing::Combine(::testing::ValuesIn(sc_threefryKnownAnswerInputs),
+                                                    ::testing::ValuesIn(getHardwareContextsWithCapability(
+                                                            GpuConfigurationCapabilities::Threefry))),
+                                 flattenTupleWithHardwareContext<ThreeFryKnownAnswerInput>()),
+                         sc_knownAnswersTestNamer);
+
+
+class ThreeFry2x64Test : public ::testing::Test
 {
 };
 
-TEST_P(ThreeFry2x64Test, Default)
-{
-    gmx::test::TestReferenceData    data;
-    gmx::test::TestReferenceChecker checker(data.rootChecker());
-    const std::vector<uint64_t>     input = GetParam();
-    std::vector<uint64_t>           result;
-
-    gmx::ThreeFry2x64<0> rng(input[2], input[3]);
-    rng.restart(input[0], input[1]);
-
-    result.push_back(rng());
-    result.push_back(rng());
-
-    checker.checkSequence(result.begin(), result.end(), "ThreeFry2x64");
-}
-
-TEST_P(ThreeFry2x64Test, Fast)
-{
-    gmx::test::TestReferenceData    data;
-    gmx::test::TestReferenceChecker checker(data.rootChecker());
-    const std::vector<uint64_t>     input = GetParam();
-    std::vector<uint64_t>           result;
-
-    gmx::ThreeFry2x64Fast<0> rng(input[2], input[3]);
-    rng.restart(input[0], input[1]);
-
-    result.push_back(rng());
-    result.push_back(rng());
-
-    checker.checkSequence(result.begin(), result.end(), "ThreeFry2x64Fast");
-}
-
-TEST_P(ThreeFry2x64Test, Using40Rounds)
-{
-    gmx::test::TestReferenceData    data;
-    gmx::test::TestReferenceChecker checker(data.rootChecker());
-    const std::vector<uint64_t>     input = GetParam();
-    std::vector<uint64_t>           result;
-
-    gmx::ThreeFry2x64General<40, 0> rng(input[2], input[3]);
-    rng.restart(input[0], input[1]);
-
-    result.push_back(rng());
-    result.push_back(rng());
-
-    checker.checkSequence(result.begin(), result.end(), "ThreeFry2x64Using40Rounds");
-}
-
-
-/*! \brief Constant array of integers with all bits zeroed.
- *
- *  Reference key and counter input data for known answers test.
- *  The 2x64 flavors of ThreeFry64 will use the first four values, while
- *  the 4x64 version uses all eight.
- */
-const std::vector<uint64_t> bitsZero{ { 0, 0, 0, 0 } };
-
-
-/*! \brief Constant array of integers with all bits set to one.
- *
- *  Reference key and counter input data for known answers test.
- *  The 2x64 flavors of ThreeFry64 will use the first four values, while
- *  the 4x64 version uses all eight.
- */
-const std::vector<uint64_t> bitsOne{
-    { 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL }
-};
-
-/*! \brief Constant array of integers with bitpattern from Pi.
- *
- *  Reference key and counter input data for known answers test.
- *  The 2x64 flavors of ThreeFry64 will use the first four values, while
- *  the 4x64 version uses all eight.
- */
-const std::vector<uint64_t> bitsPi{
-    { 0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL, 0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL }
-};
-
-// Test the known ansers for the ThreeFry random function when the argument
-// is (1) all zero, (2) all ones, (3) the bits of pi, for a bunch of different flavors of ThreeFry.
-INSTANTIATE_TEST_SUITE_P(KnownAnswersTest, ThreeFry2x64Test, ::testing::Values(bitsZero, bitsOne, bitsPi));
-
-
-// ThreeFry2x64 tests
 TEST_F(ThreeFry2x64Test, Logical)
 {
     gmx::ThreeFry2x64<10> rngA(123456, gmx::RandomDomain::Other);
@@ -247,5 +389,6 @@ TEST_F(ThreeFry2x64Test, ExhaustInternalCounter)
 }
 
 } // namespace
+
 } // namespace test
 } // namespace gmx
