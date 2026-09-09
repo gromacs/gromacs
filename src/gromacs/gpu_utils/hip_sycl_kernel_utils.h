@@ -320,6 +320,23 @@ constexpr int deviceWavefrontSize()
 #    endif
 }
 
+/*! \brief Whether the offload target is a CDNA or not.
+ *
+ * True for gfx9xx (wave64) and gfx1251 (wave32 CDNA5).
+ * False for all other targets. Use for CDNA-only optimizations that
+ * are independent of physical wave width.
+ */
+constexpr bool deviceIsCdna()
+{
+#    if defined(__GFX9__) || defined(__gfx1251__)
+    return true;
+#    elif defined(__AMDGCN__)
+    return false;
+#    else
+    static_assert(false); // prevent using this outside of device kernels
+#    endif
+}
+
 #endif /* Device code only */
 
 #endif /* GMX_GPU_UTILS_WAVE_MOVE_DPP_H */

@@ -372,10 +372,10 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
             // Coordinates
             __shared__ float3 sm_coordinates[atomsPerBlock];
             /* Staging coefficients/charges */
-            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(sm_coefficients, gm_coefficientsA);
+            pme_gpu_stage_atom_data<float, atomsPerBlock, 1, false>(sm_coefficients, gm_coefficientsA);
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(sm_coordinates, gm_coordinates);
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1, false>(sm_coordinates, gm_coordinates);
             __syncthreads();
             atomX      = sm_coordinates[atomIndexLocal];
             atomCharge = sm_coefficients[atomIndexLocal];
