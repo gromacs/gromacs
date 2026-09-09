@@ -33,8 +33,6 @@
 
 add_library(gmxlib INTERFACE)
 
-# The nonbonded directory contains subdirectories that are only
-# conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.cpp)
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} PARENT_SCOPE)
