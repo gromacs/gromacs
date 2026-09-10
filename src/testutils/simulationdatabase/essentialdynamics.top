@@ -1,0 +1,42 @@
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.8333
+
+[ atomtypes ]
+;name   bond_type     mass     charge   ptype   sigma         epsilon       Amb
+ CH3      CH3          0.00000  0.00000   A     3.39967e-01   4.57730e-01 ; 1.91  0.1094
+ CH2      CH2          0.00000  0.00000   A     3.39967e-01   4.57730e-01 ; 1.91  0.1094
+
+[ moleculetype ]
+;name nrexcl
+DRG      3
+
+[ atoms ]
+;  nr  type resnr resid  atom  cgnr charge    
+    1   CH3     1 DRG     CAA     1   -0.011       12.01000 
+    2   CH2     1 DRG     CAB     1    0.011        12.01000
+    3   CH2     1 DRG     CAC     1    0.011        12.01000 
+    4   CH3     1 DRG     CAD     1   -0.011       12.01000 
+[ bonds ]
+;ai  aj  fu    c0          c1
+  1   2   1 0.153    334720.0 0.153    334720.0 ;   CAA  CAB
+  2   3   1 0.153    334720.0 0.153    334720.0 ;   CAB  CAC
+  3   4   1 0.153    334720.0 0.153    334720.0 ;   CAC  CAD
+[ pairs ]
+;ai  aj  fu    c0          c1
+  1   4   1                   ;   CAA  CAD
+[ angles ]
+;ai  aj  ak  fu    c0          c1
+  1   2   3   1 111.0       460.2 111.0       460.2 ;   CAA  CAB  CAC
+  2   3   4   1 111.0       460.2 111.0       460.2 ;   CAB  CAC  CAD
+[ dihedrals ]
+;ai  aj  ak  al  fu    c0    c1 m  c0   c1 m
+  4   3   2   1   1   0.0    5.9 3   0.0    5.9 3 ; DI    CAD  CAC  CAB  CAA
+   
+[ system ]
+DRG-linacc
+
+[ molecules ]
+; Compound        nmols
+DRG               1     
+

@@ -63,6 +63,13 @@ public:
     //! \brief Run command and check the resulting output.
     void runAndCheckResults();
 
+    /*! \brief Run command without checking output files.
+     *
+     * Use this when validation is done externally (e.g., comparing against
+     * files in simulationdatabase) rather than via the reference data framework.
+     */
+    void runTool();
+
     //! \brief Select groups when prompted for when running the tool.
     void selectGroups(std::initializer_list<const char*> groups);
 

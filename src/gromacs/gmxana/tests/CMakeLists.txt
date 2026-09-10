@@ -38,6 +38,7 @@ gmx_add_gtest_executable(${exename}
         gmxanatestbase.cpp
         gmx_angle.cpp
         gmx_chi.cpp
+        gmx_make_edi.cpp
         gmx_mindist.cpp
         gmx_rama.cpp
         gmx_rms.cpp

@@ -76,9 +76,14 @@ GmxAnaTestBase::GmxAnaTestBase() : impl_(std::make_unique<Impl>(fileManager())) 
 
 GmxAnaTestBase::~GmxAnaTestBase() {}
 
-void GmxAnaTestBase::runAndCheckResults()
+void GmxAnaTestBase::runTool()
 {
     ASSERT_EQ(0, gmxTool(commandLine().argc(), commandLine().argv()));
+}
+
+void GmxAnaTestBase::runAndCheckResults()
+{
+    runTool();
     checkOutputFiles();
 }
 

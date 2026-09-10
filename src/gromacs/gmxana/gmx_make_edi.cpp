@@ -752,155 +752,156 @@ int gmx_make_edi(int argc, char* argv[])
     /* Save all the params in this struct and then save it in an edi file.
      * ignoring fields nmass,massnrs,mass,tmass,nfit,fitnrs,edo
      */
-    static t_edipar edi_params;
+    t_edipar edi_params = {};
 
     enum
     {
         evStepNr = evRADFIX + 1
     };
-    static const char* evSelections[evNr] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-    static const char* evOptions[evNr]         = { "-linfix", "-linacc", "-flood", "-radfix",
-                                                   "-radacc", "-radcon", "-mon" };
-    static const char* evParams[evStepNr]      = { nullptr, nullptr };
-    static const char* evStepOptions[evStepNr] = { "-linstep", "-accdir", "-not_used", "-radstep" };
-    static const char* ConstForceStr;
-    static real*       evStepList[evStepNr];
-    static real        radstep  = 0.0;
-    static real        deltaF0  = 150;
-    static real        deltaF   = 0;
-    static real        tau      = .1;
-    static real        constEfl = 0.0;
-    static real        alpha    = 1;
-    static int         eqSteps  = 0;
-    static int*        listen[evNr];
-    static real        T         = 300.0;
-    const real         kB        = 2.5 / 300.0; /* k_boltzmann in MD units */
-    static gmx_bool    bRestrain = FALSE;
-    static gmx_bool    bHesse    = FALSE;
-    static gmx_bool    bHarmonic = FALSE;
-    t_pargs            pa[]      = {
+    const char* evSelections[evNr] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+    const char* const evOptions[evNr]         = { "-linfix", "-linacc", "-flood", "-radfix",
+                                                  "-radacc", "-radcon", "-mon" };
+    const char*       evParams[evStepNr]      = { nullptr, nullptr };
+    const char* const evStepOptions[evStepNr] = { "-linstep", "-accdir", "-not_used", "-radstep" };
+    const char*       ConstForceStr           = nullptr;
+    real*             evStepList[evStepNr]    = { nullptr };
+    real              radstep                 = 0.0;
+    real              deltaF0                 = 150;
+    real              deltaF                  = 0;
+    real              tau                     = .1;
+    real              constEfl                = 0.0;
+    real              alpha                   = 1;
+    int               eqSteps                 = 0;
+    int*              listen[evNr]            = { nullptr };
+    real              T                       = 300.0;
+    const real        kB                      = 2.5 / 300.0; /* k_boltzmann in MD units */
+    gmx_bool          bRestrain               = FALSE;
+    gmx_bool          bHesse                  = FALSE;
+    gmx_bool          bHarmonic               = FALSE;
+
+    t_pargs pa[] = {
         { "-mon",
-                          FALSE,
-                          etSTR,
-                          { &evSelections[evMON] },
-                          "Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 "
-                                          "31 ... 91" },
+          FALSE,
+          etSTR,
+          { &evSelections[evMON] },
+          "Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 "
+          "31 ... 91" },
         { "-linfix",
-                          FALSE,
-                          etSTR,
-                          { &evSelections[0] },
-                          "Indices of eigenvectors for fixed increment linear sampling" },
+          FALSE,
+          etSTR,
+          { &evSelections[0] },
+          "Indices of eigenvectors for fixed increment linear sampling" },
         { "-linacc",
-                          FALSE,
-                          etSTR,
-                          { &evSelections[1] },
-                          "Indices of eigenvectors for acceptance linear sampling" },
+          FALSE,
+          etSTR,
+          { &evSelections[1] },
+          "Indices of eigenvectors for acceptance linear sampling" },
         { "-radfix",
-                          FALSE,
-                          etSTR,
-                          { &evSelections[3] },
-                          "Indices of eigenvectors for fixed increment radius expansion" },
+          FALSE,
+          etSTR,
+          { &evSelections[3] },
+          "Indices of eigenvectors for fixed increment radius expansion" },
         { "-radacc",
-                          FALSE,
-                          etSTR,
-                          { &evSelections[4] },
-                          "Indices of eigenvectors for acceptance radius expansion" },
+          FALSE,
+          etSTR,
+          { &evSelections[4] },
+          "Indices of eigenvectors for acceptance radius expansion" },
         { "-radcon",
-                          FALSE,
-                          etSTR,
-                          { &evSelections[5] },
-                          "Indices of eigenvectors for acceptance radius contraction" },
+          FALSE,
+          etSTR,
+          { &evSelections[5] },
+          "Indices of eigenvectors for acceptance radius contraction" },
         { "-flood", FALSE, etSTR, { &evSelections[2] }, "Indices of eigenvectors for flooding" },
         { "-outfrq",
-                          FALSE,
-                          etINT,
-                          { &edi_params.outfrq },
-                          "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
+          FALSE,
+          etINT,
+          { &edi_params.outfrq },
+          "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
         { "-slope",
-                          FALSE,
-                          etREAL,
-                          { &edi_params.slope },
-                          "Minimal slope in acceptance radius expansion" },
+          FALSE,
+          etREAL,
+          { &edi_params.slope },
+          "Minimal slope in acceptance radius expansion" },
         { "-linstep",
-                          FALSE,
-                          etSTR,
-                          { &evParams[0] },
-                          "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 "
-                                          "-3.1\")" },
+          FALSE,
+          etSTR,
+          { &evParams[0] },
+          "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 "
+          "-3.1\")" },
         { "-accdir",
-                          FALSE,
-                          etSTR,
-                          { &evParams[1] },
-                          "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 "
-                                          "-1.1\")" },
+          FALSE,
+          etSTR,
+          { &evParams[1] },
+          "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 "
+          "-1.1\")" },
         { "-radstep",
-                          FALSE,
-                          etREAL,
-                          { &radstep },
-                          "Stepsize (nm/step) for fixed increment radius expansion" },
+          FALSE,
+          etREAL,
+          { &radstep },
+          "Stepsize (nm/step) for fixed increment radius expansion" },
         { "-maxedsteps",
-                          FALSE,
-                          etINT,
-                          { &edi_params.maxedsteps },
-                          "Maximum number of steps per cycle" },
+          FALSE,
+          etINT,
+          { &edi_params.maxedsteps },
+          "Maximum number of steps per cycle" },
         { "-eqsteps",
-                          FALSE,
-                          etINT,
-                          { &eqSteps },
-                          "Number of steps to run without any perturbations " },
+          FALSE,
+          etINT,
+          { &eqSteps },
+          "Number of steps to run without any perturbations " },
         { "-deltaF0", FALSE, etREAL, { &deltaF0 }, "Target destabilization energy for flooding" },
         { "-deltaF",
-                          FALSE,
-                          etREAL,
-                          { &deltaF },
-                          "Start deltaF with this parameter - default 0, nonzero values only needed for restart" },
+          FALSE,
+          etREAL,
+          { &deltaF },
+          "Start deltaF with this parameter - default 0, nonzero values only needed for restart" },
         { "-tau",
-                          FALSE,
-                          etREAL,
-                          { &tau },
-                          "Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity "
-                                          "i.e. constant flooding strength" },
+          FALSE,
+          etREAL,
+          { &tau },
+          "Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity "
+          "i.e. constant flooding strength" },
         { "-Eflnull",
-                          FALSE,
-                          etREAL,
-                          { &constEfl },
-                          "The starting value of the flooding strength. The flooding strength is updated "
-                                          "according to the adaptive flooding scheme. For a constant flooding strength use "
-                                          "[TT]-tau[tt] 0. " },
+          FALSE,
+          etREAL,
+          { &constEfl },
+          "The starting value of the flooding strength. The flooding strength is updated "
+          "according to the adaptive flooding scheme. For a constant flooding strength use "
+          "[TT]-tau[tt] 0. " },
         { "-T",
-                          FALSE,
-                          etREAL,
-                          { &T },
-                          "T is temperature, the value is needed if you want to do flooding " },
+          FALSE,
+          etREAL,
+          { &T },
+          "T is temperature, the value is needed if you want to do flooding " },
         { "-alpha",
-                          FALSE,
-                          etREAL,
-                          { &alpha },
-                          "Scale width of gaussian flooding potential with alpha^2 " },
+          FALSE,
+          etREAL,
+          { &alpha },
+          "Scale width of gaussian flooding potential with alpha^2 " },
         { "-restrain",
-                          FALSE,
-                          etBOOL,
-                          { &bRestrain },
-                          "Use the flooding potential with inverted sign -> effects as quasiharmonic restraining "
-                                          "potential" },
+          FALSE,
+          etBOOL,
+          { &bRestrain },
+          "Use the flooding potential with inverted sign -> effects as quasiharmonic restraining "
+          "potential" },
         { "-hessian",
-                          FALSE,
-                          etBOOL,
-                          { &bHesse },
-                          "The eigenvectors and eigenvalues are from a Hessian matrix" },
+          FALSE,
+          etBOOL,
+          { &bHesse },
+          "The eigenvectors and eigenvalues are from a Hessian matrix" },
         { "-harmonic",
-                          FALSE,
-                          etBOOL,
-                          { &bHarmonic },
-                          "The eigenvalues are interpreted as spring constant" },
+          FALSE,
+          etBOOL,
+          { &bHarmonic },
+          "The eigenvalues are interpreted as spring constant" },
         { "-constF",
-                          FALSE,
-                          etSTR,
-                          { &ConstForceStr },
-                          "Constant force flooding: manually set the forces for the eigenvectors selected with "
-                                          "-flood "
-                                          "(put in quotes! \"1.0 2.3 5.1 -3.1\"). No other flooding parameters are needed when "
-                                          "specifying the forces directly." }
+          FALSE,
+          etSTR,
+          { &ConstForceStr },
+          "Constant force flooding: manually set the forces for the eigenvectors selected with "
+          "-flood "
+          "(put in quotes! \"1.0 2.3 5.1 -3.1\"). No other flooding parameters are needed when "
+          "specifying the forces directly." }
     };
 #define NPA asize(pa)
 

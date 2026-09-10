@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Energy Name="Total Energy">
+    <Real Name="Time 0.000000 Step 0 in frame 0">-35501.76921205769</Real>
+  </Energy>
+  <Energy Name="Kinetic En.">
+    <Real Name="Time 0.000000 Step 0 in frame 0">7887.1206360432334</Real>
+  </Energy>
+  <Energy Name="Potential">
+    <Real Name="Time 0.000000 Step 0 in frame 0">-43388.889848100924</Real>
+  </Energy>
+  <XvgLegend Name="Legend">
+    <String Name="XvgLegend"><![CDATA[
+title "Essential dynamics / flooding output"
+xaxis  label "Time (ps)"
+yaxis  label "RMSDs (nm), projections on EVs (nm), ..."
+TYPE xy
+s0 legend "  RMSD to ref (nm)"
+s1 legend "  EV1prjFLOOD (nm)"
+s2 legend "  EV1-Vfl (kJ/mol)"
+s3 legend "  EV1-FLforces (kJ/mol/nm)"
+s4 legend "  EV2prjFLOOD (nm)"
+s5 legend "  EV2-Vfl (kJ/mol)"
+s6 legend "  EV2-FLforces (kJ/mol/nm)"
+]]></String>
+  </XvgLegend>
+  <XvgData Name="Data">
+    <Sequence Name="Row0">
+      <Int Name="Length">8</Int>
+      <Real>0.000000</Real>
+      <Real>0.254122</Real>
+      <Real>8.57459e-03</Real>
+      <Real>1.04687e+04</Real>
+      <Real>2.45713e+04</Real>
+      <Real>3.21008e-01</Real>
+      <Real>1.04687e+04</Real>
+      <Real>-2.10504e+04</Real>
+    </Sequence>
+  </XvgData>
+</ReferenceData>
