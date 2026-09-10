@@ -391,8 +391,24 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
 
 std::string simdDescription()
 {
-    static const std::string& sc_simdDescription = gmx::simdString(GMX_SIMD_ENUM_VALUE);
-    return sc_simdDescription;
+    std::string desc = gmx::simdString(GMX_SIMD_ENUM_VALUE);
+
+
+    // If we use autovec'd kernels, report compiler VLEN settings
+#if GMX_ENABLE_NBNXM_CPU_VECTORIZATION
+#    if defined(__riscv_v_fixed_vlen)
+    desc += gmx::formatString(" (NBNxM autovectorized, RVV VLEN=%d bits)", __riscv_v_fixed_vlen);
+#    elif defined(__riscv_v_min_vlen)
+    desc += gmx::formatString(" (NBNxM autovectorized, RVV VLEN>=%d bits)", __riscv_v_min_vlen);
+#    else
+    desc += gmx::formatString(" (NBNxM autovectorized)");
+#    endif
+#endif
+    // If we're using SVE, report bit length
+#if GMX_SIMD_ARM_SVE
+    desc += gmx::formatString(" (%d bits)", GMX_SIMD_ARM_SVE_LENGTH_VALUE);
+#endif
+    return desc;
 }
 
 } // namespace gmx
