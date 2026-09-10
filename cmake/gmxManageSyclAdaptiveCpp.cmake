@@ -71,6 +71,11 @@ set(ACPP_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes ${SYCL_CX
 # -ffast-math for performance
 set(ACPP_EXTRA_COMPILE_OPTIONS -ffast-math)
 
+check_cxx_compiler_flag("-fgpu-flush-denormals-to-zero" HAS_GPU_FLUSH_DENORMALS_TO_ZERO)
+if(${HAS_GPU_FLUSH_DENORMALS_TO_ZERO})
+    list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -fgpu-flush-denormals-to-zero)
+endif()
+
 # Enable instant submission unless _ALLOW_INSTANT_SUBMISSION or _FORCE_INSTANT_SUBMISSION is already set (to 0 or 1)
 # Not necessary since https://github.com/AdaptiveCpp/AdaptiveCpp/pull/179, so should be possible to remove this once we require ACpp 25.10
 if (NOT SYCL_CXX_FLAGS_EXTRA MATCHES "_INSTANT_SUBMISSION")
