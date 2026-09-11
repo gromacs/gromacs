@@ -113,13 +113,14 @@ static const std::string getKernelName()
 #endif
 }
 
-
 //! Helper method to calculate launch bounds
 static constexpr int minBlocksPerMp(const bool hasLargeRegisterPool, const bool doCalcEnergies)
 {
     return hasLargeRegisterPool ? 1 : doCalcEnergies ? 6 : 8;
 }
 
+template<typename T, bool Condition>
+using MaybeConstT = std::conditional_t<Condition, const T, T>;
 
 /*! \brief Main kernel for NBNXM.
  *
@@ -127,7 +128,12 @@ static constexpr int minBlocksPerMp(const bool hasLargeRegisterPool, const bool 
 template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int nthreadZ, PairlistType pairlistType>
 __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
                   minBlocksPerMp(hasLargeRegisterPool, doCalcEnergies)) __global__
-        static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<pairlistType> plist, bool doCalcShift)
+        static void nbnxmKernel(NBAtomDataGpu             atdat,
+                                NBParamGpu                nbparam,
+                                GpuPairlist<pairlistType> plist,
+                                MaybeConstT<nbnxn_cj_packed_t<pairlistType>, !doPruneNBL>* __restrict__ gm_plistCJPacked,
+                                const nbnxn_sci_t* __restrict__ gm_sci,
+                                bool doCalcShift)
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
@@ -153,16 +159,11 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
     using NbnxmCjPacked = nbnxn_cj_packed_t<pairlistType>;
 
     AmdFastBuffer<const float4> gm_xq{ atdat.xq };
-    float3*                     gm_f             = asFloat3(atdat.f);
-    float3*                     gm_shiftVec      = asFloat3(atdat.shiftVec);
-    float3*                     gm_fShift        = asFloat3(atdat.fShift);
-    float*                      gm_energyElec    = atdat.eElec + energyIndexBase;
-    float*                      gm_energyVdw     = atdat.eLJ + energyIndexBase;
-    NbnxmCjPacked*              gm_plistCJPacked = plist.cjPacked;
-    AmdFastBuffer<const nbnxn_sci_t> gm_plistSci{ doPruneNBL ? plist.sci : plist.sorting.sciSorted };
-    int* gm_plistSciHistogram = plist.sorting.sciHistogram;
-    int* gm_sciCount          = plist.sorting.sciCount;
-
+    float3*                     gm_f          = asFloat3(atdat.f);
+    float3*                     gm_shiftVec   = asFloat3(atdat.shiftVec);
+    float3*                     gm_fShift     = asFloat3(atdat.fShift);
+    float*                      gm_energyElec = atdat.eElec + energyIndexBase;
+    float*                      gm_energyVdw  = atdat.eLJ + energyIndexBase;
 
     AmdFastBuffer<const NbnxmExcl> gm_plistExcl{ plist.excl };
     AmdFastBuffer<const Float2>    gm_ljComb{ atdat.ljComb };       /* used iff ljComb<vdwType> */
@@ -230,7 +231,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
         fCiBuffer[i] = { 0.0F, 0.0F, 0.0F };
     }
 
-    const nbnxn_sci_t nbSci          = gm_plistSci[bidx];
+    const nbnxn_sci_t nbSci          = gm_sci[bidx];
     const int         sci            = nbSci.sci;
     const int         cijPackedBegin = nbSci.cjPackedBegin;
     const int         cijPackedEnd   = nbSci.cjPackedEnd;
@@ -632,7 +633,9 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
 
             if (tidxi == 0 && tidxj == 0 && tidxz == 0)
             {
-                int index = max(c_sciHistogramSize - prunedPairCount - 1, 0);
+                int* gm_plistSciHistogram = plist.sorting.sciHistogram;
+                int* gm_sciCount          = plist.sorting.sciCount;
+                int  index                = max(c_sciHistogramSize - prunedPairCount - 1, 0);
                 atomicAdd(gm_plistSciHistogram + index, 1);
                 gm_sciCount[bidx] = index;
             }
@@ -707,6 +710,12 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
                 auto* plist                 = pairlists[iloc].get();
                 using T                     = std::decay_t<decltype(*plist)>;
                 constexpr auto pairlistType = getPairlistTypeFromPairlist<T>();
+                // Unpack this so that we can use it directly (sometimes as
+                // const) in the device code, which seems to generate better
+                // code than unpacking it from plist inside the device code.
+                const auto* gm_cjPacked = plist->cjPacked;
+                // Move selection of sciList here to avoid in kernel branch
+                const auto* gm_sci = doPruneNBL ? plist->sci : plist->sorting.sciSorted;
 
                 GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]),
                            "Wrong template called");
@@ -721,6 +730,8 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
                         adat,
                         nbp,
                         plist,
+                        &gm_cjPacked,
+                        &gm_sci,
                         &stepWork.computeVirial);
             },
             nb->plist);
