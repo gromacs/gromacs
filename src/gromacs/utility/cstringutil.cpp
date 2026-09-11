@@ -490,20 +490,12 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
 
 int64_t str_to_int64_t(const char* str, char** endptr)
 {
-#ifndef _MSC_VER
     return std::strtoll(str, endptr, 10);
-#else
-    return _strtoi64(str, endptr, 10);
-#endif
 }
 
 uint64_t str_to_uint64_t(const char* str, char** endptr)
 {
-#ifndef _MSC_VER
     return std::strtoull(str, endptr, 10);
-#else
-    return _strtoui64(str, endptr, 10);
-#endif
 }
 
 

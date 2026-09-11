@@ -63,18 +63,13 @@ TEST(UserTaskAssignmentStringHandlingTest, ParsingAndReconstructionWork)
     using ::testing::ElementsAreArray;
     using ::testing::UnorderedElementsAreArray;
 
-    // TODO It would be nicer to use EXPECT_THAT(assignment,
-    // UnorderedElementsAreArray({0,1}) but MSVC 2015 does
-    // not deduce the template arguments for <int, 2>.
-
     // Test simple assignments and back mappings
     {
         const char* strings[] = { "01", "0,1", "0,1," };
         for (const auto& s : strings)
         {
             auto assignment = parseUserTaskAssignmentString(s);
-            auto matcher    = UnorderedElementsAreArray<int, 2>({ 0, 1 });
-            EXPECT_THAT(assignment, matcher) << "for string " << s;
+            EXPECT_THAT(assignment, UnorderedElementsAreArray({ 0, 1 })) << "for string " << s;
             EXPECT_EQ("0", makeGpuIdString(assignment, 1));
             EXPECT_EQ("0,1", makeGpuIdString(assignment, 2));
             EXPECT_EQ("0,0,1", makeGpuIdString(assignment, 3));
@@ -86,8 +81,7 @@ TEST(UserTaskAssignmentStringHandlingTest, ParsingAndReconstructionWork)
     // Test an input that could be a single large index, or two small indices; and back mappings
     {
         auto assignment = parseUserTaskAssignmentString("11");
-        auto matcher    = UnorderedElementsAreArray<int, 2>({ 1, 1 });
-        EXPECT_THAT(assignment, matcher);
+        EXPECT_THAT(assignment, UnorderedElementsAreArray({ 1, 1 }));
         EXPECT_EQ("1", makeGpuIdString(assignment, 1));
         EXPECT_EQ("1,1", makeGpuIdString(assignment, 2));
         EXPECT_EQ("1,1,1", makeGpuIdString(assignment, 3));
@@ -96,8 +90,7 @@ TEST(UserTaskAssignmentStringHandlingTest, ParsingAndReconstructionWork)
     {
         const char* s          = "11,";
         auto        assignment = parseUserTaskAssignmentString(s);
-        auto        matcher    = UnorderedElementsAreArray<int, 1>({ 11 });
-        EXPECT_THAT(assignment, matcher);
+        EXPECT_THAT(assignment, UnorderedElementsAreArray({ 11 }));
         EXPECT_EQ("11", makeGpuIdString(assignment, 1));
         EXPECT_EQ("11,11", makeGpuIdString(assignment, 2));
         EXPECT_EQ("11,11,11", makeGpuIdString(assignment, 3));
@@ -111,8 +104,7 @@ TEST(UserTaskAssignmentStringHandlingTest, ParsingAndReconstructionWork)
         for (const auto& s : strings)
         {
             auto assignment = parseUserTaskAssignmentString(s);
-            auto matcher    = UnorderedElementsAreArray<int, 2>({ 11, 12 });
-            EXPECT_THAT(assignment, matcher) << "for string " << s;
+            EXPECT_THAT(assignment, UnorderedElementsAreArray({ 11, 12 })) << "for string " << s;
             EXPECT_EQ("11", makeGpuIdString(assignment, 1));
             EXPECT_EQ("11,12", makeGpuIdString(assignment, 2));
             EXPECT_EQ("11,11,12", makeGpuIdString(assignment, 3));

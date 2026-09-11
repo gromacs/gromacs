@@ -337,11 +337,9 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(TabulatedNormalDistribution);
 };
 
-// MSVC does not handle extern template class members correctly even in MSVC 2015,
-// so in that case we have to instantiate in every object using it. In addition,
 // doxygen is convinced this defines a function (which leads to crashes in our python
-// scripts), so to avoid confusion we hide it from doxygen too.
-#if !defined(_MSC_VER) && !defined(DOXYGEN)
+// scripts), so to avoid confusion we hide it.
+#if !defined(DOXYGEN)
 // Declaration of template specialization
 template<>
 const std::array<real, 1 << detail::c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<>::c_table_;

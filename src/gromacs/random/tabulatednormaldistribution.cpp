@@ -39,9 +39,6 @@
 namespace gmx
 {
 
-// MSVC does not handle extern template class members correctly even in MSVC 2015,
-// so in that case we have to instantiate in every object using it.
-#if !defined(_MSC_VER)
 // This is by far the most common version of the normal distribution table,
 // so we use this as an extern template specialization to avoid instantiating
 // the table in all files using it, unless the user has requested a different
@@ -49,9 +46,5 @@ namespace gmx
 template<>
 const std::array<real, 1 << detail::c_TabulatedNormalDistributionDefaultBits> TabulatedNormalDistribution<>::c_table_ =
         TabulatedNormalDistribution<>::makeTable();
-#else
-// Avoid compiler warnings about no public symbols
-void TabulatedNormalDistributionDummy() {}
-#endif
 
 } // namespace gmx

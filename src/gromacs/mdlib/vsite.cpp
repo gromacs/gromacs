@@ -2437,7 +2437,6 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
         {
             for (int th = 0; th < numThreads + 1; th++)
             {
-                /* MSVC doesn't like matrix references, so we use a pointer */
                 const matrix& dxdf = threadingInfo_.threadData(th).dxdf;
 
                 for (int i = 0; i < DIM; i++)

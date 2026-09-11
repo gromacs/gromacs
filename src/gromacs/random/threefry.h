@@ -604,17 +604,7 @@ private:
 
 public:
     //! \brief Smallest value that can be returned from random engine.
-#    if !defined(_MSC_VER)
-    static constexpr
-#    else
-    // Avoid constexpr bug in MSVC 2015, note that max() below does work
-    static
-#    endif
-            result_type
-            min()
-    {
-        return result_type(0);
-    }
+    static constexpr result_type min() { return result_type(0); }
 
     //! \brief Largest value that can be returned from random engine.
     static constexpr result_type max() { return ~result_type(0); }
