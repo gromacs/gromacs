@@ -190,8 +190,7 @@ auto lincsKernel(CommandGroupHandler& cgh,
             xi = gm_x[i];
             xj = gm_x[j];
 
-            Float3 dx;
-            pbcDxAiucGpu(pbcAiuc, xi, xj, dx);
+            Float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
             float rlen = sycl::rsqrt(dx[XX] * dx[XX] + dx[YY] * dx[YY] + dx[ZZ] * dx[ZZ]);
             rc         = rlen * dx;
@@ -234,8 +233,7 @@ auto lincsKernel(CommandGroupHandler& cgh,
             xj[ZZ] = atomicLoad(gm_xp[j][ZZ]);
         }
 
-        Float3 dx;
-        pbcDxAiucGpu(pbcAiuc, xi, xj, dx);
+        Float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
         float sol = sqrtReducedMass * ((rc[XX] * dx[XX] + rc[YY] * dx[YY] + rc[ZZ] * dx[ZZ]) - targetLength);
 
@@ -311,8 +309,7 @@ auto lincsKernel(CommandGroupHandler& cgh,
                 xj[ZZ] = atomicLoad(gm_xp[j][ZZ]);
             }
 
-            Float3 dx;
-            pbcDxAiucGpu(pbcAiuc, xi, xj, dx);
+            Float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
             float len2  = targetLength * targetLength;
             float dlen2 = 2.0F * len2 - (dx[XX] * dx[XX] + dx[YY] * dx[YY] + dx[ZZ] * dx[ZZ]);

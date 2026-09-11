@@ -65,8 +65,8 @@ static constexpr int xyzToShiftIndex(int x, int y, int z)
  * 0.5/sqrt(2) times a box vector length (e.g. for a rhombic dodecahedron)
  * can use a more distant periodic image.
  *
- * \todo This routine uses CUDA float4 types for input coordinates and
- *       returns in rvec data-type. Other than that, it does essentially
+ * \todo This routine uses SYCL float4 types for input coordinates and
+ *       returns in Float3 data-type. Other than that, it does essentially
  *       the same thing as the version below, as well as SIMD and CPU
  *       versions. This routine is used in GPU listed forces module.
  *       To avoid code duplication, these implementations should be
@@ -116,30 +116,22 @@ int pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const sycl::float4& r1, const sycl::flo
 /*! \brief Computes the vector between two points taking PBC into account.
  *
  * Computes the vector dr between points r2 and r1, taking into account the
- * periodic boundary conditions, described in pbcAiuc object. Note that this
- * routine always does the PBC arithmetic for all directions, multiplying the
- * displacements by zeroes if the corresponding direction is not periodic.
- * For triclinic boxes only distances up to half the smallest box diagonal
- * element are guaranteed to be the shortest. This means that distances from
- * 0.5/sqrt(2) times a box vector length (e.g. for a rhombic dodecahedron)
- * can use a more distant periodic image.
+ * periodic boundary conditions, described in pbcAiuc object. Same as above,
+ * only takes and returns data in Float3 format. Does not return shifts.
  *
- * \todo This routine operates on rvec types and uses PbcAiuc to define
- *       periodic box, but essentially does the same thing as SIMD and GPU
- *       version. These will have to be unified in future to avoid code
- *       duplication. See Issue #2863:
+ * \todo This routine uses Float3 types for both input and return values.
+ *       To avoid code duplication, these implementations should be
+ *       unified. See Issue #2863:
  *       https://gitlab.com/gromacs/gromacs/-/issues/2863
  *
  * \param[in]  pbcAiuc  PBC object.
  * \param[in]  r1       Coordinates of the first point.
  * \param[in]  r2       Coordinates of the second point.
- * \param[out]    dr       Resulting distance.
+ * \returns    dr       Resulting distance.
  */
-static void pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2, rvec dr)
+static Float3 pbcDxAiuc(const PbcAiuc& pbcAiuc, const Float3& r1, const Float3& r2)
 {
-    dr[XX] = r1[XX] - r2[XX];
-    dr[YY] = r1[YY] - r2[YY];
-    dr[ZZ] = r1[ZZ] - r2[ZZ];
+    Float3 dr = r1 - r2;
 
     float shz = sycl::rint(dr[ZZ] * pbcAiuc.invBoxDiagZ);
     dr[XX] -= shz * pbcAiuc.boxZX;
@@ -152,6 +144,8 @@ static void pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2,
 
     float shx = sycl::rint(dr[XX] * pbcAiuc.invBoxDiagX);
     dr[XX] -= shx * pbcAiuc.boxXX;
+
+    return dr;
 }
 
 #endif // GMX_PBCUTIL_PBC_AIUC_SYCL_H

@@ -134,11 +134,9 @@ pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const float4 r1, const float4 r2, float3& d
  * Computes the vector dr between points r2 and r1, taking into account the
  * periodic boundary conditions, described in pbcAiuc object. Same as above,
  * only takes and returns data in float3 format. Does not return shifts.
+ * Used in GPU constraints.
  *
- * \todo This routine uses CUDA float3 types for both input and returns
- *       values. Other than that, it does essentially the same thing as the
- *       version above, as well as SIMD and CPU versions. This routine is
- *       used in GPU-based constraints.
+ * \todo This routine uses CUDA float3 types for both input and return values.
  *       To avoid code duplication, these implementations should be
  *       unified. See Issue #2863:
  *       https://gitlab.com/gromacs/gromacs/-/issues/2863
