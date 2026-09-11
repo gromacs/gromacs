@@ -138,7 +138,7 @@ void setAttributeVector(hid_t container, const char* attributeName, ArrayRef<con
 
 /*! \brief Write a vector-like string attribute via iterators
  * String data type is treated specially because of the HDF5 requirements for
- * contiguous memory storage for fixed-size strings. A reusable character buffer
+ * contiguous memory storage for fixed-length strings. A reusable character buffer
  * is needed to avoid frequent memory allocations for multiple writing of different
  * string attributes.
  *

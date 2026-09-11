@@ -349,20 +349,20 @@ INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderValidDims,
                          ::testing::ValuesIn(g_dataSetDimsToTest),
                          nameOfTest);
 
-/******************************************************************************
- * TEST SUITE FOR READING AND WRITING STRINGS                                 *
- *                                                                            *
- * This suite is parametrized to run over both variable and fixed-size string *
- * data sets, ensuring that both kinds pass string-specific tests.            *
- ******************************************************************************/
+/********************************************************************************
+ * TEST SUITE FOR READING AND WRITING STRINGS                                   *
+ *                                                                              *
+ * This suite is parametrized to run over both variable and fixed-length string *
+ * data sets, ensuring that both kinds pass string-specific tests.              *
+ ********************************************************************************/
 
-// Maximum length for variable-size strings in these tests
+// Maximum length for variable-length strings in these tests
 static constexpr size_t sc_maxVariableStringLength = 4096;
 
-//! \brief Type of string data set with fixed max string size, or nullopt for variable-string data sets.
+//! \brief Type of string data set with fixed max string length, or nullopt for variable-string data sets.
 struct StringDataSetType
 {
-    //!< Fixed-size of string (includes terminating '\0')
+    //!< Fixed-length of string (includes terminating '\0')
     std::optional<size_t> maxStringLength;
 };
 
@@ -391,7 +391,7 @@ public:
     const char* name_ = "testDataSet";
 };
 
-//! \brief Helper function for GTest to print size parameter.
+//! \brief Helper function for GTest to print string length parameter.
 void PrintTo(const StringDataSetType& param, std::ostream* os)
 {
     if (param.maxStringLength.has_value())
@@ -419,7 +419,7 @@ static std::string nameOfStringTest(const ::testing::TestParamInfo<StringDataSet
 
 TEST_P(H5mdDataSetBaseStringTest, FullDataSetIo)
 {
-    // Maximum string size (including terminating '\0')
+    // Maximum string length (including terminating '\0')
     const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     constexpr int                nx = 3, ny = 2, nz = 4;
@@ -453,7 +453,7 @@ TEST_P(H5mdDataSetBaseStringTest, FullDataSetIo)
 
 TEST_P(H5mdDataSetBaseStringTest, RandomAccessRead)
 {
-    // Maximum string size (including terminating '\0')
+    // Maximum string length (including terminating '\0')
     const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     constexpr int                nx = 3, ny = 2, nz = 4;
@@ -499,7 +499,7 @@ TEST_P(H5mdDataSetBaseStringTest, RandomAccessRead)
 
 TEST_P(H5mdDataSetBaseStringTest, RandomAccessWrite)
 {
-    // Maximum string size (including terminating '\0')
+    // Maximum string length (including terminating '\0')
     const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     const DataSetDims            dims    = { 5, 4 };
@@ -530,11 +530,11 @@ TEST_P(H5mdDataSetBaseStringTest, RandomAccessWrite)
 }
 
 const StringDataSetType g_stringDataSetTypes[] = {
-    { std::nullopt }, // variable-size string
-    // { 0 }, HDF5 cannot have fixed-size 0 strings!
-    { 1 }, // fixed-size 1 string (empty, since we need space for '\0')
-    { 2 }, // fixed-size 2 string (single character)
-    { 16 } // fixed-size 16 string
+    { std::nullopt }, // variable-length string
+    // { 0 }, HDF5 cannot have fixed-length 0 strings!
+    { 1 }, // fixed-length 1 string (empty, since we need space for '\0')
+    { 2 }, // fixed-length 2 string (single character)
+    { 16 } // fixed-length 16 string
 };
 INSTANTIATE_TEST_SUITE_P(H5mdDataSetBaseTest,
                          H5mdDataSetBaseStringTest,

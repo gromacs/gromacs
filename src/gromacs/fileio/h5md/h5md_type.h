@@ -116,30 +116,30 @@ inline hid_t hdf5DataTypeFor<uint64_t>() noexcept
     return H5T_NATIVE_UINT64_g;
 }
 
-/*! \brief Return a handle to a HDF5 data type for fixed-size strings.
+/*! \brief Return a handle to a HDF5 data type for fixed-length strings.
  *
  * The string type is created with a UTF8 character set and null termination, so stored
  * strings may be shorter than the maximum length but a fixed amount of memory is always
- * allocated. Data sets of fixed size strings are contiguous in memory and can be compressed.
+ * allocated. Data sets of fixed length strings are contiguous in memory and can be compressed.
  *
  * The returned handle must be closed with a call to H5Tclose to avoid leaking resources.
  *
- * \param[in] maxStringLength Fixed maximum size of string.
+ * \param[in] maxStringLength Fixed maximum length of string.
  *
  * \throws H5mdError if \p maxStringLength is not a positive value.
  */
-inline hid_t hdf5DataTypeForFixedSizeString(const hsize_t maxStringLength)
+inline hid_t hdf5DataTypeForFixedLengthString(const hsize_t maxStringLength)
 {
     const hid_t dataType = H5Tcopy(H5T_C_S1_g);
     H5Tset_cset(dataType, H5T_CSET_UTF8);
     GMX_H5MD_THROW_UPON_ERROR(H5Tset_size(dataType, maxStringLength) < 0,
-                              "Invalid fixed-size for string type");
+                              "Invalid fixed-length for string type");
     return dataType;
 }
 
-/*! \brief Return a handle to a HDF5 data type for variable-size strings.
+/*! \brief Return a handle to a HDF5 data type for variable-length strings.
  */
-inline hid_t hdf5DataTypeForVariableSizeString()
+inline hid_t hdf5DataTypeForVariableLengthString()
 {
     const hid_t dataType = H5Tcopy(H5T_C_S1_g);
     H5Tset_cset(dataType, H5T_CSET_UTF8);

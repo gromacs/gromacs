@@ -448,7 +448,7 @@ using H5mdDataSetBuilderTest = H5mdTestBase;
 TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
 {
     {
-        SCOPED_TRACE("Check the builder for fixed sized string data set");
+        SCOPED_TRACE("Check the builder for fixed-length string data set");
 
         EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "withMaxLength")
                                     .withMaxStringLength(256)
@@ -459,11 +459,11 @@ TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
         const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withMaxLength");
         EXPECT_EQ(H5Tget_class(dataSet.storedDataType()), H5T_STRING);
         EXPECT_EQ(H5Tget_size(dataSet.storedDataType()), 256)
-                << "Data type should be fixed size string with length 256";
+                << "Data type should be fixed-length string with size 256";
     }
 
     {
-        SCOPED_TRACE("Check the builder for variable sized string data set");
+        SCOPED_TRACE("Check the builder for variable-length string data set");
 
         EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "withVariableLength")
                                     .withVariableStringLength()
@@ -489,7 +489,7 @@ TEST_F(H5mdDataSetBuilderTest, NoThrowForDefaultStringType)
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForNonPositiveMaxStringLength)
 {
-    // NOTE: H5Tset_size accepts only positive values for fixed-size strings.
+    // NOTE: H5Tset_size accepts only positive values for fixed-length strings.
     EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "ZeroMaxLength")
                              .withMaxStringLength(0)
                              .withDimension({ 0 })

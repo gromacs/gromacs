@@ -176,14 +176,14 @@ TEST_P(WithDims, ReadAndWriteDataWorksForBasicVector)
     EXPECT_EQ(readBuffer, valuesToWrite);
 }
 
-TEST_P(WithDims, WriteDataWorksForFixedSizeStrings)
+TEST_P(WithDims, WriteDataWorksForFixedLengthStrings)
 {
-    const DataSetDims dims          = GetParam().dims_;
-    constexpr int     maxStringSize = 3; // without terminating '\0'
+    const DataSetDims dims            = GetParam().dims_;
+    constexpr int     maxStringLength = 3; // without terminating '\0'
 
     H5mdFixedDataSet<std::string> dataSet =
             H5mdDataSetBuilder<std::string>(fileid(), "testDataSet")
-                    .withMaxStringLength(maxStringSize + 1) // with terminating '\0'
+                    .withMaxStringLength(maxStringLength + 1) // with terminating '\0'
                     .withDimension(dims)
                     .build();
 
@@ -192,7 +192,7 @@ TEST_P(WithDims, WriteDataWorksForFixedSizeStrings)
     for (hsize_t i = 0; i < dataSet.numValues(); ++i)
     {
         std::string uniqueString;
-        uniqueString.resize(maxStringSize);
+        uniqueString.resize(maxStringLength);
 
         // Fill each string with unique values, indexing within 'a'..='z' repeating
         std::generate(uniqueString.begin(),
@@ -217,7 +217,7 @@ TEST_P(WithDims, WriteDataWorksForFixedSizeStrings)
     }
 }
 
-TEST_P(WithDims, ReadAndWriteDataWorksForVariableSizeStrings)
+TEST_P(WithDims, ReadAndWriteDataWorksForVariableLengthStrings)
 {
     const DataSetDims dims = GetParam().dims_;
 
@@ -235,9 +235,9 @@ TEST_P(WithDims, ReadAndWriteDataWorksForVariableSizeStrings)
     stringsToWrite.reserve(dataSet.numValues());
     for (hsize_t i = 0; i < dataSet.numValues(); ++i)
     {
-        const int   stringSize = variableStringLengths.at(i % variableStringLengths.size());
+        const int   stringLength = variableStringLengths.at(i % variableStringLengths.size());
         std::string uniqueString;
-        uniqueString.resize(stringSize);
+        uniqueString.resize(stringLength);
 
         // Fill each string with unique values, indexing within 'a'..='z' repeating
         std::generate(uniqueString.begin(),
@@ -317,24 +317,21 @@ TEST_P(WithDims, ThrowsForReadAndWriteWithWrongSizeBuffers)
 
 INSTANTIATE_TEST_SUITE_P(H5mdFixedDataSetTest, WithDims, ::testing::ValuesIn(g_dataSetDimsToTest), nameOfTest);
 
-/******************************************************************************
- * TEST SUITE FOR READING AND WRITING STRINGS                                 *
- *                                                                            *
- * This suite is parametrized to run over both variable and fixed-size string *
- * data sets, ensuring that both kinds pass string-specific tests.            *
- ******************************************************************************/
+/********************************************************************************
+ * TEST SUITE FOR READING AND WRITING STRINGS                                   *
+ *                                                                              *
+ * This suite is parametrized to run over both variable and fixed-length string *
+ * data sets, ensuring that both kinds pass string-specific tests.              *
+ ********************************************************************************/
 
-// Maximum length for variable-size strings in these tests: used as the upper bound
-// when checking expected results, which requires a .substr() call when testing
-// fixed-size strings. Using this as an upper limit for variable strings simplifies
-// the tests.
-constexpr size_t c_maxVariableStringLength = 4096;
+// Maximum length for variable-length strings in these tests
+static constexpr size_t sc_maxVariableStringLength = 4096;
 
-//! \brief Type of string data set with fixed max string size, or nullopt for variable-string data sets.
+//! \brief Type of string data set with fixed max string length, or nullopt for variable-string data sets.
 struct StringDataSetType
 {
-    //!< Fixed-size of string (includes terminating '\0')
-    std::optional<size_t> maxStringSize;
+    //!< Fixed-length of string (includes terminating '\0')
+    std::optional<size_t> maxStringLength;
 };
 
 //! \brief Test fixture for an open H5md file with string data sets
@@ -347,11 +344,11 @@ public:
         H5mdDataSetBuilder<std::string> builder = H5mdDataSetBuilder<std::string>(this->fileid(), name_);
         builder.withDimension(dims);
 
-        isFixedStringDataSet_ = GetParam().maxStringSize.has_value();
+        isFixedStringDataSet_ = GetParam().maxStringLength.has_value();
         if (isFixedStringDataSet_)
         {
-            const size_t maxStringSize = GetParam().maxStringSize.value();
-            builder.withMaxStringLength(maxStringSize);
+            const size_t maxStringLength = GetParam().maxStringLength.value();
+            builder.withMaxStringLength(maxStringLength);
         }
 
         return builder.build();
@@ -362,36 +359,36 @@ public:
     const char* name_ = "testDataSet";
 };
 
-//! \brief Helper function for GTest to print size parameter.
+//! \brief Helper function for GTest to print length parameter.
 void PrintTo(const StringDataSetType& param, std::ostream* os)
 {
-    if (param.maxStringSize.has_value())
+    if (param.maxStringLength.has_value())
     {
-        *os << "FixedSize(" << param.maxStringSize.value() << ")";
+        *os << "FixedLength(" << param.maxStringLength.value() << ")";
     }
     else
     {
-        *os << "VariableSize";
+        *os << "VariableLength";
     }
 }
 
 //! \brief Helper function for GTest to construct test names.
 static std::string nameOfStringTest(const ::testing::TestParamInfo<StringDataSetType>& info)
 {
-    if (info.param.maxStringSize.has_value())
+    if (info.param.maxStringLength.has_value())
     {
-        return formatString("FixedSizeString%lu", info.param.maxStringSize.value());
+        return formatString("FixedLengthString%lu", info.param.maxStringLength.value());
     }
     else
     {
-        return "VariableSizeString";
+        return "VariableLengthString";
     }
 }
 
-TEST_P(StringTypes, Size1StringsWork)
+TEST_P(StringTypes, Length1StringsWork)
 {
-    // Maximum string size (including terminating '\0')
-    const size_t testMaxStringSize = GetParam().maxStringSize.value_or(c_maxVariableStringLength);
+    // Maximum string length (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     const DataSetDims             dims    = { 3 };
     H5mdFixedDataSet<std::string> dataSet = createDataSet(dims);
@@ -404,10 +401,10 @@ TEST_P(StringTypes, Size1StringsWork)
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
-        // For all strings except fixed-size == 1 we can compare the full string above,
-        // if the size is 1 we know that the created string is empty since the written
+        // For all strings except fixed-length == 1 we can compare the full string above,
+        // if the length is 1 we know that the created string is empty since the written
         // string includes the '\0' terminator
-        EXPECT_EQ(readBuffer[i], testMaxStringSize == 1 ? "" : stringsToWrite[i]);
+        EXPECT_EQ(readBuffer[i], testMaxStringLength == 1 ? "" : stringsToWrite[i]);
     }
 }
 
@@ -428,16 +425,16 @@ TEST_P(StringTypes, EmptyStringsWork)
     }
 }
 
-TEST_P(StringTypes, ExactFixedSizeLengthWorks)
+TEST_P(StringTypes, ExactFixedLengthWorks)
 {
-    // Variable-size strings have no fixed size to test for, so just return
-    if (!GetParam().maxStringSize.has_value())
+    // Variable-length strings have no fixed size to test for, so just return
+    if (!GetParam().maxStringLength.has_value())
     {
         return;
     }
 
-    // Maximum string size (including terminating '\0')
-    const size_t testMaxStringSize = GetParam().maxStringSize.value_or(c_maxVariableStringLength);
+    // Maximum string length (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     const DataSetDims             dims    = { 3 };
     H5mdFixedDataSet<std::string> dataSet = createDataSet(dims);
@@ -447,7 +444,7 @@ TEST_P(StringTypes, ExactFixedSizeLengthWorks)
     for (hsize_t i = 0; i < dataSet.numValues(); ++i)
     {
         std::string uniqueString;
-        uniqueString.resize(testMaxStringSize - 1); // -1 to account for the '\0' terminator
+        uniqueString.resize(testMaxStringLength - 1); // -1 to account for the '\0' terminator
 
         // Fill each string with unique values, indexing within 'a'..='z' repeating
         std::generate(uniqueString.begin(),
@@ -472,16 +469,17 @@ TEST_P(StringTypes, ExactFixedSizeLengthWorks)
     }
 }
 
-TEST_P(StringTypes, LongStringsAreTrimmedToMaxSize)
+TEST_P(StringTypes, LongStringsAreTrimmedToMaxLength)
 {
-    // Maximum string size (including terminating '\0')
-    const size_t testMaxStringSize = GetParam().maxStringSize.value_or(c_maxVariableStringLength);
+    // Maximum string length (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     const DataSetDims             dims    = { 3 };
     H5mdFixedDataSet<std::string> dataSet = createDataSet(dims);
 
     std::vector<std::string> stringsToWrite(
-            dataSet.numValues(), "A long string which should be trimmed when written as fixed-size");
+            dataSet.numValues(),
+            "A long string which should be trimmed when written as fixed-length");
     dataSet.writeData(stringsToWrite);
 
     std::vector<std::string> readBuffer(dataSet.numValues());
@@ -489,15 +487,15 @@ TEST_P(StringTypes, LongStringsAreTrimmedToMaxSize)
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
-        // Compare testMaxStringSize - 1 characters to account for the terminating '\0'
-        EXPECT_EQ(readBuffer[i], stringsToWrite[i].substr(0, testMaxStringSize - 1));
+        // Compare testMaxStringLength - 1 characters to account for the terminating '\0'
+        EXPECT_EQ(readBuffer[i], stringsToWrite[i].substr(0, testMaxStringLength - 1));
     }
 }
 
 TEST_P(StringTypes, WritingOverwritesOldData)
 {
-    // Maximum string size (including terminating '\0')
-    const size_t testMaxStringSize = GetParam().maxStringSize.value_or(c_maxVariableStringLength);
+    // Maximum string length (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     const DataSetDims             dims    = { 3 };
     H5mdFixedDataSet<std::string> dataSet = createDataSet(dims);
@@ -514,15 +512,15 @@ TEST_P(StringTypes, WritingOverwritesOldData)
 
     for (int i = 0; i < gmx::ssize(finalStrings); ++i)
     {
-        // Compare testMaxStringSize - 1 characters to account for the terminating '\0'
-        EXPECT_EQ(readBuffer[i], finalStrings[i].substr(0, testMaxStringSize - 1));
+        // Compare testMaxStringLength - 1 characters to account for the terminating '\0'
+        EXPECT_EQ(readBuffer[i], finalStrings[i].substr(0, testMaxStringLength - 1));
     }
 }
 
 TEST_P(StringTypes, DifferentCharacterSets)
 {
-    // Maximum string size (including terminating '\0')
-    const size_t testMaxStringSize = GetParam().maxStringSize.value_or(c_maxVariableStringLength);
+    // Maximum string length (including terminating '\0')
+    const size_t testMaxStringLength = GetParam().maxStringLength.value_or(sc_maxVariableStringLength);
 
     const std::vector<std::string> stringsToWrite = {
         "\ttabs\nand\bback\band\tnew\nlines", // control characters
@@ -546,31 +544,31 @@ TEST_P(StringTypes, DifferentCharacterSets)
 
     for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
     {
-        // Compare testMaxStringSize - 1 characters to account for the terminating '\0'
-        EXPECT_EQ(readBuffer[i], stringsToWrite[i].substr(0, testMaxStringSize - 1));
+        // Compare testMaxStringLength - 1 characters to account for the terminating '\0'
+        EXPECT_EQ(readBuffer[i], stringsToWrite[i].substr(0, testMaxStringLength - 1));
     }
 }
 
 const StringDataSetType g_stringDataSetTypes[] = {
-    { std::nullopt }, // variable-size string
-    // { 0 }, HDF5 cannot have fixed-size 0 strings! Tested explicitly below.
-    { 1 }, // fixed-size 1 string (empty, since we need space for '\0')
-    { 2 }, // fixed-size 2 string (single character)
-    { 16 } // fixed-size 16 string
+    { std::nullopt }, // variable-length string
+    // { 0 }, HDF5 cannot have fixed-length 0 strings! Tested explicitly below.
+    { 1 }, // fixed-length 1 string (empty, since we need space for '\0')
+    { 2 }, // fixed-length 2 string (single character)
+    { 16 } // fixed-length 16 string
 };
 
 INSTANTIATE_TEST_SUITE_P(H5mdFixedDataSetTest, StringTypes, ::testing::ValuesIn(g_stringDataSetTypes), nameOfStringTest);
 
-TEST_F(StringTypes, ThrowsWhenConstructingFixedSize0String)
+TEST_F(StringTypes, ThrowsWhenConstructingFixedLength0String)
 {
     // H5mdFixedDataSet constructs from H5mdDataSetBase, so ensure that
-    // we cannot construct those with fixed-size 0 (or smaller) strings
-    EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "negativeSize").withMaxStringLength(-1), H5mdError)
-            << "Must throw when constructing data set for fixed-size -1 strings";
-    EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "size0").withMaxStringLength(0), H5mdError)
-            << "Must throw when constructing data set for fixed-size 0 strings";
-    EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "size1").withMaxStringLength(1))
-            << "Sanity check: Must not throw for fixed-size 1 strings";
+    // we cannot construct those with fixed-length 0 (or smaller) strings
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "negativeLength").withMaxStringLength(-1), H5mdError)
+            << "Must throw when constructing data set for fixed-length -1 strings";
+    EXPECT_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "length0").withMaxStringLength(0), H5mdError)
+            << "Must throw when constructing data set for fixed-length 0 strings";
+    EXPECT_NO_THROW_GMX(H5mdDataSetBuilder<std::string>(fileid(), "length1").withMaxStringLength(1))
+            << "Sanity check: Must not throw for fixed-length 1 strings";
 }
 
 } // namespace

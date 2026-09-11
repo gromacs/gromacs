@@ -69,7 +69,7 @@ void setStringAttributeByBuffer(const hid_t          container,
                               formatString("Buffer size is too small for attribute: %s", attributeName));
 
     const auto [dataType, dataTypeGuard] =
-            makeH5mdTypeGuard(hdf5DataTypeForFixedSizeString(maxStrLength + 1));
+            makeH5mdTypeGuard(hdf5DataTypeForFixedLengthString(maxStrLength + 1));
     GMX_H5MD_THROW_UPON_INVALID_HID(
             dataType, formatString("Failed to get data type for attribute: %s", attributeName));
     GMX_H5MD_THROW_UPON_ERROR(H5Tget_class(dataType) != H5T_STRING,
@@ -129,8 +129,8 @@ std::optional<std::string> getAttribute<std::string>(const hid_t container, cons
     GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<std::string>(dataType),
                               formatString("Type mismatch when reading attribute: %s", attributeName));
 
-    size_t            stringSize = H5Tget_size(dataType);
-    std::vector<char> strData(stringSize);
+    size_t            stringLength = H5Tget_size(dataType);
+    std::vector<char> strData(stringLength);
     GMX_H5MD_THROW_UPON_ERROR(H5Aread(attribute, dataType, strData.data()) < 0,
                               formatString("Failed to read string attribute: %s", attributeName));
 
@@ -210,17 +210,17 @@ std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hi
     }
 
     // Set up a buffer and read the data
-    size_t                   stringSize = H5Tget_size(dataType);
+    size_t                   stringLength = H5Tget_size(dataType);
     std::vector<std::string> values(nelems);
-    std::vector<char>        buffer(nelems * stringSize);
+    std::vector<char>        buffer(nelems * stringLength);
 
     GMX_H5MD_THROW_UPON_ERROR(
             H5Aread(attribute, dataType, buffer.data()) < 0,
             formatString("Failed to read vector of strings attribute: %s", attributeName));
     for (size_t i = 0; i < nelems; i++)
     {
-        values[i] = std::string(buffer.data() + (i * stringSize),
-                                strnlen(buffer.data() + (i * stringSize), stringSize));
+        values[i] = std::string(buffer.data() + (i * stringLength),
+                                strnlen(buffer.data() + (i * stringLength), stringLength));
     }
     return values;
 }
@@ -248,7 +248,7 @@ void setAttribute(const hid_t container, const char* attributeName, const ValueT
 void setAttribute(const hid_t container, const char* attributeName, const char* value)
 {
     const auto [dataType, dataTypeGuard] =
-            makeH5mdTypeGuard(hdf5DataTypeForFixedSizeString(strlen(value) + 1));
+            makeH5mdTypeGuard(hdf5DataTypeForFixedLengthString(strlen(value) + 1));
     GMX_H5MD_THROW_UPON_INVALID_HID(
             dataType, formatString("Failed to get data type for attribute: %s", attributeName));
     GMX_H5MD_THROW_UPON_ERROR(H5Tget_class(dataType) != H5T_STRING,

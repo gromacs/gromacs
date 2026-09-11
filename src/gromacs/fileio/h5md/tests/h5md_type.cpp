@@ -134,17 +134,17 @@ TYPED_TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForAllTypes)
 
 TEST(H5mdTypeTest, hdf5TypeForVariableStringWorks)
 {
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForVariableSizeString());
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForVariableLengthString());
 
     EXPECT_EQ(H5Tget_class(dataType), H5T_STRING) << "String data set must be of string class";
     EXPECT_EQ(H5Tget_cset(dataType), H5T_CSET_UTF8) << "Strings must be UTF8";
     EXPECT_EQ(H5Tget_strpad(dataType), H5T_STR_NULLTERM) << "Strings must be null-terminated";
-    EXPECT_GT(H5Tis_variable_str(dataType), 0) << "Variable-size string was created as fixed";
+    EXPECT_GT(H5Tis_variable_str(dataType), 0) << "Variable-length string was created as fixed";
 }
 
-TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForVariableSizeStrings)
+TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForVariableLengthStrings)
 {
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForVariableSizeString());
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForVariableLengthString());
     EXPECT_TRUE(valueTypeIsDataType<const char*>(dataType));
     EXPECT_FALSE(valueTypeIsDataType<int32_t>(dataType));
     EXPECT_FALSE(valueTypeIsDataType<int64_t>(dataType));
@@ -158,23 +158,24 @@ TEST(H5mdTypeTest, hdf5TypeForFixedStringWorks)
 {
     constexpr hsize_t maxStringLength = 9;
     const auto [dataType, dataTypeGuard] =
-            makeH5mdTypeGuard(hdf5DataTypeForFixedSizeString(maxStringLength));
+            makeH5mdTypeGuard(hdf5DataTypeForFixedLengthString(maxStringLength));
 
     EXPECT_EQ(H5Tget_class(dataType), H5T_STRING) << "String data set must be of string class";
     EXPECT_EQ(H5Tget_cset(dataType), H5T_CSET_UTF8) << "Strings must be UTF8";
     EXPECT_EQ(H5Tget_strpad(dataType), H5T_STR_NULLTERM) << "Strings must be null-terminated";
-    EXPECT_EQ(H5Tget_size(dataType), maxStringLength) << "Fixed-size string must have correct size";
-    EXPECT_EQ(H5Tis_variable_str(dataType), 0) << "Fixed-size string was created as variable";
+    EXPECT_EQ(H5Tget_size(dataType), maxStringLength)
+            << "Fixed-length string must have correct size";
+    EXPECT_EQ(H5Tis_variable_str(dataType), 0) << "Fixed-length string was created as variable";
 }
 
-TEST(H5mdTypeTest, hdf5TypeForFixedStringThrowsForSize0)
+TEST(H5mdTypeTest, hdf5TypeForFixedStringThrowsForLength0)
 {
-    EXPECT_THROW_GMX(hdf5DataTypeForFixedSizeString(0), H5mdError);
+    EXPECT_THROW_GMX(hdf5DataTypeForFixedLengthString(0), H5mdError);
 }
 
-TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForFixedSizeStrings)
+TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForFixedLengthStrings)
 {
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForFixedSizeString(1));
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForFixedLengthString(1));
     EXPECT_TRUE(valueTypeIsDataType<const char*>(dataType));
     EXPECT_FALSE(valueTypeIsDataType<int32_t>(dataType));
     EXPECT_FALSE(valueTypeIsDataType<int64_t>(dataType));

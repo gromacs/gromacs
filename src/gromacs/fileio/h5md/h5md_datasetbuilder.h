@@ -154,7 +154,7 @@ public:
         return withChunkDimension(ArrayRef<const hsize_t>(chunkDims.begin(), chunkDims.end()));
     }
 
-    //! \brief Set the data set to use a fixed size string with maximum length \p maxLength.
+    //! \brief Set the data set to use a fixed-length string with maximum length \p maxLength.
     //
     // \note The max length must be positive and count the null-terminator character.
     // If neither withMaxStringLength() nor withVariableStringLength() is called,
@@ -164,7 +164,7 @@ public:
         // Use int to prevent the integer overflow if passed a negative value
         GMX_H5MD_THROW_UPON_ERROR(
                 maxLength <= 0,
-                "Cannot create fixed-size string data set with non-positive maximum length");
+                "Cannot create fixed-length string data set with non-positive maximum length");
         maxStringLength_ = static_cast<size_t>(maxLength);
         return *this;
     }
@@ -294,11 +294,11 @@ private:
         {
             if (maxStringLength_.has_value())
             {
-                return hdf5DataTypeForFixedSizeString(maxStringLength_.value());
+                return hdf5DataTypeForFixedLengthString(maxStringLength_.value());
             }
             else
             {
-                return hdf5DataTypeForVariableSizeString();
+                return hdf5DataTypeForVariableLengthString();
             }
         }
         else

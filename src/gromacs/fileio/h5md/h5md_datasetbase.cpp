@@ -194,7 +194,7 @@ static bool readFixedLengthStringsFromDataSet(const hid_t           dataSet,
                                               const hid_t           fileDataSpace,
                                               ArrayRef<std::string> stringValues)
 {
-    // Get the maximum string size (including the terminating '\0')
+    // Get the maximum string length (including the terminating '\0')
     const size_t      maxStringLength = H5Tget_size(nativeDataType);
     std::vector<char> readBuffer(stringValues.size() * maxStringLength);
 
@@ -234,7 +234,7 @@ static bool readVariableLengthStringsFromDataSet(const hid_t           dataSet,
             {
                 GMX_H5MD_THROW_UPON_ERROR(
                         !reclaimMemory(makeArrayRef(readBufferPointers), nativeDataType, memoryDataSpace, dataSet),
-                        "Cannot reclaim memory after reading variable-size strings");
+                        "Cannot reclaim memory after reading variable-length strings");
             });
 
     const bool readWasSuccessful = H5Dread(dataSet,
@@ -260,7 +260,7 @@ static bool writeFixedLengthStringsToDataSet(const hid_t                 dataSet
                                              const hid_t                 fileDataSpace,
                                              ArrayRef<const std::string> stringsToWrite)
 {
-    // Get the maximum string size (including the terminating '\0')
+    // Get the maximum string length (including the terminating '\0')
     const size_t maxStringLength = H5Tget_size(nativeDataType);
 
     std::vector<char> writeBuffer(stringsToWrite.size() * maxStringLength);
