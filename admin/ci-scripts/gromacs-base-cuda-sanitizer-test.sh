@@ -29,6 +29,9 @@ TEST_LABELS='QuickGpuTest'
 # Flag to mark that any
 TOOLS_FAILED=""
 
+# Let test binaries know they are running in the GROMACS CI compute-sanitizer job
+export GMX_CI_COMPUTE_SANITIZER=1
+
 for TOOL in memcheck racecheck synccheck initcheck; do
     echo "Running CUDA Compute Sanitizer in ${TOOL} mode"
     "${CTEST}" -T MemCheck \

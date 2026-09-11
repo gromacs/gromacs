@@ -171,6 +171,11 @@ TEST_P(EssentialDynamicsTest, WithinTolerances)
     std::string systemBaseName = isFloodingTest ? "essentialdynamics-flooding" : "essentialdynamics";
     std::string mdpBaseName = isFloodingTest ? "essentialdynamics-flooding" : "essentialdynamics";
 
+    if (edType == "flooding2" and nsteps > 0 and std::getenv("GMX_CI_COMPUTE_SANITIZER"))
+    {
+        GTEST_SKIP() << "Skipping long test to avoid OOM in GROMACS CI environment";
+    }
+
     // Load MDP file from database and replace nsteps value
     auto mdpPath = gmx::test::TestFileManager::getTestSimulationDatabaseDirectory()
                    / (mdpBaseName + ".mdp");
