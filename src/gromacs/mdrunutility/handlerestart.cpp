@@ -457,10 +457,7 @@ void lockLogFile(t_fileio* logfio, const std::filesystem::path& logFilename)
      * will succeed, but a second process can also lock the file.
      * We should probably try to detect this.
      */
-#if defined __native_client__
-    errno = ENOSYS;
-    if (true)
-#elif GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     if (_locking(fileno(gmx_fio_getfp(logfio)), _LK_NBLCK, LONG_MAX) == -1)
 #else
     // don't initialize here: the struct order is OS dependent!

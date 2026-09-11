@@ -202,9 +202,6 @@
 /* Maximum number of OpenMP threads supported */
 #define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
 
-/* Use if we cannot rename checkpoints */
-#cmakedefine01 GMX_NO_RENAME
-
 /* Use sub-counters */
 #cmakedefine01 GMX_CYCLE_SUBCOUNTERS
 

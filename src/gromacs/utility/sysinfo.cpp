@@ -83,7 +83,7 @@ int gmx_gethostname(char* buf, size_t len)
     {
         return 0;
     }
-#elif defined(HAVE_UNISTD_H) && !defined(__native_client__)
+#elif defined(HAVE_UNISTD_H)
     if (gethostname(buf, len - 1) == 0)
     {
         buf[len - 1] = '\0';

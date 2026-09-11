@@ -917,17 +917,6 @@ if (LIBM_LIBRARY)
     list(APPEND GMX_PUBLIC_LIBRARIES ${LIBM_LIBRARY})
 endif()
 
-option(GMX_NACL "Configure for Native Client builds" OFF)
-if (GMX_NACL)
-  list(APPEND GMX_EXTRA_LIBRARIES nosys)
-  set(GMX_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnosys")
-  # TODO: Is this still necessary with the check for its presence?
-  set(GMX_USE_NICE 0)
-  set(GMX_NO_RENAME 1)
-  message(WARNING "Native Client builds deprecated since GROMACS 2026")
-endif()
-mark_as_advanced(GMX_NACL)
-
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING
       "Path to swindirect.h")
