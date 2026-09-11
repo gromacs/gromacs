@@ -127,7 +127,11 @@ static constexpr int minBlocksPerMp(const bool hasLargeRegisterPool, const bool 
 template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int nthreadZ, PairlistType pairlistType>
 __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
                   minBlocksPerMp(hasLargeRegisterPool, doCalcEnergies)) __global__
-        static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<pairlistType> plist, bool doCalcShift)
+        static void nbnxmKernel(NBAtomDataGpu             atdat,
+                                NBParamGpu                nbparam,
+                                GpuPairlist<pairlistType> plist,
+                                const nbnxn_cj_packed_t<pairlistType>* __restrict__ gm_cjPacked,
+                                bool doCalcShift)
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
@@ -158,7 +162,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
     float3*                     gm_fShift        = asFloat3(atdat.fShift);
     float*                      gm_energyElec    = atdat.eElec + energyIndexBase;
     float*                      gm_energyVdw     = atdat.eLJ + energyIndexBase;
-    NbnxmCjPacked*              gm_plistCJPacked = plist.cjPacked;
+    const NbnxmCjPacked*        gm_plistCJPacked = doPruneNBL ? gm_cjPacked : plist.cjPacked;
     AmdFastBuffer<const nbnxn_sci_t> gm_plistSci{ doPruneNBL ? plist.sci : plist.sorting.sciSorted };
     int* gm_plistSciHistogram = plist.sorting.sciHistogram;
     int* gm_sciCount          = plist.sorting.sciCount;
@@ -603,7 +607,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
         {
             /* Update the imask with the new one which does not contain the
              * out of range clusters anymore. */
-            gm_plistCJPacked[jPacked].imei[widx].imask = imask;
+            plist.cjPacked[jPacked].imei[widx].imask = imask;
             prunedPairCount += __popc(imask);
         }
     } // for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
@@ -707,6 +711,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
                 auto* plist                 = pairlists[iloc].get();
                 using T                     = std::decay_t<decltype(*plist)>;
                 constexpr auto pairlistType = getPairlistTypeFromPairlist<T>();
+                const auto*    gm_cjPacked  = plist->cjPacked;
 
                 GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]),
                            "Wrong template called");
@@ -721,6 +726,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
                         adat,
                         nbp,
                         plist,
+                        &gm_cjPacked,
                         &stepWork.computeVirial);
             },
             nb->plist);
