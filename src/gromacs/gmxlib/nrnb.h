@@ -42,38 +42,9 @@
 
 enum
 {
-    eNR_NBKERNEL_VDW_VF,
-    eNR_NBKERNEL_VDW_F,
-    eNR_NBKERNEL_ELEC_VF,
-    eNR_NBKERNEL_ELEC_F,
-    eNR_NBKERNEL_ELEC_W3_VF,
-    eNR_NBKERNEL_ELEC_W3_F,
-    eNR_NBKERNEL_ELEC_W3W3_VF,
-    eNR_NBKERNEL_ELEC_W3W3_F,
-    eNR_NBKERNEL_ELEC_W4_VF,
-    eNR_NBKERNEL_ELEC_W4_F,
-    eNR_NBKERNEL_ELEC_W4W4_VF,
-    eNR_NBKERNEL_ELEC_W4W4_F,
-    eNR_NBKERNEL_ELEC_VDW_VF,
-    eNR_NBKERNEL_ELEC_VDW_F,
-    eNR_NBKERNEL_ELEC_VDW_W3_VF,
-    eNR_NBKERNEL_ELEC_VDW_W3_F,
-    eNR_NBKERNEL_ELEC_VDW_W3W3_VF,
-    eNR_NBKERNEL_ELEC_VDW_W3W3_F,
-    eNR_NBKERNEL_ELEC_VDW_W4_VF,
-    eNR_NBKERNEL_ELEC_VDW_W4_F,
-    eNR_NBKERNEL_ELEC_VDW_W4W4_VF,
-    eNR_NBKERNEL_ELEC_VDW_W4W4_F,
+    eNR_NBKERNEL_FREE_ENERGY,
 
-    eNR_NBKERNEL_NR, /* Total number of interaction-specific kernel entries */
-
-    eNR_NBKERNEL_GENERIC = eNR_NBKERNEL_NR, /* Reuse number; KERNEL_NR is not an entry itself */
-    eNR_NBKERNEL_GENERIC_CG,
-    eNR_NBKERNEL_FREE_ENERGY, /* Add other generic kernels _before_ the free energy one */
-
-    eNR_NBKERNEL_TOTAL_NR,
-
-    eNR_NBNXM_DIST2 = eNR_NBKERNEL_TOTAL_NR, // Reuse the symbolic constant that indicates the last kernel
+    eNR_NBNXM_DIST2,
     eNR_NBNXM_LJ_RF,
     eNR_NBNXM_LJ_RF_E,
     eNR_NBNXM_LJ_TAB,
@@ -101,13 +72,10 @@ enum
     eNR_GATHERF,
     eNR_GATHERFBSP,
     eNR_FFT,
-    eNR_CONV,
     eNR_SOLVEPME,
-    eNR_NS,
     eNR_RESETX,
     eNR_SHIFTX,
     eNR_CGCM,
-    eNR_FSUM,
     eNR_BONDS,
     eNR_G96BONDS,
     eNR_FENEBONDS,
@@ -132,6 +100,10 @@ enum
     eNR_ANGRESZ,
     eNR_MORSE,
     eNR_CUBICBONDS,
+    eNR_CMAP,
+    eNR_UREY_BRADLEY,
+    eNR_CROSS_BOND_BOND,
+    eNR_CROSS_BOND_ANGLE,
     eNR_WALLS,
     eNR_POLARIZE,
     eNR_ANHARM_POL,
@@ -160,10 +132,6 @@ enum
     eNR_VSITE4FD,
     eNR_VSITE4FDN,
     eNR_VSITEN,
-    eNR_CMAP,
-    eNR_UREY_BRADLEY,
-    eNR_CROSS_BOND_BOND,
-    eNR_CROSS_BOND_ANGLE,
     eNRNB
 };
 

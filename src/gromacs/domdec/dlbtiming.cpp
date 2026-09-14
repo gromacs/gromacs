@@ -185,29 +185,14 @@ void DDBalanceRegionHandler::closeRegionGpuImpl(float waitGpuCyclesInCpuRegion,
 //! Accumulates flop counts for force calculations.
 static double force_flop_count(const t_nrnb* nrnb)
 {
+    static_assert(eNR_NBKERNEL_FREE_ENERGY == 0, "We should not skip counters");
+    static_assert(eNR_NBNXM_LJ_RF == eNR_NBNXM_DIST2 + 1, "We should not skip counters");
+    static_assert(eNR_NB14 == eNR_NBNXM_ADD_LJ_EWALD_E + 1, "We should not skip counters");
+
     double sum = 0;
-    for (int i = 0; i < eNR_NBKERNEL_FREE_ENERGY; i++)
+    for (int i = eNR_NBKERNEL_FREE_ENERGY; i <= eNR_NBNXM_DIST2; i++)
     {
-        /* To get closer to the real timings, we half the count
-         * for the normal loops and again half it for water loops.
-         */
-        const char* name = nrnb_str(i);
-        if (std::strstr(name, "W3") != nullptr || std::strstr(name, "W4") != nullptr)
-        {
-            sum += nrnb->n[i] * 0.25 * cost_nrnb(i);
-        }
-        else
-        {
-            sum += nrnb->n[i] * 0.50 * cost_nrnb(i);
-        }
-    }
-    for (int i = eNR_NBKERNEL_FREE_ENERGY; i <= eNR_NB14; i++)
-    {
-        const char* name = nrnb_str(i);
-        if (std::strstr(name, "W3") != nullptr || std::strstr(name, "W4") != nullptr)
-        {
-            sum += nrnb->n[i] * cost_nrnb(i);
-        }
+        sum += nrnb->n[i] * cost_nrnb(i);
     }
     for (int i = eNR_NBNXM_LJ_RF; i <= eNR_NBNXM_ADD_LJ_EWALD_E; i++)
     {

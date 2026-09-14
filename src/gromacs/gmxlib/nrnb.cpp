@@ -48,35 +48,7 @@ typedef struct
 
 
 static const t_nrnb_data nbdata[eNRNB] = {
-    /* These are re-used for different NB kernels, since there are so many.
-     * The actual number of flops is set dynamically.
-     */
-    { "NB VdW [V&F]", 1 },
-    { "NB VdW [F]", 1 },
-    { "NB Elec. [V&F]", 1 },
-    { "NB Elec. [F]", 1 },
-    { "NB Elec. [W3,V&F]", 1 },
-    { "NB Elec. [W3,F]", 1 },
-    { "NB Elec. [W3-W3,V&F]", 1 },
-    { "NB Elec. [W3-W3,F]", 1 },
-    { "NB Elec. [W4,V&F]", 1 },
-    { "NB Elec. [W4,F]", 1 },
-    { "NB Elec. [W4-W4,V&F]", 1 },
-    { "NB Elec. [W4-W4,F]", 1 },
-    { "NB VdW & Elec. [V&F]", 1 },
-    { "NB VdW & Elec. [F]", 1 },
-    { "NB VdW & Elec. [W3,V&F]", 1 },
-    { "NB VdW & Elec. [W3,F]", 1 },
-    { "NB VdW & Elec. [W3-W3,V&F]", 1 },
-    { "NB VdW & Elec. [W3-W3,F]", 1 },
-    { "NB VdW & Elec. [W4,V&F]", 1 },
-    { "NB VdW & Elec. [W4,F]", 1 },
-    { "NB VdW & Elec. [W4-W4,V&F]", 1 },
-    { "NB VdW & Elec. [W4-W4,F]", 1 },
-
-    { "NB Generic kernel", 1 },
-    { "NB Generic charge grp kernel", 1 },
-    { "NB Free energy kernel", 1 },
+    { "NB Free energy kernel", 1 }, /* This counts flops, not interactions */
 
     { "Pair Search distance check", 9 }, /* nbnxm pair dist. check */
     /* nbnxm kernel flops are based on inner-loops without exclusion checks.
@@ -89,27 +61,27 @@ static const t_nrnb_data nbdata[eNRNB] = {
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
      *   is always counted as 6 flops, this roughly compensates.
      */
-    { "NxN RF Elec. + LJ [F]", 38 }, /* nbnxm kernel LJ+RF, no ener */
-    { "NxN RF Elec. + LJ [V&F]", 54 },
-    { "NxN QSTab Elec. + LJ [F]", 41 }, /* nbnxm kernel LJ+tab, no en */
-    { "NxN QSTab Elec. + LJ [V&F]", 59 },
-    { "NxN Ewald Elec. + LJ [F]", 66 }, /* nbnxm kernel LJ+Ewald, no en */
-    { "NxN Ewald Elec. + LJ [V&F]", 107 },
-    { "NxN LJ [F]", 33 }, /* nbnxm kernel LJ, no ener */
-    { "NxN LJ [V&F]", 43 },
-    { "NxN RF Electrostatics [F]", 31 }, /* nbnxm kernel RF, no ener */
-    { "NxN RF Electrostatics [V&F]", 36 },
-    { "NxN QSTab Elec. [F]", 34 }, /* nbnxm kernel tab, no ener */
-    { "NxN QSTab Elec. [V&F]", 41 },
-    { "NxN Ewald Elec. [F]", 61 }, /* nbnxm kernel Ewald, no ener */
-    { "NxN Ewald Elec. [V&F]", 84 },
+    { "NxM RF Elec. + LJ [F]", 38 }, /* nbnxm kernel LJ+RF, no ener */
+    { "NxM RF Elec. + LJ [V&F]", 54 },
+    { "NxM QSTab Elec. + LJ [F]", 41 }, /* nbnxm kernel LJ+tab, no en */
+    { "NxM QSTab Elec. + LJ [V&F]", 59 },
+    { "NxM Ewald Elec. + LJ [F]", 66 }, /* nbnxm kernel LJ+Ewald, no en */
+    { "NxM Ewald Elec. + LJ [V&F]", 107 },
+    { "NxM LJ [F]", 33 }, /* nbnxm kernel LJ, no ener */
+    { "NxM LJ [V&F]", 43 },
+    { "NxM RF Electrostatics [F]", 31 }, /* nbnxm kernel RF, no ener */
+    { "NxM RF Electrostatics [V&F]", 36 },
+    { "NxM QSTab Elec. [F]", 34 }, /* nbnxm kernel tab, no ener */
+    { "NxM QSTab Elec. [V&F]", 41 },
+    { "NxM Ewald Elec. [F]", 61 }, /* nbnxm kernel Ewald, no ener */
+    { "NxM Ewald Elec. [V&F]", 84 },
     /* The switch function flops should be added to the LJ kernels above */
-    { "NxN LJ add F-switch [F]", 12 }, /* extra cost for LJ F-switch */
-    { "NxN LJ add F-switch [V&F]", 22 },
-    { "NxN LJ add P-switch [F]", 27 }, /* extra cost for LJ P-switch */
-    { "NxN LJ add P-switch [V&F]", 20 },
-    { "NxN LJ add LJ Ewald [F]", 36 }, /* extra cost for LJ Ewald */
-    { "NxN LJ add LJ Ewald [V&F]", 33 },
+    { "NxM LJ add F-switch [F]", 12 }, /* extra cost for LJ F-switch */
+    { "NxM LJ add F-switch [V&F]", 22 },
+    { "NxM LJ add P-switch [F]", 27 }, /* extra cost for LJ P-switch */
+    { "NxM LJ add P-switch [V&F]", 20 },
+    { "NxM LJ add LJ Ewald [F]", 36 }, /* extra cost for LJ Ewald */
+    { "NxM LJ add LJ Ewald [V&F]", 33 },
     { "1,4 nonbonded interactions", 90 },
     { "Calc Weights", 36 },
     { "Spread Q", 6 },
@@ -117,13 +89,10 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Gather F", 23 },
     { "Gather F Bspline", 6 },
     { "3D-FFT", 8 },
-    { "Convolution", 4 },
     { "Solve PME", 64 },
-    { "NS-Pairs", 21 },
     { "Reset In Box", 3 },
     { "Shift-X", 6 },
     { "CG-CoM", 3 },
-    { "Sum Forces", 1 },
     { "Bonds", 59 },
     { "G96Bonds", 44 },
     { "FENE Bonds", 58 },
@@ -148,6 +117,10 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Angle Restr. Z", 164 },
     { "Morse Potent.", 83 },
     { "Cubic Bonds", 54 },
+    { "CMAP", 1700 }, // Estimate!
+    { "Urey-Bradley", 183 },
+    { "Cross-Bond-Bond", 163 },
+    { "Cross-Bond-Angle", 163 },
     { "Walls", 31 },
     { "Polarization", 59 },
     { "Anharmonic Polarization", 72 },
@@ -175,11 +148,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 3out", 87 },
     { "Virtual Site 4fd", 110 },
     { "Virtual Site 4fdn", 254 },
-    { "Virtual Site N", 15 },
-    { "CMAP", 1700 }, // Estimate!
-    { "Urey-Bradley", 183 },
-    { "Cross-Bond-Bond", 163 },
-    { "Cross-Bond-Angle", 163 }
+    { "Virtual Site N", 15 }
 };
 
 static void pr_two(FILE* out, int c, int i)
@@ -268,13 +237,13 @@ void print_nrnb(FILE* out, t_nrnb* nrnb)
     }
 }
 
-/* Returns in enr is the index of a full nbnxm VdW kernel */
+/* Returns whether enr is the index of a full nbnxm VdW kernel */
 static bool nrnb_is_nbnxm_vdw_kernel(int enr)
 {
     return (enr >= eNR_NBNXM_LJ_RF && enr <= eNR_NBNXM_LJ_E);
 }
 
-/* Returns in enr is the index of an nbnxm kernel addition (LJ modification) */
+/* Returns whether enr is the index of an nbnxm kernel addition (LJ modification) */
 static bool nrnb_is_nbnxm_kernel_addition(int enr)
 {
     return (enr >= eNR_NBNXM_ADD_LJ_FSW && enr <= eNR_NBNXM_ADD_LJ_EWALD_E);
@@ -292,30 +261,6 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
     const char* myline =
             "-----------------------------------------------------------------------------";
 
-    *nbfs = 0.0;
-    for (int i = 0; (i < eNR_NBKERNEL_TOTAL_NR); i++)
-    {
-        if (std::strstr(nbdata[i].name, "W3-W3") != nullptr)
-        {
-            *nbfs += 9e-6 * nrnb->n[i];
-        }
-        else if (std::strstr(nbdata[i].name, "W3") != nullptr)
-        {
-            *nbfs += 3e-6 * nrnb->n[i];
-        }
-        else if (std::strstr(nbdata[i].name, "W4-W4") != nullptr)
-        {
-            *nbfs += 10e-6 * nrnb->n[i];
-        }
-        else if (std::strstr(nbdata[i].name, "W4") != nullptr)
-        {
-            *nbfs += 4e-6 * nrnb->n[i];
-        }
-        else
-        {
-            *nbfs += 1e-6 * nrnb->n[i];
-        }
-    }
     tflop = 0;
     for (int i = 0; (i < eNRNB); i++)
     {
@@ -334,7 +279,7 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
 
     if (out)
     {
-        fprintf(out, " NB=Group-cutoff nonbonded kernels    NxN=N-by-N cluster Verlet kernels\n");
+        fprintf(out, " NxM=N-by-M cluster Verlet kernels\n");
         fprintf(out, " RF=Reaction-Field  VdW=Van der Waals  QSTab=quadratic-spline table\n");
         fprintf(out, " W3=SPC/TIP3p  W4=TIP4p (single or pairs)\n");
         fprintf(out, " V&F=Potential and force  V=Potential only  F=Force only\n\n");
@@ -342,6 +287,7 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
         fprintf(out, " %-32s %16s %15s  %7s\n", "Computing:", "M-Number", "M-Flops", "% Flops");
         fprintf(out, "%s\n", myline);
     }
+    *nbfs  = 0.0;
     *mflop = 0.0;
     tfrac  = 0.0;
     for (int i = 0; (i < eNRNB); i++)
@@ -352,9 +298,15 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
          */
         if (mni > 0 && !nrnb_is_nbnxm_kernel_addition(i))
         {
-            int flop;
+            /* Note that free-energy non-bonded pairs are also present in the normal
+             * non-bonded pair-list and are therefore not counted again
+             */
+            if (i >= eNR_NBNXM_LJ_RF && i < eNR_NB14)
+            {
+                *nbfs += 1e-6 * nrnb->n[i];
+            }
 
-            flop = nbdata[i].flop;
+            int flop = nbdata[i].flop;
             if (nrnb_is_nbnxm_vdw_kernel(i))
             {
                 /* Possibly add the cost of an LJ switch/Ewald function */
@@ -385,15 +337,6 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
         fprintf(out, "%s\n", myline);
         fprintf(out, " %-32s %16s %15.3f  %6.1f\n", "Total", "", *mflop, tfrac);
         fprintf(out, "%s\n\n", myline);
-
-        if (nrnb->n[eNR_NBKERNEL_GENERIC] > 0)
-        {
-            fprintf(out,
-                    "WARNING: Using the slow generic C kernel. This is fine if you are\n"
-                    "comparing different implementations or MD software. Routine\n"
-                    "simulations should use a different non-bonded setup for much better\n"
-                    "performance.\n\n");
-        }
     }
 }
 
