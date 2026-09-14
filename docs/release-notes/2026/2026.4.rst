@@ -97,6 +97,14 @@ not hot kernels.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Stopped installing lmfit content
+""""""""""""""""""""""""""""""""
+
+Some unnecessary CMake code which was problematic with IDEs and CMake
+version at least 4.3 is now removed.
+
+:issue:`5668`
+
 Updated DOI to the preprint describing AMBER14SB and AMBER19SB conversion and validation
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
