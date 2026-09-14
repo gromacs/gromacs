@@ -114,7 +114,7 @@ TEST_P(GmxMakeEdiTest, GeneratesCorrectEdi)
         // For -tar option, resolve the path at runtime
         if (option == "-tar" && i + 1 < params.edOptions.size())
         {
-            commandLine().append(TestFileManager::getInputFilePath(systemName + ".gro"));
+            commandLine().append(TestFileManager::getInputFilePath(systemName + ".gro").string());
             ++i; // Skip the placeholder value
         }
     }
