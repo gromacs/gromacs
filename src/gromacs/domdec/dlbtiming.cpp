@@ -119,6 +119,13 @@ void ddReopenBalanceRegionCpu(const gmx_domdec_t* dd)
     }
 }
 
+DDBalanceRegionHandler::DDBalanceRegionHandler(gmx_domdec_t* dd) :
+    useBalancingRegion_(dd != nullptr ? (havePPDomainDecomposition(dd) && dd->comm->ddSettings.recordLoad)
+                                      : false),
+    dd_(dd)
+{
+}
+
 void DDBalanceRegionHandler::closeRegionCpuImpl() const
 {
     BalanceRegion::Impl* reg = getBalanceRegion(dd_);

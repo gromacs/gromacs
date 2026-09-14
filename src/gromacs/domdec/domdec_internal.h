@@ -489,6 +489,8 @@ struct DDSettings
 
     //! Whether we should record the load
     bool recordLoad = false;
+    //! Whether load recording is disabled because of update being on GPU
+    bool recordLoadDisabledByUpdateOnGpu = false;
 
     /* Debugging */
     //! Step interval for dumping the local+non-local atoms to pdb

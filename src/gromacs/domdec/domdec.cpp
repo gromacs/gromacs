@@ -2641,6 +2641,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
                                 const gmx::MdrunOptions& mdrunOptions,
                                 const t_inputrec&        ir,
                                 const bool               useGpuForPme,
+                                const bool               useGpuForUpdate,
                                 const bool               canUseGpuPmeDecomposition)
 {
     DDSettings ddSettings;
@@ -2669,9 +2670,14 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
         GMX_LOG(mdlog.info).appendText("Will load balance based on FLOP count");
         ddSettings.recordLoad = true;
     }
+    else if (wallcycle_have_counter() && recload > 0)
+    {
+        ddSettings.recordLoadDisabledByUpdateOnGpu = useGpuForUpdate;
+        ddSettings.recordLoad                      = !ddSettings.recordLoadDisabledByUpdateOnGpu;
+    }
     else
     {
-        ddSettings.recordLoad = (wallcycle_have_counter() && recload > 0);
+        ddSettings.recordLoad = false;
     }
 
     ddSettings.initialDlbState = determineInitialDlbState(
@@ -2785,7 +2791,8 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
             .appendTextFormatted("\nInitializing Domain Decomposition on %d ranks",
                                  mpiCommSimulation.size());
 
-    ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_, useGpuForPme, canUseGpuPmeDecomposition);
+    ddSettings_ = getDDSettings(
+            mdlog_, options_, mdrunOptions, ir_, useGpuForPme, useGpuForUpdate, canUseGpuPmeDecomposition);
 
     if (ddSettings_.eFlop > 1)
     {

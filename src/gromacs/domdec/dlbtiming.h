@@ -85,10 +85,7 @@ class DDBalanceRegionHandler
 {
 public:
     //! Constructor, pass a pointer to gmx_domdec_t or nullptr when not using domain decomposition
-    DDBalanceRegionHandler(gmx_domdec_t* dd) :
-        useBalancingRegion_(dd != nullptr ? havePPDomainDecomposition(dd) : false), dd_(dd)
-    {
-    }
+    DDBalanceRegionHandler(gmx_domdec_t* dd);
 
     /*! \brief Returns whether were are actually using the balancing region
      */

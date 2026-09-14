@@ -49,6 +49,11 @@ which is unlikely to affect performance noticeably.
 
 :issue:`5688`
 
+Removed incorrect load imbalance reporting with update GPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5700`
+
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
