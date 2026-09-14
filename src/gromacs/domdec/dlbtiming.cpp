@@ -119,6 +119,13 @@ void ddReopenBalanceRegionCpu(const gmx_domdec_t* dd)
     }
 }
 
+DDBalanceRegionHandler::DDBalanceRegionHandler(gmx_domdec_t* dd) :
+    useBalancingRegion_(dd != nullptr ? (havePPDomainDecomposition(dd) && dd->comm->ddSettings.recordLoad)
+                                      : false),
+    dd_(dd)
+{
+}
+
 void DDBalanceRegionHandler::closeRegionCpuImpl() const
 {
     BalanceRegion::Impl* reg = getBalanceRegion(dd_);
@@ -202,9 +209,21 @@ static double force_flop_count(const t_nrnb* nrnb)
             sum += nrnb->n[i] * cost_nrnb(i);
         }
     }
-    for (int i = eNR_BONDS; i <= eNR_WALLS; i++)
+    for (int i = eNR_NBNXM_LJ_RF; i <= eNR_NBNXM_ADD_LJ_EWALD_E; i++)
     {
-        sum += nrnb->n[i] * cost_nrnb(i);
+        /* The flop rate of the non-bonded kernels is much higher that those of all other kernels.
+         * To get closer to the real timings, we scale it down. Scaling factor is not exact,
+         * but seems to work well. */
+        const float nbnxmFlopScale = 0.5f;
+        sum += nrnb->n[i] * cost_nrnb(i) * nbnxmFlopScale;
+    }
+    for (int i = eNR_NB14; i <= eNR_WALLS; i++)
+    {
+        // PME FFT and solve load is not affected by DLB
+        if (i != eNR_FFT && i != eNR_SOLVEPME)
+        {
+            sum += nrnb->n[i] * cost_nrnb(i);
+        }
     }
 
     return sum;

@@ -49,6 +49,11 @@ which is unlikely to affect performance noticeably.
 
 :issue:`5688`
 
+Removed incorrect load imbalance reporting with update GPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5700`
+
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -76,8 +81,29 @@ Fixes that affect portability
 Fixed SYCL build with HeFFTe
 """"""""""""""""""""""""""""
 
+Work around icpx compiler crash in localtopology.cpp at RelWithAssert
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Intel LLVM compiler (icpx, observed with oneAPI 2026.0) segfaults in
+its frontend while optimizing ``make_local_bondeds_excls()`` in
+``domdec/localtopology.cpp`` at ``-O3`` with assertions enabled
+(RelWithAssert configuration). The file is now compiled at ``-O2`` when
+building with IntelLLVM 2026.x in RelWithAssert mode; this has no meaningful
+performance impact as the file contains domain-decomposition setup code,
+not hot kernels.
+
+:issue:`5636`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Stopped installing lmfit content
+""""""""""""""""""""""""""""""""
+
+Some unnecessary CMake code which was problematic with IDEs and CMake
+version at least 4.3 is now removed.
+
+:issue:`5668`
 
 Updated DOI to the preprint describing AMBER14SB and AMBER19SB conversion and validation
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -88,3 +114,13 @@ preprint is uploaded on ChemRxiv, the placeholder was replaced with the DOI of
 the preprint, `doi:10.26434/chemrxiv.15006112/v1 <https://doi.org/10.26434/chemrxiv.15006112/v1>`_.
 
 :issue:`5690`
+
+Fix FLOPs-based dynamic load balancing
+""""""""""""""""""""""""""""""""""""""
+
+The FLOPs-based DLB algorithm (activated via ``GMX_DLB_BASED_ON_FLOPS``)
+was not accounting for non-bonded kernels, making it ineffectual.
+The default timer-based DLB was not affected.
+
+:issue:`5698`
+

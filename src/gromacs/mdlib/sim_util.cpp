@@ -1763,6 +1763,11 @@ void do_force(FILE*                         fplog,
         }
     }
 
+    if (haveDDAtomOrdering(*cr))
+    {
+        dd_force_flop_start(cr->dd, nrnb);
+    }
+
     if (simulationWork.useGpuNonbonded && (stepWork.computeNonbondedForces || domainWork.haveGpuBondedWork))
     {
         ddBalanceRegionHandler.openBeforeForceComputationGpu();
@@ -2040,7 +2045,6 @@ void do_force(FILE*                         fplog,
     if (haveDDAtomOrdering(*cr) && simulationWork.haveSeparatePmeRank)
     {
         wallcycle_start(wcycle, WallCycleCounter::PpDuringPme);
-        dd_force_flop_start(cr->dd, nrnb);
     }
 
     if (inputrec.bRot)

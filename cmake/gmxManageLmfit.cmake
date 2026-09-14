@@ -58,17 +58,10 @@ function(gmx_manage_lmfit)
         set_target_properties(lmfit_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
         # Create an INTERFACE (ie. fake) library for lmfit, that
-        # libgromacs can depend on. The generator expression for the
-        # target_sources expands to nothing when cmake builds the
-        # export for libgromacs, so that it understands that we don't
-        # install anything for this library - using plain source files
-        # would not convey the right information.
+        # libgromacs can depend on.
         add_library(lmfit INTERFACE)
         target_sources(lmfit INTERFACE $<TARGET_OBJECTS:lmfit_objlib>)
         target_include_directories(lmfit SYSTEM INTERFACE $<BUILD_INTERFACE:${BUNDLED_LMFIT_DIR}>)
-        # Add the lmfit interface library to the libgromacs Export name, even though
-        # we will not be installing any content.
-        install(TARGETS lmfit EXPORT libgromacs)
 
         set(HAVE_LMFIT 1 CACHE INTERNAL "Is lmfit found?")
     elseif(GMX_USE_LMFIT STREQUAL "EXTERNAL")
@@ -83,9 +76,6 @@ function(gmx_manage_lmfit)
         # Create a dummy link target so the calling code doesn't need to know
         # whether lmfit support is being compiled.
         add_library(lmfit INTERFACE)
-        # Add the lmfit interface library to the libgromacs Export name, even though
-        # we will not be installing any content.
-        install(TARGETS lmfit EXPORT libgromacs)
 
         set(HAVE_LMFIT 0 CACHE INTERNAL "Is lmfit found?")
     endif()
