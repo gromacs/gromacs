@@ -101,6 +101,8 @@ int tMPI_Wait(tMPI_Request *request, tMPI_Status *status)
     /* deallocate */
     tMPI_Return_req(rql, *request);
 
+    *request = TMPI_REQUEST_NULL;
+
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_stop(cur, TMPIFN_Wait);
 #endif

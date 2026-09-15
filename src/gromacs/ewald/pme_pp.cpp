@@ -525,7 +525,6 @@ gmx_pme_comm_cyclecounters_t PmePpComm::receiveCycleCountersAndStopCondition()
 #if GMX_MPI
         MPI_Wait(&cycleCountersRequest_, MPI_STATUS_IGNORE);
 #endif
-        cycleCountersRequest_ = MPI_REQUEST_NULL;
 
         // Capture the stop condition to return, before resetting it
         if (cycleCounters_.stop_cond != StopCondition::None)

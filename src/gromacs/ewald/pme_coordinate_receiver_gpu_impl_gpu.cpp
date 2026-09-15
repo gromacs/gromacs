@@ -196,9 +196,8 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
             ++senderIndex;
         }
         MPI_Wait(&(requests_[senderIndex]), MPI_STATUS_IGNORE);
-        // Ensure that future calls to this method for later pipeline
-        // stages of the same step will not wait upon the same sender.
-        requests_[senderIndex] = MPI_REQUEST_NULL;
+        GMX_ASSERT(requests_[senderIndex] == MPI_REQUEST_NULL,
+                   "For the next pipleine stages, we rely on MPI_Wait resetting the request");
     } while (ppCommManagers_[senderIndex].ppRank.numAtoms == 0);
 
     // Return a send event from a PP rank that transferred a non-zero
