@@ -32,16 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Tests for the Leap-Frog integrator
+ * \brief Tests for the Langevin integrator
  *
  *  The test creates a system of independent particles exerting constant
  *  external forces and makes several numerical integration timesteps.
- *  The results are compared with the analytical solution (for the systems
- *  without the temperature coupling) and with the pre-computed reference
- *  values. The tests use runners that are created for each available
- *  implementation of the tested algorithm.
+ *  The results are compared with pre-computed reference values.
  *
- * \todo Add tests for integrators with pressure control.
  * \todo Add PBC handling test.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -53,22 +49,39 @@
 
 #include <cmath>
 
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
+#include "testutils/hardware_test_fixture.h"
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
 #include "langevintestdata.h"
-#include "langevintestrunners.h"
+
+#if GMX_GPU && !GMX_GPU_OPENCL
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/gputraits.h"
+#endif
+
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/matrix.h"
 
 namespace gmx
 {
@@ -77,84 +90,146 @@ namespace test
 namespace
 {
 
-/*! \brief The parameters for the test.
- *
- * The test will run for combinations of:
- *
- * 1. Number of atoms
- * 2. Timestep
- * 3. Number of steps
- * 4. Velocity components
- * 5. Force components
- * 6. Number of temperature coupling groups
- * 7. Temperatures
- * 8. Tau-t (inverse friction constant) for all temp. coupling groups
- * 9. Random seed
- */
-struct LangevinTestParameters
+static const RVec sc_initialVelocity{ 1.0, -2.0, 3.0 };
+static const RVec sc_force{ -3.0, 2.0, -1.0 };
+
+void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
 {
-    //! Total number of atoms
-    int numAtoms;
-    //! Timestep
-    real timestep;
-    //! Number of integration steps
-    int numSteps;
-    //! Initial velocity
-    RVec v;
-    //! Constant force
-    RVec f;
-    //! Number of temperature coupling group (zero for no temperature coupling)
-    int numTCoupleGroups;
-    //! Temperature
-    real temperature;
-    //! tau-t is controlling the inverse friction constant
-    real tauT;
-    //! Random seed for the Langevin integrator
-    int seed;
-};
+    testData->state_.x.resizeWithPadding(testData->numAtoms_);
+    testData->state_.v.resizeWithPadding(testData->numAtoms_);
+    for (int i = 0; i < testData->numAtoms_; i++)
+    {
+        testData->state_.x[i] = testData->x_[i];
+        testData->state_.v[i] = testData->v_[i];
+    }
+
+    gmx_omp_nthreads_set(ModuleMultiThread::Update, 1);
+
+    Matrix3x3 parrinelloRahmanM;
+
+    for (int step = 0; step < numSteps; step++)
+    {
+        testData->update_->update_coords(testData->inputRecord_,
+                                         step,
+                                         testData->mdAtoms_.homenr,
+                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
+                                         testData->mdAtoms_.ptype,
+                                         testData->mdAtoms_.invmass,
+                                         testData->mdAtoms_.invMassPerDim,
+                                         &testData->state_,
+                                         testData->f_,
+                                         &testData->forceCalculationData_,
+                                         &testData->kineticEnergyData_,
+                                         parrinelloRahmanM,
+                                         etrtNONE,
+                                         nullptr,
+                                         false);
+        testData->update_->finish_update(testData->inputRecord_,
+                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
+                                         testData->mdAtoms_.homenr,
+                                         &testData->state_,
+                                         nullptr,
+                                         false);
+    }
+    const auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
+    for (int i = 0; i < testData->numAtoms_; i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            testData->x_[i][d]      = testData->state_.x[i][d];
+            testData->v_[i][d]      = testData->state_.v[i][d];
+            testData->xPrime_[i][d] = xp[i][d];
+        }
+    }
+}
+
+
+//! Input configuration for Langevin tests
+using LangevinInputConfig = std::tuple<int,  // numAtoms
+                                       real, // timestep
+                                       int,  // numSteps
+                                       int,  // numTCoupleGroups
+                                       real, // temperature
+                                       real, // tauT
+                                       int>; // seed
+
+/*! \brief Hardware test helper for Langevin
+ *
+ * \todo There are no execution modes - should test SIMD vs no SIMD
+ * here. Perhaps coupling vs no-coupling is useful to express this way
+ * also. */
+using LangevinTestHelper = HardwareAndExecutionTestHelper<LangevinInputConfig, std::tuple<>>;
+
+//! Format timestep as integer for test names
+std::string formatTimestep(real timestep)
+{
+    int timestepInt = std::lround(timestep * 1000000);
+    return formatString("dt%d", timestepInt);
+}
+
+//! Format tau as integer for test names
+std::string formatTauT(real tauT)
+{
+    int tauTInt = std::lround(tauT * 1000);
+    return formatString("tauT%d", tauTInt);
+}
+
+//! Format temperature as integer for test names
+std::string formatTemperature(real temperature)
+{
+    int temperatureInt = std::lround(temperature);
+    return formatString("T%d", temperatureInt);
+}
+
+//! Formatters for parameters in the config info
+static const auto sc_configInfoFormatters =
+        std::make_tuple([](int n) { return formatString("%datoms", n); },
+                        formatTimestep,
+                        [](int n) { return formatString("%dsteps", n); },
+                        [](int n) { return formatString("tcg%d", n); },
+                        formatTemperature,
+                        formatTauT,
+                        [](int n) { return formatString("seed%d", n); });
+//! Formatters for parameters in the execution mode (currently empty)
+static const auto sc_executionModeFormatters = std::make_tuple();
+
+//! Helper object to name tests using all parameters
+static const NameOfTestFromTuple<LangevinTestHelper::DynamicParameters> sc_testNamer =
+        LangevinTestHelper::testNamer(sc_configInfoFormatters, sc_executionModeFormatters);
 
 //! The set of parameters combinations to run the test on
-const LangevinTestParameters parametersSets[] = {
-    { 1, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 0, 2, 123 }, // 1 particle, T = 0K
-    { 1, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 0, 2, 12345 }, // 1 particle, T=0K, other random seed
-    { 1, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 123 },  // T = 100K
-    { 1, 0.001, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 0, 123 },  // tau-t = 0
-    { 1, 0.0005, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 123 }, // 0.0005 ps timestep
-    { 1, 0.0005, 2, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 123 }, // 0.0005 ps timestep, 2 steps
-    { 1, 0.0025, 3, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 123 }, // 0.0025 ps timestep, 3 steps
-    { 1, 0.0025, 3, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 12345 }, // Other random seed
-    { 1, 0.0025, 3, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 500, 2, 123 }, // 0.0025 ps timestep, 3 steps, T = 500K
-    { 1, 0.0025, 20, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 0, 2, 123 },   // 20 steps, T = 0K
-    { 1, 0.0025, 20, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 123 }, // 20 steps, T = 100K
-    { 1, 0.0025, 20, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 12345 }, // Other random seed
-    { 10, 0.0025, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 1, 100, 2, 123 },   // 10 particles
-    { 10, 0.0025, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 2, 100, 2, 123 }, // 2 temperature couple groups
-    { 10, 0.0025, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 2, 100, 2, 12345 }, // Other random seed
-    { 10, 0.0025, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 2, 100, 0.5, 123 }, // tau-t = 0.5
-    { 10, 0.0025, 1, { 1.0, -2.0, 3.0 }, { -3.0, 2.0, -1.0 }, 5, 100, 2, 12345 }, // 5 temperature couple groups
-};
-
+const std::array<LangevinInputConfig, 17> sc_langevinConfigs = { {
+        { 1, 0.001, 1, 1, 0, 2, 123 },
+        { 1, 0.001, 1, 1, 0, 2, 12345 },
+        { 1, 0.001, 1, 1, 100, 2, 123 },
+        { 1, 0.001, 1, 1, 100, 0, 123 },
+        { 1, 0.0005, 1, 1, 100, 2, 123 },
+        { 1, 0.0005, 2, 1, 100, 2, 123 },
+        { 1, 0.0025, 3, 1, 100, 2, 123 },
+        { 1, 0.0025, 3, 1, 100, 2, 12345 },
+        { 1, 0.0025, 3, 1, 500, 2, 123 },
+        { 1, 0.0025, 20, 1, 0, 2, 123 },
+        { 1, 0.0025, 20, 1, 100, 2, 123 },
+        { 1, 0.0025, 20, 1, 100, 2, 12345 },
+        { 10, 0.0025, 1, 1, 100, 2, 123 },
+        { 10, 0.0025, 1, 2, 100, 2, 123 },
+        { 10, 0.0025, 1, 2, 100, 2, 12345 },
+        { 10, 0.0025, 1, 2, 100, 0.5, 123 },
+        { 10, 0.0025, 1, 5, 100, 2, 12345 },
+} };
 
 /*! \brief Test fixture for Langevin integrator.
  */
-class LangevinTest : public ::testing::TestWithParam<LangevinTestParameters>
+class LangevinTest : public HardwareTestFixture<LangevinTestHelper>
 {
+protected:
+    LangevinTest() : HardwareTestFixture(sc_configInfoFormatters) {}
+
 public:
-    //! Reference data
-    TestReferenceData refData_;
-    //! Checker for reference data
-    TestReferenceChecker checker_;
-
-    LangevinTest() : checker_(refData_.rootChecker()) {}
-
-    /*! \brief Test the numerical integrator against pre-computed reference values.
-     *
-     * \param[in]  testData   Test data object
-     */
     void testAgainstReferenceData(const LangevinTestData& testData)
     {
         TestReferenceChecker finalPositionsRef(
-                checker_.checkSequenceCompound("FinalPositions", testData.numAtoms_));
+                checker().checkSequenceCompound("FinalPositions", testData.numAtoms_));
         for (int i = 0; i < testData.numAtoms_; i++)
         {
             const gmx::RVec&     xPrime = testData.xPrime_[i];
@@ -165,7 +240,7 @@ public:
         }
 
         TestReferenceChecker finalVelocitiesRef(
-                checker_.checkSequenceCompound("FinalVelocities", testData.numAtoms_));
+                checker().checkSequenceCompound("FinalVelocities", testData.numAtoms_));
         for (int i = 0; i < testData.numAtoms_; i++)
         {
             const gmx::RVec&     v = testData.v_[i];
@@ -179,55 +254,36 @@ public:
 
 TEST_P(LangevinTest, SimpleIntegration)
 {
-    // Construct the list of runners
-    std::vector<std::unique_ptr<ILangevinTestRunner>> runners;
-    // Add runners for CPU version
-    runners.emplace_back(std::make_unique<LangevinHostTestRunner>());
+    auto [numAtoms, timestep, numSteps, numTCoupleGroups, temperature, tauT, seed, _] = GetParam();
 
-    for (const auto& runner : runners)
     {
-        LangevinTestParameters parameters = GetParam();
+        std::unique_ptr<LangevinTestData> testData = std::make_unique<LangevinTestData>(
+                numAtoms, timestep, sc_initialVelocity, sc_force, numTCoupleGroups, temperature, tauT, seed);
 
-        std::string testDescription = formatString(
-                "Testing on %s with %d atoms for %d timesteps with %d temperature coupling "
-                "groups (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f), T = %f, tau-t = %f, seed = %d",
-                runner->hardwareDescription().c_str(),
-                parameters.numAtoms,
-                parameters.numSteps,
-                parameters.numTCoupleGroups,
-                parameters.timestep,
-                parameters.v[XX],
-                parameters.v[YY],
-                parameters.v[ZZ],
-                parameters.f[XX],
-                parameters.f[YY],
-                parameters.f[ZZ],
-                parameters.temperature,
-                parameters.tauT,
-                parameters.seed);
-        SCOPED_TRACE(testDescription);
+        if (isGpuTest())
+        {
+            GMX_THROW(gmx::InternalError("GPU hardware context with no test code"));
+        }
+        else
+        {
+            integrateLangevinCpu(testData.get(), numSteps);
+        }
 
-        std::unique_ptr<LangevinTestData> testData =
-                std::make_unique<LangevinTestData>(parameters.numAtoms,
-                                                   parameters.timestep,
-                                                   parameters.v,
-                                                   parameters.f,
-                                                   parameters.numTCoupleGroups,
-                                                   parameters.temperature,
-                                                   parameters.tauT,
-                                                   parameters.seed);
+        FloatingPointTolerance tolerance = absoluteTolerance(numSteps * (GMX_DOUBLE ? 5e-10 : 5e-6));
 
-        runner->integrate(testData.get(), parameters.numSteps);
-
-        FloatingPointTolerance tolerance =
-                absoluteTolerance(parameters.numSteps * (GMX_DOUBLE ? 5e-10 : 5e-6));
-
-        checker_.setDefaultTolerance(tolerance);
+        checker().setDefaultTolerance(tolerance);
         testAgainstReferenceData(*testData);
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(WithParameters, LangevinTest, ::testing::ValuesIn(parametersSets));
+INSTANTIATE_TEST_SUITE_P(AllHardware,
+                         LangevinTest,
+                         ::testing::ConvertGenerator(
+                                 ::testing::Combine(::testing::ValuesIn(sc_langevinConfigs),
+                                                    ::testing::ValuesIn(getHardwareContextsWithCapability(
+                                                            GpuConfigurationCapabilities::UpdateSD))),
+                                 flattenTupleWithHardwareContext<LangevinInputConfig>()),
+                         sc_testNamer);
 
 } // namespace
 } // namespace test

@@ -140,7 +140,7 @@ bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* m
 
 bool UpdateConstrainGpu::areConstraintsSupported()
 {
-    return GpuConfigurationCapabilities::Update;
+    return GpuConfigurationCapabilities::Constraints;
 }
 
 } // namespace gmx

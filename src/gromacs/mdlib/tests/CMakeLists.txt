@@ -42,9 +42,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         energyoutput.cpp
         expanded.cpp
         freeenergyparameters.cpp
-        langevin.cpp
         langevintestdata.cpp
-        langevintestrunners.cpp
         leapfrogtestdata.cpp
         parrinellorahman.cpp
         settletestdata.cpp
@@ -55,6 +53,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         vsite.cpp
     GPU_CPP_SOURCE_FILES
         constr.cpp
+        langevin.cpp
         leapfrog.cpp
         mdgpugraph.cpp
         settle.cpp

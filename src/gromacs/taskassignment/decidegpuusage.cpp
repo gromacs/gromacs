@@ -798,7 +798,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
         errorReasons.append("Compatible GPUs must have been found.");
         silenceWarningMessageWithUpdateAuto = true;
     }
-    if (!GpuConfigurationCapabilities::Update)
+    if (!GpuConfigurationCapabilities::UpdateLeapfrog || !GpuConfigurationCapabilities::Constraints)
     {
         errorReasons.append("Backend doesn't support GPU update+constraints.");
         // Silence clang-analyzer deadcode.DeadStores warning about ignoring the previous assignments

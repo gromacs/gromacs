@@ -332,7 +332,7 @@ ArrayRef<const TestHardwareContext> getTestHardwareContexts();
  * Returns pointers to hardware contexts where GPU contexts are included
  * only if the specified capability is supported. CPU context is always included.
  *
- * \param[in] hardwareHasCapability  The GPU capability required (e.g., GpuConfigurationCapabilities::Update)
+ * \param[in] hardwareHasCapability  The GPU capability required (e.g., GpuConfigurationCapabilities::Constraints)
  * \return Vector of pointers to matching hardware contexts (backed by static storage)
  *
  * See file-level documentation for complete usage examples.

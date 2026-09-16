@@ -955,7 +955,7 @@ INSTANTIATE_TEST_SUITE_P(AllHardware,
                          ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
                                             ::testing::ValuesIn(c_pbcs),
                                             ::testing::ValuesIn(getHardwareContextsWithCapability(
-                                                    GpuConfigurationCapabilities::Update))),
+                                                    GpuConfigurationCapabilities::Constraints))),
                          sc_testNamer);
 
 /*! \brief Test fixture for topology-based constraint tests.

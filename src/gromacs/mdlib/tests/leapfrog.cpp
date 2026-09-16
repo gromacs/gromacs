@@ -441,7 +441,7 @@ INSTANTIATE_TEST_SUITE_P(AllHardware,
                          ::testing::ConvertGenerator(
                                  ::testing::Combine(::testing::ValuesIn(sc_leapFrogConfigs),
                                                     ::testing::ValuesIn(getHardwareContextsWithCapability(
-                                                            GpuConfigurationCapabilities::Update))),
+                                                            GpuConfigurationCapabilities::UpdateLeapfrog))),
                                  flattenTupleWithHardwareContext<LeapFrogInputConfig>()),
                          sc_testNamer);
 

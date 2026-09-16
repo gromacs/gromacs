@@ -556,7 +556,7 @@ INSTANTIATE_TEST_SUITE_P(AllHardware,
                          ::testing::ConvertGenerator(
                                  ::testing::Combine(::testing::ValuesIn(sc_settleConfigs),
                                                     ::testing::ValuesIn(getHardwareContextsWithCapability(
-                                                            GpuConfigurationCapabilities::Update))),
+                                                            GpuConfigurationCapabilities::Constraints))),
                                  flattenTupleWithHardwareContext<SettleInputConfig>()),
                          sc_testNamer);
 

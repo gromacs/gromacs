@@ -117,14 +117,14 @@ public:
     //! Number of temperature coupling groups
     int numTCoupleGroups_;
 
-    LangevinTestData(int        numAtoms,
-                     real       timestep,
-                     const RVec v0,
-                     const RVec f0,
-                     int        numTCoupleGroups,
-                     real       temperature,
-                     real       tauT,
-                     int        seed);
+    LangevinTestData(int  numAtoms,
+                     real timestep,
+                     RVec v0,
+                     RVec f0,
+                     int  numTCoupleGroups,
+                     real temperature,
+                     real tauT,
+                     int  seed);
 };
 
 } // namespace test

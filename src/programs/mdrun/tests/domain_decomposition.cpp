@@ -172,7 +172,9 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #if GMX_GPU
     errorReasons.appendIf(haveAnyGpuWork && !haveCompatibleDevices,
                           "Cannot use GPU offload without a compatible GPU");
-    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Update && updateFlavor == UpdateFlavor::Gpu,
+    errorReasons.appendIf(!(gmx::GpuConfigurationCapabilities::UpdateLeapfrog
+                            && gmx::GpuConfigurationCapabilities::Constraints)
+                                  && updateFlavor == UpdateFlavor::Gpu,
                           "GPU Update not supported");
     errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme && pmeFlavor == PmeFlavor::Gpu,
                           "GPU PME not supported");
