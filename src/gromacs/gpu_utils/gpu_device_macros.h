@@ -66,9 +66,15 @@
  *
  * Use a plain device-side assert during the GPU device compilation pass
  * and regular (GROMACS) throw in host code.
+ *
+ * We exclude clang compiling for CUDA completely because it miscompiles code that includes assert
  */
 #if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__) || defined(__SYCL_DEVICE_ONLY__)
-#    define GMX_HOST_DEVICE_THROW(e) assert(false)
+#    if defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__)
+#        define GMX_HOST_DEVICE_THROW(e)
+#    else
+#        define GMX_HOST_DEVICE_THROW(e) assert(false)
+#    endif
 #else
 #    define GMX_HOST_DEVICE_THROW(e) GMX_THROW(InternalError(e))
 #endif
