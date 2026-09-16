@@ -42,8 +42,8 @@ target_sources(linearalgebra PRIVATE
 
 # Note that the use of MKL for FFT determines that MKL will be used
 # also for linear algebra, for simplicity.
-set_source_files_properties(binary_information.cpp PROPERTIES COMPILE_FLAGS
-    "-DGMX_DESCRIBE_BLAS=\"${GMX_DESCRIBE_BLAS}\" -DGMX_DESCRIBE_LAPACK=\"${GMX_DESCRIBE_LAPACK}\" -DGMX_FFT_MKL=${GMX_FFT_MKL}")
+set_source_files_properties(binary_information.cpp PROPERTIES COMPILE_DEFINITIONS
+    "GMX_DESCRIBE_BLAS=${GMX_DESCRIBE_BLAS};GMX_DESCRIBE_LAPACK=${GMX_DESCRIBE_LAPACK};GMX_FFT_MKL=${GMX_FFT_MKL}")
 
 if (NOT GMX_EXTERNAL_BLAS)
     set(BLAS_SOURCES

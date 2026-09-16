@@ -366,12 +366,16 @@ target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/e
 
 if(SIMD_AVX_512_CXX_SUPPORTED)
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
-    set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
+    separate_arguments(_identifyavx512fmaunits_flags UNIX_COMMAND "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
+    set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_OPTIONS "${_identifyavx512fmaunits_flags}")
+    unset(_identifyavx512fmaunits_flags)
 endif()
 
 if (GMX_GPU_HIP)
     get_property(HIP_SOURCES GLOBAL PROPERTY HIP_SOURCES)
-    set_source_files_properties(${HIP_SOURCES} PROPERTIES COMPILE_FLAGS "${HIP_CXX_FLAGS}")
+    separate_arguments(_hip_source_flags UNIX_COMMAND "${HIP_CXX_FLAGS}")
+    set_source_files_properties(${HIP_SOURCES} PROPERTIES COMPILE_OPTIONS "${_hip_source_flags}")
+    unset(_hip_source_flags)
 endif()
 
 # Only add the -fsycl flag to sources that really need it
@@ -393,9 +397,8 @@ if (GMX_INTERNAL_XDR)
 endif()
 
 # This can move to a suitable OBJECT target when one exists
-set_source_files_properties(hardware/simd_support.cpp PROPERTIES COMPILE_FLAGS
-    "-DGMX_SIMD_ENUM_VALUE=\"${GMX_SIMD_ENUM_VALUE}\""
-    )
+set_source_files_properties(hardware/simd_support.cpp PROPERTIES COMPILE_DEFINITIONS
+    "GMX_SIMD_ENUM_VALUE=${GMX_SIMD_ENUM_VALUE}")
 
 # Work around a crash in the Intel LLVM compiler (icpx, observed with oneAPI
 # 2026.0 and .1) while optimizing make_local_bondeds_excls().
