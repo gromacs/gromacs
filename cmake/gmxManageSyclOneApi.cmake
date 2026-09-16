@@ -35,6 +35,9 @@
 # https://gitlab.kitware.com/cmake/cmake/-/issues/21711
 
 include(gmxFindFlagsForSource)
+include(CMakePushCheckState)
+include(CheckCompilerFlag)
+include(CheckCXXSourceCompiles)
 
 if(NOT GMX_GPU_SYCL OR GMX_SYCL_ACPP OR NOT GMX_SYCL_DPCPP)
     message(FATAL_ERROR "Internal error: OneAPI configuration script was included when it should not")
@@ -65,12 +68,10 @@ set(SAMPLE_SYCL_SOURCE
              return 0;
          }")
 set(SYCL_CXX_FLAGS "-fsycl")
-gmx_check_source_compiles_with_flags(
-    "${SAMPLE_SYCL_SOURCE}"
-    "${SYCL_CXX_FLAGS}"
-    "CXX"
-    SYCL_CXX_FLAGS_RESULT
-)
+cmake_push_check_state()
+set(CMAKE_REQUIRED_FLAGS "${SYCL_CXX_FLAGS}")
+check_cxx_source_compiles("${SAMPLE_SYCL_SOURCE}" SYCL_CXX_FLAGS_RESULT)
+cmake_pop_check_state()
 if (SYCL_CXX_FLAGS_RESULT)
     if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
         message(STATUS "Checking for flags to enable SYCL - ${SYCL_CXX_FLAGS}")
@@ -154,12 +155,10 @@ list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 # Add kernel-splitting flag if available, both for compiling and linking
 set(SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS "-fsycl-device-code-split=per_kernel")
 list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " SYCL_TOOLCHAIN_CXX_FLAGS_STR)
-gmx_check_source_compiles_with_flags(
-    "${SAMPLE_SYCL_SOURCE}"
-    "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}"
-    "CXX"
-    SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT
-)
+cmake_push_check_state()
+set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}")
+check_cxx_source_compiles("${SAMPLE_SYCL_SOURCE}" SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT)
+cmake_pop_check_state()
 if (SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT)
     list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS})
     list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS})
@@ -181,21 +180,13 @@ endif()
 
 # We compile PME kernels for all possible sub-group sizes, so the warning is useless.
 # Added after oneAPI 2024.0 (https://github.com/intel/llvm/pull/11991).
-gmx_check_compiler_flag(
-    "-Wno-incorrect-sub-group-size"
-    "CXX"
-    HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT
-)
+check_compiler_flag(CXX "-Wno-incorrect-sub-group-size" HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT)
 if (HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT)
     list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "-Wno-incorrect-sub-group-size")
 endif()
 
 # Force small GRF size on PVC, see #5105
-gmx_check_compiler_flag(
-    "-ftarget-register-alloc-mode=pvc:small"
-    "CXX"
-    HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG
-)
+check_compiler_flag(CXX "-ftarget-register-alloc-mode=pvc:small" HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG)
 if (HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG)
     list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS "-ftarget-register-alloc-mode=pvc:small")
 endif()
@@ -205,12 +196,10 @@ if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings;-Wno-override-module;-Wno-sycl-target")
     list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " SYCL_TOOLCHAIN_CXX_FLAGS_STR)
     list(JOIN SYCL_WARNINGS_CXX_FLAGS " " SYCL_WARNINGS_CXX_FLAGS_STR)
-    gmx_check_source_compiles_with_flags(
-        "${SAMPLE_SYCL_SOURCE}"
-        "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${SYCL_WARNINGS_CXX_FLAGS_STR}"
-        "CXX"
-        SYCL_WARNINGS_CXX_FLAGS_RESULT
-    )
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${SYCL_WARNINGS_CXX_FLAGS_STR}")
+    check_cxx_source_compiles("${SAMPLE_SYCL_SOURCE}" SYCL_WARNINGS_CXX_FLAGS_RESULT)
+    cmake_pop_check_state()
     if (SYCL_WARNINGS_CXX_FLAGS_RESULT)
         list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_WARNINGS_CXX_FLAGS})
         list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_WARNINGS_CXX_FLAGS})
@@ -237,12 +226,11 @@ if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
     if (GMX_DPCPP_HAVE_HIP_TARGET)
         set(OCLC_UNSAFE_FP_ATOMICS_FLAG "-mllvm=--amdgpu-oclc-unsafe-fp-atomics=true")
         list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " SYCL_TOOLCHAIN_CXX_FLAGS_STR)
-        gmx_check_source_compiles_with_flags(
-            "${SAMPLE_SYCL_KERNEL_PROBE_SOURCE}"  # To check -mllvm= flags, we need to trigger the kernel pass
-            "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${OCLC_UNSAFE_FP_ATOMICS_FLAG}"
-            "CXX"
-            OCLC_UNSAFE_FP_ATOMICS_FLAG_RESULT
-        )
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${OCLC_UNSAFE_FP_ATOMICS_FLAG}")
+        # To check -mllvm= flags, we need to trigger the kernel pass.
+        check_cxx_source_compiles("${SAMPLE_SYCL_KERNEL_PROBE_SOURCE}" OCLC_UNSAFE_FP_ATOMICS_FLAG_RESULT)
+        cmake_pop_check_state()
         if (OCLC_UNSAFE_FP_ATOMICS_FLAG_RESULT)
             list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "${OCLC_UNSAFE_FP_ATOMICS_FLAG}")
         endif()

@@ -31,32 +31,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# Helper function to call the correct language version of the CMake
-# check_*_compiler_flag function.
-function(gmx_check_compiler_flag FLAGS LANGUAGE RESULT_VARIABLE)
-    if (LANGUAGE STREQUAL "C")
-        check_c_compiler_flag("${FLAGS}" ${RESULT_VARIABLE})
-    elseif (LANGUAGE STREQUAL "CXX")
-        check_cxx_compiler_flag("${FLAGS}" ${RESULT_VARIABLE})
-    else()
-        message(FATAL_ERROR "Language '${LANGUAGE}' is not supported by gmx_check_compiler_flag")
-    endif()
-endfunction()
-
-# Helper function to call the correct language version of the CMake
-# check_*_source_compiles function. The use of a function creates a
-# scope that prevents the leaking of the flags via
-# CMAKE_REQUIRED_FLAGS.
-function(gmx_check_source_compiles_with_flags SOURCE FLAGS LANGUAGE RESULT_VARIABLE)
-   set(CMAKE_REQUIRED_FLAGS "${FLAGS}")
-   if (LANGUAGE STREQUAL "C")
-       check_c_source_compiles("${SOURCE}" ${RESULT_VARIABLE})
-   elseif (LANGUAGE STREQUAL "CXX")
-       check_cxx_source_compiles("${SOURCE}" ${RESULT_VARIABLE})
-   else()
-       message(FATAL_ERROR "Language '${LANGUAGE}' is not supported by gmx_check_source_compiles_with_flags")
-   endif()
-endfunction()
+include(CheckCompilerFlag)
+include(CheckSourceCompiles)
+include(CMakePushCheckState)
 
 # Helper routine to find flag (from a list) to compile a specific
 # source (in C or C++).  It loops over flags in the list, first
@@ -76,9 +53,9 @@ endfunction()
 # NEW_FLAGS_VARIABLE        The first working flag will be set to this variable.
 # Args 6 through N          Multiple strings with compiler flags to test
 #
-# If gmx_check_compiler_flag() finds a working compiler flag, but the project in
-# gmx_check_source_compiles_with_flags() fails to build source code that needs,
-# the flag, this function sets SUGGEST_BINUTILS_UPDATE in the parent scope to
+# If check_compiler_flag() finds a working compiler flag, but the project in
+# check_source_compiles() fails to build source code that needs the flag, this
+# function sets SUGGEST_BINUTILS_UPDATE in the parent scope to
 # suggest that the calling code tell the user about this issue if needed.
 function(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAGS_VARIABLE NEW_FLAGS_VARIABLE)
     # Insert a blank element last in the list (ie. try without any flags too)
@@ -96,7 +73,7 @@ function(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
             # Give the empty flag variable a better name since we cannot control the CMake status messages
             set(COMPILE_WORKS_VARIABLE "${LANGUAGE}_COMPILE_WORKS_WITHOUT_SPECIAL_FLAGS")
         else()
-            gmx_check_compiler_flag("${${TOOLCHAIN_FLAGS_VARIABLE}} ${_testflag}" "${LANGUAGE}" ${FLAG_ACCEPTED_VARIABLE})
+            check_compiler_flag("${LANGUAGE}" "${${TOOLCHAIN_FLAGS_VARIABLE}} ${_testflag}" ${FLAG_ACCEPTED_VARIABLE})
         endif()
 
         if(${FLAG_ACCEPTED_VARIABLE})
@@ -106,7 +83,10 @@ function(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
             endif()
             # Check that we can really compile source with the full
             # toolchain (this does not catch compiler warnings).
-            gmx_check_source_compiles_with_flags("${SOURCE}" "${${TOOLCHAIN_FLAGS_VARIABLE}} ${_testflag}" "${LANGUAGE}" ${COMPILE_WORKS_VARIABLE})
+            cmake_push_check_state()
+            set(CMAKE_REQUIRED_FLAGS "${${TOOLCHAIN_FLAGS_VARIABLE}} ${_testflag}")
+            check_source_compiles("${LANGUAGE}" "${SOURCE}" ${COMPILE_WORKS_VARIABLE})
+            cmake_pop_check_state()
 
             if(NOT ${COMPILE_WORKS_VARIABLE})
                 if (NOT RUN_QUIETLY)
