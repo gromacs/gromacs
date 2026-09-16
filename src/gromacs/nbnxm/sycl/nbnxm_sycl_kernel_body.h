@@ -38,6 +38,9 @@
  *
  *  \ingroup module_nbnxm
  */
+
+#include <type_traits>
+
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/math/functions.h"
@@ -650,6 +653,10 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
     }
 }
 
+//! Helper type to keep types as const as possible.
+template<typename T, bool Condition>
+using MaybeConstT = std::conditional_t<Condition, const T, T>;
+
 /*! \brief Main kernel for NBNXM.
  *
  */
@@ -661,7 +668,7 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
                         Float3* __restrict__ gm_fShift,
                         float* __restrict__ gm_energyElec,
                         float* __restrict__ gm_energyVdw,
-                        nbnxm_cj_packed_t* __restrict__ gm_plistCJPacked,
+                        MaybeConstT<nbnxm_cj_packed_t, !doPruneNBL>* __restrict__ gm_plistCJPacked,
                         const nbnxm_sci_t* __restrict__ gm_plistSci,
                         const nbnxm_excl_t* __restrict__ gm_plistExcl,
                         const Float2* __restrict__ gm_ljComb /* used iff ljComb<vdwType> */,
@@ -669,8 +676,8 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
                         const Float2* __restrict__ gm_nbfp /* used iff !ljComb<vdwType> */,
                         const Float2* __restrict__ gm_nbfpComb /* used iff ljEwald<vdwType> */,
                         const float* __restrict__ gm_coulombTab /* used iff elecEwaldTab<elecType> */,
-                        int* __restrict__ gm_sciHistogram,      /* used iff doPruneNBL */
-                        int* __restrict__ gm_sciCount,          /* used iff doPruneNBL */
+                        int* __restrict__ gm_sciHistogram, /* used iff doPruneNBL && nbnxmSortListsOnGpu() */
+                        int* __restrict__ gm_sciCount, /* used iff doPruneNBL && nbnxmSortListsOnGpu() */
                         const int             numTypes,
                         const float           rCoulombSq,
                         const float           rVdwSq,
@@ -915,7 +922,8 @@ static auto nbnxmKernel(CommandGroupHandler cgh,
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            nbnxm_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            MaybeConstT<nbnxm_cj_packed_t, !doPruneNBL>* plistCJPacked =
+                    indexedAddress(gm_plistCJPacked, jPacked);
             unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].imask);
             if (!doPruneNBL && !imask)
             {
