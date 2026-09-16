@@ -128,7 +128,7 @@ void launchForceReductionKernel(int                    numAtoms,
     config.sharedMemorySize = 0;
 
     gmx::dispatchTemplatedFunction(
-            [&](auto accumulate_, auto addRvecForce_)
+            [&](auto addRvecForce_, auto accumulate_)
             {
                 auto kernelFn = reduceKernel<addRvecForce_, accumulate_>;
 
@@ -137,8 +137,8 @@ void launchForceReductionKernel(int                    numAtoms,
 
                 launchGpuKernel(kernelFn, config, deviceStream, nullptr, "Force Reduction", kernelArgs);
             },
-            accumulate,
-            addRvecForce);
+            addRvecForce,
+            accumulate);
 }
 
 } // namespace gmx
