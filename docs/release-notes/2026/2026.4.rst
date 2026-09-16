@@ -75,6 +75,15 @@ times are large and intervals are small.
 
 :issue:`5219`
 
+Reported AWH friction was of by a factor kT^2
+"""""""""""""""""""""""""""""""""""""""""""""
+
+The ``gmx eneconv`` tool now applies the correct conversion of elements
+of the metric tensor to friction output. Friction values obtained with
+older versions of the tool can be corrected by dividing by kT^2.
+
+:issue:`5702`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
