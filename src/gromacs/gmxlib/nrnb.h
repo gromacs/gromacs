@@ -184,7 +184,4 @@ void print_perf(FILE*   out,
 int cost_nrnb(int enr);
 /* Cost in i860 cycles of this component of MD */
 
-const char* nrnb_str(int enr);
-/* Name of this component */
-
 #endif /* GMX_GMXLIB_NRNB_H */

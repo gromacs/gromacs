@@ -35,8 +35,8 @@
 
 #include "nrnb.h"
 
+#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include "gromacs/utility/stringutil.h"
 
@@ -261,7 +261,9 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
     const char* myline =
             "-----------------------------------------------------------------------------";
 
-    tflop = 0;
+    tflop  = 0;
+    *nbfs  = 0.0;
+    *mflop = 0.0;
     for (int i = 0; (i < eNRNB); i++)
     {
         tflop += 1e-6 * nrnb->n[i] * nbdata[i].flop;
@@ -269,7 +271,10 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
 
     if (tflop == 0)
     {
-        fprintf(out, "No MEGA Flopsen this time\n");
+        if (out)
+        {
+            fprintf(out, "No MEGA Flopsen this time\n");
+        }
         return;
     }
     if (out)
@@ -279,17 +284,14 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
 
     if (out)
     {
-        fprintf(out, " NxM=N-by-M cluster Verlet kernels\n");
-        fprintf(out, " RF=Reaction-Field  VdW=Van der Waals  QSTab=quadratic-spline table\n");
-        fprintf(out, " W3=SPC/TIP3p  W4=TIP4p (single or pairs)\n");
-        fprintf(out, " V&F=Potential and force  V=Potential only  F=Force only\n\n");
+        fprintf(out, " NB=Nonbonded  NxM=N-by-M cluster kernels\n");
+        fprintf(out, " RF=Reaction-Field  LJ=Lennard-Jones  QSTab=quadratic-spline table\n");
+        fprintf(out, " V&F=Potential and force  F=Force only\n\n");
 
         fprintf(out, " %-32s %16s %15s  %7s\n", "Computing:", "M-Number", "M-Flops", "% Flops");
         fprintf(out, "%s\n", myline);
     }
-    *nbfs  = 0.0;
-    *mflop = 0.0;
-    tfrac  = 0.0;
+    tfrac = 0.0;
     for (int i = 0; (i < eNRNB); i++)
     {
         mni = 1e-6 * nrnb->n[i];
@@ -416,9 +418,4 @@ void print_perf(FILE*         out,
 int cost_nrnb(int enr)
 {
     return nbdata[enr].flop;
-}
-
-const char* nrnb_str(int enr)
-{
-    return nbdata[enr].name;
 }
