@@ -96,9 +96,9 @@ struct gmx_output_env_t;
 
 struct t_trxstatus
 {
-    int  flags        = 0; /* flags for read_first/next_frame  */
-    int  currentFrame = -1;
-    real t0           = 0;                  /* time of the first frame, needed  *
+    int    flags        = 0; /* flags for read_first/next_frame  */
+    int    currentFrame = -1;
+    double t0           = 0;                /* time of the first frame, needed  *
                                              * for skipping frames with -dt     */
     real                       tf = 0;      /* internal frame time              */
     gmx::TimeControl           timeControl; /* time control for read_first/next_frame */
@@ -258,12 +258,12 @@ t_fileio* trx_get_fileio(t_trxstatus* status)
     return status->fio;
 }
 
-float trx_get_time_of_final_frame(t_trxstatus* status)
+double trx_get_time_of_final_frame(t_trxstatus* status)
 {
     t_fileio* stfio    = trx_get_fileio(status);
     int       fileType = status->fileType;
     gmx_bool  bOK;
-    float     lasttime = -1;
+    double    lasttime = -1;
 
     if (fileType == efXTC)
     {
@@ -609,7 +609,7 @@ int write_trx(t_trxstatus*   status,
               const int*     ind,
               const t_atoms* atoms,
               int            step,
-              real           time,
+              double         time,
               matrix         box,
               rvec           x[],
               rvec*          v,
@@ -820,12 +820,11 @@ static int pdb_first_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
 
 bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxframe* fr)
 {
-    real     pt;
     int      ct;
     gmx_bool bOK, bMissingData = FALSE, bSkip = FALSE;
     bool     bRet = false;
 
-    pt = status->tf;
+    const double pt = status->tf;
 
     MSVC_DIAGNOSTIC_IGNORE(6237) // We intend to skip calling gmx_fio_is_double sometimes
     const bool buildIsDoublePrecision = GMX_DOUBLE;
@@ -1138,7 +1137,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
 int read_first_x(const gmx_output_env_t*      oenv,
                  t_trxstatus**                status,
                  const std::filesystem::path& fn,
-                 real*                        t,
+                 double*                      t,
                  rvec**                       x,
                  matrix                       box,
                  const gmx::TimeControl*      timeControl)
@@ -1156,7 +1155,7 @@ int read_first_x(const gmx_output_env_t*      oenv,
     return (*status)->xframe->natoms;
 }
 
-gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, real* t, rvec x[], matrix box)
+gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, double* t, rvec x[], matrix box)
 {
     gmx_bool bRet;
 

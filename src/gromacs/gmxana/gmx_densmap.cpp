@@ -134,7 +134,8 @@ int gmx_densmap(int argc, char* argv[])
     PbcType           pbcType = PbcType::Unset;
     rvec *            x, xcom[2], direction, center, dx;
     matrix            box;
-    real              t, m, mtot;
+    double            t;
+    real              m, mtot;
     t_pbc             pbc;
     int               cav = 0, c1 = 0, c2 = 0;
     char **           grpname, buf[STRLEN];

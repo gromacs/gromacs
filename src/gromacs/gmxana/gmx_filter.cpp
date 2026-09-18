@@ -117,7 +117,8 @@ int gmx_filter(int argc, char* argv[])
     t_trxstatus *     outl, *outh;
     int               nffr, i, fr, nat, j, d, m;
     int*              ind;
-    real              flen, *filt, sum, *t;
+    real              flen, *filt, sum;
+    double*           t;
     rvec              xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
     gmx_output_env_t* oenv;
     gmx::TimeControl  timeControl;

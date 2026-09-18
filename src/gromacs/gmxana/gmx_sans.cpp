@@ -141,7 +141,7 @@ int gmx_sans(int argc, char* argv[])
     matrix                               box;
     rvec*                                x;
     int                                  natoms;
-    real                                 t;
+    double                               t;
     char**                               grpname = nullptr;
     int*                                 index   = nullptr;
     int                                  isize;

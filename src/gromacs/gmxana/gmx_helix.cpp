@@ -156,7 +156,7 @@ int gmx_helix(int argc, char* argv[])
     t_topology*       top;
     PbcType           pbcType;
     rvec *            x, *xref;
-    real              t;
+    double            t;
     real              rms;
     matrix            box;
     gmx_rmpbc_t       gpbc = nullptr;

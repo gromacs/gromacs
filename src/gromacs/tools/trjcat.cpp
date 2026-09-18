@@ -333,13 +333,13 @@ static void do_demux(ArrayRef<const std::string> inFiles,
                      real                        dt_remd,
                      int                         isize,
                      int                         index[],
-                     real                        dt,
+                     double                      dt,
                      const gmx_output_env_t*     oenv)
 {
     int           k, natoms;
     t_trxstatus **fp_in, **fp_out;
     gmx_bool      bCont, *bSet;
-    real          t, first_time = 0;
+    double        t, first_time = 0;
     t_trxframe*   trx;
 
     snew(fp_in, inFiles.size());
@@ -505,7 +505,7 @@ int gmx_trjcat(int argc, char* argv[])
     gmx_bool          bNewFile, bIndex, bWrite;
     int*              cont_type;
     real *            readtime, *timest, *settime;
-    real              first_time = 0, lasttime = 0, last_ok_t = -1, timestep;
+    double            first_time = 0, lasttime = 0, last_ok_t = -1, timestep;
     gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0;

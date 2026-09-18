@@ -15,3 +15,8 @@ and dimensions of 1 Angstrom to indicate no periodic boundary conditions.
 |Gromacs| now interprets such structures as not having PBC.
 
 :issue:`4645`, :issue:`5679`
+
+Analysis tools now always process time values in double precision
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This avoids picking incorrect frames when times values are large.

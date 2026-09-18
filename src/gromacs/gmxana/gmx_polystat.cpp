@@ -165,7 +165,7 @@ int gmx_polystat(int argc, char* argv[])
     int                        isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
     char*                      grpname;
     t_trxstatus*               status;
-    real                       t;
+    double                     t;
     rvec *                     x, *bond = nullptr;
     matrix                     box;
     int                        natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = { 0 };

@@ -1319,7 +1319,7 @@ int gmx_trjconv(int argc, char* argv[])
                      * but since here we don't have the output frame yet,
                      * we introduce a temporary output frame time variable.
                      */
-                    real frout_time;
+                    double frout_time;
 
                     frout_time = bTDump ? frameToDump->time : fr.time;
 

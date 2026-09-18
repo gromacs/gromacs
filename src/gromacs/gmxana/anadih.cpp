@@ -834,7 +834,8 @@ void read_ang_dih(const char*             trj_fn,
     t_trxstatus*  status;
     int           i, angind, teller;
     int           nangles, n_alloc;
-    real          t, fraction, pifac, angle;
+    double        t;
+    real          fraction, pifac, angle;
     real*         angles[2];
     matrix        box;
     rvec*         x;

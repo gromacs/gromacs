@@ -150,7 +150,8 @@ int gmx_saltbr(int argc, char* argv[])
     PbcType      pbcType;
     t_trxstatus* status;
     int          i, j, k, m, nnn, teller, ncg;
-    real         t, *time, qi, qj;
+    double       t, *time;
+    real         qi, qj;
     t_charge*    cg;
     real***      cgdist;
     int**        nWithin;

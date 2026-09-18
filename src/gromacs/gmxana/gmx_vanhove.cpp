@@ -154,7 +154,9 @@ int gmx_vanhove(int argc, char* argv[])
     int*                     index;
     char*                    grpname;
     int                      nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
-    real *                   time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
+    double*                  time;
+    double                   t;
+    real                     invbin = 0, rmax2 = 0, rint2 = 0, d2;
     real                     invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
     std::vector<std::string> legend;
     real**                   mat = nullptr;

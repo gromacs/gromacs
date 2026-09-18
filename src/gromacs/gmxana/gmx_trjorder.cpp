@@ -148,7 +148,8 @@ int gmx_trjorder(int argc, char* argv[])
     matrix            box;
     t_pbc             pbc;
     gmx_rmpbc_t       gpbc;
-    real              t, totmass, mass, rcut2 = 0, n2;
+    double            t;
+    real              totmass, mass, rcut2 = 0, n2;
     int               natoms, nwat, ncut;
     char**            grpname;
     int               i, j, d, *isize, isize_ref      = 0, isize_sol;

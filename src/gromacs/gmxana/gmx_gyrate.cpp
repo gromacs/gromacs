@@ -242,7 +242,8 @@ int gmx_gyrate(int argc, char* argv[])
     real**                     moi_trans = nullptr;
     int                        max_moi = 0, delta_moi = 100;
     rvec                       d, d1; /* eigenvalues of inertia tensor */
-    real                       t, t0, tm, gyro;
+    double                     t, t0, tm;
+    real                       gyro;
     int                        natoms;
     char*                      grpname;
     int                        j, m, gnx, nam, mol;

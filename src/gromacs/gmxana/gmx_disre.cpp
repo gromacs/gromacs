@@ -756,7 +756,7 @@ int gmx_disre(int argc, char* argv[])
     FILE *       out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
     int          i, j, kkk;
     t_trxstatus* status;
-    real         t;
+    double       t;
     rvec *       x, *xav = nullptr;
     rvec4*       f;
     matrix       box;

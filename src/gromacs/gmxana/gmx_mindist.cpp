@@ -164,7 +164,7 @@ static void periodic_mindist_plot(const char*             trxfn,
     FILE*                      out;
     std::array<std::string, 5> leg = { "min per.", "max int.", "box1", "box2", "box3" };
     t_trxstatus*               status;
-    real                       t;
+    double                     t;
     rvec*                      x;
     matrix                     box;
     int                        natoms, ind_min[2] = { 0, 0 }, ind_mini = 0, ind_minj = 0;
@@ -395,7 +395,8 @@ static void dist_plot(const char*             fn,
     t_trxstatus*             trxout;
     char                     buf[256];
     std::vector<std::string> leg;
-    real                     t, dmin, dmax, **mindres = nullptr, **maxdres = nullptr;
+    double                   t;
+    real                     dmin, dmax, **mindres = nullptr, **maxdres = nullptr;
     int                      nmin, nmax;
     t_trxstatus*             status;
     int                      i = -1, j, k;

@@ -101,7 +101,7 @@ int write_trx(t_trxstatus*   status,
               const int*     ind,
               const t_atoms* atoms,
               int            step,
-              real           time,
+              double         time,
               matrix         box,
               rvec           x[],
               rvec*          v,
@@ -179,7 +179,7 @@ t_trxstatus* open_trx(const std::filesystem::path& outfile, const char* filemode
 struct t_fileio* trx_get_fileio(t_trxstatus* status);
 /* get a fileio from a trxstatus */
 
-float trx_get_time_of_final_frame(t_trxstatus* status);
+double trx_get_time_of_final_frame(t_trxstatus* status);
 /* get time of final frame. Only supported for TNG and XTC */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool compareTimesAsDouble);
@@ -243,7 +243,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, struct t
 int read_first_x(const gmx_output_env_t*      oenv,
                  t_trxstatus**                status,
                  const std::filesystem::path& fn,
-                 real*                        t,
+                 double*                      t,
                  rvec**                       x,
                  matrix                       box,
                  const gmx::TimeControl*      timeControl);
@@ -255,7 +255,7 @@ int read_first_x(const gmx_output_env_t*      oenv,
  * DEPRECATED: Use read_first_frame and read_next_frame instead
  */
 
-gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, real* t, rvec x[], matrix box);
+gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, double* t, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.

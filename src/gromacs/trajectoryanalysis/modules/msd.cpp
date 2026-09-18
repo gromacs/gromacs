@@ -666,7 +666,7 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
                        t_pbc*                        pbc,
                        TrajectoryAnalysisModuleData* pdata)
 {
-    const real time = frame.time;
+    const double time = frame.time;
     // Need to populate dt on frame 2;
     if (!dt_.has_value() && !times_.empty())
     {

@@ -176,7 +176,8 @@ int gmx_covar(int argc, char* argv[])
     rvec *            x, *xread, *xref, *xav, *xproj;
     matrix            box, zerobox;
     real *            sqrtm, *mat, *eigenvalues, sum, trace, inv_nframes;
-    real              t, tstart, tend, **mat2;
+    double            t, tstart, tend;
+    real**            mat2;
     real              xj, *w_rls = nullptr;
     real              min, max, *axis;
     int               natoms, nat, nframes0, nframes, nlevels;

@@ -182,7 +182,7 @@ static void calc_potential(const char*             fn,
     int          nr_frames = 0;
     int          slice;
     double       qsum, nn;
-    real         t;
+    double       t;
     double       z;
     rvec         xcm;
     real         boxSize;

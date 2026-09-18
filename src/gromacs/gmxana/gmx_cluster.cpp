@@ -195,7 +195,7 @@ static rvec** read_whole_trj(const char*             fn,
 {
     rvec **      xx, *x;
     matrix       box;
-    real         t;
+    double       t;
     int          i, j, max_nf;
     int          natom;
     t_trxstatus* status;

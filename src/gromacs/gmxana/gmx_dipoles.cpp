@@ -469,7 +469,7 @@ static void print_gkrbin(const char* fn, t_gkrbin* gb, int ngrp, int nframes, re
 }
 
 static gmx_bool
-read_mu_from_enx(ener_file_t fmu, int Vol, const ivec iMu, rvec mu, real* vol, real* t, int nre, t_enxframe* fr)
+read_mu_from_enx(ener_file_t fmu, int Vol, const ivec iMu, rvec mu, real* vol, double* t, int nre, t_enxframe* fr)
 {
     int      i;
     gmx_bool bCont;
@@ -852,7 +852,8 @@ static void do_dip(const t_topology*       top,
     t_trxstatus*   status;
     int *          dipole_bin, ndipbin, ibin, iVol, idim = -1;
     unsigned long  mode;
-    real           rcut = 0, t, t0, t1, dt, dd, rms_cos;
+    real           rcut = 0, dd, rms_cos;
+    double         t, t0, t1, dt;
     rvec           dipaxis;
     matrix         box;
     gmx_bool       bCorr, bTotal, bCont;

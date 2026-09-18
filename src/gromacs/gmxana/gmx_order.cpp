@@ -297,7 +297,7 @@ static void calc_tetra_order_parm(const char*             fnNDX,
     PbcType      pbcType;
     t_trxstatus* status;
     int          natoms;
-    real         t;
+    double       t;
     rvec *       xtop, *x;
     matrix       box;
     real         sg, sk;
@@ -434,11 +434,11 @@ static void calc_order(const char*                     fn,
             Sx, Sy, Sz,        /* the three molecular axes                       */
             tmp1, tmp2,        /* temp. rvecs for calculating dot products       */
             frameorder;        /* order parameters for one frame                 */
-    real* slFrameorder;        /* order parameter for one frame, per slice      */
-    real  length,              /* total distance between two atoms               */
-            t,                 /* time from trajectory                           */
-            z_ave, z1, z2;     /* average z, used to det. which slice atom is in */
-    int natoms,                /* nr. atoms in trj                               */
+    real*  slFrameorder;       /* order parameter for one frame, per slice      */
+    real   length;             /* total distance between two atoms               */
+    double t;                  /* time from trajectory                           */
+    real   z_ave, z1, z2;      /* average z, used to det. which slice atom is in */
+    int    natoms,             /* nr. atoms in trj                               */
             nr_tails,          /* nr tails, to check if index file is correct    */
             size = 0,          /* nr. of atoms in group. same as nr_tails        */
             i, j, m, k, slice; /* current slice number                           */

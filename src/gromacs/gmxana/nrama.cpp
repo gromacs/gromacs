@@ -263,7 +263,7 @@ t_topology* init_rama(gmx_output_env_t*       oenv,
                       int                     mult)
 {
     t_topology* top;
-    real        t;
+    double      t;
 
     top = read_top(topfile, &xr->pbcType);
 

@@ -83,7 +83,7 @@ static void get_refx(gmx_output_env_t*       oenv,
 {
     int          natoms, nfr_all, nfr, i, j, a, r, c, min_fr;
     t_trxstatus* status;
-    real *       ti, min_t;
+    double *     ti, min_t;
     double       tot_mass, msd, *srmsd, min_srmsd, srmsd_tot;
     rvec *       x, **xi;
     real         xf;
@@ -245,7 +245,7 @@ int gmx_rotmat(int argc, char* argv[])
     PbcType                    pbcType;
     rvec *                     x_ref, *x;
     matrix                     box, R;
-    real                       t;
+    double                     t;
     int                        natoms, i;
     char*                      grpname;
     int                        gnx;

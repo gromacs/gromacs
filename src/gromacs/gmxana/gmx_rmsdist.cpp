@@ -722,8 +722,8 @@ int gmx_rmsdist(int argc, char* argv[])
 
     };
 
-    int  i, teller;
-    real t;
+    int    i, teller;
+    double t;
 
     t_topology top;
     PbcType    pbcType;

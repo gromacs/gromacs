@@ -517,7 +517,8 @@ static void project(const char*             trajfile,
     int*         all_at;
     matrix       box;
     rvec *       xread, *x;
-    real         t, inp, **inprod = nullptr;
+    double       t;
+    real         inp, **inprod = nullptr;
     char         str[STRLEN], str2[STRLEN];
     const char** ylabel;
     real         fact;

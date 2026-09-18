@@ -69,7 +69,7 @@ typedef struct
     t_trxstatus*      traj;
     int               natoms;
     int               amin, amax;
-    real              t;
+    double            t;
     rvec*             x;
     matrix            box;
     t_idef*           idef;

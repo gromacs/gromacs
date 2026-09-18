@@ -228,7 +228,8 @@ int gmx_mdmat(int argc, char* argv[])
     int               i, j, nres, natoms, nframes, trxnat;
     t_trxstatus*      status;
     gmx_bool          bCalcN, bFrames;
-    real              t, ratio;
+    double            t;
+    real              ratio;
     char              label[234];
     t_rgb             rlo, rhi;
     rvec*             x;

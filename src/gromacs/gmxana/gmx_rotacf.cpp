@@ -104,7 +104,7 @@ int gmx_rotacf(int argc, char* argv[])
     rvec          xij, xjk, n;
     int           i, m, teller, n_alloc, natoms, nvec, ai, aj, ak;
     unsigned long mode;
-    real          t, t0, t1, dt;
+    double        t, t0, t1, dt;
     gmx_rmpbc_t   gpbc = nullptr;
     t_topology*   top;
     PbcType       pbcType;

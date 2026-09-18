@@ -167,7 +167,7 @@ int gmx_spol(int argc, char* argv[])
     t_atom*      atom;
     t_trxstatus* status;
     int          nrefat, natoms, nf, ntot;
-    real         t;
+    double       t;
     rvec *       x, xref, trial, dx = { 0 }, dip, dir;
     matrix       box;
 

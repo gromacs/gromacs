@@ -293,7 +293,7 @@ static void calc_tetra_order_interface(const char*             fnNDX,
     PbcType      pbcType;
     t_trxstatus* status;
     int          natoms;
-    real         t;
+    double       t;
     rvec *       xtop, *x;
     matrix       box;
     real         sg, sk, sgintf;

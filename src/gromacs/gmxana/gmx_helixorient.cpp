@@ -88,7 +88,7 @@ int gmx_helixorient(int argc, char* argv[])
     };
 
     t_topology*  top = nullptr;
-    real         t;
+    double       t;
     rvec*        x = nullptr;
     matrix       box;
     t_trxstatus* status;

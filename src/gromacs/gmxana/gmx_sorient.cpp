@@ -130,7 +130,7 @@ int gmx_sorient(int argc, char* argv[])
     PbcType      pbcType = PbcType::Unset;
     t_trxstatus* status;
     int          natoms;
-    real         t;
+    double       t;
     rvec *       xtop, *x;
     matrix       box;
 

@@ -215,7 +215,8 @@ static void calc_electron_density(const char*             fn,
     double       averageBoxSize;
     gmx_rmpbc_t  gpbc = nullptr;
 
-    real t, z;
+    double t;
+    real   z;
 
     if (axis < 0 || axis >= DIM)
     {
@@ -363,7 +364,8 @@ static void calc_density(const char*             fn,
     t_trxstatus* status;
     int          i, n;
     int          nr_frames = 0;
-    real         t, z;
+    double       t;
+    real         z;
     real*        den_val; /* values from which the density is calculated */
     int          sliceIndex;
     real         boxSize;

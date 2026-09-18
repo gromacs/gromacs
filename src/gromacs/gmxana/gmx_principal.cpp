@@ -89,7 +89,7 @@ int gmx_principal(int argc, char* argv[])
     t_trxstatus* status;
     t_topology   top;
     PbcType      pbcType;
-    real         t;
+    double       t;
     rvec*        x;
 
     int                      natoms;

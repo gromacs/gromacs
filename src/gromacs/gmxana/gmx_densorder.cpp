@@ -161,7 +161,8 @@ static void density_in_time(const char*             fn,
             slicex, slicey, slicez; /*slice # of x y z position */
     real*** Densslice = nullptr;    /* Density-slice in one frame*/
     real    dscale;                 /*physical scaling factor*/
-    real    t, x, y, z;             /* time and coordinates*/
+    double  t;                      /* time */
+    real    x, y, z;                /* coordinates */
     rvec    bbww;
 
     *tblock = 0; /* blocknr in block average - initialise to 0*/

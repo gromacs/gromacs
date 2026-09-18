@@ -248,9 +248,10 @@ int gmx_rmsf(int argc, char* argv[])
                   "Do a least squares superposition before computing RMSF. Without this you must "
                           "make sure that the reference structure and the trajectory match." }
     };
-    int  natom;
-    int  i, m;
-    real t, *w_rls;
+    int    natom;
+    int    i, m;
+    double t;
+    real*  w_rls;
 
     t_topology top;
     PbcType    pbcType;

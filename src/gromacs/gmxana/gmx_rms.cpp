@@ -218,7 +218,8 @@ int gmx_rms(int argc, char* argv[])
     int j, m;
 #define NFRAME 5000
     int        maxframe = NFRAME, maxframe2 = NFRAME;
-    real       t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
+    double     t;
+    real *     w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
     gmx_bool   bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
     gmx_bool   bFit, bReset;
     t_topology top;
