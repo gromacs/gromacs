@@ -23,6 +23,10 @@ mechanically, with the remainder being modeled using the force field.
 The current version of |Gromacs| provides an interface to the popular
 Quantum Chemistry package CP2K :ref:`188 <refcp2k2020>`.
 
+When using the |Gromacs|-CP2K interface for QM/MM simulations, please cite
+Morozov et al., "Seamless QM/MM Simulations via a GROMACS-CP2K Interface"
+:ref:`201 <refMorozov2026>`.
+
 Overview
 ^^^^^^^^
 
@@ -37,7 +41,7 @@ the Hamiltonian for the QM subsystem:
    .. math::
 
       H^{QM/MM} =
-      H^{QM}_e-\sum_i^n\sum_J^M\frac{e^2Q_J}{4\pi\epsilon_0r_{iJ}}+\sum_A^N\sum_J^M\frac{e^2Z_AQ_J}{e\pi\epsilon_0R_{AJ}},
+      H^{QM}_e-\sum_i^n\sum_J^M\frac{e^2Q_J}{4\pi\epsilon_0r_{iJ}}+\sum_A^N\sum_J^M\frac{e^2Z_AQ_J}{4\pi\epsilon_0R_{AJ}},
 
 where :math:`n` and :math:`N` are the number of electrons and nuclei
 in the QM region, respectively, and :math:`M` is the number of

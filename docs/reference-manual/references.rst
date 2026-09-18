@@ -2762,3 +2762,18 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 .. raw:: html
 
    </div>
+
+.. raw:: html
+
+   <div id="refMorozov2026">
+
+.. _refMorozov2026:
+
+:sup:`201` D. Morozov, C. Blau, O. Schütt, V. Mironov, A. Proeme, H. Judge,
+T. D. Kühne, B. Hess, and G. Groenhof, "Seamless QM/MM Simulations via a
+GROMACS-CP2K Interface", *Journal of Chemical Information and Modeling* (2026).
+`doi:10.1021/acs.jcim.6c02073 <https://doi.org/10.1021/acs.jcim.6c02073>`_.
+
+.. raw:: html
+
+   </div>

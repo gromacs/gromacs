@@ -67,6 +67,7 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/pleasecite.h"
 
 #include "qmmmforceprovider.h"
 #include "qmmmoptions.h"
@@ -210,21 +211,32 @@ private:
 
 /*! \internal
  * \brief Handle file output for QMMM simulations.
- * empty implementation as QMMM does not use that
+ * Requests citation of the QMMM interface.
  */
 class QMMMOutputProvider final : public IMDOutputProvider
 {
 public:
+    //! Construct with whether to request the QMMM citation.
+    explicit QMMMOutputProvider(bool cite) : cite_(cite) {}
+
     //! Initialize output
-    void initOutput(FILE* /*fplog*/,
+    void initOutput(FILE* fplog,
                     int /*nfile*/,
                     const t_filenm /*fnm*/[],
                     bool /*bAppendFiles*/,
                     const gmx_output_env_t* /*oenv*/) override
     {
+        if (cite_)
+        {
+            please_cite(fplog, "Morozov2026");
+        }
     }
     //! Finalizes output from a simulation run.
     void finishOutput() override {}
+
+private:
+    //! Whether to request the QMMM citation.
+    const bool cite_;
 };
 
 
@@ -408,12 +420,20 @@ public:
         forceProviders->addForceProvider(forceProvider_.get(), "QMMM");
     }
 
-    //! QMMM Module should not use OutputProvider as it will be removed in the future
-    IMDOutputProvider* outputProvider() override { return &qmmmOutputProvider_; }
+    //! Provide output with citation enabled only when QMMM is active.
+    IMDOutputProvider* outputProvider() override
+    {
+        // Defer construction until the QMMM options have been populated.
+        if (!qmmmOutputProvider_)
+        {
+            qmmmOutputProvider_ = std::make_unique<QMMMOutputProvider>(qmmmOptions_.active());
+        }
+        return qmmmOutputProvider_.get();
+    }
 
 private:
     //! The output provider
-    QMMMOutputProvider qmmmOutputProvider_;
+    std::unique_ptr<QMMMOutputProvider> qmmmOutputProvider_;
     //! The options provided for QMMM
     QMMMOptions qmmmOptions_;
     //! Object that evaluates the forces
