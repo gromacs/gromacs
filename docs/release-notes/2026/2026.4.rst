@@ -62,6 +62,14 @@ always very small.
 
 :issue:`5694`
 
+Fixed freeze when using NVSHMEM with PME decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When NVSHMEM was used with multiple PME ranks, and ``-ddorder interleave`` was used,
+the simulation would deadlock on the first step.
+
+:issue:`5641`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

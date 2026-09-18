@@ -49,6 +49,7 @@
 
 #include <cstdint>
 
+#include <algorithm>
 #include <numeric>
 
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -95,6 +96,25 @@ FusedGpuHaloExchange::FusedGpuHaloExchange(const DeviceContext& deviceContext,
     mpi_comm_mysim_world_(mpi_comm_mysim_world)
 {
     enableFusedForceKernelSync_ = (getenv("GMX_ENABLE_NVSHMEM_FORCE_HALO_SYNC") != nullptr);
+
+    /* dd->neighbor stores PP-group ranks, whereas NVSHMEM was initialized on
+     * the mpiCommMySim communicator and has its own PEs. Build the explicit translation. */
+    if (mpi_comm_mysim_ != MPI_COMM_NULL) // we're on a PP rank
+    {
+#if GMX_MPI && GMX_NVSHMEM
+        int numPpRanks;
+        MPI_Comm_size(mpi_comm_mysim_, &numPpRanks);
+        groupRankToPE_.resize(numPpRanks, -1);
+        int myPE = nvshmem_my_pe();
+        MPI_Allgather(&myPE, 1, MPI_INT, groupRankToPE_.data(), 1, MPI_INT, mpi_comm_mysim_);
+        int numRanksInSim;
+        MPI_Comm_size(mpi_comm_mysim_world_, &numRanksInSim);
+        GMX_RELEASE_ASSERT(std::all_of(groupRankToPE_.begin(),
+                                       groupRankToPE_.end(),
+                                       [=](int pe) { return pe >= 0 && pe < numRanksInSim; }),
+                           "Invalid PE value encountered when mapping ranks to NVSHMEM PEs");
+#endif
+    }
 }
 
 FusedGpuHaloExchange::~FusedGpuHaloExchange()
@@ -274,13 +294,16 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
     changePinningPolicy(&haloExchangeData_, PinningPolicy::PinnedIfSupported);
     haloExchangeData_.resize(totalNumPulses_);
 
-    const gmx_domdec_comm_t& comm     = *cr.dd->comm;
-    int                      idxEntry = 0;
+    const gmx_domdec_comm_t& comm = *cr.dd->comm;
+
+    int idxEntry = 0;
     for (int d = 0; d < cr.dd->ndim; d++)
     {
         const int  dimIndex  = d;
         const int  sendRankX = cr.dd->neighbor[dimIndex][1];
         const int  recvRankX = cr.dd->neighbor[dimIndex][0];
+        const int  xSendPE   = groupRankToPE_[sendRankX];
+        const int  xRecvPE   = groupRankToPE_[recvRankX];
         const bool usePBC    = (cr.dd->ci[cr.dd->dim[dimIndex]] == 0);
 
         if (usePBC && cr.dd->unitCellInfo.haveScrewPBC)
@@ -305,8 +328,8 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
             data.xSendSize         = xSendSize;
             data.xRecvSize         = xRecvSize;
             data.atomOffset        = atomOffset;
-            data.sendRankX         = sendRankX;
-            data.recvRankX         = recvRankX;
+            data.xSendPE           = xSendPE;
+            data.xRecvPE           = xRecvPE;
             data.boxDimensionIndex = cr.dd->dim[dimIndex];
             data.usePBC            = usePBC;
             data.accumulateForces  = (pulse > 0 || cr.dd->ndim > 1);
@@ -327,12 +350,16 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
             }
 
             // Remote pointers and offsets for NVSHMEM
-            data.nvshmemData.remoteXPeerPutPtr = (Float3*)nvshmem_ptr(sharedBuffers_.d_x, sendRankX);
-            const int sendRankF = recvRankX;
-            const int recvRankF = sendRankX;
+#if GMX_NVSHMEM
+            data.nvshmemData.remoteXPeerPutPtr =
+                    static_cast<Float3*>(nvshmem_ptr(sharedBuffers_.d_x, xSendPE));
+            const int fSendPE = xRecvPE;
+            const int fRecvPE = xSendPE;
             data.nvshmemData.remoteForcePeerGetPtr =
-                    (const Float3*)nvshmem_ptr(sharedBuffers_.d_f, recvRankF);
-            data.nvshmemData.remoteForcePeerPutPtr = (Float3*)nvshmem_ptr(sharedBuffers_.d_f, sendRankF);
+                    static_cast<const Float3*>(nvshmem_ptr(sharedBuffers_.d_f, fRecvPE));
+            data.nvshmemData.remoteForcePeerPutPtr =
+                    static_cast<Float3*>(nvshmem_ptr(sharedBuffers_.d_f, fSendPE));
+#endif
 
 // Exchange atom offset with neighbors for coordinate PUT destination
 #if GMX_MPI

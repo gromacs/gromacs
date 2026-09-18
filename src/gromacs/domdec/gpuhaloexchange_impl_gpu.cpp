@@ -719,8 +719,12 @@ GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  
     dd_(dd), stream_(stream), peerRank_(peerRank), context_(context), wcycle_(wcycle)
 {
 #if GMX_NVSHMEM
-    fusedPpHaloExchange_ = std::make_unique<gmx::FusedGpuHaloExchange>(
-            context_, wcycle, mpi_comm_mygroup, mpi_comm_mysim_world);
+    /* A PME-only rank has no PP halo of its own, so it must not take part in the
+     * PP-group collective that builds the rank->PE map in the constructor. */
+    const bool     thisIsPmeOnlyRank = peerRank.has_value();
+    const MPI_Comm mpiCommPpGroup    = thisIsPmeOnlyRank ? MPI_COMM_NULL : mpi_comm_mygroup;
+    fusedPpHaloExchange_             = std::make_unique<gmx::FusedGpuHaloExchange>(
+            context_, wcycle, mpiCommPpGroup, mpi_comm_mysim_world);
 #else
     GMX_UNUSED_VALUE(mpi_comm_mygroup);
     GMX_UNUSED_VALUE(mpi_comm_mysim_world);
