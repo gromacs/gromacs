@@ -58,6 +58,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
+class ForceWithVirial;
 class MpiComm;
 } // namespace gmx
 
@@ -81,7 +82,7 @@ void ewald_LRcorrection(int                            numAtomsLocal,
                         gmx::ArrayRef<const gmx::RVec> coords,
                         const matrix                   box,
                         gmx::ArrayRef<const gmx::RVec> mu_tot,
-                        gmx::ArrayRef<gmx::RVec>       forces,
+                        gmx::ForceWithVirial*          forceWithVirial,
                         real*                          Vcorr_q,
                         real                           lambda_q,
                         real*                          dvdlambda_q);

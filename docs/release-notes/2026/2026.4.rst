@@ -54,6 +54,13 @@ Removed incorrect load imbalance reporting with update GPU
 
 :issue:`5700`
 
+PME and Ewald with 3DC correction or finite epsilon surface now add virial contribution
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The contribution to the virial was missing for these cases. This contribution is nearly
+always very small.
+
+:issue:`5694`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
