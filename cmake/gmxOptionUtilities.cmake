@@ -154,28 +154,6 @@ macro(GMX_DEPENDENT_OPTION NAME DESCRIPTION DEFAULT CONDITIONS)
     gmx_dependent_cache_variable(${NAME} "${DESCRIPTION}" BOOL "${DEFAULT}" "${CONDITIONS}")
 endmacro()
 
-# Sets a boolean variable based on conditions
-#
-# Usage:
-#   gmx_set_boolean(VAR CONDITIONS)
-#
-# Sets VAR to ON if all conditions listed in CONDITIONS are true, otherwise
-# VAR is set OFF.
-#
-# See gmx_add_cache_dependency() on how to specify the conditions.
-#
-function (GMX_SET_BOOLEAN NAME CONDITIONS)
-    set(${NAME} ON)
-    foreach(_cond ${CONDITIONS})
-        string(REGEX REPLACE " +" ";" _cond_as_list ${_cond})
-        if (${_cond_as_list})
-        else()
-            set(${NAME} OFF)
-        endif()
-    endforeach()
-    set(${NAME} ${${NAME}} PARENT_SCOPE)
-endfunction()
-
 # Checks if one or more variables have changed since last call to this function
 #
 # Usage:

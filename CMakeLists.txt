@@ -406,7 +406,11 @@ if(GMX_DEVELOPER_BUILD)
     mark_as_advanced(CMAKE_EXPORT_COMPILE_COMMANDS)
 endif()
 
-gmx_set_boolean(GMX_COMPILER_WARNINGS_DEFAULT "NOT SOURCE_IS_SOURCE_DISTRIBUTION")
+if(SOURCE_IS_SOURCE_DISTRIBUTION)
+    set(GMX_COMPILER_WARNINGS_DEFAULT OFF)
+else()
+    set(GMX_COMPILER_WARNINGS_DEFAULT ON)
+endif()
 option(GMX_COMPILER_WARNINGS
     "Enable a default set of compiler warnings"
     ${GMX_COMPILER_WARNINGS_DEFAULT})
@@ -551,7 +555,11 @@ endif()
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
-gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
+if(HAVE_UNISTD_H AND HAVE_NICE)
+    set(GMX_USE_NICE ON)
+else()
+    set(GMX_USE_NICE OFF)
+endif()
 
 ########################################################################
 #Process shared/static library settings
