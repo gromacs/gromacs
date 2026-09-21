@@ -39,6 +39,8 @@
 
 #include <gtest/gtest.h>
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -81,6 +83,16 @@ TEST(TemplateMPTest, DispatchTemplatedFunctionEnum)
                                                    Options::Op1,
                                                    Options::Op2);
     EXPECT_EQ(two1plus2plus5, 9);
+}
+
+TEST(TemplateMPTest, DispatchTemplatedFunctionEnumCountThrows)
+{
+    int five = 5;
+    EXPECT_THROW_GMX(dispatchTemplatedFunction([=](auto p1, auto p2)
+                                               { return testEnumTwoIPlusJPlusK<p1, p2>(five); },
+                                               Options::Op1,
+                                               Options::Count),
+                     InternalError);
 }
 
 TEST(TemplateMPTest, DispatchTemplatedFunctionBool)
