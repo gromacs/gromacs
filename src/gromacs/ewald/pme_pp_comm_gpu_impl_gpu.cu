@@ -59,7 +59,8 @@ namespace gmx
 
 void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* sendPtr,
                                                         int           sendSize,
-                                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
+                                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
+                                                        bool sendPtrIsGpuMemory)
 {
     // ensure stream waits until coordinate data is available on device
     if (coordinatesReadyOnDeviceEvent)
@@ -67,11 +68,12 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* sendPtr,
         coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
     }
 
-    cudaError_t stat = cudaMemcpyAsync(remotePmeXBuffer_,
-                                       sendPtr,
-                                       sendSize * DIM * sizeof(float),
-                                       cudaMemcpyDefault,
-                                       pmePpCommStream_.stream());
+    // Be explicit about the origin of the send pointer instead of relying on cudaMemcpyDefault
+    // to auto-detect it. See #5539 and the HIP backend, where the auto-detection is unreliable.
+    const cudaMemcpyKind copyKind = sendPtrIsGpuMemory ? cudaMemcpyDeviceToDevice : cudaMemcpyHostToDevice;
+
+    cudaError_t stat = cudaMemcpyAsync(
+            remotePmeXBuffer_, sendPtr, sendSize * DIM * sizeof(float), copyKind, pmePpCommStream_.stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Send to PME CUDA direct data transfer failed");
 
 #if GMX_MPI

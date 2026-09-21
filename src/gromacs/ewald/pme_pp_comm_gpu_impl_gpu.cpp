@@ -301,11 +301,12 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
 void PmePpCommGpu::Impl::sendCoordinatesToPme(const Float3*         sendPtr,
                                               int                   sendSize,
                                               GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
-                                              bool                  receiveForcesToGpu)
+                                              bool                  receiveForcesToGpu,
+                                              bool                  sendPtrIsGpuMemory)
 {
     if (GMX_THREAD_MPI)
     {
-        sendCoordinatesToPmePeerToPeer(sendPtr, sendSize, coordinatesReadyOnDeviceEvent);
+        sendCoordinatesToPmePeerToPeer(sendPtr, sendSize, coordinatesReadyOnDeviceEvent, sendPtrIsGpuMemory);
     }
     else
     {
@@ -368,13 +369,17 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
                                                GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
                                                bool                  receiveForcesToGpu)
 {
-    impl_->sendCoordinatesToPme(
-            asMpiPointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
+    impl_->sendCoordinatesToPme(asMpiPointer(sendPtr),
+                                sendSize,
+                                coordinatesReadyOnDeviceEvent,
+                                receiveForcesToGpu,
+                                /*sendPtrIsGpuMemory=*/true);
 }
 
 void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize, bool receiveForcesToGpu)
 {
-    impl_->sendCoordinatesToPme(sendPtr, sendSize, nullptr, receiveForcesToGpu);
+    impl_->sendCoordinatesToPme(
+            sendPtr, sendSize, nullptr, receiveForcesToGpu, /*sendPtrIsGpuMemory=*/false);
 }
 
 std::optional<DeviceBuffer<Float3>> PmePpCommGpu::getGpuForceStagingPtr()

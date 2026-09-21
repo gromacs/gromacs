@@ -67,11 +67,16 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool
 
     pmeForcesReady_->enqueueWaitEvent(*ppCommManagers_[ppRank].stream);
 
-    // Push data to remote GPU's memory
+    // Be explicit about the destination memory space rather than relying on cudaMemcpyDefault.
+    // See #5539 and the HIP backend, where the auto-detection is unreliable for peer/host copies.
+    const bool destinationIsGpu = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_);
+    const cudaMemcpyKind copyKind = destinationIsGpu ? cudaMemcpyDeviceToDevice : cudaMemcpyDeviceToHost;
+
+    // Push data to remote PP rank's memory
     cudaError_t stat = cudaMemcpyAsync(asFloat3(pmeRemoteForcePtr),
                                        ppCommManagers_[ppRank].localForcePtr,
                                        numAtoms * sizeof(rvec),
-                                       cudaMemcpyDefault,
+                                       copyKind,
                                        ppCommManagers_[ppRank].stream->stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
 
@@ -82,7 +87,7 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool
         stat = cudaMemcpyAsync(ppCommManagers_[ppRank].pmeRemoteCpuForcePtr,
                                ppCommManagers_[ppRank].pmeRemoteGpuForcePtr,
                                numAtoms * sizeof(rvec),
-                               cudaMemcpyDefault,
+                               cudaMemcpyDeviceToHost,
                                ppCommManagers_[ppRank].stream->stream());
         CU_RET_ERR(stat, "cudaMemcpyAsync on local device to host transfer of PME forces failed");
     }

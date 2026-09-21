@@ -67,11 +67,20 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool
 
     pmeForcesReady_->enqueueWaitEvent(*ppCommManagers_[ppRank].stream);
 
-    // Push data to remote GPU's memory
+    // Be explicit about the destination memory space rather than relying on hipMemcpyDefault to
+    // auto-detect it. The source is always this rank's (PME) device buffer; the destination is a
+    // remote (peer) PP device buffer when pushing directly to GPU or when staging, otherwise the
+    // remote PP host buffer. hipMemcpyDefault is unreliable for cross-device (peer) and
+    // host/device-mixed transfers on several AMD architectures, causing crashes/hangs at
+    // >2 ranks (see #5539).
+    const bool destinationIsGpu = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_);
+    const hipMemcpyKind copyKind = destinationIsGpu ? hipMemcpyDeviceToDevice : hipMemcpyDeviceToHost;
+
+    // Push data to remote PP rank's memory
     hipError_t stat = hipMemcpyAsync(asFloat3(pmeRemoteForcePtr),
                                      ppCommManagers_[ppRank].localForcePtr,
                                      numAtoms * sizeof(rvec),
-                                     hipMemcpyDefault,
+                                     copyKind,
                                      ppCommManagers_[ppRank].stream->stream());
     gmx::checkDeviceError(stat, "hipMemcpyAsync on Recv from PME HIP direct data transfer failed");
 
@@ -82,7 +91,7 @@ void PmeForceSenderGpu::Impl::sendFToPpPeerToPeer(int ppRank, int numAtoms, bool
         stat = hipMemcpyAsync(ppCommManagers_[ppRank].pmeRemoteCpuForcePtr,
                               ppCommManagers_[ppRank].pmeRemoteGpuForcePtr,
                               numAtoms * sizeof(rvec),
-                              hipMemcpyDefault,
+                              hipMemcpyDeviceToHost,
                               ppCommManagers_[ppRank].stream->stream());
         gmx::checkDeviceError(
                 stat, "hipMemcpyAsync on local device to host transfer of PME forces failed");

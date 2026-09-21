@@ -110,11 +110,15 @@ public:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
      * \param[in] receiveForcesToGpu Whether PME forces will be received to GPU
+     * \param[in] sendPtrIsGpuMemory Whether \p sendPtr resides in GPU (device) memory (true)
+     *            or CPU (host) memory (false). Required so the thread-MPI direct-GPU copy
+     *            can select the correct, explicit memcpy direction on HIP (see #5539).
      */
     void sendCoordinatesToPme(const Float3*         sendPtr,
                               int                   sendSize,
                               GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
-                              bool                  receiveForcesToGpu);
+                              bool                  receiveForcesToGpu,
+                              bool                  sendPtrIsGpuMemory);
 
     /*! \brief When this PP rank has particles with PME force
      * contributions expected from its PME-only rank, return pointer
@@ -156,10 +160,14 @@ private:
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
+     * \param[in] sendPtrIsGpuMemory Whether \p sendPtr resides in GPU (device) memory (true)
+     *            or CPU (host) memory (false). Selects the explicit memcpy direction so we do
+     *            not rely on the GPU runtime auto-detecting the pointer origin (see #5539).
      */
     void sendCoordinatesToPmePeerToPeer(const Float3*         sendPtr,
                                         int                   sendSize,
-                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
+                                        bool                  sendPtrIsGpuMemory);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using GPU-aware MPI.
