@@ -144,10 +144,11 @@ same restriction as holds for the energy (see sec. :ref:`ecorr`).
 Lennard-Jones PME
 ~~~~~~~~~~~~~~~~~
 
-In order to treat systems, using Lennard-Jones potentials, that are
-non-homogeneous outside of the cut-off distance, we can instead use the
-Particle-mesh Ewald method as discussed for electrostatics above. In
-this case the modified Ewald equations become
+As with electrostatics, the particle-mesh Ewald method can be used to
+treat the dispersion component of systems with Lennard-Jones
+potentials. These can improve the fidelity of the model physics when
+the system is non-homogeneous outside of the cut-off distance. In this
+case the modified Ewald equations become
 
 .. math:: \begin{aligned}
           V &=& V_{\mathrm{dir}} + V_{\mathrm{rec}} + V_{0} \\[0.5ex]
@@ -163,7 +164,8 @@ this case the modified Ewald equations become
           V_{0} &=& -\frac{\beta^{6}}{12}\sum_{i}^{N} C^{ii}_6\end{aligned}
           :label: eqnljpmerealspace2
 
-where :math:`{\bf m}=(m_x,m_y,m_z)`, :math:`\beta` is the parameter
+where :math:`{\bf n}=(n_x,n_y,n_z)` are real-space lattice-translation vectors,
+:math:`{\bf m}=(m_x,m_y,m_z)` are reciprocal lattice vectors, :math:`\beta` is the parameter
 determining the weight between direct and reciprocal space, and
 :math:`{C^{ij}_6}` is the combined dispersion parameter for particle
 :math:`i` and :math:`j`. The star indicates that terms with
@@ -179,13 +181,13 @@ introduced above are defined as
           :label: eqnljpmerealdistance
 
 The above methodology works fine as long as the dispersion parameters
-can be combined geometrically (:eq:`eqn. %s <eqncomb>`) in the same way as the
+can be combined geometrically :eq:`eqn. %s <eqncomb>` in the same way as the
 charges for electrostatics
 
 .. math:: C^{ij}_{6,\mathrm{geom}} = \left(C^{ii}_6 \, C^{jj}_6\right)^{1/2}
           :label: eqnljpmegeom
 
-For Lorentz-Berthelot combination rules (:eq:`eqn. %s <eqnlorentzberthelot>`),
+For Lorentz-Berthelot combination rules :eq:`eqn. %s <eqnlorentzberthelot>`,
 the reciprocal part of this sum has to be calculated seven times due to
 the splitting of the dispersion parameter according to
 
