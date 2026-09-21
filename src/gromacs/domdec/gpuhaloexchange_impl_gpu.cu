@@ -889,9 +889,6 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
 
                         if (sendSize > 0)
                         {
-                            uint64_t* remoteSignalReceiverRankFCurr = reinterpret_cast<uint64_t*>(
-                                    nvshmem_ptr(signalReceiverRankFNext, sendRank));
-                            GMX_DEVICE_ASSERT(remoteSignalReceiverRankFCurr != nullptr);
                             for (int pulseId = currPulse + 1; pulseId < totalNumPulses; pulseId++)
                             {
                                 const uint32_t* syncOnPrevPulse = d_fGridSync_ + pulseId;
@@ -913,6 +910,9 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
                             {
                                 // For NVLink comm we just signal the sender rank using system-scoped
                                 // release store to get(pull) the forces as they are ready.
+                                uint64_t* remoteSignalReceiverRankFCurr = reinterpret_cast<uint64_t*>(
+                                        nvshmem_ptr(signalReceiverRankFNext, sendRank));
+                                GMX_DEVICE_ASSERT(remoteSignalReceiverRankFCurr != nullptr);
                                 storeReleaseSysAsm(remoteSignalReceiverRankFCurr, signalReceiverRankFCounter);
                             }
                         }
