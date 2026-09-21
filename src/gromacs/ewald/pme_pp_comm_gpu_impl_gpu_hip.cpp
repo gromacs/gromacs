@@ -60,7 +60,8 @@ namespace gmx
 
 void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* sendPtr,
                                                         int           sendSize,
-                                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
+                                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
+                                                        bool sendPtrIsGpuMemory)
 {
     // ensure stream waits until coordinate data is available on device
     if (coordinatesReadyOnDeviceEvent)
@@ -68,11 +69,15 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* sendPtr,
         coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
     }
 
-    hipError_t stat = hipMemcpyAsync(remotePmeXBuffer_,
-                                     sendPtr,
-                                     sendSize * DIM * sizeof(float),
-                                     hipMemcpyDefault,
-                                     pmePpCommStream_.stream());
+    // Be explicit about the origin of the send pointer rather than relying on the HIP runtime to
+    // auto-detect it via hipMemcpyDefault. The destination (remotePmeXBuffer_) is always on a
+    // remote (peer) device; the source is either this rank's device buffer or a host buffer.
+    // hipMemcpyDefault is unreliable for cross-device (peer) and host/device-mixed transfers on
+    // several AMD architectures, causing crashes/hangs at >2 ranks (see #5539).
+    const hipMemcpyKind copyKind = sendPtrIsGpuMemory ? hipMemcpyDeviceToDevice : hipMemcpyHostToDevice;
+
+    hipError_t stat = hipMemcpyAsync(
+            remotePmeXBuffer_, sendPtr, sendSize * DIM * sizeof(float), copyKind, pmePpCommStream_.stream());
     gmx::checkDeviceError(stat, "hipMemcpyAsync on Send to PME HIP direct data transfer failed");
 
 #if GMX_MPI

@@ -51,7 +51,8 @@ namespace gmx
 
 void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* /*sendPtr*/,
                                                         int /*sendSize*/,
-                                                        GpuEventSynchronizer* /*coordinatesReadyOnDeviceEvent*/)
+                                                        GpuEventSynchronizer* /*coordinatesReadyOnDeviceEvent*/,
+                                                        bool /*sendPtrIsGpuMemory*/)
 {
     GMX_RELEASE_ASSERT(false,
                        "Direct peer-to-peer communications not supported with SYCL and threadMPI.");
