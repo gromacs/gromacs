@@ -127,7 +127,9 @@ static gmx_bool ip_pert(InteractionFunction ftype, const t_iparams* ip)
         case InteractionFunction::LennardJones14:
             bPert = (ip->lj14.c6A != ip->lj14.c6B || ip->lj14.c12A != ip->lj14.c12B);
             break;
-        case InteractionFunction::DihedralEnergyCorrectionMap: bPert = FALSE; break;
+        case InteractionFunction::DihedralEnergyCorrectionMap:
+            bPert = (ip->cmap.cmapA != ip->cmap.cmapB); // perturbed when A/B CMAP grids differ
+            break;
         case InteractionFunction::RestrictedBendingPotential:
             bPert = (ip->harmonic.rA != ip->harmonic.rB) || (ip->harmonic.krA != ip->harmonic.krB);
             break;

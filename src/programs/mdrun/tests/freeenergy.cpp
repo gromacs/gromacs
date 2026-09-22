@@ -282,8 +282,9 @@ INSTANTIATE_TEST_SUITE_P(
                 FreeEnergyReferenceTestParams{ "transformAtoB",
                                                MaxNumWarnings(1),
                                                { InteractionFunction::dVremainingdLambda } },
-                FreeEnergyReferenceTestParams{ "vdwalone",
-                                               MaxNumWarnings(1),
+                FreeEnergyReferenceTestParams{ "vdwalone", MaxNumWarnings(1), { InteractionFunction::dVremainingdLambda } },
+                FreeEnergyReferenceTestParams{ "cmap-perturbation", // end-to-end test for CMAP FEP
+                                               MaxNumWarnings(0),
                                                { InteractionFunction::dVremainingdLambda } }),
         FreeEnergyReferenceTest::PrintParametersToString());
 #else
@@ -334,8 +335,9 @@ INSTANTIATE_TEST_SUITE_P(
                 FreeEnergyReferenceTestParams{ "transformAtoB",
                                                MaxNumWarnings(1),
                                                { InteractionFunction::dVremainingdLambda } },
-                FreeEnergyReferenceTestParams{ "vdwalone",
-                                               MaxNumWarnings(1),
+                FreeEnergyReferenceTestParams{ "vdwalone", MaxNumWarnings(1), { InteractionFunction::dVremainingdLambda } },
+                FreeEnergyReferenceTestParams{ "cmap-perturbation", // end-to-end test for CMAP FEP
+                                               MaxNumWarnings(0),
                                                { InteractionFunction::dVremainingdLambda } }),
         FreeEnergyReferenceTest::PrintParametersToString());
 #endif

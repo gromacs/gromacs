@@ -1383,6 +1383,31 @@ void push_cmaptype(Directive                                                  d,
         wi->addError(message);
     }
 
+    // Read optional unique name token placed after nx/ny on the [ cmaptypes ] header line
+    // (e.g. "C-* N-GLY XC-GLY C-GLY N-* 1 24 24 GLY\"). After \ line-joining by the preprocessor
+    // the name appears immediately after ny and before the grid values on the logical line.
+    // Peek at the next token: if non-numeric it is the name; if numeric it is the first grid value
+    // and must be restored for the grid loop via clear()+seekg().
+    {
+        const std::streampos posBefore = cmapLine.tellg(); // position after ny, before next token
+        std::string          nameToken;                    // candidate name token
+        cmapLine >> nameToken;                             // read one token
+        char*        endPtr = nullptr;
+        const double numVal = std::strtod(nameToken.c_str(), &endPtr); // attempt numeric parse
+        (void)numVal; // value unused; only endPtr matters
+        const bool isNumeric =
+                (endPtr != nameToken.c_str() && *endPtr == '\0'); // true if whole token is a number
+        if (!nameToken.empty() && !isNumeric) // non-numeric: it is the optional name token
+        {
+            cmapType.name_ = nameToken; // store name for explicit A/B-state FEP lookup in push_cmap
+        }
+        else if (!nameToken.empty()) // numeric: first grid value; restore stream position for grid loop
+        {
+            cmapLine.clear();          // clear eofbit/failbit set by >> before seeking
+            cmapLine.seekg(posBefore); // restore to saved position so grid loop reads this token
+        }
+    }
+
     // Fill in the CMAP grid for FEP state A
     cmapType.gridA_.resize(nxcmap, nycmap);
     ArrayRef<real> flattenedGridA = cmapType.gridA_.toArrayRef();
@@ -1439,11 +1464,7 @@ void push_cmaptype(Directive                                                  d,
         }
     }
 
-    // Copy the parameters to state B, but note that actual FEP of CMAP
-    // parameters is not supported
-    cmapType.gridB_ = cmapType.gridA_;
-
-    if (!cmapLine.eof())
+    if (!cmapLine.eof()) // any remaining tokens after the grid values are unexpected
     {
         auto message = formatString(
                 "One or more unread cmap parameters exist for atomtypes %s %s %s %s %s",
@@ -1848,19 +1869,20 @@ static bool default_nb_params(InteractionFunction                               
 class CmapTypeMatcher
 {
 public:
-    CmapTypeMatcher(ArrayRef<const int>           interactionAtomIndices,
-                    const t_atoms&                at,
-                    const PreprocessingAtomTypes& atypes)
+    CmapTypeMatcher(ArrayRef<const int> interactionAtomIndices, // indices of the 5 atoms in this CMAP interaction
+                    const t_atoms& at, // atom data containing types and residue info
+                    const PreprocessingAtomTypes& atypes) // atom type table for bond-atom-type lookup
     {
         // Allocate and fill the caches of atom type and residue type
         // name for this interaction, so a lookup over potentially
         // many CMAP interaction types is efficient.
-        atomTypes_.reserve(interactionAtomIndices.size());
-        residueTypeNames_.reserve(interactionAtomIndices.size());
-        for (const int atomIndex : interactionAtomIndices)
+        atomTypes_.reserve(interactionAtomIndices.size()); // pre-allocate bond atom type cache
+        residueTypeNames_.reserve(interactionAtomIndices.size()); // pre-allocate residue name cache
+        for (const int atomIndex : interactionAtomIndices) // iterate over each of the 5 CMAP atoms
         {
-            atomTypes_.emplace_back(atypes.bondAtomTypeFromAtomType(at.atom[atomIndex].type).value());
-            residueTypeNames_.emplace_back(*at.resinfo[at.atom[atomIndex].resind].name);
+            atomTypes_.emplace_back(atypes.bondAtomTypeFromAtomType(at.atom[atomIndex].type).value()); // A-state bond atom type
+            residueTypeNames_.emplace_back(
+                    *at.resinfo[at.atom[atomIndex].resind].name); // residue name for AMBER-style matching
         }
     }
 
@@ -1907,14 +1929,56 @@ private:
     std::vector<const char*> residueTypeNames_;
 };
 
-/*! \brief Find the appropriate type for the current CMAP \c p interaction
+/*! \brief Find a CMAP type by its unique name field
  *
- * The CMAP type looked up in the list available for this forcefield, either
+ * Searches \p cmapTypes for an entry whose name_ matches \p name.
+ * Returns the 0-based index on success, or issues a fatal error.
+ *
+ * \param[in] cmapTypes  All defined CMAP types.
+ * \param[in] name       Name to look up.
+ * \param[in] p          Interaction used to format the error message.
+ * \param[in] wi         Warning handler.
+ * \returns 0-based index of the matching CMAP type. */
+static int findCmapTypeByName(gmx::ArrayRef<const CmapInteractionType> cmapTypes,
+                              const std::string&                       name,
+                              const InteractionOfType&                 p,
+                              WarningHandler*                          wi)
+{
+    const auto it = std::find_if(cmapTypes.begin(),
+                                 cmapTypes.end(),
+                                 [&name](const CmapInteractionType& t)
+                                 { return t.name_ == name; }); // match by name_ field
+    if (it != cmapTypes.end())                                 // found a matching named entry
+    {
+        return std::distance(cmapTypes.begin(), it); // return 0-based index
+    }
+    auto message = gmx::formatString(
+            "Unable to assign a cmap type to torsion between atoms %d %d %d %d and %d: "
+            "no cmap type with name '%s' found",
+            p.ai() + 1,
+            p.aj() + 1,
+            p.ak() + 1,
+            p.al() + 1,
+            p.am() + 1,
+            name.c_str()); // include the unrecognised name in the error message
+    warning_error_and_exit(wi, message, FARGS);
+}
+
+/*! \brief Find the appropriate type for the current CMAP \p p interaction
+ *
+ * The CMAP type is looked up in the list available for this forcefield, either
  * via the index supplied in the user's topology for this interaction, or via
- * atom-type name and/or residue-type name lookup (according to the how the forcefield
+ * atom-type name and/or residue-type name lookup (according to how the forcefield
  * does lookups for default CMAP types).
  *
- * When no CMAP type matches \c p, a fatal error is issued. */
+ * When no CMAP type matches \p p, a fatal error is issued.
+ *
+ * \param[in] bondtype  All bonded interaction types.
+ * \param[in] at        Atom data for type/residue lookup.
+ * \param[in] atypes    Atom type table.
+ * \param[in] p         The CMAP interaction to resolve.
+ * \param[in] wi        Warning handler.
+ * \returns 0-based index of the matching CMAP type. */
 static int findCmapType(EnumerationArray<InteractionFunction, InteractionsOfType>& bondtype,
                         const t_atoms&                                             at,
                         const PreprocessingAtomTypes&                              atypes,
@@ -1922,19 +1986,20 @@ static int findCmapType(EnumerationArray<InteractionFunction, InteractionsOfType
                         WarningHandler*                                            wi)
 {
     ArrayRef<const CmapInteractionType> cmapTypes =
-            bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_;
-    if (!p.forceParam().empty() && roundToInt(p.forceParam()[0]) > 0)
+            bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_; // all defined CMAP grid entries
+    if (!p.forceParam().empty() && roundToInt(p.forceParam()[0]) > 0) // user supplied a 1-based integer index
     {
         // The user specified the CMAP interaction type for a CMAP
         // interaction via index, rather than the default
         // atom/residue-based lookup. User-specified types are
         // indexed starting from 1 so we subtract that
-        const int cmapTypeIndexFromUser = roundToInt(p.forceParam()[0]) - 1;
+        const int cmapTypeIndexFromUser =
+                roundToInt(p.forceParam()[0]) - 1; // convert 1-based user index to 0-based
         // Check that the user-specified CMAP type exists
-        if (cmapTypeIndexFromUser < cmapTypes.ssize())
+        if (cmapTypeIndexFromUser < cmapTypes.ssize()) // bounds check against number of defined CMAP types
         {
             // Use the user-specified CMAP type
-            return cmapTypeIndexFromUser;
+            return cmapTypeIndexFromUser; // return 0-based index directly
         }
         // If that user-specified CMAP type does not exist, give an error below
     }
@@ -1942,11 +2007,11 @@ static int findCmapType(EnumerationArray<InteractionFunction, InteractionsOfType
     {
         // Seek a match for the current CMAP angle against the CMAP
         // types for this force field.
-        const CmapTypeMatcher matcher(p.atoms(), at, atypes);
+        const CmapTypeMatcher matcher(p.atoms(), at, atypes); // build matcher from A-state atom/residue types
         if (const auto cmapTypeIt = std::find_if(cmapTypes.begin(), cmapTypes.end(), matcher);
-            cmapTypeIt != cmapTypes.end())
+            cmapTypeIt != cmapTypes.end()) // found a matching CMAP type by atom/residue-type lookup
         {
-            return std::distance(cmapTypes.begin(), cmapTypeIt);
+            return std::distance(cmapTypes.begin(), cmapTypeIt); // return 0-based index of the match
         }
         // If no CMAP type match is found, give an error below
     }
@@ -1957,7 +2022,7 @@ static int findCmapType(EnumerationArray<InteractionFunction, InteractionsOfType
                          p.aj() + 1,
                          p.ak() + 1,
                          p.al() + 1,
-                         p.am() + 1);
+                         p.am() + 1); // list the five atom indices for diagnostic
     warning_error_and_exit(wi, message, FARGS);
 }
 
@@ -2758,33 +2823,37 @@ void push_cmap(Directive                                                  d,
                char*                                                      line,
                WarningHandler*                                            wi)
 {
-    const char* aaformat[] = { "%d%d%d%d%d%d", "%d%d%d%d%d%d%d", "%d%d%d%d%d%d%d%d" };
+    // Format strings: 5 atom indices + ftype, then optional cmapA and cmapB tokens as strings
+    const char* aaformat   = "%d%d%d%d%d%d";     // atoms + ftype only (auto atom-type lookup)
+    const char* aaformatA  = "%d%d%d%d%d%d%s";   // atoms + ftype + explicit cmapA name/index
+    const char* aaformatAB = "%d%d%d%d%d%d%s%s"; // atoms + ftype + explicit cmapA and cmapB
 
-    int nral, nread;
-    int aa[MAXATOMLIST];
-    int cmapTypeA = NOTSET, cmapTypeB = NOTSET;
+    int  nral, nread;
+    int  aa[MAXATOMLIST];         // atom indices from the [ cmap ] line
+    char cmapTokenA[STRLEN] = ""; // optional user-supplied A-state grid name or 1-based index
+    char cmapTokenB[STRLEN] = ""; // optional user-supplied B-state grid name or 1-based index
 
-    InteractionFunction ftype = ifunc_index(d, 1);
-    nral                      = NRAL(ftype);
+    InteractionFunction ftype = ifunc_index(d, 1); // default ftype before parsing
+    nral                      = NRAL(ftype); // number of atoms for this interaction (5 for CMAP)
 
-    nread = sscanf(line, aaformat[2], &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5], &cmapTypeA, &cmapTypeB);
-    if (nread < nral + 3)
+    nread = sscanf(line, aaformatAB, &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5], cmapTokenA, cmapTokenB); // try reading both tokens
+    if (nread < nral + 3) // fewer than atoms+ftype+cmapA+cmapB fields: try A-only
     {
-        nread = sscanf(line, aaformat[1], &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5], &cmapTypeA);
-        if (nread < nral + 2)
+        nread = sscanf(line, aaformatA, &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5], cmapTokenA); // try reading cmapA only
+        if (nread < nral + 2) // fewer than atoms+ftype+cmapA: no explicit tokens at all
         {
-            nread = sscanf(line, aaformat[0], &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5]);
+            nread = sscanf(line, aaformat, &aa[0], &aa[1], &aa[2], &aa[3], &aa[4], &aa[5]); // atoms + ftype only
         }
     }
 
-    if (nread < nral + 1)
+    if (nread < nral + 1) // must have at least atoms + ftype
     {
         too_few(wi);
         return;
     }
 
     GMX_RELEASE_ASSERT(aa[nral] == 1, "Invalid function type for cmap torsion: must be 1");
-    ftype = ifunc_index(d, aa[nral]);
+    ftype = ifunc_index(d, aa[nral]); // resolve actual ftype from parsed function-type field
 
     /* Check for double atoms and atoms out of bounds */
     for (int i = 0; i < nral; i++)
@@ -2815,22 +2884,74 @@ void push_cmap(Directive                                                  d,
         }
     }
 
-    /* default force parameters  */
+    /* Build atom index list (0-based) for the InteractionOfType */
     std::vector<int> atoms;
     for (int j = 0; (j < nral); j++)
     {
-        atoms.emplace_back(aa[j] - 1);
+        atoms.emplace_back(aa[j] - 1); // convert 1-based topology index to 0-based
     }
 
-    std::array<real, MAXFORCEPARAM> forceParam = { static_cast<real>(cmapTypeA) };
-    InteractionOfType               param(atoms, forceParam, "");
-    /* Get the cmap type for this cmap angle */
-    int cmapType = findCmapType(bondtype, *at, *atypes, param, wi);
+    gmx::ArrayRef<const CmapInteractionType> cmapTypes =
+            bondtype[InteractionFunction::DihedralEnergyCorrectionMap].cmapTypes_; // all defined CMAP grid entries
 
-    /* We want exactly one parameter (the cmap type in state A (currently no state B) back */
-    /* Put the values in the appropriate arrays */
-    param.setForceParameter(0, cmapType);
-    add_param_to_list(&bond[ftype], param);
+    auto isPositiveInteger = [](const char* s) -> bool // true when the entire string is a positive decimal integer
+    {
+        char*     endPtr = nullptr; // will point past last parsed char
+        const int val    = static_cast<int>(std::strtol(s, &endPtr, 10)); // attempt integer parse
+        return (endPtr != s && *endPtr == '\0' && val > 0); // whole token is a valid positive int
+    };
+
+    if (cmapTokenA[0] != '\0' && cmapTokenB[0] != '\0') // both A and B tokens supplied
+    {
+        const bool aIsInt = isPositiveInteger(cmapTokenA); // check if A token is an integer
+        const bool bIsInt = isPositiveInteger(cmapTokenB); // check if B token is an integer
+        if (aIsInt != bIsInt)                              // one integer and one name: reject
+        {
+            auto message = formatString(
+                    "CMAP A-state and B-state types must both be names or both be indices, "
+                    "but got '%s' and '%s'",
+                    cmapTokenA,
+                    cmapTokenB);
+            warning_error_and_exit(wi, message, FARGS);
+        }
+    }
+
+    /*! \brief Helper lambda: resolve a cmap token (name or 1-based integer) to a 0-based grid index.
+     *
+     * If the token is empty, falls back to atom/residue-type lookup via findCmapType.
+     * If the token is a positive integer, uses the existing 1-based index path.
+     * Otherwise treats the token as a name and uses findCmapTypeByName. */
+    auto resolveCmapToken = [&](const char* token, const InteractionOfType& p) -> int
+    {
+        if (token[0] == '\0') // no token supplied: use atom/residue-type lookup
+        {
+            return findCmapType(bondtype, *at, *atypes, p, wi); // default atom-type-based lookup
+        }
+        // Try to interpret token as a positive integer (backward-compatible 1-based index)
+        char* endPtr = nullptr;
+        const int intVal = static_cast<int>(std::strtol(token, &endPtr, 10)); // attempt integer parse
+        if (endPtr != token && *endPtr == '\0' && intVal > 0) // whole token is a valid positive integer
+        {
+            std::array<real, MAXFORCEPARAM> fp = { static_cast<real>(
+                    intVal) }; // pack integer as forceParam for findCmapType
+            InteractionOfType pIdx(p.atoms(), fp, ""); // temporary interaction carrying the index
+            return findCmapType(bondtype, *at, *atypes, pIdx, wi); // uses 1-based index path in findCmapType
+        }
+        // Token is a name string: look up by CmapInteractionType::name_
+        return findCmapTypeByName(cmapTypes, token, p, wi); // name-based lookup for FEP A/B grids
+    };
+
+    std::array<real, MAXFORCEPARAM> forceParam = {}; // zero-initialised force parameter array
+    InteractionOfType               param(atoms, forceParam, ""); // interaction carrying atom list
+
+    const int cmapA = resolveCmapToken(cmapTokenA, param);          // resolve A-state grid index
+    const int cmapB = (cmapTokenB[0] != '\0')                       // B-state token present?
+                              ? resolveCmapToken(cmapTokenB, param) // resolve explicit B-state grid
+                              : cmapA; // unperturbed: B-state same as A
+
+    param.setForceParameter(0, cmapA);      // store A-state 0-based grid index
+    param.setForceParameter(1, cmapB);      // store B-state 0-based grid index
+    add_param_to_list(&bond[ftype], param); // add the resolved CMAP interaction to the bond list
 }
 
 

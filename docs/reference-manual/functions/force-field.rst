@@ -208,6 +208,42 @@ Note also that in the current implementation the grid extent must be
 identical for ``x`` and ``y`` dimensions and the same for all CMAP type
 entries.
 
+Free energy perturbation with CMAP
+"""""""""""""""""""""""""""""""""""
+
+CMAP interactions support alchemical free energy perturbation via the
+``bonded-lambdas`` lambda component. To specify distinct A and B state
+grids for a CMAP interaction, add an optional name token after the grid
+extent on the ``[ cmaptypes ]`` header line:
+
+.. code-block:: none
+
+    [ cmaptypes ]
+    C-* N-ALA XC-ALA C-ALA N-* 1 24 24 ALA\
+    3.44619344 4.59474328 ...
+
+The name token (``ALA`` in the example) can then be referenced in the
+``[ cmap ]`` interaction section to explicitly select A and B state
+grids:
+
+.. code-block:: none
+
+    [ cmap ]
+    ;  ai    aj    ak    al    am funct  cmapA  cmapB
+       1     2     3     4     5    1     ALA    GLY
+
+The ``cmapA`` and ``cmapB`` fields accept either a 1-based integer index
+(referring to the order of entries in ``[ cmaptypes ]``) or a name
+string matching the optional name token. When both ``cmapA`` and
+``cmapB`` are given, they must be the same kind: both names or both
+indices. If only ``cmapA`` is given, the
+B state defaults to the same grid (no perturbation). If both fields are
+omitted, the CMAP type is determined automatically from atom or residue
+types as usual. Note that these examples use a 3-letter
+residue abbreviation to describe the CMAP type, but this
+is merely convenient for this simple example; any
+non-numeric name is valid.
+
 .. _charmmff:
 
 CHARMM

@@ -77,6 +77,29 @@ interpolated:
           {\frac{\partial V}{\partial {\lambda}}} &=& (k^B - k^A) \, f\end{aligned}
           :label: eqnfeptabbonded
 
+CMAP interactions
+~~~~~~~~~~~~~~~~~
+
+For energy correction map (CMAP) interactions, both the energy and
+forces are interpolated linearly between the A-state grid
+(:math:`\lambda=0`) and the B-state grid (:math:`\lambda=1`):
+
+.. math:: \begin{aligned}
+          V_\text{cmap}(\phi,\psi;\lambda) &=
+              (1-\lambda)\, V_\text{cmap}^A(\phi,\psi) +
+              \lambda\, V_\text{cmap}^B(\phi,\psi) \\
+          \frac{\partial V_\text{cmap}}{\partial \lambda} &=
+              V_\text{cmap}^B(\phi,\psi) -
+              V_\text{cmap}^A(\phi,\psi)
+          \end{aligned}
+          :label: eqnfepcmap
+
+where :math:`V_\text{cmap}^A` and :math:`V_\text{cmap}^B` are
+evaluated by independent bicubic interpolations of the respective
+CMAP grids at the current dihedral angles :math:`\phi` and
+:math:`\psi`. The CMAP perturbation is controlled by the
+``bonded-lambdas`` component of the lambda vector.
+
 Coulomb interaction
 ~~~~~~~~~~~~~~~~~~~
 

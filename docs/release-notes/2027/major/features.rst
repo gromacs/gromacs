@@ -27,3 +27,22 @@ which requires a CP2K 2027.1 or higher, whereas the default is
 short-range regularized point-charge coupling 
 ``qmmm-cp2k-dftb-electrostatic-coupling = point-charge``.
 Regular DFT methods are still using GEEP (Gauss) for electrostatics.
+
+CMAP interactions now support free energy perturbation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Energy correction map (CMAP) torsion interactions can now be
+perturbed between an A state and a B state using the
+``bonded-lambdas`` free-energy lambda component. The A and B
+state CMAP grids are linearly interpolated at each lambda
+value, and the corresponding :math:`\partial H/\partial\lambda`
+contribution is accumulated for BAR/TI analysis.
+
+To use CMAP FEP, specify a B-state CMAP type in the ``[ cmap ]``
+section of the topology. The type can be given as a 1-based index
+or as an explicit name token (e.g. ``GLY``, ``PZQ``) that matches
+the optional name field on the corresponding ``[ cmaptypes ]``
+header line. When the A and B state CMAP types differ, the
+interaction is treated as perturbed; when they are identical (or
+no B-state is specified) the standard non-perturbed code path is
+used.

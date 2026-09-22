@@ -202,7 +202,8 @@ enum tpxv
     tpxv_NNPotIFuncType,       /**< Add interaction function type for neural network potential */
     tpxv_AwhHistogramTolerance,       /**< Add AWH histogram tolerance */
     tpxv_OutputControlInKeyValueTree, /**< Move output control parameters to key-value tree */
-    tpxv_Count                        /**< the total number of tpxv versions */
+    tpxv_CmapBState, /**< Store B-state CMAP grid index for free energy perturbation */
+    tpxv_Count       /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -2308,6 +2309,10 @@ static void do_iparams(gmx::ISerializer* serializer, InteractionFunction ftype, 
         case InteractionFunction::DihedralEnergyCorrectionMap:
             serializer->doInt(&iparams->cmap.cmapA);
             serializer->doInt(&iparams->cmap.cmapB);
+            if (file_version < tpxv_CmapBState && serializer->reading()) // legacy: cmapB was zero-initialised
+            {
+                iparams->cmap.cmapB = iparams->cmap.cmapA; // treat as unperturbed
+            }
             break;
         default:
             gmx_fatal(FARGS,

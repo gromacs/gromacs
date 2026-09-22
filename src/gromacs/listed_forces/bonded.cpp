@@ -3141,6 +3141,69 @@ void accumulateCmapForces(const rvec      x[],
 
 } // namespace
 
+//! Energy and force gradients from a single CMAP bicubic evaluation.
+struct CmapBicubicResult
+{
+    real e;   // potential energy contribution
+    real df1; // force gradient along phi1
+    real df2; // force gradient along phi2
+};
+
+/*! \brief Evaluate CMAP bicubic interpolation for one grid at a given (phi1, phi2) point. */
+static CmapBicubicResult evaluateCmapBicubic(gmx::ArrayRef<const std::array<real, 4>> grid,
+                                             int                                      pos1,
+                                             int                                      pos2,
+                                             int                                      pos3,
+                                             int                                      pos4,
+                                             real                                     dx,
+                                             real                                     tt,
+                                             real                                     tu,
+                                             const int loop_index[4][4])
+{
+    real tx[16];            // bicubic coefficient input vector
+    tx[0]  = grid[pos1][0]; // function values at four corners
+    tx[1]  = grid[pos2][0];
+    tx[2]  = grid[pos3][0];
+    tx[3]  = grid[pos4][0];
+    tx[4]  = grid[pos1][1] * dx; // phi1 derivatives scaled to degrees
+    tx[5]  = grid[pos2][1] * dx;
+    tx[6]  = grid[pos3][1] * dx;
+    tx[7]  = grid[pos4][1] * dx;
+    tx[8]  = grid[pos1][2] * dx; // phi2 derivatives scaled to degrees
+    tx[9]  = grid[pos2][2] * dx;
+    tx[10] = grid[pos3][2] * dx;
+    tx[11] = grid[pos4][2] * dx;
+    tx[12] = grid[pos1][3] * dx * dx; // cross derivatives scaled to degrees^2
+    tx[13] = grid[pos2][3] * dx * dx;
+    tx[14] = grid[pos3][3] * dx * dx;
+    tx[15] = grid[pos4][3] * dx * dx;
+
+    std::array<real, 16> tc = { 0 }; // bicubic coefficients from matrix multiply
+    for (int idx = 0; idx < 16; idx++)
+    {
+        for (int k = 0; k < 16; k++)
+        {
+            tc[idx] += cmap_coeff_matrix[k * 16 + idx] * tx[k]; // apply bicubic coefficient matrix
+        }
+    }
+
+    real e   = 0; // energy accumulator
+    real df1 = 0; // phi1 gradient accumulator
+    real df2 = 0; // phi2 gradient accumulator
+    for (int i = 3; i >= 0; i--)
+    {
+        const int l1 = loop_index[i][3]; // Horner loop indices for df1
+        const int l2 = loop_index[i][2];
+        const int l3 = loop_index[i][1];
+        e = tt * e + ((tc[i * 4 + 3] * tu + tc[i * 4 + 2]) * tu + tc[i * 4 + 1]) * tu + tc[i * 4]; // bicubic energy
+        df1 = tu * df1 + (3.0 * tc[l1] * tt + 2.0 * tc[l2]) * tt + tc[l3]; // phi1 gradient
+        df2 = tt * df2 + (3.0 * tc[i * 4 + 3] * tu + 2.0 * tc[i * 4 + 2]) * tu + tc[i * 4 + 1]; // phi2 gradient
+    }
+
+    const real fac = gmx::c_rad2Deg / dx; // scale gradients from grid units to rad^-1
+    return { e, df1 * fac, df2 * fac };   // return energy and scaled force gradients
+}
+
 real cmap_dihs(int                 nbonds,
                const t_iatom       forceatoms[],
                const t_iparams     forceparams[],
@@ -3149,23 +3212,20 @@ real cmap_dihs(int                 nbonds,
                rvec4               f[],
                rvec                fshift[],
                const struct t_pbc* pbc,
-               real gmx_unused     lambda,
-               real gmx_unused*    dvdlambda,
+               real                lambda,    // FEP lambda for CMAP A/B-state interpolation
+               real*               dvdlambda, // accumulates dH/dlambda for CMAP
                gmx::ArrayRef<const real> /*charge*/,
                t_fcdata gmx_unused*     fcd,
                t_disresdata gmx_unused* disresdata,
                t_oriresdata gmx_unused* oriresdata,
                int gmx_unused*          global_atom_index)
 {
-    int t11, t21, t31, t12, t22, t32;
-    int ip1m1, ip1p1, ip1p2;
-    int ip2m1, ip2p1, ip2p2;
-    int l1, l2, l3;
+    int t11, t21, t31, t12, t22, t32; // shift indices for torsion 1 and 2
+    int ip1m1, ip1p1, ip1p2;          // grid index neighbours along phi1
+    int ip2m1, ip2p1, ip2p2;          // grid index neighbours along phi2
 
-    real ty[4], ty1[4], ty2[4], ty12[4], tx[16];
-
-    rvec r1_ij, r1_kj, r1_kl, m1, n1;
-    rvec r2_ij, r2_kj, r2_kl, m2, n2;
+    rvec r1_ij, r1_kj, r1_kl, m1, n1; // bond vectors for torsion 1
+    rvec r2_ij, r2_kj, r2_kl, m2, n2; // bond vectors for torsion 2
 
     int loop_index[4][4] = { { 0, 4, 8, 12 }, { 1, 5, 9, 13 }, { 2, 6, 10, 14 }, { 3, 7, 11, 15 } };
 
@@ -3183,9 +3243,10 @@ real cmap_dihs(int                 nbonds,
         const int am   = forceatoms[n++];
 
         /* Which CMAP type is this */
-        const int                                cmapA      = forceparams[type].cmap.cmapA;
-        const size_t                             gridExtent = grids[cmapA].extent(0);
-        gmx::ArrayRef<const std::array<real, 4>> cmapd      = grids[cmapA].toArrayRef();
+        const int    cmapA      = forceparams[type].cmap.cmapA; // A-state CMAP grid index
+        const int    cmapB      = forceparams[type].cmap.cmapB; // B-state CMAP grid index
+        const size_t gridExtent = grids[cmapA].extent(0);       // grid dimension (same for A and B)
+        gmx::ArrayRef<const std::array<real, 4>> cmapd = grids[cmapA].toArrayRef(); // A-state grid data
 
         /* First torsion */
         const int a1i = ai;
@@ -3335,80 +3396,50 @@ real cmap_dihs(int                 nbonds,
         const int pos3 = ip1p1 * gridExtent + ip2p1;
         const int pos4 = iphi1 * gridExtent + ip2p1;
 
-        ty[0] = cmapd[pos1][0];
-        ty[1] = cmapd[pos2][0];
-        ty[2] = cmapd[pos3][0];
-        ty[3] = cmapd[pos4][0];
-
-        ty1[0] = cmapd[pos1][1];
-        ty1[1] = cmapd[pos2][1];
-        ty1[2] = cmapd[pos3][1];
-        ty1[3] = cmapd[pos4][1];
-
-        ty2[0] = cmapd[pos1][2];
-        ty2[1] = cmapd[pos2][2];
-        ty2[2] = cmapd[pos3][2];
-        ty2[3] = cmapd[pos4][2];
-
-        ty12[0] = cmapd[pos1][3];
-        ty12[1] = cmapd[pos2][3];
-        ty12[2] = cmapd[pos3][3];
-        ty12[3] = cmapd[pos4][3];
-
         /* Switch to degrees */
-        dx    = 360.0 / gridExtent;
-        xphi1 = xphi1 * gmx::c_rad2Deg;
-        xphi2 = xphi2 * gmx::c_rad2Deg;
+        dx    = 360.0 / gridExtent;     // grid spacing in degrees
+        xphi1 = xphi1 * gmx::c_rad2Deg; // phi1 converted to degrees
+        xphi2 = xphi2 * gmx::c_rad2Deg; // phi2 converted to degrees
 
-        for (int i = 0; i < 4; i++) /* 16 */
+        const real tt = (xphi1 - iphi1 * dx) / dx; // fractional position in phi1 cell
+        const real tu = (xphi2 - iphi2 * dx) / dx; // fractional position in phi2 cell
+
+        const auto [e, df1, df2] = evaluateCmapBicubic(
+                cmapd, pos1, pos2, pos3, pos4, dx, tt, tu, loop_index); // A-state bicubic evaluation
+
+        real df1L = df1; // default to A-state force gradient
+        real df2L = df2; // default to A-state force gradient
+
+        if (cmapA != cmapB) // only evaluate B-state when grids differ
         {
-            tx[i]      = ty[i];
-            tx[i + 4]  = ty1[i] * dx;
-            tx[i + 8]  = ty2[i] * dx;
-            tx[i + 12] = ty12[i] * dx * dx;
-        }
+            // shared gridExtent requires equal sizes for A and B grids
+            GMX_ASSERT(static_cast<size_t>(grids[cmapB].extent(0)) == gridExtent,
+                       "CMAP A and B grids must have the same grid extent");
+            gmx::ArrayRef<const std::array<real, 4>> cmapdB =
+                    grids[cmapB].toArrayRef(); // B-state CMAP grid data
+            const auto [eB, df1B, df2B] = evaluateCmapBicubic(
+                    cmapdB, pos1, pos2, pos3, pos4, dx, tt, tu, loop_index); // B-state bicubic evaluation
 
-        std::array<real, 16> tc = { 0 };
-        for (int idx = 0; idx < 16; idx++) /* 1056 */
+            const real L1 = 1.0 - lambda;             // A-state weight
+            df1L          = L1 * df1 + lambda * df1B; // lambda-interpolated phi1 force gradient
+            df2L          = L1 * df2 + lambda * df2B; // lambda-interpolated phi2 force gradient
+
+            /* CMAP energy */
+            vtot += L1 * e + lambda * eB; // lambda-interpolated CMAP potential energy
+            *dvdlambda += eB - e;         // CMAP contribution to dH/dlambda
+        }
+        else
         {
-            for (int k = 0; k < 16; k++)
-            {
-                tc[idx] += cmap_coeff_matrix[k * 16 + idx] * tx[k];
-            }
+            vtot += e; // no perturbation: use A-state energy directly
         }
-
-        const real tt = (xphi1 - iphi1 * dx) / dx;
-        const real tu = (xphi2 - iphi2 * dx) / dx;
-
-        real e   = 0;
-        real df1 = 0;
-        real df2 = 0;
-
-        for (int i = 3; i >= 0; i--)
-        {
-            l1 = loop_index[i][3];
-            l2 = loop_index[i][2];
-            l3 = loop_index[i][1];
-
-            e = tt * e + ((tc[i * 4 + 3] * tu + tc[i * 4 + 2]) * tu + tc[i * 4 + 1]) * tu + tc[i * 4];
-            df1 = tu * df1 + (3.0 * tc[l1] * tt + 2.0 * tc[l2]) * tt + tc[l3];
-            df2 = tt * df2 + (3.0 * tc[i * 4 + 3] * tu + 2.0 * tc[i * 4 + 2]) * tu + tc[i * 4 + 1];
-        }
-
-        const real fac = gmx::c_rad2Deg / dx;
-        df1            = df1 * fac;
-        df2            = df2 * fac;
-
-        /* CMAP energy */
-        vtot += e;
 
         /* Do forces - first torsion */
         accumulateCmapForces(
-                x, f, fshift, pbc, r1_ij, r1_kj, r1_kl, a1, b1, h1, ra2r1, rb2r1, rgr1, rg1, a1i, a1j, a1k, a1l, df1, t11, t21);
+                x, f, fshift, pbc, r1_ij, r1_kj, r1_kl, a1, b1, h1, ra2r1, rb2r1, rgr1, rg1, a1i, a1j, a1k, a1l, df1L, t11, t21); // lambda-interpolated forces
 
         /* Do forces - second torsion */
         accumulateCmapForces(
-                x, f, fshift, pbc, r2_ij, r2_kj, r2_kl, a2, b2, h2, ra2r2, rb2r2, rgr2, rg2, a2i, a2j, a2k, a2l, df2, t12, t22);
+                x, f, fshift, pbc, r2_ij, r2_kj, r2_kl, a2, b2, h2, ra2r2, rb2r2, rgr2, rg2, a2i, a2j, a2k, a2l, df2L, t12, t22); // lambda-interpolated forces
     }
     return vtot;
 }

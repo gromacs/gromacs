@@ -1,0 +1,53 @@
+; End-to-end test for CMAP free energy perturbation
+; Minimal two-residue peptide in vacuum
+
+; RUN CONTROL
+integrator               = md
+tinit                    = 0.0
+dt                       = 0.001
+nsteps                   = 20
+init-step                = 0
+comm-mode                = Linear
+nstcomm                  = 1
+
+; OUTPUT
+nstxout                  = 20
+nstvout                  = 20
+nstfout                  = 20
+nstlog                   = 20
+nstcalcenergy            = 1
+nstenergy                = 1
+
+; NEIGHBORSEARCHING
+cutoff-scheme            = Verlet
+nstlist                  = 10
+pbc                      = xyz
+verlet-buffer-tolerance  = -1
+rlist                    = 1.0
+
+; ELECTROSTATICS AND VDW
+coulombtype              = cut-off
+rcoulomb                 = 1.0
+vdwtype                  = cut-off
+rvdw                     = 1.0
+
+; TEMPERATURE / PRESSURE
+tcoupl                   = no
+pcoupl                   = no
+
+; VELOCITIES
+gen-vel                  = yes
+gen-temp                 = 298
+gen-seed                 = 42
+
+; BONDS
+constraints              = none
+
+; FREE ENERGY
+free-energy              = yes
+init-lambda-state        = 2
+fep-lambdas              = 0.0 0.25 0.5 0.75 1.0
+calc-lambda-neighbors    = 1
+nstdhdl                  = 5
+separate-dhdl-file       = no
+dhdl-derivatives         = yes

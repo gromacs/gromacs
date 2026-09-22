@@ -134,12 +134,14 @@ private:
 struct CmapInteractionType
 {
     static constexpr size_t sc_numAtomTypesPerCmapInteraction = 5;
-    //! Grid data for a CMAP type, for FEP state A or B.
-    MultiDimArray<std::vector<real>, dynamicExtents2D> gridA_, gridB_;
+    //! Grid data for this CMAP type (state A; B-state selected by cmapB index at push_cmap time)
+    MultiDimArray<std::vector<real>, dynamicExtents2D> gridA_;
     //! The five atomtypes
     std::array<int, sc_numAtomTypesPerCmapInteraction> atomTypes_;
     //! The names of the five residue types
     std::array<std::string, sc_numAtomTypesPerCmapInteraction> residueTypeNames_;
+    //! Optional unique name for this CMAP type; enables explicit A/B-state FEP grid lookup by name in [ cmap ]
+    std::string name_;
 };
 
 /*! \libinternal \brief

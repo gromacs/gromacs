@@ -419,6 +419,18 @@ std::vector<std::tuple<std::string, ExpectedResult, std::string>> cmapValidInput
     { "define = -DUSER_SPECIFIED_CMAPTYPE_OUT_OF_BOUNDS",
       ExpectedResult::Death,
       "Unable to assign a cmap type to torsion between atoms 1 2 3 4 and 5" },
+    { "define = -DUSER_SPECIFIED_NAMED_CMAPTYPES", ExpectedResult::Success, "" }, // both A and B grids resolved by name
+    { "define = -DUSER_SPECIFIED_NUMBER_CMAPTYPES", ExpectedResult::Success, "" }, // A/B grids resolved by 1-based integer index
+    { "define = -DUSER_SPECIFIED_NUMBER_UNNAMED_CMAPTYPE",
+      ExpectedResult::Success,
+      "" }, // unnamed cmaptype (old format, no name token) selectable by 1-based integer index
+    { "define = -DUSER_SPECIFIED_MIXED_NAME_AND_INDEX",
+      ExpectedResult::Death,
+      "must both be names or both be indices" }, // mixing name and integer index is not allowed
+    { "define = -DUSER_SPECIFIED_MIXED_INDEX_AND_NAME",
+      ExpectedResult::Death,
+      "must both be names or both be indices" }, // reverse: integer A + name B also rejected
+    { "define = -DUSER_SPECIFIED_UNKNOWN_CMAP_NAME", ExpectedResult::Death, "name 'UNKNOWN' found" }, // unrecognised B-state name must trigger fatal error
     { "define = -DALL_CMAP_TYPES_MUST_USE_SAME_GRID_EXTENT",
       ExpectedResult::Death,
       "each CMAP must have the same grid extent" },
