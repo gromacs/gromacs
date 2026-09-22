@@ -45,6 +45,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -81,7 +82,7 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
                         gmx::ArrayRef<const gmx::RVec> coords,
                         const matrix                   box,
                         gmx::ArrayRef<const gmx::RVec> mu_tot,
-                        gmx::ArrayRef<gmx::RVec>       forces,
+                        gmx::ForceWithVirial*          forceWithVirial,
                         real*                          Vcorr_q,
                         real                           lambda_q,
                         real*                          dvdlambda_q)
@@ -143,6 +144,9 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
             break;
         default: gmx_incons("Unsupported Ewald geometry");
     }
+
+    gmx::ArrayRef<gmx::RVec> forces = forceWithVirial->force_;
+
     const bool bNeedLongRangeCorrection = (dipole_coeff != 0);
     if (bNeedLongRangeCorrection && !bHaveChargePerturbed)
     {
@@ -211,6 +215,22 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
                                       * (sumQZ2 + qsum[q] * box[ZZ][ZZ] * box[ZZ][ZZ] / 12);
                     }
                 }
+
+                gmx::RVec  virial;
+                const real factor = (q == 0 ? L1_q : lambda_q) / boxVolume;
+                for (int d = 0; d < DIM; d++)
+                {
+                    virial[d] = -factor * Vdipole[q];
+                    if (ewaldGeometry == EwaldGeometry::ThreeD)
+                    {
+                        virial[d] += factor * 2 * dipole_coeff * gmx::square(mutot[q][d]);
+                    }
+                    else if (d == ZZ)
+                    {
+                        virial[d] += factor * 2 * Vdipole[q];
+                    }
+                }
+                forceWithVirial->addVirialContribution(virial);
             }
         }
     }

@@ -145,10 +145,10 @@ public:
         int xRecvSize = 0;
         //! The atom offset for receive (x) or send (f) for this pulse
         int atomOffset = 0;
-        //! rank to send data to for X
-        int sendRankX = 0;
-        //! rank to recv data from for X
-        int recvRankX = 0;
+        //! NVSHMEM PE to send data to for X
+        int xSendPE = 0;
+        //! NVSHMEM PE to recv data from for X
+        int xRecvPE = 0;
         //! whether PBC applies for this pulse
         bool usePBC = false;
         //! true when forces should accumulate for this pulse
@@ -280,8 +280,10 @@ private:
     // MPI communicator used for symmetric allocations sizing (NVSHMEM path)
     //! MPI communicator used for PP ranks
     MPI_Comm mpiCommPpGroup_ = MPI_COMM_NULL;
-    //! MPI communicator involving PP + PME.
+    //! MPI communicator used for initializing NVSHMEM
     MPI_Comm mpi_comm_mysim_world_ = MPI_COMM_NULL;
+    //! Mapping from rank in mpiCommPpGroup_ to rank in mpi_comm_mysim_world_ (same as NVSHMEM PE)
+    std::vector<int> groupRankToPE_;
 
     // Unified send/recv buffers across all dims/pulses (optional fused path)
     //! unified send buffer across all pulses

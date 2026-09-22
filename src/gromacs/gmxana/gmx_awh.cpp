@@ -65,6 +65,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -382,10 +383,10 @@ void OutputFile::initializeFrictionOutputFile(int                  subBlockStart
     firstGraphSubBlock_ = subBlockStart + numSubBlocks - numTensorElements;
     numGraph_           = numTensorElements;
     useKTForEnergy_     = (energyUnit == EnergyUnit::KT);
-    // For the bias and the PMF in the awh output file this factor converts energy.
-    // For the friction output, which has units energy^2*time, this converts energy
-    // and also divides by kT to get from the metric tensor to friction.
-    scaleFactor_.resize(numGraph_, useKTForEnergy_ ? 1 : kTValue);
+    // The metric tensor, which has units energy^2*time, is stored in the energy file in MD units.
+    // For kT units we thus need to multiply by kT^-2.
+    // For MD units we need to divide by kT to get from the metric tensor to friction.
+    scaleFactor_.resize(numGraph_, useKTForEnergy_ ? 1 / gmx::square(kTValue) : 1 / kTValue);
     int numLegend = numDim_ - 1 + numGraph_;
     legend_       = makeLegend(awhBiasParams, OutputFileType::Friction, numLegend);
     xLabel_       = "(nm, deg or lambda state)";

@@ -222,7 +222,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                                 coordinates,
                                 box,
                                 mu_tot,
-                                forceWithVirial->force_,
+                                forceWithVirial,
                                 &ewc_t.Vcorr_q,
                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                                 &ewc_t.dvdl[FreeEnergyPerturbationCouplingType::Coul]);

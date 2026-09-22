@@ -481,8 +481,8 @@ __global__ void fusedPulsesPackXAndSendKernel(float3* __restrict__ data,
     for (int currPulse = blockIdx.y; currPulse < totalNumPulses; currPulse += gridDim.y)
     {
         FusedGpuHaloExchange::HaloExchangeData haloExchangeData = dataPacked[currPulse];
-        const int                              sendRank         = haloExchangeData.sendRankX;
-        const int                              recvRank         = haloExchangeData.recvRankX;
+        const int                              sendRank         = haloExchangeData.xSendPE;
+        const int                              recvRank         = haloExchangeData.xRecvPE;
         const int                              sendSize         = haloExchangeData.xSendSize;
         const int                              recvSize         = haloExchangeData.xRecvSize;
         const int atomOffsetXInSendRank = haloExchangeData.nvshmemData.putAtomOffsetInReceiverRankXBuf_;
@@ -680,8 +680,8 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
     {
         FusedGpuHaloExchange::HaloExchangeData haloExchangeData = dataPacked[currPulse];
         // Reverse the send and recv ranks/sizes of X is send and recv for F
-        const int sendRank = haloExchangeData.recvRankX;
-        const int recvRank = haloExchangeData.sendRankX;
+        const int sendRank = haloExchangeData.xRecvPE;
+        const int recvRank = haloExchangeData.xSendPE;
         const int sendSize = haloExchangeData.xRecvSize;
         const int recvSize = haloExchangeData.xSendSize;
 
@@ -762,7 +762,7 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
                     {
                         FusedGpuHaloExchange::HaloExchangeData haloExchangeData = dataPacked[nextPulse];
                         // Reverse the send and recv ranks/sizes of X is send and recv for F
-                        const int sendRank   = haloExchangeData.recvRankX;
+                        const int sendRank   = haloExchangeData.xRecvPE;
                         const int sendSize   = haloExchangeData.xRecvSize;
                         const int atomOffset = haloExchangeData.atomOffset;
 
@@ -773,9 +773,6 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
 
                         if (sendSize > 0)
                         {
-                            uint64_t* remoteSignalReceiverRankFCurr = reinterpret_cast<uint64_t*>(
-                                    nvshmem_ptr(signalReceiverRankFNext, sendRank));
-                            GMX_DEVICE_ASSERT(remoteSignalReceiverRankFCurr != nullptr);
                             for (int pulseId = currPulse + 1; pulseId < totalNumPulses; pulseId++)
                             {
                                 const uint32_t* syncOnPrevPulse = d_fGridSync_ + pulseId;
@@ -797,6 +794,9 @@ __global__ void fusedUnPackFRecvBufNvshmemKernel(float3* __restrict__ data,
                             {
                                 // For NVLink comm we just signal the sender rank using system-scoped
                                 // release store to get(pull) the forces as they are ready.
+                                uint64_t* remoteSignalReceiverRankFCurr = reinterpret_cast<uint64_t*>(
+                                        nvshmem_ptr(signalReceiverRankFNext, sendRank));
+                                GMX_DEVICE_ASSERT(remoteSignalReceiverRankFCurr != nullptr);
                                 storeReleaseSysAsm(remoteSignalReceiverRankFCurr, signalReceiverRankFCounter);
                             }
                         }
