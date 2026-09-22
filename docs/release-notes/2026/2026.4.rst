@@ -5,7 +5,7 @@ GROMACS 2026.4 release notes
 This version was released on TODO, 2026. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2026.3 version, to fix known issues. It also incorporates all
-fixes made in version 2025.4 and earlier, which you can find described
+fixes made in version 2025.5 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -90,10 +90,10 @@ times are large and intervals are small.
 
 :issue:`5219`
 
-Reported AWH friction was of by a factor kT^2
-"""""""""""""""""""""""""""""""""""""""""""""
+Reported AWH friction was off by a factor kT^2
+""""""""""""""""""""""""""""""""""""""""""""""
 
-The ``gmx eneconv`` tool now applies the correct conversion of elements
+The ``gmx awh`` tool now applies the correct conversion of elements
 of the metric tensor to friction output. Friction values obtained with
 older versions of the tool can be corrected by dividing by kT^2.
 
@@ -133,7 +133,7 @@ Updated DOI to the preprint describing AMBER14SB and AMBER19SB conversion and va
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 AMBER14SB and AMBER19SB force field :ref:`itp` files contained a placeholder
-link the preprint describing the conversion and validation steps. Now that the
+link to the preprint describing the conversion and validation steps. Now that the
 preprint is uploaded on ChemRxiv, the placeholder was replaced with the DOI of
 the preprint, `doi:10.26434/chemrxiv.15006112/v1 <https://doi.org/10.26434/chemrxiv.15006112/v1>`_.
 
