@@ -44,8 +44,8 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/gpu_common.h"
+#include "gromacs/utility/template_mp.h"
 
-#include "nbnxm_hip_kernel.h"
 #include "nbnxm_hip_kernel_pruneonly.h"
 #include "nbnxm_hip_kernel_sci_sort.h"
 #include "nbnxm_hip_types.h"
@@ -109,6 +109,16 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     }
 }
 
+template<bool doPruneNBL, bool doCalcEnergies>
+void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, InteractionLocality iloc);
+
+// clang-format off
+extern template void launchNbnxmKernel<false, false>(NbnxmGpu* nb, const StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernel<false, true>(NbnxmGpu* nb, const StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernel<true, true>(NbnxmGpu* nb, const StepWorkload&  stepWork, const InteractionLocality iloc);
+extern template void launchNbnxmKernel<true, false>(NbnxmGpu* nb, const StepWorkload&  stepWork, const InteractionLocality iloc);
+// clang-format on
+
 void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc)
 {
     const NBParamGpu* nbp   = nb->nbparam;
@@ -138,7 +148,13 @@ void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const Interac
      * call to the interaction kernel after a neighbour list step */
     bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
 
-    launchNbnxmKernel(nb, stepWork, iloc, doPrune);
+    const bool doCalcEnergies = stepWork.computeEnergy;
+    dispatchTemplatedFunction(
+            [&](auto doPruneNBL_, auto doCalcEnergies_)
+            { launchNbnxmKernel<doPruneNBL_, doCalcEnergies_>(nb, stepWork, iloc); },
+            doPrune,
+            doCalcEnergies);
+
     if (doPrune)
     {
         launchNbnxmKernelSciSort(nb, iloc);

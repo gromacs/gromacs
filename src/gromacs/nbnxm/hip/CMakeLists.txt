@@ -46,7 +46,6 @@ if(GMX_GPU_HIP)
          nbnxm_gpu_buffer_ops_internal_hip.cpp 
          nbnxm_hip.cpp
          nbnxm_hip_data_mgmt.cpp
-         nbnxm_hip_kernel.cpp
          ${NBNXM_HIP_KERNEL_SOURCES})
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_HIP_SOURCES} PARENT_SCOPE)
     _gmx_add_files_to_property(HIP_SOURCES ${NBNXM_HIP_SOURCES})

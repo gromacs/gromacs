@@ -44,12 +44,8 @@
 
 namespace gmx
 {
-template void launchNbnxmKernelHelper<true, false, false>(NbnxmGpu*                 nb,
-                                                          const StepWorkload&       stepWork,
-                                                          const InteractionLocality iloc);
-
-template void launchNbnxmKernelHelper<false, false, false>(NbnxmGpu*                 nb,
-                                                           const StepWorkload&       stepWork,
-                                                           const InteractionLocality iloc);
+template void launchNbnxmKernel<false, false>(NbnxmGpu*                 nb,
+                                              const StepWorkload&       stepWork,
+                                              const InteractionLocality iloc);
 
 } // namespace gmx

@@ -62,11 +62,13 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/template_mp.h"
 
-#include "nbnxm_hip_kernel.h"
 #include "nbnxm_hip_kernel_utils.h"
 #include "nbnxm_hip_types.h"
 
 namespace gmx
+{
+
+namespace internal
 {
 
 //! Lookup kernel name based on launch configuration
@@ -685,8 +687,10 @@ static void launchNbnxmKernel(const DeviceStream&      deviceStream,
     launchGpuKernel(kernel, config, deviceStream, nullptr, kernelName.c_str(), kernelArgs);
 }
 
+} // namespace internal
+
 //! \brief Select templated kernel and launch it.
-template<PairlistType pairlistType, bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies, class... Args>
+template<PairlistType pairlistType, bool doPruneNBL, bool doCalcEnergies, class... Args>
 void chooseAndLaunchNbnxmKernel(ElecType                 elecType,
                                 VdwType                  vdwType,
                                 const DeviceStream&      deviceStream,
@@ -694,23 +698,27 @@ void chooseAndLaunchNbnxmKernel(ElecType                 elecType,
                                 const DeviceInformation& deviceInfo,
                                 Args*... args)
 {
+    const auto hasLargeRegisterPool = gmx::targetHasLargeRegisterPool(deviceInfo);
+
     dispatchTemplatedFunction(
-            [&](auto elecType_, auto vdwType_)
+            [&](auto elecType_, auto vdwType_, auto hasLargeRegisterPool_)
             {
-                return launchNbnxmKernel<pairlistType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
+                return internal::launchNbnxmKernel<pairlistType, hasLargeRegisterPool_, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         deviceStream, numSci, deviceInfo, args...);
             },
             elecType,
-            vdwType);
+            vdwType,
+            hasLargeRegisterPool);
 }
 
-template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies>
-void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc)
+template<bool doPruneNBL, bool doCalcEnergies>
+void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc)
 {
     NBAtomDataGpu*           adat         = nb->atdat;
     NBParamGpu*              nbp          = nb->nbparam;
     const DeviceStream&      deviceStream = *nb->deviceStreams[iloc];
     const DeviceInformation& deviceInfo   = nb->deviceContext.deviceInfo();
+
 
     auto* plist = nb->plist[iloc].get();
     // Unpack this so that we can use it directly (sometimes as
@@ -723,18 +731,17 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
     GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
     GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
 
-    chooseAndLaunchNbnxmKernel<sc_layoutType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies>(
-            nbp->elecType,
-            nbp->vdwType,
-            deviceStream,
-            plist->numSci,
-            deviceInfo,
-            adat,
-            nbp,
-            plist,
-            &gm_cjPacked,
-            &gm_sci,
-            &stepWork.computeVirial);
+    chooseAndLaunchNbnxmKernel<sc_layoutType, doPruneNBL, doCalcEnergies>(nbp->elecType,
+                                                                          nbp->vdwType,
+                                                                          deviceStream,
+                                                                          plist->numSci,
+                                                                          deviceInfo,
+                                                                          adat,
+                                                                          nbp,
+                                                                          plist,
+                                                                          &gm_cjPacked,
+                                                                          &gm_sci,
+                                                                          &stepWork.computeVirial);
 }
 
 } // namespace gmx
