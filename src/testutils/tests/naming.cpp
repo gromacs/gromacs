@@ -116,12 +116,8 @@ TEST(NameOfTestFromTupleTest, RejectsNullptrFormatFunction)
 TEST(NameOfTestFromTupleTest, WorksWithFormatLambda)
 {
     using TestParameters = std::tuple<int>;
-    // At least gcc-12 warns about a possible uninitialized value in the
-    // destructor of std::function, but this seems to be overzealous.
-    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
     const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple([](int /* a */)
                                                                      { return "foo"; }) };
-    GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("foo", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3), 0)));
 }
 
@@ -135,23 +131,15 @@ TEST(NameOfTestFromTupleTest, WorksWithUseStringFormat)
 TEST(NameOfTestFromTupleTest, WorksWithPrefixFormatter)
 {
     using TestParameters = std::tuple<double>;
-    // At least gcc-12 warns about a possible uninitialized value in the
-    // destructor of std::function, but this seems to be overzealous.
-    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
     const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
             PrefixFormatter<double, toString>{ "pi_" }) };
-    GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("pi_3_14", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3.14), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithFormatFunctor)
 {
     using TestParameters = std::tuple<int>;
-    // At least gcc-12 warns about a possible uninitialized value in the
-    // destructor of std::function, but this seems to be overzealous.
-    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
     const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(FormatFunctorForInt{}) };
-    GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("4", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(4), 0)));
 }
 

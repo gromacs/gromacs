@@ -247,10 +247,7 @@ static void lambda_components_add(lambda_components_t* lc, const char* name, siz
         srenew(lc->names, lc->Nalloc);
     }
     snew(lc->names[lc->N], name_length + 1);
-    // GCC 12.1 has a false positive about the missing \0. But it is already there, nothing to worry about.
-    GCC_DIAGNOSTIC_IGNORE("-Wstringop-truncation")
     std::strncpy(lc->names[lc->N], name, name_length);
-    GCC_DIAGNOSTIC_RESET
     lc->N++;
 }
 

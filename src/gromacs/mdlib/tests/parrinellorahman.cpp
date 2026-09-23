@@ -50,7 +50,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/boxutilities.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
@@ -183,9 +182,6 @@ struct Matrix3x3ToString
     }
 };
 
-// At least gcc-12 warns about a possible uninitialized value in the
-// destructor of std::function, but this seems to be overzealous.
-GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
 //! Tuple of formatters to name the parameterized test cases
 const NameOfTestFromTuple<ParrinelloRahmanTestParameters> sc_testNamer{ std::make_tuple(
         pressureCouplingOptionsToString,
@@ -193,7 +189,6 @@ const NameOfTestFromTuple<ParrinelloRahmanTestParameters> sc_testNamer{ std::mak
         sc_boxShapeNames,
         Matrix3x3ToString{ "box" },
         Matrix3x3ToString{ "boxv" }) };
-GCC_DIAGNOSTIC_RESET
 
 //! Test fixture - abbreviated ParrinelloRahman to ParrRahm for shorter refdata filenames
 using ParrRahmTest = ::testing::TestWithParam<ParrinelloRahmanTestParameters>;

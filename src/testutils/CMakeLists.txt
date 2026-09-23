@@ -125,6 +125,15 @@ gmx_target_compile_options(testutils)
 target_compile_definitions(testutils PRIVATE HAVE_CONFIG_H)
 target_include_directories(testutils SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 target_compile_definitions(testutils PRIVATE TMPI_USE_VISIBILITY)
+
+# naming.h makes extensive use of std::function to make it easy for
+# test authors to name their tests expressively, but the destructor of
+# std::function is apt to give false positives with -Wmaybe-uninitialized
+# so we have to suppress it.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
+    target_compile_options(testutils INTERFACE -Wno-maybe-uninitialized)
+endif()
+
 # These two include directories are supplied by the gmock target below
 # but can be added after global include directories added e.g. for
 # FFTW, which leads to unexpected mismatches. See #5141 and #5531.

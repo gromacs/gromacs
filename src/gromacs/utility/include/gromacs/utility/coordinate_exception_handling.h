@@ -170,13 +170,11 @@ auto coordinateExceptionHandling(MPI_Comm communicator, Callable callable) ->
         // callable threw, and in that case coordinateMpiRanks ensures
         // all ranks throw, so an uninitialized value is never
         // returned, so should not be warned about.
-#if defined(__GNUC__)
+        // Confirmed with gcc 11 through 16 that this fires for
+        // Callable = std::function<...>; not version-specific.
         GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
-#endif
         return returnValues;
-#if defined(__GNUC__)
         GCC_DIAGNOSTIC_RESET
-#endif
     }
 }
 
