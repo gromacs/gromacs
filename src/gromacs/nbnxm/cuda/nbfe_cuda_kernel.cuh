@@ -113,10 +113,22 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
     const float lambdaVdw              = nbparam.lambdaVdw;
     const float oneMinusLambdaVdw      = 1.0F - lambdaVdw;
 
-    float lambdaFactorCoul[2]         = { oneMinusLambdaCoul, lambdaCoul };
-    float lambdaFactorVdw[2]          = { oneMinusLambdaVdw, lambdaVdw };
-    float softcoreLambdaFactorCoul[2] = { lambdaCoul, oneMinusLambdaCoul };
-    float softcoreLambdaFactorVdw[2]  = { lambdaVdw, oneMinusLambdaVdw };
+    float lambdaFactorCoul[2] = { oneMinusLambdaCoul, lambdaCoul };
+    float lambdaFactorVdw[2]  = { oneMinusLambdaVdw, lambdaVdw };
+
+    const int   lambdaPower                 = nbparam.lambdaPower;
+    const float softcoreLambdaFactorCoul[2] = {
+        (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[0]) * (1.0F - lambdaFactorCoul[0])
+                          : (1.0F - lambdaFactorCoul[0])),
+        (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[1]) * (1.0F - lambdaFactorCoul[1])
+                          : (1.0F - lambdaFactorCoul[1]))
+    };
+    const float softcoreLambdaFactorVdw[2] = {
+        (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[0]) * (1.0F - lambdaFactorVdw[0])
+                          : (1.0F - lambdaFactorVdw[0])),
+        (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[1]) * (1.0F - lambdaFactorVdw[1])
+                          : (1.0F - lambdaFactorVdw[1]))
+    };
 
 #    ifndef LJ_COMB
     const int4* gm_atomTypes4 = atdat.atomTypes4;
@@ -179,11 +191,10 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
     float c_rf = nbparam.c_rf;
 #        endif /* EL_EWALD_ANY */
 
-    float*    gm_e_lj     = atdat.eLJ;
-    float*    gm_e_el     = atdat.eElec;
-    float*    gm_dvdl_lj  = atdat.dvdlLJ;
-    float*    gm_dvdl_el  = atdat.dvdlElec;
-    const int lambdaPower = nbparam.lambdaPower;
+    float* gm_e_lj    = atdat.eLJ;
+    float* gm_e_el    = atdat.eElec;
+    float* gm_dvdl_lj = atdat.dvdlLJ;
+    float* gm_dvdl_el = atdat.dvdlElec;
 
     float dLambdaFactor[2];
     float softcoreDlFactorCoul[2];
@@ -197,14 +208,8 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
 
     for (int k = 0; k < 2; k++)
     {
-        softcoreLambdaFactorCoul[k] =
-                (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[k]) * (1.0F - lambdaFactorCoul[k])
-                                  : (1.0F - lambdaFactorCoul[k]));
         softcoreDlFactorCoul[k] = dLambdaFactor[k] * lambdaPower / softcoreRPower
                                   * (lambdaPower == 2 ? (1.0F - lambdaFactorCoul[k]) : 1.0F);
-        softcoreLambdaFactorVdw[k] =
-                (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[k]) * (1.0F - lambdaFactorVdw[k])
-                                  : (1.0F - lambdaFactorVdw[k]));
         softcoreDlFactorVdw[k] = dLambdaFactor[k] * lambdaPower / softcoreRPower
                                  * (lambdaPower == 2 ? (1.0F - lambdaFactorVdw[k]) : 1.0F);
     }
