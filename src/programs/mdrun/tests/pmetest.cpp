@@ -82,7 +82,6 @@
 #include "testutils/mpitest.h"
 #include "testutils/naming.h"
 #include "testutils/refdata.h"
-#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -297,8 +296,7 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
     // In principle, a node with MPS configured could get around this.
     // See https://gitlab.com/gromacs/gromacs/-/issues/5345
     messages.appendIf((std::getenv("GMX_ENABLE_NVSHMEM") != nullptr)
-                              && (getNumberOfTestMpiRanks()
-                                  > getTestHardwareEnvironment()->hwinfo()->ngpu_compatible_tot),
+                              && (getNumberOfTestMpiRanks() > s_hwinfo->ngpu_compatible_tot),
                       "it targets multiple ranks with NVSHMEM, but that requires at least as "
                       "many GPUs as ranks");
     return messages;
