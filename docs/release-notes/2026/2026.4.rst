@@ -49,6 +49,12 @@ which is unlikely to affect performance noticeably.
 
 :issue:`5688`
 
+Fixed incorrect forces with (experimental) non-bonded free-energy on GPU with sc-power=2
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5693`
+
+ 
 Removed incorrect load imbalance reporting with update GPU
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
