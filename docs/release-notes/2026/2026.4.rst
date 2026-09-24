@@ -154,3 +154,9 @@ The default timer-based DLB was not affected.
 
 :issue:`5698`
 
+Fix CSV output of ``gmx nonbonded-benchmark``
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, the CSV file (``-o`` option) did not contain the results
+unless ``-time`` was also specified.
+

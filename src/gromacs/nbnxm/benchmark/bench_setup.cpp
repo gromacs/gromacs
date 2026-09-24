@@ -440,67 +440,45 @@ static void setupAndRunInstance(const BenchmarkSystem&         system,
     cycles = gmx_cycles_read() - cycles;
     if (!doWarmup)
     {
+        double totalUnits;
+        double unitsPerIter;
+        double totalPairsRate;
+        double usefulPairsRate;
+
         if (options.reportTime)
         {
-            const double uSec = static_cast<double>(cycles) * gmx_cycles_calibrate(1.0) * 1.e6;
-            if (options.cyclesPerPair)
-            {
-                fprintf(stdout,
-                        "%13.2f %13.3f %10.3f %10.3f\n",
-                        uSec,
-                        uSec / options.numIterations,
-                        uSec / (options.numIterations * numPairs),
-                        uSec / (options.numIterations * numUsefulPairs));
-                if (!options.outputFile.empty())
-                {
-                    fprintf(system.csv,
-                            "\"%.3f\",\"%.4f\",\"%.4f\",\"%.4f\"\n",
-                            uSec,
-                            uSec / options.numIterations,
-                            uSec / (options.numIterations * numPairs),
-                            uSec / (options.numIterations * numUsefulPairs));
-                }
-            }
-            else
-            {
-                fprintf(stdout,
-                        "%13.2f %13.3f %10.3f %10.3f\n",
-                        uSec,
-                        uSec / options.numIterations,
-                        options.numIterations * numPairs / uSec,
-                        options.numIterations * numUsefulPairs / uSec);
-                if (!options.outputFile.empty())
-                {
-                    fprintf(system.csv,
-                            "\"%.3f\",\"%.4f\",\"%.4f\",\"%.4f\"\n",
-                            uSec,
-                            uSec / options.numIterations,
-                            options.numIterations * numPairs / uSec,
-                            options.numIterations * numUsefulPairs / uSec);
-                }
-            }
+            totalUnits     = static_cast<double>(cycles) * gmx_cycles_calibrate(1.0) * 1.e6;
+            unitsPerIter   = totalUnits / options.numIterations;
+            totalPairsRate = options.cyclesPerPair ? totalUnits / (options.numIterations * numPairs)
+                                                   : (options.numIterations * numPairs) / totalUnits;
+            usefulPairsRate = options.cyclesPerPair
+                                      ? totalUnits / (options.numIterations * numUsefulPairs)
+                                      : (options.numIterations * numUsefulPairs) / totalUnits;
+
+            fprintf(stdout, "%13.2f %13.3f %10.3f %10.3f\n", totalUnits, unitsPerIter, totalPairsRate, usefulPairsRate);
         }
         else
         {
             const double dCycles = static_cast<double>(cycles);
-            if (options.cyclesPerPair)
-            {
-                fprintf(stdout,
-                        "%10.3f %10.4f %8.4f %8.4f\n",
-                        cycles * 1e-6,
-                        dCycles / options.numIterations * 1e-6,
-                        dCycles / (options.numIterations * numPairs),
-                        dCycles / (options.numIterations * numUsefulPairs));
-            }
-            else
-            {
-                fprintf(stdout,
-                        "%10.3f %10.4f %8.4f %8.4f\n",
-                        dCycles * 1e-6,
-                        dCycles / options.numIterations * 1e-6,
-                        options.numIterations * numPairs / dCycles,
-                        options.numIterations * numUsefulPairs / dCycles);
-            }
+            totalUnits           = dCycles * 1e-6;
+            unitsPerIter         = totalUnits / options.numIterations;
+            totalPairsRate  = options.cyclesPerPair ? dCycles / (options.numIterations * numPairs)
+                                                    : (options.numIterations * numPairs) / dCycles;
+            usefulPairsRate = options.cyclesPerPair
+                                      ? dCycles / (options.numIterations * numUsefulPairs)
+                                      : (options.numIterations * numUsefulPairs) / dCycles;
+
+            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", totalUnits, unitsPerIter, totalPairsRate, usefulPairsRate);
+        }
+
+        if (!options.outputFile.empty())
+        {
+            fprintf(system.csv,
+                    "\"%.3f\",\"%.4f\",\"%.4f\",\"%.4f\"\n",
+                    totalUnits,
+                    unitsPerIter,
+                    totalPairsRate,
+                    usefulPairsRate);
         }
     }
 }
@@ -593,8 +571,9 @@ void bench(const int sizeFactor, const NbnxmKernelBenchOptions& options)
                     "\"width\",\"atoms\",\"cut-off radius\",\"threads\",\"iter\",\"compute "
                     "energy\",\"Ewald excl. "
                     "corr.\",\"Coulomb\",\"LJ\",\"comb\",\"SIMD\",\"intmod\",\"usec\",\"usec/"
-                    "it\",\"total "
-                    "pairs/usec\",\"useful pairs/usec\"\n");
+                    "it\",\"total %s\",\"useful %s\"\n",
+                    options.cyclesPerPair ? "usec/pair" : "pairs/usec",
+                    options.cyclesPerPair ? "usec/pair" : "pairs/usec");
         }
         fprintf(stdout,
                 "                                                                    total      "
@@ -611,8 +590,9 @@ void bench(const int sizeFactor, const NbnxmKernelBenchOptions& options)
                     "\"width\",\"atoms\",\"cut-off radius\",\"threads\",\"iter\",\"compute "
                     "energy\",\"Ewald excl. "
                     "corr.\",\"Coulomb\",\"LJ\",\"comb\",\"SIMD\",\"intmod\",\"Mcycles\",\"Mcycles/"
-                    "it\",\"total "
-                    "total cycles/pair\",\"total cycles per useful pair\"\n");
+                    "it\",\"total %s\",\"useful %s\"\n",
+                    options.cyclesPerPair ? "cycles/pair" : "pairs/cycle",
+                    options.cyclesPerPair ? "cycles/pair" : "pairs/cycle");
         }
         fprintf(stdout,
                 "                                                            total    "
