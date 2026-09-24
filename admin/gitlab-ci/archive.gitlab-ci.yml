@@ -33,9 +33,9 @@ regressiontests:prepare:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
-  # Always clone the default version for this branch, release-2026 in this case
+  # Always clone the default version for this branch, main in this case
   script:
-    - export REGTESTBRANCH=release-2026
+    - export REGTESTBRANCH=main
     - if [[ ! -z "$REGRESSIONTESTBRANCH" ]] ; then
       export REGTESTBRANCH=$REGRESSIONTESTBRANCH ;
       echo "Using $REGTESTBRANCH instead of default" ;
