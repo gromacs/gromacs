@@ -33,7 +33,13 @@
 
 # Set up the module library
 add_library(tables INTERFACE)
-file(GLOB TABLE_SOURCES *.cpp)
+set(TABLE_SOURCES
+    cubicsplinetable.cpp
+    forcetable.cpp
+    quadraticsplinetable.cpp
+    splineutil.cpp
+    )
+list(TRANSFORM TABLE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TABLE_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
