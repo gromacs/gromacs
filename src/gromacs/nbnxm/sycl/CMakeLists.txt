@@ -32,7 +32,18 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 if (GMX_GPU_SYCL)
-    file(GLOB NBNXM_SYCL_SOURCES *.cpp)
+    set(NBNXM_SYCL_SOURCES
+        nbnxm_gpu_buffer_ops_internal_sycl.cpp
+        nbnxm_sycl.cpp
+        nbnxm_sycl_data_mgmt.cpp
+        nbnxm_sycl_kernel.cpp
+        nbnxm_sycl_kernel_body_f_noprune.cpp
+        nbnxm_sycl_kernel_body_f_prune.cpp
+        nbnxm_sycl_kernel_body_fv_noprune.cpp
+        nbnxm_sycl_kernel_body_fv_prune.cpp
+        nbnxm_sycl_kernel_pruneonly.cpp
+        )
+    list(TRANSFORM NBNXM_SYCL_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_SYCL_SOURCES} PARENT_SCOPE)
     _gmx_add_files_to_property(SYCL_SOURCES ${NBNXM_SYCL_SOURCES})
 endif()
