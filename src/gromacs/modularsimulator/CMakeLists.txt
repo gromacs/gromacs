@@ -31,7 +31,33 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-file(GLOB MODULARSIMULATOR_SOURCES *.cpp)
+set(MODULARSIMULATOR_SOURCES
+    andersentemperaturecoupling.cpp
+    checkpointhelper.cpp
+    compositesimulatorelement.cpp
+    computeglobalselement.cpp
+    constraintelement.cpp
+    domdechelper.cpp
+    energydata.cpp
+    expandedensembleelement.cpp
+    firstorderpressurecoupling.cpp
+    forceelement.cpp
+    freeenergyperturbationdata.cpp
+    modularsimulator.cpp
+    mttk.cpp
+    nosehooverchains.cpp
+    parrinellorahmanbarostat.cpp
+    pmeloadbalancehelper.cpp
+    propagator.cpp
+    pullelement.cpp
+    referencetemperaturemanager.cpp
+    signallers.cpp
+    simulatoralgorithm.cpp
+    statepropagatordata.cpp
+    topologyholder.cpp
+    trajectoryelement.cpp
+    velocityscalingtemperaturecoupling.cpp
+    )
 
 add_library(modularsimulator OBJECT ${MODULARSIMULATOR_SOURCES})
 
