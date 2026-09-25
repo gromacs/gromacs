@@ -33,7 +33,36 @@
 
 # Set up the module library
 add_library(trajectoryanalysis INTERFACE)
-file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp)
+set(TRAJECTORYANALYSIS_SOURCES
+    analysismodule.cpp
+    analysissettings.cpp
+    cmdlinerunner.cpp
+    modules.cpp
+    modules/angle.cpp
+    modules/convert_trj.cpp
+    modules/distance.cpp
+    modules/dssp.cpp
+    modules/extract_cluster.cpp
+    modules/freevolume.cpp
+    modules/gyrate.cpp
+    modules/hbond.cpp
+    modules/isotope.cpp
+    modules/msd.cpp
+    modules/pairdist.cpp
+    modules/rdf.cpp
+    modules/sasa.cpp
+    modules/scattering-debye-sans.cpp
+    modules/scattering-debye-saxs.cpp
+    modules/scattering-debye.cpp
+    modules/scattering.cpp
+    modules/scatteringfactors.cpp
+    modules/select.cpp
+    modules/surfacearea.cpp
+    modules/trajectory.cpp
+    runnercommon.cpp
+    topologyinformation.cpp
+    )
+list(TRANSFORM TRAJECTORYANALYSIS_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
