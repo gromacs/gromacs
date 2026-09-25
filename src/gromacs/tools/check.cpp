@@ -435,6 +435,7 @@ static void chk_trj(const gmx_output_env_t* oenv, const char* fn, const char* tp
     fprintf(stderr, "\n");
 
     close_trx(status);
+    done_frame(&fr);
 
     fprintf(stderr, "\nItem        #frames");
     if (bShowTimestep)

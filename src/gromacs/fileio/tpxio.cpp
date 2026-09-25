@@ -951,7 +951,7 @@ static void do_swapgroup(gmx::ISerializer* serializer, t_swapGroup* g)
     if (serializer->reading())
     {
         serializer->doString(&buf);
-        g->molname = gmx_strdup(buf.c_str());
+        g->molname = buf;
     }
     else
     {

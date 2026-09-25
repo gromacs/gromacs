@@ -89,6 +89,10 @@ gmx_global_stat_t global_stat_init(const t_inputrec* ir)
 
 void global_stat_destroy(gmx_global_stat_t gs)
 {
+    if (gs == nullptr)
+    {
+        return;
+    }
     destroy_bin(gs->rb);
     sfree(gs->itc0);
     sfree(gs->itc1);

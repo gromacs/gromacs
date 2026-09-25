@@ -942,7 +942,10 @@ void LegacySimulator::do_rerun()
     if (isMainRank)
     {
         close_trx(status);
+        done_frame(&rerun_fr);
     }
+
+    global_stat_destroy(gstat);
 
     if (runScheduleWork_->simulationWork.haveSeparatePmeRank)
     {

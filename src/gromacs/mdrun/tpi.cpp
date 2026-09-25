@@ -1260,6 +1260,7 @@ void LegacySimulator::do_tpi()
     walltime_accounting_end_time(wallTimeAccounting_);
 
     close_trx(status);
+    done_frame(&rerun_fr);
 
     if (fp_tpi != nullptr)
     {

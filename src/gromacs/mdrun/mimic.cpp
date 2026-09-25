@@ -823,6 +823,8 @@ void LegacySimulator::do_mimic()
 
     done_shellfc(fpLog_, shellfc, step_rel);
 
+    global_stat_destroy(gstat);
+
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_rel);
 }
 

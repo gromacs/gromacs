@@ -240,8 +240,10 @@ static void warn_step(FILE* fp, real ftol, real fmax, gmx_bool bLastStep, gmx_bo
                            : "");
     }
 
-    std::fputs(wrap_lines(buffer, 78, 0, FALSE), stderr);
-    std::fputs(wrap_lines(buffer, 78, 0, FALSE), fp);
+    char* wrappedBuffer = wrap_lines(buffer, 78, 0, FALSE);
+    std::fputs(wrappedBuffer, stderr);
+    std::fputs(wrappedBuffer, fp);
+    sfree(wrappedBuffer);
 }
 
 //! Print message about convergence of the EM
@@ -2046,6 +2048,7 @@ void LegacySimulator::do_cg()
     }
 
     finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
+    global_stat_destroy(gstat);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step);
@@ -2872,6 +2875,7 @@ void LegacySimulator::do_lbfgs()
     }
 
     finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
+    global_stat_destroy(gstat);
 
     /* To print the actual number of steps we needed somewhere */
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step);
@@ -3218,6 +3222,7 @@ void LegacySimulator::do_steep()
     }
 
     finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
+    global_stat_destroy(gstat);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, count);
 }
@@ -3585,6 +3590,7 @@ void LegacySimulator::do_nm()
     }
 
     finish_em(fr_->pmePpComm.get(), outf, wallTimeAccounting_);
+    global_stat_destroy(gstat);
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, numSteps);
 }
