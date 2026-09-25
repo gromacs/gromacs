@@ -33,7 +33,10 @@
 
 # Set up the module library
 add_library(swap INTERFACE)
-file(GLOB SWAP_SOURCES *.cpp)
+set(SWAP_SOURCES
+    swapcoords.cpp
+    )
+list(TRANSFORM SWAP_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SWAP_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
