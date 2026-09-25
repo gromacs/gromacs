@@ -552,8 +552,18 @@ if(MSVC)
     check_cxx_symbol_exists(_aligned_malloc   stdlib.h     HAVE__ALIGNED_MALLOC)
 endif()
 
-include(TestBigEndian)
-test_big_endian(GMX_INTEGER_BIG_ENDIAN)
+# CMAKE_CXX_BYTE_ORDER is empty if compiler detection could not determine
+# the byte order, or if CMAKE_OSX_ARCHITECTURES mixes byte orders. Only
+# then use the deprecated TestBigEndian module, which compiles a test
+# program to find out.
+if(CMAKE_CXX_BYTE_ORDER STREQUAL "BIG_ENDIAN")
+    set(GMX_INTEGER_BIG_ENDIAN ON)
+elseif(CMAKE_CXX_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
+    set(GMX_INTEGER_BIG_ENDIAN OFF)
+else()
+    include(TestBigEndian)
+    test_big_endian(GMX_INTEGER_BIG_ENDIAN)
+endif()
 
 if(HAVE_UNISTD_H AND HAVE_NICE)
     set(GMX_USE_NICE ON)
