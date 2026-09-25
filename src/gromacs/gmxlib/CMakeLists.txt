@@ -33,7 +33,12 @@
 
 add_library(gmxlib INTERFACE)
 
-file(GLOB GMXLIB_SOURCES *.cpp)
+set(GMXLIB_SOURCES
+    conformation_utilities.cpp
+    network.cpp
+    nrnb.cpp
+    )
+list(TRANSFORM GMXLIB_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} PARENT_SCOPE)
 
