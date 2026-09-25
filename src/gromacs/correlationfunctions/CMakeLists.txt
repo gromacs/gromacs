@@ -34,7 +34,16 @@
 # Set up the module library
 add_library(correlationfunctions INTERFACE)
 
-file(GLOB GMXCORRFUNC_SOURCES *.cpp)
+set(GMXCORRFUNC_SOURCES
+    autocorr.cpp
+    crosscorr.cpp
+    expfit.cpp
+    gmx_lmcurve.cpp
+    integrate.cpp
+    manyautocorrelation.cpp
+    polynomials.cpp
+    )
+list(TRANSFORM GMXCORRFUNC_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXCORRFUNC_SOURCES} PARENT_SCOPE)
 
