@@ -53,8 +53,8 @@
 
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"

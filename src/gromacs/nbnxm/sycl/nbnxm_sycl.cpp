@@ -40,9 +40,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 
 #include "nbnxm_sycl_kernel.h"
 #include "nbnxm_sycl_kernel_pruneonly.h"

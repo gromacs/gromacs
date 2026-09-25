@@ -36,9 +36,9 @@
 
 #include "config.h"
 
-#include "gromacs/math/functions.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+#include "gromacs/utility/functions.h"
 
 /* linearized electrostatics */
 template<bool computeForces, class RealType, class BoolType>

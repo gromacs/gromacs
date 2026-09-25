@@ -56,7 +56,6 @@
 
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald_utils.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
@@ -66,6 +65,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"

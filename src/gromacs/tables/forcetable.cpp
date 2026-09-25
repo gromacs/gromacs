@@ -38,7 +38,6 @@
 #include <cmath>
 
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
@@ -48,6 +47,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/futil.h"
 
 namespace gmx

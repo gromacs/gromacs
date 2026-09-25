@@ -41,7 +41,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/math/functions.h"
+#include "gromacs/utility/functions.h"
 
 #include "config.h"
 

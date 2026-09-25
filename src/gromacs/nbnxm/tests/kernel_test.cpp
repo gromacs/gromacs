@@ -72,7 +72,6 @@
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/atominfo.h"
@@ -99,6 +98,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"

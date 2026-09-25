@@ -53,9 +53,9 @@
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_hip.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/template_mp.h"
 #include "gromacs/utility/vec.h"
 

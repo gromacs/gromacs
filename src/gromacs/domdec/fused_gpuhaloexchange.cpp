@@ -53,8 +53,8 @@
 #include <numeric>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 

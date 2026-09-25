@@ -117,7 +117,6 @@
 #include <algorithm>
 #include <memory>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -128,6 +127,7 @@
 #include "gromacs/selection/selvalue.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vec.h"

@@ -44,7 +44,7 @@
 #include "gromacs/gpu_utils/hip_kernel_utils.h"
 #include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#include "gromacs/math/functions.h"
+#include "gromacs/utility/functions.h"
 
 #include "pme_gpu_calculate_splines_hip.h"
 #include "pme_gpu_constants.h"

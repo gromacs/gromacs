@@ -113,10 +113,10 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/gpu_device_macros.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 
 #if !defined DOXYGEN || !DOXYGEN
 
@@ -628,8 +628,8 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero.
      */
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     GMX_HOSTDEVICE_ATTRIBUTE
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     ThreeFry2x64General(uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
     {
         seed(key0, domain);
@@ -648,8 +648,8 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     GMX_HOSTDEVICE_ATTRIBUTE
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     ThreeFry2x64General(uint64_t key0, uint64_t key1) { seed(key0, key1); }
 
     /*! \brief Seed 2x64 random engine with two 64-bit key values

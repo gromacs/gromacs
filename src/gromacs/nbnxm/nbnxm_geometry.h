@@ -44,9 +44,9 @@
 
 #include <filesystem>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 

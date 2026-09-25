@@ -57,8 +57,8 @@
 #endif
 
 #include "gromacs/correlationfunctions/expfit.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/smalloc.h"
 
 #if HAVE_LMFIT

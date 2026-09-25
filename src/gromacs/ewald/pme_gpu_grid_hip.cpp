@@ -52,8 +52,8 @@
 #include "gromacs/gpu_utils/devicebuffer_hip.h"
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/template_mp.h"
 #include "gromacs/utility/vec.h"
 

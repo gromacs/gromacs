@@ -49,9 +49,9 @@
 #include <climits>
 #include <cmath>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fixedcapacityvector.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "dimparams.h"

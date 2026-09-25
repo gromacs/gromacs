@@ -52,7 +52,6 @@
 #include <memory>
 
 #include "gromacs/listed_forces/bonded.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/vec.h"
 

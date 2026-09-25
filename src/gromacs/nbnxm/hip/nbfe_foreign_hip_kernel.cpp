@@ -52,7 +52,6 @@
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -60,6 +59,7 @@
 #include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/nbnxm_kernel_utils.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/template_mp.h"
 

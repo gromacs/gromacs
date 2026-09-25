@@ -40,10 +40,10 @@
 #include <filesystem>
 
 #include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vec.h"
 

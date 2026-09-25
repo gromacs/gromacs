@@ -41,7 +41,6 @@ set(MATH_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/densityfittingforce.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/do_fit.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/exponentialmovingaverage.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/functions.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/gausstransform.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/invertmatrix.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/neldermead.cpp

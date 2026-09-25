@@ -46,9 +46,9 @@
 
 #include <new>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 

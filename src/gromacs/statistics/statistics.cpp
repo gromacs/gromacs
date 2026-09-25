@@ -38,8 +38,8 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"

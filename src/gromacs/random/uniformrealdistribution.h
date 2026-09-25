@@ -54,9 +54,9 @@
 #include <memory>
 #include <type_traits>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 

@@ -45,13 +45,13 @@
 #include <array>
 #include <memory>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/gausstransform.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/vectypes.h"
 
 namespace gmx

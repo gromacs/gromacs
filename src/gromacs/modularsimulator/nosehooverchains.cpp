@@ -45,13 +45,13 @@
 #include <numeric>
 
 #include "gromacs/domdec/domdec_network.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/vec.h"
 

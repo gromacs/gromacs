@@ -104,7 +104,7 @@
 
 #include <type_traits>
 
-#include "gromacs/math/functions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 

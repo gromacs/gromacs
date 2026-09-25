@@ -42,8 +42,8 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/gpu_common.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/template_mp.h"
 
 #include "nbfe_foreign_hip_kernel.h"

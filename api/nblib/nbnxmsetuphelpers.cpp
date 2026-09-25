@@ -53,7 +53,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/rf_util.h"
@@ -74,6 +73,7 @@
 #include "gromacs/nbnxm/pairsearch.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 

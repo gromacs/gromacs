@@ -48,11 +48,11 @@
 
 #include <cmath>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/vec.h"
 
 /* This function computes factors needed for restricted angle potential.

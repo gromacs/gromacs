@@ -50,6 +50,7 @@ set(UTILITY_SOURCES
     fatalerror.cpp
     fileredirector.cpp
     filestream.cpp
+    functions.cpp
     futil.cpp
     gmxassert.cpp
     gmxomp.cpp

@@ -46,10 +46,10 @@
 
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/hip/nbnxm_hip_types.h"
 #include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
+#include "gromacs/utility/functions.h"
 
 namespace
 {

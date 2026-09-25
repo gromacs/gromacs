@@ -36,12 +36,12 @@
 
 #include "simd_prune_kernel.h"
 
-#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #if GMX_SIMD

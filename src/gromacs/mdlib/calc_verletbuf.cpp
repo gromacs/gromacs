@@ -54,7 +54,6 @@
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -73,6 +72,7 @@
 #include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/vec.h"

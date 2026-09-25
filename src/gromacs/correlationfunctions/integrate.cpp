@@ -45,8 +45,8 @@
 
 #include <filesystem>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/vec.h"
 
 /*! \brief Integrate a function and printe the integral value. */

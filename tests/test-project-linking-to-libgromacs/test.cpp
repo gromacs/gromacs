@@ -37,7 +37,7 @@
 #    error "Did not find GMX_VERSION"
 #endif
 
-#include "gromacs/math/functions.h"
+#include "gromacs/utility/functions.h"
 
 int main(int, const char**)
 {

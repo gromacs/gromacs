@@ -46,7 +46,7 @@
 
 #include <algorithm>
 
-#include "gromacs/math/functions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx

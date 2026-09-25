@@ -43,11 +43,11 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/nbnxm_kernel_utils.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/template_mp.h"
 
 #include "nbnxm_sycl_kernel.h"

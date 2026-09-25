@@ -41,12 +41,12 @@
 #include <filesystem>
 #include <string>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/nrjac.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/vec.h"

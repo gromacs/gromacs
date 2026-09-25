@@ -52,7 +52,6 @@
 #include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/constr.h"
@@ -69,6 +68,7 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/vectypes.h"
 

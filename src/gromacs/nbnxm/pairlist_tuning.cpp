@@ -53,7 +53,6 @@
 #include <string>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"

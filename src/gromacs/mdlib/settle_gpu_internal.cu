@@ -56,9 +56,9 @@
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/template_mp.h"
 #include "gromacs/utility/vec.h"
 

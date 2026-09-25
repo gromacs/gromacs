@@ -39,11 +39,11 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"

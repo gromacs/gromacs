@@ -56,12 +56,12 @@
 #include <limits>
 #include <memory>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/random/exponentialdistribution.h"
 #include "gromacs/random/normaldistribution.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 
 /*
  * The workaround implementation for the broken std::gamma_distribution in the

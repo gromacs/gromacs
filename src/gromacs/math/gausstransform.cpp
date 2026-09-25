@@ -51,7 +51,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
@@ -61,6 +60,7 @@
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 

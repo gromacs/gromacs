@@ -54,8 +54,8 @@
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/analysisdata/framelocaldata.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 

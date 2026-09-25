@@ -46,11 +46,11 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;

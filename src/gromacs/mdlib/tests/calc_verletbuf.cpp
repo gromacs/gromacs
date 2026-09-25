@@ -48,11 +48,11 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"

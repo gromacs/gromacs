@@ -89,7 +89,7 @@ static inline GMX_DEVICE_FUNC_ATTRIBUTE PointerType indexedAddress(PointerType a
 // We only want to use the methods in this header when we are actually compiling device code
 #if (defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)) || defined(__HIPCC__)
 
-#    include "gromacs/math/functions.h"
+#    include "gromacs/utility/functions.h"
 
 /* !\brief Cross-lane move operation using AMD DPP (Data-Parallel Primitives).
  *

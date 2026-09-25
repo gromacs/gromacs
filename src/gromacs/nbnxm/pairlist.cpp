@@ -53,7 +53,6 @@
 
 #include "gromacs/domdec/domdec_zones.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -73,6 +72,7 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/listoflists.h"

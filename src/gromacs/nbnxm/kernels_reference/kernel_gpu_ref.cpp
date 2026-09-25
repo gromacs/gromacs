@@ -39,7 +39,6 @@
 
 #include <algorithm>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -51,6 +50,7 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/vec.h"
 
 namespace gmx

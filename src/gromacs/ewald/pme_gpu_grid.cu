@@ -52,8 +52,8 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.cuh"
-#include "gromacs/math/functions.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/vec.h"
 
 #include "pme_gpu_internal.h"

@@ -52,12 +52,12 @@
 #include "gromacs/applied_forces/awh/pointstate.h"
 #include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"

@@ -45,7 +45,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
-#include "gromacs/math/functions.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/template_mp.h"
 
 #include "nbnxm_sycl_kernel_utils.h"

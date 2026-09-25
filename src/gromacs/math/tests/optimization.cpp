@@ -50,8 +50,8 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"

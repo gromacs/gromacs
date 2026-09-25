@@ -36,9 +36,9 @@
 
 #include <cmath>
 
-#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/scalar/scalar.h"
+#include "gromacs/utility/functions.h"
 
 /*! \libinternal \file
  *
@@ -80,7 +80,7 @@ static inline float copysign(float x, float y)
     return std::copysign(x, y);
 }
 
-// invsqrt(x) is already defined in math/functions.h
+// invsqrt(x) is already defined in utility/functions.h
 
 /*! \brief Calculate 1/sqrt(x) for two floats.
  *
@@ -483,7 +483,7 @@ static inline double copysign(double x, double y)
     return std::copysign(x, y);
 }
 
-// invsqrt(x) is already defined in math/functions.h
+// invsqrt(x) is already defined in utility/functions.h
 
 /*! \brief Calculate 1/sqrt(x) for two doubles.
  *

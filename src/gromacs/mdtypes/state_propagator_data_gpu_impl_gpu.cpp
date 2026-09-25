@@ -51,11 +51,11 @@
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gpueventsynchronizer.h"
-#    include "gromacs/math/functions.h"
 #    include "gromacs/math/utilities.h"
 #    include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #    include "gromacs/timing/wallcycle.h"
 #    include "gromacs/utility/classhelpers.h"
+#    include "gromacs/utility/functions.h"
 #    include "gromacs/utility/mpicomm.h"
 #    include "gromacs/utility/vectypes.h"
 
