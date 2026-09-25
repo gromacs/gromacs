@@ -275,7 +275,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
 
-    # NB: This file handles settings for the SIMD module, so in the interest 
+    # NB: This file handles settings for the SIMD module, so in the interest
     # of proper modularization, please do NOT put any verlet kernel settings in this file.
 
     if(GMX_SIMD_REF_FLOAT_WIDTH)
@@ -337,7 +337,7 @@ if(GMX_ENABLE_AVX512_TESTS AND
                 set(CXX_NO_UNUSED_OPTION_WARNING_FLAGS "${_testflag}")
                 break()
             endif()
-        endforeach(_testflag)
+        endforeach()
     endif()
 endif()
 
@@ -352,12 +352,12 @@ endif()
 #
 # Update 2015-11-04: As of version 3.6, clang has added support for __vectorcall
 # (also on Linux). This appears to be buggy for the reference SIMD
-# implementation when using the Debug build (when functions are not inlined) 
+# implementation when using the Debug build (when functions are not inlined)
 # while it seems works fine for the actual SIMD implementations. This is likely
 # because the reference build ends up passing lots of structures with arrays
 # rather than actual vector data. For now we disable __vectorcall with clang
 # when using the reference build.
-# 
+#
 # xlc 13.1.5 does not seem recognize any attribute, and warns about invalid ones
 # so we avoid searching for any.
 #

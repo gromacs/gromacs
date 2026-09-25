@@ -41,11 +41,11 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         defaultinitializationallocator.cpp
         enumerationhelpers.cpp
         fixedcapacityvector.cpp
-	functions.cpp
+        functions.cpp
         keyvaluetreetransform.cpp
         listoflists.cpp
         logger.cpp
-	matrix.cpp
+        matrix.cpp
         message_string_collector.cpp
         mpicomm.cpp
         path.cpp

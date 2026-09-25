@@ -124,7 +124,7 @@ if (GMX_USE_SIMD_KERNELS)
         kernel_ElecRF_VdwLJ_VF.cpp
         kernel_ElecRF_VdwLJ_VgrpF.cpp
         )
-    
+
     if (GMX_USE_EXT_FMM)
         set(ELECNONE_KERNEL_SOURCES
             kernel_ElecNone_VdwLJCombGeom_F.cpp

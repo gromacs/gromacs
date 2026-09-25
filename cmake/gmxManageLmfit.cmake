@@ -37,7 +37,7 @@ set(GMX_LMFIT_REQUIRED_VERSION "7.0")
 
 include(gmxOptionUtilities)
 
-# Make a three-state enumeration, defaulting to 
+# Make a three-state enumeration, defaulting to
 gmx_option_multichoice(GMX_USE_LMFIT
     "How to handle the lmfit dependency of GROMACS"
     INTERNAL

@@ -174,7 +174,7 @@ else()
     foreach(REMOTE ${GMX_REMOTES})
         string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" REMOTE ${REMOTE})
         set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev ${GIT_NAME_REV_ARGUMENT} --refs=refs/remotes/${REMOTE}/*")
-    endforeach(REMOTE)
+    endforeach()
     # this is necessary for CMake to properly split the variable into
     # parameters for execute_process().
     string(REPLACE " " ";" BASEREVCOMMAND ${BASEREVCOMMAND})
@@ -200,7 +200,7 @@ else()
             break()
         endif()
         math(EXPR AHEAD ${AHEAD}+1)
-    endforeach(ANCESTOR)
+    endforeach()
     # mark the build "local" if didn't find any commits that are from
     # remotes/${GMX_REMOTE}/*
     if("${GMX_VERSION_CENTRAL_BASE_HASH}" STREQUAL "")

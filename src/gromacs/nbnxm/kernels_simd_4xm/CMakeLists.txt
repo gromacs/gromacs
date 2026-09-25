@@ -147,7 +147,7 @@ if (GMX_USE_SIMD_KERNELS)
             kernel_ElecNone_VdwLJ_VgrpF.cpp
             )
         list(APPEND KERNEL_SOURCES ${ELECNONE_KERNEL_SOURCES})
-        
+
     endif()
 
 endif()

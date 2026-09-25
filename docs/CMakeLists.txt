@@ -388,7 +388,7 @@ if (SPHINX_FOUND)
         release-notes/2027/major/api.rst
         release-notes/2026/2026.1.rst
         release-notes/2026/2026.2.rst
-	release-notes/2026/2026.3.rst
+        release-notes/2026/2026.3.rst
         release-notes/2026/2026.4.rst
         release-notes/2026/2026.5.rst
         release-notes/2026/major/highlights.rst

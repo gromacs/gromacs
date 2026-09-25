@@ -66,7 +66,7 @@ else ()
         # Use GMXAPI_PUBLIC_HEADERS to populate source files. Make a local copy with
         # the list converted to a space-delimited string.
         set(GMXAPI_PUBLIC_HEADERS ${GMXAPI_SOURCE_DIR}/include ${GMXAPI_BINARY_DIR}/include)
-        string(REPLACE ";" " " GMXAPI_PUBLIC_HEADERS "${GMXAPI_PUBLIC_HEADERS}")
+        list(JOIN GMXAPI_PUBLIC_HEADERS " " GMXAPI_PUBLIC_HEADERS)
         configure_file(Doxyfile-gmxapi0.cmakein Doxyfile-gmxapi0 @ONLY)
 
         # Use all gmxapi sources to populate developer docs.
@@ -82,7 +82,7 @@ else ()
         list(APPEND GMX_API_INCLUDE_DIRECTORIES ${NBLIB_INCLUDE_DIRECTORIES})
     endif ()
 
-    string(REPLACE ";" " " GMX_API_INCLUDE_DIRECTORIES "${GMX_API_INCLUDE_DIRECTORIES}")
+    list(JOIN GMX_API_INCLUDE_DIRECTORIES " " GMX_API_INCLUDE_DIRECTORIES)
     configure_file(Doxyfile.cmakein Doxyfile-api @ONLY)
 
     add_custom_target( public-api-xml

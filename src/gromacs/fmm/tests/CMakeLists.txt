@@ -37,7 +37,7 @@ gmx_add_unit_test(FmmInterfaceUnitTests fmm-interface-tests
         fmm_mdpvalidator.cpp
         fmmforceprovider.cpp
         fmmforceproviderbuilder.cpp
-        
+
         )
 
 # Currently relying on getting libgromacs via gmx_add_unit_test

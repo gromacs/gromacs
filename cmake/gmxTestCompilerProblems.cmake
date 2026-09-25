@@ -113,4 +113,4 @@ int main(void){return 0;}" HAVE_CRAY_MACRO)
     endif()
 
 
-endmacro(gmx_test_compiler_problems)
+endmacro()

@@ -43,7 +43,7 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
         clfftinitializer.cpp
         device_availability.cpp
         device_stream_manager.cpp
-        
+
     GPU_CPP_SOURCE_FILES
         device_buffer.cpp
         gpueventsynchronizer.cpp

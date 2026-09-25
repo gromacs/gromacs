@@ -63,7 +63,7 @@ target_link_libraries(options PRIVATE
 
 target_link_libraries(options PRIVATE common)
 
-if (BUILD_SHARED_LIBS)  
+if (BUILD_SHARED_LIBS)
     set_target_properties(options PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 

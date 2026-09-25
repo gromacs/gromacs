@@ -158,7 +158,7 @@ macro(TMPI_ENABLE_CORE INCDIR)
     check_cxx_symbol_exists(sysconf    unistd.h HAVE_SYSCONF)
 # this runs on windows
 #   check_include_files(windows.h               HAVE_WINDOWS_H)
-endmacro(TMPI_ENABLE_CORE)
+endmacro()
 
 # enable C++ library build.
 set(TMPI_CXX_LIB 1)
@@ -206,7 +206,7 @@ macro(TMPI_ENABLE)
     else ()
         set(TMPI_WARNINGS 0)
     endif ()
-endmacro(TMPI_ENABLE)
+endmacro()
 
 
 macro(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
@@ -236,4 +236,4 @@ macro(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
              ${SRC_ROOT}/type.cpp          ${SRC_ROOT}/scan.cpp
              ${SRC_ROOT}/numa_malloc.cpp   ${SRC_ROOT}/once.cpp)
     endif()
-endmacro(TMPI_GET_SOURCE_LIST)
+endmacro()

@@ -61,7 +61,7 @@
 #
 function(GMX_OPTION_MULTICHOICE NAME DESCRIPTION DEFAULT)
     # Some processing of the input values
-    string(REPLACE ";" ", " _allowed_comma_separated "${ARGN}")
+    list(JOIN ARGN ", " _allowed_comma_separated)
     set(_description "${DESCRIPTION}. Pick one of: ${_allowed_comma_separated}")
     string(REPLACE "[built-in]" "" _allowed "${ARGN}")
 

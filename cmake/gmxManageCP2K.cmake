@@ -32,8 +32,8 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 if(GMX_CP2K)
-    
-    # CMake flags for CP2K linking 
+
+    # CMake flags for CP2K linking
     set(CP2K_DIR "" CACHE STRING "Path to the directory with libcp2k.a library")
     set(CP2K_LINKER_FLAGS "" CACHE STRING "List of flags and libraries required for linking libcp2k. Typically this should be combination of LDFLAGS and LIBS variables from ARCH file used to compile CP2K")
 
@@ -49,7 +49,7 @@ if(GMX_CP2K)
         # Add directory with libcp2k.h into system include directories
         include_directories(SYSTEM "${CP2K_DIR}/../../../src/start")
 
-        # Add libcp2k and DBCSR for linking 
+        # Add libcp2k and DBCSR for linking
         list(APPEND GMX_COMMON_LIBRARIES "-Wl,--allow-multiple-definition -L${CP2K_DIR} -lcp2k -L${CP2K_DIR}/exts/dbcsr -ldbcsr")
 
         # Add User provided libraries
@@ -65,7 +65,7 @@ if(GMX_CP2K)
 
         # Append PKG_CONFIG_PATH_PATH with ${CP2K_DIR}/pkgconfig which should contain libcp2k.pc
         set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CP2K_DIR}/pkgconfig")
- 
+
         # Search for libcp2k
         pkg_check_modules(LIBCP2K QUIET libcp2k)
 
@@ -80,7 +80,7 @@ if(GMX_CP2K)
         link_directories(${LIBCP2K_LIBRARY_DIRS})
         list(APPEND GMX_COMMON_LIBRARIES ${LIBCP2K_LIBRARIES})
     endif()
- 
+
     # If we use GNU compilers then also libgfortran should be linked
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         list(APPEND GMX_COMMON_LIBRARIES "gfortran")

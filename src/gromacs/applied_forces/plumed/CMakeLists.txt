@@ -48,12 +48,12 @@ if(GMX_PLUMED_ACTIVE)
     if(HAS_NO_STRINGOP_TRUNCATION)
         target_compile_options(applied_forces INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
     endif()
-    
+
     if (BUILD_TESTING)
         add_subdirectory(tests)
     endif()
 else()
 gmx_add_libgromacs_sources(
         plumedMDModule_stub.cpp
-    )    
+    )
 endif()

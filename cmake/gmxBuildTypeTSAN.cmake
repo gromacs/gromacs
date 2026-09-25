@@ -36,7 +36,7 @@
 # the tests can be run to detect data races.
 #
 # The main advantage of the clang version is that there can be a
-# suppressions file that acts at compile time, though there is no use of 
+# suppressions file that acts at compile time, though there is no use of
 # that yet. The main advantage of the gcc version is that it can be used
 # with a OpenMP (if gomp is compiled with --disable-linux-futex).
 #

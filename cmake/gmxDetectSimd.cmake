@@ -40,7 +40,7 @@
 # where we are not cross-compiling; depending on the architecture the
 # detection will either use special assembly instructions (like cpuid),
 # preprocessor defines, or probing /proc/cpuinfo on Linux.
-# 
+#
 # Sets ${_suggested_simd} in the parent scope if GMX_SIMD is not set
 # (e.g. by the user, or a previous run of CMake).
 # The string is converted to uppercase for compatibility with

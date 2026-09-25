@@ -156,6 +156,6 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
         endif()
 
     endif()
-endmacro(GMX_TEST_LARGE_FILES VARIABLE)
+endmacro()
 
 

@@ -60,7 +60,7 @@ target_link_libraries(pulling PRIVATE
         utility
 )
 
-# pulling needs muparser defines 
+# pulling needs muparser defines
 if (HAVE_MUPARSER)
     target_link_libraries(pulling PUBLIC muparser::muparser)
 endif()

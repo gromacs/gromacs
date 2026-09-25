@@ -137,7 +137,7 @@ if(REGRESSIONTEST_PATH)
     #(e.g. Cray) we enable it.
     list(APPEND ARGS -crosscompile)
 
-    set(REGRESSIONTEST_EXTRA_ARGS "" CACHE STRING 
+    set(REGRESSIONTEST_EXTRA_ARGS "" CACHE STRING
         "Extra arguments passed to gmxtest")
     mark_as_advanced(REGRESSIONTEST_EXTRA_ARGS)
     list(APPEND ARGS ${REGRESSIONTEST_EXTRA_ARGS})

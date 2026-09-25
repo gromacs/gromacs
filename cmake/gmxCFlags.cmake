@@ -334,7 +334,7 @@ macro (gmx_c_flags)
 
     # msvc
     if (MSVC)
-        # disable warnings for: 
+        # disable warnings for:
         #      forcing value to bool
         #      "this" in initializer list
         #      deprecated (posix, secure) functions

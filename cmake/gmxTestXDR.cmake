@@ -58,6 +58,6 @@ macro(GMX_TEST_XDR VARIABLE)
         set(${VARIABLE} ${XDR_COMPILE_OK} CACHE INTERNAL "Result of test for system XDR support" FORCE)
 
     endif()
-endmacro(GMX_TEST_XDR VARIABLE)
+endmacro()
 
 

@@ -42,7 +42,7 @@ endif()
 
 if (BUILDING_SOURCE_PACKAGE)
     # TODO: add check that source doesn't contain any untracked files
-    get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} PATH)
+    get_filename_component(CMAKE_BINARY_DIR ${CPACK_OUTPUT_CONFIG_FILE} DIRECTORY)
     # TODO: The list could be generated at the same time as the list of
     # directories to include to keep the probe file names at the same place.
     # And this does not detect if things have been built in the past, but are

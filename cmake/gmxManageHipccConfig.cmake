@@ -163,7 +163,7 @@ gmx_hip_check_single_flag("-fcuda-flush-denormals-to-zero")
 gmx_hip_check_single_flag("-fno-slp-vectorize")
 gmx_hip_check_single_flag("-Wno-unused-command-line-argument")
 # currently ROCm 6.2.x spams warnings about missing occupancy targets during the
-# compilation of the GPU kernels. We silence this warning here to prevent builds 
+# compilation of the GPU kernels. We silence this warning here to prevent builds
 # failing because of that.
 gmx_hip_check_single_flag("-Wno-pass-failed")
 

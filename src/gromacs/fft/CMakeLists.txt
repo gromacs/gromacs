@@ -95,12 +95,12 @@ elseif (GMX_GPU_HIP)
             gpu_3dfft_hip_rocfft.cpp
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp
-            rocfft_common_utils.cpp 
+            rocfft_common_utils.cpp
             )
     _gmx_add_files_to_property(HIP_SOURCES
         # Must add these files so they can include hip_runtime.h
         gpu_3dfft_hip_rocfft.cpp
-        rocfft_common_utils.cpp 
+        rocfft_common_utils.cpp
         )
     endif()
     _gmx_add_files_to_property(HIP_SOURCES

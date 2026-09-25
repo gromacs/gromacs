@@ -62,7 +62,7 @@ if(GMX_GPU_FFT_VKFFT)
 elseif(GMX_GPU_FFT_ROCFFT OR GMX_USE_Heffte)
     find_package(rocfft REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
 else()
-    message(FATAL_ERROR "The configured GPU FFT library ${GMX_GPU_FFT_LIBRARY} can not be used together with the HIP backend") 
+    message(FATAL_ERROR "The configured GPU FFT library ${GMX_GPU_FFT_LIBRARY} can not be used together with the HIP backend")
 endif()
 
 macro(get_hip_compiler_info COMPILER_INFO COMPILER_FLAGS)

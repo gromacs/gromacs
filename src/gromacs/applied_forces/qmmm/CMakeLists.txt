@@ -39,7 +39,7 @@ gmx_add_libgromacs_sources(
     qmmm.cpp
     )
 
-# If we have libcp2k linked then compile qmmmforceprovider.cpp 
+# If we have libcp2k linked then compile qmmmforceprovider.cpp
 # In other case compile stub implementation qmmmforceprovider_stub.cpp
 if (GMX_CP2K)
 gmx_add_libgromacs_sources(

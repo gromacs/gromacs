@@ -84,7 +84,7 @@ if(NOT TESTVMD EQUAL 0)
     set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile"
         CACHE PATH "Path to VMD plugins for molfile I/O" FORCE)
 else()
-    get_filename_component(VMD_PLUGIN_PATH ${VMDXYZPLUGIN} PATH)
+    get_filename_component(VMD_PLUGIN_PATH ${VMDXYZPLUGIN} DIRECTORY)
     message(STATUS "VMD version of ${VMD_PLUGIN_PATH} is suitable")
     set(GMX_VMD_PLUGIN_PATH ${VMD_PLUGIN_PATH}
         CACHE PATH "Path to VMD plugins for molfile I/O" FORCE)

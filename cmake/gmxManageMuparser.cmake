@@ -35,7 +35,7 @@ set(GMX_MUPARSER_REQUIRED_VERSION "2.3.4")
 
 include(gmxOptionUtilities)
 
-# Make a three-state enumeration, defaulting to 
+# Make a three-state enumeration, defaulting to
 gmx_option_multichoice(GMX_USE_MUPARSER
     "How to handle the muparser dependency of GROMACS"
     INTERNAL

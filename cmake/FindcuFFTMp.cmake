@@ -51,7 +51,7 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_cuFFTMp QUIET cuFFTMp)
 
 find_path(cuFFTMp_ROOT_DIR
-    NAMES 
+    NAMES
     include/cufftmp_ea/cufftMp.h
     include/cufftmp/cufftMp.h
     HINTS ${cuFFTMp_ROOT}

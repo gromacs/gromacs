@@ -30,7 +30,7 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
-# 
+#
 # Copyright 2024- Codeplay Software Ltd.
 
 # Manage OneMath, GPU FFT library used with SYCL.

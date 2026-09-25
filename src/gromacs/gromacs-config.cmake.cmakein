@@ -32,9 +32,9 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 set(_gmx_cmake_dir ${CMAKE_CURRENT_LIST_DIR})
-get_filename_component(_gmx_root_dir "${_gmx_cmake_dir}" PATH)
-get_filename_component(_gmx_root_dir "${_gmx_root_dir}" PATH)
-get_filename_component(_gmx_root_dir "${_gmx_root_dir}" PATH)
+get_filename_component(_gmx_root_dir "${_gmx_cmake_dir}" DIRECTORY)
+get_filename_component(_gmx_root_dir "${_gmx_root_dir}" DIRECTORY)
+get_filename_component(_gmx_root_dir "${_gmx_root_dir}" DIRECTORY)
 
 # Find the exported targets (file name depends on whether shared or static
 # libraries were built to allow both to coexist in the same prefix), and

@@ -119,7 +119,7 @@ if (${FFTW}_FOUND)
         break()
       endif()
     endforeach()
-    
+
     # Check for FFTW3 compiled with --enable-sse2
     foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2 ${${FFTW}_FUNCTION_PREFIX}_have_sse2)
       if (FFTW_LIBRARY_CHANGED)
@@ -132,7 +132,7 @@ if (${FFTW}_FOUND)
         break()
       endif()
     endforeach()
-    
+
     # Check for any other SIMD support in FFTW
     if (NOT ${FFTW}_HAVE_SIMD)
         foreach(SIMD_FCT
