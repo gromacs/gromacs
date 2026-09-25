@@ -33,7 +33,55 @@
 
 add_library(utility INTERFACE)
 
-file(GLOB UTILITY_SOURCES *.cpp)
+set(UTILITY_SOURCES
+    alignedallocator.cpp
+    any.cpp
+    basenetwork.cpp
+    baseversion.cpp
+    booltype.cpp
+    compare.cpp
+    coolstuff.cpp
+    cstringutil.cpp
+    datafilefinder.cpp
+    directoryenumerator.cpp
+    errorcodes.cpp
+    errorformat.cpp
+    exceptions.cpp
+    fatalerror.cpp
+    fileredirector.cpp
+    filestream.cpp
+    futil.cpp
+    gmxassert.cpp
+    gmxomp.cpp
+    ikeyvaluetreeerror.cpp
+    init.cpp
+    int64_to_int.cpp
+    keyvaluetree.cpp
+    keyvaluetreemdpwriter.cpp
+    keyvaluetreetransform.cpp
+    logger.cpp
+    loggerbuilder.cpp
+    message_string_collector.cpp
+    mpicomm.cpp
+    mpiinfo.cpp
+    niceheader.cpp
+    path.cpp
+    physicalnodecommunicator.cpp
+    pleasecite.cpp
+    programcontext.cpp
+    smalloc.cpp
+    strconvert.cpp
+    strdb.cpp
+    stringstream.cpp
+    stringutil.cpp
+    sysinfo.cpp
+    textreader.cpp
+    textwriter.cpp
+    txtdump.cpp
+    veccompare.cpp
+    vecdump.cpp
+    )
+list(TRANSFORM UTILITY_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
 # Public interface for modules, including dependencies and interfaces
