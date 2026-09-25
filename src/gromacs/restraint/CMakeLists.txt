@@ -33,7 +33,11 @@
 
 # Set up the module library
 add_library(restraint INTERFACE)
-file(GLOB RESTRAINT_SOURCES *.cpp)
+set(RESTRAINT_SOURCES
+    manager.cpp
+    restraintmdmodule.cpp
+    )
+list(TRANSFORM RESTRAINT_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${RESTRAINT_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
