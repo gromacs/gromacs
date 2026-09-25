@@ -279,10 +279,10 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
     # of proper modularization, please do NOT put any verlet kernel settings in this file.
 
     if(GMX_SIMD_REF_FLOAT_WIDTH)
-        add_definitions(-DGMX_SIMD_REF_FLOAT_WIDTH=${GMX_SIMD_REF_FLOAT_WIDTH})
+        add_compile_definitions(GMX_SIMD_REF_FLOAT_WIDTH=${GMX_SIMD_REF_FLOAT_WIDTH})
     endif()
     if(GMX_SIMD_REF_DOUBLE_WIDTH)
-        add_definitions(-DGMX_SIMD_REF_DOUBLE_WIDTH=${GMX_SIMD_REF_DOUBLE_WIDTH})
+        add_compile_definitions(GMX_SIMD_REF_DOUBLE_WIDTH=${GMX_SIMD_REF_DOUBLE_WIDTH})
     endif()
 
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)

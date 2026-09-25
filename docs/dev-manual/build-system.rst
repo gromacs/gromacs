@@ -604,10 +604,6 @@ The build system uses a few different mechanisms to influence the compilation:
 * Some options are passed on the compiler command line using ``-D`` or
   equivalent, such that they are available in every compilation unit.  This
   should be used with care to keep the compiler command lines manageable.
-  You can find the current set of such defines with ::
-
-    git grep add_definitions
-
 * A few header files are generated using CMake ``configure_file()`` and
   included in the desired source files.  These files must exist for the
   compilation to pass.  Only a few files use an ``#ifdef HAVE_CONFIG_H`` to

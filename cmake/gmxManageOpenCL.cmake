@@ -58,7 +58,7 @@ endif()
 
 # Tell compiler to hide warnings for comments caused by cl_gl_ext.h on Linux
 if (UNIX)
-    set(OpenCL_DEFINITIONS ${OpenCL_DEFINITIONS} " -Wno-comment")
+    add_compile_options(-Wno-comment)
 endif()
 
 # Yes Virginia, Darwin kernel version 14.4 corresponds to OS X 10.4.
@@ -77,9 +77,8 @@ elseif(NOT GMX_GPU_FFT_CLFFT)
     message(FATAL_ERROR "In the OpenCL build, only -DGMX_GPU_FFT_LIBRARY=VkFFT and -DGMX_GPU_FFT_LIBRARY=clFFT are supported")
 endif()
 
-add_definitions(${OpenCL_DEFINITIONS})
 math(EXPR REQUIRED_OPENCL_MIN_VERSION_DEF "100 * ${REQUIRED_OPENCL_MIN_VERSION_MAJOR} + 10 * ${REQUIRED_OPENCL_MIN_VERSION_MINOR}" OUTPUT_FORMAT DECIMAL)
-add_definitions("-DCL_TARGET_OPENCL_VERSION=${REQUIRED_OPENCL_MIN_VERSION_DEF}")
+add_compile_definitions(CL_TARGET_OPENCL_VERSION=${REQUIRED_OPENCL_MIN_VERSION_DEF})
 
 include_directories(SYSTEM ${OpenCL_INCLUDE_DIRS})
 

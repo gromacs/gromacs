@@ -467,7 +467,7 @@ if(GMX_DOUBLE)
 else()
     set(GMX_DOUBLE_VALUE 0)
 endif()
-add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
+add_compile_definitions(GMX_DOUBLE=${GMX_DOUBLE_VALUE})
 list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
 option(GMX_IMD "Enable Interactive Molecular Dynamics (IMD) sessions, e.g. with VMD" ON)
@@ -752,7 +752,7 @@ if(GMX_THREAD_MPI)
 endif()
 # If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
 if (TMPI_ATOMICS_DISABLED)
-   add_definitions(-DTMPI_ATOMICS_DISABLED)
+   add_compile_definitions(TMPI_ATOMICS_DISABLED)
 endif()
 
 include(gmxManageTNG)
@@ -953,7 +953,7 @@ if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
-    add_definitions(-DNOMINMAX)
+    add_compile_definitions(NOMINMAX)
 endif()
 
 

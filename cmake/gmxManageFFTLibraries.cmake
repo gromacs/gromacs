@@ -183,6 +183,6 @@ endif()
 
 # enable threaded fftw3 if we've found it
 if(FFTW3_THREADS OR FFTW3F_THREADS)
-    add_definitions(-DFFT5D_FFTW_THREADS)
+    add_compile_definitions(FFT5D_FFTW_THREADS)
 endif()
 

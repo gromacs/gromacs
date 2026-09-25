@@ -201,7 +201,7 @@ endif()
 # We are not using the wrapper that comes with the ROCm toolkit but are
 # relying directly on the built-in support in CMake to do that.
 function(gmx_hip_add_library TARGET)
-    add_definitions(-DHAVE_CONFIG_H)
+    add_compile_definitions(HAVE_CONFIG_H)
 
     # Now add all the compilation options
     gmx_device_target_compile_options(HIP_${TARGET}_CXXFLAGS)
