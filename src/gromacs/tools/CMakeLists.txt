@@ -33,7 +33,20 @@
 
 # Set up the module library
 add_library(tools INTERFACE)
-file(GLOB TOOLS_SOURCES *.cpp)
+set(TOOLS_SOURCES
+    check.cpp
+    convert_tpr.cpp
+    dump.cpp
+    eneconv.cpp
+    make_ndx.cpp
+    mk_angndx.cpp
+    pme_error.cpp
+    report_methods.cpp
+    trjcat.cpp
+    trjconv.cpp
+    tune_pme.cpp
+    )
+list(TRANSFORM TOOLS_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOOLS_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
