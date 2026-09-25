@@ -87,6 +87,8 @@ if (${FFTW}_FOUND)
   #The user could specify trash in ${FFTW}_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
   include(gmxOptionUtilities)
+  include(CMakePushCheckState)
+  cmake_push_check_state()
   if (LIBM_LIBRARY)
     #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
     set(CMAKE_REQUIRED_LIBRARIES ${LIBM_LIBRARY})
@@ -101,7 +103,7 @@ if (${FFTW}_FOUND)
   if(NOT (FOUND_${FFTW}_PLAN_MANY AND
       FOUND_${FFTW}_PLAN_MANY_R2C AND
       FOUND_${FFTW}_PLAN_MANY_C2R))
-      message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_many_[r2c|c2r] in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
+      message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_many_[r2c|c2r] in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeConfigureLog.yaml to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
   endif()
 
   if(NOT WIN32) # *_have_* functions aren't external. Thus aren't visible on Windows.
@@ -166,7 +168,7 @@ if (${FFTW}_FOUND)
           message(FATAL_ERROR "The FFTW library ${${FFTW}_LIBRARY} cannot be used with shared libraries. Provide a different FFTW library by setting ${FFTW}_LIBRARY. If you don't have a different one, recompile FFTW with \"--enable-shared\" or \"--with-pic\". Or disable shared libraries for GROMACS by setting BUILD_SHARED_LIBS to \"no\". Note: Disabling shared libraries requires up to 10x as much disk space.")
       endif()
   endif()
-  set(CMAKE_REQUIRED_LIBRARIES)
+  cmake_pop_check_state()
 endif ()
 
 mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY)
