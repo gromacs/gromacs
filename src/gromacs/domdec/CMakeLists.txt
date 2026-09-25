@@ -33,10 +33,41 @@
 
 # Set up the module library
 add_library(domdec INTERFACE)
-file(GLOB DOMDEC_SOURCES *.cpp)
-list(FILTER DOMDEC_SOURCES EXCLUDE REGEX ".*/gpuhaloexchange_impl_gpu[a-z_]*\.cpp$")
-list(FILTER DOMDEC_SOURCES EXCLUDE REGEX ".*/gpuhaloexchange_impl.cpp$")
-list(FILTER DOMDEC_SOURCES EXCLUDE REGEX ".*/fused_gpuhaloexchange.cpp$")
+set(DOMDEC_SOURCES
+    atomdistribution.cpp
+    box.cpp
+    cellsizes.cpp
+    collect.cpp
+    computemultibodycutoffs.cpp
+    distribute.cpp
+    dlb.cpp
+    dlbtiming.cpp
+    domainpaircomm.cpp
+    domdec.cpp
+    domdec_constraints.cpp
+    domdec_network.cpp
+    domdec_setup.cpp
+    domdec_specatomcomm.cpp
+    domdec_vsite.cpp
+    domdec_zones.cpp
+    dump.cpp
+    ga2la.cpp
+    haloexchange.cpp
+    haloexchangesetup.cpp
+    localatomset.cpp
+    localatomsetdata.cpp
+    localatomsetmanager.cpp
+    localtopology.cpp
+    localtopologychecker.cpp
+    makebondedlinks.cpp
+    mdsetup.cpp
+    nsgrid.cpp
+    partition.cpp
+    redistribute.cpp
+    reversetopology.cpp
+    utility.cpp
+    )
+list(TRANSFORM DOMDEC_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 if(GMX_GPU_SYCL)
     set(DOMDEC_GPU_SOURCES gpuhaloexchange_impl_gpu.cpp gpuhaloexchange_impl_gpu_sycl.cpp)
