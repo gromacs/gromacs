@@ -32,7 +32,11 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 add_library(imd INTERFACE)
-file(GLOB IMD_SOURCES *.cpp)
+set(IMD_SOURCES
+    imd.cpp
+    imdsocket.cpp
+    )
+list(TRANSFORM IMD_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${IMD_SOURCES} PARENT_SCOPE)
 
 # Source files have the following private module dependencies.
