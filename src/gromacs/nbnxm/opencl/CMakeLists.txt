@@ -32,7 +32,13 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 if(GMX_GPU_OPENCL)
-    file(GLOB OPENCL_NB_SOURCES *.cpp)
+    set(OPENCL_NB_SOURCES
+        nbnxm_gpu_buffer_ops_internal_ocl.cpp
+        nbnxm_ocl.cpp
+        nbnxm_ocl_data_mgmt.cpp
+        nbnxm_ocl_jit_support.cpp
+        )
+    list(TRANSFORM OPENCL_NB_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${OPENCL_NB_SOURCES} PARENT_SCOPE)
 endif()
 
