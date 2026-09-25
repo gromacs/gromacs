@@ -33,7 +33,11 @@
 
 # Set up the module library
 add_library(random INTERFACE)
-file(GLOB RANDOM_SOURCES *.cpp)
+set(RANDOM_SOURCES
+    seed.cpp
+    tabulatednormaldistribution.cpp
+    )
+list(TRANSFORM RANDOM_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${RANDOM_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
