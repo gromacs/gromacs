@@ -37,7 +37,7 @@ add_library(nbnxm INTERFACE)
 add_subdirectory(kernels_simd_4xm)
 add_subdirectory(kernels_simd_2xmm)
 
-file(GLOB NBNXM_SOURCES
+set(NBNXM_SOURCES
     # Source files
     atomdata.cpp
     exclusionchecker.cpp
@@ -71,6 +71,7 @@ file(GLOB NBNXM_SOURCES
     benchmark/bench_setup.cpp
     benchmark/bench_system.cpp
     )
+list(TRANSFORM NBNXM_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 if(GMX_GPU_CUDA)
     add_subdirectory(cuda)

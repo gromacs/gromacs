@@ -44,11 +44,12 @@ if(GMX_GPU_HIP)
         nbfe_foreign_hip_kernel.cpp
     )
 
-    file(GLOB NBNXM_HIP_SOURCES
-         nbnxm_gpu_buffer_ops_internal_hip.cpp 
+    set(NBNXM_HIP_SOURCES
+         nbnxm_gpu_buffer_ops_internal_hip.cpp
          nbnxm_hip.cpp
          nbnxm_hip_data_mgmt.cpp
          ${NBNXM_HIP_KERNEL_SOURCES})
+    list(TRANSFORM NBNXM_HIP_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
     
     # Add FEP headers to the sources for tracking
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_HIP_SOURCES} PARENT_SCOPE)

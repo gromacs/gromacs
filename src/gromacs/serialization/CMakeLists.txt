@@ -33,10 +33,11 @@
 
 add_library(serialization INTERFACE)
 
-file(GLOB SERIALIZATION_SOURCES
+set(SERIALIZATION_SOURCES
     inmemoryserializer.cpp
     keyvaluetreeserializer.cpp
     )
+list(TRANSFORM SERIALIZATION_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SERIALIZATION_SOURCES} PARENT_SCOPE)
 
 # Public interface for modules, including dependencies and interfaces

@@ -44,11 +44,12 @@ if(GMX_GPU_CUDA)
             nbnxm_cuda_kernel_pruneonly.cu)
     endif()
 
-    file(GLOB NBNXM_CUDA_SOURCES
+    set(NBNXM_CUDA_SOURCES
          nbfe_cuda.cu
          nbnxm_cuda.cu
          nbnxm_cuda_data_mgmt.cu
          nbnxm_gpu_buffer_ops_internal.cu
          ${NBNXM_CUDA_KERNEL_SOURCES})
+    list(TRANSFORM NBNXM_CUDA_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_CUDA_SOURCES} PARENT_SCOPE)
 endif()

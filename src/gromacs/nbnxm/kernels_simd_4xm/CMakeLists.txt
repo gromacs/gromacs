@@ -32,7 +32,7 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 if (GMX_USE_SIMD_KERNELS)
-    file(GLOB KERNEL_SOURCES
+    set(KERNEL_SOURCES
         kernel_ElecEwTwinCut_VdwLJCombGeom_F.cpp
         kernel_ElecEwTwinCut_VdwLJCombGeom_VF.cpp
         kernel_ElecEwTwinCut_VdwLJCombGeom_VgrpF.cpp
@@ -126,7 +126,7 @@ if (GMX_USE_SIMD_KERNELS)
         )
 
     if (GMX_USE_EXT_FMM)
-        file(GLOB ELECNONE_KERNEL_SOURCES
+        set(ELECNONE_KERNEL_SOURCES
             kernel_ElecNone_VdwLJCombGeom_F.cpp
             kernel_ElecNone_VdwLJCombGeom_VF.cpp
             kernel_ElecNone_VdwLJCombGeom_VgrpF.cpp
@@ -152,4 +152,5 @@ if (GMX_USE_SIMD_KERNELS)
 
 endif()
 
+list(TRANSFORM KERNEL_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${KERNEL_SOURCES} PARENT_SCOPE)

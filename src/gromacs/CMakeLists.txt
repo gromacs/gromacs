@@ -552,7 +552,7 @@ add_library(Gromacs::libgromacs ALIAS libgromacs)
 
 if(GMX_GPU_OPENCL)
     # Install the utility headers
-    file(GLOB OPENCL_INSTALLED_FILES
+    set(OPENCL_INSTALLED_FILES
         gpu_utils/vectype_ops.clh
         gpu_utils/device_utils.clh
         )
@@ -561,7 +561,7 @@ if(GMX_GPU_OPENCL)
         COMPONENT libraries)
 
     # Install the NBNXM source and headers
-    file(GLOB OPENCL_INSTALLED_FILES
+    set(OPENCL_INSTALLED_FILES
         nbnxm/opencl/nbnxm_ocl_kernels.cl
         nbnxm/opencl/nbnxm_ocl_kernel.clh
         nbnxm/opencl/nbnxm_ocl_kernel_pruneonly.clh
@@ -576,7 +576,7 @@ if(GMX_GPU_OPENCL)
         COMPONENT libraries)
 
     # Install the PME source and headers
-    file(GLOB OPENCL_INSTALLED_FILES
+    set(OPENCL_INSTALLED_FILES
         ewald/pme_spread.clh
         ewald/pme_solve.clh
         ewald/pme_gather.clh

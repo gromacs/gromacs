@@ -35,7 +35,7 @@
 add_library(selection INTERFACE)
 
 file(GLOB SELECTION_SOURCES *.cpp)
-file(GLOB SCANNER_SOURCES scanner.cpp parser.cpp)
+set(SCANNER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/scanner.cpp ${CMAKE_CURRENT_SOURCE_DIR}/parser.cpp)
 list(REMOVE_ITEM SELECTION_SOURCES ${SCANNER_SOURCES})
 # Add the non-generated sources to libgromacs, so that they have only the normal warning suppressions
 target_sources(libgromacs PRIVATE ${SELECTION_SOURCES})

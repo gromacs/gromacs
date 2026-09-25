@@ -34,16 +34,17 @@
 # Set up the module library
 add_library(mimic INTERFACE)
 if (GMX_MIMIC)
-    file(GLOB MIMIC_SOURCES
+    set(MIMIC_SOURCES
         communicator.cpp
         utilities.cpp
         )
 else()
-    file(GLOB MIMIC_SOURCES
+    set(MIMIC_SOURCES
         communicator_stub.cpp
         utilities.cpp
         )
 endif()
+list(TRANSFORM MIMIC_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MIMIC_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
