@@ -33,7 +33,10 @@
 
 add_library(essentialdynamics INTERFACE)
 
-file(GLOB ESSENTIALDYNAMICS_SOURCES *.cpp)
+set(ESSENTIALDYNAMICS_SOURCES
+    edsam.cpp
+    )
+list(TRANSFORM ESSENTIALDYNAMICS_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 # Source files have the following private module dependencies.
 target_link_libraries(essentialdynamics PRIVATE
