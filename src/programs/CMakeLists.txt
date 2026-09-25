@@ -31,7 +31,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-file(GLOB MDRUN_SOURCES mdrun/*.cpp)
+set(MDRUN_SOURCES
+    mdrun/mdrun.cpp
+    mdrun/nonbonded_bench.cpp
+    )
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 gmx_target_compile_options(mdrun_objlib)
