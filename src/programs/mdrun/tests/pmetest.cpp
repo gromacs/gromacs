@@ -74,7 +74,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/message_string_collector.h"
-#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -247,8 +246,8 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
 
     // -npme was already required
     std::string npmeOptionArgument(commandLine.argumentOf("-npme").value());
-    const bool  commandLineTargetsPmeOnlyRanks = (std::stoi(npmeOptionArgument) > 0);
-    messages.appendIf(commandLineTargetsPmeOnlyRanks && numRanks == 1,
+    const int   numPmeOnlyRanks = std::stoi(npmeOptionArgument);
+    messages.appendIf(numPmeOnlyRanks > 0 && numRanks == 1,
                       "it targets using PME rank(s) but the simulation is using only one rank");
 
     // -pme was already required
@@ -259,25 +258,9 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         messages.appendIf(getCompatibleDevices(s_hwinfo->deviceInfoList).empty(),
                           "it targets GPU execution, but no compatible devices were detected");
 
-        if (!commandLineTargetsPmeOnlyRanks && numRanks > 1)
-        {
-            const bool pmeDecompositionSupported = GpuConfigurationCapabilities::PmeDecomposition
-                                                   && GpuConfigurationCapabilities::PpPmeDirectComm;
-            messages.appendIf(!pmeDecompositionSupported,
-                              "it targets PME decomposition, but that is not supported");
-            if (pmeDecompositionSupported)
-            {
-                const bool pmeDecompositionActive = (std::getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr);
-                messages.appendIf(!pmeDecompositionActive,
-                                  "it targets PME decomposition, but that is not enabled");
-                GpuAwareMpiStatus gpuAwareMpiStatus = s_hwinfo->minGpuAwareMpiStatus;
-                const bool        gpuAwareMpiActive = gpuAwareMpiStatus == GpuAwareMpiStatus::Forced
-                                               || gpuAwareMpiStatus == GpuAwareMpiStatus::Supported;
-                messages.appendIf(!gpuAwareMpiActive,
-                                  "it targets PME decomposition, which requires GPU-aware MPI, but "
-                                  "that is not detected");
-            }
-        }
+        messages.appendIf(numPmeOnlyRanks == 0 && numRanks > 1,
+                          "it targets GPU PME offload with multiple shared PP+PME ranks, which is "
+                          "not supported");
 
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
         const bool                      commandLineTargetsPmeFftOnGpu =
@@ -405,7 +388,7 @@ void PmeTest::checkEnergies(const bool usePmeTuning) const
 const auto c_reproducesEnergies = ::testing::ValuesIn(std::vector<PmeTestParameters>{ {
         // Here are all tests without a PME-only rank. These can
         // always run with a single rank, but can run with more
-        // ranks when either not targeting GPUs or doing PME decomposition.
+        // ranks when not targeting GPUs.
         // Note that an -npme argument is required.
         { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme cpu" },
         { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme auto" },
