@@ -57,6 +57,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_USE_HDF5
@@ -203,6 +204,7 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
         {
             const auto [createPropertyList, createPropertyListGuard] =
                     makeH5mdPropertyListGuard(H5Pcreate(H5P_FILE_CREATE));
+            make_backup(fileName);
             file_ = H5Fcreate(fileName.string().c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
         }
         break;
