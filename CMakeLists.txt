@@ -532,12 +532,48 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
     check_cxx_source_compiles("int main(){ return __cntlz8(1);}" HAVE_CNTLZ8)
 endif()
 
-include(CheckLibraryExists)
 find_library(LIBM_LIBRARY m)
 mark_as_advanced(LIBM_LIBRARY)
-check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
-check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
-check_library_exists(m fedisableexcept "" HAVE_FEDISABLEEXCEPT)
+
+# GROMACS sources are compiled with _GNU_SOURCE (see gmxpre.h), which
+# some C libraries (e.g. mingw-w64 for fenv.h) require to declare the
+# functions checked here.
+include(CMakePushCheckState)
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+
+# clock_gettime() lives in libc on current glibc and musl, but in librt
+# on older glibc, so only link rt when it is needed. Check it the way
+# src/gromacs/timing uses it, including std::timespec, which libstdc++
+# only provides when the C library has timespec_get() (mingw-w64 has
+# clock_gettime() but not timespec_get()).
+set(SAMPLE_CLOCK_GETTIME_SOURCE "
+#include <ctime>
+int main()
+{
+    std::timespec t;
+    return clock_gettime(CLOCK_REALTIME, &t);
+}")
+check_cxx_source_compiles("${SAMPLE_CLOCK_GETTIME_SOURCE}" HAVE_CLOCK_GETTIME_IN_LIBC)
+if(NOT HAVE_CLOCK_GETTIME_IN_LIBC)
+    cmake_push_check_state()
+    list(APPEND CMAKE_REQUIRED_LIBRARIES rt)
+    check_cxx_source_compiles("${SAMPLE_CLOCK_GETTIME_SOURCE}" HAVE_CLOCK_GETTIME_IN_LIBRT)
+    cmake_pop_check_state()
+endif()
+unset(SAMPLE_CLOCK_GETTIME_SOURCE)
+if(HAVE_CLOCK_GETTIME_IN_LIBC OR HAVE_CLOCK_GETTIME_IN_LIBRT)
+    set(HAVE_CLOCK_GETTIME ON)
+else()
+    set(HAVE_CLOCK_GETTIME OFF)
+endif()
+
+if(LIBM_LIBRARY)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIBM_LIBRARY})
+endif()
+check_cxx_symbol_exists(feenableexcept fenv.h HAVE_FEENABLEEXCEPT)
+check_cxx_symbol_exists(fedisableexcept fenv.h HAVE_FEDISABLEEXCEPT)
+cmake_pop_check_state()
 
 include(TestSchedAffinity)
 test_sched_affinity(HAVE_SCHED_AFFINITY)
@@ -951,9 +987,8 @@ if(GMX_USE_PLUGINS)
     endif()
 endif()
 
-# Link real-time library for POSIX timers. The check for clock_gettime
-# confirms the linkability of rt.
-if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
+# Link real-time library for POSIX timers where clock_gettime() needs it.
+if(HAVE_TIME_H AND HAVE_UNISTD_H AND NOT HAVE_CLOCK_GETTIME_IN_LIBC AND HAVE_CLOCK_GETTIME_IN_LIBRT)
     list(APPEND GMX_EXTRA_LIBRARIES rt)
 endif()
 
