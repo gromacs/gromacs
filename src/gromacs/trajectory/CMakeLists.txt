@@ -33,7 +33,11 @@
 
 # Set up the module library
 add_library(trajectory INTERFACE)
-file(GLOB TRAJECTORY_SOURCES *.cpp)
+set(TRAJECTORY_SOURCES
+    energyframe.cpp
+    trajectoryframe.cpp
+    )
+list(TRANSFORM TRAJECTORY_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORY_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
