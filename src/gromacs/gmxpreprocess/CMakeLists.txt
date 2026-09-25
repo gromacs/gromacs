@@ -34,7 +34,53 @@
 # Set up the module library
 add_library(gmxpreprocess INTERFACE)
 
-file(GLOB GMXPREPROCESS_SOURCES *.cpp)
+set(GMXPREPROCESS_SOURCES
+    add_par.cpp
+    calch.cpp
+    compute_io.cpp
+    convparm.cpp
+    editconf.cpp
+    fflibutil.cpp
+    gen_ad.cpp
+    gen_maxwell_velocities.cpp
+    gen_vsite.cpp
+    genconf.cpp
+    genhydro.cpp
+    genion.cpp
+    genrestr.cpp
+    gmxcpp.cpp
+    gpp_atomtype.cpp
+    gpp_bond_atomtype.cpp
+    gpp_nextnb.cpp
+    grompp.cpp
+    h_db.cpp
+    hackblock.cpp
+    hizzie.cpp
+    insert_molecules.cpp
+    makeexclusiondistances.cpp
+    massrepartitioning.cpp
+    nm2type.cpp
+    pdb2gmx.cpp
+    pdb2top.cpp
+    pgutil.cpp
+    readir.cpp
+    readpull.cpp
+    readrot.cpp
+    resall.cpp
+    solvate.cpp
+    specbond.cpp
+    ter_db.cpp
+    tomorse.cpp
+    topdirs.cpp
+    topio.cpp
+    toppush.cpp
+    topshake.cpp
+    toputil.cpp
+    vsite_parm.cpp
+    x2top.cpp
+    xlate.cpp
+    )
+list(TRANSFORM GMXPREPROCESS_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXPREPROCESS_SOURCES} PARENT_SCOPE)
 
