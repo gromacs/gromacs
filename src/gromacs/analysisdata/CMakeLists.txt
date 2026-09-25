@@ -32,7 +32,23 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 add_library(analysisdata INTERFACE)
-file(GLOB ANALYSISDATA_SOURCES *.cpp modules/*.cpp)
+set(ANALYSISDATA_SOURCES
+    abstractdata.cpp
+    analysisdata.cpp
+    arraydata.cpp
+    dataframe.cpp
+    datamodule.cpp
+    datamodulemanager.cpp
+    dataproxy.cpp
+    datastorage.cpp
+    modules/average.cpp
+    modules/displacement.cpp
+    modules/frameaverager.cpp
+    modules/histogram.cpp
+    modules/lifetime.cpp
+    modules/plot.cpp
+    )
+list(TRANSFORM ANALYSISDATA_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ANALYSISDATA_SOURCES} PARENT_SCOPE)
 
 # Source files have the following private module dependencies.
