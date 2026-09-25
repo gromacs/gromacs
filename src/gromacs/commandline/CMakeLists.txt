@@ -32,7 +32,23 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 add_library(commandline INTERFACE)
-file(GLOB COMMANDLINE_SOURCES *.cpp)
+set(COMMANDLINE_SOURCES
+    cmdlinehelpcontext.cpp
+    cmdlinehelpmodule.cpp
+    cmdlinehelpwriter.cpp
+    cmdlineinit.cpp
+    cmdlinemodule.cpp
+    cmdlinemodulemanager.cpp
+    cmdlinemodulesettings.cpp
+    cmdlineoptionsmodule.cpp
+    cmdlineparser.cpp
+    cmdlineprogramcontext.cpp
+    filenm.cpp
+    pargs.cpp
+    shellcompletions.cpp
+    viewit.cpp
+    )
+list(TRANSFORM COMMANDLINE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE)
 
 # Source files have the following private module dependencies.
