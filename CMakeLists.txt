@@ -575,13 +575,45 @@ check_cxx_symbol_exists(feenableexcept fenv.h HAVE_FEENABLEEXCEPT)
 check_cxx_symbol_exists(fedisableexcept fenv.h HAVE_FEDISABLEEXCEPT)
 cmake_pop_check_state()
 
-include(TestSchedAffinity)
-test_sched_affinity(HAVE_SCHED_AFFINITY)
+# Check that the GNU sched.h affinity API works: sched_getaffinity(),
+# sched_setaffinity(), CPU_ZERO(), CPU_SET(), CPU_ISSET(), CPU_CLR() and
+# CPU_COUNT().
+include(CheckSourceCompiles)
+check_source_compiles(C
+    "#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#include <sched.h>
+int main(void) {
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  sched_getaffinity(0, sizeof(cpu_set_t), &mask);
+  if(CPU_ISSET(0,&mask))
+  {
+    CPU_CLR(0,&mask);
+    CPU_SET(0,&mask);
+  }
+  sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+  return CPU_COUNT(&mask);
+}" HAVE_SCHED_AFFINITY)
 
 # Aligned memory allocation. We need to check for both mm_malloc(),
 # posix_memalign(), memalign(), and on windows also _aligned_malloc()
-include(gmxTestMMMalloc)
-gmx_test_mm_malloc(HAVE__MM_MALLOC)
+check_include_files(mm_malloc.h  HAVE_MM_MALLOC_H)
+check_include_files(malloc.h     HAVE_MALLOC_H)
+# Check for _mm_malloc() in the same header that alignedallocator.cpp
+# will include.
+if(HAVE_MM_MALLOC_H)
+    set(_mm_malloc_header mm_malloc.h)
+elseif(HAVE_MALLOC_H)
+    set(_mm_malloc_header malloc.h)
+elseif(HAVE_XMMINTRIN_H)
+    set(_mm_malloc_header xmmintrin.h)
+endif()
+if(_mm_malloc_header)
+    check_cxx_symbol_exists(_mm_malloc "${_mm_malloc_header}" HAVE__MM_MALLOC)
+endif()
+unset(_mm_malloc_header)
 check_cxx_symbol_exists(posix_memalign    stdlib.h     HAVE_POSIX_MEMALIGN)
 check_cxx_symbol_exists(memalign          stdlib.h     HAVE_MEMALIGN)
 if(MSVC)

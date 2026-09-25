@@ -37,25 +37,10 @@
 #
 #  VARIABLE will be set to true if GCC x86 inline asm works.
 
+include(CheckSourceCompiles)
+
 macro(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
-    if(NOT DEFINED ${VARIABLE})
-
-        message(STATUS "Checking for GCC x86 inline asm")
-
-        try_compile(${VARIABLE} SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestInlineASM_gcc_x86.cpp"
-                    LOG_DESCRIPTION "Checking for GCC-style x86 inline assembly"
-                    OUTPUT_VARIABLE INLINE_ASM_COMPILE_OUTPUT)
-
-        if(${VARIABLE})
-            message(STATUS "Checking for GCC x86 inline asm - supported")
-            set(${VARIABLE} 1 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
-        else()
-            message(STATUS "Checking for GCC x86 inline asm - not supported")
-            set(${VARIABLE} 0 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
-        endif()
-
-    endif()
-endmacro(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
-
-
-
+    file(READ "${CMAKE_SOURCE_DIR}/cmake/TestInlineASM_gcc_x86.cpp" _inline_asm_source)
+    check_source_compiles(CXX "${_inline_asm_source}" ${VARIABLE})
+    unset(_inline_asm_source)
+endmacro()
