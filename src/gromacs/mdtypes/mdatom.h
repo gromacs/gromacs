@@ -59,8 +59,6 @@ typedef struct t_mdatoms
     real tmass;
     //! Number of atoms in arrays
     int nr;
-    //! Number of energy groups
-    int nenergrp;
     //! Do we have multiple center of mass motion removal groups
     bool bVCMgrps;
     //! Do we have any virtual sites?

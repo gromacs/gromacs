@@ -108,7 +108,6 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
     mdAtoms->mdatoms_ = std::make_unique<t_mdatoms>();
     t_mdatoms* md     = mdAtoms->mdatoms_.get();
 
-    md->nenergrp = mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size();
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
