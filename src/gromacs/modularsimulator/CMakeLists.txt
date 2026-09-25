@@ -62,8 +62,7 @@ set(MODULARSIMULATOR_SOURCES
 add_library(modularsimulator OBJECT ${MODULARSIMULATOR_SOURCES})
 
 if (GMX_OPENMP)
-    # Explicitly set properties for modular simulator module to compile with openmp
-    set_target_properties(modularsimulator PROPERTIES COMPILE_OPTIONS $<TARGET_PROPERTY:OpenMP::OpenMP_CXX,INTERFACE_COMPILE_OPTIONS>)
+    target_link_libraries(modularsimulator PRIVATE OpenMP::OpenMP_CXX)
 endif ()
 
 if (MSVC)
