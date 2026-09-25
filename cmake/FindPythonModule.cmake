@@ -39,7 +39,6 @@ function (find_python_module module)
     set(_find_package_module ${module})
     set(_out_var PYTHONMODULE_${_module_upper})
 
-    include(CMakeParseArguments)
     set(_options QUIET REQUIRED)
     cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
     if (ARG_UNPARSED_ARGUMENTS)

@@ -67,7 +67,6 @@ endfunction()
 # The values end up in CPACK_SOURCE_INSTALLED_DIRECTORIES, which is a list of
 # pairs of names of source and destination directories.
 function (gmx_cpack_add_generated_source_directory DIR)
-    include(CMakeParseArguments)
     set(_one_value_args DESTINATION)
     cmake_parse_arguments(ARG "" "${_one_value_args}" "" ${ARGN})
     if (ARG_UNPARSED_ARGUMENTS)

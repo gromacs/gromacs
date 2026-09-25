@@ -433,7 +433,6 @@ unset(GMX_VERSION_CENTRAL_BASE_HASH)
 # The main user-visible interface to the machinery.
 # See documentation at the top of the script.
 function (gmx_configure_version_file INFILE OUTFILE)
-    include(CMakeParseArguments)
     set(_options REMOTE_HASH)
     set(_one_value_args COMMENT TARGET)
     set(_multi_value_args EXTRA_VARS)

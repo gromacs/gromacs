@@ -34,7 +34,6 @@
 # Helper macros to encapsulate some usage of CTest
 #
 # This file is intended to contain CTest workarounds and such.
-include(CMakeParseArguments)
 
 macro (gmx_ctest_init)
     # Set a default valgrind suppression file.

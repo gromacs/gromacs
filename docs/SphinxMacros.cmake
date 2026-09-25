@@ -31,8 +31,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-include(CMakeParseArguments)
-
 macro(gmx_init_sphinx_setup SPHINX_INPUT_DIR)
     set(_SPHINX_INPUT_ROOT ${SPHINX_INPUT_DIR})
     set(_SPHINX_INPUT_FILES)
