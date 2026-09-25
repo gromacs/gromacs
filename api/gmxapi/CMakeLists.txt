@@ -72,7 +72,6 @@ if (GMX_LIB_MPI)
     # find_dependency for MPI, preconfigured with our best guess of hints. It would probably be better,
     # though, to add the appropriate hints to the gromacs-hints.cmake so that the client can easily
     # set or override input variables arbitrarily early in their CMake config call.
-    # _gmxapi_find_dependencies is now set in api/gmxapi/cpp/CMakeLists.txt
 elseif(GMX_THREAD_MPI)
     # GROMACS is built with its internal thread-MPI implementation.
     set(_gmx_mpi_type "tmpi")
