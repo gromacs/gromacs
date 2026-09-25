@@ -34,9 +34,39 @@
 # Set up the module library
 add_library(selection INTERFACE)
 
-file(GLOB SELECTION_SOURCES *.cpp)
-set(SCANNER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/scanner.cpp ${CMAKE_CURRENT_SOURCE_DIR}/parser.cpp)
-list(REMOVE_ITEM SELECTION_SOURCES ${SCANNER_SOURCES})
+set(SELECTION_SOURCES
+    centerofmass.cpp
+    compiler.cpp
+    evaluate.cpp
+    indexutil.cpp
+    mempool.cpp
+    nbsearch.cpp
+    params.cpp
+    parsetree.cpp
+    poscalc.cpp
+    position.cpp
+    scanner_internal.cpp
+    selection.cpp
+    selectioncollection.cpp
+    selectionoption.cpp
+    selectionoptionbehavior.cpp
+    selectionoptionmanager.cpp
+    selelem.cpp
+    selhelp.cpp
+    selmethod.cpp
+    selvalue.cpp
+    sm_compare.cpp
+    sm_distance.cpp
+    sm_insolidangle.cpp
+    sm_keywords.cpp
+    sm_merge.cpp
+    sm_permute.cpp
+    sm_position.cpp
+    sm_same.cpp
+    sm_simple.cpp
+    symrec.cpp
+    )
+set(SCANNER_SOURCES scanner.cpp parser.cpp)
 # Add the non-generated sources to libgromacs, so that they have only the normal warning suppressions
 target_sources(libgromacs PRIVATE ${SELECTION_SOURCES})
 
