@@ -559,20 +559,8 @@ if(GMX_GPU_OPENCL)
     install(FILES ${OPENCL_INSTALLED_FILES}
         DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/gpu_utils
         COMPONENT libraries)
-    file(GLOB OPENCL_INSTALLED_FILES
-        pbcutil/ishift.h
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/pbcutil
-        COMPONENT libraries)
 
     # Install the NBNXM source and headers
-    file(GLOB OPENCL_INSTALLED_FILES
-        nbnxm/constants.h
-        )
-    install(FILES ${OPENCL_INSTALLED_FILES}
-        DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/nbnxm
-        COMPONENT libraries)
     file(GLOB OPENCL_INSTALLED_FILES
         nbnxm/opencl/nbnxm_ocl_kernels.cl
         nbnxm/opencl/nbnxm_ocl_kernel.clh

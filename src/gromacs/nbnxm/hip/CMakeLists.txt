@@ -39,8 +39,6 @@ if(GMX_GPU_HIP)
         nbnxm_hip_kernel_body_fv_noprune.cpp
         nbnxm_hip_kernel_pruneonly.cpp
         nbnxm_hip_kernel_sci_sort.cpp
-        nbnxm_hip_kernel_sum.cpp
-        nbfe_hip_kernel.cpp
         nbfe_hip_kernel_body_f.cpp
         nbfe_hip_kernel_body_fv.cpp
         nbfe_foreign_hip_kernel.cpp

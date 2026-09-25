@@ -47,7 +47,6 @@ file(GLOB MDTYPES_SOURCES
     interaction_const.cpp
     md_enums.cpp
     mdatoms.cpp
-    mpicomm.cpp
     multipletimestepping.cpp
     observableshistory.cpp
     observablesreducer.cpp
