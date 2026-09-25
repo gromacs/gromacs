@@ -42,8 +42,8 @@ macro(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
 
         message(STATUS "Checking for GCC x86 inline asm")
 
-        try_compile(${VARIABLE} "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestInlineASM_gcc_x86.cpp"
+        try_compile(${VARIABLE} SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestInlineASM_gcc_x86.cpp"
+                    LOG_DESCRIPTION "Checking for GCC-style x86 inline assembly"
                     OUTPUT_VARIABLE INLINE_ASM_COMPILE_OUTPUT)
 
         if(${VARIABLE})
@@ -56,7 +56,6 @@ macro(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
 
     endif()
 endmacro(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
-
 
 
 

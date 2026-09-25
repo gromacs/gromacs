@@ -56,17 +56,18 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
         message(STATUS "Checking for 64-bit off_t")
 
         # First check without any special flags
-        try_compile(FILE64_OK "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp")
+        try_compile(FILE64_OK
+                    SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
+                    LOG_DESCRIPTION "Checking for 64-bit off_t")
         if(FILE64_OK)
             message(STATUS "Checking for 64-bit off_t - present")
         endif()
 
         if(NOT FILE64_OK)
             # Test with _FILE_OFFSET_BITS=64
-            try_compile(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
-                        COMPILE_DEFINITIONS "-D_FILE_OFFSET_BITS=64" )
+            try_compile(FILE64_OK SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
+                        COMPILE_DEFINITIONS "-D_FILE_OFFSET_BITS=64"
+                        LOG_DESCRIPTION "Checking for 64-bit off_t with _FILE_OFFSET_BITS=64")
             if(FILE64_OK)
                 message(STATUS "Checking for 64-bit off_t - present with _FILE_OFFSET_BITS=64")
                 set(_FILE_OFFSET_BITS 64 CACHE INTERNAL "64-bit off_t requires _FILE_OFFSET_BITS=64")
@@ -75,9 +76,9 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
 
         if(NOT FILE64_OK)
             # Test with _LARGE_FILES
-            try_compile(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
-                        COMPILE_DEFINITIONS "-D_LARGE_FILES" )
+            try_compile(FILE64_OK SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
+                        COMPILE_DEFINITIONS "-D_LARGE_FILES"
+                        LOG_DESCRIPTION "Checking for 64-bit off_t with _LARGE_FILES")
             if(FILE64_OK)
                 message(STATUS "Checking for 64-bit off_t - present with _LARGE_FILES")
                 set(_LARGE_FILES 1 CACHE INTERNAL "64-bit off_t requires _LARGE_FILES")
@@ -86,9 +87,9 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
 
         if(NOT FILE64_OK)
             # Test with _LARGEFILE_SOURCE
-            try_compile(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
-                        COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE" )
+            try_compile(FILE64_OK SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestFileOffsetBits.cpp"
+                        COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE"
+                        LOG_DESCRIPTION "Checking for 64-bit off_t with _LARGEFILE_SOURCE")
             if(FILE64_OK)
                 message(STATUS "Checking for 64-bit off_t - present with _LARGEFILE_SOURCE")
                 set(_LARGEFILE_SOURCE 1 CACHE INTERNAL "64-bit off_t requires _LARGEFILE_SOURCE")
@@ -106,17 +107,18 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
 
             message(STATUS "Checking for fseeko/ftello")
             # Test if ftello/fseeko are available
-            try_compile(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp")
+            try_compile(FSEEKO_COMPILE_OK
+                        SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp"
+                        LOG_DESCRIPTION "Checking for fseeko() and ftello()")
             if(FSEEKO_COMPILE_OK)
                 message(STATUS "Checking for fseeko/ftello - present")
             endif()
 
             if(NOT FSEEKO_COMPILE_OK)
                 # glibc 2.2 neds _LARGEFILE_SOURCE for fseeko (but not 64-bit off_t...)
-                try_compile(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
-                            "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp"
-                            COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE" )
+                try_compile(FSEEKO_COMPILE_OK SOURCES "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.cpp"
+                            COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE"
+                            LOG_DESCRIPTION "Checking for fseeko() and ftello() with _LARGEFILE_SOURCE")
                 if(FSEEKO_COMPILE_OK)
                     message(STATUS "Checking for fseeko/ftello - present with _LARGEFILE_SOURCE")
                     set(_LARGEFILE_SOURCE 1 CACHE INTERNAL "64-bit fseeko requires _LARGEFILE_SOURCE")
@@ -129,8 +131,9 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
 
         if(NOT FILE64_OK)
             # now check for Windows stuff
-            try_compile(FILE64_OK "${CMAKE_BINARY_DIR}"
-                        "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.cpp")
+            try_compile(FILE64_OK
+                        SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestWindowsFSeek.cpp"
+                        LOG_DESCRIPTION "Checking for _fseeki64()")
             if(FILE64_OK)
                 message(STATUS "Checking for 64-bit off_t - present with _fseeki64")
                 set(HAVE__FSEEKI64 1 CACHE INTERNAL "64-bit off_t requires _fseeki64")
@@ -154,6 +157,5 @@ macro(GMX_TEST_LARGE_FILES VARIABLE)
 
     endif()
 endmacro(GMX_TEST_LARGE_FILES VARIABLE)
-
 
 

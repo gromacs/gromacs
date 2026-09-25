@@ -59,11 +59,11 @@ function(gmx_detect_avx_512_fma_units RESULT)
 
                 set(_compile_definitions "-I${PROJECT_SOURCE_DIR}/src -DGMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE -DSIMD_AVX_512_CXX_SUPPORTED=1 -DGMX_X86_GCC_INLINE_ASM=1 ${SIMD_AVX_512_CXX_FLAGS}")
                 try_compile(AVX_512_FMA_UNIT_DETECTION_COMPILED
-                    "${PROJECT_BINARY_DIR}"
-                    "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/identifyavx512fmaunits.cpp"
+                    SOURCES "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/identifyavx512fmaunits.cpp"
                     COMPILE_DEFINITIONS "${_compile_definitions}"
+                    LOG_DESCRIPTION "Checking whether the AVX-512 FMA unit detection program compiles"
                     OUTPUT_VARIABLE AVX_512_FMA_UNIT_DETECTION_COMPILED_OUTPUT
-                    COPY_FILE ${AVX_512_FMA_UNIT_DETECTION_BINARY})
+                    COPY_FILE "${AVX_512_FMA_UNIT_DETECTION_BINARY}")
                 if(NOT AVX_512_FMA_UNIT_DETECTION_COMPILED AND NOT RUN_AVX_512_FMA_UNIT_DETECTION_COMPILATION_QUIETLY)
                   message(STATUS "Could not identify number of AVX-512 units - detection program did not compile")
                 endif()

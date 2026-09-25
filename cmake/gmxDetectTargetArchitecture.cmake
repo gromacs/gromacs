@@ -40,8 +40,9 @@
 
 function(gmx_detect_target_architecture)
     if (NOT DEFINED GMX_TARGET_X86)
-        try_compile(GMX_TARGET_X86 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestX86.cpp")
+        try_compile(GMX_TARGET_X86
+            SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestX86.cpp"
+            LOG_DESCRIPTION "Checking whether the target architecture is x86")
     endif()
 endfunction()
 

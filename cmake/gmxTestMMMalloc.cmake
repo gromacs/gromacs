@@ -49,12 +49,12 @@ macro(GMX_TEST_MM_MALLOC VARIABLE)
 
         message(STATUS "Checking for _mm_malloc()")
 
-        try_compile(${VARIABLE} "${CMAKE_BINARY_DIR}"
-                    "${CMAKE_SOURCE_DIR}/cmake/TestMMMalloc.cpp"
+        try_compile(${VARIABLE} SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestMMMalloc.cpp"
                     COMPILE_DEFINITIONS
                     "-DHAVE_MM_MALLOC_H=${HAVE_MM_MALLOC_H}"
                     "-DHAVE_MALLOC_H=${HAVE_MALLOC_H}"
                     "-DHAVE_XMMINTRIN_H=${HAVE_XMMINTRIN_H}"
+                    LOG_DESCRIPTION "Checking for _mm_malloc() and _mm_free()"
                     OUTPUT_VARIABLE MM_MALLOC_COMPILE_OUTPUT)
 
         if(${VARIABLE})
@@ -67,7 +67,6 @@ macro(GMX_TEST_MM_MALLOC VARIABLE)
 
     endif()
 endmacro(GMX_TEST_MM_MALLOC VARIABLE)
-
 
 
 

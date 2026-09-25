@@ -42,7 +42,9 @@ gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CMAKE_CUDA_HOST_COMPILER)
 # code in GROMACS. So this workaround is good enough to keep problems
 # away from users installing GROMACS. See Issue #1982.
 if(CUDA_HOST_COMPILER_CHANGED)
-    try_compile(IS_GLIBC_2_23_OR_HIGHER ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/cmake/TestGlibcVersion.cpp)
+    try_compile(IS_GLIBC_2_23_OR_HIGHER
+        SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestGlibcVersion.cpp"
+        LOG_DESCRIPTION "Checking whether the CUDA host uses glibc 2.23 or newer")
     if(IS_GLIBC_2_23_OR_HIGHER)
         message(STATUS "Adding work-around for issue compiling CUDA code with glibc 2.23 string.h")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -D_FORCE_INLINES")

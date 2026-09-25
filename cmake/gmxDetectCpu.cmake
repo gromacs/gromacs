@@ -87,12 +87,11 @@ function(gmx_run_cpu_detection TYPE)
 
             set(_compile_definitions ${GCC_INLINE_ASM_DEFINE};-I${PROJECT_SOURCE_DIR}/src;-DGMX_CPUINFO_STANDALONE=1;-DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE})
             try_compile(CPU_DETECTION_COMPILED
-                "${PROJECT_BINARY_DIR}"
-                "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp"
+                SOURCES "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp"
                 COMPILE_DEFINITIONS "${_compile_definitions}"
-                CMAKE_FLAGS "-DLINK_LIBRARIES=${LINK_LIBRARIES}"
+                LOG_DESCRIPTION "Checking whether the CPU detection program compiles"
                 OUTPUT_VARIABLE CPU_DETECTION_COMPILED_OUTPUT
-                COPY_FILE ${CPU_DETECTION_BINARY})
+                COPY_FILE "${CPU_DETECTION_BINARY}")
             if(NOT CPU_DETECTION_COMPILED AND NOT RUN_CPU_DETECTION_COMPILATION_QUIETLY)
                 if(GMX_TARGET_X86)
                     message(WARNING "CPU detection program did not compile on x86 host - this should never happen. It is VERY bad for performance, since you will lose all SIMD support. Please file a bug report.")

@@ -32,7 +32,10 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
-  try_compile(GMX_INTEL_LLVM "${CMAKE_BINARY_DIR}" SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestIntelLLVM.cpp" OUTPUT_VARIABLE GMX_INTEL_LLVM_VERSION)
+  try_compile(GMX_INTEL_LLVM
+    SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestIntelLLVM.cpp"
+    LOG_DESCRIPTION "Detecting the Intel LLVM compiler version"
+    OUTPUT_VARIABLE GMX_INTEL_LLVM_VERSION)
   if (GMX_INTEL_LLVM)
     if(GMX_INTEL_LLVM_VERSION MATCHES ": ([0-9]+) ")
       set(GMX_INTEL_LLVM_VERSION ${CMAKE_MATCH_1})

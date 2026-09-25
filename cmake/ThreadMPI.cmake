@@ -100,7 +100,9 @@ int main(void)
 
 endfunction()
 
-try_compile(HAVE_PROCESSOR_NUMBER ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/TestWinProcNum.cpp")
+try_compile(HAVE_PROCESSOR_NUMBER
+    SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestWinProcNum.cpp"
+    LOG_DESCRIPTION "Checking for the Windows Processor Group API")
 
 include(FindThreads)
 
@@ -235,4 +237,3 @@ macro(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
              ${SRC_ROOT}/numa_malloc.cpp   ${SRC_ROOT}/once.cpp)
     endif()
 endmacro(TMPI_GET_SOURCE_LIST)
-
