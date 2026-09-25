@@ -33,7 +33,14 @@
 
 # Set up the module library
 add_library(onlinehelp INTERFACE)
-file(GLOB ONLINEHELP_SOURCES *.cpp)
+set(ONLINEHELP_SOURCES
+    helpformat.cpp
+    helpmanager.cpp
+    helptopic.cpp
+    helpwritercontext.cpp
+    rstparser.cpp
+    )
+list(TRANSFORM ONLINEHELP_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ONLINEHELP_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
