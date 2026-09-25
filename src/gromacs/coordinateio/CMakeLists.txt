@@ -33,7 +33,20 @@
 
 # Set up the module library
 add_library(coordinateio INTERFACE)
-file(GLOB COORDINATEIO_SOURCES *.cpp outputadapters/*.cpp frameconverters/*.cpp)
+set(COORDINATEIO_SOURCES
+    coordinatefile.cpp
+    frameconverters/register.cpp
+    outputadaptercontainer.cpp
+    outputadapters/outputselector.cpp
+    outputadapters/setatoms.cpp
+    outputadapters/setforces.cpp
+    outputadapters/setprecision.cpp
+    outputadapters/setstarttime.cpp
+    outputadapters/settimestep.cpp
+    outputadapters/setvelocities.cpp
+    requirements.cpp
+    )
+list(TRANSFORM COORDINATEIO_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COORDINATEIO_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
