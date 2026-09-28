@@ -222,10 +222,6 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     bCiteTng = TRUE;
                     break;
                 case efH5MD:
-                    if (!restartWithAppending)
-                    {
-                        make_backup(filename);
-                    }
                     of->h5md = gmx::makeH5md(filename, gmx::H5mdFileMode(filemode[0]));
                     if (!restartWithAppending)
                     {
