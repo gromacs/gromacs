@@ -115,6 +115,15 @@ older versions of the tool can be corrected by dividing by kT^2.
 
 :issue:`5702`
 
+Fix wrong cell shifts in NNPot pair list input
+""""""""""""""""""""""""""""""""""""""""""""""
+
+For NNP models that request the |Gromacs| pair list as input, the cell shifts were
+were incorrectly computed, leading to wrong energies and forces on triclinic simulation
+boxes.
+
+:issue:`5705`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
