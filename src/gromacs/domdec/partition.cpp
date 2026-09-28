@@ -2611,10 +2611,11 @@ void print_dd_statistics(gmx_domdec_t* dd, const t_inputrec& inputrec, FILE* fpl
         {
             print_dd_load_av(fplog, dd);
         }
-        else if (dd->comm->ddSettings.recordLoadDisabledByUpdateOnGpu && fplog)
+        else if (dd->comm->ddSettings.recordLoadDisabledByHaloOnGpu && fplog)
         {
             fprintf(fplog,
-                    "\nCould not measure load imbalance because update was performed on GPU\n");
+                    "\nCould not measure load imbalance because halo exchange was performed on "
+                    "GPU\n");
         }
     }
 }

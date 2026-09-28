@@ -55,8 +55,12 @@ Fixed incorrect forces with (experimental) non-bonded free-energy on GPU with sc
 :issue:`5693`
 
  
-Removed incorrect load imbalance reporting with update GPU
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Removed incorrect load imbalance reporting with halo communication on GPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When halo communication is offloaded to the GPU, load imbalance cannot be
+measured via host timers and the reported imbalance values were meaningless.
+
 
 :issue:`5700`
 
