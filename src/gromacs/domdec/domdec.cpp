@@ -2642,7 +2642,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
                                 const gmx::MdrunOptions& mdrunOptions,
                                 const t_inputrec&        ir,
                                 const bool               useGpuForPme,
-                                const bool               useGpuForUpdate,
+                                const bool               useGpuDirectHalo,
                                 const bool               canUseGpuPmeDecomposition)
 {
     DDSettings ddSettings;
@@ -2673,8 +2673,8 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
     }
     else if (wallcycle_have_counter() && recload > 0)
     {
-        ddSettings.recordLoadDisabledByUpdateOnGpu = useGpuForUpdate;
-        ddSettings.recordLoad                      = !ddSettings.recordLoadDisabledByUpdateOnGpu;
+        ddSettings.recordLoadDisabledByHaloOnGpu = useGpuDirectHalo;
+        ddSettings.recordLoad                    = !ddSettings.recordLoadDisabledByHaloOnGpu;
     }
     else
     {
@@ -2795,7 +2795,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                                  mpiCommSimulation.size());
 
     ddSettings_ = getDDSettings(
-            mdlog_, options_, mdrunOptions, ir_, useGpuForPme, useGpuForUpdate, canUseGpuPmeDecomposition);
+            mdlog_, options_, mdrunOptions, ir_, useGpuForPme, useGpuDirectHalo, canUseGpuPmeDecomposition);
 
     if (ddSettings_.eFlop > 1)
     {

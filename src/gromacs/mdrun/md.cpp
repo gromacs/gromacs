@@ -1377,9 +1377,10 @@ void LegacySimulator::do_md()
             //       prior to GPU update.
             // TODO: When the output flags will be included in step workload, this copy can be combined with the
             //       copy call in do_force(...).
-            // NOTE: The forces should not be copied here if the vsites are present, since they were modified
+            // NOTE: The forces should not be copied here if the vsites or CPU-staged PP-PME comms are present, since they were modified
             //       on host after the D2H copy in do_force(...).
-            if (runScheduleWork_->stepWork.useGpuFBufferOps && (simulationWork.useGpuUpdate && !virtualSites_)
+            if (runScheduleWork_->stepWork.useGpuFBufferOps
+                && (simulationWork.useGpuUpdate && !virtualSites_ && !simulationWork.useCpuPmePpCommunication)
                 && do_per_step(step, outputControl.nstfout))
             {
                 stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
