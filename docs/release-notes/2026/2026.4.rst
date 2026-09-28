@@ -80,6 +80,12 @@ the simulation would deadlock on the first step.
 
 :issue:`5641`
 
+Fixed incorrect output forces with staged PP-PME communication
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With GPUs, separate PME rank, staged PP-PME communications, and force-output
+used on non-virial steps, the written forces were lacking the PME contribution.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
