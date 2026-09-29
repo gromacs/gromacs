@@ -170,7 +170,7 @@ template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wr
 __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
         void pme_spline_and_spread_kernel(const PmeGpuKernelParams kernelParams)
 {
-    static_assert(computeSplines or threadsPerAtom == ThreadsPerAtom::OrderSquared,
+    static_assert(computeSplines || threadsPerAtom == ThreadsPerAtom::OrderSquared,
                   "Loading splines from global memory is supported only with order-squared threads "
                   "per atom");
 

@@ -223,7 +223,7 @@ auto pmeSplineAndSpreadKernel(CommandGroupHandler cgh,
         {
             return;
         }
-        static_assert(computeSplines or threadsPerAtom == ThreadsPerAtom::OrderSquared,
+        static_assert(computeSplines || threadsPerAtom == ThreadsPerAtom::OrderSquared,
                       "Loading splines from global memory is supported only with order-squared "
                       "threads per atom");
 
