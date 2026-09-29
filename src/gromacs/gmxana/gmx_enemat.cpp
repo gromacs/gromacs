@@ -292,12 +292,10 @@ int gmx_enemat(int argc, char* argv[])
     fprintf(stderr, "\n");
     if (n == 0)
     {
-        // Return an error, can't do what the user asked for
-        fprintf(stderr,
-                "None of the specified energy groups were found in this .edr file.\n"
-                "Perhaps you used the wrong groups, the wrong files, or didn't use a .tpr\n"
-                "that was made from an .mdp file that specified these energy groups.\n");
-        return 1;
+        gmx_fatal(FARGS,
+                  "None of the specified energy groups were found in this .edr file.\n"
+                  "Perhaps you used the wrong groups, the wrong files, or didn't use a .tpr\n"
+                  "that was made from an .mdp file that specified these energy groups.\n");
     }
     nset = n;
     snew(eneset, nset + 1);

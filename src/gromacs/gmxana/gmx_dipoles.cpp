@@ -1761,19 +1761,17 @@ int gmx_dipoles(int argc, char* argv[])
     {
         if (bQuad)
         {
-            printf("WARNING: Can not determine quadrupoles from energy file\n");
-            bQuad = FALSE;
+            gmx_fatal(FARGS, "Can not determine quadrupoles from energy file.\n");
         }
         if (bGkr)
         {
-            printf("WARNING: Can not determine Gk(r) from energy file\n");
-            bGkr = FALSE;
-            ncos = 1;
+            gmx_fatal(FARGS, "Can not determine Gk(r) from energy file\n");
         }
         if (mu_aver == -1)
         {
-            printf("WARNING: Can not calculate Gk and gk, since you did\n"
-                   "         not enter a valid dipole for the molecules\n");
+            gmx_fatal(FARGS,
+                      "Can not calculate Gk and gk, since you did "
+                      "not enter a valid dipole for the molecules (-mu)\n");
         }
     }
 

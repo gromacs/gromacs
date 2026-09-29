@@ -1609,10 +1609,9 @@ int gmx_xpm2ps(int argc, char* argv[])
     {
         if (ecombine != ecHalves)
         {
-            fprintf(stderr,
-                    "WARNING: arithmetic matrix combination selected (-combine), "
-                    "but no second matrix (-f2) supplied\n"
-                    "         no matrix combination will be performed\n");
+            gmx_fatal(FARGS,
+                      "Arithmetic matrix combination selected (-combine), "
+                      "but no second matrix (-f2) supplied.\n");
         }
         ecombine = 0;
     }
@@ -1657,11 +1656,10 @@ int gmx_xpm2ps(int argc, char* argv[])
         epsfile = ftp2fn_null(efEPS, NFILE, fnm);
         if (epsfile)
         {
-            fprintf(stderr,
-                    "WARNING: can only write result of arithmetic combination "
-                    "of two matrices to .xpm file\n"
-                    "         file %s will not be written\n",
-                    epsfile);
+            gmx_fatal(FARGS,
+                      "Can only write result of arithmetic combination "
+                      "of two matrices to .xpm file, but %s is .eps.",
+                      epsfile);
         }
         write_combined_matrix(ecombine,
                               opt2fn("-xpm", NFILE, fnm),

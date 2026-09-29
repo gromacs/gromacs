@@ -334,11 +334,9 @@ int gmx_rms(int argc, char* argv[])
 
     if (bFile2 && !bMat && !bBond)
     {
-        fprintf(stderr,
-                "WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
-                "         will not read from %s\n",
-                opt2fn("-f2", NFILE, fnm));
-        bFile2 = FALSE;
+        gmx_fatal(FARGS,
+                  "A second trajectory (-f2) should only be supplied if -m and/or -bm options are "
+                  "supplied.\n");
     }
 
     if (bDelta)
@@ -360,10 +358,7 @@ int gmx_rms(int argc, char* argv[])
 
     if (!bTop && bBond)
     {
-        fprintf(stderr,
-                "WARNING: Need a run input file for bond angle matrix,\n"
-                "         will not calculate bond angle matrix.\n");
-        bBond = FALSE;
+        gmx_fatal(FARGS, "A .tpr input (-s) is required to compute the bond matrix (-bm).\n");
     }
 
     if (bReset)

@@ -271,7 +271,7 @@ int gmx_g_angle(int argc, char* argv[])
 
     if (!bTrans && bHisto)
     {
-        fprintf(stderr, "Warning: Option -ot is not specified. -oh will not be generated.\n");
+        gmx_fatal(FARGS, "Both -ot and -oh must be specified for -oh to be generated.\n");
     }
 
     if (bChandler && !bCorr)
@@ -281,10 +281,7 @@ int gmx_g_angle(int argc, char* argv[])
 
     if (bFrac && !bRb)
     {
-        fprintf(stderr,
-                "Warning: Option -of should only accompany -type ryckaert-bellemans. Disabling "
-                "-of.\n\n");
-        bFrac = FALSE;
+        gmx_fatal(FARGS, "Option -of can only be used with -type ryckaert-bellemans.\n");
     }
 
     /*

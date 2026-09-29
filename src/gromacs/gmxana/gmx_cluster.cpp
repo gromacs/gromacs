@@ -1059,11 +1059,7 @@ int gmx_cluster(int argc, char* argv[])
     }
     if (trx_out_fn && !bReadTraj)
     {
-        fprintf(stderr,
-                "\nWarning: "
-                "cannot write cluster structures without reading trajectory\n"
-                "         ignoring option -cl %s\n",
-                trx_out_fn);
+        gmx_fatal(FARGS, "An input trajectory file (-f) is required to generate -cl %s", trx_out_fn);
     }
 
     method = 1;

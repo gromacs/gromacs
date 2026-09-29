@@ -28,3 +28,13 @@ starting from 1. This means that the AMBER19SB and AMBER14SB force fields now us
 hydrogen names, (i.e. HB2 and HB3 for methylene hydrogens instead of HB1 and HB2). This is more
 consistent with the naming in the original Amber force field files and with the IUPAC standard
 for hydrogen names.
+
+Warnings previously changing user inputs converted to fatal errors
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Various warnings in analysis tools previously would warn the user that input combinations were
+incompatible and the desired output would not be produced. To prevent confusion or the need to
+parse lengthy log files in order to verify the outputs of the tools, these warnings were converted
+to fatal errors so that only valid combinations of inputs will result in successful execution.
+
+:issue:`5626`
