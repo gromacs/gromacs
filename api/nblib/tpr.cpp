@@ -141,7 +141,7 @@ TprReader::TprReader(std::string filename)
                      ? 0.0
                      : inputRecord.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
     update_mdatoms(mdAtoms->mdatoms(), initMassLambda);
-    auto numParticles = mdAtoms->mdatoms()->nr;
+    auto numParticles = ntopatoms;
     charges_.resize(numParticles);
     particleTypeIdOfAllParticles_.resize(numParticles);
     inverseMasses_.resize(numParticles);

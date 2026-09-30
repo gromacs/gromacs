@@ -92,8 +92,6 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
                        1),
     numTCoupleGroups_(numTCoupleGroups)
 {
-    mdAtoms_.nr = numAtoms_;
-
     for (int i = 0; i < numAtoms_; i++)
     {
         // Typical PBC box size is tens of nanometers

@@ -200,73 +200,69 @@ void atoms2md(const gmx_mtop_t&        mtop,
     const SimulationGroups& groups = mtop.groups;
 
     auto* md = mdAtoms->mdatoms();
-    /* nindex>=0 indicates DD where we use an index */
-    if (nindex >= 0)
-    {
-        md->nr = nindex;
-    }
-    else
-    {
-        md->nr = mtop.natoms;
-    }
+    // When using DD, nindex (>= 0) indicates the size of the map
+    // from local to global atom indices.  MDAtoms needs to allocate
+    // space for home atoms and ghost atoms for force, constraint, and
+    // virtual-site operations.
+    const int numTotalAtoms = (nindex >= 0) ? nindex : mtop.natoms;
 
     { // Brace retained to preserve indentation for reviewer convenience
         if (md->nMassPerturbed)
         {
-            md->massA.resize(md->nr);
-            md->massB.resize(md->nr);
+            md->massA.resize(numTotalAtoms);
+            md->massB.resize(numTotalAtoms);
         }
-        md->massT.resize(md->nr);
-        md->invmass.resizeWithPadding(md->nr);
-        md->invMassPerDim.resize(md->nr);
-        mdAtoms->resizeChargeA(md->nr);
+        md->massT.resize(numTotalAtoms);
+        md->invmass.resizeWithPadding(numTotalAtoms);
+        md->invMassPerDim.resize(numTotalAtoms);
+        mdAtoms->resizeChargeA(numTotalAtoms);
         if (md->nPerturbed > 0)
         {
-            mdAtoms->resizeChargeB(md->nr);
+            mdAtoms->resizeChargeB(numTotalAtoms);
         }
-        md->typeA.resize(md->nr);
+        md->typeA.resize(numTotalAtoms);
         if (md->nPerturbed)
         {
-            md->typeB.resize(md->nr);
+            md->typeB.resize(numTotalAtoms);
         }
         if (bLJPME)
         {
-            md->sqrt_c6A.resize(md->nr);
-            md->sigmaA.resize(md->nr);
-            md->sigma3A.resize(md->nr);
+            md->sqrt_c6A.resize(numTotalAtoms);
+            md->sigmaA.resize(numTotalAtoms);
+            md->sigma3A.resize(numTotalAtoms);
             if (md->nPerturbed)
             {
-                md->sqrt_c6B.resize(md->nr);
-                md->sigmaB.resize(md->nr);
-                md->sigma3B.resize(md->nr);
+                md->sqrt_c6B.resize(numTotalAtoms);
+                md->sigmaB.resize(numTotalAtoms);
+                md->sigma3B.resize(numTotalAtoms);
             }
         }
-        md->ptype.resize(md->nr);
+        md->ptype.resize(numTotalAtoms);
         if (opts->ngtc > 1)
         {
-            md->cTC.resize(md->nr);
+            md->cTC.resize(numTotalAtoms);
             /* We always copy cTC with domain decomposition */
         }
-        md->cENER.resize(md->nr);
+        md->cENER.resize(numTotalAtoms);
         if (inputrec.useConstantAcceleration)
         {
-            md->cACC.resize(md->nr);
+            md->cACC.resize(numTotalAtoms);
         }
         if (inputrecFrozenAtoms(&inputrec))
         {
-            md->cFREEZE.resize(md->nr);
+            md->cFREEZE.resize(numTotalAtoms);
         }
         if (md->bVCMgrps)
         {
-            md->cVCM.resize(md->nr);
+            md->cVCM.resize(numTotalAtoms);
         }
         if (md->bOrires)
         {
-            md->cORF.resize(md->nr);
+            md->cORF.resize(numTotalAtoms);
         }
         if (md->nPerturbed)
         {
-            md->bPerturbed.resize(md->nr);
+            md->bPerturbed.resize(numTotalAtoms);
         }
 
         // Note that these user groups are empty
@@ -275,11 +271,11 @@ void atoms2md(const gmx_mtop_t&        mtop,
         // gprnrU1 = (md->cU1.empty() ? 0 : md->cU1[localatindex])
         if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User1].empty())
         {
-            md->cU1.resize(md->nr);
+            md->cU1.resize(numTotalAtoms);
         }
         if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User2].empty())
         {
-            md->cU2.resize(md->nr);
+            md->cU2.resize(numTotalAtoms);
         }
     }
 
@@ -293,7 +289,7 @@ void atoms2md(const gmx_mtop_t&        mtop,
     // In grompp, OpenMP is not initialized and nthreads_get returns 0. We want 1 thread in this case.
     const int gmx_unused nthreads = std::max(gmx_omp_nthreads_get(ModuleMultiThread::Default), 1);
 #pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(mTopLookUp)
-    for (int i = 0; i < md->nr; i++)
+    for (int i = 0; i < numTotalAtoms; i++)
     {
         try
         {
@@ -515,10 +511,10 @@ void atoms2md(const gmx_mtop_t&        mtop,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
-    if (md->nr > 0)
+    if (numTotalAtoms > 0)
     {
         /* Pad invmass with 0 so a SIMD MD update does not change v and x */
-        for (int i = md->nr; i < md->invmass.paddedSize(); i++)
+        for (int i = numTotalAtoms; i < md->invmass.paddedSize(); i++)
         {
             md->invmass[i] = 0;
         }
@@ -538,10 +534,12 @@ void update_mdatoms(t_mdatoms* md, real lambda)
     {
         real L1 = 1 - lambda;
 
+        const int numTotalAtoms = md->massT.size();
+
         /* Update masses of perturbed atoms for the change in lambda */
         int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-        for (int i = 0; i < md->nr; i++)
+        for (int i = 0; i < numTotalAtoms; i++)
         {
             if (md->bPerturbed[i])
             {

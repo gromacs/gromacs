@@ -1143,7 +1143,7 @@ void relax_shell_flexcon(FILE*                         fplog,
 
     if (gmx_debug_at)
     {
-        pr_rvecs(debug, 0, "force0", as_rvec_array(force[Min].data()), md.nr);
+        pr_rvecs(debug, 0, "force0", as_rvec_array(force[Min].data()), force[Min].size());
     }
 
     if (!shells.empty() || nflexcon > 0)

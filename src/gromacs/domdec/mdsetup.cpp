@@ -127,7 +127,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
 
     if (vsite)
     {
-        vsite->setVirtualSites(top->idef.il, mdatoms->nr, mdatoms->homenr, mdatoms->ptype);
+        vsite->setVirtualSites(top->idef.il, numTotalAtoms, mdatoms->homenr, mdatoms->ptype);
     }
 
     /* Note that with DD only flexible constraints, not shells, are supported
@@ -219,7 +219,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
     if (constr)
     {
         constr->setConstraints(top,
-                               mdatoms->nr,
+                               numTotalAtoms,
                                mdatoms->homenr,
                                mdatoms->massT,
                                mdatoms->invmass,

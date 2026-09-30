@@ -1114,7 +1114,7 @@ void LegacySimulator::do_tpi()
     int frame = 0;
 
     if (rerun_fr.natoms - (insertIntoCavity ? gmx::ssize(massesDefiningCavity) : 0)
-        != mdatoms->nr - testAtomsRange.size())
+        != mdatoms->homenr - testAtomsRange.size())
     {
         gmx_fatal(FARGS,
                   "Number of atoms in trajectory (%d)%s "
@@ -1122,7 +1122,7 @@ void LegacySimulator::do_tpi()
                   "minus the number of atoms to insert (%d)\n",
                   rerun_fr.natoms,
                   insertIntoCavity ? " minus one" : "",
-                  mdatoms->nr,
+                  mdatoms->homenr,
                   testAtomsRange.size());
     }
 
