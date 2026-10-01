@@ -119,6 +119,10 @@ public:
     XDR* xdr();
 
 private:
+    //! Helper for doReal to serialize real as TargetFloat
+    template<typename TargetFloat>
+    void doRealImpl(real* value);
+
     //! File handle opened during construction
     FILE* fp_ = nullptr;
     /*! \brief XDR I/O handle using external file pointer.

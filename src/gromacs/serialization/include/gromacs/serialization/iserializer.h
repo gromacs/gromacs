@@ -204,9 +204,16 @@ public:
     {
         static_assert(std::is_same_v<std::underlying_type_t<EnumType>, int>,
                       "Only enums with underlying type int are supported.");
-        auto castedValue = static_cast<int>(*enumValue);
-        doInt(&castedValue);
-        *enumValue = static_cast<EnumType>(castedValue);
+        int intValue;
+        if (!reading())
+        {
+            intValue = static_cast<int>(*enumValue);
+        }
+        doInt(&intValue);
+        if (reading())
+        {
+            *enumValue = static_cast<EnumType>(intValue);
+        }
     }
 
     //! Serialize array of enum values with underlying type.

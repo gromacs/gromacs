@@ -82,9 +82,16 @@ void XdrSerializer::setDoublePrecision(const bool doublePrecision)
 void XdrSerializer::doBool(bool* value)
 {
     // XDR can't do bool natively, so convert to integer
-    int intValue = static_cast<int>(*value);
+    int intValue;
+    if (!reading())
+    {
+        intValue = static_cast<int>(*value);
+    }
     doInt(&intValue);
-    *value = static_cast<bool>(intValue);
+    if (reading())
+    {
+        *value = static_cast<bool>(intValue);
+    }
 }
 
 void XdrSerializer::doUChar(unsigned char* value)
@@ -151,39 +158,40 @@ void XdrSerializer::doDouble(double* value)
     }
 }
 
+template<typename TargetFloat>
+void XdrSerializer::doRealImpl(real* value)
+{
+    // When reading and converting precision, take care not to convert an
+    // uninitialized *value to the other precision, which can trigger a
+    // floating-point exception (e.g. from a signaling NaN or overflow).
+    TargetFloat temp;
+    if (!reading())
+    {
+        temp = static_cast<TargetFloat>(*value);
+    }
+    if constexpr (std::is_same_v<TargetFloat, double>)
+    {
+        doDouble(&temp);
+    }
+    else
+    {
+        doFloat(&temp);
+    }
+    if (reading())
+    {
+        *value = static_cast<real>(temp);
+    }
+}
+
 void XdrSerializer::doReal(real* value)
 {
     if (doublePrecision_)
     {
-        double temp;
-        if (!reading())
-        {
-            temp = static_cast<double>(*value);
-        }
-        if (xdr_double(&xdr_, &temp) == 0)
-        {
-            GMX_THROW(FileIOError("Failed to serialize real(double) value to XDR"));
-        }
-        if (reading())
-        {
-            *value = static_cast<real>(temp);
-        }
+        doRealImpl<double>(value);
     }
     else
     {
-        float temp;
-        if (!reading())
-        {
-            temp = static_cast<float>(*value);
-        }
-        if (xdr_float(&xdr_, &temp) == 0)
-        {
-            GMX_THROW(FileIOError("Failed to serialize real(float) value to XDR"));
-        }
-        if (reading())
-        {
-            *value = static_cast<real>(temp);
-        }
+        doRealImpl<float>(value);
     }
 }
 
@@ -203,90 +211,11 @@ void XdrSerializer::doIvec(IVec* value)
 
 void XdrSerializer::doRvec(rvec* value)
 {
-    // RVec (and rvec) tend to be default-initialized (e.g. with
-    // std::vector<RVec>::resize(n) which means aggregate
-    // initialization, i.e no initialization. Such unintialized
-    // memory can be filled here when reading, but we must take care
-    // not to try to convert such values to the other precision, which
-    // can trigger a floating-point exception.
-    if (doublePrecision_)
-    {
-        dvec    temp;
-        double* d;
-        if constexpr (std::is_same_v<rvec, dvec>)
-        {
-            // No need for conversions
-            d = reinterpret_cast<double*>(&(*value)[0]);
-        }
-        else
-        {
-            if (!reading())
-            {
-                // Convert precision when writing
-                temp[XX] = (*value)[XX];
-                temp[YY] = (*value)[YY];
-                temp[ZZ] = (*value)[ZZ];
-            }
-            d = &(temp[0]);
-        }
-        if (xdr_vector(&xdr_,
-                       reinterpret_cast<char*>(d),
-                       DIM,
-                       static_cast<unsigned int>(sizeof(double)),
-                       reinterpret_cast<xdrproc_t>(xdr_double))
-            == 0)
-        {
-            GMX_THROW(FileIOError("Failed to serialize rvec(double) value to XDR"));
-        }
-        if constexpr (!std::is_same_v<rvec, dvec>)
-        {
-            if (reading())
-            {
-                // Convert precision when reading
-                (*value)[XX] = static_cast<real>(temp[XX]);
-                (*value)[YY] = static_cast<real>(temp[YY]);
-                (*value)[ZZ] = static_cast<real>(temp[ZZ]);
-            }
-        }
-    }
-    else
-    {
-        float  temp[DIM];
-        float* f;
-        if constexpr (std::is_same_v<rvec, dvec>)
-        {
-            if (!reading())
-            {
-                temp[XX] = (*value)[XX];
-                temp[YY] = (*value)[YY];
-                temp[ZZ] = (*value)[ZZ];
-            }
-            f = &(temp[0]);
-        }
-        else
-        {
-            // No need for conversions
-            f = reinterpret_cast<float*>(&((*value)[0]));
-        }
-        if (xdr_vector(&xdr_,
-                       reinterpret_cast<char*>(f),
-                       DIM,
-                       static_cast<unsigned int>(sizeof(float)),
-                       reinterpret_cast<xdrproc_t>(xdr_float))
-            == 0)
-        {
-            GMX_THROW(FileIOError("Failed to serialize rvec(float) value to XDR"));
-        }
-        if constexpr (std::is_same_v<rvec, dvec>)
-        {
-            if (reading())
-            {
-                (*value)[XX] = static_cast<real>(temp[XX]);
-                (*value)[YY] = static_cast<real>(temp[YY]);
-                (*value)[ZZ] = static_cast<real>(temp[ZZ]);
-            }
-        }
-    }
+    // Delegating to doReal handles precision conversion and ensures uninitialized
+    // values are not converted when reading.
+    doReal(&(*value)[XX]);
+    doReal(&(*value)[YY]);
+    doReal(&(*value)[ZZ]);
 }
 
 void XdrSerializer::doRvec(RVec* value)
