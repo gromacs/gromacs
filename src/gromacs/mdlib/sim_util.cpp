@@ -1767,6 +1767,24 @@ void do_force(FILE*                         fplog,
     }
 
 
+    const bool haveGpuNonbondedOrBondedWork =
+            simulationWork.useGpuNonbonded
+            && (stepWork.computeNonbondedForces || domainWork.haveGpuBondedWork);
+
+    if (haveGpuNonbondedOrBondedWork)
+    {
+        // Ensure local and non-local compute kernels will have
+        // the necessary shift vectors on the GPUs in time.
+        wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
+        wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
+        gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
+        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
+    }
+
+    /* Coordinate conversion acts as a synchronization point between local and non-local
+     * streams. All "misc" operations which are needed by both local and non-local
+     * NBNXM kernels must be submitted before. */
     if (!stepWork.doNeighborSearch && !EI_TPI(inputrec.eI) && stepWork.computeNonbondedForces)
     {
         if (stepWork.useGpuXBufferOps)
@@ -1792,13 +1810,12 @@ void do_force(FILE*                         fplog,
         dd_force_flop_start(cr->dd, nrnb);
     }
 
-    if (simulationWork.useGpuNonbonded && (stepWork.computeNonbondedForces || domainWork.haveGpuBondedWork))
+    if (haveGpuNonbondedOrBondedWork)
     {
         ddBalanceRegionHandler.openBeforeForceComputationGpu();
 
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
         if (!stepWork.useGpuXBufferOps)
         {
             gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::Local);

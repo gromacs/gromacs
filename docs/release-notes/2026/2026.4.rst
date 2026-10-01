@@ -86,6 +86,18 @@ Fixed incorrect output forces with staged PP-PME communication
 With GPUs, separate PME rank, staged PP-PME communications, and force-output
 used on non-virial steps, the written forces were lacking the PME contribution.
 
+Fix race condition with stale shift vectors in GPU non-local nonbonded kernel
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With domain decomposition, GPU nonbonded interactions, GPU coordinate
+buffer operations and a changing box (e.g., pressure coupling), the
+non-local nonbonded kernel could use the shift vectors from the previous
+step, leading to incorrect forces between local and non-local atoms
+interacting across a periodic boundary. The effect is expected to be minor
+in well-equilibrated systems.
+
+:issue:`5724`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
