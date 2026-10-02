@@ -66,3 +66,21 @@ gromacs:clang-14:regressiontest:
     - job: gromacs:clang-14:build
     - job: regressiontests:prepare
 
+gromacs:clang-14:test-linking-to-libgromacs:
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0-openmpi-5.0.3
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+  needs:
+    - job: gromacs:clang-14:build
+  script:
+    - cd tests/test-project-linking-to-libgromacs
+    # Once we use cmake 4.3, we can use its File API to make some kinds of
+    # target-dependency issues detectable despite the fact that normal linking succeeds.
+    #- mkdir -p build-dir/.cmake/api/v1/query
+    #- touch build-dir/.cmake/api/v1/query/codemodel-v2
+    - $CMAKE -S . -B build-dir -DCMAKE_PREFIX_PATH=/builds/gromacs/gromacs/install
+    - $CMAKE --build build-dir
+    - build-dir/test-gromacs
+    - ldd build-dir/test-gromacs | grep libgromacs
