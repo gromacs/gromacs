@@ -358,76 +358,85 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
     }
     const int totalAtoms = selectedAtomsIndexMap.has_value() ? selectedAtomsIndexMap->size()
                                                              : atomRange.end()->globalAtomNumber();
-    std::vector<int32_t> residueIds;
-    residueIds.reserve(totalAtoms);
-    std::vector<int32_t> residueNames;
-    residueNames.reserve(totalAtoms);
+    std::vector<int32_t> residueNumbers;
+    residueNumbers.reserve(totalAtoms);
+    // Indices of residue names in the lookup table `residueNameTable`.
+    std::vector<int32_t> residueNameIds;
+    residueNameIds.reserve(totalAtoms);
     std::vector<int32_t> sequence;
-    sequence.reserve(totalAtoms / 3); // A rough estimation of the number of residues (3 atoms per residue)
-    std::vector<int32_t> cachedResIDs;
-    cachedResIDs.reserve(totalAtoms / 3);
+    // A rough estimation of the number of residues (3 atoms per residue)
+    sequence.reserve(totalAtoms / 3);
 
-    // Build the residue index map to re-order the residue indices if `selectedAtomsIndexMap` is given
-    std::vector<std::string> existingResidueNames;
-    existingResidueNames.reserve(1024); // Guess a reasonable size for the lookup table
-    std::vector<int32_t> residueIndices(atomRange.end()->globalAtomNumber(), -1);
-    int                  residueCount = 0;
-    int                  maxStrLength = 0;
+    std::vector<std::string> residueNameTable;
+    // Initialize with a reasonable large residue name lookup table
+    residueNameTable.reserve(1024);
+    int maxStrLength = 0;
+
+    // Residue look-up is unsafe (residue numbers is not bounded by the number of atoms,
+    // may be zero or negative). As atoms in a residue are contiguous within a molecule,
+    // counting the changes gives a unique index without any lookup table.
+    int globalResidueIndex      = -1;
+    int previousLocalResidueId  = -1;
+    int lastEmittedResidueIndex = -1;
+    int selectedResidueCount    = 0;
     for (auto it = atomRange.begin(); it != atomRange.end(); ++it)
     {
-        const int resind = it->residueNumber();
-
-        if (selectedAtomsIndexMap.has_value())
+        const int localResidueId = it->atom().resind;
+        if (it->atomNumberInMol() == 0 || localResidueId != previousLocalResidueId)
         {
-            if (selectedAtomsIndexMap->find(it->globalAtomNumber()) == selectedAtomsIndexMap->end())
-            {
-                continue;
-            }
-
-            // This avoids the expensive find operation for every atom
-            if (residueIndices[resind] == -1)
-            {
-                residueIndices[resind] = residueCount;
-                residueCount += 1;
-            }
-
-            // Switch the indices to 1-based indexing
-            residueIds.push_back(residueIndices[resind] + 1);
+            ++globalResidueIndex;
         }
-        else
+        previousLocalResidueId = localResidueId;
+
+        if (selectedAtomsIndexMap.has_value()
+            && selectedAtomsIndexMap->find(it->globalAtomNumber()) == selectedAtomsIndexMap->end())
         {
-            // Switch the indices to 1-based indexing
-            residueIds.push_back(resind + 1);
+            // The selection exists and does not include this atom, so
+            // do not emit residue information for this atom.
+            continue;
         }
 
-        // Put unique residue names into the string table
-        if (std::find(existingResidueNames.begin(), existingResidueNames.end(), it->residueName())
-            == existingResidueNames.end())
+        // Residues are contiguous, so a change of index is the first atom written of a residue
+        const bool isFirstAtomOfResidue = globalResidueIndex != lastEmittedResidueIndex;
+        if (isFirstAtomOfResidue)
         {
-            existingResidueNames.push_back(it->residueName());
-            maxStrLength = std::max(maxStrLength, static_cast<int32_t>(std::strlen(it->residueName())));
+            ++selectedResidueCount;
+            lastEmittedResidueIndex = globalResidueIndex;
         }
 
-        // Get the index of the atom name and put to residue name list and sequence
-        const int indexOfResidue =
-                std::find(existingResidueNames.begin(), existingResidueNames.end(), it->residueName())
-                - existingResidueNames.begin();
+        /* Without a selection, the original residue numbers of the input are kept. If a
+         * selection is applied, the residues it keeps are renumbered, since the ones left
+         * out would otherwise leave gaps. */
+        residueNumbers.push_back(selectedAtomsIndexMap.has_value() ? selectedResidueCount
+                                                                   : it->residueNumber());
 
-        residueNames.push_back(indexOfResidue);
-        if (std::find(cachedResIDs.begin(), cachedResIDs.end(), resind) == cachedResIDs.end())
+        // As it->residueName() does some non-trivial pointer chasing, store it as local variable.
+        const char* residueName = it->residueName();
+
+        // Put unique residue names into the string table. A name that is not in the table
+        // yet lands at its end, which is the index the search has already computed.
+        const auto foundName = std::find(residueNameTable.begin(), residueNameTable.end(), residueName);
+        const int indexOfResidue = foundName - residueNameTable.begin();
+        if (foundName == residueNameTable.end())
+        {
+            residueNameTable.emplace_back(residueName);
+            maxStrLength = std::max(maxStrLength, static_cast<int32_t>(std::strlen(residueName)));
+        }
+
+        residueNameIds.push_back(indexOfResidue);
+        if (isFirstAtomOfResidue)
         {
             sequence.push_back(indexOfResidue);
-            cachedResIDs.push_back(resind);
         }
     }
 
     // Create the datasets for residue information
     H5mdFixedDataSet<int32_t> datasetResidueId = H5mdDataSetBuilder<int32_t>(baseContainer, c_residueIdName)
-                                                         .withDimension({ residueIds.size() })
+                                                         .withDimension({ residueNumbers.size() })
                                                          .build();
     H5mdFixedDataSet<int32_t> datasetResidueName =
             H5mdDataSetBuilder<int32_t>(baseContainer, c_residueNameIndicesName)
-                    .withDimension({ residueNames.size() })
+                    .withDimension({ residueNameIds.size() })
                     .build();
     H5mdFixedDataSet<int32_t> datasetSequence =
             H5mdDataSetBuilder<int32_t>(baseContainer, c_residueSequenceName)
@@ -435,15 +444,15 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
                     .build();
     H5mdFixedDataSet<std::string> datasetResidueNameTable =
             H5mdDataSetBuilder<std::string>(baseContainer, c_residueNameTableName)
-                    .withDimension({ existingResidueNames.size() })
+                    .withDimension({ residueNameTable.size() })
                     .withMaxStringLength(maxStrLength + 1)
                     .build();
 
     // Write cached data to the datasets
-    datasetResidueId.writeData(residueIds);
-    datasetResidueName.writeData(residueNames);
+    datasetResidueId.writeData(residueNumbers);
+    datasetResidueName.writeData(residueNameIds);
     datasetSequence.writeData(sequence);
-    datasetResidueNameTable.writeData(existingResidueNames);
+    datasetResidueNameTable.writeData(residueNameTable);
 
     setAttribute<int32_t>(baseContainer, c_numResiduesAttributeKey, sequence.size());
 }
