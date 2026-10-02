@@ -29,10 +29,10 @@ jobs:
             openmp_var: "On"
           }
         - {
-            name: "Windows ARM64 MSVC 2022", artifact: "Windows-ARM64-MSVC-2022.7z",
-            os: windows-11-arm,
+            name: "Windows ARM64 MSVC 2026", artifact: "Windows-ARM64-MSVC-2026.7z",
+            os: windows-11-vs2026-arm,
             cc: "cl", cxx: "cl",
-            environment_script: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsarm64.bat",
+            environment_script: "C:/Program Files/Microsoft Visual Studio/18/Enterprise/VC/Auxiliary/Build/vcvarsarm64.bat",
             gpu_var: "Off",
             openmp_var: "On"
           }
