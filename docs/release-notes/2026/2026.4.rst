@@ -191,3 +191,11 @@ Fix CSV output of ``gmx nonbonded-benchmark``
 Previously, the CSV file (``-o`` option) did not contain the results
 unless ``-time`` was also specified.
 
+Fixes to the Colvars library
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This release contains the following bugfixes from the`Colvars repository
+<https://github.com/Colvars/colvars>`_:
+
+* fix: correctly implement the wrap function for orientation_angle (`Colvars PR 943
+  <https://github.com/Colvars/colvars/pull/943>`_)
