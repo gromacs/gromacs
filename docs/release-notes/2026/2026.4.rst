@@ -86,6 +86,15 @@ Fixed incorrect output forces with staged PP-PME communication
 With GPUs, separate PME rank, staged PP-PME communications, and force-output
 used on non-virial steps, the written forces were lacking the PME contribution.
 
+Fix empty domain handling in PP-PME GPU communication
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Inconsistencies in the handling of empty domains in PP-PME coordinate
+communications could have led to deadlocks and missing synchronizations.
+Happened with both threadMPI and GPU-aware MPI
+
+:issue:`5132`
+
 Fix race condition with stale shift vectors in GPU non-local nonbonded kernel
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

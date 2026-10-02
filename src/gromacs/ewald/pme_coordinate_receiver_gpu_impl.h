@@ -115,12 +115,12 @@ public:
      * Return PP co-ordinate transfer event received from PP
      * rank determined from \c senderIndex, for consumer to enqueue
      *
-     * The returned sender index corresponds to a PP rank that
-     * transferred particles this step.
+     * The returned sender index may correspond to a PP rank with an
+     * empty domain, which transfers no particles but still takes part
+     * in the communication.
      *
      * \param[in]  senderIndex   Index of the sender within the set of PP ranks
-     * \returns                  tuple with index of sending PP rank (or -1 when no
-     *                           event was sent (from a PP rank with no particles)
+     * \returns                  tuple with index of sending PP rank
      *                           and corresponding event.
      */
     std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int senderIndex);
@@ -144,9 +144,9 @@ public:
     std::tuple<int, int> ppCommAtomRange(int senderIndex);
 
     /*! \brief
-     * Return number of PP ranks contributing particles to PME-PP communication
+     * Return number of PP ranks communicating with this PME rank
      */
-    int ppCommNumRanksSendingParticles();
+    int ppCommNumRanks();
 
     /*! \brief Mark an event in the sender stream \p senderIndex
      * (which must be valid) and enqueue it into \p stream.
