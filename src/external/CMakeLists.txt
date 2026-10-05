@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
+if(BUILD_TESTING)
     # GTest/GMock suggest linking with pthreads when available for thread safety
     set(CMAKE_THREAD_PREFER_PTHREAD 1)
     find_package(Threads)

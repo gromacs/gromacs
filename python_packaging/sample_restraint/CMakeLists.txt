@@ -155,7 +155,7 @@ add_subdirectory(docs)
 
 # Process CMake configuration for Python and C++ tests.
 include(CTest)
-if(BUILD_TESTING AND (NOT DEFINED GMX_BUILD_UNITTESTS OR GMX_BUILD_UNITTESTS))
+if(BUILD_TESTING)
     # Projects based on this subtree should bundle googletest sources.
     # The GROMACS project already bundles googletest sources for internal use, but
     # they will only be available to this project with some additional management by

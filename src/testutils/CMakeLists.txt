@@ -31,10 +31,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if (NOT GMX_BUILD_UNITTESTS)
-    gmx_add_missing_tests_notice("Unit tests have not been run. You need to set GMX_BUILD_UNITTESTS=ON if you want to build and run them.")
-    return()
-endif()
 
 if (GMX_GPU_CUDA)
     add_library(testutils)

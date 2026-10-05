@@ -21,8 +21,7 @@ functionality of multiple modules.
 Shared code used to implement the tests is in ``src/external/googletest/`` and
 ``src/testutils/`` (see below).
 
-The tests are built if ``BUILD_TESTING=ON`` (the default) and
-``GMX_BUILD_UNITTESTS=ON`` (the default) in CMake. Each module
+The tests are built if ``BUILD_TESTING=ON`` (the default) in CMake. Each module
 produces at least one separate unit test binary
 (:file:`{module}-test`) under ``bin/``, which can execute tests for
 that module.

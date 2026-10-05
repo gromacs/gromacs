@@ -857,9 +857,6 @@ if(WIN32)
     add_definitions(-DNOMINMAX)
 endif()
 
-option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING" ON)
-mark_as_advanced(GMX_BUILD_UNITTESTS)
-gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 
 ########################################################################
 # Our own GROMACS tests

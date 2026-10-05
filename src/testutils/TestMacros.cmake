@@ -65,7 +65,7 @@ elseif (NOT GMX_THREAD_MPI)
 endif()
 
 function (gmx_add_unit_test_library NAME)
-    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+    if (BUILD_TESTING)
         add_library(${NAME} STATIC ${UNITTEST_TARGET_OPTIONS} ${ARGN})
         gmx_target_compile_options(${NAME})
         target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H)
@@ -127,7 +127,7 @@ endfunction ()
 # Note that multi-value options (like source-file lists) must follow the
 # no-option or single-value options.
 function (gmx_add_gtest_executable EXENAME)
-    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+    if (BUILD_TESTING)
         set(_options MPI NVSHMEM HARDWARE_DETECTION DYNAMIC_REGISTRATION)
         set(_multi_value_keywords
             CPP_SOURCE_FILES
@@ -298,7 +298,7 @@ endfunction()
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
-    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+    if (BUILD_TESTING)
         set(_options INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS QUICK_GPU_TEST SLOW_GPU_TEST)
         set(_one_value_args MPI_RANKS OPENMP_THREADS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
