@@ -526,13 +526,13 @@ __global__ void nbfeKernel(const NBAtomDataGpu atdat, const NBParamGpu nbparam, 
                             if (c6c12AB[k].x != 0.0F || c6c12AB[k].y != 0.0F)
                             {
                                 float rInv6;
-                                if constexpr (!useSoftCore)
+                                if constexpr (useSoftCore)
                                 {
-                                    rInv6 = inv_r2 * inv_r2 * inv_r2;
+                                    rInv6 = rPInvV;
                                 }
                                 else
                                 {
-                                    rInv6 = rPInvV;
+                                    rInv6 = inv_r2 * inv_r2 * inv_r2;
                                 }
                                 const float Vvdw6            = c6c12AB[k].x * rInv6;
                                 const float Vvdw12           = c6c12AB[k].y * rInv6 * rInv6;

@@ -468,13 +468,13 @@ __global__ void NB_FEP_KERNEL_FUNC_NAME(nbfe_kernel, _F_cuda)
 
                             if (c6AB[k] != 0.0F || c12AB[k] != 0.0F)
                             {
-                                if (!useSoftCore)
+                                if (useSoftCore)
                                 {
-                                    rInv6 = inv_r2 * inv_r2 * inv_r2;
+                                    rInv6 = rPInvV;
                                 }
                                 else
                                 {
-                                    rInv6 = rPInvV;
+                                    rInv6 = inv_r2 * inv_r2 * inv_r2;
                                 }
                                 float Vvdw6                  = c6AB[k] * rInv6;
                                 float Vvdw12                 = c12AB[k] * rInv6 * rInv6;
