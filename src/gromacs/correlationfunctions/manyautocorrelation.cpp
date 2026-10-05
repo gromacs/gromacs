@@ -108,9 +108,14 @@ int many_auto_correl(std::vector<std::vector<real>>* c)
             gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
             /* Allocate temporary arrays */
             in.resize(2 * nfft, 0);
-            out.resize(2 * nfft, 0);
+            out.resize(2 * nfft);
             for (int i = i0; (i < i1); i++)
             {
+                // Zero the whole array before every series: the entries
+                // beyond ndata would otherwise still contain the power
+                // spectrum of the previous series processed by this
+                // thread, corrupting every correlation but the first.
+                std::fill(in.begin(), in.end(), 0.0);
                 for (size_t j = 0; j < ndata; j++)
                 {
                     in[2 * j + 0] = (*c)[i][j];
