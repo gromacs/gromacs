@@ -1718,6 +1718,11 @@ std::string getCoolQuote()
         { "Ken Thompson said one of his most productive days was throwing away a thousand lines of "
           "code. I enjoyed the day I removed the former particle-decomposition scheme!",
           "Mark Abraham" },
+        { "We trust DFT... well, I don't trust DFT ever.", "Gerrit Groenhof" },
+        { "One event is no event.", "Gerrit Groenhof" },
+        { "People [whose names are shown] in red are people that did something here, I think. "
+          "[Berk Hess's name was shown in black.]",
+          "Gerrit Groenhof" },
     };
 
     if (beCool())
