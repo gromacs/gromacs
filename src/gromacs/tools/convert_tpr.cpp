@@ -365,12 +365,8 @@ void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModu
         "tpx file, which is useful when you want to remove the solvent from",
         "your [REF].tpx[ref] file, or when you want to make e.g. a pure C[GRK]alpha[grk] ",
         "[REF].tpx[ref] file.",
-        "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
-        "this to work.",
-        "[BB]WARNING: this [REF].tpx[ref] file is not fully functional[bb].[PAR]",
-        "[BB]3.[bb] by setting the charges of a specified group",
-        "to zero. This is useful when doing free energy estimates",
-        "using the LIE (Linear Interaction Energy) method."
+        "[BB]WARNING: this [REF].tpx[ref] file is not fully functional[bb][PAR]",
+        "[BB]3.[bb] by generating new velocities at a given temperature",
     };
 
     settings->setHelpText(desc);

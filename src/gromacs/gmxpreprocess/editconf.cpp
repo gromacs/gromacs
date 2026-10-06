@@ -658,8 +658,8 @@ int gmx_editconf(int argc, char* argv[])
         "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2."
     };
     const char* bugs[] = {
-        "For complex molecules, the periodicity removal routine may break down, ",
-        "in that case you can use [gmx-trjconv]."
+        "For complex molecules, the periodicity removal routine may break down, "
+        "in that case you can use [gmx-trjconv].",
     };
     static real dist = 0.0;
     static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW = FALSE, bCONECT = FALSE;

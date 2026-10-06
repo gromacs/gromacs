@@ -559,43 +559,17 @@ void LegacySimulator::do_md()
                 cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata.get(), simulationWork);
     }
 
-    if (!ir->bContinuation)
+    if (!ir->bContinuation && constr_)
     {
-        if (state_->hasEntry(StateEntry::V))
-        {
-            auto v = makeArrayRef(state_->v);
-            /* Set the velocities of vsites, shells and frozen atoms to zero */
-            for (int i = 0; i < md->homenr; i++)
-            {
-                if (md->ptype[i] == ParticleType::Shell)
-                {
-                    clear_rvec(v[i]);
-                }
-                else if (!md->cFREEZE.empty())
-                {
-                    for (int m = 0; m < DIM; m++)
-                    {
-                        if (ir->opts.nFreeze[md->cFREEZE[i]][m])
-                        {
-                            v[i][m] = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (constr_)
-        {
-            /* Constrain the initial coordinates and velocities */
-            do_constrain_first(fpLog_,
-                               constr_,
-                               *ir,
-                               md->homenr,
-                               state_->x.arrayRefWithPadding(),
-                               state_->v.arrayRefWithPadding(),
-                               state_->box,
-                               state_->lambda[FreeEnergyPerturbationCouplingType::Bonded]);
-        }
+        /* Constrain the initial coordinates and velocities */
+        do_constrain_first(fpLog_,
+                           constr_,
+                           *ir,
+                           md->homenr,
+                           state_->x.arrayRefWithPadding(),
+                           state_->v.arrayRefWithPadding(),
+                           state_->box,
+                           state_->lambda[FreeEnergyPerturbationCouplingType::Bonded]);
     }
 
     const int nstfep = computeFepPeriod(*ir, replExParams_);

@@ -203,12 +203,10 @@ StatePropagatorData::StatePropagatorData(int                        numAtoms,
     lastStep_(-1),
     globalState_(globalState)
 {
-    bool stateHasVelocities;
     // Local state only becomes valid now.
     if (cr->dd)
     {
         dd_init_local_state(*cr->dd, globalState, localState);
-        stateHasVelocities = localState->hasEntry(StateEntry::V);
         setLocalState(localState);
     }
     else
@@ -218,7 +216,6 @@ StatePropagatorData::StatePropagatorData(int                        numAtoms,
         x_           = globalState->x;
         v_           = globalState->v;
         copy_mat(globalState->box, box_);
-        stateHasVelocities = globalState->hasEntry(StateEntry::V);
         previousX_.resizeWithPadding(localNAtoms_);
         ddpCount_ = globalState->ddp_count;
         copyPosition();
@@ -237,34 +234,9 @@ StatePropagatorData::StatePropagatorData(int                        numAtoms,
         fGlobal_.resizeWithPadding(totalNumAtoms_);
     }
 
-    if (!inputrec->bContinuation)
+    if (!inputrec->bContinuation && inputrec->eI == IntegrationAlgorithm::VV)
     {
-        if (stateHasVelocities)
-        {
-            auto v = velocitiesView().paddedArrayRef();
-            // Set the velocities of vsites, shells and frozen atoms to zero
-            for (int i = 0; i < mdatoms->homenr; i++)
-            {
-                if (mdatoms->ptype[i] == ParticleType::Shell)
-                {
-                    clear_rvec(v[i]);
-                }
-                else if (!mdatoms->cFREEZE.empty())
-                {
-                    for (int m = 0; m < DIM; m++)
-                    {
-                        if (inputrec->opts.nFreeze[mdatoms->cFREEZE[i]][m])
-                        {
-                            v[i][m] = 0;
-                        }
-                    }
-                }
-            }
-        }
-        if (inputrec->eI == IntegrationAlgorithm::VV)
-        {
-            vvResetVelocities_ = true;
-        }
+        vvResetVelocities_ = true;
     }
 }
 

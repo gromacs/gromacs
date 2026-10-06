@@ -495,16 +495,56 @@ void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandler* wi)
     }
 }
 
-void check_vel(gmx_mtop_t* mtop, rvec v[])
+/*! \brief Zeroes velocity components for special particles
+ *
+ * Shells and virtual sites have their degrees of freedom constructed
+ * from other particles and thus do not have velocity. Particles with
+ * frozen dimensions likewise do not have velocities. These should be
+ * zeroed during grompp, so users cannot be concerned over observing a
+ * non-zero velocity, and if they see one it's a bug.
+ *
+ * The implementation is fairly efficient even for an enormous
+ * system, but many simulations have none of these special atom
+ * types and would waste time here. If we need to optimize, then
+ * we can make the previous code count the numbers of such
+ * particles and then we would know in advance whether we need to
+ * do such clearing. */
+void clearSpecialParticleVelocities(const bool        bGenVel,
+                                    const t_inputrec& ir,
+                                    const gmx_mtop_t& mtop,
+                                    ArrayRef<RVec>    v)
 {
-    for (const AtomProxy atomP : AtomRange(*mtop))
+    const bool clearNonFrozenSpecialParticles = bGenVel;
+    const bool hasFrozenParticles             = inputrecFrozenAtoms(&ir);
+    if (!clearNonFrozenSpecialParticles and !hasFrozenParticles)
     {
-        const t_atom& local = atomP.atom();
-        int           i     = atomP.globalAtomNumber();
-        if (local.ptype == ParticleType::Shell || local.ptype == ParticleType::Bond
-            || local.ptype == ParticleType::VSite)
+        // nothing to do
+        return;
+    }
+    for (const AtomProxy atomP : AtomRange(mtop))
+    {
+        const t_atom& atom = atomP.atom();
+        const int     i    = atomP.globalAtomNumber();
+        if (clearNonFrozenSpecialParticles)
         {
-            clear_rvec(v[i]);
+            if (atom.ptype == ParticleType::Shell || atom.ptype == ParticleType::Bond
+                || atom.ptype == ParticleType::VSite)
+            {
+                // Found a special particle, zero its velocitiy
+                v[i] = RVec{ 0, 0, 0 };
+            }
+        }
+        if (hasFrozenParticles)
+        {
+            const int atomGroup = getGroupType(mtop.groups, SimulationAtomGroupType::Freeze, i);
+            for (int d = 0; d < DIM; ++d)
+            {
+                if (ir.opts.nFreeze[atomGroup][d])
+                {
+                    // Found an atom with a frozen dimension, zero its velocity
+                    v[i][d] = 0.0_real;
+                }
+            }
         }
     }
 }
@@ -2536,11 +2576,6 @@ int gmx_grompp(int argc, char* argv[])
     {
         pr_symtab(debug, 0, "After virtual sites", &sys.symtab);
     }
-    /* Check velocity for virtual sites and shells */
-    if (bGenVel)
-    {
-        check_vel(&sys, state.v.rvec_array());
-    }
 
     /* check for shells and inpurecs */
     check_shells_inputrec(&sys, ir, &wi);
@@ -2594,6 +2629,12 @@ int gmx_grompp(int argc, char* argv[])
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("initialising group options...");
     }
     do_index(mdparin, ftp2path_optional(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, &wi);
+
+    // Clear velocity fields for special or frozen particles.  This
+    // must come after the topology has been read and MD groups have
+    // been built and before initial temperatures have been
+    // calculated.
+    clearSpecialParticleVelocities(bGenVel, *ir, sys, state.v);
 
     // Notify topology to MdModules for pre-processing after all indexes were built
     mdModules.notifiers().preProcessingNotifier_.notify(&sys);
@@ -2879,7 +2920,7 @@ int gmx_grompp(int argc, char* argv[])
         }
     }
 
-    // Hand over box and coordiantes to MdModules before they evaluate their final parameters
+    // Hand over box and coordinates to MdModules before they evaluate their final parameters
     {
         CoordinatesAndBoxPreprocessed coordinatesAndBoxPreprocessed;
         coordinatesAndBoxPreprocessed.coordinates_ = state.x.arrayRefWithPadding();
