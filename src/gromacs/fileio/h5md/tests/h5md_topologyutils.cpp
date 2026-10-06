@@ -138,7 +138,115 @@ void createDisulfideBondTopology(gmx_mtop_t*               topology,
     }
 }
 
+/*! \brief Build a topology of \p numMols copies of a molecule with one atom per residue.
+ *
+ * \param[out] topology        Topology to fill.
+ * \param[in]  residueNumbers  Residue number of each residue, as an input file would give it.
+ * \param[in]  numMols         Number of copies of the molecule.
+ */
+void createOneAtomPerResidueTopology(gmx_mtop_t*               topology,
+                                     const ArrayRef<const int> residueNumbers,
+                                     const int                 numMols)
+{
+    topology->moltype.resize(1);
+    topology->molblock.resize(1);
+
+    gmx_moltype_t& molType = topology->moltype[0];
+    molType.atoms.nr       = static_cast<int>(residueNumbers.size());
+    molType.atoms.nres     = static_cast<int>(residueNumbers.size());
+    snew(molType.atoms.atom, molType.atoms.nr);
+    snew(molType.atoms.atomname, molType.atoms.nr);
+    snew(molType.atoms.resinfo, molType.atoms.nres);
+
+    /* t_atoms reaches names through char**, so it has to be given the address of a
+     * modifiable char* that outlives the topology. That rules out const or constexpr,
+     * whose address is a const char** and no longer convertible. done_atom() frees the
+     * arrays but not the names, so this storage is not freed along with them. */
+    static char  nameStorage[] = "RES";
+    static char* name          = nameStorage;
+
+    for (int i = 0; i < molType.atoms.nr; ++i)
+    {
+        molType.atoms.atom[i].resind  = i;
+        molType.atoms.atomname[i]     = &name;
+        molType.atoms.resinfo[i].nr   = residueNumbers[i];
+        molType.atoms.resinfo[i].name = &name;
+    }
+
+    topology->molblock[0].type = 0;
+    topology->molblock[0].nmol = numMols;
+    topology->natoms           = molType.atoms.nr * numMols;
+    topology->finalize();
+}
+
 using H5mdTopologyUtilTest = H5mdTestBase;
+
+/*! \brief Residue numbers far above the atom count do not overrun any buffer.
+ *
+ * AtomProxy::residueNumber() reports the number the input file gave, which is bounded by
+ * nothing in particular: a domain taken out of a larger structure keeps the numbering of
+ * the original. Identifying residues by that number would index a buffer sized by the
+ * number of atoms.
+ */
+TEST_F(H5mdTopologyUtilTest, ResidueNumbersAboveAtomCountAreHandled)
+{
+    // Four atoms, one residue each, numbered as a fragment of a larger structure
+    const std::vector<int> residueNumbers = { 9000, 9001, 9002, 9003 };
+    gmx_mtop_t             topology;
+    createOneAtomPerResidueTopology(&topology, residueNumbers, 1);
+    ASSERT_EQ(topology.natoms, 4);
+
+    AtomRange              atomRange(topology);
+    const std::vector<int> selectedIndices       = { 0, 1, 2, 3 };
+    IndexMap               selectedAtomsIndexMap = mapSelectionToInternalIndices(selectedIndices);
+
+    const auto [baseContainer, baseContainerGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/particles/highResidueNumbers"));
+    writeResidueInfo(atomRange, baseContainer, selectedAtomsIndexMap);
+
+    // A selection renumbers the residues it keeps, so four residues become 1..4
+    H5mdFixedDataSet<int32_t> dataResidueId(baseContainer, "residue_id");
+    std::vector<int32_t>      retResidueIds(dataResidueId.numValues());
+    dataResidueId.readData(retResidueIds);
+    EXPECT_EQ(retResidueIds, (std::vector<int32_t>{ 1, 2, 3, 4 }));
+
+    const auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
+    ASSERT_TRUE(retNrResidues.has_value());
+    EXPECT_EQ(retNrResidues.value(), 4);
+}
+
+/*! \brief Residues of repeated molecules are kept apart.
+ *
+ * Every copy of a molecule reports the residue numbers of the molecule type, so those
+ * numbers repeat across the copies and cannot identify a residue on their own.
+ */
+TEST_F(H5mdTopologyUtilTest, RepeatedMoleculesDoNotShareResidues)
+{
+    // Two atoms per molecule, one residue each, numbered 1 and 2 in every copy
+    const std::vector<int> residueNumbers = { 1, 2 };
+    gmx_mtop_t             topology;
+    createOneAtomPerResidueTopology(&topology, residueNumbers, 3);
+    ASSERT_EQ(topology.natoms, 6);
+
+    AtomRange              atomRange(topology);
+    const std::vector<int> selectedIndices       = { 0, 1, 2, 3, 4, 5 };
+    IndexMap               selectedAtomsIndexMap = mapSelectionToInternalIndices(selectedIndices);
+
+    const auto [baseContainer, baseContainerGuard] =
+            makeH5mdGroupGuard(createGroup(fileid(), "/particles/repeatedMolecules"));
+    writeResidueInfo(atomRange, baseContainer, selectedAtomsIndexMap);
+
+    // Six residues, not the two that the repeated residue numbers alone would suggest
+    H5mdFixedDataSet<int32_t> dataResidueId(baseContainer, "residue_id");
+    std::vector<int32_t>      retResidueIds(dataResidueId.numValues());
+    dataResidueId.readData(retResidueIds);
+    EXPECT_EQ(retResidueIds, (std::vector<int32_t>{ 1, 2, 3, 4, 5, 6 }))
+            << "Residues of different copies of a molecule must not be merged";
+
+    const auto retNrResidues = getAttribute<int32_t>(baseContainer, "residue_count");
+    ASSERT_TRUE(retNrResidues.has_value());
+    EXPECT_EQ(retNrResidues.value(), 6);
+}
 
 TEST_F(H5mdTopologyUtilTest, WriteFullTopologyAtomProp)
 {

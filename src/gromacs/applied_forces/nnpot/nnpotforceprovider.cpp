@@ -386,6 +386,10 @@ void NNPotForceProvider::preparePairlistInput(const matrix& box)
     shiftVectors_.clear();
     shiftVectors_.reserve(numPairs);
 
+    // precompute shifts
+    std::array<RVec, c_numShiftVectors> shiftVecs;
+    calc_shifts(box, shiftVecs);
+
     for (int i = 0; i < numPairs; i++)
     {
         const auto [atomPair, shiftIndex] = fullPairlist_[i];
@@ -399,13 +403,9 @@ void NNPotForceProvider::preparePairlistInput(const matrix& box)
                 inputIdxB.has_value())
             {
                 // no need to check cutoff: pairlist already comes filtered by cutoff
-                RVec       shift;
-                const IVec unitShift = shiftIndexToXYZ(shiftIndex);
-                mvmul_ur0(box, unitShift.toRVec(), shift);
-
                 pairlistForModel_.push_back(inputIdxA.value());
                 pairlistForModel_.push_back(inputIdxB.value());
-                shiftVectors_.push_back(shift);
+                shiftVectors_.push_back(shiftVecs[shiftIndex]);
             }
         }
     }

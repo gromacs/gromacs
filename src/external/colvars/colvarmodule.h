@@ -128,7 +128,7 @@ private:
   int version_int = 0;
 
   /// Patch version number; value will be set in colvarmodule.cpp
-  int patch_version_int = 0;
+  int patch_version_int = 4; // GROMACS 2026.4
 
 public:
 
