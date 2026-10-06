@@ -52,6 +52,7 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -72,26 +73,6 @@
 
 namespace gmx
 {
-
-namespace
-{
-
-/*! \brief Resizes \p v to \p size elements and sets every element to \p value.
- *
- * This differs from \c std::vector::resize(size, value), which only initializes the elements
- * that are newly added and leaves the ones the vector already holds untouched. The LINCS host
- * buffers persist across LincsGpu::set() calls and are only sparsely written afterwards, so
- * every element has to be reset to its sentinel value on each call, whether the buffer grows,
- * shrinks or keeps its size.
- */
-template<typename T, typename Allocator>
-void resizeAndFill(std::vector<T, Allocator>* v, const std::size_t size, const T& value)
-{
-    v->resize(size);
-    std::fill(v->begin(), v->end(), value);
-}
-
-} // namespace
 
 void LincsGpu::apply(const DeviceBuffer<Float3>& d_x,
                      DeviceBuffer<Float3>        d_xp,
@@ -321,8 +302,12 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
         AtomPair pair;
         pair.i = -1;
         pair.j = -1;
-        resizeAndFill(&h_constraints_, kernelParams_.numConstraintsThreads, pair);
-        resizeAndFill(&h_constraintsTargetLengths_, kernelParams_.numConstraintsThreads, 0.0F);
+        // The LINCS host buffers persist across LincsGpu::set() calls
+        // and are only sparsely written afterwards, so every element
+        // has to be reset to its sentinel value on each call, whether
+        // the buffer grows, shrinks or keeps its size.
+        h_constraints_.assign(kernelParams_.numConstraintsThreads, pair);
+        h_constraintsTargetLengths_.assign(kernelParams_.numConstraintsThreads, 0.0F);
     }
 
 
@@ -380,16 +365,16 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     const size_t coupledIndicesSize = maxCoupledConstraints_ * coupledCountsSize;
     const size_t massFactorsSize    = coupledIndicesSize;
 
-    resizeAndFill(&h_coupledConstraintsCounts_, coupledCountsSize, 0);
-    resizeAndFill(&h_coupledConstraintsIndices_, coupledIndicesSize, -1);
-    resizeAndFill(&h_massFactors_, massFactorsSize, -1.0F);
+    h_coupledConstraintsCounts_.assign(coupledCountsSize, 0);
+    h_coupledConstraintsIndices_.assign(coupledIndicesSize, -1);
+    h_massFactors_.assign(massFactorsSize, -1.0F);
 
     // Only perform constraint re-ordering with HIP
     if constexpr (GMX_GPU_HIP)
     {
         // findConstraintGroupSizes() only writes the entries of the groups it detects, so the
         // whole buffer needs the sentinel value first to make sure no stale groups survive.
-        resizeAndFill(&h_constraintGroupSize_, kernelParams_.numConstraintsThreads, -1);
+        h_constraintGroupSize_.assign(kernelParams_.numConstraintsThreads, -1);
         findConstraintGroupSizes(numConstraints, h_constraints_, h_constraintGroupSize_);
     }
 
