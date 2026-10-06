@@ -101,7 +101,8 @@ void SettleGpu::apply(const DeviceBuffer<Float3>& d_x,
     if (computeVirial)
     {
         copyFromDeviceBuffer(
-                h_virialScaled_.data(), &d_virialScaled_, 0, 6, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
+                h_virialScaled_.data(), &d_virialScaled_, 0, 6, deviceStream_, GpuApiCallBehavior::Async, nullptr);
+        deviceStream_.synchronize();
 
         // Mapping [XX, XY, XZ, YY, YZ, ZZ] internal format to a tensor object
         virialScaled[XX][XX] += h_virialScaled_[0];
@@ -119,7 +120,10 @@ void SettleGpu::apply(const DeviceBuffer<Float3>& d_x,
 }
 
 SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
-    deviceContext_(deviceContext), deviceStream_(deviceStream)
+    deviceContext_(deviceContext),
+    deviceStream_(deviceStream),
+    h_virialScaled_(6, HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported }),
+    h_atomIds_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported })
 {
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
@@ -141,7 +145,6 @@ SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext,
                                          settleParams.dHH);
 
     allocateDeviceBuffer(&d_virialScaled_, 6, deviceContext_);
-    h_virialScaled_.resize(6);
 }
 
 SettleGpu::~SettleGpu()
@@ -188,7 +191,7 @@ void SettleGpu::set(const InteractionDefinitions& idef)
             h_atomIds_[i] = settler;
         }
         copyToDeviceBuffer(
-                &d_atomIds_, h_atomIds_.data(), 0, numSettles_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
+                &d_atomIds_, h_atomIds_.data(), 0, numSettles_, deviceStream_, GpuApiCallBehavior::Async, nullptr);
     }
 }
 

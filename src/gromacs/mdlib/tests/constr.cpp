@@ -52,6 +52,7 @@
 #include <cassert>
 #include <cmath>
 
+#include <array>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -93,6 +94,7 @@
 #    include "gromacs/gpu_utils/device_stream.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gputraits.h"
+#    include "gromacs/gpu_utils/hostallocator.h"
 #    include "gromacs/mdlib/lincs_gpu.h"
 #endif
 
@@ -211,6 +213,35 @@ void applyLincsGpu(const DeviceContext& deviceContext,
 
     auto lincsGpu = std::make_unique<LincsGpu>(
             testData->ir_.nLincsIter, testData->ir_.nProjOrder, deviceContext, deviceStream);
+
+    // Pin the invmass buffer now that we have a DeviceContext, so async H2D copies work.
+    testData->invmass_ = HostVector<real>(
+            testData->invmass_, HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+    {
+        /* LincsGpu keeps its buffers across set() calls, and with domain decomposition the number
+         * of constraints on a rank changes at every repartitioning. So before the call under test,
+         * call set() with no constraints, which returns early, and then with one constraint more.
+         * The call under test then has fewer constraints, so the slots the previous call filled
+         * have to be reset to dummy constraints.
+         */
+        SCOPED_TRACE("Preliminary calls to set() to cover resizing edge cases");
+        {
+            SCOPED_TRACE("Call set() with no constraints");
+            InteractionDefinitions emptyIdef = *testData->idef_;
+            emptyIdef.il[InteractionFunction::Constraints].clear();
+            lincsGpu->set(emptyIdef, testData->numAtoms_, testData->invmass_);
+        }
+        {
+            SCOPED_TRACE("Call set() with one constraint more");
+            InteractionDefinitions   largerIdef = *testData->idef_;
+            InteractionList&         largerList = largerIdef.il[InteractionFunction::Constraints];
+            const int                type       = largerList.iatoms[0];
+            const std::array<int, 2> atoms      = { largerList.iatoms[1], largerList.iatoms[2] };
+            largerList.push_back(type, atoms);
+            lincsGpu->set(largerIdef, testData->numAtoms_, testData->invmass_);
+            deviceStream.synchronize();
+        }
+    }
 
     bool updateVelocities = true;
     int  numAtoms         = testData->numAtoms_;

@@ -42,6 +42,7 @@
 
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/booltype.h"
 #include "gromacs/utility/real.h"
@@ -80,7 +81,7 @@ typedef struct t_mdatoms
     //! Atomic mass in present state
     std::vector<real> massT;
     //! Inverse atomic mass per atom, 0 for vsites and shells
-    gmx::PaddedVector<real> invmass;
+    gmx::PaddedHostVector<real> invmass;
     //! Inverse atomic mass per atom and dimension, 0 for vsites, shells and frozen dimensions
     std::vector<gmx::RVec> invMassPerDim;
     //! Atomic charge in A state
@@ -108,7 +109,7 @@ typedef struct t_mdatoms
     //! Particle type
     std::vector<ParticleType> ptype;
     //! Group index for temperature coupling
-    std::vector<unsigned short> cTC;
+    gmx::HostVector<unsigned short> cTC;
     //! Group index for energy matrix
     std::vector<unsigned short> cENER;
     //! Group index for acceleration

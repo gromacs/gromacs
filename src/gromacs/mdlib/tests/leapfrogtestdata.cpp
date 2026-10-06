@@ -82,7 +82,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     v0_(numAtoms),
     v_(numAtoms),
     f_(numAtoms),
-    inverseMasses_(numAtoms),
+    inverseMasses_(),
     inverseMassesPerDim_(numAtoms),
     kineticEnergyData_(std::vector<real>(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0),
                        EnsembleTemperatureSetting::NotAvailable,
@@ -92,6 +92,8 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
                        1),
     numTCoupleGroups_(numTCoupleGroups)
 {
+    inverseMasses_.resizeWithPadding(numAtoms_);
+
     for (int i = 0; i < numAtoms_; i++)
     {
         // Typical PBC box size is tens of nanometers

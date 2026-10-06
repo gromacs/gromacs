@@ -48,6 +48,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/constraint_gpu_helpers.h"
 #include "gromacs/mdlib/settle.h"
@@ -120,6 +121,9 @@ public:
      *
      * SETTLEs atom ID's is taken from idef.il[InteractionFunction::SETTLE].iatoms.
      *
+     * The copies to the GPU are asynchronous, so the device stream has to be synchronized
+     * between calls.
+     *
      * \param[in] idef    System topology
      */
     void set(const InteractionDefinitions& idef);
@@ -130,16 +134,16 @@ private:
     //! GPU stream
     const DeviceStream& deviceStream_;
 
-    //! Scaled virial tensor (9 reals, GPU)
-    std::vector<float> h_virialScaled_;
-    //! Scaled virial tensor (9 reals, GPU)
+    //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ], CPU)
+    gmx::HostVector<float> h_virialScaled_;
+    //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ], GPU)
     DeviceBuffer<float> d_virialScaled_;
 
     //! Number of settles
     int numSettles_ = 0;
 
     //! Indexes of atoms (.i for oxygen, .j and.k for hydrogens, CPU)
-    std::vector<WaterMolecule> h_atomIds_;
+    gmx::HostVector<WaterMolecule> h_atomIds_;
     //! Indexes of atoms (.i for oxygen, .j and.k for hydrogens, GPU)
     DeviceBuffer<WaterMolecule> d_atomIds_;
     //! Current size of the array of atom IDs

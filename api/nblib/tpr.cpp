@@ -134,7 +134,7 @@ TprReader::TprReader(std::string filename)
 
     int                           ntopatoms = molecularTopology.natoms;
     std::unique_ptr<gmx::MDAtoms> mdAtoms =
-            gmx::makeMDAtoms(nullptr, molecularTopology, inputRecord, false, nullptr);
+            gmx::makeMDAtoms(nullptr, molecularTopology, inputRecord, false, false, nullptr);
     atoms2md(molecularTopology, inputRecord, -1, {}, ntopatoms, mdAtoms.get());
     const double initMassLambda =
             (inputRecord.efep == FreeEnergyPerturbationType::No

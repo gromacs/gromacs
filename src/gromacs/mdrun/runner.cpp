@@ -1992,7 +1992,8 @@ int Mdrunner::mdrunner()
          * mdAtoms is not filled with atom data,
          * as this can not be done now with domain decomposition.
          */
-        mdAtoms = makeMDAtoms(fplog, mtop, *inputrec, thisRankHasPmeGpuTask, deviceStreamManager.get());
+        mdAtoms = makeMDAtoms(
+                fplog, mtop, *inputrec, thisRankHasPmeGpuTask, useGpuForUpdate, deviceStreamManager.get());
         if (globalState && thisRankHasPmeGpuTask)
         {
             // The pinning of coordinates in the global state object works, because we only use

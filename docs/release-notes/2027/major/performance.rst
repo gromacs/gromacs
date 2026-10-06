@@ -17,3 +17,13 @@ all three dimensions are considered when estimating atom density.
 
 :issue:`5622`
 
+
+Reduced host-side blocking in the GPU update and constraints setup
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The mass and temperature-coupling group data that the GPU update and
+constraints upload on every neighbour-search step is now held in pinned
+host memory and copied asynchronously, rather than with blocking copies.
+This cuts the host-side cost of the GPU update and constraints setup by
+roughly a factor of 2.6, with the largest benefit for runs with frequent
+pair-list updates.

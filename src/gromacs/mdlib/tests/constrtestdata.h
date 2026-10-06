@@ -50,6 +50,7 @@
 #include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -88,7 +89,7 @@ public:
     //! Masses
     std::vector<real> masses_;
     //! Inverse masses
-    std::vector<real> invmass_;
+    HostVector<real> invmass_;
     //! Input record (info that usually in .mdp file)
     t_inputrec ir_;
     //! Local topology

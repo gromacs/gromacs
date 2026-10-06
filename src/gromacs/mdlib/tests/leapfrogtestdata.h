@@ -91,7 +91,7 @@ public:
     //! External forces
     PaddedVector<RVec> f_;
     //! Inverse masses of the particles
-    PaddedVector<real> inverseMasses_;
+    PaddedHostVector<real> inverseMasses_;
     //! Inverse masses of the particles per dimension
     std::vector<RVec> inverseMassesPerDim_;
 

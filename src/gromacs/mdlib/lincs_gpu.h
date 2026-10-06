@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/lincs_constraint_group_sizes.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
@@ -162,9 +163,13 @@ public:
      *     idef.il[InteractionFunction::Constraints].iatoms  --- type (T) of constraint and two
      * atom indexes (i1, i2) idef.iparams[T].constr.dA --- target length for constraint of type T
      *
+     * The copies to the GPU are asynchronous, so \p invmass has to be page-locked (pinned)
+     * host memory and has to stay alive until they have completed, and the device stream has to
+     * be synchronized between calls.
+     *
      * \param[in] idef      Local topology data to get information on constraints from.
      * \param[in] numAtoms  Number of atoms.
-     * \param[in] invmass   Inverse masses of atoms.
+     * \param[in] invmass   Inverse masses of atoms, in pinned host memory.
      */
     void set(const InteractionDefinitions& idef, int numAtoms, ArrayRef<const real> invmass);
 
@@ -186,7 +191,7 @@ private:
     LincsGpuKernelParameters kernelParams_;
 
     //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ])
-    std::vector<float> h_virialScaled_;
+    gmx::HostVector<float> h_virialScaled_;
 
     /*! \brief Maximum total number of constraints so far.
      *
@@ -204,6 +209,19 @@ private:
 
     //! Maximum number of coupled constraints
     int maxCoupledConstraints_ = 0;
+
+    //! Host buffer for constrained atom pairs
+    gmx::HostVector<AtomPair> h_constraints_;
+    //! Host buffer for constraint target lengths
+    gmx::HostVector<float> h_constraintsTargetLengths_;
+    //! Host buffer for coupled constraint counts
+    gmx::HostVector<int> h_coupledConstraintsCounts_;
+    //! Host buffer for coupled constraint indices
+    gmx::HostVector<int> h_coupledConstraintsIndices_;
+    //! Host buffer for mass factors
+    gmx::HostVector<float> h_massFactors_;
+    //! Host buffer for constraint group sizes, HIP only
+    gmx::HostVector<int> h_constraintGroupSize_;
 };
 
 } // namespace gmx

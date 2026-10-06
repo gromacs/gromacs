@@ -73,16 +73,18 @@
 namespace gmx
 {
 
-MDAtoms::MDAtoms(const bool rankHasPmeGpuTask, const DeviceStreamManager* deviceStreamManager) :
+MDAtoms::MDAtoms(const bool                 rankHasPmeGpuTask,
+                 const bool                 useGpuForUpdate,
+                 const DeviceStreamManager* deviceStreamManager) :
     mdatoms_(nullptr),
     // GPU transfers may want to use a suitable pinning mode.
     chargeA_(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager)),
     chargeB_(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager))
 {
-    if (rankHasPmeGpuTask)
+    if (rankHasPmeGpuTask || useGpuForUpdate)
     {
         GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
-                           "Must have device stream manager when there is a PME GPU task");
+                           "Must have device stream manager when there is a GPU task");
     }
 }
 
@@ -102,11 +104,19 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
                                      const gmx_mtop_t&          mtop,
                                      const t_inputrec&          ir,
                                      const bool                 rankHasPmeGpuTask,
+                                     const bool                 useGpuForUpdate,
                                      const DeviceStreamManager* deviceStreamManager)
 {
-    auto mdAtoms      = std::make_unique<MDAtoms>(rankHasPmeGpuTask, deviceStreamManager);
+    auto mdAtoms = std::make_unique<MDAtoms>(rankHasPmeGpuTask, useGpuForUpdate, deviceStreamManager);
     mdAtoms->mdatoms_ = std::make_unique<t_mdatoms>();
-    t_mdatoms* md     = mdAtoms->mdatoms_.get();
+    /* Only the GPU update and constraints copy invmass and cTC to the GPU, asynchronously.
+     * atoms2md() can reallocate them, because the search step first waits for the coordinates
+     * on the host, so those copies are done. */
+    const HostAllocationPolicy updatePolicy =
+            makeHostAllocationPolicy(useGpuForUpdate, deviceStreamManager);
+    mdAtoms->mdatoms_->invmass = PaddedHostVector<real>(updatePolicy);
+    mdAtoms->mdatoms_->cTC     = HostVector<unsigned short>(updatePolicy);
+    t_mdatoms* md              = mdAtoms->mdatoms_.get();
 
     md->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)

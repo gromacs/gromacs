@@ -80,6 +80,7 @@
 #if GMX_GPU && !GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gputraits.h"
+#    include "gromacs/gpu_utils/hostallocator.h"
 #    include "gromacs/mdlib/leapfrog_gpu.h"
 #    include "gromacs/mdlib/stat.h"
 #endif
@@ -173,6 +174,39 @@ void integrateLeapFrogGpu(const DeviceContext& deviceContext,
 
     auto integrator =
             std::make_unique<LeapFrogGpu>(deviceContext, deviceStream, testData->numTCoupleGroups_);
+
+    testData->inverseMasses_ = PaddedHostVector<real>(
+            testData->inverseMasses_,
+            HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+    testData->mdAtoms_.cTC = HostVector<unsigned short>(
+            testData->mdAtoms_.cTC,
+            HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+
+    {
+        SCOPED_TRACE("Preliminary call to set() to cover resizing edge cases");
+        // Use one atom more, so the call under test shrinks an object that holds data
+        const int              largerNumAtoms = testData->numAtoms_ + 1;
+        PaddedHostVector<real> inverseMasses(
+                HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+        HostVector<unsigned short> cTC(
+                HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+        inverseMasses.resizeWithPadding(largerNumAtoms);
+        for (int i = 0; i < largerNumAtoms; i++)
+        {
+            inverseMasses[i] = 1.0 / (3.0 + i);
+        }
+        // Like mdatoms, only fill cTC when there is more than one group
+        if (testData->numTCoupleGroups_ > 1)
+        {
+            cTC.resize(largerNumAtoms);
+            for (int i = 0; i < largerNumAtoms; i++)
+            {
+                cTC[i] = i % testData->numTCoupleGroups_;
+            }
+        }
+        integrator->set(largerNumAtoms, inverseMasses, cTC);
+        deviceStream.synchronize();
+    }
 
     integrator->set(numAtoms, testData->inverseMasses_, testData->mdAtoms_.cTC);
 

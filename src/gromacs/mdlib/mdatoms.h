@@ -72,7 +72,7 @@ class MDAtoms
 
 public:
     // TODO make this private
-    MDAtoms(bool rankHasPmeGpuTask, const DeviceStreamManager* deviceStreamManager);
+    MDAtoms(bool rankHasPmeGpuTask, bool useGpuForUpdate, const DeviceStreamManager* deviceStreamManager);
     //! Getter.
     t_mdatoms* mdatoms() { return mdatoms_.get(); }
     //! Const getter.
@@ -92,6 +92,7 @@ public:
                                                 const gmx_mtop_t&          mtop,
                                                 const t_inputrec&          ir,
                                                 bool                       rankHasPmeGpuTask,
+                                                bool                       useGpuForUpdate,
                                                 const DeviceStreamManager* deviceStreamManager);
 };
 
@@ -99,7 +100,8 @@ public:
 std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
                                      const gmx_mtop_t&          mtop,
                                      const t_inputrec&          ir,
-                                     bool                       useGpuForPme,
+                                     bool                       rankHasPmeGpuTask,
+                                     bool                       useGpuForUpdate,
                                      const DeviceStreamManager* deviceStreamManager);
 
 } // namespace gmx

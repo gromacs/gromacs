@@ -138,6 +138,10 @@ public:
 
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *
+     * The copies to the GPU are asynchronous and this function may reallocate buffers that earlier
+     * copies and kernels still use, so the device stream has to be synchronized between calls. In
+     * mdrun this is implicit, because a search step needs the coordinates on the host.
+     *
      * \param[in,out]  d_x                 Device buffer with coordinates.
      * \param[in,out]  d_v                 Device buffer with velocities.
      * \param[in]      d_f                 Device buffer with forces.

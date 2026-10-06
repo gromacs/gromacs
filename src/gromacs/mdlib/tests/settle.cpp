@@ -168,6 +168,15 @@ void applySettleGpu(const DeviceContext& deviceContext,
 
     auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, deviceStream);
 
+    const int currentNumSettles = testData->numAtoms_ / testData->atomsPerSettle_;
+    {
+        SCOPED_TRACE("Preliminary call to set() to cover resizing edge cases");
+        // Use one SETTLE more, so the call under test shrinks an object that holds a topology
+        SettleTestData largerData(currentNumSettles + 1);
+        settleGpu->set(*largerData.idef_);
+        deviceStream.synchronize();
+    }
+
     settleGpu->set(*testData->idef_);
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
