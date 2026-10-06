@@ -374,7 +374,7 @@ target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 
 # End-to-end test for pull functionality
 target_link_libraries(${exename} PRIVATE legacy_modules)
-gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST SLOW_GPU_TEST)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST SLOW_TEST SLOW_GPU_TEST)
 
 set(testname "MdrunPullTests")
 set(exename "mdrun-pull-test")

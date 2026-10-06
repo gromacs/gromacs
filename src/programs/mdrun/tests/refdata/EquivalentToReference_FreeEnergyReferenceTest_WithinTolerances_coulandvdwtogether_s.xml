@@ -47,4 +47,892 @@
     <Real Name="Time 0.019000 Step 19 in frame 19">-1420.3792</Real>
     <Real Name="Time 0.020000 Step 20 in frame 20">-1423.0452</Real>
   </Energy>
+  <Sequence Name="Time 0.000000 Step 0 F">
+    <Int Name="Length">177</Int>
+    <Vector>
+      <Real Name="X">617.34375</Real>
+      <Real Name="Y">-780.51501</Real>
+      <Real Name="Z">-86.702072</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-169.1344</Real>
+      <Real Name="Y">-251.96123</Real>
+      <Real Name="Z">32.742668</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-454.91608</Real>
+      <Real Name="Y">275.33817</Real>
+      <Real Name="Z">-220.36194</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-111.52454</Real>
+      <Real Name="Y">187.76163</Real>
+      <Real Name="Z">25.406908</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">805.48645</Real>
+      <Real Name="Y">669.2262</Real>
+      <Real Name="Z">-34.901966</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-23.666637</Real>
+      <Real Name="Y">322.59149</Real>
+      <Real Name="Z">-212.35675</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-963.6618</Real>
+      <Real Name="Y">320.11844</Real>
+      <Real Name="Z">1073.1454</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">17.540369</Real>
+      <Real Name="Y">-305.069</Real>
+      <Real Name="Z">-406.89935</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">344.25339</Real>
+      <Real Name="Y">-377.22119</Real>
+      <Real Name="Z">-211.73772</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">7.9341583</Real>
+      <Real Name="Y">-32.547142</Real>
+      <Real Name="Z">22.990005</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">3.7139969</Real>
+      <Real Name="Y">28.822702</Real>
+      <Real Name="Z">-13.92342</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-7.9797745</Real>
+      <Real Name="Y">15.074007</Real>
+      <Real Name="Z">-5.1397095</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2.5759735</Real>
+      <Real Name="Y">20.933933</Real>
+      <Real Name="Z">-6.5524788</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-3.836319</Real>
+      <Real Name="Y">-8.3823967</Real>
+      <Real Name="Z">4.6223545</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">6.4703369</Real>
+      <Real Name="Y">-23.644455</Real>
+      <Real Name="Z">4.1259346</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">364.90253</Real>
+      <Real Name="Y">-59.309967</Real>
+      <Real Name="Z">-670.2229</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-395.9418</Real>
+      <Real Name="Y">36.184296</Real>
+      <Real Name="Z">385.22751</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-6.6889343</Real>
+      <Real Name="Y">-11.371409</Real>
+      <Real Name="Z">206.43143</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">372.76349</Real>
+      <Real Name="Y">415.08725</Real>
+      <Real Name="Z">-106.87671</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-40.293312</Real>
+      <Real Name="Y">-233.29605</Real>
+      <Real Name="Z">90.302017</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-356.02527</Real>
+      <Real Name="Y">-587.08331</Real>
+      <Real Name="Z">251.21092</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">647.47156</Real>
+      <Real Name="Y">-496.60931</Real>
+      <Real Name="Z">-423.58609</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-113.63124</Real>
+      <Real Name="Y">123.53936</Real>
+      <Real Name="Z">75.955368</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-647.95825</Real>
+      <Real Name="Y">441.42102</Real>
+      <Real Name="Z">220.66104</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-20.772688</Real>
+      <Real Name="Y">287.47513</Real>
+      <Real Name="Z">60.566994</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">88.318604</Real>
+      <Real Name="Y">-160.49452</Real>
+      <Real Name="Z">-108.35756</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-114.93088</Real>
+      <Real Name="Y">-211.821</Real>
+      <Real Name="Z">-136.50034</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-590.88647</Real>
+      <Real Name="Y">267.35956</Real>
+      <Real Name="Z">839.02905</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">396.81296</Real>
+      <Real Name="Y">-52.671791</Real>
+      <Real Name="Z">-871.45386</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">175.44894</Real>
+      <Real Name="Y">-189.3943</Real>
+      <Real Name="Z">-62.890968</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1107.5167</Real>
+      <Real Name="Y">592.50562</Real>
+      <Real Name="Z">848.63422</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-162.84033</Real>
+      <Real Name="Y">-854.79633</Real>
+      <Real Name="Z">-356.51804</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-854.72766</Real>
+      <Real Name="Y">309.6907</Real>
+      <Real Name="Z">-571.8089</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">362.18393</Real>
+      <Real Name="Y">752.30585</Real>
+      <Real Name="Z">141.25356</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-7.8114624</Real>
+      <Real Name="Y">-648.95227</Real>
+      <Real Name="Z">-51.363312</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-92.773033</Real>
+      <Real Name="Y">-130.48799</Real>
+      <Real Name="Z">-35.331036</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">13.513876</Real>
+      <Real Name="Y">-155.12347</Real>
+      <Real Name="Z">-891.41406</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-93.938805</Real>
+      <Real Name="Y">26.179022</Real>
+      <Real Name="Z">254.17606</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">393.79803</Real>
+      <Real Name="Y">-9.9368286</Real>
+      <Real Name="Z">679.59967</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">110.12247</Real>
+      <Real Name="Y">49.642029</Real>
+      <Real Name="Z">-862.85529</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-257.10233</Real>
+      <Real Name="Y">161.30377</Real>
+      <Real Name="Z">485.82669</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">13.702007</Real>
+      <Real Name="Y">-197.45654</Real>
+      <Real Name="Z">167.65445</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-630.30676</Real>
+      <Real Name="Y">82.248383</Real>
+      <Real Name="Z">360.9238</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">543.20959</Real>
+      <Real Name="Y">-65.623322</Real>
+      <Real Name="Z">-8.2364006</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">137.03227</Real>
+      <Real Name="Y">-33.424271</Real>
+      <Real Name="Z">-245.83963</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-102.84692</Real>
+      <Real Name="Y">33.581497</Real>
+      <Real Name="Z">361.57281</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">245.42319</Real>
+      <Real Name="Y">-3.5078964</Real>
+      <Real Name="Z">-127.53534</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">57.408451</Real>
+      <Real Name="Y">-112.90311</Real>
+      <Real Name="Z">-114.63247</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-343.68091</Real>
+      <Real Name="Y">-2053.6343</Real>
+      <Real Name="Z">-698.38672</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">334.17712</Real>
+      <Real Name="Y">1319.8094</Real>
+      <Real Name="Z">317.9819</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">275.01801</Real>
+      <Real Name="Y">413.62549</Real>
+      <Real Name="Z">71.078308</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">432.78491</Real>
+      <Real Name="Y">1006.4035</Real>
+      <Real Name="Z">-844.37451</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-151.46721</Real>
+      <Real Name="Y">-538.99091</Real>
+      <Real Name="Z">229.15016</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-272.52988</Real>
+      <Real Name="Y">-402.38736</Real>
+      <Real Name="Z">560.71985</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">51.855331</Real>
+      <Real Name="Y">95.835449</Real>
+      <Real Name="Z">3.430233</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-10.051478</Real>
+      <Real Name="Y">-42.181622</Real>
+      <Real Name="Z">-2.5011368</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-20.626314</Real>
+      <Real Name="Y">-31.759087</Real>
+      <Real Name="Z">9.4047451</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-440.20312</Real>
+      <Real Name="Y">980.25281</Real>
+      <Real Name="Z">399.88089</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">607.22424</Real>
+      <Real Name="Y">-691.5459</Real>
+      <Real Name="Z">-454.94049</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">36.138874</Real>
+      <Real Name="Y">-157.08536</Real>
+      <Real Name="Z">-17.091526</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">213.91182</Real>
+      <Real Name="Y">-488.61017</Real>
+      <Real Name="Z">-1414.5413</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-65.933289</Real>
+      <Real Name="Y">354.58401</Real>
+      <Real Name="Z">1043.2622</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-331.36649</Real>
+      <Real Name="Y">19.886536</Real>
+      <Real Name="Z">245.5184</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">181.34412</Real>
+      <Real Name="Y">-124.99104</Real>
+      <Real Name="Z">-118.82477</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-86.352951</Real>
+      <Real Name="Y">126.48833</Real>
+      <Real Name="Z">73.657211</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-63.520454</Real>
+      <Real Name="Y">41.177162</Real>
+      <Real Name="Z">151.44403</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">330.51065</Real>
+      <Real Name="Y">-339.71521</Real>
+      <Real Name="Z">-72.241745</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-289.56915</Real>
+      <Real Name="Y">414.87753</Real>
+      <Real Name="Z">96.133293</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-103.74142</Real>
+      <Real Name="Y">68.079559</Real>
+      <Real Name="Z">39.450089</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">755.07812</Real>
+      <Real Name="Y">-267.23959</Real>
+      <Real Name="Z">-577.46606</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-353.17883</Real>
+      <Real Name="Y">255.45471</Real>
+      <Real Name="Z">608.12946</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-268.47849</Real>
+      <Real Name="Y">283.2514</Real>
+      <Real Name="Z">151.70392</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.91012573</Real>
+      <Real Name="Y">-9.6540527</Real>
+      <Real Name="Z">5.6990089</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.09280014</Real>
+      <Real Name="Y">6.2510986</Real>
+      <Real Name="Z">-1.3743725</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.311615</Real>
+      <Real Name="Y">4.2110901</Real>
+      <Real Name="Z">-5.0405846</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-394.94586</Real>
+      <Real Name="Y">856.92169</Real>
+      <Real Name="Z">245.18022</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">287.25854</Real>
+      <Real Name="Y">-483.84314</Real>
+      <Real Name="Z">-678.7854</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-314.17966</Real>
+      <Real Name="Y">-444.65656</Real>
+      <Real Name="Z">296.65921</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">370.7659</Real>
+      <Real Name="Y">28.093414</Real>
+      <Real Name="Z">-151.09503</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-271.91016</Real>
+      <Real Name="Y">59.995659</Real>
+      <Real Name="Z">39.736061</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-91.483124</Real>
+      <Real Name="Y">-36.650078</Real>
+      <Real Name="Z">73.755287</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-557.96814</Real>
+      <Real Name="Y">-1285.3948</Real>
+      <Real Name="Z">-314.9281</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">201.60809</Real>
+      <Real Name="Y">618.40503</Real>
+      <Real Name="Z">-286.6347</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">379.58356</Real>
+      <Real Name="Y">652.41235</Real>
+      <Real Name="Z">624.79395</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1195.4281</Real>
+      <Real Name="Y">443.18677</Real>
+      <Real Name="Z">-793.37494</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">820.32336</Real>
+      <Real Name="Y">-311.45053</Real>
+      <Real Name="Z">572.69684</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">185.03732</Real>
+      <Real Name="Y">-31.90572</Real>
+      <Real Name="Z">39.746017</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">219.05365</Real>
+      <Real Name="Y">427.99689</Real>
+      <Real Name="Z">165.94174</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-29.749573</Real>
+      <Real Name="Y">-133.48889</Real>
+      <Real Name="Z">-72.059181</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-109.5997</Real>
+      <Real Name="Y">-123.34273</Real>
+      <Real Name="Z">-17.816132</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1046.6116</Real>
+      <Real Name="Y">-1076.0031</Real>
+      <Real Name="Z">-858.07526</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">182.17006</Real>
+      <Real Name="Y">210.2097</Real>
+      <Real Name="Z">195.34167</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">576.18121</Real>
+      <Real Name="Y">692.08337</Real>
+      <Real Name="Z">681.30139</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">197.84229</Real>
+      <Real Name="Y">387.26797</Real>
+      <Real Name="Z">-1021.8293</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-99.936279</Real>
+      <Real Name="Y">-316.56274</Real>
+      <Real Name="Z">752.73004</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">55.991116</Real>
+      <Real Name="Y">33.420532</Real>
+      <Real Name="Z">254.10219</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-272.33398</Real>
+      <Real Name="Y">-513.68091</Real>
+      <Real Name="Z">-928.87756</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">240.64288</Real>
+      <Real Name="Y">80.176003</Real>
+      <Real Name="Z">145.86633</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">54.541759</Real>
+      <Real Name="Y">257.67807</Real>
+      <Real Name="Z">803.70038</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-504.879</Real>
+      <Real Name="Y">-155.15672</Real>
+      <Real Name="Z">-164.86398</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">240.1922</Real>
+      <Real Name="Y">16.228748</Real>
+      <Real Name="Z">135.49417</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">238.37253</Real>
+      <Real Name="Y">47.362823</Real>
+      <Real Name="Z">105.8634</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">589.66199</Real>
+      <Real Name="Y">826.87732</Real>
+      <Real Name="Z">-262.17065</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-123.52</Real>
+      <Real Name="Y">-202.67902</Real>
+      <Real Name="Z">15.75396</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-461.92493</Real>
+      <Real Name="Y">-869.53802</Real>
+      <Real Name="Z">-37.158009</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1693.0667</Real>
+      <Real Name="Y">-174.15036</Real>
+      <Real Name="Z">896.79114</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-862.95099</Real>
+      <Real Name="Y">314.3045</Real>
+      <Real Name="Z">-687.11102</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-322.71643</Real>
+      <Real Name="Y">-175.96967</Real>
+      <Real Name="Z">-374.29102</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-154.6702</Real>
+      <Real Name="Y">55.155537</Real>
+      <Real Name="Z">125.81575</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">163.54362</Real>
+      <Real Name="Y">-162.45422</Real>
+      <Real Name="Z">29.750065</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">199.44675</Real>
+      <Real Name="Y">-7.2477379</Real>
+      <Real Name="Z">25.004196</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">725.21161</Real>
+      <Real Name="Y">-430.76135</Real>
+      <Real Name="Z">7.2025452</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-512.58374</Real>
+      <Real Name="Y">294.11417</Real>
+      <Real Name="Z">37.104668</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-414.4899</Real>
+      <Real Name="Y">350.93951</Real>
+      <Real Name="Z">-121.14191</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-129.10278</Real>
+      <Real Name="Y">-1820.3639</Real>
+      <Real Name="Z">38.1539</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">130.12355</Real>
+      <Real Name="Y">241.6617</Real>
+      <Real Name="Z">-35.208267</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">183.01727</Real>
+      <Real Name="Y">1228.601</Real>
+      <Real Name="Z">-58.759037</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">436.39545</Real>
+      <Real Name="Y">1034.9377</Real>
+      <Real Name="Z">857.30328</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-312.27533</Real>
+      <Real Name="Y">-645.20306</Real>
+      <Real Name="Z">-580.97266</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-59.260586</Real>
+      <Real Name="Y">-239.47469</Real>
+      <Real Name="Z">-227.79562</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">40.694435</Real>
+      <Real Name="Y">-377.20734</Real>
+      <Real Name="Z">-473.38077</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-196.80875</Real>
+      <Real Name="Y">346.03629</Real>
+      <Real Name="Z">245.53914</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-125.08826</Real>
+      <Real Name="Y">145.33463</Real>
+      <Real Name="Z">477.83871</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">778.9549</Real>
+      <Real Name="Y">-311.18784</Real>
+      <Real Name="Z">-241.48178</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-162.85318</Real>
+      <Real Name="Y">453.18225</Real>
+      <Real Name="Z">4.5320072</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-742.0564</Real>
+      <Real Name="Y">-154.62605</Real>
+      <Real Name="Z">176.70279</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1096.1003</Real>
+      <Real Name="Y">1502.3986</Real>
+      <Real Name="Z">-674.96442</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">176.17152</Real>
+      <Real Name="Y">-212.0157</Real>
+      <Real Name="Z">94.944305</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">626.79974</Real>
+      <Real Name="Y">-964.20184</Real>
+      <Real Name="Z">443.67999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">744.16492</Real>
+      <Real Name="Y">22.967934</Real>
+      <Real Name="Z">144.31747</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-164.01233</Real>
+      <Real Name="Y">95.556969</Real>
+      <Real Name="Z">-34.543762</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-916.07977</Real>
+      <Real Name="Y">123.17785</Real>
+      <Real Name="Z">-126.2411</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-798.03961</Real>
+      <Real Name="Y">-1242.7542</Real>
+      <Real Name="Z">108.21339</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">700.27869</Real>
+      <Real Name="Y">953.69299</Real>
+      <Real Name="Z">62.575336</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">58.252289</Real>
+      <Real Name="Y">258.16669</Real>
+      <Real Name="Z">-74.889755</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-128.15004</Real>
+      <Real Name="Y">-691.19678</Real>
+      <Real Name="Z">812.9516</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">144.88901</Real>
+      <Real Name="Y">504.39734</Real>
+      <Real Name="Z">-583.37567</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-53.485821</Real>
+      <Real Name="Y">76.172058</Real>
+      <Real Name="Z">-119.49648</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">67.595894</Real>
+      <Real Name="Y">-129.64949</Real>
+      <Real Name="Z">309.33075</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-25.438732</Real>
+      <Real Name="Y">250.85356</Real>
+      <Real Name="Z">-60.292019</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-290.62051</Real>
+      <Real Name="Y">360.49948</Real>
+      <Real Name="Z">45.284088</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">83.772491</Real>
+      <Real Name="Y">479.88065</Real>
+      <Real Name="Z">-73.341293</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-50.435139</Real>
+      <Real Name="Y">-177.02924</Real>
+      <Real Name="Z">67.39608</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">30.987743</Real>
+      <Real Name="Y">-187.59821</Real>
+      <Real Name="Z">27.103796</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">78.769096</Real>
+      <Real Name="Y">771.32062</Real>
+      <Real Name="Z">73.89502</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-48.361668</Real>
+      <Real Name="Y">-168.63541</Real>
+      <Real Name="Z">-65.577057</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-69.228004</Real>
+      <Real Name="Y">-727.33893</Real>
+      <Real Name="Z">-11.528872</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-97.365875</Real>
+      <Real Name="Y">-724.96423</Real>
+      <Real Name="Z">-207.02731</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">171.96478</Real>
+      <Real Name="Y">627.13422</Real>
+      <Real Name="Z">110.45773</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">73.247986</Real>
+      <Real Name="Y">177.91426</Real>
+      <Real Name="Z">42.456902</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">52.941841</Real>
+      <Real Name="Y">814.1366</Real>
+      <Real Name="Z">588.21381</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">24.188263</Real>
+      <Real Name="Y">-185.58173</Real>
+      <Real Name="Z">-105.79523</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">130.35179</Real>
+      <Real Name="Y">-616.078</Real>
+      <Real Name="Z">-446.39191</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-289.98291</Real>
+      <Real Name="Y">310.52847</Real>
+      <Real Name="Z">-419.03558</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">161.59485</Real>
+      <Real Name="Y">-258.08331</Real>
+      <Real Name="Z">437.42615</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">146.62553</Real>
+      <Real Name="Y">-119.18941</Real>
+      <Real Name="Z">90.630371</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-881.5719</Real>
+      <Real Name="Y">-102.95378</Real>
+      <Real Name="Z">-59.490417</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">730.7323</Real>
+      <Real Name="Y">-59.390114</Real>
+      <Real Name="Z">5.589138</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">311.63391</Real>
+      <Real Name="Y">50.355774</Real>
+      <Real Name="Z">7.1670609</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1521.3538</Real>
+      <Real Name="Y">-274.70441</Real>
+      <Real Name="Z">-653.08246</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">294.1911</Real>
+      <Real Name="Y">-40.116974</Real>
+      <Real Name="Z">208.85147</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1067.9159</Real>
+      <Real Name="Y">342.88226</Real>
+      <Real Name="Z">332.12372</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-395.47699</Real>
+      <Real Name="Y">1438.0077</Real>
+      <Real Name="Z">325.95566</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">7.0077801</Real>
+      <Real Name="Y">-736.71167</Real>
+      <Real Name="Z">-586.96295</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">373.00009</Real>
+      <Real Name="Y">-458.66299</Real>
+      <Real Name="Z">485.55942</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">201.63785</Real>
+      <Real Name="Y">437.37128</Real>
+      <Real Name="Z">127.21469</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-67.344261</Real>
+      <Real Name="Y">-123.37765</Real>
+      <Real Name="Z">-82.542503</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-224.36755</Real>
+      <Real Name="Y">-494.5882</Real>
+      <Real Name="Z">-109.3611</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1162.1271</Real>
+      <Real Name="Y">-2017.4222</Real>
+      <Real Name="Z">666.97296</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-129.03546</Real>
+      <Real Name="Y">1230.6185</Real>
+      <Real Name="Z">320.17874</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1029.7601</Real>
+      <Real Name="Y">392.19501</Real>
+      <Real Name="Z">-802.41644</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">786.07611</Real>
+      <Real Name="Y">-1308.1172</Real>
+      <Real Name="Z">-296.95148</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-246.38216</Real>
+      <Real Name="Y">685.94891</Real>
+      <Real Name="Z">25.197517</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-501.07245</Real>
+      <Real Name="Y">703.30896</Real>
+      <Real Name="Z">323.36255</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">76.651047</Real>
+      <Real Name="Y">818.48383</Real>
+      <Real Name="Z">1329.3811</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-102.85981</Real>
+      <Real Name="Y">-715.75806</Real>
+      <Real Name="Z">-1007.6072</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-106.7327</Real>
+      <Real Name="Y">19.044579</Real>
+      <Real Name="Z">-246.05432</Real>
+    </Vector>
+  </Sequence>
 </ReferenceData>
