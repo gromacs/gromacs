@@ -1775,8 +1775,8 @@ int gmx_energy(int argc, char* argv[])
     static gmx_bool bDp = FALSE, bMutot = FALSE, bOrinst = FALSE, bOvec = FALSE, bFluctProps = FALSE;
     static int  nmol = 1, nbmin = 5, nbmax = 5;
     static real reftemp = 300.0, ezero = 0;
-    static int  einsteinRestarts = 100;
-    static int  einsteinBlocks   = 4;
+    int         einsteinRestarts = 100;
+    int         einsteinBlocks   = 4;
     t_pargs     pa[]             = {
         { "-fee", FALSE, etBOOL, { &bFee }, "Do a free energy estimate" },
         { "-fetemp",
