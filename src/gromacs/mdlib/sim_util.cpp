@@ -993,8 +993,10 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
     if (runScheduleWork.stepWork.haveGpuPmeOnThisRank)
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
-        bool gpuGraphWithSeparatePmeRank = false;
-        pme_gpu_finish_step(pmedata->gpu.get(), gpuGraphWithSeparatePmeRank, wcycle);
+        const bool            gpuGraphWithSeparatePmeRank = false;
+        const PmeStepWorkload pmeStepWork{ runScheduleWork.stepWork };
+        pme_gpu_finish_step(
+                pmedata->gpu.get(), gpuGraphWithSeparatePmeRank, pmeStepWork.computeEnergyAndVirial, wcycle);
         wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
     }
 

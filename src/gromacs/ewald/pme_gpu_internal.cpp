@@ -167,14 +167,19 @@ void pme_gpu_free_energy_virial(PmeGpu* pmeGpu)
     }
 }
 
-void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, const bool gpuGraphWithSeparatePmeRank)
+void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu,
+                                 const bool    gpuGraphWithSeparatePmeRank,
+                                 const bool    computedEnergyAndVirial)
 {
-    for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+    if (computedEnergyAndVirial)
     {
-        clearDeviceBufferAsync(&pmeGpu->kernelParams->constants.d_virialAndEnergy[gridIndex],
-                               0,
-                               c_virialAndEnergyCount,
-                               pmeGpu->archSpecific->pmeStream_);
+        for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+        {
+            clearDeviceBufferAsync(&pmeGpu->kernelParams->constants.d_virialAndEnergy[gridIndex],
+                                   0,
+                                   c_virialAndEnergyCount,
+                                   pmeGpu->archSpecific->pmeStream_);
+        }
     }
     if (pmeGpu->settings.useGpuForceReduction && gpuGraphWithSeparatePmeRank)
     {
@@ -1420,7 +1425,8 @@ void pme_gpu_reinit(PmeGpu* pmeGpu, gmx_pme_t* pme, const bool useMdGpuGraph)
     pme_gpu_reinit_grids(pmeGpu);
     // Note: if timing the reinit launch overhead becomes more relevant
     // (e.g. with regular PP-PME re-balancing), we should pass wcycle here.
-    pme_gpu_finish_step(pmeGpu, useMdGpuGraph, nullptr);
+    const bool clearEnergyAndVirial = true;
+    pme_gpu_finish_step(pmeGpu, useMdGpuGraph, clearEnergyAndVirial, nullptr);
 }
 
 PmeGpu::~PmeGpu()

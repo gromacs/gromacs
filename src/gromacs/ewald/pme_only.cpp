@@ -987,7 +987,8 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
         {
             // Reinit before PME->PP force send so it is included in graph
             // which implicitly joins back to PP task as part of force transfer
-            pme_gpu_finish_step(pme->gpu.get(), pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(
+                    pme->gpu.get(), pme_pp->useMdGpuGraph, stepWork.computeEnergyAndVirial, wcycle);
         }
 
         gmx_pme_send_force_vir_ener(
@@ -996,7 +997,8 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
         // Reinit after PME->PP force send so it is removed from the critical path
         if (simulationWork.useGpu && !pme_pp->useMdGpuGraph)
         {
-            pme_gpu_finish_step(pme->gpu.get(), pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(
+                    pme->gpu.get(), pme_pp->useMdGpuGraph, stepWork.computeEnergyAndVirial, wcycle);
         }
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);

@@ -143,8 +143,12 @@ void pme_gpu_free_energy_virial(PmeGpu* pmeGpu);
  *
  * \param[in] pmeGpu                          The PME GPU structure.
  * \param[in] gpuGraphWithSeparatePmeRank     Whether MD GPU Graph with separate PME rank is in use.
+ * \param[in] computedEnergyAndVirial         Whether energy and virial were computed,
+ *                                            clearing is skipped otherwise.
  */
-void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu, bool gpuGraphWithSeparatePmeRank);
+void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu,
+                                 bool          gpuGraphWithSeparatePmeRank,
+                                 bool          computedEnergyAndVirial);
 
 /*! \libinternal \brief
  * Reallocates and copies the pre-computed B-spline values to the GPU.
