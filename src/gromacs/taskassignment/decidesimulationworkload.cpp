@@ -61,7 +61,6 @@
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pulling/pull.h"
@@ -217,7 +216,7 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
                                                    const t_forcerec&         fr,
                                                    const pull_t*             pull_work,
                                                    const edsam*              ed,
-                                                   const t_mdatoms&          mdatoms,
+                                                   const bool                hasPerturbedParticles,
                                                    const SimulationWorkload& simulationWork)
 {
     DomainLifetimeWorkload domainWork;
@@ -239,7 +238,7 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     domainWork.haveGpuBondedWork =
             ((fr.listedForcesGpu != nullptr) && fr.listedForcesGpu->haveInteractions());
     domainWork.haveNonbondedFreeEnergyWork =
-            (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
+            (fr.efep != FreeEnergyPerturbationType::No && hasPerturbedParticles);
     domainWork.haveCpuNonbondedFreeEnergyWork =
             domainWork.haveNonbondedFreeEnergyWork && simulationWork.useCpuNonbondedFE;
     // Currently no GPU support for gapsys softcore type and expanded ensemble free energy calculations

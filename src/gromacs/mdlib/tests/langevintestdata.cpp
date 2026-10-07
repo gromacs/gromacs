@@ -76,6 +76,7 @@ LangevinTestData::LangevinTestData(int        numAtoms,
     f_(numAtoms),
     inverseMasses_(numAtoms),
     inverseMassesPerDim_(numAtoms),
+    mdAtoms_(false, false, nullptr),
     kineticEnergyData_(std::vector<real>(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, temperature),
                        EnsembleTemperatureSetting::NotAvailable,
                        0.0,
@@ -165,7 +166,7 @@ LangevinTestData::LangevinTestData(int        numAtoms,
     state_.box[ZZ][YY] = 0.0;
     state_.box[ZZ][ZZ] = 10.0;
 
-    mdAtoms_.homenr                   = numAtoms_;
+    mdAtoms_.numHomeAtoms             = numAtoms_;
     mdAtoms_.haveVsites               = false;
     mdAtoms_.havePartiallyFrozenAtoms = false;
 

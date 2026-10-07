@@ -70,7 +70,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
@@ -557,7 +557,7 @@ shellfc_t* init_shell_flexcon(FILE*                      fplog,
     return shfc;
 }
 
-void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, shellfc_t* shfc)
+void make_local_shells(const gmx_domdec_t* dd, const MDAtoms& mdAtoms, shellfc_t* shfc)
 {
     int a0, a1;
 
@@ -580,7 +580,7 @@ void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, shellfc_t* s
     shells.clear();
     for (int i = a0; i < a1; i++)
     {
-        if (md.ptype[i] == ParticleType::Shell)
+        if (mdAtoms.ptype[i] == ParticleType::Shell)
         {
             if (dd)
             {
@@ -651,13 +651,13 @@ static void do_1pos3(rvec xnew, const rvec xold, const rvec f, const rvec step)
 static void directional_sd(ArrayRef<const RVec> xold,
                            ArrayRef<RVec>       xnew,
                            ArrayRef<const RVec> acc_dir,
-                           int                  homenr,
+                           int                  numHomeAtoms,
                            real                 step)
 {
     const rvec* xo = as_rvec_array(xold.data());
     rvec*       xn = as_rvec_array(xnew.data());
 
-    for (int i = 0; i < homenr; i++)
+    for (int i = 0; i < numHomeAtoms; i++)
     {
         do_1pos(xn[i], xo[i], acc_dir[i], step);
     }
@@ -838,7 +838,7 @@ static void init_adir(shellfc_t*                shfc,
                       const t_commrec*          cr,
                       int                       dd_ac1,
                       int64_t                   step,
-                      const t_mdatoms&          md,
+                      const MDAtoms&            mdAtoms,
                       int                       end,
                       ArrayRefWithPadding<RVec> xOld,
                       ArrayRef<RVec>            x_init,
@@ -872,11 +872,11 @@ static void init_adir(shellfc_t*                shfc,
     /* Does NOT work with freeze or acceleration groups (yet) */
     for (n = 0; n < end; n++)
     {
-        w_dt = md.invmass[n] * dt;
+        w_dt = mdAtoms.invmass[n] * dt;
 
         for (d = 0; d < DIM; d++)
         {
-            if ((md.ptype[n] != ParticleType::VSite) && (md.ptype[n] != ParticleType::Shell))
+            if ((mdAtoms.ptype[n] != ParticleType::VSite) && (mdAtoms.ptype[n] != ParticleType::Shell))
             {
                 xnold[n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
                 xnew[n][d]  = 2 * x[n][d] - x_old[n][d] + f[n][d] * w_dt * dt;
@@ -923,8 +923,8 @@ static void init_adir(shellfc_t*                shfc,
     {
         for (d = 0; d < DIM; d++)
         {
-            xnew[n][d] =
-                    -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / square(dt) - f[n][d] * md.invmass[n];
+            xnew[n][d] = -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / square(dt)
+                         - f[n][d] * mdAtoms.invmass[n];
         }
         clear_rvec(acc_dir[n]);
     }
@@ -967,7 +967,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                          const history_t*              hist,
                          ForceBuffersView*             f,
                          tensor                        force_vir,
-                         const t_mdatoms&              md,
+                         const MDAtoms&                mdAtoms,
                          CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
                          t_nrnb*                       nrnb,
                          gmx_wallcycle*                wcycle,
@@ -984,7 +984,7 @@ void relax_shell_flexcon(FILE*                         fplog,
     real dum = 0;
     char sbuf[22];
     int  nat, dd_ac0, dd_ac1 = 0, i;
-    int  homenr = md.homenr, end = homenr;
+    int  numHomeAtoms = mdAtoms.numHomeAtoms, end = numHomeAtoms;
     int  d, Min = 0, count = 0;
 #define Try (1 - Min) /* At start Try = 1 */
 
@@ -1041,8 +1041,8 @@ void relax_shell_flexcon(FILE*                         fplog,
                              box,
                              fr->haveBoxDeformation,
                              inputrec->deform,
-                             x.subArray(0, md.homenr),
-                             v.empty() ? ArrayRef<RVec>{} : v.subArray(0, md.homenr),
+                             x.subArray(0, mdAtoms.numHomeAtoms),
+                             v.empty() ? ArrayRef<RVec>{} : v.subArray(0, mdAtoms.numHomeAtoms),
                              gmx_omp_nthreads_get(ModuleMultiThread::Default));
     }
 
@@ -1051,7 +1051,7 @@ void relax_shell_flexcon(FILE*                         fplog,
         shfc->acc_dir.resize(nat);
         shfc->x_old.resizeWithPadding(nat);
         ArrayRef<RVec> x_old = shfc->x_old.arrayRefWithPadding().unpaddedArrayRef();
-        for (i = 0; i < homenr; i++)
+        for (i = 0; i < numHomeAtoms; i++)
         {
             for (d = 0; d < DIM; d++)
             {
@@ -1060,19 +1060,18 @@ void relax_shell_flexcon(FILE*                         fplog,
         }
     }
 
-    auto massT = md.massT;
     /* Do a prediction of the shell positions, when appropriate.
      * Without velocities (EM, NM, BD) we only do initial prediction.
      */
     if (shfc->predictShells && !bCont && (EI_STATE_VELOCITY(inputrec->eI) || bInit))
     {
-        predict_shells(fplog, x, v, inputrec->delta_t, shells, massT, bInit);
+        predict_shells(fplog, x, v, inputrec->delta_t, shells, mdAtoms.massT, bInit);
     }
 
     /* Calculate the forces first time around */
     if (gmx_debug_at)
     {
-        pr_rvecs(debug, 0, "x b4 do_force", as_rvec_array(x.data()), homenr);
+        pr_rvecs(debug, 0, "x b4 do_force", as_rvec_array(x.data()), numHomeAtoms);
     }
     ForceBuffersView forceViewInit = ForceBuffersView(forceWithPadding[Min], {}, false);
 
@@ -1094,7 +1093,7 @@ void relax_shell_flexcon(FILE*                         fplog,
              hist,
              &forceViewInit,
              force_vir,
-             &md,
+             mdAtoms,
              enerd,
              lambda,
              fr,
@@ -1115,7 +1114,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                   cr,
                   dd_ac1,
                   mdstep,
-                  md,
+                  mdAtoms,
                   end,
                   shfc->x_old.arrayRefWithPadding(),
                   x,
@@ -1128,7 +1127,7 @@ void relax_shell_flexcon(FILE*                         fplog,
 
         for (i = 0; i < end; i++)
         {
-            sf_dir += massT[i] * norm2(shfc->acc_dir[i]);
+            sf_dir += mdAtoms.massT[i] * norm2(shfc->acc_dir[i]);
         }
     }
     accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());
@@ -1209,7 +1208,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                       cr,
                       dd_ac1,
                       mdstep,
-                      md,
+                      mdAtoms,
                       end,
                       shfc->x_old.arrayRefWithPadding(),
                       x,
@@ -1228,8 +1227,8 @@ void relax_shell_flexcon(FILE*                         fplog,
 
         if (gmx_debug_at)
         {
-            pr_rvecs(debug, 0, "RELAX: pos[Min]  ", as_rvec_array(pos[Min].data()), homenr);
-            pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
+            pr_rvecs(debug, 0, "RELAX: pos[Min]  ", as_rvec_array(pos[Min].data()), numHomeAtoms);
+            pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), numHomeAtoms);
         }
         /* Try the new positions */
         ForceBuffersView forceViewTry = ForceBuffersView(forceWithPadding[Try], {}, false);
@@ -1252,7 +1251,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                  hist,
                  &forceViewTry,
                  force_vir,
-                 &md,
+                 mdAtoms,
                  enerd,
                  lambda,
                  fr,
@@ -1266,8 +1265,8 @@ void relax_shell_flexcon(FILE*                         fplog,
         accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());
         if (gmx_debug_at)
         {
-            pr_rvecs(debug, 0, "RELAX: force[Min]", as_rvec_array(force[Min].data()), homenr);
-            pr_rvecs(debug, 0, "RELAX: force[Try]", as_rvec_array(force[Try].data()), homenr);
+            pr_rvecs(debug, 0, "RELAX: force[Min]", as_rvec_array(force[Min].data()), numHomeAtoms);
+            pr_rvecs(debug, 0, "RELAX: force[Try]", as_rvec_array(force[Try].data()), numHomeAtoms);
         }
         sf_dir = 0;
         if (nflexcon)
@@ -1278,7 +1277,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                       cr,
                       dd_ac1,
                       mdstep,
-                      md,
+                      mdAtoms,
                       end,
                       shfc->x_old.arrayRefWithPadding(),
                       x,
@@ -1292,7 +1291,7 @@ void relax_shell_flexcon(FILE*                         fplog,
             ArrayRef<const RVec> acc_dir = shfc->acc_dir;
             for (i = 0; i < end; i++)
             {
-                sf_dir += massT[i] * norm2(acc_dir[i]);
+                sf_dir += mdAtoms.massT[i] * norm2(acc_dir[i]);
             }
         }
 
@@ -1309,7 +1308,7 @@ void relax_shell_flexcon(FILE*                         fplog,
         {
             if (gmx_debug_at)
             {
-                pr_rvecs(debug, 0, "F na do_force", as_rvec_array(force[Try].data()), homenr);
+                pr_rvecs(debug, 0, "F na do_force", as_rvec_array(force[Try].data()), numHomeAtoms);
             }
             if (gmx_debug_at)
             {

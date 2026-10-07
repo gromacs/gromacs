@@ -124,7 +124,7 @@ public:
                           const MDLogger&             mdlog,
                           t_commrec*                  cr,
                           const t_inputrec*           inputrec,
-                          const MDAtoms*              mdAtoms,
+                          const MDAtoms&              mdAtoms,
                           t_nrnb*                     nrnb,
                           gmx_wallcycle*              wcycle,
                           t_forcerec*                 fr,
@@ -235,7 +235,7 @@ private:
     //! Full system topology - only needed for checkNumberOfBondedInteractions.
     const gmx_mtop_t& top_global_;
     //! Atom parameters for this domain.
-    const MDAtoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
     //! Handles constraints.
     Constraints* constr_;
     //! Manages flop accounting.

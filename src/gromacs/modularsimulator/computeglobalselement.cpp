@@ -54,7 +54,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
@@ -63,7 +62,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/modularsimulator/energydata.h"
 #include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
@@ -92,7 +91,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
                                                         const MDLogger&     mdlog,
                                                         t_commrec*          cr,
                                                         const t_inputrec*   inputrec,
-                                                        const MDAtoms*      mdAtoms,
+                                                        const MDAtoms&      mdAtoms,
                                                         t_nrnb*             nrnb,
                                                         gmx_wallcycle*      wcycle,
                                                         t_forcerec*         fr,
@@ -155,9 +154,8 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         auto x = vcm_.mode == ComRemovalAlgorithm::LinearAccelerationCorrection
                          ? ArrayRefWithPadding<RVec>{}
                          : statePropagatorData_->positionsView();
-        process_and_stopcm_grp(
-                fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(), v.unpaddedArrayRef());
-        inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
+        process_and_stopcm_grp(fplog_, &vcm_, mdAtoms_, x.unpaddedArrayRef(), v.unpaddedArrayRef());
+        inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_.numHomeAtoms);
     }
 
     unsigned int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
@@ -311,7 +309,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     x,
                     v,
                     box,
-                    mdAtoms_->mdatoms(),
+                    mdAtoms_,
                     nrnb_,
                     &vcm_,
                     step != -1 ? wcycle_ : nullptr,
@@ -327,8 +325,8 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     observablesReducer_);
     if (flags & CGLO_STOPCM && !isInit)
     {
-        process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x, v);
-        inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
+        process_and_stopcm_grp(fplog_, &vcm_, mdAtoms_, x, v);
+        inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_.numHomeAtoms);
     }
 }
 
@@ -410,7 +408,7 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
                     legacySimulatorData->mdLog_,
                     legacySimulatorData->cr_,
                     legacySimulatorData->inputRec_,
-                    legacySimulatorData->mdAtoms_,
+                    *legacySimulatorData->mdAtoms_,
                     legacySimulatorData->nrnb_,
                     legacySimulatorData->wallCycleCounters_,
                     legacySimulatorData->fr_,
@@ -457,7 +455,7 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
                         simulator->mdLog_,
                         simulator->cr_,
                         simulator->inputRec_,
-                        simulator->mdAtoms_,
+                        *simulator->mdAtoms_,
                         simulator->nrnb_,
                         simulator->wallCycleCounters_,
                         simulator->fr_,

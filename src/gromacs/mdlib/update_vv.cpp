@@ -50,7 +50,6 @@
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
@@ -62,7 +61,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pulling/pull.h"
@@ -86,7 +85,7 @@ void integrateVVFirstStep(int64_t                   step,
                           const gmx::MpiComm&       mpiComm,
                           const gmx_domdec_t*       dd,
                           t_state*                  state,
-                          t_mdatoms*                mdatoms,
+                          gmx::MDAtoms&             mdAtoms,
                           t_fcdata*                 fcdata,
                           t_extmass*                MassQ,
                           t_vcm*                    vcm,
@@ -142,9 +141,9 @@ void integrateVVFirstStep(int64_t                   step,
                            ekind,
                            state,
                            total_vir,
-                           mdatoms->homenr,
-                           mdatoms->cTC,
-                           mdatoms->invmass,
+                           mdAtoms.numHomeAtoms,
+                           mdAtoms.cTC,
+                           mdAtoms.invmass,
                            MassQ,
                            trotter_seq,
                            TrotterSequence::One);
@@ -154,11 +153,11 @@ void integrateVVFirstStep(int64_t                   step,
         gmx::Matrix3x3 dummyParrinelloRahmanM;
         upd->update_coords(*ir,
                            step,
-                           mdatoms->homenr,
-                           mdatoms->havePartiallyFrozenAtoms,
-                           mdatoms->ptype,
-                           mdatoms->invmass,
-                           mdatoms->invMassPerDim,
+                           mdAtoms.numHomeAtoms,
+                           mdAtoms.havePartiallyFrozenAtoms,
+                           mdAtoms.ptype,
+                           mdAtoms.invmass,
+                           mdAtoms.invMassPerDim,
                            state,
                            f->view().forceWithPadding(),
                            fcdata,
@@ -200,7 +199,7 @@ void integrateVVFirstStep(int64_t                   step,
                             makeConstArrayRef(state->x),
                             makeConstArrayRef(state->v),
                             state->box,
-                            mdatoms,
+                            mdAtoms,
                             nrnb,
                             vcm,
                             wcycle,
@@ -224,8 +223,8 @@ void integrateVVFirstStep(int64_t                   step,
             if (bStopCM)
             {
                 process_and_stopcm_grp(
-                        fplog, vcm, *mdatoms, makeArrayRef(state->x), makeArrayRef(state->v));
-                inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
+                        fplog, vcm, mdAtoms, makeArrayRef(state->x), makeArrayRef(state->v));
+                inc_nrnb(nrnb, eNR_STOPCM, mdAtoms.numHomeAtoms);
             }
             wallcycle_start(wcycle, WallCycleCounter::Update);
         }
@@ -240,9 +239,9 @@ void integrateVVFirstStep(int64_t                   step,
                                ekind,
                                state,
                                total_vir,
-                               mdatoms->homenr,
-                               mdatoms->cTC,
-                               mdatoms->invmass,
+                               mdAtoms.numHomeAtoms,
+                               mdAtoms.cTC,
+                               mdAtoms.invmass,
                                MassQ,
                                trotter_seq,
                                TrotterSequence::Two);
@@ -278,7 +277,7 @@ void integrateVVFirstStep(int64_t                   step,
                                 makeConstArrayRef(state->x),
                                 makeConstArrayRef(state->v),
                                 state->box,
-                                mdatoms,
+                                mdAtoms,
                                 nrnb,
                                 vcm,
                                 wcycle,
@@ -334,7 +333,7 @@ void integrateVVSecondStep(int64_t                   step,
                            const gmx::MpiComm&       mpiComm,
                            const gmx_domdec_t*       dd,
                            t_state*                  state,
-                           t_mdatoms*                mdatoms,
+                           gmx::MDAtoms&             mdAtoms,
                            t_fcdata*                 fcdata,
                            t_extmass*                MassQ,
                            t_vcm*                    vcm,
@@ -367,11 +366,11 @@ void integrateVVSecondStep(int64_t                   step,
     /* velocity half-step update */
     upd->update_coords(*ir,
                        step,
-                       mdatoms->homenr,
-                       mdatoms->havePartiallyFrozenAtoms,
-                       mdatoms->ptype,
-                       mdatoms->invmass,
-                       mdatoms->invMassPerDim,
+                       mdAtoms.numHomeAtoms,
+                       mdAtoms.havePartiallyFrozenAtoms,
+                       mdAtoms.ptype,
+                       mdAtoms.invmass,
+                       mdAtoms.invMassPerDim,
                        state,
                        f->view().forceWithPadding(),
                        fcdata,
@@ -400,11 +399,11 @@ void integrateVVSecondStep(int64_t                   step,
 
     upd->update_coords(*ir,
                        step,
-                       mdatoms->homenr,
-                       mdatoms->havePartiallyFrozenAtoms,
-                       mdatoms->ptype,
-                       mdatoms->invmass,
-                       mdatoms->invMassPerDim,
+                       mdAtoms.numHomeAtoms,
+                       mdAtoms.havePartiallyFrozenAtoms,
+                       mdAtoms.ptype,
+                       mdAtoms.invmass,
+                       mdAtoms.invMassPerDim,
                        state,
                        f->view().forceWithPadding(),
                        fcdata,
@@ -419,10 +418,21 @@ void integrateVVSecondStep(int64_t                   step,
     constrain_coordinates(
             constr, do_log || do_ene, step, state, upd->xp()->arrayRefWithPadding(), dvdl_constr, bCalcVir, shake_vir);
 
-    upd->update_sd_second_half(
-            *ir, step, dvdl_constr, mdatoms->homenr, mdatoms->ptype, mdatoms->invmass, state, dd, nrnb, wcycle, constr, do_log, do_ene);
+    upd->update_sd_second_half(*ir,
+                               step,
+                               dvdl_constr,
+                               mdAtoms.numHomeAtoms,
+                               mdAtoms.ptype,
+                               mdAtoms.invmass,
+                               state,
+                               dd,
+                               nrnb,
+                               wcycle,
+                               constr,
+                               do_log,
+                               do_ene);
     upd->finish_update(
-            *ir, mdatoms->havePartiallyFrozenAtoms, mdatoms->homenr, state, wcycle, constr != nullptr);
+            *ir, mdAtoms.havePartiallyFrozenAtoms, mdAtoms.numHomeAtoms, state, wcycle, constr != nullptr);
 
     if (ir->eI == IntegrationAlgorithm::VVAK)
     {
@@ -436,7 +446,7 @@ void integrateVVSecondStep(int64_t                   step,
                         makeConstArrayRef(state->x),
                         makeConstArrayRef(state->v),
                         state->box,
-                        mdatoms,
+                        mdAtoms,
                         nrnb,
                         vcm,
                         wcycle,
@@ -456,9 +466,9 @@ void integrateVVSecondStep(int64_t                   step,
                        ekind,
                        state,
                        total_vir,
-                       mdatoms->homenr,
-                       mdatoms->cTC,
-                       mdatoms->invmass,
+                       mdAtoms.numHomeAtoms,
+                       mdAtoms.cTC,
+                       mdAtoms.invmass,
                        MassQ,
                        trotter_seq,
                        TrotterSequence::Four);
@@ -467,11 +477,11 @@ void integrateVVSecondStep(int64_t                   step,
 
         upd->update_coords(*ir,
                            step,
-                           mdatoms->homenr,
-                           mdatoms->havePartiallyFrozenAtoms,
-                           mdatoms->ptype,
-                           mdatoms->invmass,
-                           mdatoms->invMassPerDim,
+                           mdAtoms.numHomeAtoms,
+                           mdAtoms.havePartiallyFrozenAtoms,
+                           mdAtoms.ptype,
+                           mdAtoms.invmass,
+                           mdAtoms.invMassPerDim,
                            state,
                            f->view().forceWithPadding(),
                            fcdata,
@@ -487,7 +497,8 @@ void integrateVVSecondStep(int64_t                   step,
          * to numerical errors, or are they important
          * physically? I'm thinking they are just errors, but not completely sure.
          * For now, will call without actually constraining, constr=NULL*/
-        upd->finish_update(*ir, mdatoms->havePartiallyFrozenAtoms, mdatoms->homenr, state, wcycle, false);
+        upd->finish_update(
+                *ir, mdAtoms.havePartiallyFrozenAtoms, mdAtoms.numHomeAtoms, state, wcycle, false);
     }
     /* this factor or 2 correction is necessary
         because half of the constraint force is removed

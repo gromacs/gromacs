@@ -58,7 +58,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -140,16 +140,16 @@ CpuPpLongRangeNonbondeds::CpuPpLongRangeNonbondeds(int                         n
 
 CpuPpLongRangeNonbondeds::~CpuPpLongRangeNonbondeds() = default;
 
-void CpuPpLongRangeNonbondeds::updateAfterPartition(const t_mdatoms& md)
+void CpuPpLongRangeNonbondeds::updateAfterPartition(const gmx::MDAtoms& mdAtoms)
 {
-    homenr_        = md.homenr;
-    havePerturbed_ = md.nChargePerturbed != 0;
-    chargeA_       = md.chargeA;
-    chargeB_       = md.chargeB;
-    sqrt_c6A_      = md.sqrt_c6A;
-    sqrt_c6B_      = md.sqrt_c6B;
-    sigmaA_        = md.sigmaA;
-    sigmaB_        = md.sigmaB;
+    numHomeAtoms_  = mdAtoms.numHomeAtoms;
+    havePerturbed_ = mdAtoms.nChargePerturbed != 0;
+    chargeA_       = mdAtoms.chargeA;
+    chargeB_       = mdAtoms.chargeB;
+    sqrt_c6A_      = mdAtoms.sqrt_c6A;
+    sqrt_c6B_      = mdAtoms.sqrt_c6B;
+    sigmaA_        = mdAtoms.sigmaA;
+    sigmaB_        = mdAtoms.sigmaB;
 }
 
 void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
@@ -206,7 +206,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                          * the forces in the normal, single forceWithVirial->force_ array.
                          */
                         ewald_LRcorrection(
-                                homenr_,
+                                numHomeAtoms_,
                                 commrec->commMyGroup,
                                 nthreads,
                                 t,
@@ -266,7 +266,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                     wallcycle_start(wcycle_, WallCycleCounter::PmeMesh);
                     int status = gmx_pme_do(
                             pmedata,
-                            gmx::constArrayRefFromArray(coordinates.data(), homenr_ - numTpiAtoms_),
+                            gmx::constArrayRefFromArray(coordinates.data(), numHomeAtoms_ - numTpiAtoms_),
                             forceWithVirial->force_,
                             chargeA_,
                             chargeB_,
@@ -309,8 +309,8 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                      */
                     Vlr_q = gmx_pme_calc_energy(
                             pmedata,
-                            coordinates.subArray(homenr_ - numTpiAtoms_, numTpiAtoms_),
-                            chargeA_.subArray(homenr_ - numTpiAtoms_, numTpiAtoms_));
+                            coordinates.subArray(numHomeAtoms_ - numTpiAtoms_, numTpiAtoms_),
+                            chargeA_.subArray(numHomeAtoms_ - numTpiAtoms_, numTpiAtoms_));
                 }
             }
         }
@@ -327,7 +327,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                              chargeB_,
                              box,
                              commrec->dd,
-                             homenr_,
+                             numHomeAtoms_,
                              ewaldOutput.vir_q,
                              ewaldCoeffQ_,
                              lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],

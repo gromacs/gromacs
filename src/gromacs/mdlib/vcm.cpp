@@ -44,7 +44,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topology_enums.h"
@@ -168,7 +168,7 @@ static void update_tensor(const rvec x, real m0, tensor I)
 }
 
 /* Center of mass code for groups */
-void calc_vcm_grp(const t_mdatoms&               md,
+void calc_vcm_grp(const gmx::MDAtoms&            mdAtoms,
                   gmx::ArrayRef<const gmx::RVec> x,
                   gmx::ArrayRef<const gmx::RVec> v,
                   t_vcm*                         vcm)
@@ -180,7 +180,7 @@ void calc_vcm_grp(const t_mdatoms&               md,
     int nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 
     {
-#pragma omp parallel num_threads(nthreads) default(none) shared(x, v, vcm, md)
+#pragma omp parallel num_threads(nthreads) default(none) shared(x, v, vcm, mdAtoms)
         {
             int t = gmx_omp_get_thread_num();
             for (int g = 0; g < vcm->size; g++)
@@ -199,13 +199,13 @@ void calc_vcm_grp(const t_mdatoms&               md,
             }
 
 #pragma omp for schedule(static)
-            for (int i = 0; i < md.homenr; i++)
+            for (int i = 0; i < mdAtoms.numHomeAtoms; i++)
             {
                 int  g  = 0;
-                real m0 = md.massT[i];
-                if (!md.cVCM.empty())
+                real m0 = mdAtoms.massT[i];
+                if (!mdAtoms.cVCM.empty())
                 {
-                    g = md.cVCM[i];
+                    g = mdAtoms.cVCM[i];
                 }
                 t_vcm_thread* vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
                 /* Calculate linear momentum */
@@ -267,25 +267,25 @@ void calc_vcm_grp(const t_mdatoms&               md,
  * \note This routine should be called from within an OpenMP parallel region.
  *
  * \tparam numDimensions    Correct dimensions 0 to \p numDimensions-1
- * \param[in]     mdatoms   The atom property and group information
+ * \param[in]     mdAtoms   The atom property and group information
  * \param[in,out] v         The velocities to correct
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
-static void doStopComMotionLinear(const t_mdatoms& mdatoms, gmx::ArrayRef<gmx::RVec> v, const t_vcm& vcm)
+static void doStopComMotionLinear(const gmx::MDAtoms& mdAtoms, gmx::ArrayRef<gmx::RVec> v, const t_vcm& vcm)
 {
-    const int                                 homenr   = mdatoms.homenr;
-    const gmx::ArrayRef<const unsigned short> group_id = mdatoms.cVCM;
+    const int                                 numHomeAtoms = mdAtoms.numHomeAtoms;
+    const gmx::ArrayRef<const unsigned short> group_id     = mdAtoms.cVCM;
 
-    if (!mdatoms.cFREEZE.empty())
+    if (!mdAtoms.cFREEZE.empty())
     {
         GMX_RELEASE_ASSERT(vcm.nFreeze != nullptr, "Need freeze dimension info with freeze groups");
 
 #pragma omp for schedule(static)
-        for (int i = 0; i < homenr; i++)
+        for (int i = 0; i < numHomeAtoms; i++)
         {
             unsigned short vcmGroup    = group_id.empty() ? 0 : group_id[i];
-            unsigned short freezeGroup = mdatoms.cFREEZE[i];
+            unsigned short freezeGroup = mdAtoms.cFREEZE[i];
             for (int d = 0; d < numDimensions; d++)
             {
                 if (vcm.nFreeze[freezeGroup][d] == 0)
@@ -298,7 +298,7 @@ static void doStopComMotionLinear(const t_mdatoms& mdatoms, gmx::ArrayRef<gmx::R
     else if (group_id.empty())
     { // NOLINT(bugprone-branch-clone) This is actually a clang-tidy bug
 #pragma omp for schedule(static)
-        for (int i = 0; i < homenr; i++)
+        for (int i = 0; i < numHomeAtoms; i++)
         {
             for (int d = 0; d < numDimensions; d++)
             {
@@ -309,7 +309,7 @@ static void doStopComMotionLinear(const t_mdatoms& mdatoms, gmx::ArrayRef<gmx::R
     else
     {
 #pragma omp for schedule(static)
-        for (int i = 0; i < homenr; i++)
+        for (int i = 0; i < numHomeAtoms; i++)
         {
             const int g = group_id[i];
             for (int d = 0; d < numDimensions; d++)
@@ -325,14 +325,14 @@ static void doStopComMotionLinear(const t_mdatoms& mdatoms, gmx::ArrayRef<gmx::R
  * \note This routine should be called from within an OpenMP parallel region.
  *
  * \tparam numDimensions    Correct dimensions 0 to \p numDimensions-1
- * \param[in]     homenr    The number of atoms to correct
+ * \param[in]     numHomeAtoms    The number of atoms to correct
  * \param[in]     group_id  List of VCM group ids, when nullptr is passed all atoms are assumed to be in group 0
  * \param[in,out] x         The coordinates to correct
  * \param[in,out] v         The velocities to correct
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
-static void doStopComMotionAccelerationCorrection(int                                 homenr,
+static void doStopComMotionAccelerationCorrection(int                                 numHomeAtoms,
                                                   gmx::ArrayRef<const unsigned short> group_id,
                                                   gmx::ArrayRef<gmx::RVec>            x,
                                                   gmx::ArrayRef<gmx::RVec>            v,
@@ -344,7 +344,7 @@ static void doStopComMotionAccelerationCorrection(int                           
     if (group_id.empty())
     {
 #pragma omp for schedule(static)
-        for (int i = 0; i < homenr; i++)
+        for (int i = 0; i < numHomeAtoms; i++)
         {
             for (int d = 0; d < numDimensions; d++)
             {
@@ -356,7 +356,7 @@ static void doStopComMotionAccelerationCorrection(int                           
     else
     {
 #pragma omp for schedule(static)
-        for (int i = 0; i < homenr; i++)
+        for (int i = 0; i < numHomeAtoms; i++)
         {
             const int g = group_id[i];
             for (int d = 0; d < numDimensions; d++)
@@ -368,7 +368,7 @@ static void doStopComMotionAccelerationCorrection(int                           
     }
 }
 
-static void do_stopcm_grp(const t_mdatoms&         mdatoms,
+static void do_stopcm_grp(const gmx::MDAtoms&      mdAtoms,
                           gmx::ArrayRef<gmx::RVec> x,
                           gmx::ArrayRef<gmx::RVec> v,
                           const t_vcm&             vcm)
@@ -378,11 +378,12 @@ static void do_stopcm_grp(const t_mdatoms&         mdatoms,
         return;
     }
     {
-        const int                                 homenr   = mdatoms.homenr;
-        const gmx::ArrayRef<const unsigned short> group_id = mdatoms.cVCM;
+        const int                                 numHomeAtoms = mdAtoms.numHomeAtoms;
+        const gmx::ArrayRef<const unsigned short> group_id     = mdAtoms.cVCM;
 
         int gmx_unused nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
-#pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, group_id, mdatoms) shared(homenr)
+#pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, group_id, mdAtoms) \
+        shared(numHomeAtoms)
         {
             if (vcm.mode == ComRemovalAlgorithm::Linear || vcm.mode == ComRemovalAlgorithm::Angular
                 || (vcm.mode == ComRemovalAlgorithm::LinearAccelerationCorrection && x.empty()))
@@ -390,9 +391,9 @@ static void do_stopcm_grp(const t_mdatoms&         mdatoms,
                 /* Subtract linear momentum for v */
                 switch (vcm.ndim)
                 {
-                    case 1: doStopComMotionLinear<1>(mdatoms, v, vcm); break;
-                    case 2: doStopComMotionLinear<2>(mdatoms, v, vcm); break;
-                    case 3: doStopComMotionLinear<3>(mdatoms, v, vcm); break;
+                    case 1: doStopComMotionLinear<1>(mdAtoms, v, vcm); break;
+                    case 2: doStopComMotionLinear<2>(mdAtoms, v, vcm); break;
+                    case 3: doStopComMotionLinear<3>(mdAtoms, v, vcm); break;
                 }
             }
             else
@@ -404,13 +405,13 @@ static void do_stopcm_grp(const t_mdatoms&         mdatoms,
                 switch (vcm.ndim)
                 {
                     case 1:
-                        doStopComMotionAccelerationCorrection<1>(homenr, group_id, x, v, vcm);
+                        doStopComMotionAccelerationCorrection<1>(numHomeAtoms, group_id, x, v, vcm);
                         break;
                     case 2:
-                        doStopComMotionAccelerationCorrection<2>(homenr, group_id, x, v, vcm);
+                        doStopComMotionAccelerationCorrection<2>(numHomeAtoms, group_id, x, v, vcm);
                         break;
                     case 3:
-                        doStopComMotionAccelerationCorrection<3>(homenr, group_id, x, v, vcm);
+                        doStopComMotionAccelerationCorrection<3>(numHomeAtoms, group_id, x, v, vcm);
                         break;
                 }
             }
@@ -421,7 +422,7 @@ static void do_stopcm_grp(const t_mdatoms&         mdatoms,
 
                 int g = 0;
 #pragma omp for schedule(static)
-                for (int i = 0; i < homenr; i++)
+                for (int i = 0; i < numHomeAtoms; i++)
                 {
                     if (!group_id.empty())
                     {
@@ -614,7 +615,7 @@ static void process_and_check_cm_grp(FILE* fp, t_vcm* vcm, real Temp_Max)
 
 void process_and_stopcm_grp(FILE*                    fplog,
                             t_vcm*                   vcm,
-                            const t_mdatoms&         mdatoms,
+                            const gmx::MDAtoms&      mdAtoms,
                             gmx::ArrayRef<gmx::RVec> x,
                             gmx::ArrayRef<gmx::RVec> v)
 {
@@ -623,6 +624,6 @@ void process_and_stopcm_grp(FILE*                    fplog,
         // TODO: Replace fixed temperature of 1 by a system value
         process_and_check_cm_grp(fplog, vcm, 1);
 
-        do_stopcm_grp(mdatoms, x, v, *vcm);
+        do_stopcm_grp(mdAtoms, x, v, *vcm);
     }
 }

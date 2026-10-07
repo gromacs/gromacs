@@ -52,20 +52,20 @@ struct t_inputrec;
 struct t_nrnb;
 class t_state;
 struct t_trxframe;
-struct t_mdatoms;
 
 namespace gmx
 {
 template<typename T>
 class ArrayRef;
 class MpiComm;
+class MDAtoms;
 class MDLogger;
 class ObservablesReducer;
 class SimulationSignaller;
 } // namespace gmx
 
 /* Define a number of flags to better control the information
- * passed to compute_globals in md.c and global_stat.
+ * passed to compute_globals in MDAtoms and global_stat.
  */
 
 /* Compute the kinetic energy of groups, implied by CGLO_TEMPERATURE */
@@ -121,7 +121,7 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::ArrayRef<const gmx::RVec> x,
                      gmx::ArrayRef<const gmx::RVec> v,
                      const matrix                   box,
-                     const t_mdatoms*               mdatoms,
+                     const gmx::MDAtoms&            mdAtoms,
                      t_nrnb*                        nrnb,
                      t_vcm*                         vcm,
                      gmx_wallcycle*                 wcycle,

@@ -55,7 +55,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
@@ -65,7 +64,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
@@ -102,12 +101,12 @@ public:
     //! Constructor
     ReferenceTemperatureHelper(const t_inputrec*    inputrec,
                                StatePropagatorData* statePropagatorData,
-                               const t_mdatoms*     mdatoms) :
+                               const MDAtoms&       mdAtoms) :
         numTemperatureGroups_(inputrec->opts.ngtc),
         referenceTemperature_(inputrec->opts.ref_t, inputrec->opts.ref_t + inputrec->opts.ngtc),
         velocityScalingFactors_(numTemperatureGroups_),
         statePropagatorData_(statePropagatorData),
-        mdatoms_(mdatoms)
+        mdAtoms_(mdAtoms)
     {
     }
 
@@ -144,7 +143,7 @@ public:
             getThreadAtomRange(nth, threadIndex, statePropagatorData_->localNAtoms_, &startAtom, &endAtom);
             for (int atomIdx = startAtom; atomIdx < endAtom; ++atomIdx)
             {
-                const int temperatureGroup = !mdatoms_->cTC.empty() ? mdatoms_->cTC[atomIdx] : 0;
+                const int temperatureGroup = !mdAtoms_.cTC.empty() ? mdAtoms_.cTC[atomIdx] : 0;
                 velocities[atomIdx] *= velocityScalingFactors_[temperatureGroup];
             }
         }
@@ -162,7 +161,7 @@ private:
     //! Pointer to StatePropagatorData to scale velocities
     StatePropagatorData* statePropagatorData_;
     //! Atom parameters for this domain (temperature group information)
-    const t_mdatoms* mdatoms_;
+    const MDAtoms& mdAtoms_;
 };
 
 StatePropagatorData::StatePropagatorData(int                        numAtoms,
@@ -176,7 +175,7 @@ StatePropagatorData::StatePropagatorData(int                        numAtoms,
                                          bool               writeFinalConfiguration,
                                          const std::string& finalConfigurationFilename,
                                          const t_inputrec*  inputrec,
-                                         const t_mdatoms*   mdatoms,
+                                         const MDAtoms&     mdAtoms,
                                          const gmx_mtop_t&  globalTop) :
     totalNumAtoms_(numAtoms),
     localNAtoms_(0),
@@ -197,7 +196,7 @@ StatePropagatorData::StatePropagatorData(int                        numAtoms,
                                        finalConfigurationFilename,
                                        inputrec,
                                        globalTop)),
-    referenceTemperatureHelper_(std::make_unique<ReferenceTemperatureHelper>(inputrec, this, mdatoms)),
+    referenceTemperatureHelper_(std::make_unique<ReferenceTemperatureHelper>(inputrec, this, mdAtoms)),
     vvResetVelocities_(false),
     isRegularSimulationEnd_(false),
     lastStep_(-1),

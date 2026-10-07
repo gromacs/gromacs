@@ -186,7 +186,7 @@ public:
     //! Constructor
     explicit Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement, double deltaLambda);
 
-    //! Update lambda and mdatoms
+    //! Update lambda and mdAtoms
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! Update the MdAtoms object

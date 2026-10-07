@@ -43,10 +43,9 @@
 #include "pullelement.h"
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
@@ -63,7 +62,7 @@ PullElement::PullElement(bool                 setPbcRefToPrevStepCOM,
                          StatePropagatorData* statePropagatorData,
                          pull_t*              pullWork,
                          const MpiComm&       mpiComm,
-                         const MDAtoms*       mdAtoms) :
+                         const MDAtoms&       mdAtoms) :
     setPbcRefToPrevStepCOM_(setPbcRefToPrevStepCOM),
     pbcType_(pbcType),
     restoredFromCheckpoint_(false),
@@ -80,7 +79,7 @@ void PullElement::elementSetup()
     {
         preparePrevStepPullComNewSimulation(mpiComm_,
                                             pullWork_,
-                                            mdAtoms_->mdatoms()->massT,
+                                            mdAtoms_.massT,
                                             statePropagatorData_->constPositionsView().unpaddedArrayRef(),
                                             statePropagatorData_->constBox(),
                                             pbcType_,
@@ -188,7 +187,7 @@ PullElement::getElementPointerImpl(LegacySimulatorData*                    legac
             statePropagatorData,
             legacySimulatorData->pullWork_,
             legacySimulatorData->cr_->commMyGroup,
-            legacySimulatorData->mdAtoms_));
+            *legacySimulatorData->mdAtoms_));
     // Printing output is scheduled after the step
     builderHelper->registerPostStepScheduling(
             [pullElement](Step step, Time time, const RegisterRunFunction& registerRunFunction)

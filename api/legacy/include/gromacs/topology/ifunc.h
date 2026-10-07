@@ -48,7 +48,6 @@
 struct t_fcdata;
 struct t_graph;
 union t_iparams;
-struct t_mdatoms;
 struct t_pbc;
 
 /* TODO: Remove this typedef when t_ilist is removed */

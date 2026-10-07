@@ -56,13 +56,12 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrun/isimulator.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
 #include "gromacs/random/seed.h"
@@ -90,7 +89,7 @@ AndersenTemperatureCoupling::AndersenTemperatureCoupling(double               si
                                                          ArrayRef<const real> referenceTemperature,
                                                          ArrayRef<const real> couplingTime,
                                                          StatePropagatorData* statePropagatorData,
-                                                         const MDAtoms*       mdAtoms,
+                                                         const MDAtoms&       mdAtoms,
                                                          const t_commrec*     cr) :
     doMassive_(doMassive),
     randomizationRate_(simulationTimestep / couplingTime[0]),
@@ -99,7 +98,7 @@ AndersenTemperatureCoupling::AndersenTemperatureCoupling(double               si
     referenceTemperature_(referenceTemperature),
     couplingTime_(couplingTime),
     statePropagatorData_(statePropagatorData),
-    mdAtoms_(mdAtoms->mdatoms()),
+    mdAtoms_(mdAtoms),
     cr_(cr)
 {
 }
@@ -124,9 +123,9 @@ void AndersenTemperatureCoupling::apply(Step step)
 
     auto velocities = statePropagatorData_->velocitiesView().unpaddedArrayRef();
 
-    for (int atomIdx = 0; atomIdx < mdAtoms_->homenr; ++atomIdx)
+    for (int atomIdx = 0; atomIdx < mdAtoms_.numHomeAtoms; ++atomIdx)
     {
-        const int temperatureGroup = !mdAtoms_->cTC.empty() ? mdAtoms_->cTC[atomIdx] : 0;
+        const int temperatureGroup = !mdAtoms_.cTC.empty() ? mdAtoms_.cTC[atomIdx] : 0;
         if (referenceTemperature_[temperatureGroup] <= 0 || couplingTime_[temperatureGroup] <= 0)
         {
             continue;
@@ -144,7 +143,7 @@ void AndersenTemperatureCoupling::apply(Step step)
         if (doMassive_ || (uniformDist(rng) < randomizationRate_))
         {
             const real scalingFactor = std::sqrt(c_boltz * referenceTemperature_[temperatureGroup]
-                                                 * mdAtoms_->invmass[atomIdx]);
+                                                 * mdAtoms_.invmass[atomIdx]);
             normalDist.reset();
             for (int d = 0; d < DIM; d++)
             {
@@ -189,7 +188,7 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
             constArrayRefFromArray(legacySimulatorData->inputRec_->opts.tau_t,
                                    legacySimulatorData->inputRec_->opts.ngtc),
             statePropagatorData,
-            legacySimulatorData->mdAtoms_,
+            *legacySimulatorData->mdAtoms_,
             legacySimulatorData->cr_);
     auto* andersenThermostatPtr = andersenThermostat.get();
     builderHelper->registerReferenceTemperatureUpdate(
@@ -223,7 +222,7 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
                 legacySimulatorData->cr_->commMyGroup.isMainRank(),
                 legacySimulatorData->fpLog_,
                 legacySimulatorData->inputRec_,
-                legacySimulatorData->mdAtoms_->mdatoms());
+                *legacySimulatorData->mdAtoms_);
         // Add call to composite element call list
         elementCallList.emplace_back(compat::make_not_null(constraintElement.get()));
         // Move ownership of constraint element to composite element

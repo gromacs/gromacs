@@ -59,7 +59,6 @@ struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct t_grp_tcstat;
 struct t_inputrec;
-struct t_mdatoms;
 
 namespace gmx
 {
@@ -113,7 +112,7 @@ void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
                              DeviceBuffer<RVec> /* d_v */,
                              const DeviceBuffer<RVec> /* d_f */,
                              const InteractionDefinitions& /* idef */,
-                             const t_mdatoms& /* md */)
+                             const MDAtoms& /* md */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");

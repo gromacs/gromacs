@@ -69,7 +69,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/mdtypes/state.h"
@@ -98,7 +98,7 @@ static void calc_ke_part_normal(const matrix                   deform,
                                 gmx::ArrayRef<const gmx::RVec> v,
                                 const matrix                   box,
                                 const t_grpopts*               opts,
-                                const t_mdatoms*               md,
+                                const gmx::MDAtoms&            mdAtoms,
                                 gmx_ekindata_t*                ekind,
                                 t_nrnb*                        nrnb,
                                 gmx_bool                       bEkinAveVel)
@@ -167,8 +167,8 @@ static void calc_ke_part_normal(const matrix                   deform,
         real hm;
         int  d, m;
 
-        start_t = ((thread + 0) * md->homenr) / nthread;
-        end_t   = ((thread + 1) * md->homenr) / nthread;
+        start_t = ((thread + 0) * mdAtoms.numHomeAtoms) / nthread;
+        end_t   = ((thread + 1) * mdAtoms.numHomeAtoms) / nthread;
 
         gmx::ArrayRef<gmx::Matrix3x3> ekin_sum    = ekind->ekin_work[thread];
         real*                         dekindl_sum = ekind->dekindl_work[thread];
@@ -189,11 +189,11 @@ static void calc_ke_part_normal(const matrix                   deform,
         gt = 0;
         for (n = start_t; n < end_t; n++)
         {
-            if (!md->cTC.empty())
+            if (!mdAtoms.cTC.empty())
             {
-                gt = md->cTC[n];
+                gt = mdAtoms.cTC[n];
             }
-            hm = 0.5 * md->massT[n];
+            hm = 0.5 * mdAtoms.massT[n];
 
             gmx::RVec vn = v[n];
             if constexpr (haveBoxDeformation)
@@ -219,17 +219,17 @@ static void calc_ke_part_normal(const matrix                   deform,
 
                 if constexpr (haveBoxDeformation)
                 {
-                    systemMomentumWork->momentum[d] += md->massT[n] * vn[d];
+                    systemMomentumWork->momentum[d] += mdAtoms.massT[n] * vn[d];
                 }
             }
-            if (md->nMassPerturbed && md->bPerturbed[n])
+            if (mdAtoms.nMassPerturbed && mdAtoms.bPerturbed[n])
             {
-                *dekindl_sum += 0.5 * (md->massB[n] - md->massA[n]) * iprod(vn, vn);
+                *dekindl_sum += 0.5 * (mdAtoms.massB[n] - mdAtoms.massA[n]) * iprod(vn, vn);
             }
 
             if constexpr (haveBoxDeformation)
             {
-                systemMomentumWork->mass += md->massT[n];
+                systemMomentumWork->mass += mdAtoms.massT[n];
             }
         }
     }
@@ -266,7 +266,7 @@ static void calc_ke_part_normal(const matrix                   deform,
         ekind->dekindl += *ekind->dekindl_work[thread];
     }
 
-    inc_nrnb(nrnb, eNR_EKIN, md->homenr);
+    inc_nrnb(nrnb, eNR_EKIN, mdAtoms.numHomeAtoms);
 
     if constexpr (!haveBoxDeformation)
     {
@@ -278,12 +278,12 @@ static void calc_ke_part_visc(const matrix                   box,
                               gmx::ArrayRef<const gmx::RVec> x,
                               gmx::ArrayRef<const gmx::RVec> v,
                               const t_grpopts*               opts,
-                              const t_mdatoms*               md,
+                              const gmx::MDAtoms&            mdAtoms,
                               gmx_ekindata_t*                ekind,
                               t_nrnb*                        nrnb,
                               gmx_bool                       bEkinAveVel)
 {
-    int                         start = 0, homenr = md->homenr;
+    int                         start = 0, numHomeAtoms = mdAtoms.numHomeAtoms;
     int                         g, d, n, m, gt = 0;
     rvec                        v_corrt;
     real                        hm;
@@ -303,19 +303,19 @@ static void calc_ke_part_visc(const matrix                   box,
     fac     = 2 * M_PI / box[ZZ][ZZ];
     mvcos   = 0;
     dekindl = 0;
-    for (n = start; n < start + homenr; n++)
+    for (n = start; n < start + numHomeAtoms; n++)
     {
-        if (!md->cTC.empty())
+        if (!mdAtoms.cTC.empty())
         {
-            gt = md->cTC[n];
+            gt = mdAtoms.cTC[n];
         }
-        hm = 0.5 * md->massT[n];
+        hm = 0.5 * mdAtoms.massT[n];
 
         /* Note that the times of x and v differ by half a step */
         /* MRS -- would have to be changed for VV */
         cosz = std::cos(fac * x[n][ZZ]);
         /* Calculate the amplitude of the new velocity profile */
-        mvcos += 2 * cosz * md->massT[n] * v[n][XX];
+        mvcos += 2 * cosz * mdAtoms.massT[n] * v[n][XX];
 
         copy_rvec(v[n], v_corrt);
         /* Subtract the profile for the kinetic energy */
@@ -335,20 +335,20 @@ static void calc_ke_part_visc(const matrix                   box,
                 }
             }
         }
-        if (md->nPerturbed && md->bPerturbed[n])
+        if (mdAtoms.nPerturbed && mdAtoms.bPerturbed[n])
         {
             /* The minus sign here might be confusing.
              * The kinetic contribution from dH/dl doesn't come from
              * d m(l)/2 v^2 / dl, but rather from d p^2/2m(l) / dl,
              * where p are the momenta. The difference is only a minus sign.
              */
-            dekindl -= 0.5 * (md->massB[n] - md->massA[n]) * iprod(v_corrt, v_corrt);
+            dekindl -= 0.5 * (mdAtoms.massB[n] - mdAtoms.massA[n]) * iprod(v_corrt, v_corrt);
         }
     }
     ekind->dekindl = dekindl;
     cosacc->mvcos  = mvcos;
 
-    inc_nrnb(nrnb, eNR_EKIN, homenr);
+    inc_nrnb(nrnb, eNR_EKIN, numHomeAtoms);
 }
 
 static void calc_ke_part(const bool                     haveBoxDeformation,
@@ -357,7 +357,7 @@ static void calc_ke_part(const bool                     haveBoxDeformation,
                          gmx::ArrayRef<const gmx::RVec> v,
                          const matrix                   box,
                          const t_grpopts*               opts,
-                         const t_mdatoms*               md,
+                         const gmx::MDAtoms&            mdAtoms,
                          gmx_ekindata_t*                ekind,
                          t_nrnb*                        nrnb,
                          gmx_bool                       bEkinAveVel)
@@ -366,16 +366,16 @@ static void calc_ke_part(const bool                     haveBoxDeformation,
     {
         if (haveBoxDeformation)
         {
-            calc_ke_part_normal<true>(deform, x, v, box, opts, md, ekind, nrnb, bEkinAveVel);
+            calc_ke_part_normal<true>(deform, x, v, box, opts, mdAtoms, ekind, nrnb, bEkinAveVel);
         }
         else
         {
-            calc_ke_part_normal<false>(deform, x, v, box, opts, md, ekind, nrnb, bEkinAveVel);
+            calc_ke_part_normal<false>(deform, x, v, box, opts, mdAtoms, ekind, nrnb, bEkinAveVel);
         }
     }
     else
     {
-        calc_ke_part_visc(box, x, v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(box, x, v, opts, mdAtoms, ekind, nrnb, bEkinAveVel);
     }
 }
 
@@ -430,7 +430,7 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::ArrayRef<const gmx::RVec> x,
                      gmx::ArrayRef<const gmx::RVec> v,
                      const matrix                   box,
-                     const t_mdatoms*               mdatoms,
+                     const gmx::MDAtoms&            mdAtoms,
                      t_nrnb*                        nrnb,
                      t_vcm*                         vcm,
                      gmx_wallcycle*                 wcycle,
@@ -480,7 +480,7 @@ void compute_globals(gmx_global_stat*               gstat,
         if (!bReadEkin)
         {
             wallcycle_start(wcycle, WallCycleCounter::ComputeEKin);
-            calc_ke_part(fr->haveBoxDeformation, ir->deform, x, v, box, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);
+            calc_ke_part(fr->haveBoxDeformation, ir->deform, x, v, box, &(ir->opts), mdAtoms, ekind, nrnb, bEkinAveVel);
             wallcycle_stop(wcycle, WallCycleCounter::ComputeEKin);
         }
     }
@@ -488,7 +488,7 @@ void compute_globals(gmx_global_stat*               gstat,
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)
     {
-        calc_vcm_grp(*mdatoms, x, v, vcm);
+        calc_vcm_grp(mdAtoms, x, v, vcm);
     }
 
     if (computeEkin || bTemp || bStopCM || bPres || bEner || bConstrain
@@ -543,7 +543,7 @@ void compute_globals(gmx_global_stat*               gstat,
     if (bEner)
     {
         /* Calculate the amplitude of the cosine velocity profile */
-        ekind->cosacc.vcos = ekind->cosacc.mvcos / mdatoms->tmass;
+        ekind->cosacc.vcos = ekind->cosacc.mvcos / mdAtoms.tmass;
     }
 
     if (bTemp)

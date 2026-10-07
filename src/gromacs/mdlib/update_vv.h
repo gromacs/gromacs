@@ -55,7 +55,6 @@ struct t_extmass;
 struct t_fcdata;
 struct t_forcerec;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 struct t_vcm;
@@ -64,6 +63,7 @@ namespace gmx
 {
 class Constraints;
 class ForceBuffers;
+class MDAtoms;
 class MpiComm;
 class ObservablesReducer;
 class SimulationSignaller;
@@ -83,7 +83,7 @@ enum class StartingBehavior : int;
  * \param[in]  mpiComm           Communication object for my group.
  * \param[in]  dd                Domain decomposition object, pass nullptr when dd is not in use.
  * \param[in]  state             Simulation state.
- * \param[in]  mdatoms           MD atoms data.
+ * \param[in]  mdAtoms           MD atoms data.
  * \param[in]  fcdata            Force calculation data.
  * \param[in]  MassQ             Mass/pressure data.
  * \param[in]  vcm               Center of mass motion removal.
@@ -124,7 +124,7 @@ void integrateVVFirstStep(int64_t                   step,
                           const gmx::MpiComm&       mpiComm,
                           const gmx_domdec_t*       dd,
                           t_state*                  state,
-                          t_mdatoms*                mdatoms,
+                          gmx::MDAtoms&             mdAtoms,
                           t_fcdata*                 fcdata,
                           t_extmass*                MassQ,
                           t_vcm*                    vcm,
@@ -164,7 +164,7 @@ void integrateVVFirstStep(int64_t                   step,
  * \param[in]  mpiComm           Communication object for my group.
  * \param[in]  dd                Domain decomposition object, pass nullptr when dd is not in use.
  * \param[in]  state             Simulation state.
- * \param[in]  mdatoms           MD atoms data.
+ * \param[in]  mdAtoms           MD atoms data.
  * \param[in]  fcdata            Force calculation data.
  * \param[in]  MassQ             Mass/pressure data.
  * \param[in]  vcm               Center of mass motion removal.
@@ -198,7 +198,7 @@ void integrateVVSecondStep(int64_t                   step,
                            const gmx::MpiComm&       mpiComm,
                            const gmx_domdec_t*       dd,
                            t_state*                  state,
-                           t_mdatoms*                mdatoms,
+                           gmx::MDAtoms&             mdAtoms,
                            t_fcdata*                 fcdata,
                            t_extmass*                MassQ,
                            t_vcm*                    vcm,

@@ -47,14 +47,13 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -88,7 +87,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                            const DeviceStreamManager*  deviceStreamManager,
                            const t_inputrec*           inputrec,
                            const MDModulesNotifiers&   mdModulesNotifiers,
-                           const MDAtoms*              mdAtoms,
+                           const MDAtoms&              mdAtoms,
                            t_nrnb*                     nrnb,
                            t_forcerec*                 fr,
                            gmx_wallcycle*              wcycle,
@@ -150,7 +149,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     {
         // This was done in mdAlgorithmsSetupAtomData(), but shellfc
         // won't be available outside this element.
-        make_local_shells(cr->dd, *mdAtoms->mdatoms(), shellfc_);
+        make_local_shells(cr->dd, mdAtoms, shellfc_);
     }
 }
 
@@ -203,7 +202,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
         }
         edsam* ed                    = nullptr; // disabled
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
-                *inputrec_, *fr_, pull_work_, ed, *mdAtoms_->mdatoms(), runScheduleWork_->simulationWork);
+                *inputrec_, *fr_, pull_work_, ed, mdAtoms_.nPerturbed > 0, runScheduleWork_->simulationWork);
     }
 
     runScheduleWork_->stepWork = setupStepWorkload(flags,
@@ -229,7 +228,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     ArrayRef<real> lambda =
             freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->lambdaView() : lambda_;
 
-    longRangeNonbondeds_->updateAfterPartition(*mdAtoms_->mdatoms());
+    longRangeNonbondeds_->updateAfterPartition(mdAtoms_);
 
     if (doShellFC)
     {
@@ -256,7 +255,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                             hist,
                             &forces,
                             force_vir,
-                            *mdAtoms_->mdatoms(),
+                            mdAtoms_,
                             longRangeNonbondeds_.get(),
                             nrnb_,
                             wcycle_,
@@ -295,7 +294,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                  hist,
                  &forces,
                  force_vir,
-                 mdAtoms_->mdatoms(),
+                 mdAtoms_,
                  energyData_->enerdata(),
                  lambda,
                  fr_,
@@ -347,7 +346,7 @@ std::optional<SignallerCallback> ForceElement::registerEnergyCallback(EnergySign
 
 DomDecCallback ForceElement::registerDomDecCallback()
 {
-    return [this]() { longRangeNonbondeds_->updateAfterPartition(*mdAtoms_->mdatoms()); };
+    return [this]() { longRangeNonbondeds_->updateAfterPartition(mdAtoms_); };
 }
 
 ISimulatorElement*
@@ -371,7 +370,7 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                            deviceStreamManager,
                                            legacySimulatorData->inputRec_,
                                            legacySimulatorData->mdModulesNotifiers_,
-                                           legacySimulatorData->mdAtoms_,
+                                           *legacySimulatorData->mdAtoms_,
                                            legacySimulatorData->nrnb_,
                                            legacySimulatorData->fr_,
                                            legacySimulatorData->wallCycleCounters_,

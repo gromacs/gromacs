@@ -54,7 +54,6 @@ class history_t;
 struct pull_t;
 struct t_forcerec;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 class CpuPpLongRangeNonbondeds;
@@ -71,6 +70,7 @@ class Constraints;
 class DeviceStreamManager;
 class ForceBuffersView;
 class ImdSession;
+class MDAtoms;
 struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
 class SimulationWorkload;
@@ -119,7 +119,7 @@ void relax_shell_flexcon(FILE*                         log,
                          const history_t*              hist,
                          ForceBuffersView*             f,
                          tensor                        force_vir,
-                         const t_mdatoms&              md,
+                         const MDAtoms&                mdAtoms,
                          CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
                          t_nrnb*                       nrnb,
                          gmx_wallcycle*                wcycle,

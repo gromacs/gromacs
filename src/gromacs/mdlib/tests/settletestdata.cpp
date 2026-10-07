@@ -56,7 +56,6 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/tests/watersystem.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/forcefieldparameters.h"

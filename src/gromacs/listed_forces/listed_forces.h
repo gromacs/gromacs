@@ -315,7 +315,7 @@ private:
     std::vector<gmx::RVec> shiftForceBufferLambda_;
     //! Temporary array for storing foreign lambda group pair energies
     std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
-    //! Vector of indices needed in order to loop over the atoms in each COM group (currently just a reference to t_mdatoms.cVCM)
+    //! Vector of indices needed in order to loop over the atoms in each COM group (currently just a reference to MDAtoms.cVCM)
     gmx::ArrayRef<const unsigned short> restraintComIndices_;
     //! Pointer to domain decomposition data, can be nullptr
     const gmx_domdec_t* domDec_;

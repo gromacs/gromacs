@@ -68,7 +68,6 @@ struct gmx_mdoutf;
 enum class PbcType : int;
 struct t_inputrec;
 class t_state;
-struct t_mdatoms;
 struct t_trxframe;
 struct gmx_mtop_t;
 
@@ -129,7 +128,7 @@ public:
                         bool                       writeFinalConfiguration,
                         const std::string&         finalConfigurationFilename,
                         const t_inputrec*          inputrec,
-                        const t_mdatoms*           mdatoms,
+                        const MDAtoms&             mdAtoms,
                         const gmx_mtop_t&          globalTop);
 
     //! Destructor (allows forward declaration of internal type)

@@ -73,7 +73,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -336,18 +336,14 @@ protected:
         // 'nAtomsPerPair+1'-tuples (fType a_0 a_i ... a_nAtomsPerPair)
         std::vector<t_iatom> iatoms = { 0, 1, 2, 0, 0, 2 };
 
-        std::vector<int>            ddgatindex = { 0, 1, 2 };
-        std::vector<real>           chargeA    = { 1.0, -0.5, -0.5 };
-        std::vector<real>           chargeB    = { 0.0, 0.0, 0.0 };
-        std::vector<BoolType>       perturbed  = { true, true, true };
-        std::vector<unsigned short> egrp       = { 0, 0, 0 };
-        t_mdatoms                   mdatoms    = { 0 };
+        std::vector<int> ddgatindex = { 0, 1, 2 };
 
-        mdatoms.chargeA    = chargeA;
-        mdatoms.chargeB    = chargeB;
-        mdatoms.bPerturbed = perturbed;
-        mdatoms.cENER      = egrp;
-        mdatoms.nPerturbed = 3;
+        MDAtoms mdAtoms(false, false, nullptr);
+        mdAtoms.chargeA    = { 1.0, -0.5, -0.5 };
+        mdAtoms.chargeB    = { 0.0, 0.0, 0.0 };
+        mdAtoms.bPerturbed = { true, true, true };
+        mdAtoms.cENER      = { 0, 0, 0 };
+        mdAtoms.nPerturbed = 3;
 
         t_forcerec* fr = frHelper.get();
         fr->efep = input_.fep ? FreeEnergyPerturbationType::Yes : FreeEnergyPerturbationType::No;
@@ -394,11 +390,11 @@ protected:
                      &pbc_,
                      lambdas.data(),
                      output.dvdLambda.data(),
-                     mdatoms.chargeA,
-                     mdatoms.chargeB,
-                     makeArrayRef(mdatoms.bPerturbed),
-                     mdatoms.cENER,
-                     mdatoms.nPerturbed,
+                     mdAtoms.chargeA,
+                     mdAtoms.chargeB,
+                     makeArrayRef(mdAtoms.bPerturbed),
+                     mdAtoms.cENER,
+                     mdAtoms.nPerturbed,
                      *fr,
                      havePerturbedInteractions,
                      stepWork,

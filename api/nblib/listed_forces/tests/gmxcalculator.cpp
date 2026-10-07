@@ -84,6 +84,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     virialProxy(forceBuffer, true),
     forceOutputs(shiftProxy, true, virialProxy),
     fr(gmx::HostAllocationPolicy{}),
+    mdAtoms_(false, false, nullptr),
     enerd(1, nullptr),
     lambdaBuffer(42) // values unused; just initialized with something larger than the number of enum types in FreeEnergyPerturbationCouplingType
 {
@@ -99,7 +100,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     gmx_wallcycle* wcycle = nullptr;
     gmxListedForces_      = std::make_unique<ListedForces>(
             *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, nullptr, wcycle, fr, &nrnb);
-    gmxListedForces_->setup(*idef, nP, false, mdatoms_.cVCM);
+    gmxListedForces_->setup(*idef, nP, false, mdAtoms_.cVCM);
 
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());
 
@@ -110,7 +111,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
 
     fr.natoms_force = numParticles;
 
-    mdatoms_.nPerturbed = 0;
+    mdAtoms_.nPerturbed = 0;
 }
 
 void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
@@ -153,11 +154,11 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
                                 &pbc,
                                 &enerd,
                                 lambdaBuffer,
-                                mdatoms_.chargeA,
-                                mdatoms_.chargeB,
-                                makeConstArrayRef(mdatoms_.bPerturbed),
-                                mdatoms_.cENER,
-                                mdatoms_.nPerturbed,
+                                mdAtoms_.chargeA,
+                                mdAtoms_.chargeB,
+                                makeConstArrayRef(mdAtoms_.bPerturbed),
+                                mdAtoms_.cENER,
+                                mdAtoms_.nPerturbed,
                                 nullptr,
                                 stepWork);
 

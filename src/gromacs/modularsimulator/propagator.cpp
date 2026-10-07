@@ -43,10 +43,9 @@
 #include "propagator.h"
 
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
@@ -209,16 +208,17 @@ void Propagator<IntegrationStage::PositionsOnly>::run()
     const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
     const RVec* v  = statePropagatorData_->constVelocitiesView().paddedArrayRef().data();
 
-    int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-    int homenr = mdAtoms_->mdatoms()->homenr;
+    const int nth          = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    const int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, homenr, x, xp, v)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(nth, numHomeAtoms, x, xp, v)
     for (int th = 0; th < nth; th++)
     {
         try
         {
             int start_th, end_th;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+            getThreadAtomRange(nth, th, numHomeAtoms, &start_th, &end_th);
 
             for (int a = start_th; a < end_th; a++)
             {
@@ -245,24 +245,24 @@ void Propagator<IntegrationStage::ScalePositions>::run()
     const real lambda =
             (numPositionScalingValues == NumPositionScalingValues::Single) ? positionScaling_[0] : 1.0;
 
-    int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-    int homenr = mdAtoms_->mdatoms()->homenr;
+    int nth          = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, homenr, x) \
-        firstprivate(lambda)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(nth, numHomeAtoms, x) firstprivate(lambda)
     for (int th = 0; th < nth; th++)
     {
         try
         {
             int start_th, end_th;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+            getThreadAtomRange(nth, th, numHomeAtoms, &start_th, &end_th);
 
             for (int a = start_th; a < end_th; a++)
             {
                 scalePositions<numPositionScalingValues>(
                         a,
                         (numPositionScalingValues == NumPositionScalingValues::Multiple)
-                                ? positionScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                ? positionScaling_[mdAtoms_.cTC[a]]
                                 : lambda,
                         x);
             }
@@ -284,7 +284,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 
     RVec*                      v = statePropagatorData_->velocitiesView().paddedArrayRef().data();
     const RVec*                f = statePropagatorData_->constForcesView().force().data();
-    const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    const ArrayRef<const RVec> invMassPerDim = mdAtoms_.invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -297,17 +297,17 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
             canTreatPRScalingMatrixAsDiagonal<parrinelloRahmanVelocityScaling>(matrixPR_);
     const RVec diagonalOfPRScalingMatrix = treatPRScalingMatrixAsDiagonal ? diagonal(matrixPR_) : RVec{};
 
-    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-    const int homenr = mdAtoms_->mdatoms()->homenr;
+    const int nth          = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    const int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
-        shared(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
+        shared(nth, numHomeAtoms, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
         try
         {
             int start_th, end_th;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+            getThreadAtomRange(nth, th, numHomeAtoms, &start_th, &end_th);
 
             for (int a = start_th; a < end_th; a++)
             {
@@ -317,10 +317,10 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                             a,
                             timestep_,
                             numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaStart,
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? endVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaEnd,
                             invMassPerDim.data(),
                             v,
@@ -334,10 +334,10 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                             a,
                             timestep_,
                             numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaStart,
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? endVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaEnd,
                             invMassPerDim.data(),
                             v,
@@ -366,7 +366,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
     RVec*       v  = statePropagatorData_->velocitiesView().paddedArrayRef().data();
     const RVec* f  = statePropagatorData_->constForcesView().force().data();
-    const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    const ArrayRef<const RVec> invMassPerDim = mdAtoms_.invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -379,18 +379,18 @@ void Propagator<IntegrationStage::LeapFrog>::run()
             canTreatPRScalingMatrixAsDiagonal<parrinelloRahmanVelocityScaling>(matrixPR_);
     const RVec diagonalOfPRScalingMatrix = treatPRScalingMatrixAsDiagonal ? diagonal(matrixPR_) : RVec{};
 
-    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-    const int homenr = mdAtoms_->mdatoms()->homenr;
+    const int nth          = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    const int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
         shared(x, xp, v, f, invMassPerDim)                               \
-        firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
+        firstprivate(nth, numHomeAtoms, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
         try
         {
             int start_th, end_th;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+            getThreadAtomRange(nth, th, numHomeAtoms, &start_th, &end_th);
 
             for (int a = start_th; a < end_th; a++)
             {
@@ -400,10 +400,10 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                             a,
                             timestep_,
                             numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaStart,
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? endVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaEnd,
                             invMassPerDim.data(),
                             v,
@@ -417,10 +417,10 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                             a,
                             timestep_,
                             numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaStart,
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? endVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaEnd,
                             invMassPerDim.data(),
                             v,
@@ -450,7 +450,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
     RVec*       v  = statePropagatorData_->velocitiesView().paddedArrayRef().data();
     const RVec* f  = statePropagatorData_->constForcesView().force().data();
-    const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    const ArrayRef<const RVec> invMassPerDim = mdAtoms_.invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -463,18 +463,18 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
             canTreatPRScalingMatrixAsDiagonal<parrinelloRahmanVelocityScaling>(matrixPR_);
     const RVec diagonalOfPRScalingMatrix = treatPRScalingMatrixAsDiagonal ? diagonal(matrixPR_) : RVec{};
 
-    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-    const int homenr = mdAtoms_->mdatoms()->homenr;
+    const int nth          = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    const int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
         shared(x, xp, v, f, invMassPerDim)                               \
-        firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
+        firstprivate(nth, numHomeAtoms, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
         try
         {
             int start_th, end_th;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+            getThreadAtomRange(nth, th, numHomeAtoms, &start_th, &end_th);
 
             for (int a = start_th; a < end_th; a++)
             {
@@ -484,10 +484,10 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                             a,
                             0.5 * timestep_,
                             numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaStart,
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? endVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaEnd,
                             invMassPerDim.data(),
                             v,
@@ -501,10 +501,10 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                             a,
                             0.5 * timestep_,
                             numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaStart,
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                    ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                    ? endVelocityScaling_[mdAtoms_.cTC[a]]
                                     : lambdaEnd,
                             invMassPerDim.data(),
                             v,
@@ -540,25 +540,25 @@ void Propagator<IntegrationStage::ScaleVelocities>::run()
                                      ? startVelocityScaling_[0]
                                      : 1.0;
 
-    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-    const int homenr = mdAtoms_->mdatoms()->homenr;
+    const int nth          = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+    const int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-        shared(v, lambdaStart, nth, homenr)
+        shared(v, lambdaStart, nth, numHomeAtoms)
     for (int th = 0; th < nth; th++)
     {
         try
         {
             int start_th = 0;
             int end_th   = 0;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+            getThreadAtomRange(nth, th, numHomeAtoms, &start_th, &end_th);
 
             for (int a = start_th; a < end_th; a++)
             {
                 scaleVelocities<numStartVelocityScalingValues>(
                         a,
                         numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
-                                ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                ? startVelocityScaling_[mdAtoms_.cTC[a]]
                                 : lambdaStart,
                         v);
             }
@@ -571,7 +571,7 @@ void Propagator<IntegrationStage::ScaleVelocities>::run()
 template<IntegrationStage integrationStage>
 Propagator<integrationStage>::Propagator(double               timestep,
                                          StatePropagatorData* statePropagatorData,
-                                         const MDAtoms*       mdAtoms,
+                                         const MDAtoms&       mdAtoms,
                                          gmx_wallcycle*       wcycle) :
     timestep_(timestep),
     statePropagatorData_(statePropagatorData),
@@ -986,7 +986,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
                                || (timestep == 0.0),
                        "Scaling elements don't propagate the system.");
     auto* element    = builderHelper->storeElement(std::make_unique<Propagator<integrationStage>>(
-            timestep, statePropagatorData, legacySimulatorData->mdAtoms_, legacySimulatorData->wallCycleCounters_));
+            timestep, statePropagatorData, *legacySimulatorData->mdAtoms_, legacySimulatorData->wallCycleCounters_));
     auto* propagator = static_cast<Propagator<integrationStage>*>(element);
     builderHelper->registerPropagator(getConnection<integrationStage>(propagator, propagatorTag));
     return element;

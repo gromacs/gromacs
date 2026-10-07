@@ -44,13 +44,12 @@
 
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/pbcutil/boxutilities.h"
 
 #include "energydata.h"
@@ -103,8 +102,8 @@ void FirstOrderPressureCoupling::scaleBoxAndCoordinates()
     // Coordinates are always scaled except for GPU update (not implemented currently)
     const bool scaleCoordinates = true;
     // Atom range
-    const int startAtom = 0;
-    const int numAtoms  = mdAtoms_->mdatoms()->homenr;
+    const int startAtom    = 0;
+    const int numHomeAtoms = mdAtoms_.numHomeAtoms;
 
     pressureCouplingScaleBoxAndCoordinates<pressureCouplingType>(inputrec_->pressureCouplingOptions,
                                                                  inputrec_->deform,
@@ -113,7 +112,7 @@ void FirstOrderPressureCoupling::scaleBoxAndCoordinates()
                                                                  box,
                                                                  boxRel_,
                                                                  startAtom,
-                                                                 numAtoms,
+                                                                 numHomeAtoms,
                                                                  positions,
                                                                  velocities,
                                                                  cFreeze,
@@ -233,7 +232,7 @@ FirstOrderPressureCoupling::FirstOrderPressureCoupling(int                  coup
                                                        EnergyData*          energyData,
                                                        FILE*                fplog,
                                                        const t_inputrec*    inputrec,
-                                                       const MDAtoms*       mdAtoms,
+                                                       const MDAtoms&       mdAtoms,
                                                        t_nrnb*              nrnb,
                                                        ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy) :
     pressureCouplingType_(inputrec->pressureCouplingOptions.epc),
@@ -278,7 +277,7 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
             energyData,
             legacySimulatorData->fpLog_,
             legacySimulatorData->inputRec_,
-            legacySimulatorData->mdAtoms_,
+            *legacySimulatorData->mdAtoms_,
             legacySimulatorData->nrnb_,
             reportPreviousStepConservedEnergy));
 }

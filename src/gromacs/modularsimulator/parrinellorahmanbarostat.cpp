@@ -46,12 +46,11 @@
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/utility/vec.h"
 
@@ -71,7 +70,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
                                                    EnergyData*          energyData,
                                                    const MDLogger&      mdlog,
                                                    const t_inputrec*    inputrec,
-                                                   const MDAtoms*       mdAtoms) :
+                                                   const MDAtoms&       mdAtoms) :
     nstpcouple_(nstpcouple),
     offset_(offset),
     couplingTimePeriod_(couplingTimePeriod),
@@ -169,19 +168,18 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
     preserveBoxShape(inputrec_->pressureCouplingOptions, inputrec_->deform, boxRel_, box);
 
     // Scale the coordinates
-    const int      start   = 0;
-    const int      homenr  = mdAtoms_->mdatoms()->homenr;
-    ArrayRef<RVec> x       = statePropagatorData_->positionsView().paddedArrayRef();
-    ivec*          nFreeze = inputrec_->opts.nFreeze;
-    for (int n = start; n < start + homenr; n++)
+    const int      numHomeAtoms = mdAtoms_.numHomeAtoms;
+    ArrayRef<RVec> x            = statePropagatorData_->positionsView().paddedArrayRef();
+    ivec*          nFreeze      = inputrec_->opts.nFreeze;
+    for (int n = 0; n < numHomeAtoms; n++)
     {
-        if (mdAtoms_->mdatoms()->cFREEZE.empty())
+        if (mdAtoms_.cFREEZE.empty())
         {
             x[n] = multiplyVectorByTransposeOfBoxMatrix(mu_, x[n]);
         }
         else
         {
-            int g = mdAtoms_->mdatoms()->cFREEZE[n];
+            int g = mdAtoms_.cFREEZE[n];
             if (!nFreeze[g][XX])
             {
                 x[n][XX] = mu_(XX, XX) * x[n][XX] + mu_(YY, XX) * x[n][YY] + mu_(ZZ, XX) * x[n][ZZ];
@@ -369,7 +367,7 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
             energyData,
             legacySimulatorData->mdLog_,
             legacySimulatorData->inputRec_,
-            legacySimulatorData->mdAtoms_));
+            *legacySimulatorData->mdAtoms_));
     auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);
     builderHelper->registerTemperaturePressureControl(
             [barostat, propagatorTag](const PropagatorConnection& connection)

@@ -53,7 +53,7 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -84,6 +84,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     f_(numAtoms),
     inverseMasses_(),
     inverseMassesPerDim_(numAtoms),
+    mdAtoms_(false, false, nullptr),
     kineticEnergyData_(std::vector<real>(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0),
                        EnsembleTemperatureSetting::NotAvailable,
                        0.0,
@@ -170,7 +171,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     state_.box[ZZ][YY] = 0.0;
     state_.box[ZZ][ZZ] = 10.0;
 
-    mdAtoms_.homenr                   = numAtoms_;
+    mdAtoms_.numHomeAtoms             = numAtoms_;
     mdAtoms_.haveVsites               = false;
     mdAtoms_.havePartiallyFrozenAtoms = false;
 

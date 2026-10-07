@@ -63,7 +63,7 @@
 #include "gromacs/mdlib/leapfrog_gpu.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdlib/update_constrain_gpu_internal.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 
@@ -189,7 +189,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
                                    DeviceBuffer<Float3>          d_v,
                                    const DeviceBuffer<Float3>    d_f,
                                    const InteractionDefinitions& idef,
-                                   const t_mdatoms&              md)
+                                   const MDAtoms&                mdAtoms)
 {
     wallcycle_start(wcycle_, WallCycleCounter::GpuSetConstr);
 
@@ -201,7 +201,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     d_v_ = d_v;
     d_f_ = d_f;
 
-    numAtoms_ = md.homenr;
+    numAtoms_ = mdAtoms.numHomeAtoms;
 
     reallocateDeviceBuffer(&d_x0_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
 
@@ -209,11 +209,11 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
             &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
 
     // Integrator should also update something, but it does not even have a method yet
-    integrator_->set(numAtoms_, md.invmass, md.cTC);
+    integrator_->set(numAtoms_, mdAtoms.invmass, mdAtoms.cTC);
     if constexpr (GpuConfigurationCapabilities::Constraints)
     {
         wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuSetLincs);
-        lincsGpu_->set(idef, numAtoms_, md.invmass);
+        lincsGpu_->set(idef, numAtoms_, mdAtoms.invmass);
         wallcycle_sub_stop(wcycle_, WallCycleSubCounter::GpuSetLincs);
         wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuSetSettle);
         settleGpu_->set(idef);
@@ -288,9 +288,9 @@ void UpdateConstrainGpu::set(DeviceBuffer<Float3>          d_x,
                              DeviceBuffer<Float3>          d_v,
                              const DeviceBuffer<Float3>    d_f,
                              const InteractionDefinitions& idef,
-                             const t_mdatoms&              md)
+                             const MDAtoms&                mdAtoms)
 {
-    impl_->set(d_x, d_v, d_f, idef, md);
+    impl_->set(d_x, d_v, d_f, idef, mdAtoms);
 }
 
 void UpdateConstrainGpu::setPbc(const PbcType pbcType, const matrix box)

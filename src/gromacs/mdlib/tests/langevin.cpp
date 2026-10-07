@@ -111,7 +111,7 @@ void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
     {
         testData->update_->update_coords(testData->inputRecord_,
                                          step,
-                                         testData->mdAtoms_.homenr,
+                                         testData->mdAtoms_.numHomeAtoms,
                                          testData->mdAtoms_.havePartiallyFrozenAtoms,
                                          testData->mdAtoms_.ptype,
                                          testData->mdAtoms_.invmass,
@@ -126,7 +126,7 @@ void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
                                          false);
         testData->update_->finish_update(testData->inputRecord_,
                                          testData->mdAtoms_.havePartiallyFrozenAtoms,
-                                         testData->mdAtoms_.homenr,
+                                         testData->mdAtoms_.numHomeAtoms,
                                          &testData->state_,
                                          nullptr,
                                          false);

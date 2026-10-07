@@ -51,7 +51,6 @@
 #include "propagator.h"
 
 struct t_commrec;
-struct t_mdatoms;
 
 namespace gmx
 {
@@ -80,7 +79,7 @@ public:
                                 ArrayRef<const real> referenceTemperature,
                                 ArrayRef<const real> couplingTime,
                                 StatePropagatorData* statePropagatorData,
-                                const MDAtoms*       mdAtoms,
+                                const MDAtoms&       mdAtoms,
                                 const t_commrec*     cr);
 
     /*! \brief Register run function for step / time
@@ -143,7 +142,7 @@ private:
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
     //! Atom parameters for this domain.
-    const t_mdatoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
     //! Handles communication.
     const t_commrec* cr_;
 

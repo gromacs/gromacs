@@ -51,7 +51,6 @@ struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct t_forcerec;
-struct t_mdatoms;
 
 namespace gmx
 {

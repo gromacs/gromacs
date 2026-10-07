@@ -45,7 +45,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -55,7 +54,7 @@
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/topology/topology.h"
@@ -77,7 +76,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
                        FreeEnergyPerturbationData* freeEnergyPerturbationData,
                        const gmx_mtop_t&           globalTopology,
                        const t_inputrec*           inputrec,
-                       const MDAtoms*              mdAtoms,
+                       const MDAtoms&              mdAtoms,
                        gmx_enerdata_t*             enerd,
                        gmx_ekindata_t*             ekind,
                        const Constraints*          constr,
@@ -248,7 +247,7 @@ void EnergyData::doStep(Step step, Time time, bool isEnergyCalculationStep, bool
             isFreeEnergyCalculationStep,
             isEnergyCalculationStep,
             time,
-            mdAtoms_->mdatoms()->tmass,
+            mdAtoms_.tmass,
             enerd_,
             inputrec_->fepvals.get(),
             statePropagatorData_->constPreviousBox(),

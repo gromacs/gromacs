@@ -59,7 +59,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stat.h"
@@ -74,7 +73,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -459,7 +458,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
             legacySimulatorData->mdrunOptions_.writeConfout,
             opt2fn("-c", legacySimulatorData->nFile_, legacySimulatorData->fnm_),
             legacySimulatorData->inputRec_,
-            legacySimulatorData->mdAtoms_->mdatoms(),
+            *legacySimulatorData->mdAtoms_,
             legacySimulatorData->topGlobal_);
     registerExistingElement(statePropagatorData_->element());
 
@@ -470,7 +469,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
                                                freeEnergyPerturbationData_.get(),
                                                legacySimulatorData->topGlobal_,
                                                legacySimulatorData->inputRec_,
-                                               legacySimulatorData->mdAtoms_,
+                                               *legacySimulatorData->mdAtoms_,
                                                legacySimulatorData->enerd_,
                                                legacySimulatorData->ekind_,
                                                legacySimulatorData->constr_,

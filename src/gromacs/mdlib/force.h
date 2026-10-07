@@ -64,7 +64,6 @@ struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_lambda;
-struct t_mdatoms;
 struct t_nrnb;
 struct gmx_ewald_tab_t;
 class CpuPpLongRangeNonbondeds;
@@ -77,6 +76,7 @@ class Awh;
 class ForceBuffersView;
 class ForceWithVirial;
 class ImdSession;
+class MDAtoms;
 struct MDModulesNotifiers;
 class MdrunScheduleWorkload;
 class MDLogger;
@@ -127,7 +127,7 @@ void do_force(FILE*                         log,
               const history_t*              hist,
               ForceBuffersView*             force,
               tensor                        vir_force,
-              const t_mdatoms*              mdatoms,
+              const MDAtoms&                mdAtoms,
               gmx_enerdata_t*               enerd,
               ArrayRef<const real>          lambda,
               t_forcerec*                   fr,
@@ -169,7 +169,7 @@ public:
 
     ~CpuPpLongRangeNonbondeds();
 
-    void updateAfterPartition(const t_mdatoms& md);
+    void updateAfterPartition(const gmx::MDAtoms& mdAtoms);
 
     /* Calculate CPU Ewald or PME-mesh forces when done on this rank and Ewald corrections, when used
      *
@@ -212,8 +212,8 @@ private:
     bool havePbcXY2Walls_;
     //! Free energy perturbation type
     FreeEnergyPerturbationType freeEnergyPerturbationType_;
-    //! Number of atoms on this node
-    int homenr_;
+    //! Number of home atoms on this rank
+    int numHomeAtoms_;
     //! Whether there are perturbed interactions
     bool havePerturbed_;
     //! State A charge

@@ -49,7 +49,6 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
@@ -76,10 +75,11 @@ namespace gmx
 MDAtoms::MDAtoms(const bool                 rankHasPmeGpuTask,
                  const bool                 useGpuForUpdate,
                  const DeviceStreamManager* deviceStreamManager) :
-    mdatoms_(nullptr),
     // GPU transfers may want to use a suitable pinning mode.
-    chargeA_(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager)),
-    chargeB_(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager))
+    invmass(makeHostAllocationPolicy(useGpuForUpdate, deviceStreamManager)),
+    chargeA(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager)),
+    chargeB(makeHostAllocationPolicy(rankHasPmeGpuTask, deviceStreamManager)),
+    cTC(makeHostAllocationPolicy(useGpuForUpdate, deviceStreamManager))
 {
     if (rankHasPmeGpuTask || useGpuForUpdate)
     {
@@ -88,17 +88,6 @@ MDAtoms::MDAtoms(const bool                 rankHasPmeGpuTask,
     }
 }
 
-void MDAtoms::resizeChargeA(const int newSize)
-{
-    chargeA_.resizeWithPadding(newSize);
-    mdatoms_->chargeA = chargeA_;
-}
-
-void MDAtoms::resizeChargeB(const int newSize)
-{
-    chargeB_.resizeWithPadding(newSize);
-    mdatoms_->chargeB = chargeB_;
-}
 
 std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
                                      const gmx_mtop_t&          mtop,
@@ -108,22 +97,13 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
                                      const DeviceStreamManager* deviceStreamManager)
 {
     auto mdAtoms = std::make_unique<MDAtoms>(rankHasPmeGpuTask, useGpuForUpdate, deviceStreamManager);
-    mdAtoms->mdatoms_ = std::make_unique<t_mdatoms>();
-    /* Only the GPU update and constraints copy invmass and cTC to the GPU, asynchronously.
-     * atoms2md() can reallocate them, because the search step first waits for the coordinates
-     * on the host, so those copies are done. */
-    const HostAllocationPolicy updatePolicy =
-            makeHostAllocationPolicy(useGpuForUpdate, deviceStreamManager);
-    mdAtoms->mdatoms_->invmass = PaddedHostVector<real>(updatePolicy);
-    mdAtoms->mdatoms_->cTC     = HostVector<unsigned short>(updatePolicy);
-    t_mdatoms* md              = mdAtoms->mdatoms_.get();
 
-    md->bVCMgrps = FALSE;
+    mdAtoms->bVCMgrps = FALSE;
     for (int i = 0; i < mtop.natoms; i++)
     {
         if (getGroupType(mtop.groups, SimulationAtomGroupType::MassCenterVelocityRemoval, i) > 0)
         {
-            md->bVCMgrps = TRUE;
+            mdAtoms->bVCMgrps = TRUE;
         }
     }
 
@@ -131,10 +111,15 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
     double totalMassA = 0.0;
     double totalMassB = 0.0;
 
-    md->haveVsites                  = FALSE;
+    mdAtoms->haveVsites             = FALSE;
     gmx_mtop_atomloop_block_t aloop = gmx_mtop_atomloop_block_init(mtop);
     const t_atom*             atom;
     int                       nmol;
+
+    mdAtoms->nPerturbed       = 0;
+    mdAtoms->nMassPerturbed   = 0;
+    mdAtoms->nChargePerturbed = 0;
+    mdAtoms->nTypePerturbed   = 0;
     while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
     {
         totalMassA += nmol * atom->m;
@@ -142,62 +127,65 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
 
         if (atom->ptype == ParticleType::VSite)
         {
-            md->haveVsites = TRUE;
+            mdAtoms->haveVsites = TRUE;
         }
 
         if (ir.efep != FreeEnergyPerturbationType::No && PERTURBED(*atom))
         {
-            md->nPerturbed++;
+            mdAtoms->nPerturbed++;
             if (atom->mB != atom->m)
             {
-                md->nMassPerturbed += nmol;
+                mdAtoms->nMassPerturbed += nmol;
             }
             if (atom->qB != atom->q)
             {
-                md->nChargePerturbed += nmol;
+                mdAtoms->nChargePerturbed += nmol;
             }
             if (atom->typeB != atom->type)
             {
-                md->nTypePerturbed += nmol;
+                mdAtoms->nTypePerturbed += nmol;
             }
         }
     }
 
-    md->tmassA = totalMassA;
-    md->tmassB = totalMassB;
+    mdAtoms->tmassA = totalMassA;
+    mdAtoms->tmassB = totalMassB;
 
     if (ir.efep != FreeEnergyPerturbationType::No && fp)
     {
         fprintf(fp,
                 "There are %d atoms and %d charges for free energy perturbation\n",
-                md->nPerturbed,
-                md->nChargePerturbed);
+                mdAtoms->nPerturbed,
+                mdAtoms->nChargePerturbed);
     }
 
-    md->havePartiallyFrozenAtoms = FALSE;
+    mdAtoms->havePartiallyFrozenAtoms = FALSE;
     for (int g = 0; g < ir.opts.ngfrz; g++)
     {
         for (int d = YY; d < DIM; d++)
         {
             if (ir.opts.nFreeze[g][d] != ir.opts.nFreeze[g][XX])
             {
-                md->havePartiallyFrozenAtoms = TRUE;
+                mdAtoms->havePartiallyFrozenAtoms = TRUE;
             }
         }
     }
 
-    md->bOrires = (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) != 0);
+    mdAtoms->bOrires = (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) != 0);
 
     return mdAtoms;
 }
 
 } // namespace gmx
 
+/* Only the GPU update and constraints copy invmass and cTC to the GPU, asynchronously.
+ * atoms2md() can reallocate them, because the search step first waits for the coordinates
+ * on the host, so those copies are done. */
 void atoms2md(const gmx_mtop_t&        mtop,
               const t_inputrec&        inputrec,
               int                      nindex,
               gmx::ArrayRef<const int> index,
-              int                      homenr,
+              int                      numHomeAtoms,
               gmx::MDAtoms*            mdAtoms)
 {
     gmx_bool         bLJPME;
@@ -209,84 +197,81 @@ void atoms2md(const gmx_mtop_t&        mtop,
 
     const SimulationGroups& groups = mtop.groups;
 
-    auto* md = mdAtoms->mdatoms();
     // When using DD, nindex (>= 0) indicates the size of the map
     // from local to global atom indices.  MDAtoms needs to allocate
     // space for home atoms and ghost atoms for force, constraint, and
     // virtual-site operations.
     const int numTotalAtoms = (nindex >= 0) ? nindex : mtop.natoms;
 
-    { // Brace retained to preserve indentation for reviewer convenience
-        if (md->nMassPerturbed)
+    if (mdAtoms->nMassPerturbed)
+    {
+        mdAtoms->massA.resize(numTotalAtoms);
+        mdAtoms->massB.resize(numTotalAtoms);
+    }
+    mdAtoms->massT.resize(numTotalAtoms);
+    mdAtoms->invmass.resizeWithPadding(numTotalAtoms);
+    mdAtoms->invMassPerDim.resize(numTotalAtoms);
+    mdAtoms->chargeA.resizeWithPadding(numTotalAtoms);
+    if (mdAtoms->nPerturbed > 0)
+    {
+        mdAtoms->chargeB.resizeWithPadding(numTotalAtoms);
+    }
+    mdAtoms->typeA.resize(numTotalAtoms);
+    if (mdAtoms->nPerturbed)
+    {
+        mdAtoms->typeB.resize(numTotalAtoms);
+    }
+    if (bLJPME)
+    {
+        mdAtoms->sqrt_c6A.resize(numTotalAtoms);
+        mdAtoms->sigmaA.resize(numTotalAtoms);
+        mdAtoms->sigma3A.resize(numTotalAtoms);
+        if (mdAtoms->nPerturbed)
         {
-            md->massA.resize(numTotalAtoms);
-            md->massB.resize(numTotalAtoms);
+            mdAtoms->sqrt_c6B.resize(numTotalAtoms);
+            mdAtoms->sigmaB.resize(numTotalAtoms);
+            mdAtoms->sigma3B.resize(numTotalAtoms);
         }
-        md->massT.resize(numTotalAtoms);
-        md->invmass.resizeWithPadding(numTotalAtoms);
-        md->invMassPerDim.resize(numTotalAtoms);
-        mdAtoms->resizeChargeA(numTotalAtoms);
-        if (md->nPerturbed > 0)
-        {
-            mdAtoms->resizeChargeB(numTotalAtoms);
-        }
-        md->typeA.resize(numTotalAtoms);
-        if (md->nPerturbed)
-        {
-            md->typeB.resize(numTotalAtoms);
-        }
-        if (bLJPME)
-        {
-            md->sqrt_c6A.resize(numTotalAtoms);
-            md->sigmaA.resize(numTotalAtoms);
-            md->sigma3A.resize(numTotalAtoms);
-            if (md->nPerturbed)
-            {
-                md->sqrt_c6B.resize(numTotalAtoms);
-                md->sigmaB.resize(numTotalAtoms);
-                md->sigma3B.resize(numTotalAtoms);
-            }
-        }
-        md->ptype.resize(numTotalAtoms);
-        if (opts->ngtc > 1)
-        {
-            md->cTC.resize(numTotalAtoms);
-            /* We always copy cTC with domain decomposition */
-        }
-        md->cENER.resize(numTotalAtoms);
-        if (inputrec.useConstantAcceleration)
-        {
-            md->cACC.resize(numTotalAtoms);
-        }
-        if (inputrecFrozenAtoms(&inputrec))
-        {
-            md->cFREEZE.resize(numTotalAtoms);
-        }
-        if (md->bVCMgrps)
-        {
-            md->cVCM.resize(numTotalAtoms);
-        }
-        if (md->bOrires)
-        {
-            md->cORF.resize(numTotalAtoms);
-        }
-        if (md->nPerturbed)
-        {
-            md->bPerturbed.resize(numTotalAtoms);
-        }
+    }
+    mdAtoms->ptype.resize(numTotalAtoms);
+    if (opts->ngtc > 1)
+    {
+        mdAtoms->cTC.resize(numTotalAtoms);
+        /* We always copy cTC with domain decomposition */
+    }
+    mdAtoms->cENER.resize(numTotalAtoms);
+    if (inputrec.useConstantAcceleration)
+    {
+        mdAtoms->cACC.resize(numTotalAtoms);
+    }
+    if (inputrecFrozenAtoms(&inputrec))
+    {
+        mdAtoms->cFREEZE.resize(numTotalAtoms);
+    }
+    if (mdAtoms->bVCMgrps)
+    {
+        mdAtoms->cVCM.resize(numTotalAtoms);
+    }
+    if (mdAtoms->bOrires)
+    {
+        mdAtoms->cORF.resize(numTotalAtoms);
+    }
+    if (mdAtoms->nPerturbed)
+    {
+        mdAtoms->bPerturbed.resize(numTotalAtoms);
+    }
 
-        // Note that these user groups are empty
-        // when there is only one group present.
-        // Therefore, when adding code, the user should use something like:
-        // gprnrU1 = (md->cU1.empty() ? 0 : md->cU1[localatindex])
-        if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User1].empty())
-        {
-            md->cU1.resize(numTotalAtoms);
-        }
-        if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User2].empty())
-        {
-            md->cU2.resize(numTotalAtoms);
-        }
+    // Note that these user groups are empty
+    // when there is only one group present.
+    // Therefore, when adding code, the user should use something like:
+    // gprnrU1 = (mdAtoms->cU1.empty() ? 0 : mdAtoms->cU1[localatindex])
+    if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User1].empty())
+    {
+        mdAtoms->cU1.resize(numTotalAtoms);
+    }
+    if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User2].empty())
+    {
+        mdAtoms->cU2.resize(numTotalAtoms);
     }
 
     MTopLookUp mTopLookUp(mtop);
@@ -318,9 +303,9 @@ void atoms2md(const gmx_mtop_t&        mtop,
 
             const t_atom& atom = (isValidAtom ? mTopLookUp.getAtomParameters(ag) : fillerAtom);
 
-            if (!md->cFREEZE.empty())
+            if (!mdAtoms->cFREEZE.empty())
             {
-                md->cFREEZE[i] =
+                mdAtoms->cFREEZE[i] =
                         (isValidAtom ? getGroupType(groups, SimulationAtomGroupType::Freeze, ag) : 0);
             }
             if (EI_ENERGY_MINIMIZATION(inputrec.eI))
@@ -350,8 +335,8 @@ void atoms2md(const gmx_mtop_t&        mtop,
                 {
                     /* The friction coefficient is mass/tau_t */
                     fac = inputrec.delta_t
-                          / opts->tau_t[!md->cTC.empty() ? groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag]
-                                                         : 0];
+                          / opts->tau_t[!mdAtoms->cTC.empty() ? groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag]
+                                                              : 0];
                     mA = 0.5 * atom.m * fac;
                     mB = 0.5 * atom.mB * fac;
                 }
@@ -361,30 +346,30 @@ void atoms2md(const gmx_mtop_t&        mtop,
                 mA = atom.m;
                 mB = atom.mB;
             }
-            if (md->nMassPerturbed)
+            if (mdAtoms->nMassPerturbed)
             {
-                md->massA[i] = mA;
-                md->massB[i] = mB;
+                mdAtoms->massA[i] = mA;
+                mdAtoms->massB[i] = mB;
             }
-            md->massT[i] = mA;
+            mdAtoms->massT[i] = mA;
 
             if (mA == 0.0)
             {
-                md->invmass[i]           = 0;
-                md->invMassPerDim[i][XX] = 0;
-                md->invMassPerDim[i][YY] = 0;
-                md->invMassPerDim[i][ZZ] = 0;
+                mdAtoms->invmass[i]           = 0;
+                mdAtoms->invMassPerDim[i][XX] = 0;
+                mdAtoms->invMassPerDim[i][YY] = 0;
+                mdAtoms->invMassPerDim[i][ZZ] = 0;
             }
-            else if (!md->cFREEZE.empty())
+            else if (!mdAtoms->cFREEZE.empty())
             {
-                g = md->cFREEZE[i];
+                g = mdAtoms->cFREEZE[i];
                 GMX_ASSERT(opts->nFreeze != nullptr, "Must have freeze groups to initialize masses");
                 if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
                 {
                     /* Set the mass of completely frozen particles to ALMOST_ZERO
                      * iso 0 to avoid div by zero in lincs or shake.
                      */
-                    md->invmass[i] = ALMOST_ZERO;
+                    mdAtoms->invmass[i] = ALMOST_ZERO;
                 }
                 else
                 {
@@ -392,129 +377,131 @@ void atoms2md(const gmx_mtop_t&        mtop,
                      * If such particles are constrained, the frozen dimensions
                      * should not be updated with the constrained coordinates.
                      */
-                    md->invmass[i] = 1.0 / mA;
+                    mdAtoms->invmass[i] = 1.0 / mA;
                 }
                 for (int d = 0; d < DIM; d++)
                 {
-                    md->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0 / mA);
+                    mdAtoms->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0 / mA);
                 }
             }
             else
             {
-                md->invmass[i] = 1.0 / mA;
+                mdAtoms->invmass[i] = 1.0 / mA;
                 for (int d = 0; d < DIM; d++)
                 {
-                    md->invMassPerDim[i][d] = 1.0 / mA;
+                    mdAtoms->invMassPerDim[i][d] = 1.0 / mA;
                 }
             }
 
-            md->chargeA[i] = atom.q;
-            md->typeA[i]   = atom.type;
+            mdAtoms->chargeA[i] = atom.q;
+            mdAtoms->typeA[i]   = atom.type;
             if (bLJPME)
             {
-                real c6         = (isValidAtom
-                                           ? mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c6
-                                           : 0.0_real);
-                real c12        = (isValidAtom
-                                           ? mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c12
-                                           : 0.0_real);
-                md->sqrt_c6A[i] = std::sqrt(c6);
+                real c6              = (isValidAtom
+                                                ? mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c6
+                                                : 0.0_real);
+                real c12             = (isValidAtom
+                                                ? mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c12
+                                                : 0.0_real);
+                mdAtoms->sqrt_c6A[i] = std::sqrt(c6);
                 if (c6 == 0.0 || c12 == 0)
                 {
-                    md->sigmaA[i] = 1.0;
+                    mdAtoms->sigmaA[i] = 1.0;
                 }
                 else
                 {
-                    md->sigmaA[i] = gmx::sixthroot(c12 / c6);
+                    mdAtoms->sigmaA[i] = gmx::sixthroot(c12 / c6);
                 }
-                md->sigma3A[i] = 1 / (md->sigmaA[i] * md->sigmaA[i] * md->sigmaA[i]);
+                mdAtoms->sigma3A[i] = 1 / (mdAtoms->sigmaA[i] * mdAtoms->sigmaA[i] * mdAtoms->sigmaA[i]);
             }
-            if (md->nPerturbed)
+            if (mdAtoms->nPerturbed)
             {
-                md->bPerturbed[i] = PERTURBED(atom);
-                md->chargeB[i]    = atom.qB;
-                md->typeB[i]      = atom.typeB;
+                mdAtoms->bPerturbed[i] = PERTURBED(atom);
+                mdAtoms->chargeB[i]    = atom.qB;
+                mdAtoms->typeB[i]      = atom.typeB;
                 if (bLJPME)
                 {
-                    real c6         = (isValidAtom ? mtop.ffparams
+                    real c6              = (isValidAtom ? mtop.ffparams
                                                      .iparams[atom.typeB * (mtop.ffparams.atnr + 1)]
                                                      .lj.c6
-                                                   : 0.0_real);
-                    real c12        = (isValidAtom ? mtop.ffparams
+                                                        : 0.0_real);
+                    real c12             = (isValidAtom ? mtop.ffparams
                                                       .iparams[atom.typeB * (mtop.ffparams.atnr + 1)]
                                                       .lj.c12
-                                                   : 0.0_real);
-                    md->sqrt_c6B[i] = std::sqrt(c6);
+                                                        : 0.0_real);
+                    mdAtoms->sqrt_c6B[i] = std::sqrt(c6);
                     if (c6 == 0.0 || c12 == 0)
                     {
-                        md->sigmaB[i] = 1.0;
+                        mdAtoms->sigmaB[i] = 1.0;
                     }
                     else
                     {
-                        md->sigmaB[i] = gmx::sixthroot(c12 / c6);
+                        mdAtoms->sigmaB[i] = gmx::sixthroot(c12 / c6);
                     }
-                    md->sigma3B[i] = 1 / (md->sigmaB[i] * md->sigmaB[i] * md->sigmaB[i]);
+                    mdAtoms->sigma3B[i] =
+                            1 / (mdAtoms->sigmaB[i] * mdAtoms->sigmaB[i] * mdAtoms->sigmaB[i]);
                 }
             }
-            md->ptype[i] = atom.ptype;
+            mdAtoms->ptype[i] = atom.ptype;
 
             if (isValidAtom)
             {
-                if (!md->cTC.empty())
+                if (!mdAtoms->cTC.empty())
                 {
-                    md->cTC[i] = groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
+                    mdAtoms->cTC[i] =
+                            groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
                 }
-                md->cENER[i] = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
-                if (!md->cACC.empty())
+                mdAtoms->cENER[i] = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
+                if (!mdAtoms->cACC.empty())
                 {
-                    md->cACC[i] = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
+                    mdAtoms->cACC[i] = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
                 }
-                if (!md->cVCM.empty())
+                if (!mdAtoms->cVCM.empty())
                 {
-                    md->cVCM[i] =
+                    mdAtoms->cVCM[i] =
                             groups.groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][ag];
                 }
-                if (!md->cORF.empty())
+                if (!mdAtoms->cORF.empty())
                 {
-                    md->cORF[i] =
+                    mdAtoms->cORF[i] =
                             getGroupType(groups, SimulationAtomGroupType::OrientationRestraintsFit, ag);
                 }
 
-                if (!md->cU1.empty())
+                if (!mdAtoms->cU1.empty())
                 {
-                    md->cU1[i] = groups.groupNumbers[SimulationAtomGroupType::User1][ag];
+                    mdAtoms->cU1[i] = groups.groupNumbers[SimulationAtomGroupType::User1][ag];
                 }
-                if (!md->cU2.empty())
+                if (!mdAtoms->cU2.empty())
                 {
-                    md->cU2[i] = groups.groupNumbers[SimulationAtomGroupType::User2][ag];
+                    mdAtoms->cU2[i] = groups.groupNumbers[SimulationAtomGroupType::User2][ag];
                 }
             }
             else
             {
                 // As fillers have no mass and interactions, we can add them to group 0 without side-effects
-                if (!md->cTC.empty())
+                if (!mdAtoms->cTC.empty())
                 {
-                    md->cTC[i] = 0;
+                    mdAtoms->cTC[i] = 0;
                 }
-                md->cENER[i] = 0;
-                if (!md->cACC.empty())
+                mdAtoms->cENER[i] = 0;
+                if (!mdAtoms->cACC.empty())
                 {
-                    md->cACC[i] = 0;
+                    mdAtoms->cACC[i] = 0;
                 }
-                if (!md->cVCM.empty())
+                if (!mdAtoms->cVCM.empty())
                 {
-                    md->cVCM[i] = 0;
+                    mdAtoms->cVCM[i] = 0;
                 }
-                GMX_ASSERT(md->cORF.empty(),
+                GMX_ASSERT(mdAtoms->cORF.empty(),
                            "Combination of orientation restraints and fillers is not supported");
 
-                if (!md->cU1.empty())
+                if (!mdAtoms->cU1.empty())
                 {
-                    md->cU1[i] = -1;
+                    mdAtoms->cU1[i] = -1;
                 }
-                if (!md->cU2.empty())
+                if (!mdAtoms->cU2.empty())
                 {
-                    md->cU2[i] = -1;
+                    mdAtoms->cU2[i] = -1;
                 }
             }
         }
@@ -524,56 +511,56 @@ void atoms2md(const gmx_mtop_t&        mtop,
     if (numTotalAtoms > 0)
     {
         /* Pad invmass with 0 so a SIMD MD update does not change v and x */
-        for (int i = numTotalAtoms; i < md->invmass.paddedSize(); i++)
+        for (int i = numTotalAtoms; i < mdAtoms->invmass.paddedSize(); i++)
         {
-            md->invmass[i] = 0;
+            mdAtoms->invmass[i] = 0;
         }
     }
 
-    md->homenr = homenr;
+    mdAtoms->numHomeAtoms = numHomeAtoms;
     /* We set mass, invmass, invMassPerDim and tmass for lambda=0.
      * For free-energy runs, these should be updated using update_mdatoms().
      */
-    md->tmass  = md->tmassA;
-    md->lambda = 0;
+    mdAtoms->tmass      = mdAtoms->tmassA;
+    mdAtoms->massLambda = 0;
 }
 
-void update_mdatoms(t_mdatoms* md, real lambda)
+void update_mdatoms(gmx::MDAtoms* mdAtoms, real massLambda)
 {
-    if (md->nMassPerturbed && lambda != md->lambda)
+    if (mdAtoms->nMassPerturbed && massLambda != mdAtoms->massLambda)
     {
-        real L1 = 1 - lambda;
+        real L1 = 1 - massLambda;
 
-        const int numTotalAtoms = md->massT.size();
+        const int numTotalAtoms = mdAtoms->massT.size();
 
-        /* Update masses of perturbed atoms for the change in lambda */
+        /* Update masses of perturbed atoms for the change in mass lambda */
         int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
         for (int i = 0; i < numTotalAtoms; i++)
         {
-            if (md->bPerturbed[i])
+            if (mdAtoms->bPerturbed[i])
             {
-                md->massT[i] = L1 * md->massA[i] + lambda * md->massB[i];
+                mdAtoms->massT[i] = L1 * mdAtoms->massA[i] + massLambda * mdAtoms->massB[i];
                 /* Atoms with invmass 0 or ALMOST_ZERO are massless or frozen
                  * and their invmass does not depend on lambda.
                  */
-                if (md->invmass[i] > 1.1 * ALMOST_ZERO)
+                if (mdAtoms->invmass[i] > 1.1 * ALMOST_ZERO)
                 {
-                    md->invmass[i] = 1.0 / md->massT[i];
+                    mdAtoms->invmass[i] = 1.0 / mdAtoms->massT[i];
                     for (int d = 0; d < DIM; d++)
                     {
-                        if (md->invMassPerDim[i][d] > 1.1 * ALMOST_ZERO)
+                        if (mdAtoms->invMassPerDim[i][d] > 1.1 * ALMOST_ZERO)
                         {
-                            md->invMassPerDim[i][d] = md->invmass[i];
+                            mdAtoms->invMassPerDim[i][d] = mdAtoms->invmass[i];
                         }
                     }
                 }
             }
         }
 
-        /* Update the system mass for the change in lambda */
-        md->tmass = L1 * md->tmassA + lambda * md->tmassB;
+        /* Update the system mass for the change in mass lambda */
+        mdAtoms->tmass = L1 * mdAtoms->tmassA + massLambda * mdAtoms->tmassB;
     }
 
-    md->lambda = lambda;
+    mdAtoms->massLambda = massLambda;
 }

@@ -53,14 +53,13 @@
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/output_control.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
@@ -140,16 +139,15 @@ TprReader::TprReader(std::string filename)
             (inputRecord.efep == FreeEnergyPerturbationType::No
                      ? 0.0
                      : inputRecord.fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
-    update_mdatoms(mdAtoms->mdatoms(), initMassLambda);
-    auto numParticles = ntopatoms;
-    charges_.resize(numParticles);
-    particleTypeIdOfAllParticles_.resize(numParticles);
-    inverseMasses_.resize(numParticles);
-    for (int i = 0; i < numParticles; i++)
+    update_mdatoms(mdAtoms.get(), initMassLambda);
+    charges_.resize(ntopatoms);
+    particleTypeIdOfAllParticles_.resize(ntopatoms);
+    inverseMasses_.resize(ntopatoms);
+    for (int i = 0; i < ntopatoms; i++)
     {
-        charges_[i]                      = mdAtoms->mdatoms()->chargeA[i];
-        particleTypeIdOfAllParticles_[i] = mdAtoms->mdatoms()->typeA[i];
-        inverseMasses_[i]                = mdAtoms->mdatoms()->invmass[i];
+        charges_[i]                      = mdAtoms->chargeA[i];
+        particleTypeIdOfAllParticles_[i] = mdAtoms->typeA[i];
+        inverseMasses_[i]                = mdAtoms->invmass[i];
     }
     particleInteractionFlags_ = forceRecord.atomInfo;
 

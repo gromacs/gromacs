@@ -75,7 +75,6 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
@@ -90,7 +89,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -142,20 +141,20 @@ static void global_max(const MpiComm& mpiComm, int* n)
 
 //! Computes and returns the RF exclusion energy for the last molecule starting at \p beginAtom
 static real reactionFieldExclusionCorrection(ArrayRef<const RVec>       x,
-                                             const t_mdatoms&           mdatoms,
+                                             const MDAtoms&             mdAtoms,
                                              const interaction_const_t& ic,
                                              const int                  beginAtom)
 {
     real energy = 0;
 
-    for (int i = beginAtom; i < mdatoms.homenr; i++)
+    for (int i = beginAtom; i < mdAtoms.numHomeAtoms; i++)
     {
-        const real qi = mdatoms.chargeA[i];
+        const real qi = mdAtoms.chargeA[i];
         energy -= 0.5 * qi * qi * ic.coulomb.reactionFieldShift;
 
-        for (int j = i + 1; j < mdatoms.homenr; j++)
+        for (int j = i + 1; j < mdAtoms.numHomeAtoms; j++)
         {
-            const real qj  = mdatoms.chargeA[j];
+            const real qj  = mdAtoms.chargeA[j];
             const real rsq = distance2(x[i], x[j]);
             energy += qi * qj * (ic.coulomb.reactionFieldCoefficient * rsq - ic.coulomb.reactionFieldShift);
         }
@@ -176,7 +175,7 @@ public:
     TestParticleInsertion(const t_inputrec&         inputRec,
                           const gmx_mtop_t&         topGlobal,
                           const gmx_localtop_t&     top,
-                          const t_mdatoms&          mdatoms,
+                          const MDAtoms&            mdAtoms,
                           const MDModulesNotifiers& mdModulesNotifiers,
                           t_forcerec*               forceRec,
                           gmx_enerdata_t*           enerd,
@@ -248,7 +247,7 @@ private:
     //! The local topology
     const gmx_localtop_t& top_;
     //! The MD-atoms data
-    const t_mdatoms& mdatoms_;
+    const MDAtoms& mdAtoms_;
 
     //! Notifiers for MDModules
     const MDModulesNotifiers& mdModulesNotifiers_;
@@ -325,13 +324,13 @@ namespace
 {
 
 //! Returns whether there are electrostatic contributions to the insertion energy
-bool haveElectrostatics(const t_mdatoms& mdatoms, const Range<int>& testAtomsRange)
+bool haveElectrostatics(const MDAtoms& mdAtoms, const Range<int>& testAtomsRange)
 {
     return std::any_of(testAtomsRange.begin(),
                        testAtomsRange.end(),
-                       [mdatoms](int i) {
-                           return mdatoms.chargeA[i] != 0
-                                  || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0);
+                       [mdAtoms](int i) {
+                           return mdAtoms.chargeA[i] != 0
+                                  || (!mdAtoms.chargeB.empty() && mdAtoms.chargeB[i] != 0);
                        });
 }
 
@@ -340,7 +339,7 @@ bool haveElectrostatics(const t_mdatoms& mdatoms, const Range<int>& testAtomsRan
 TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
                                              const gmx_mtop_t&         topGlobal,
                                              const gmx_localtop_t&     top,
-                                             const t_mdatoms&          mdatoms,
+                                             const MDAtoms&            mdAtoms,
                                              const MDModulesNotifiers& mdModulesNotifiers,
                                              t_forcerec*               forceRec,
                                              gmx_enerdata_t*           enerd,
@@ -354,7 +353,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     inputRec_(inputRec),
     topGlobal_(topGlobal),
     top_(top),
-    mdatoms_(mdatoms),
+    mdAtoms_(mdAtoms),
     mdModulesNotifiers_(mdModulesNotifiers),
     cr_(mpiCommSingleRank_, mpiCommSingleRank_, nullptr),
     fr_(*forceRec),
@@ -365,7 +364,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     xMoleculeToInsert_(xMoleculeToInsert.begin(), xMoleculeToInsert.end()),
     ngid_(topGlobal.groups.groups[SimulationAtomGroupType::EnergyOutput].size()),
     beta_(beta),
-    haveElectrostatics_(haveElectrostatics(mdatoms, testAtomsRange)),
+    haveElectrostatics_(haveElectrostatics(mdAtoms, testAtomsRange)),
     rfExclusionEnergy_(rfExclusionEnergy),
     referenceVolumeShift_(std::log(referenceVolume)),
     bins_(1),
@@ -553,7 +552,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
 
     /* Note: NonLocal refers to the inserted molecule */
     fr_.nbv->convertCoordinates(AtomLocality::NonLocal, x);
-    fr_.longRangeNonbondeds->updateAfterPartition(mdatoms_);
+    fr_.longRangeNonbondeds->updateAfterPartition(mdAtoms_);
 
     // TPI might place a particle so close that the potential
     // is infinite. Since this is intended to happen, we
@@ -593,7 +592,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
              &stateGlobal->hist,
              &forceBuffers_.view(),
              force_vir,
-             &mdatoms_,
+             mdAtoms_,
              &enerd_,
              stateGlobal->lambda,
              &fr_,
@@ -820,7 +819,7 @@ double TestParticleInsertion::insertIntoFrame(const double           t,
 
             /* TODO: Avoid updating all atoms at every bNS step */
             fr_.nbv->setAtomProperties(
-                    mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo, mdatoms_.typeB, mdatoms_.chargeB);
+                    mdAtoms_.typeA, mdAtoms_.chargeA, fr_.atomInfo, mdAtoms_.typeB, mdAtoms_.chargeB);
 
             fr_.nbv->constructPairlist(InteractionLocality::Local, top_.excls, false, step, nrnb);
 
@@ -924,7 +923,7 @@ void LegacySimulator::do_tpi()
 
     /*
        init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
-       state_global->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);*/
+       state_global->box,fr,mdAtoms,top,cr,nfile,fnm,NULL,NULL);*/
     /* We never need full pbc for TPI */
     fr_->pbcType = PbcType::Xyz;
     /* Determine the temperature for the Boltzmann weighting */
@@ -955,13 +954,12 @@ void LegacySimulator::do_tpi()
      */
     const real drmax = inputRec_->rtpi;
 
-    auto* mdatoms = mdAtoms_->mdatoms();
     atoms2md(topGlobal_, *inputRec_, -1, {}, topGlobal_.natoms, mdAtoms_);
     const double initMassLambda =
             (inputRec_->efep == FreeEnergyPerturbationType::No
                      ? 0.0
                      : inputRec_->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
-    update_mdatoms(mdatoms, initMassLambda);
+    update_mdatoms(mdAtoms_, initMassLambda);
 
     /* Print to log file  */
     walltime_accounting_start_time(wallTimeAccounting_);
@@ -991,7 +989,7 @@ void LegacySimulator::do_tpi()
     if (usingRF(fr_->ic->coulomb.type))
     {
         rfExclusionEnergy =
-                reactionFieldExclusionCorrection(x, *mdatoms, *fr_->ic, *testAtomsRange.begin());
+                reactionFieldExclusionCorrection(x, *mdAtoms_, *fr_->ic, *testAtomsRange.begin());
         if (debug)
         {
             fprintf(debug, "RF exclusion correction for inserted molecule: %f kJ/mol\n", rfExclusionEnergy);
@@ -1042,7 +1040,7 @@ void LegacySimulator::do_tpi()
         fprintf(fpLog_,
                 "\nWill insert %d atoms %s partial charges\n",
                 testAtomsRange.size(),
-                haveElectrostatics(*mdatoms, testAtomsRange) ? "with" : "without");
+                haveElectrostatics(*mdAtoms_, testAtomsRange) ? "with" : "without");
 
         fprintf(fpLog_,
                 "\nWill insert %" PRId64 " times in each frame of %s\n",
@@ -1098,7 +1096,7 @@ void LegacySimulator::do_tpi()
     const InteractionDefinitions emptyInteractionDefinitions(emptyFFParams);
     for (auto& listedForces : fr_->listedForces)
     {
-        listedForces.setup(emptyInteractionDefinitions, 0, false, mdatoms->cVCM);
+        listedForces.setup(emptyInteractionDefinitions, 0, false, mdAtoms_->cVCM);
     }
 
     double V_all     = 0;
@@ -1114,7 +1112,7 @@ void LegacySimulator::do_tpi()
     int frame = 0;
 
     if (rerun_fr.natoms - (insertIntoCavity ? gmx::ssize(massesDefiningCavity) : 0)
-        != mdatoms->homenr - testAtomsRange.size())
+        != mdAtoms_->numHomeAtoms - testAtomsRange.size())
     {
         gmx_fatal(FARGS,
                   "Number of atoms in trajectory (%d)%s "
@@ -1122,14 +1120,14 @@ void LegacySimulator::do_tpi()
                   "minus the number of atoms to insert (%d)\n",
                   rerun_fr.natoms,
                   insertIntoCavity ? " minus one" : "",
-                  mdatoms->homenr,
+                  mdAtoms_->numHomeAtoms,
                   testAtomsRange.size());
     }
 
     TestParticleInsertion tpi(*inputRec_,
                               topGlobal_,
                               *top_,
-                              *mdatoms,
+                              *mdAtoms_,
                               mdModulesNotifiers_,
                               fr_,
                               enerd_,
@@ -1203,7 +1201,7 @@ void LegacySimulator::do_tpi()
         // so care needs to be taken that members of domainWork get correctly initialized
         // for the TPI use-case.
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
-                *inputRec_, *fr_, pullWork_, ed, *mdatoms, runScheduleWork_->simulationWork);
+                *inputRec_, *fr_, pullWork_, ed, mdAtoms_->nPerturbed > 0, runScheduleWork_->simulationWork);
 
         const int64_t step = cr_->commMyGroup.rank() * tpi.stepBlockSize();
 

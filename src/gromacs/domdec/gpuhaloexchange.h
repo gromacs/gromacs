@@ -55,7 +55,6 @@ struct gmx_domdec_t;
 struct gmx_wallcycle;
 class DeviceContext;
 class DeviceStream;
-class DeviceStreamManager;
 class GpuEventSynchronizer;
 
 namespace gmx

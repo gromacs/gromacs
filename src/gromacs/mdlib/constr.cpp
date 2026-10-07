@@ -100,7 +100,7 @@ class Lincs;
 
 /* \brief Impl class for Constraints
  *
- * \todo Members like md, idef are valid only for the lifetime of a
+ * \todo Members like mdAtoms, idef are valid only for the lifetime of a
  * domain, which would be good to make clearer in the structure of the
  * code. It should not be possible to call apply() if setConstraints()
  * has not been called. For example, this could be achieved if

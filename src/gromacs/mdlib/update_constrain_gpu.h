@@ -58,11 +58,12 @@ struct gmx_mtop_t;
 enum class PbcType : int;
 class InteractionDefinitions;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_pbc;
 
 namespace gmx
 {
+
+class MDAtoms;
 
 class UpdateConstrainGpu
 {
@@ -146,13 +147,13 @@ public:
      * \param[in,out]  d_v                 Device buffer with velocities.
      * \param[in]      d_f                 Device buffer with forces.
      * \param[in]      idef                System topology
-     * \param[in]      md                  Atoms data.
+     * \param[in]      mdAtoms             Atoms data.
      */
     void set(DeviceBuffer<RVec>            d_x,
              DeviceBuffer<RVec>            d_v,
              DeviceBuffer<RVec>            d_f,
              const InteractionDefinitions& idef,
-             const t_mdatoms&              md);
+             const MDAtoms&                mdAtoms);
 
     /*! \brief
      * Update PBC data.

@@ -57,7 +57,6 @@ struct t_oriresdata;
 struct t_disresdata;
 struct t_fcdata;
 class t_state;
-struct t_mdatoms;
 union t_iparams;
 
 namespace gmx

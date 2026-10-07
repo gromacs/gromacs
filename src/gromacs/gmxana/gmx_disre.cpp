@@ -66,12 +66,11 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -890,7 +889,7 @@ int gmx_disre(int argc, char* argv[])
 
     auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false, false, nullptr);
     atoms2md(*topInfo.mtop(), *ir, -1, {}, ntopatoms, mdAtoms.get());
-    update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Fep));
+    update_mdatoms(mdAtoms.get(), ir->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Fep));
     if (ir->pbcType != PbcType::No)
     {
         gpbc = gmx_rmpbc_init(idef, ir->pbcType, natoms);

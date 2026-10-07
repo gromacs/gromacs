@@ -103,7 +103,7 @@ public:
                FreeEnergyPerturbationData* freeEnergyPerturbationData,
                const gmx_mtop_t&           globalTopology,
                const t_inputrec*           inputrec,
-               const MDAtoms*              mdAtoms,
+               const MDAtoms&              mdAtoms,
                gmx_enerdata_t*             enerd,
                gmx_ekindata_t*             ekind,
                const Constraints*          constr,
@@ -308,7 +308,7 @@ private:
     //! Full system topology.
     const gmx_mtop_t& top_global_;
     //! Atom parameters for this domain.
-    const MDAtoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
     //! Energy data structure
     gmx_enerdata_t* enerd_;
     //! Kinetic energy data

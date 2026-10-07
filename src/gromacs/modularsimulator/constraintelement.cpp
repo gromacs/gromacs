@@ -42,11 +42,10 @@
 
 #include "constraintelement.h"
 
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/vec.h"
@@ -67,7 +66,7 @@ ConstraintsElement<variable>::ConstraintsElement(Constraints*         constr,
                                                  bool              isMain,
                                                  FILE*             fplog,
                                                  const t_inputrec* inputrec,
-                                                 const t_mdatoms*  mdAtoms) :
+                                                 const MDAtoms&    mdAtoms) :
     nextVirialCalculationStep_(-1),
     nextEnergyWritingStep_(-1),
     nextLogWritingStep_(-1),
@@ -247,7 +246,7 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
             legacySimulatorData->cr_->commMyGroup.isMainRank(),
             legacySimulatorData->fpLog_,
             legacySimulatorData->inputRec_,
-            legacySimulatorData->mdAtoms_->mdatoms()));
+            *legacySimulatorData->mdAtoms_));
 }
 
 // Explicit template initializations

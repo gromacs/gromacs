@@ -76,7 +76,7 @@ public:
                 StatePropagatorData* statePropagatorData,
                 pull_t*              pullWork,
                 const MpiComm&       mpiComm,
-                const MDAtoms*       mdAtoms);
+                const MDAtoms&       mdAtoms);
     //! Update annealing temperature
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
     //! Set initial annealing temperature
@@ -141,7 +141,7 @@ private:
     //! Handles communication.
     const MpiComm& mpiComm_;
     //! Atom parameters for this domain.
-    const MDAtoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
 };
 } // namespace gmx
 

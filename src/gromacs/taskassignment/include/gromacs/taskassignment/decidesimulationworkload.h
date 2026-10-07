@@ -55,7 +55,6 @@ namespace gmx
 {
 struct edsam;
 }
-struct t_mdatoms;
 
 namespace gmx
 {
@@ -121,19 +120,19 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
  * this function anytime a change in listed forces assignment after repartitioning
  * can be expected.
  *
- * \param[in] inputrec           The input record
- * \param[in] fr                 The force record
- * \param[in] pull_work          Pull data
- * \param[in] ed                 Essential dynamics data
- * \param[in] mdatoms            Atom parameter data
- * \param[in] simulationWork     Simulation workload flags
+ * \param[in] inputrec               The input record
+ * \param[in] fr                     The force record
+ * \param[in] pull_work              Pull data
+ * \param[in] ed                     Essential dynamics data
+ * \param[in] hasPerturbedParticles  Whether any particles undergo free-energy perturbation
+ * \param[in] simulationWork         Simulation workload flags
  *
  */
 DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
                                                    const t_forcerec&         fr,
                                                    const pull_t*             pull_work,
                                                    const edsam*              ed,
-                                                   const t_mdatoms&          mdatoms,
+                                                   bool                      hasPerturbedParticles,
                                                    const SimulationWorkload& simulationWork);
 
 /*! \brief Set up force flag struct from the force bitmask.

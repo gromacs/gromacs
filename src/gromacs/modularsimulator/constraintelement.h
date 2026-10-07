@@ -55,6 +55,7 @@ class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
 class LegacySimulatorData;
+class MDAtoms;
 class ModularSimulatorAlgorithmBuilderHelper;
 class ObservablesReducer;
 class StatePropagatorData;
@@ -86,7 +87,7 @@ public:
                        bool                        isMain,
                        FILE*                       fplog,
                        const t_inputrec*           inputrec,
-                       const t_mdatoms*            mdAtoms);
+                       const MDAtoms&              mdAtoms);
 
     /*! \brief Register constraining function for step / time
      *
@@ -168,7 +169,7 @@ private:
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
     //! Atom parameters for this domain.
-    const t_mdatoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
 };
 
 } // namespace gmx

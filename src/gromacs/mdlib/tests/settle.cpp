@@ -87,7 +87,6 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/tests/watersystem.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"

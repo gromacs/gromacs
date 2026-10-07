@@ -249,7 +249,7 @@ int dd_numHomeAtoms(const gmx_domdec_t& dd)
 
 int dd_natoms_mdatoms(const gmx_domdec_t& dd)
 {
-    /* We currently set mdatoms entries for all atoms:
+    /* We currently set mdAtoms entries for all atoms:
      * local + non-local + communicated for vsite + constraints
      */
 

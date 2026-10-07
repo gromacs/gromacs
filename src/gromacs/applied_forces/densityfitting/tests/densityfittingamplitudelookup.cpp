@@ -48,7 +48,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/booltype.h"
 #include "gromacs/utility/real.h"
@@ -65,7 +64,6 @@ class DensityFittingAmplitudeLookupTest : public ::testing::Test
 protected:
     std::vector<real> masses_        = { 2, 3, 4 };
     std::vector<real> charges_       = { 20, 30, 40 };
-    t_mdatoms         atoms_         = {};
     std::vector<int>  lookupIndices_ = { 1, 2 };
 };
 

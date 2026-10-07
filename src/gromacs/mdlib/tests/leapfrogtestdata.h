@@ -54,7 +54,7 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
@@ -96,7 +96,7 @@ public:
     std::vector<RVec> inverseMassesPerDim_;
 
     //! MD atoms structure in which inverse masses will be passed to the integrator
-    t_mdatoms mdAtoms_;
+    MDAtoms mdAtoms_;
     //! Input record (to get integrator type, temperature and pressure coupling)
     t_inputrec inputRecord_;
     //! System state

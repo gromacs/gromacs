@@ -132,7 +132,7 @@ public:
     //! Constructor
     Propagator(double               timestep,
                StatePropagatorData* statePropagatorData,
-               const MDAtoms*       mdAtoms,
+               const MDAtoms&       mdAtoms,
                gmx_wallcycle*       wcycle);
 
     /*! \brief Register run function for step / time
@@ -269,7 +269,7 @@ private:
 
     // Access to ISimulator data
     //! Atom parameters for this domain.
-    const MDAtoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
     //! Manages wall cycle accounting.
     gmx_wallcycle* wcycle_;
 };

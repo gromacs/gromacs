@@ -908,7 +908,7 @@ std::optional<gmx_wallclock_gpu_pme_t> gmx_pmeonly(std::unique_ptr<gmx_pme_t> pm
 
         // TODO Make a struct of array refs onto these per-atom fields
         // of pme_pp (maybe box, energy and virial, too; and likewise
-        // from mdatoms for the other call to gmx_pme_do), so we have
+        // from mdAtoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
         PmeOutput output = { {}, false, 0, { { 0 } }, 0, 0, 0, { { 0 } } };
         if (simulationWork.useGpu)

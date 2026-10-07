@@ -105,7 +105,7 @@ public:
                  const DeviceStreamManager*  deviceStreamManager,
                  const t_inputrec*           inputrec,
                  const MDModulesNotifiers&   mdModulesNotifiers,
-                 const MDAtoms*              mdAtoms,
+                 const MDAtoms&              mdAtoms,
                  t_nrnb*                     nrnb,
                  t_forcerec*                 fr,
                  gmx_wallcycle*              wcycle,
@@ -220,7 +220,7 @@ private:
     //! Notifiers for MDModules
     const MDModulesNotifiers& mdModulesNotifiers_;
     //! Atom parameters for this domain.
-    const MDAtoms* mdAtoms_;
+    const MDAtoms& mdAtoms_;
     //! Manages flop accounting.
     t_nrnb* nrnb_;
     //! Manages wall cycle accounting.

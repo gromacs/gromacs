@@ -48,11 +48,10 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/modularsimulator/modularsimulatorinterfaces.h"
@@ -151,7 +150,7 @@ int FreeEnergyPerturbationData::currentFEPState() const
 
 void FreeEnergyPerturbationData::updateMDAtoms()
 {
-    update_mdatoms(mdAtoms_->mdatoms(), lambda_[FreeEnergyPerturbationCouplingType::Mass]);
+    update_mdatoms(mdAtoms_, lambda_[FreeEnergyPerturbationCouplingType::Mass]);
 }
 
 FepStateSetting* FreeEnergyPerturbationData::enableExternalFepStateSetting() const

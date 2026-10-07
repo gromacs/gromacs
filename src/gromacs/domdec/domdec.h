@@ -72,7 +72,6 @@ struct gmx_mtop_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
 enum class PbcType : int;
@@ -135,7 +134,7 @@ int dd_numAtomsZones(const gmx_domdec_t& dd);
 /*! \brief Returns the number of home atoms */
 int dd_numHomeAtoms(const gmx_domdec_t& dd);
 
-/*! \brief Returns the atom range in the local state for atoms that need to be present in mdatoms */
+/*! \brief Returns the atom range in the local state for atoms that need to be present in mdAtoms */
 int dd_natoms_mdatoms(const gmx_domdec_t& dd);
 
 /*! \brief Returns the atom range in the local state for atoms involved in virtual sites */

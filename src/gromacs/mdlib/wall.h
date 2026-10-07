@@ -42,7 +42,6 @@
 struct SimulationGroups;
 struct t_forcerec;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 
 namespace gmx

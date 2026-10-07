@@ -51,7 +51,6 @@ struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct t_forcerec;
 struct t_inputrec;
-struct t_mdatoms;
 
 namespace gmx
 {
@@ -66,10 +65,10 @@ class VirtualSitesHandler;
 /*! \brief Gets the local shell with domain decomposition
  *
  * \param[in]     dd        Domain decomposition struct, can be nullptr
- * \param[in]     md        The MD atom data
+ * \param[in]     mdAtoms   The MD atom data
  * \param[in,out] shfc      The shell/flexible-constraint data
  */
-void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, shellfc_t* shfc);
+void make_local_shells(const gmx_domdec_t* dd, const MDAtoms& mdAtoms, shellfc_t* shfc);
 
 /*! \brief Sets atom data for several MD algorithms
  *

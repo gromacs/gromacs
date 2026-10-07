@@ -146,13 +146,13 @@ public:
      * \param[in,out]  d_v            Device buffer with velocities.
      * \param[in]      d_f            Device buffer with forces.
      * \param[in] idef                System topology
-     * \param[in] md                  Atoms data.
+     * \param[in] mdAtoms             Atoms data.
      */
     void set(DeviceBuffer<Float3>          d_x,
              DeviceBuffer<Float3>          d_v,
              DeviceBuffer<Float3>          d_f,
              const InteractionDefinitions& idef,
-             const t_mdatoms&              md);
+             const MDAtoms&                mdAtoms);
 
     /*! \brief
      * Update PBC data.

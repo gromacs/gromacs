@@ -62,7 +62,7 @@
 #include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
@@ -114,7 +114,7 @@ void integrateLeapFrogCpu(LeapFrogTestData* testData, int numSteps)
     {
         testData->update_->update_coords(testData->inputRecord_,
                                          step,
-                                         testData->mdAtoms_.homenr,
+                                         testData->mdAtoms_.numHomeAtoms,
                                          testData->mdAtoms_.havePartiallyFrozenAtoms,
                                          testData->mdAtoms_.ptype,
                                          testData->mdAtoms_.invmass,
@@ -129,7 +129,7 @@ void integrateLeapFrogCpu(LeapFrogTestData* testData, int numSteps)
                                          false);
         testData->update_->finish_update(testData->inputRecord_,
                                          testData->mdAtoms_.havePartiallyFrozenAtoms,
-                                         testData->mdAtoms_.homenr,
+                                         testData->mdAtoms_.numHomeAtoms,
                                          &testData->state_,
                                          nullptr,
                                          false);

@@ -113,7 +113,6 @@
 #include "gromacs/mdlib/gpuforcereduction.h"
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdgraph_gpu.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
@@ -143,7 +142,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/observableshistory.h"
@@ -2081,12 +2080,12 @@ int Mdrunner::mdrunner()
     std::unique_ptr<gmx_pme_t> pmedata;
     if (usingPme(inputrec->coulombtype) || usingLJPme(inputrec->vdwtype))
     {
-        if (mdAtoms && mdAtoms->mdatoms())
+        if (mdAtoms)
         {
-            nChargePerturbed = mdAtoms->mdatoms()->nChargePerturbed;
+            nChargePerturbed = mdAtoms->nChargePerturbed;
             if (usingLJPme(inputrec->vdwtype))
             {
-                nTypePerturbed = mdAtoms->mdatoms()->nTypePerturbed;
+                nTypePerturbed = mdAtoms->nTypePerturbed;
             }
         }
         if (cr->dd && cr->dd->numPmeOnlyRanks > 0)
