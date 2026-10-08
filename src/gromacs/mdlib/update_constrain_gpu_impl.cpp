@@ -125,14 +125,14 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
             integratorLangevin_->integrate(
                     d_x_, d_x0_, d_v_, d_f_, dt, seed, step, SDUpdate::FrictionAndNoiseOnly);
             /* Constrain the coordinates upd->x0 for half a time step */
-            const bool computeVirialAtHalfTimeStep    = false;
-            const bool updateVelocitiesAtHalfTimeStep = false;
+            constexpr bool computeVirialAtHalfTimeStep    = false;
+            constexpr bool updateVelocitiesAtHalfTimeStep = true;
             if constexpr (GpuConfigurationCapabilities::Constraints)
             {
                 lincsGpu_->apply(d_x0_,
                                  d_x_,
                                  updateVelocitiesAtHalfTimeStep,
-                                 nullptr,
+                                 d_v_,
                                  1.0 / (0.5 * dt),
                                  computeVirialAtHalfTimeStep,
                                  nullptr,
@@ -140,7 +140,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                 settleGpu_->apply(d_x0_,
                                   d_x_,
                                   updateVelocitiesAtHalfTimeStep,
-                                  nullptr,
+                                  d_v_,
                                   1.0 / (0.5 * dt),
                                   computeVirialAtHalfTimeStep,
                                   nullptr,
