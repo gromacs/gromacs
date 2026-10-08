@@ -111,7 +111,7 @@ public:
         CorrelationGrid::BlockLengthMeasure blockLengthMeasure = CorrelationGrid::BlockLengthMeasure::Time;
         numDim_ = GetParam();
         GMX_RELEASE_ASSERT(numDim_ < 4, "Too high dimensionality.");
-        numPoints_ = std::pow(g_numPointsPerDim, numDim_);
+        numPoints_ = std::llround(std::pow(g_numPointsPerDim, numDim_));
 
         correlationGrid_ = std::make_unique<CorrelationGrid>(
                 numPoints_, numDim_, blockLengthInit, blockLengthMeasure, sampleTimeStep_);
