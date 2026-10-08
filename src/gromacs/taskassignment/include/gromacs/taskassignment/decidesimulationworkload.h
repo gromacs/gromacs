@@ -79,6 +79,7 @@ class MDLogger;
  * \param[in] haveFillerParticlesInLocalState  Whether filler particles are part of the local state.
  * \param[in] havePpDomainDecomposition        Whether PP domain decomposition is used in this run.
  * \param[in] haveSeparatePmeRank              Whether separate PME rank(s) are used in this run.
+ * \param[in] haveVirtualSites                 Whether the system has virtual sites.
  * \param[in] useGpuForNonbonded               Whether we have short-range nonbonded interaction
  *                                             calculations on GPU(s).
  * \param[in] useGpuForNonbondedFE             Whether we have nonbonded free-energy interaction
@@ -104,6 +105,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
                                             bool       haveFillerParticlesInLocalState,
                                             bool       havePpDomainDecomposition,
                                             bool       haveSeparatePmeRank,
+                                            bool       haveVirtualSites,
                                             bool       useGpuForNonbonded,
                                             bool       useGpuForNonbondedFE,
                                             PmeRunMode pmeRunMode,

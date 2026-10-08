@@ -89,6 +89,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
                                             bool       haveFillerParticlesInLocalState,
                                             bool       havePpDomainDecomposition,
                                             bool       haveSeparatePmeRank,
+                                            bool       haveVirtualSites,
                                             bool       useGpuForNonbonded,
                                             bool       useGpuForNonbondedFE,
                                             PmeRunMode pmeRunMode,
@@ -100,6 +101,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
 {
     SimulationWorkload simulationWorkload;
     simulationWorkload.computeNonbonded = !disableNonbondedCalculation;
+    simulationWorkload.haveVirtualSites = haveVirtualSites;
     simulationWorkload.computeNonbondedAtMtsLevel1 =
             simulationWorkload.computeNonbonded && inputrec.useMts
             && inputrec.mtsLevels.back().forceGroups[static_cast<int>(MtsForceGroups::Nonbonded)];
@@ -325,6 +327,10 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
     flags.copyVFromGpuForIO = simulationWork.useGpuUpdate
                               && (do_per_step(step, outputControl.nstvout)
                                   || (writeCheckpoint.value() && EI_STATE_VELOCITY(inputrec.eI)));
+    // CPU VSite spreading and staged PME-PP comms modify forces on host after reduction and before integration
+    flags.copyReducedFFromGpu = flags.useGpuFBufferOps
+                                && (!simulationWork.useGpuUpdate || simulationWork.useCpuPmePpCommunication
+                                    || simulationWork.haveVirtualSites);
 
     return flags;
 }
