@@ -326,7 +326,7 @@ void clear_trxframe(t_trxframe* fr, gmx_bool bFirst)
 
 void setTrxFramePbcType(t_trxframe* fr, PbcType pbcType)
 {
-    fr->bPBC    = (pbcType == PbcType::Unset);
+    fr->bPBC    = (pbcType != PbcType::Unset);
     fr->pbcType = pbcType;
 }
 
@@ -435,7 +435,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
                                       title,
                                       fr->atoms,
                                       fr->x,
-                                      PbcType::Unset,
+                                      fr->bPBC ? fr->pbcType : PbcType::Unset,
                                       fr->box,
                                       ' ',
                                       fr->step,

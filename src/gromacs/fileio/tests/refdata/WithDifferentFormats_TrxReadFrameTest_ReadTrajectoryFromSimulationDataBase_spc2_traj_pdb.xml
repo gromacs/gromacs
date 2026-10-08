@@ -57,6 +57,7 @@
       <Real Name="Z">3.0100000000000002</Real>
     </Vector>
   </Sequence>
+  <Int Name="pbcType (frame 0)">0</Int>
   <Bool Name="bAtoms (frame 1)">false</Bool>
   <Int Name="step (frame 1)">1</Int>
   <Real Name="time (frame 1)">1</Real>
@@ -112,4 +113,5 @@
       <Real Name="Z">9.0099999999999998</Real>
     </Vector>
   </Sequence>
+  <Int Name="pbcType (frame 1)">0</Int>
 </ReferenceData>

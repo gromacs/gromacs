@@ -16,6 +16,13 @@ and dimensions of 1 Angstrom to indicate no periodic boundary conditions.
 
 :issue:`4645`, :issue:`5679`
 
+PDB trajectory output now writes correct per-frame PBC type
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When writing PDB trajectories, the PBC type of the system was ignored
+and instead guessed from the box. As a result, the ``CRYST1`` record
+was written incorrectly for screw PBC (wrong space group and cell length).
+
 Analysis tools now always process time values in double precision
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
