@@ -286,9 +286,17 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
 
     if (simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed)
     {
-        GMX_ASSERT(simulationWork.useGpuNonbonded,
-                   "Can only offload buffer ops if nonbonded computation is also offloaded");
+        GMX_RELEASE_ASSERT(
+                simulationWork.useGpuNonbonded,
+                "Can only offload buffer ops if nonbonded computation is also offloaded");
     }
+    if (!computeSlowForces)
+    {
+        GMX_RELEASE_ASSERT(!(flags.computeEnergy || flags.computeVirial || flags.computeDhdl),
+                           "Energies, virial or dH/dlambda were requested on "
+                           "a fast MTS step, where they would lack the slow components");
+    }
+
     flags.useGpuXBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed && !flags.doNeighborSearch;
     // on virial steps the CPU reduction path is taken
     flags.useGpuFBufferOps = simulationWork.useGpuFBufferOpsWhenAllowed && !flags.computeVirial;
