@@ -168,7 +168,8 @@ std::vector<real> makeNonBondedParameterLists(const int                      num
     return nbfp;
 }
 
-std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                      numAtomTypes,
+std::vector<real> makeLJPmeC6GridCorrectionParameters(const int  numAtomTypes,
+                                                      const bool addFillerAtomType,
                                                       gmx::ArrayRef<const t_iparams> iparams,
                                                       LongRangeVdW ljpme_combination_rule)
 {
@@ -177,11 +178,12 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                 
      * access to the C6-values used on the reciprocal grid in pme.c
      */
 
-    std::vector<real> grid(2 * numAtomTypes * numAtomTypes, 0.0);
-    int               k = 0;
+    const int numAtomTypesGrid = numAtomTypes + (addFillerAtomType ? 1 : 0);
+
+    std::vector<real> grid(2 * gmx::square(numAtomTypesGrid), 0.0);
     for (int i = 0; (i < numAtomTypes); i++)
     {
-        for (int j = 0; (j < numAtomTypes); j++, k++)
+        for (int j = 0; (j < numAtomTypes); j++)
         {
             real c6i  = iparams[i * (numAtomTypes + 1)].lj.c6;
             real c12i = iparams[i * (numAtomTypes + 1)].lj.c12;
@@ -200,7 +202,7 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                 
             /* Store the elements at the same relative positions as C6 in nbfp in order
              * to simplify access in the kernels
              */
-            grid[2 * (numAtomTypes * i + j)] = c6 * 6.0;
+            grid[2 * (i * numAtomTypesGrid + j)] = c6 * 6.0;
         }
     }
     return grid;
@@ -938,8 +940,9 @@ void init_forcerec(FILE*                            fplog,
             mtop.ffparams.atnr, true, mtop.ffparams.iparams, forcerec->haveBuckingham);
     if (usingLJPme(interactionConst->vdw.type))
     {
-        forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(
-                mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->ljpme_combination_rule);
+        const bool addFillerType = true;
+        forcerec->ljpme_c6grid   = makeLJPmeC6GridCorrectionParameters(
+                mtop.ffparams.atnr, addFillerType, mtop.ffparams.iparams, forcerec->ljpme_combination_rule);
     }
 
     /* Copy the energy group exclusions */

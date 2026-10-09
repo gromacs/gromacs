@@ -329,8 +329,10 @@ public:
                       InteractionModifiers   vdwMod)
     {
         icHelper_.initInteractionConst(coulType, vdwType, vdwMod);
-        nbfp_ = makeNonBondedParameterLists(idef.atnr, false, idef.iparams, false);
-        ljPmeC6Grid_ = makeLJPmeC6GridCorrectionParameters(idef.atnr, idef.iparams, LongRangeVdW::Geom);
+        const bool addFillerType = false;
+        nbfp_        = makeNonBondedParameterLists(idef.atnr, addFillerType, idef.iparams, false);
+        ljPmeC6Grid_ = makeLJPmeC6GridCorrectionParameters(
+                idef.atnr, addFillerType, idef.iparams, LongRangeVdW::Geom);
     }
 
     void setSoftcoreAlpha(const real scBeutlerAlphaOrGapsysLinpointScaling)

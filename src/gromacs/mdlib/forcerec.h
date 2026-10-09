@@ -72,6 +72,9 @@ class SimulationWorkload;
  * \param[in] addFillerAtomType      Whether to add an atom type, at the end, for filler particles
  * \param[in] iparams                The LJ parameters
  * \param[in] useBuckinghamPotential Use Buckingham potential
+ *
+ * \returns a vector of size 2 * n^2, where n is is equal to \p numAtomTypes,
+ *          where \p addFillerAtomType=false and equal to n+1 when addFillerAtomType=true
  */
 std::vector<real> makeNonBondedParameterLists(int                            numAtomTypes,
                                               bool                           addFillerAtomType,
@@ -81,10 +84,15 @@ std::vector<real> makeNonBondedParameterLists(int                            num
 /*! \brief Calculate c6 parameters for grid correction
  *
  * \param[in] numAtomTypes           The number of atom types
+ * \param[in] addFillerAtomType      Whether to add an atom type for filler particles
  * \param[in] iparams                The LJ parameters
  * \param[in] ljpme_combination_rule How long range LJ is treated
+ *
+ * \returns a vector of size 2 * n^2, where n is is equal to \p numAtomTypes,
+ *          where \p addFillerAtomType=false and equal to n+1 when addFillerAtomType=true
  */
-std::vector<real> makeLJPmeC6GridCorrectionParameters(int                            numAtomTypes,
+std::vector<real> makeLJPmeC6GridCorrectionParameters(int  numAtomTypes,
+                                                      bool addFillerAtomType,
                                                       gmx::ArrayRef<const t_iparams> iparams,
                                                       LongRangeVdW ljpme_combination_rule);
 

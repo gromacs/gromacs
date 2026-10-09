@@ -409,6 +409,11 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
     real gmx_unused       ewaldLJCoeffSixDivSix;
     if constexpr (ljKernelType == LJKernelType::Ewald)
     {
+        GMX_RELEASE_ASSERT(
+                nbfp_grid.size() == nbfp.size(),
+                "LJ-PME correction parameter matrix should have the same size as the normal LJ "
+                "matrix");
+
         ewaldLJCoeffSq        = gmx::square(ic.vdw.ewaldCoeff);
         ewaldLJCoeffSixDivSix = ewaldLJCoeffSq * ewaldLJCoeffSq * ewaldLJCoeffSq / six;
     }

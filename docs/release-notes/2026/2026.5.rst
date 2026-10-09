@@ -15,6 +15,17 @@ previous 2026.4 version, to fix known issues.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed incorrect LJ-PME forces and energies for perturbed particles
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In the free-energy non-bonded kernel, the indexing of the coefficient buffer for
+LJ-PME grid corrections was incorrect. This meant that forces and energies were incorrect.
+In addition, the coefficient buffer for LJ-PME grid corrections was not allocated sufficiently
+large, which meant that LJ forces and energies could be random, depending on whether the memory
+accessed was used for other data. This is has been present in versions 2025.0 to 2026.4.
+
+:issue:`5716`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
