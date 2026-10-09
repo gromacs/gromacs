@@ -121,6 +121,23 @@ function(gmx_target_compile_options TARGET)
         $<$<AND:$<COMPILE_LANGUAGE:C>,$<CONFIG:RELEASE>>:${GMXC_CFLAGS_RELEASE_ONLY}>
         $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:RELEASE>>:${GMXC_CXXFLAGS_RELEASE_ONLY}>
         )
+
+    # In principle, C++ developers can check the __cplusplus macro to
+    # write code that works appropriately for either C or C++, or
+    # potentially multiple C++ versions. GROMACS doesn't make much use
+    # of its value nor of MSVC, so we have not seen much of an issue
+    # with the fact that historically MSVC did not set __cplusplus
+    # correctly for post-98 C++ standards. But it would be nice if we
+    # would prevent a headache some time.
+    #
+    # Starting with Visual Studio 2017 version 15.7 (_MSC_VER==1914)
+    # it does, but not by default - see
+    # https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/. CMake
+    # is choosing not to adopt a central fix - see
+    # https://gitlab.kitware.com/cmake/cmake/-/work_items/18837.
+    if (MSVC AND (MSVC_VERSION GREATER_EQUAL 1914))
+        target_compile_options(${TARGET} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>)
+    endif()
 endfunction()
 
 # The approach taken by FindCUDA.cmake is to require that the compiler
