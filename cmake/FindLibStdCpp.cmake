@@ -158,8 +158,8 @@ if (TRY_TO_FIND_GPLUSPLUS)
     endif()
 
     set(_gcc_toolchain_flag_to_use "--gcc-toolchain=${_gplusplus_path}")
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag(${_gcc_toolchain_flag_to_use} CXX_COMPILER_ACCEPTS_GCC_TOOLCHAIN_FLAG)
+    include(CheckCompilerFlag)
+    check_compiler_flag(CXX ${_gcc_toolchain_flag_to_use} CXX_COMPILER_ACCEPTS_GCC_TOOLCHAIN_FLAG)
 
     if (CXX_COMPILER_ACCEPTS_GCC_TOOLCHAIN_FLAG)
         # Set up to use the libstdc++ from that g++. Note that we checked

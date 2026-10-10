@@ -44,6 +44,8 @@
 #
 #  VARIABLE will be set to true if all of the functions link fine.
 
+include(CheckCSourceCompiles)
+
 macro(test_sched_affinity VARIABLE)
 
   if(NOT DEFINED sched_affinity_compile)

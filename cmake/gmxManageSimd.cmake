@@ -31,6 +31,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
+include(CheckCompilerFlag)
+include(CheckCXXSourceCompiles)
 include(gmxDetectCpu)
 include(gmxSimdFlags)
 
@@ -330,7 +332,7 @@ if(GMX_ENABLE_AVX512_TESTS AND
     if (NOT MSVC)
         foreach(_testflag "-Wno-unused-command-line-argument" "-wd10121")
             string(REGEX REPLACE "[^a-zA-Z0-9]+" "_" FLAG_ACCEPTED_VARIABLE "${_testflag}_FLAG_ACCEPTED")
-            check_cxx_compiler_flag("${_testflag}" ${FLAG_ACCEPTED_VARIABLE})
+            check_compiler_flag(CXX "${_testflag}" ${FLAG_ACCEPTED_VARIABLE})
             if(${FLAG_ACCEPTED_VARIABLE})
                 set(CXX_NO_UNUSED_OPTION_WARNING_FLAGS "${_testflag}")
                 break()

@@ -33,7 +33,8 @@
 
 if (GMX_GPU_FFT_VKFFT)
   # Suppress warning that first appeared when compiling tests on macOS with x86.
-  check_cxx_compiler_flag("-Wno-unused-parameter" HAS_NO_UNUSED_PARAMETER)
+  include(CheckCompilerFlag)
+  check_compiler_flag(CXX "-Wno-unused-parameter" HAS_NO_UNUSED_PARAMETER)
   if(HAS_NO_UNUSED_PARAMETER)
     set_source_files_properties(pmetestcommon.cpp PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter")
   endif()
