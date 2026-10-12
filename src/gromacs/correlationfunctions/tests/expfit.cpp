@@ -219,7 +219,7 @@ TEST_F(ExpfitTest, EffnVAC)
 
 TEST_F(ExpfitTest, EffnPRES)
 {
-    double param[] = { 0.6, 10, 7, 1, 0.25, 2 };
+    double param[] = { 0.5, 1, 5, 1, 5, 1 };
     test(effnPRES, param, 1e-4, 1);
 }
 
