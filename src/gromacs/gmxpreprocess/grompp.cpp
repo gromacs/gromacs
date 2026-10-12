@@ -503,6 +503,9 @@ void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandler* wi)
  * zeroed during grompp, so users cannot be concerned over observing a
  * non-zero velocity, and if they see one it's a bug.
  *
+ * Must only be called when the state has velocities, i.e. \p v
+ * has an entry for every atom in \p mtop.
+ *
  * The implementation is fairly efficient even for an enormous
  * system, but many simulations have none of these special atom
  * types and would waste time here. If we need to optimize, then
@@ -514,6 +517,8 @@ void clearSpecialParticleVelocities(const bool        bGenVel,
                                     const gmx_mtop_t& mtop,
                                     ArrayRef<RVec>    v)
 {
+    GMX_RELEASE_ASSERT(v.ssize() == mtop.natoms, "Need velocities for all atoms");
+
     const bool clearNonFrozenSpecialParticles = bGenVel;
     const bool hasFrozenParticles             = inputrecFrozenAtoms(&ir);
     if (!clearNonFrozenSpecialParticles and !hasFrozenParticles)
@@ -2633,8 +2638,12 @@ int gmx_grompp(int argc, char* argv[])
     // Clear velocity fields for special or frozen particles.  This
     // must come after the topology has been read and MD groups have
     // been built and before initial temperatures have been
-    // calculated.
-    clearSpecialParticleVelocities(bGenVel, *ir, sys, state.v);
+    // calculated. Only dynamical integrators have velocities in the
+    // state, e.g. energy minimization has none.
+    if (state.hasEntry(StateEntry::V))
+    {
+        clearSpecialParticleVelocities(bGenVel, *ir, sys, state.v);
+    }
 
     // Notify topology to MdModules for pre-processing after all indexes were built
     mdModules.notifiers().preProcessingNotifier_.notify(&sys);
