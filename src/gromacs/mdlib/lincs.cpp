@@ -2498,6 +2498,9 @@ bool constrain_lincs(bool                            computeRmsd,
         {
             if (hasMassPerturbed && lincsd->matlam != lambda)
             {
+                // Uncomment this to expose the issue of #5733
+                // GMX_RELEASE_ASSERT(ir.efep == FreeEnergyPerturbationType::SlowGrowth,
+                //                   "LINCS should only have a new lambda during slow-growth FEP");
                 set_lincs_matrix(lincsd, invmass, lambda);
             }
 

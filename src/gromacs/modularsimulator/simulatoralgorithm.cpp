@@ -566,16 +566,17 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             legacySimulatorData_->wallTimeAccounting_);
 
     // Build topology holder
-    algorithm.topologyHolder_ =
-            topologyHolderBuilder_.build(legacySimulatorData_->topGlobal_,
-                                         legacySimulatorData_->top_,
-                                         legacySimulatorData_->cr_,
-                                         legacySimulatorData_->inputRec_,
-                                         legacySimulatorData_->fr_,
-                                         legacySimulatorData_->mdAtoms_,
-                                         legacySimulatorData_->constr_,
-                                         legacySimulatorData_->runScheduleWork_->simulationWork,
-                                         legacySimulatorData_->virtualSites_);
+    algorithm.topologyHolder_ = topologyHolderBuilder_.build(
+            legacySimulatorData_->topGlobal_,
+            legacySimulatorData_->top_,
+            legacySimulatorData_->cr_,
+            legacySimulatorData_->inputRec_,
+            legacySimulatorData_->fr_,
+            legacySimulatorData_->state_->lambda[FreeEnergyPerturbationCouplingType::Mass],
+            legacySimulatorData_->mdAtoms_,
+            legacySimulatorData_->constr_,
+            legacySimulatorData_->runScheduleWork_->simulationWork,
+            legacySimulatorData_->virtualSites_);
     registerWithInfrastructureAndSignallers(algorithm.topologyHolder_.get());
 
     // Build PME load balance helper

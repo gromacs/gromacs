@@ -887,9 +887,9 @@ int gmx_disre(int argc, char* argv[])
         maxxv = xvgropen(opt2fn("-dm", NFILE, fnm), "Largest Violation", "Time (ps)", "nm", oenv);
     }
 
-    auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false, false, nullptr);
-    atoms2md(*topInfo.mtop(), *ir, -1, {}, ntopatoms, mdAtoms.get());
-    update_mdatoms(mdAtoms.get(), ir->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Fep));
+    auto       mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false, false, nullptr);
+    const real initMassLambda = ir->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Fep);
+    atoms2md(*topInfo.mtop(), *ir, -1, {}, ntopatoms, mdAtoms.get(), initMassLambda);
     if (ir->pbcType != PbcType::No)
     {
         gpbc = gmx_rmpbc_init(idef, ir->pbcType, natoms);

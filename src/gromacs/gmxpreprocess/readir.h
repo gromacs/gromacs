@@ -169,7 +169,7 @@ pull_t* set_pull_init(t_inputrec*          ir,
                       const gmx_mtop_t&    mtop,
                       ArrayRef<const RVec> x,
                       matrix               box,
-                      real                 lambda,
+                      real                 massLambda,
                       WarningHandler*      wi);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.

@@ -3204,8 +3204,9 @@ void dd_partition_system(FILE*                     fplog,
 
     /* Update atom data for mdAtoms and several algorithms */
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
+    const real massLambda = state_local->lambda[FreeEnergyPerturbationCouplingType::Mass];
     mdAlgorithmsSetupAtomData(
-            simulationWork, dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr, stateGpu, wcycle);
+            simulationWork, dd, inputrec, top_global, top_local, fr, f, massLambda, mdAtoms, constr, vsite, nullptr, stateGpu, wcycle);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     if (dd->atomSets != nullptr)

@@ -186,7 +186,8 @@ void atoms2md(const gmx_mtop_t&        mtop,
               int                      nindex,
               gmx::ArrayRef<const int> index,
               int                      numHomeAtoms,
-              gmx::MDAtoms*            mdAtoms)
+              gmx::MDAtoms*            mdAtoms,
+              const real               massLambda)
 {
     gmx_bool         bLJPME;
     const t_grpopts* opts;
@@ -351,45 +352,52 @@ void atoms2md(const gmx_mtop_t&        mtop,
                 mdAtoms->massA[i] = mA;
                 mdAtoms->massB[i] = mB;
             }
-            mdAtoms->massT[i] = mA;
+            // When masses are perturbed, all perturbed-atom
+            // mass-related quantities are instead assigned in
+            // updateMdAtomsForMassLambdas().
+            if (!mdAtoms->nMassPerturbed or !mdAtoms->bPerturbed[i])
+            {
+                mdAtoms->massT[i] = mA;
 
-            if (mA == 0.0)
-            {
-                mdAtoms->invmass[i]           = 0;
-                mdAtoms->invMassPerDim[i][XX] = 0;
-                mdAtoms->invMassPerDim[i][YY] = 0;
-                mdAtoms->invMassPerDim[i][ZZ] = 0;
-            }
-            else if (!mdAtoms->cFREEZE.empty())
-            {
-                g = mdAtoms->cFREEZE[i];
-                GMX_ASSERT(opts->nFreeze != nullptr, "Must have freeze groups to initialize masses");
-                if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
+                if (mA == 0.0)
                 {
-                    /* Set the mass of completely frozen particles to ALMOST_ZERO
-                     * iso 0 to avoid div by zero in lincs or shake.
-                     */
-                    mdAtoms->invmass[i] = ALMOST_ZERO;
+                    mdAtoms->invmass[i]           = 0;
+                    mdAtoms->invMassPerDim[i][XX] = 0;
+                    mdAtoms->invMassPerDim[i][YY] = 0;
+                    mdAtoms->invMassPerDim[i][ZZ] = 0;
+                }
+                else if (!mdAtoms->cFREEZE.empty())
+                {
+                    g = mdAtoms->cFREEZE[i];
+                    GMX_ASSERT(opts->nFreeze != nullptr,
+                               "Must have freeze groups to initialize masses");
+                    if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
+                    {
+                        /* Set the mass of completely frozen particles to ALMOST_ZERO
+                         * iso 0 to avoid div by zero in lincs or shake.
+                         */
+                        mdAtoms->invmass[i] = ALMOST_ZERO;
+                    }
+                    else
+                    {
+                        /* Note: Partially frozen particles use the normal invmass.
+                         * If such particles are constrained, the frozen dimensions
+                         * should not be updated with the constrained coordinates.
+                         */
+                        mdAtoms->invmass[i] = 1.0 / mA;
+                    }
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        mdAtoms->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0 / mA);
+                    }
                 }
                 else
                 {
-                    /* Note: Partially frozen particles use the normal invmass.
-                     * If such particles are constrained, the frozen dimensions
-                     * should not be updated with the constrained coordinates.
-                     */
                     mdAtoms->invmass[i] = 1.0 / mA;
-                }
-                for (int d = 0; d < DIM; d++)
-                {
-                    mdAtoms->invMassPerDim[i][d] = (opts->nFreeze[g][d] ? 0 : 1.0 / mA);
-                }
-            }
-            else
-            {
-                mdAtoms->invmass[i] = 1.0 / mA;
-                for (int d = 0; d < DIM; d++)
-                {
-                    mdAtoms->invMassPerDim[i][d] = 1.0 / mA;
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        mdAtoms->invMassPerDim[i][d] = 1.0 / mA;
+                    }
                 }
             }
 
@@ -519,15 +527,15 @@ void atoms2md(const gmx_mtop_t&        mtop,
 
     mdAtoms->numHomeAtoms = numHomeAtoms;
     /* We set mass, invmass, invMassPerDim and tmass for lambda=0.
-     * For free-energy runs, these should be updated using update_mdatoms().
+     * For free-energy runs, these should be updated using updateMdAtomsForMassLambda().
      */
-    mdAtoms->tmass      = mdAtoms->tmassA;
-    mdAtoms->massLambda = 0;
+    mdAtoms->tmass = mdAtoms->tmassA;
+    updateMdAtomsForMassLambda(mdAtoms, massLambda);
 }
 
-void update_mdatoms(gmx::MDAtoms* mdAtoms, real massLambda)
+void updateMdAtomsForMassLambda(gmx::MDAtoms* mdAtoms, const real massLambda)
 {
-    if (mdAtoms->nMassPerturbed && massLambda != mdAtoms->massLambda)
+    if (mdAtoms->nMassPerturbed)
     {
         real L1 = 1 - massLambda;
 
@@ -561,6 +569,4 @@ void update_mdatoms(gmx::MDAtoms* mdAtoms, real massLambda)
         /* Update the system mass for the change in mass lambda */
         mdAtoms->tmass = L1 * mdAtoms->tmassA + massLambda * mdAtoms->tmassB;
     }
-
-    mdAtoms->massLambda = massLambda;
 }

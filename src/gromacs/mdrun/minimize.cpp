@@ -519,6 +519,7 @@ static void init_em(FILE*                        fplog,
                                   top,
                                   fr,
                                   &ems->f,
+                                  ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass],
                                   mdAtoms,
                                   constr,
                                   vsite,
@@ -526,8 +527,6 @@ static void init_em(FILE*                        fplog,
                                   fr->stateGpu,
                                   wcycle);
     }
-
-    update_mdatoms(mdAtoms, ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
     if (constr)
     {

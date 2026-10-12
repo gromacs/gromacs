@@ -686,7 +686,7 @@ pull_t* set_pull_init(t_inputrec*               ir,
                       const gmx_mtop_t&         mtop,
                       ArrayRef<const gmx::RVec> x,
                       matrix                    box,
-                      real                      lambda,
+                      const real                massLambda,
                       WarningHandler*           wi)
 {
     pull_t* pull_work;
@@ -695,13 +695,9 @@ pull_t* set_pull_init(t_inputrec*               ir,
     pull_params_t*           pull = ir->pull.get();
     const gmx::MpiComm       mpiComm(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
     gmx::LocalAtomSetManager atomSets;
-    pull_work    = init_pull(nullptr, pull, ir, mtop, mpiComm, nullptr, &atomSets, lambda);
+    pull_work    = init_pull(nullptr, pull, ir, mtop, mpiComm, nullptr, &atomSets, massLambda);
     auto mdAtoms = gmx::makeMDAtoms(nullptr, mtop, *ir, false, false, nullptr);
-    atoms2md(mtop, *ir, -1, {}, mtop.natoms, mdAtoms.get());
-    if (ir->efep != FreeEnergyPerturbationType::No)
-    {
-        update_mdatoms(mdAtoms.get(), lambda);
-    }
+    atoms2md(mtop, *ir, -1, {}, mtop.natoms, mdAtoms.get(), massLambda);
 
     set_pbc(&pbc, ir->pbcType, box);
 

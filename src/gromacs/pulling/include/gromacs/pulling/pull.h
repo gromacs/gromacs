@@ -267,7 +267,7 @@ void dd_make_local_pull_groups(const gmx::MpiComm& mpiComm, gmx_domdec_t* dd, pu
  * \param mpiComm     Communication object for my group.
  * \param dd          Domain decomposition object, is nullptr when DD is not used.
  * \param atomSets    The manager that handles the pull atom sets
- * \param lambda      FEP lambda.
+ * \param massLambda  FEP lambda for masses.
  */
 struct pull_t* init_pull(FILE*                     fplog,
                          const pull_params_t*      pull_params,
@@ -276,7 +276,7 @@ struct pull_t* init_pull(FILE*                     fplog,
                          const gmx::MpiComm&       mpiComm,
                          gmx_domdec_t*             dd,
                          gmx::LocalAtomSetManager* atomSets,
-                         real                      lambda);
+                         real                      massLambda);
 
 
 /*! \brief Close the pull output files and delete pull.

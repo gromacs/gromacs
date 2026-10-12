@@ -413,8 +413,20 @@ void LegacySimulator::do_md()
     else
     {
         /* Generate and initialize new topology */
-        mdAlgorithmsSetupAtomData(
-                simulationWork, cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc, stateGpu, wallCycleCounters_);
+        mdAlgorithmsSetupAtomData(simulationWork,
+                                  cr_->dd,
+                                  *ir,
+                                  topGlobal_,
+                                  top_,
+                                  fr_,
+                                  &f,
+                                  state_->lambda[FreeEnergyPerturbationCouplingType::Mass],
+                                  mdAtoms_,
+                                  constr_,
+                                  virtualSites_,
+                                  shellfc,
+                                  stateGpu,
+                                  wallCycleCounters_);
 
         upd.updateAfterPartition(state_->numAtoms(), mdAtoms_->cFREEZE, mdAtoms_->cTC, mdAtoms_->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*mdAtoms_);
@@ -504,8 +516,6 @@ void LegacySimulator::do_md()
     // But state_global is still used as temporary storage space for writing
     // the global state to file and potentially for replica exchange.
     // (Global topology should persist.)
-
-    update_mdatoms(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
     if (ir->bExpanded)
     {
@@ -1002,9 +1012,9 @@ void LegacySimulator::do_md()
             EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
 
-        if (ir->efep != FreeEnergyPerturbationType::No)
+        if (ir->efep == FreeEnergyPerturbationType::SlowGrowth)
         {
-            update_mdatoms(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+            updateMdAtomsForMassLambda(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         if (bExchanged)

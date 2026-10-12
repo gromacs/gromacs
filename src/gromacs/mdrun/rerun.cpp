@@ -380,6 +380,7 @@ void LegacySimulator::do_rerun()
                                   top_,
                                   fr_,
                                   &f,
+                                  state_->lambda[FreeEnergyPerturbationCouplingType::Mass],
                                   mdAtoms_,
                                   constr_,
                                   virtualSites_,
@@ -394,8 +395,6 @@ void LegacySimulator::do_rerun()
     // But state_global is still used as temporary storage space for writing
     // the global state to file and potentially for replica exchange.
     // (Global topology should persist.)
-
-    update_mdatoms(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
     if (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl != 0)
     {
@@ -628,9 +627,9 @@ void LegacySimulator::do_rerun()
             EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
 
-        if (ir->efep != FreeEnergyPerturbationType::No)
+        if (ir->efep == FreeEnergyPerturbationType::SlowGrowth)
         {
-            update_mdatoms(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+            updateMdAtomsForMassLambda(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         fr_->longRangeNonbondeds->updateAfterPartition(*mdAtoms_);

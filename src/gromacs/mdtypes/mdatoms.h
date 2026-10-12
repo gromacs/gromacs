@@ -138,8 +138,6 @@ public:
     std::vector<unsigned short> cU2;
     //! Group index for orientation restraints
     std::vector<unsigned short> cORF;
-    //! The mass lambda value used to update the contents of the struct
-    real massLambda;
 
     // TODO make this private
     MDAtoms(bool rankHasPmeGpuTask, bool useGpuForUpdate, const DeviceStreamManager* deviceStreamManager);
@@ -169,24 +167,28 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
  * \param[in]    index         Lookup table for global atom index.
  * \param[in]    numHomeAtoms  Number of home atoms on this rank.
  * \param[inout] mdAtoms       Data set up by this routine.
+ * \param[in]    massLambda    The FEP lambda value relevant to mass perturbation
  *
  * If index!=NULL only the indexed atoms are copied.
- * For the masses the A-state (lambda=0) mass is used.
- * Sets mdAtoms->massLambda = 0.
- * In free-energy runs, update_mdatoms() should be called after atoms2md()
- * to set the masses corresponding to the value of the mass lambda at each step.
  */
 void atoms2md(const gmx_mtop_t&        mtop,
               const t_inputrec&        inputrec,
               int                      nindex,
               gmx::ArrayRef<const int> index,
               int                      numHomeAtoms,
-              gmx::MDAtoms*            mdAtoms);
+              gmx::MDAtoms*            mdAtoms,
+              real                     massLambda);
 
-void update_mdatoms(gmx::MDAtoms* mdAtoms, real massLambda);
-/* When necessary, sets all the mass parameters to values corresponding
- * to the (mass) free-energy parameter lambda.
- * Sets mdAtoms->massLambda = massLambda.
+/*! \brief This routine updates the mass-related values in \c mdAtoms to
+ * respect \c massLambda
+ *
+ * Intended to cater for possible per-step changes to the
+ * lambda value for masses with slow-growth FEP, but also
+ * called by \c atoms2md() during reinit after DD repartitioning.
+ *
+ * \param[inout] mdAtoms       Data set up by this routine.
+ * \param[in]    massLambda    The FEP lambda value relevant to mass perturbation
  */
+void updateMdAtomsForMassLambda(gmx::MDAtoms* mdAtoms, real massLambda);
 
 #endif

@@ -84,6 +84,7 @@ void make_local_shells(const gmx_domdec_t* dd, const MDAtoms& mdAtoms, shellfc_t
  * \param[in,out] top        The local topology
  * \param[in,out] fr         The force calculation parameter/data record
  * \param[out]    force      The force buffer
+ * \param[in]     massLambda The FEP lambda value relevant to mass perturbation
  * \param[out]    mdAtoms    The MD atom data
  * \param[in,out] constr     The constraints handler, can be NULL
  * \param[in,out] vsite      The virtual site data, can be NULL
@@ -98,6 +99,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                gmx_localtop_t*           top,
                                t_forcerec*               fr,
                                ForceBuffers*             force,
+                               real                      massLambda,
                                MDAtoms*                  mdAtoms,
                                Constraints*              constr,
                                VirtualSitesHandler*      vsite,

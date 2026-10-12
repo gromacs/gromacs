@@ -954,12 +954,11 @@ void LegacySimulator::do_tpi()
      */
     const real drmax = inputRec_->rtpi;
 
-    atoms2md(topGlobal_, *inputRec_, -1, {}, topGlobal_.natoms, mdAtoms_);
-    const double initMassLambda =
+    const real initMassLambda =
             (inputRec_->efep == FreeEnergyPerturbationType::No
                      ? 0.0
                      : inputRec_->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
-    update_mdatoms(mdAtoms_, initMassLambda);
+    atoms2md(topGlobal_, *inputRec_, -1, {}, topGlobal_.natoms, mdAtoms_, initMassLambda);
 
     /* Print to log file  */
     walltime_accounting_start_time(wallTimeAccounting_);

@@ -77,6 +77,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                gmx_localtop_t*           top,
                                t_forcerec*               fr,
                                ForceBuffers*             force,
+                               const real                massLambda,
                                MDAtoms*                  mdAtomsModifiable,
                                Constraints*              constr,
                                VirtualSitesHandler*      vsite,
@@ -111,7 +112,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
     {
         globalAtomIndices = dd->globalAtomIndices;
     }
-    atoms2md(top_global, inputrec, numAtomIndex, globalAtomIndices, numHomeAtoms, mdAtomsModifiable);
+    atoms2md(top_global, inputrec, numAtomIndex, globalAtomIndices, numHomeAtoms, mdAtomsModifiable, massLambda);
 
     // No changes to mdAtoms after here
     const MDAtoms& mdAtoms = *mdAtomsModifiable;
@@ -226,7 +227,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                mdAtoms.massT,
                                mdAtoms.invmass,
                                mdAtoms.nMassPerturbed != 0,
-                               mdAtoms.massLambda,
+                               massLambda,
                                mdAtoms.cFREEZE);
     }
 }

@@ -1822,7 +1822,7 @@ static void init_pull_group_index(FILE*               fplog,
                                   const ivec          pulldim_con,
                                   const gmx_mtop_t&   mtop,
                                   const t_inputrec*   ir,
-                                  real                lambda)
+                                  const real          massLambda)
 {
     /* With EM and BD there are no masses in the integrator.
      * But we still want to have the correct mass-weighted COMs.
@@ -1865,7 +1865,7 @@ static void init_pull_group_index(FILE*               fplog,
         }
         else
         {
-            m = (1 - lambda) * atom.m + lambda * atom.mB;
+            m = (1 - massLambda) * atom.m + massLambda * atom.mB;
         }
         real w;
         if (!pg->params_.weight.empty())
@@ -1978,7 +1978,7 @@ struct pull_t* init_pull(FILE*                     fplog,
                          const gmx::MpiComm&       mpiComm,
                          gmx_domdec_t*             dd,
                          gmx::LocalAtomSetManager* atomSets,
-                         real                      lambda)
+                         const real                massLambda)
 {
     struct pull_t* pull;
     pull_comm_t*   comm;
@@ -2314,7 +2314,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             }
 
             /* Set the indices */
-            init_pull_group_index(fplog, mpiComm, g, pgrp, bConstraint, pulldim_con, mtop, ir, lambda);
+            init_pull_group_index(fplog, mpiComm, g, pgrp, bConstraint, pulldim_con, mtop, ir, massLambda);
         }
         else
         {
