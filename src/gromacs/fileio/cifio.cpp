@@ -50,7 +50,6 @@
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"

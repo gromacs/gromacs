@@ -35,6 +35,7 @@
 add_library(fileio INTERFACE)
 set(FILEIO_SOURCES
     checkpoint.cpp
+    cifio.cpp
     confio.cpp
     enxio.cpp
     espio.cpp

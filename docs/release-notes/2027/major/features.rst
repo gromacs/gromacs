@@ -57,6 +57,7 @@ Configuring warns when a SYCL build for Intel GPUs is paired with a LibTorch
 without XPU support.
 
 :issue:`5754`
+
 Reading and writing of mmCIF/PDBx structure and trajectory files
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
