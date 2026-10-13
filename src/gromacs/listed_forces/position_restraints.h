@@ -56,6 +56,7 @@ struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct t_forcerec;
 class InteractionDefinitions;
+union t_iparams;
 struct t_pbc;
 
 namespace gmx

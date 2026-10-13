@@ -33,7 +33,7 @@
  */
 /*! \file
  * \brief
- * Declares interaction functions.
+ * Declares interaction function types and related things.
  *
  * \ingroup module_topology
  * \inlibraryapi
@@ -45,11 +45,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/vectypes.h"
 
-struct t_fcdata;
-struct t_graph;
-union t_iparams;
-struct t_pbc;
-
 /* TODO: Remove this typedef when t_ilist is removed */
 typedef int t_iatom;
 
@@ -58,45 +53,56 @@ typedef int t_iatom;
  */
 typedef real rvec4[4];
 
-/*! These flags tell to some of the routines what can be done with this
- * item in the list.
+/*! \brief These flags tell some of the routines what can be done with
+ * particular kinds of interaction functions.
+ *
  */
+//! \{
 constexpr unsigned int IF_NULL = 0;
 //! With IF_BOND a bonded interaction will be calculated.
-constexpr unsigned int IF_BOND       = 1 << 0;
-constexpr unsigned int IF_VSITE      = 1 << 1;
+// TODO rename me to IF_BONDEDFORCE for clarity wrt a 2-body bond
+constexpr unsigned int IF_BOND = 1 << 0;
+//! A virtual site
+constexpr unsigned int IF_VSITE = 1 << 1;
+//! Either a constraint or a SETTLE
 constexpr unsigned int IF_CONSTRAINT = 1 << 2;
-constexpr unsigned int IF_CHEMBOND   = 1 << 3;
-//! With IF_BTYPE grompp can convert the bond to a Morse potential.
-constexpr unsigned int IF_BTYPE = 1 << 4;
-/*! With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
+//! A bond, constraint, or SETTLE that expresses connectivity
+constexpr unsigned int IF_CHEMBOND = 1 << 3;
+/*! \brief A two-body bond that grompp can convert to a Morse potential.
+ *
+ * \todo rename me to IF_CONVERTIBLE_TO_MORSE for clarity
+ *
+ * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
  * a constraint or used for vsite parameter determination by grompp.
+ *
+ * \todo express this as IF_CONVERTIBLE_TO_CONSTRAINT and IF_VSITE_BASIS
  */
-constexpr unsigned int IF_ATYPE     = 1 << 5;
-constexpr unsigned int IF_DIHEDRAL  = 1 << 6;
-constexpr unsigned int IF_PAIR      = 1 << 7;
+constexpr unsigned int IF_BTYPE = 1 << 4;
+/*! \brief Angle interactions
+ *
+ * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
+ * a constraint or used for vsite parameter determination by grompp.
+ *
+ * \todo express this as IF_CONVERTIBLE_TO_CONSTRAINT and IF_VSITE_BASIS
+ */
+constexpr unsigned int IF_ATYPE = 1 << 5;
+//! Dihedral interactions
+constexpr unsigned int IF_DIHEDRAL = 1 << 6;
+//! Pair interactions
+constexpr unsigned int IF_PAIR = 1 << 7;
+//! Tabulated interactions
 constexpr unsigned int IF_TABULATED = 1 << 8;
-/*! IF_LIMZERO indicates that for a bonded interaction the potential
- * does goes to zero for large distances, thus if such an interaction
- * it not assigned to any node by the domain decomposition, the simulation
- * still continue, if mdrun has been told so.
+/*! \brief IF_LIMZERO indicates that for a bonded interaction the potential
+ * does goes to zero for large distances.
+ *
+ * Thus if such an interaction it not assigned to any domain by the
+ * domain decomposition, the simulation still continues, if mdrun has
+ * been told to do so.
  */
 constexpr unsigned int IF_LIMZERO = 1 << 9;
+//! \}
 
-/*! \brief Interaction function.
- *
- * This function type calculates one interaction, using iatoms[]
- * and iparams. Within the function the number of atoms to be used is
- * known. Within the function only the atomid part of the iatoms[] array
- * is supplied, not the type field (see also t_ilist). The function
- * returns the potential energy. If pbc==NULL the coordinates in x are
- * assumed to be such that no calculation of PBC is necessary,
- * If pbc!=NULL a full PBC calculation is performed.
- * If g!=NULL it is used for determining the shift forces.
- * With domain decomposition ddgatindex can be used for getting global
- * atom numbers for warnings and error messages.
- * ddgatindex is NULL when domain decomposition is not used.
- */
+//! Interaction function.
 struct t_interaction_function // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     const char* name;         //!< The name of this function.
@@ -262,9 +268,11 @@ static inline int NRAL(InteractionFunction iftype)
     return interaction_function[iftype].nratoms;
 }
 
-//! \brief Tells if function type ftype represents a chemical bond.
+//! \brief Tells if function type ftype represents a two-bond Lewis-style chemical bond.
 static inline bool IS_CHEMBOND(InteractionFunction iftype)
 {
+    // Note that SETTLE has IF_CHEMBOND, so we need to check for the
+    // atom count.
     return interaction_function[iftype].nratoms == 2
            && (interaction_function[iftype].flags & IF_CHEMBOND) != 0;
 }
