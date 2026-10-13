@@ -10,8 +10,9 @@ barriers along the reaction coordinate by applying a history-dependent
 potential to the system that “fills up” free energy minima. This is
 similar in spirit to other adaptive biasing potential methods, e.g. the
 Wang-Landau \ :ref:`138 <refwang2001efficient>`, local
-elevation \ :ref:`139 <refhuber1994local>` and
-metadynamics \ :ref:`140 <reflaio2002escaping>` methods.
+elevation \ :ref:`139 <refhuber1994local>`,
+metadynamics \ :ref:`140 <reflaio2002escaping>` and
+adaptive biasing force :ref:`202 <refCorner2015>` methods.
 The initial sampling stage of AWH makes the method robust against the
 choice of input parameters. Furthermore, the target distribution along
 the reaction coordinate may be chosen freely.
@@ -442,7 +443,9 @@ probability weights
 
 where :math:`w_{\mathrm{user}}(\lambda)` is provided by user data and
 in principle :math:`\rho_0(\lambda)` can be any of the target
-distributions mentioned above.
+distributions mentioned above. This is selected by setting the mdp parameter
+:mdp:`awh1-user-data` to ``yes`` and provding a file called ``awhinit.xvg``
+to mdrun with the weights to mdrun.
 
 Lastly, it is possible to automatically scale the target distribution
 (:math:`\rho_0(\lambda)`) based on the AWH friction metric (see
@@ -652,6 +655,39 @@ alchemical coordinates. For instance, hydration free-energies of divalent
 cations with a pair of monovalent anions can exceed this limit. The limit can
 also be exceeded when decoupling large molecules from solvent, but this often
 coincides with the limit where the sampling becomes problematic.
+
+Comparison with other enhanced sampling methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+AWH is very similar to other enhanced sampling methods that act on reaction coordinates,
+such as metadynamics :ref:`142 <refbarducci2008well>` and adaptive biasing force (ABF)
+:ref:`202 <refCorner2015>`. These methods can be used in the same applications
+and share most advantages and disadvantages. Particular differences and advantages
+of AWH over most other methods and packages are:
+
+#. AWH is based on a target distribution. This enables easy convergence checks.
+   It also allows straightforward control over the focus of the sampling.
+   A useful target distribution is flat with exponential decay at high free
+   energy, but it can also be set or modified by the user
+   (see :mdp:`awh1-user-data`).
+#. Initial exponential convergence, which means it takes logarithmic time to
+   cover barriers larger than :math:`kT`. In the final phase the error decreases as
+   :math:`1/\sqrt{t}`, as dictated by statistics.
+#. AWH produces a friction metric. This can provide information on issues
+   with the reaction coordinate, as well as be used to weigh the sampling.
+#. A very efficient implementation: both AWH and the pull code for the reaction
+   coordinates run distributed and only use minimal MPI communication when
+   strictly needed. The pull code also uses OpenMP threading for multiple
+   pull groups and for groups with many atoms. Plugins for |Gromacs| like Colvars
+   and Plumed collect all required data to one MPI rank and process it there
+   single-threaded, which can cause a large overhead when running on many cores
+   or with GPUs (we are working on improving this).
+
+Advantages of other packages over AWH plus the pull code:
+
+#. The pull code only supports a basic set of reaction coordinates, although
+   these are composable through mathematical expressions. Other packages often
+   provide a much larger selection of reaction coordinates.
 
 Usage
 ~~~~~

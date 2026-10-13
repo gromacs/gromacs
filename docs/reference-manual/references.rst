@@ -2777,3 +2777,18 @@ GROMACS-CP2K Interface", *Journal of Chemical Information and Modeling* (2026).
 .. raw:: html
 
    </div>
+
+.. raw:: html
+
+   <div id="refCorner2015">
+
+.. _refCorner2015:
+
+:sup:`202` J. Comer, J. C. Gumbart, J. Hénin, T. Lelièvre, A. Pohorille, C. Chipot,
+"The Adaptive Biasing Force Method: Everything You Always Wanted To Know but Were Afraid To Ask",
+*J. Phys. Chem. B* (2015).
+`doi:10.1021/jp506633n <https://doi.org/10.1021/jp506633n>`_.
+
+.. raw:: html
+
+   </div>
