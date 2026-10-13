@@ -1364,7 +1364,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 {
                     loop_count = pme->pmeSolve->solveLJYZX(
                             *pme,
-                            pme->gridsLJ,
+                            gmx::arrayRefFromArray(&gridsRef.grids, 1),
                             false,
                             scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ],
                             computeEnergyAndVirial,
