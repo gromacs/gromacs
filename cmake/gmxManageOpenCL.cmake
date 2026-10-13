@@ -66,6 +66,10 @@ if (APPLE AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "14.4")
         message(WARNING "OS X prior to version 10.10.4 produces incorrect AMD OpenCL code at runtime. You will not be able to use AMD GPUs on this host unless you upgrade your operating system.")
 endif()
 
+if (APPLE AND GMX_GPU_FFT_CLFFT)
+    message(FATAL_ERROR "clFFT is not supported on macOS; plese use -DGMX_GPU_FFT_LIBRARY=VkFFT.")
+endif()
+
 if (GMX_GPU_FFT_VKFFT)
     # Use VkFFT with OpenCL back end as header-only library
     include(gmxManageVkFft)

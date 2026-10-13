@@ -65,6 +65,7 @@
 #include "gromacs/ewald/pme_solve.h"
 #include "gromacs/ewald/pme_spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -120,7 +121,7 @@ MessageStringCollector getSkipMessagesIfNecessary(const t_inputrec& inputRec, co
     }
 
     std::string errorMessage;
-    messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
+    messages.appendIf(!GpuConfigurationCapabilities::Pme, "this build does not support PME on GPUs");
     messages.appendIf(!pme_gpu_supports_input(inputRec, &errorMessage), errorMessage);
     return messages;
 }

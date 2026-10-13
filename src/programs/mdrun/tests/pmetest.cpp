@@ -63,7 +63,6 @@
 #include <gtest/gtest-spi.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
@@ -272,8 +271,8 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
                           "it targets GPU execution of FFT work, which is not supported in the "
                           "current build");
 
-        std::string errorMessage;
-        messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
+        messages.appendIf(!GpuConfigurationCapabilities::Pme,
+                          "it targets PME on the GPU, which this build does not support");
         // A check on whether the .tpr is supported for PME on GPUs is
         // not needed, because it is supported by design.
     }

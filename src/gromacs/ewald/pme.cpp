@@ -153,30 +153,6 @@ gmx::PmeOnlySimulationWorkload::PmeOnlySimulationWorkload(const SimulationWorklo
 {
 }
 
-bool pme_gpu_supports_build(std::string* error)
-{
-    gmx::MessageStringCollector errorReasons;
-    // Before changing the prefix string, make sure that it is not searched for in regression tests.
-    errorReasons.startContext("PME GPU does not support:");
-    errorReasons.appendIf(GMX_DOUBLE, "Double-precision build of GROMACS.");
-#ifdef __APPLE__
-#    if defined(__aarch64__)
-    // OpenCL compiler silently fails on macOS when using clFFT backend.
-    errorReasons.appendIf(GMX_GPU_OPENCL && !GMX_GPU_FFT_VKFFT, "macOS build using clFFT.");
-#    else
-    errorReasons.appendIf(true, "macOS build for x86 architecture.");
-#    endif
-#endif
-    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
-    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme, "Current GPU backend.");
-    errorReasons.finishContext();
-    if (error != nullptr)
-    {
-        *error = errorReasons.toString();
-    }
-    return errorReasons.isEmpty();
-}
-
 bool pme_gpu_supports_input(const t_inputrec& ir, std::string* error)
 {
     gmx::MessageStringCollector errorReasons;
@@ -228,8 +204,7 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
                           "2D PME decomposition (use GMX_PMEONEDD to force 1D).");
     errorReasons.appendIf((pme->pme_order != 4), "interpolation orders other than 4.");
     errorReasons.appendIf(pme->doLJ, "Lennard-Jones PME.");
-    errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS.");
-    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme, "current build of GROMACS.");
     errorReasons.finishContext();
     if (error != nullptr)
     {

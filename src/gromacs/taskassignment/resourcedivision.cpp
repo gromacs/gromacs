@@ -57,6 +57,7 @@
 #include <vector>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -387,7 +388,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
     if (pmeOnGpu)
     {
         GMX_RELEASE_ASSERT((usingPme(inputrec->coulombtype) || usingLJPme(inputrec->vdwtype))
-                                   && pme_gpu_supports_build(nullptr)
+                                   && gmx::GpuConfigurationCapabilities::Pme
                                    && pme_gpu_supports_input(*inputrec, nullptr),
                            "PME can't be on GPUs unless we are using PME");
 
