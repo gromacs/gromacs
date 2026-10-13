@@ -1507,6 +1507,7 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
         }
         else if (stat == TNG_FAILURE)
         {
+            // TODO This could mean frameTime never gets a valid value
             continue;
         }
         switch (blockId)
@@ -1595,9 +1596,17 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
     fr->step  = frameNumber;
     fr->bStep = TRUE;
 
-    // Convert the time to ps
+    // Convert the time to ps.
+    //
+    // Note that tng_util_particle_data_next_frame_read might have
+    // returned TNG_FAILURE, which was silently swallowed above and
+    // frameTime could still be -1. Otherwise, that function always a
+    // value, which might legitimately be -1 when the user has done
+    // something creative, or 0 legitimately, or 0 when time values
+    // were somehow unavailable. So we pass on that time and hope the
+    // user can make sense of the situation.
     fr->time  = frameTime / gmx::c_pico;
-    fr->bTime = (frameTime > 0);
+    fr->bTime = true;
 
     /* Update the data in the wrapper */
     gmx_tng_input->lastStepDataIsValid = true;
