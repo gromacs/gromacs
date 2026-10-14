@@ -13,7 +13,6 @@ include                  =
 define                   = -DPOSRES
 
 ; RUN CONTROL PARAMETERS
-integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0.0
 dt                       = 0.001

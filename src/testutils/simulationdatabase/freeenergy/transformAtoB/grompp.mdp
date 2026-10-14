@@ -1,5 +1,4 @@
 ; RUN CONTROL PARAMETERS
-integrator               = md-vv
 ; Start time and timestep in ps
 tinit                    = 0.0
 dt                       = 0.001

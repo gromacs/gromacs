@@ -2,7 +2,6 @@
 ; Minimal two-residue peptide in vacuum
 
 ; RUN CONTROL
-integrator               = md
 tinit                    = 0.0
 dt                       = 0.001
 nsteps                   = 20
