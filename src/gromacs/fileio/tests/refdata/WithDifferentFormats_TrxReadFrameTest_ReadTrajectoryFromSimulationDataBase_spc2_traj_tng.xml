@@ -4,6 +4,7 @@
   <Int Name="natoms">6</Int>
   <Bool Name="bAtoms (frame 0)">false</Bool>
   <Int Name="step (frame 0)">0</Int>
+  <Real Name="time (frame 0)">0</Real>
   <Real Name="lambda (frame 0)">0</Real>
   <Real Name="prec (frame 0)">1000</Real>
   <Sequence Name="x (frame 0)">

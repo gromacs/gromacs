@@ -1473,8 +1473,12 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 }
                 else
                 {
-                    loop_count = pme->pmeSolve->solveLJYZX(
-                            *pme, pme->gridsLJ, false, pme->unitCell.boxVolume, computeEnergyAndVirial, thread);
+                    loop_count = pme->pmeSolve->solveLJYZX(*pme,
+                                                           gmx::arrayRefFromArray(&gridsRef.grids, 1),
+                                                           false,
+                                                           pme->unitCell.boxVolume,
+                                                           computeEnergyAndVirial,
+                                                           thread);
                 }
 
                 if (thread == 0)
