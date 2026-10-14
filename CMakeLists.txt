@@ -695,7 +695,19 @@ include(gmxManageLmfit)
 
 include(gmxManageMuparser)
 
-include(gmxManageColvars)
+# Build Colvars library as bundled in a GROMACS worktree; not supporting external linkage yet
+gmx_option_multichoice(GMX_USE_COLVARS
+    "Build the collective variables (Colvars) library interfaced with GROMACS"
+    INTERNAL
+    INTERNAL NONE)
+mark_as_advanced(GMX_USE_COLVARS)
+
+if(GMX_USE_COLVARS STREQUAL "INTERNAL")
+    set(GMX_HAVE_COLVARS 1 CACHE INTERNAL "Is colvars found?")
+else()
+    set(GMX_HAVE_COLVARS 0 CACHE INTERNAL "Is colvars found?")
+endif()
+mark_as_advanced(GMX_HAVE_COLVARS)
 
 include(gmxManagePlumed)
 

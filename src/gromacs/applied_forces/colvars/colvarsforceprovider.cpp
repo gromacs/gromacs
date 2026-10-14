@@ -47,7 +47,7 @@
 #include <array>
 #include <string>
 
-#include "external/colvars/colvars_memstream.h"
+#include "colvars/colvars_memstream.h"
 
 #include "gromacs/applied_forces/colvars/colvarproxygromacs.h"
 #include "gromacs/compat/pointers.h"

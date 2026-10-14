@@ -46,6 +46,8 @@
 #include <memory>
 #include <string>
 
+#include "colvars/colvars_version.h"
+
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
@@ -56,7 +58,6 @@
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "colvars_version.h"
 #include "colvarsforceprovider.h"
 #include "colvarsoptions.h"
 #include "colvarssimulationsparameters.h"

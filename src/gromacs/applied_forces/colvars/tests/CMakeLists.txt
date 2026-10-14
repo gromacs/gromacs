@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if(GMX_USE_COLVARS STREQUAL "INTERNAL")
+if(GMX_HAVE_COLVARS)
     gmx_add_unit_test(ColvarsAppliedForcesUnitTest colvars_applied_forces-test
         CPP_SOURCE_FILES
             colvars.cpp
@@ -48,11 +48,24 @@ else()
         )
 endif()
 
-if(GMX_LIB_MPI)
-    # THis target does not link the library directly, must add the flag again
-    target_compile_definitions(colvars_applied_forces-test PRIVATE -DCOLVARS_MPI)
+target_link_libraries(colvars_applied_forces-test PRIVATE
+    applied_forces
+    math
+    topology
+    mdlib
+    mdtypes
+    )
+if (TARGET colvars_library)
+    # Note that the design of Colvars requires that the GROMACS
+    # MDModule include the definition of its types and perhaps define
+    # some macros, so the GROMACS unit tests must depend on both the
+    # module and transitively the headers and compile definitions used to
+    # build it. Thus we obtain headers from the Colvars used to build
+    # its MDModule
+    target_include_directories(colvars_applied_forces-test PRIVATE
+        $<TARGET_PROPERTY:colvars_library,INTERFACE_INCLUDE_DIRECTORIES>
+        )
+    target_compile_definitions(colvars_applied_forces-test PRIVATE
+        $<TARGET_PROPERTY:colvars_library,COMPILE_DEFINITIONS>
+        )
 endif()
-
-target_link_libraries(colvars_applied_forces-test PRIVATE applied_forces math topology mdlib
-    mdtypes)
-

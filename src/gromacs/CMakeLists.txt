@@ -407,6 +407,7 @@ target_link_libraries(libgromacs PRIVATE legacy_api)
 target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:analysisdata>
                       $<BUILD_INTERFACE:applied_forces>
+                      $<BUILD_INTERFACE:colvars_module>
                       $<BUILD_INTERFACE:commandline>
                       $<BUILD_INTERFACE:compat>
                       $<BUILD_INTERFACE:coordinateio>
@@ -474,8 +475,6 @@ target_link_libraries(libgromacs PRIVATE lmfit)
 if (HAVE_MUPARSER)
     target_link_libraries(libgromacs PRIVATE muparser::muparser)
 endif()
-gmx_manage_colvars()
-target_link_libraries(libgromacs PRIVATE colvars)
 target_link_libraries(libgromacs PRIVATE plumedgmx)
 
 # Make sure we fix "everything" found by compilers that support that
@@ -517,13 +516,6 @@ if(GMX_INTEL_LLVM)
         set(_flag "-fno-finite-math-only")
     endif()
     gmx_target_warning_suppression(libgromacs ${_flag} HAS_NO_FINITE_MATH_ONLY)
-endif()
-
-if (GMX_CLANG_TIDY)
-   # Temporarily exclude Colvars headers to silence warnings from code that is not built with GROMACS
-   # TODO: remove this when clang-tidy >= 14 is used
-   set_target_properties(libgromacs PROPERTIES CXX_CLANG_TIDY
-       "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=^(?!.*src/external/colvars).*")
 endif()
 
 # TODO: Stop installing libgromacs. Possibly allow installation during deprecation period with GMX_INSTALL_LEGACY_API.
