@@ -773,6 +773,7 @@ void LegacySimulator::do_rerun()
                                      energyOutput,
                                      nullptr,
                                      f.view().force(),
+                                     virtualSites_,
                                      isCheckpointingStep,
                                      doRerun,
                                      isLastStep,

@@ -937,25 +937,22 @@ void LegacySimulator::do_md()
         // The reason why the velocities need to be updated regularly is that the virtual site coordinates
         // are updated using these velocities during integration. Those coordinates are used for, e.g., domain
         // decomposition. Before computing any forces the positions of the virtual sites are recalculated.
-        // This fixes a bug, #4879, which was introduced in MR !979.
+        // This should be improved, see issue #4894.
+        // If the velocities are needed for trajectory output, they are calculated in do_md_trajectory_writing().
         // Note that vsite velocities might not be up-to-date in checkpoint or confout files.
         const int  c_virtualSiteVelocityUpdateInterval = 1000;
         const bool needVirtualVelocitiesThisStep =
-                (virtualSites_ != nullptr)
-                && (do_per_step(step, outputControl.nstvout)
-                    || do_per_step(step, c_virtualSiteVelocityUpdateInterval));
+                (virtualSites_ != nullptr) && do_per_step(step, c_virtualSiteVelocityUpdateInterval);
 
         if (virtualSites_ != nullptr)
         {
             // Virtual sites need to be updated before domain decomposition and forces are calculated
             wallcycle_start(wallCycleCounters_, WallCycleCounter::VsiteConstr);
-            // md-vv calculates virtual velocities once it has full-step real velocities
             virtualSites_->construct(state_->x,
                                      state_->v,
                                      state_->box,
-                                     (!EI_VV(inputRec_->eI) && needVirtualVelocitiesThisStep)
-                                             ? VSiteOperation::PositionsAndVelocities
-                                             : VSiteOperation::Positions);
+                                     (needVirtualVelocitiesThisStep) ? VSiteOperation::PositionsAndVelocities
+                                                                     : VSiteOperation::Positions);
             wallcycle_stop(wallCycleCounters_, WallCycleCounter::VsiteConstr);
         }
 
@@ -1301,13 +1298,6 @@ void LegacySimulator::do_md()
                                      nrnb_,
                                      fpLog_,
                                      wallCycleCounters_);
-                if (virtualSites_ != nullptr && needVirtualVelocitiesThisStep)
-                {
-                    // Positions were calculated earlier
-                    wallcycle_start(wallCycleCounters_, WallCycleCounter::VsiteConstr);
-                    virtualSites_->construct(state_->x, state_->v, state_->box, VSiteOperation::Velocities);
-                    wallcycle_stop(wallCycleCounters_, WallCycleCounter::VsiteConstr);
-                }
             }
 
             /* ########  END FIRST UPDATE STEP  ############## */
@@ -1390,6 +1380,7 @@ void LegacySimulator::do_md()
                                      energyOutput,
                                      bGStat ? ekind_ : nullptr,
                                      f.view().force(),
+                                     virtualSites_,
                                      isCheckpointingStep,
                                      bRerunMD,
                                      bLastStep,

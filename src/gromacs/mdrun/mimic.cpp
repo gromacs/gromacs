@@ -652,6 +652,7 @@ void LegacySimulator::do_mimic()
                                      energyOutput,
                                      ekind_,
                                      f.view().force(),
+                                     virtualSites_,
                                      isCheckpointingStep,
                                      doRerun,
                                      isLastStep,

@@ -46,6 +46,7 @@
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -76,6 +77,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
                               const gmx::EnergyOutput&       energyOutput,
                               const gmx_ekindata_t*          ekindata,
                               gmx::ArrayRef<const gmx::RVec> f,
+                              gmx::VirtualSitesHandler*      vsiteHandler,
                               gmx_bool                       bCPT,
                               gmx_bool                       bRerunMD,
                               gmx_bool                       bLastStep,
@@ -91,6 +93,13 @@ void do_md_trajectory_writing(FILE*                          fplog,
     }
     if (do_per_step(step, ir->outputControl.nstvout))
     {
+        // Construct the virtual site velocities, which are needed only for output
+        if (vsiteHandler)
+        {
+            wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::VsiteConstr);
+            vsiteHandler->construct(state->x, state->v, state->box, gmx::VSiteOperation::Velocities);
+            wallcycle_stop(mdoutf_get_wcycle(outf), WallCycleCounter::VsiteConstr);
+        }
         mdof_flags |= MDOF_V;
     }
     if (do_per_step(step, ir->outputControl.nstfout))

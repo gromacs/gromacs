@@ -55,6 +55,7 @@ namespace gmx
 class EnergyOutput;
 template<typename T>
 class ArrayRef;
+class VirtualSitesHandler;
 } // namespace gmx
 
 /*! \brief Wrapper routine for writing trajectories during mdrun
@@ -84,6 +85,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
                               const gmx::EnergyOutput&       energyOutput,
                               const gmx_ekindata_t*          ekindata,
                               gmx::ArrayRef<const gmx::RVec> f,
+                              gmx::VirtualSitesHandler*      vsiteHandler,
                               gmx_bool                       bCPT,
                               gmx_bool                       bRerunMD,
                               gmx_bool                       bLastStep,
