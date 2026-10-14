@@ -177,7 +177,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
     for (int i = 0; i < ffparams->numTypes(); i++)
     {
         const InteractionFunction ftype = ffparams->functype[i];
-        if (interaction_function[ftype].flags & IF_BOND)
+        if (interaction_function[ftype].flags & IF_BONDED_FORCE)
         {
             if (ip_pert(ftype, &ffparams->iparams[i]))
             {
@@ -213,7 +213,7 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int32_t
 
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if (interaction_function[ftype].flags & IF_BOND)
+        if (interaction_function[ftype].flags & IF_BONDED_FORCE)
         {
             InteractionList* ilist  = &idef->il[ftype];
             int*             iatoms = ilist->iatoms.data();

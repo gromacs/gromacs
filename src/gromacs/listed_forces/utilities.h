@@ -52,7 +52,7 @@
  * everything. */
 static inline bool ftypeIsListedPotential(InteractionFunction ftype)
 {
-    return ((interaction_function[ftype].flags & IF_BOND) != 0U)
+    return ((interaction_function[ftype].flags & IF_BONDED_FORCE) != 0U)
            && ftype != InteractionFunction::ConnectBonds;
 }
 
@@ -64,7 +64,7 @@ static inline bool ftypeIsListedPotential(InteractionFunction ftype)
  * everything. */
 static inline bool ftype_is_bonded_potential(InteractionFunction ftype)
 {
-    return ((interaction_function[ftype].flags & IF_BOND) != 0U)
+    return ((interaction_function[ftype].flags & IF_BONDED_FORCE) != 0U)
            && !(ftype == InteractionFunction::ConnectBonds || ftype == InteractionFunction::PositionRestraints
                 || ftype == InteractionFunction::FlatBottomedPositionRestraints);
 }

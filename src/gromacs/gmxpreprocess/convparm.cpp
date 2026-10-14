@@ -554,7 +554,8 @@ bool shouldConvertInteractionType(InteractionFunction ftype)
     const unsigned long flags = interaction_function[ftype].flags;
     return ((ftype != InteractionFunction::LennardJonesShortRange)
             && (ftype != InteractionFunction::BuckinghamShortRange)
-            && ((flags & IF_BOND) != 0u || (flags & IF_VSITE) != 0u || (flags & IF_CONSTRAINT) != 0u));
+            && ((flags & IF_BONDED_FORCE) != 0u || (flags & IF_VSITE) != 0u
+                || (flags & IF_CONSTRAINT) != 0u));
 }
 
 void convertInteractionsOfType(int atnr,
@@ -638,7 +639,7 @@ void convertInteractionsOfType(int atnr,
                  * Constraints and virtual sites would be possible,
                  * but require a lot of extra (bug-prone) code.
                  */
-                if (!(flags & IF_BOND))
+                if (!(flags & IF_BONDED_FORCE))
                 {
                     gmx_fatal(FARGS,
                               "The intermolecular_interaction section may only contain bonded "

@@ -1397,7 +1397,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
      */
     for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
     {
-        if (!(interaction_function[ftype].flags & IF_BOND) || ftype == InteractionFunction::ConnectBonds)
+        if (!(interaction_function[ftype].flags & IF_BONDED_FORCE) || ftype == InteractionFunction::ConnectBonds)
         {
             continue;
         }

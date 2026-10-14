@@ -210,7 +210,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
         {
             int nbonds;
 
-            if (interaction_function[ftype].flags & IF_BOND)
+            if (interaction_function[ftype].flags & IF_BONDED_FORCE)
             {
                 double nd_c, nd_simd;
 

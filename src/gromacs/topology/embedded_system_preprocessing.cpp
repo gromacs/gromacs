@@ -446,8 +446,9 @@ void modifyEmbeddedTwoCenterInteractions(gmx_mtop_t*              mtop,
             {
                 // If not bonded interaction or InteractionFunction::ConnectBonds, or some form of Restraints,
                 // or not pair interaction, or no interactions of that type: then go the next type
-                if (!(interaction_function[ftype].flags & IF_BOND) || ftype == InteractionFunction::ConnectBonds
-                    || ftype == InteractionFunction::RestraintBonds || ftype == InteractionFunction::HarmonicPotential
+                if (!(interaction_function[ftype].flags & IF_BONDED_FORCE)
+                    || ftype == InteractionFunction::ConnectBonds || ftype == InteractionFunction::RestraintBonds
+                    || ftype == InteractionFunction::HarmonicPotential
                     || ftype == InteractionFunction::DistanceRestraints
                     || ftype == InteractionFunction::OrientationRestraints
                     || ftype == InteractionFunction::AngleZAxisRestraints || NRAL(ftype) != 2
@@ -609,8 +610,9 @@ void modifyEmbeddedThreeCenterInteractions(gmx_mtop_t*              mtop,
                 // If not bonded interaction or Restraints
                 // or not three-particle interaction or no interactions of that type
                 // and not Settle: then go the next type
-                if ((!(interaction_function[ftype].flags & IF_BOND) || ftype == InteractionFunction::RestrictedBendingPotential
-                     || NRAL(ftype) != 3 || molType->ilist[ftype].empty())
+                if ((!(interaction_function[ftype].flags & IF_BONDED_FORCE)
+                     || ftype == InteractionFunction::RestrictedBendingPotential || NRAL(ftype) != 3
+                     || molType->ilist[ftype].empty())
                     && (ftype != InteractionFunction::SETTLE))
                 {
                     continue;
@@ -721,7 +723,7 @@ void modifyEmbeddedFourCenterInteractions(gmx_mtop_t*              mtop,
             {
                 // If not bonded interaction or Restraints
                 // or not four-particle interaction or no interactions of that type: then go the next type
-                if (!(interaction_function[ftype].flags & IF_BOND)
+                if (!(interaction_function[ftype].flags & IF_BONDED_FORCE)
                     || ftype == InteractionFunction::RestrictedTorsionPotential || NRAL(ftype) != 4
                     || molType->ilist[ftype].empty())
                 {

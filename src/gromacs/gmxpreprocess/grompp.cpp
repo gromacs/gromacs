@@ -1645,7 +1645,7 @@ void checkForUnboundAtoms(const gmx_moltype_t* molt, gmx_bool bVerbose, WarningH
 
     for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
     {
-        if (((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) == 2
+        if (((interaction_function[ftype].flags & IF_BONDED_FORCE) && NRAL(ftype) == 2
              && ftype != InteractionFunction::ConnectBonds)
             || (interaction_function[ftype].flags & IF_CONSTRAINT) || ftype == InteractionFunction::SETTLE)
         {
@@ -1727,7 +1727,7 @@ bool haveDecoupledModeInMol(const gmx_moltype_t& molt, ArrayRef<const t_iparams>
     bool haveDecoupledMode = false;
     for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
     {
-        if (interaction_function[ftype].flags & IF_ATYPE)
+        if (interaction_function[ftype].flags & IF_ANGLE)
         {
             const int              nral = NRAL(ftype);
             const InteractionList& il   = molt.ilist[ftype];

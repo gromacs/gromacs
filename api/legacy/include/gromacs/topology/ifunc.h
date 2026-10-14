@@ -58,34 +58,39 @@ typedef real rvec4[4];
  *
  */
 //! \{
+//! Indicates the intent to set no flag
 constexpr unsigned int IF_NULL = 0;
-//! With IF_BOND a bonded interaction will be calculated.
-// TODO rename me to IF_BONDEDFORCE for clarity wrt a 2-body bond
-constexpr unsigned int IF_BOND = 1 << 0;
+//! A bonded force interaction will be calculated, e.g. bond, angle, dihedral, etc.
+constexpr unsigned int IF_BONDED_FORCE = 1 << 0;
 //! A virtual site
 constexpr unsigned int IF_VSITE = 1 << 1;
 //! Either a constraint or a SETTLE
 constexpr unsigned int IF_CONSTRAINT = 1 << 2;
 //! A bond, constraint, or SETTLE that expresses connectivity
 constexpr unsigned int IF_CHEMBOND = 1 << 3;
-/*! \brief A two-body bond that grompp can convert to a Morse potential.
+/*! \brief A two-body bond that grompp can manipulate in topology
+ * preparation.
  *
- * \todo rename me to IF_CONVERTIBLE_TO_MORSE for clarity
+ * Originally this was introduced to describe all kinds of bonds that
+ * were then supported in GROMACS, and used in preparing virtual sites
+ * and in conversions to either constraints or Morse bonds.  Later
+ * other kinds of two-body interactions were introduced, and sometimes
+ * they were added to IF_BTYPE. Then the descriptor IF_CHEMBOND was
+ * introduced to describe all kinds of connective two-body
+ * associations, including constraints.
  *
- * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
- * a constraint or used for vsite parameter determination by grompp.
+ * IF_BOND would be a better name, but that was originally used to
+ * refer to all kinds of bonded interactions (now IF_BONDED_FORCE), so
+ * should be avoided.
  *
- * \todo express this as IF_CONVERTIBLE_TO_CONSTRAINT and IF_VSITE_BASIS
+ * This flag is used in preprocessing for handling the above three
+ * roles.  There are other two-body bonded interactions that could
+ * perhaps have this flag added. Or those three roles could be
+ * differentiated when we have a use case for that.
  */
 constexpr unsigned int IF_BTYPE = 1 << 4;
-/*! \brief Angle interactions
- *
- * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
- * a constraint or used for vsite parameter determination by grompp.
- *
- * \todo express this as IF_CONVERTIBLE_TO_CONSTRAINT and IF_VSITE_BASIS
- */
-constexpr unsigned int IF_ATYPE = 1 << 5;
+//! \brief Angle interactions
+constexpr unsigned int IF_ANGLE = 1 << 5;
 //! Dihedral interactions
 constexpr unsigned int IF_DIHEDRAL = 1 << 6;
 //! Pair interactions
@@ -116,7 +121,7 @@ struct t_interaction_function // NOLINT(clang-analyzer-optin.performance.Padding
                                * A and B are for normal and free energy components
                                * respectively.
                                */
-    unsigned int flags;       //!< Flags (IF_NULL, IF_BOND, etc.).
+    unsigned int flags;       //!< Flags (IF_NULL, IF_BONDED_FORCE, etc.).
 };
 
 /*! \brief Interaction function enums.
@@ -284,7 +289,7 @@ static inline bool IS_CHEMBOND(InteractionFunction iftype)
 static inline bool IS_ANGLE(InteractionFunction iftype)
 {
     return interaction_function[iftype].nratoms == 3
-           && (interaction_function[iftype].flags & IF_ATYPE) != 0;
+           && (interaction_function[iftype].flags & IF_ANGLE) != 0;
 }
 
 static inline bool IS_VSITE(InteractionFunction iftype)

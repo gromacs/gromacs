@@ -343,7 +343,7 @@ TEST(IListRangeTest, RangeBasedLoopWorks)
 
     EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::Bonds), 0);
     EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE), 2);
-    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 0);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE), 0);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
     done_atom(&mtop.moltype[0].atoms);
 }
@@ -378,9 +378,9 @@ TEST(IListRangeTest, RangeBasedLoopWithIntermolecularInteraction)
 
     EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::Bonds), 3);
     EXPECT_EQ(gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE), 2);
-    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 3);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE), 3);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
-    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND | IF_CONSTRAINT), 0);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE | IF_CONSTRAINT), 0);
     done_atom(&mtop.moltype[0].atoms);
 }
 

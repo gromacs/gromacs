@@ -127,7 +127,7 @@ static void selectInteractions(InteractionDefinitions*                   idef,
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         const t_interaction_function& ifunc = interaction_function[ftype];
-        if (ifunc.flags & IF_BOND)
+        if (ifunc.flags & IF_BONDED_FORCE)
         {
             bool assign = false;
             if (ifunc.flags & IF_PAIR)
@@ -138,7 +138,7 @@ static void selectInteractions(InteractionDefinitions*                   idef,
             {
                 assign = selectDihedrals;
             }
-            else if (ifunc.flags & IF_ATYPE)
+            else if (ifunc.flags & IF_ANGLE)
             {
                 assign = selectAngles;
             }

@@ -128,7 +128,7 @@ int nral_rt(InteractionFunction ftype)
 
 bool dd_check_ftype(const InteractionFunction ftype, const ReverseTopOptions& rtOptions)
 {
-    return ((((interaction_function[ftype].flags & IF_BOND) != 0U)
+    return ((((interaction_function[ftype].flags & IF_BONDED_FORCE) != 0U)
              && ((interaction_function[ftype].flags & IF_VSITE) == 0U)
              && ((rtOptions.ddBondedChecking_ == DDBondedChecking::All)
                  || ((interaction_function[ftype].flags & IF_LIMZERO) == 0U)))
@@ -211,7 +211,7 @@ static void low_make_reverse_ilist(const InteractionLists&  il_mt,
 
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
+        if ((interaction_function[ftype].flags & (IF_BONDED_FORCE | IF_VSITE))
             || (includeConstraints
                 && (ftype == InteractionFunction::Constraints
                     || ftype == InteractionFunction::ConstraintsNoCoupling))

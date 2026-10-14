@@ -187,9 +187,9 @@ TEST_P(ConvertInteractionsTest, Works)
     // Add a molecule block with 1 molecule of type 0 which was just filled
     mtop.molblock.emplace_back(gmx_molblock_t{ 0, 1 });
 
-    if (interaction_function[ftype].flags & IF_BOND)
+    if (interaction_function[ftype].flags & IF_BONDED_FORCE)
     {
-        EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 1)
+        EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE), 1)
                 << "topology has one bonded interaction";
         ASSERT_EQ(gmx_mtop_ftype_count(mtop, static_cast<InteractionFunction>(ftype)), 1)
                 << "topology has one kind of interaction";

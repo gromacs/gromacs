@@ -433,10 +433,11 @@ static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t&      mto
                                                       const DDBondedChecking ddBondedChecking,
                                                       const bool             useUpdateGroups)
 {
-    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BOND);
+    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE);
     if (ddBondedChecking == DDBondedChecking::ExcludeZeroLimit)
     {
-        expectedNumGlobalBondedInteractions -= gmx_mtop_interaction_count(mtop, IF_BOND | IF_LIMZERO);
+        expectedNumGlobalBondedInteractions -=
+                gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE | IF_LIMZERO);
     }
     if (useUpdateGroups)
     {

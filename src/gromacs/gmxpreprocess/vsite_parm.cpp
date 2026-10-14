@@ -151,7 +151,7 @@ static int vsite_bond_nrcheck(InteractionFunction ftype)
 {
     int nrcheck;
 
-    if ((interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT | IF_ATYPE))
+    if ((interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT | IF_ANGLE))
         || (static_cast<InteractionFunction>(ftype) == InteractionFunction::ImproperDihedrals))
     {
         nrcheck = NRAL(ftype);
@@ -1017,10 +1017,8 @@ static void clean_vsite_bonds(EnumerationArray<InteractionFunction, Interactions
     bool                bKeep, bRemove, bAllFD;
     InteractionsOfType* ps;
 
-    if (static_cast<InteractionFunction>(cftype) == InteractionFunction::ConnectBonds)
-    {
-        return;
-    }
+    GMX_RELEASE_ASSERT(cftype != InteractionFunction::ConnectBonds,
+                       "Only regular IF_BTYPE bonds to virtual sites are considered for removal");
 
     ps         = &(plist[cftype]);
     nconverted = 0;
@@ -1612,14 +1610,14 @@ void clean_vsite_bondeds(EnumerationArray<InteractionFunction, InteractionsOfTyp
         /* remove interactions that include virtual sites */
         for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
         {
-            if (((interaction_function[ftype].flags & IF_BOND) && bRmVSiteBds)
+            if (((interaction_function[ftype].flags & IF_BONDED_FORCE) && bRmVSiteBds)
                 || (interaction_function[ftype].flags & IF_CONSTRAINT))
             {
                 if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
                 {
                     clean_vsite_bonds(plist, pindex, ftype, vsite_type, logger);
                 }
-                else if (interaction_function[ftype].flags & IF_ATYPE)
+                else if (interaction_function[ftype].flags & IF_ANGLE)
                 {
                     clean_vsite_angles(plist, pindex, ftype, vsite_type, at2vc, logger);
                 }
