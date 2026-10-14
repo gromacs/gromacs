@@ -283,7 +283,7 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
         std::vector<ConstraintTypeForAtom> constraintTypeOfAtom(molt.atoms.nr, ConstraintTypeForAtom::None);
         for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if (interaction_function[ftype].flags & IF_CONSTRAINT)
+            if (interaction_function[ftype].categories & sc_ifcConstraint)
             {
                 const int nral = NRAL(ftype);
                 for (int ia = 0; ia < molt.ilist[ftype].size(); ia += 1 + nral)

@@ -266,7 +266,7 @@ static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec*
     set_pbc(&pbc, pbcType, box);
     for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
     {
-        if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND)
+        if ((interaction_function[ftype].categories & sc_ifcChemicalBond) == sc_ifcChemicalBond)
         {
             for (k = 0; (k < idef->il[ftype].size());)
             {

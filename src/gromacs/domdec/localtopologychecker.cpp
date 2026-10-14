@@ -194,7 +194,7 @@ static std::string printMissingInteractionsMolblock(const MpiComm&           mpi
             InteractionFunction ftype = static_cast<InteractionFunction>(ril.il[j_mol]);
             int                 nral  = NRAL(ftype);
             int                 j     = mol * nril_mol + j_mol;
-            if (isAssigned[j] == 0 && !(interaction_function[ftype].flags & IF_VSITE))
+            if (isAssigned[j] == 0 && !(interaction_function[ftype].categories & sc_ifcVirtualSite))
             {
                 if (DDMAIN(&dd))
                 {
@@ -433,15 +433,15 @@ static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t&      mto
                                                       const DDBondedChecking ddBondedChecking,
                                                       const bool             useUpdateGroups)
 {
-    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE);
+    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, sc_ifcBondedForce);
     if (ddBondedChecking == DDBondedChecking::ExcludeZeroLimit)
     {
         expectedNumGlobalBondedInteractions -=
-                gmx_mtop_interaction_count(mtop, IF_BONDED_FORCE | IF_LIMZERO);
+                gmx_mtop_interaction_count(mtop, sc_ifcBondedForce | sc_ifcZeroAtLargeDistances);
     }
     if (useUpdateGroups)
     {
-        expectedNumGlobalBondedInteractions += gmx_mtop_interaction_count(mtop, IF_CONSTRAINT);
+        expectedNumGlobalBondedInteractions += gmx_mtop_interaction_count(mtop, sc_ifcConstraint);
     }
     return expectedNumGlobalBondedInteractions;
 }

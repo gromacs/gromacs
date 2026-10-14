@@ -84,8 +84,9 @@ int gmx_mtop_nres(const gmx_mtop_t& mtop);
 /* Returns the total number of interactions in the system of type ftype */
 int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, InteractionFunction ftype);
 
-/* Returns the total number of interactions in the system with all interaction flags that are set in \p if_flags set */
-int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, int unsigned if_flags);
+/*! \brief Returns the total number of interactions in the system
+ * with all interaction categories in \p if_categories set */
+int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, InteractionFunctionCategoryFlags if_categories);
 
 //! Returns the number of flexible constraints in the \c ilist and \c iparams.
 int countFlexibleConstraints(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,

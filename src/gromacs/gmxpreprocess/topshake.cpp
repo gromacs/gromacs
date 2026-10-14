@@ -124,11 +124,11 @@ void make_shake(EnumerationArray<InteractionFunction, InteractionsOfType>& plist
             for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
             {
                 const InteractionsOfType* bonds = &(plist[ftype]);
-                if ((interaction_function[ftype].flags & IF_CHEMBOND) && (bonds->size() > 0))
+                if ((interaction_function[ftype].categories & sc_ifcChemicalBond) && (bonds->size() > 0))
                 {
                     for (InteractionFunction angleFtype : EnumerationWrapper<InteractionFunction>{})
                     {
-                        if (interaction_function[angleFtype].flags & IF_ANGLE)
+                        if (interaction_function[angleFtype].categories & sc_ifcAngle)
                         {
                             InteractionsOfType* pr = &(plist[angleFtype]);
 
@@ -209,9 +209,9 @@ void make_shake(EnumerationArray<InteractionFunction, InteractionsOfType>& plist
                                     ++parm;
                                 }
                             }
-                        } /* if IF_ANGLE */
+                        } /* if sc_ifcAngle */
                     } /* for angleFtype */
-                } /* if IF_BTYPE */
+                } /* if sc_ifcBType */
             } /* for ftype */
         } /* if shake angles */
 
@@ -220,7 +220,7 @@ void make_shake(EnumerationArray<InteractionFunction, InteractionsOfType>& plist
          */
         for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
         {
-            if (interaction_function[ftype].flags & IF_BTYPE)
+            if (interaction_function[ftype].categories & sc_ifcBType)
             {
                 InteractionsOfType* pr = &(plist[ftype]);
                 for (auto parm = pr->interactionTypes.begin(); parm != pr->interactionTypes.end();)

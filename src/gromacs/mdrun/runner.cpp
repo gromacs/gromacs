@@ -1610,8 +1610,8 @@ int Mdrunner::mdrunner()
     // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
     // but this will no longer be the case if cr->duty is changed for !usingPme(fr->ic->eeltype).
     const bool haveSeparatePmeRank = (thisRankHasPPDuty(cr->dd) != thisRankHasPmeDuty(cr->dd));
-    // PME-only ranks don't call makeVirtualSitesHandler, so we count IF_VSITE to have consistent simulationWork
-    const bool haveVirtualSites    = gmx_mtop_interaction_count(mtop, IF_VSITE) > 0;
+    // PME-only ranks don't call makeVirtualSitesHandler, so we count sc_ifcVirtualSite to have consistent simulationWork
+    const bool haveVirtualSites    = gmx_mtop_interaction_count(mtop, sc_ifcVirtualSite) > 0;
     runScheduleWork.simulationWork = createSimulationWorkload(
             mdlog,
             *inputrec,

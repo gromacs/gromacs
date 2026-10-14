@@ -231,7 +231,7 @@ static bool moltypeHasVsite(const gmx_moltype_t& molt)
     bool hasVsite = false;
     for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if ((interaction_function[i].flags & IF_VSITE) && !molt.ilist[i].empty())
+        if ((interaction_function[i].categories & sc_ifcVirtualSite) && !molt.ilist[i].empty())
         {
             hasVsite = true;
         }

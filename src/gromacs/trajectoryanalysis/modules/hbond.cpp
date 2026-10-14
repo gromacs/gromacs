@@ -551,7 +551,7 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
                 }
             }
             else if (interaction_function[(func_type)].nratoms == 2
-                     && (interaction_function[(func_type)].flags & IF_CHEMBOND))
+                     && (interaction_function[(func_type)].categories & sc_ifcChemicalBond))
             {
                 for (std::size_t j = 0; j < 2; ++j)
                 {

@@ -1655,7 +1655,7 @@ static int gen_vsites_his(t_atoms*                                              
 //! Returns true when vsiteType is set and the value is an interaction type that is a vsite
 static bool is_vsite(const std::optional<InteractionFunction>& vsiteType)
 {
-    return vsiteType && (interaction_function[vsiteType.value()].flags & IF_VSITE) != 0;
+    return vsiteType && (interaction_function[vsiteType.value()].categories & sc_ifcVirtualSite) != 0;
 }
 
 static const char atomnamesuffix[] = "1234";

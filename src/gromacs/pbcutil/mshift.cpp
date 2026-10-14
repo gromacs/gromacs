@@ -341,13 +341,13 @@ static t_graph mk_graph_ilist(FILE*                                             
              */
             for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
             {
-                if (interaction_function[i].flags & IF_CHEMBOND)
+                if (interaction_function[i].categories & sc_ifcChemicalBond)
                 {
                     mk_igraph(&edgesG, i, ilist[i], at_end, {});
                 }
             }
 
-            /* Determine of which separated parts the IF_CHEMBOND graph consists.
+            /* Determine of which separated parts the sc_ifcChemicalBond graph consists.
              * Store the part numbers in the partNr array.
              */
             std::vector<int> partNr(at_end);
@@ -357,12 +357,12 @@ static t_graph mk_graph_ilist(FILE*                                             
             {
                 /* Then add all the other interactions in fixed lists,
                  * but only when they connect parts of the graph
-                 * that are not connected through IF_CHEMBOND interactions.
+                 * that are not connected through sc_ifcChemicalBond interactions.
                  */
                 bool addedEdge = false;
                 for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
                 {
-                    if (!(interaction_function[i].flags & IF_CHEMBOND))
+                    if (!(interaction_function[i].categories & sc_ifcChemicalBond))
                     {
                         bool addedEdgeForType = mk_igraph(&edgesG, i, ilist[i], at_end, partNr);
                         addedEdge             = (addedEdge || addedEdgeForType);

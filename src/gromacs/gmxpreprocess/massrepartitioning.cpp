@@ -94,7 +94,8 @@ void repartitionAtomMasses(gmx_mtop_t* mtop, const bool useFep, const real massF
 
         for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if ((interaction_function[ftype].flags & IF_CHEMBOND) == 0 || ftype == InteractionFunction::SETTLE)
+            if ((interaction_function[ftype].categories & sc_ifcChemicalBond) == 0
+                || ftype == InteractionFunction::SETTLE)
             {
                 continue;
             }

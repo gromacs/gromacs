@@ -119,7 +119,7 @@ int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, InteractionFunction ftype)
     return n;
 }
 
-int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_flags)
+int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, InteractionFunctionCategoryFlags if_categories)
 {
     int n = 0;
 
@@ -127,7 +127,7 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
     {
         for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if ((interaction_function[ftype].flags & if_flags) == if_flags)
+            if ((interaction_function[ftype].categories & if_categories) == if_categories)
             {
                 n += il.nmol() * il.list()[ftype].size() / (1 + NRAL(ftype));
             }

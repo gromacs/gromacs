@@ -125,7 +125,7 @@ int dd_make_local_vsites(gmx_domdec_t*                                          
     /* Loop over all the home vsites */
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if (interaction_function[ftype].flags & IF_VSITE)
+        if (interaction_function[ftype].categories & sc_ifcVirtualSite)
         {
             const int              nral = NRAL(ftype);
             const InteractionList& lilf = lil[ftype];
@@ -163,7 +163,7 @@ int dd_make_local_vsites(gmx_domdec_t*                                          
     /* Fill in the missing indices */
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if (interaction_function[ftype].flags & IF_VSITE)
+        if (interaction_function[ftype].categories & sc_ifcVirtualSite)
         {
             const int        nral = NRAL(ftype);
             InteractionList& lilf = lil[ftype];

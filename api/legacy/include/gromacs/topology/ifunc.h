@@ -56,72 +56,107 @@ typedef real rvec4[4];
 /*! \brief These flags tell some of the routines what can be done with
  * particular kinds of interaction functions.
  *
+ * These are used to define the values used for
+ * \c InteractionFunctionCategoryFlags.
+ */
+enum class InteractionFunctionCategory : int
+{
+    //!< Indicates the intent to set no category
+    Null,
+    //!< A bonded force interaction will be calculated, e.g. bond, angle, dihedral, etc.
+    BondedForce,
+    //!< A virtual site
+    VirtualSite,
+    //!< Either a constraint or a SETTLE
+    Constraint,
+    //!< A bond, constraint, or SETTLE that expresses connectivity
+    ChemicalBond,
+    /*!< \brief A two-body bond that grompp can manipulate in topology
+     * preparation.
+     *
+     * Originally IF_BYTPE was introduced to describe all kinds of bonds that
+     * were then supported in GROMACS, and used in preparing virtual sites
+     * and in conversions to either constraints or Morse bonds.  Later
+     * other kinds of two-body interactions were introduced, and sometimes
+     * they were added to sc_ifcBType. Then the descriptor sc_ifcChemicalBond
+     * was introduced to describe all kinds of connective two-body
+     * associations, including constraints.
+     *
+     * Bond would be a better name, but that word was originally used
+     * in IF_BOND to refer to all kinds of bonded interactions, so
+     * should be avoided here.
+     *
+     * This category is used in preprocessing for handling the above three
+     * roles.  There are other two-body bonded interactions that could
+     * perhaps have this category added. Or those three roles could be
+     * differentiated when we have a use case for that.
+     *
+     * This category should be avoided in mdrun, to avoid making the
+     * mulptiple use cases even more complex. Prefer \c ChemicalBond
+     * or checking the number of particles in the interaction. */
+    BType,
+    //!< Angle interactions
+    Angle,
+    //!< Dihedral interactions
+    Dihedral,
+    //!< Pair interactions
+    Pair,
+    //!< Tabulated interactions
+    Tabulated,
+    /*!< \brief Indicates that for a bonded interaction the potential
+     * does goes to zero for large distances, thus if such an interaction
+     * is not assigned to any rank by the domain decomposition, the simulation
+     * may continue, when mdrun has been told to permit that.
+     */
+    ZeroAtLargeDistances,
+    //!< Conventional final delimiter for an enum class
+    Count
+};
+
+/*! \brief Type for specifying a set of interaction categories
+ *
+ * A std::bitset might be nice in C++23, but until then it is not
+ * constexpr enough.
+ */
+using InteractionFunctionCategoryFlags = unsigned int;
+
+/*! \brief Flags describing categories of interaction functions
+ *
+ * These values can be used (individually or in groups) in bitwise
+ * operations to see e.g. if an interaction type is either a
+ * constraint or a bond.
  */
 //! \{
-//! Indicates the intent to set no flag
-constexpr unsigned int IF_NULL = 0;
-//! A bonded force interaction will be calculated, e.g. bond, angle, dihedral, etc.
-constexpr unsigned int IF_BONDED_FORCE = 1 << 0;
-//! A virtual site
-constexpr unsigned int IF_VSITE = 1 << 1;
-//! Either a constraint or a SETTLE
-constexpr unsigned int IF_CONSTRAINT = 1 << 2;
-//! A bond, constraint, or SETTLE that expresses connectivity
-constexpr unsigned int IF_CHEMBOND = 1 << 3;
-/*! \brief A two-body bond that grompp can manipulate in topology
- * preparation.
- *
- * Originally this was introduced to describe all kinds of bonds that
- * were then supported in GROMACS, and used in preparing virtual sites
- * and in conversions to either constraints or Morse bonds.  Later
- * other kinds of two-body interactions were introduced, and sometimes
- * they were added to IF_BTYPE. Then the descriptor IF_CHEMBOND was
- * introduced to describe all kinds of connective two-body
- * associations, including constraints.
- *
- * IF_BOND would be a better name, but that was originally used to
- * refer to all kinds of bonded interactions (now IF_BONDED_FORCE), so
- * should be avoided.
- *
- * This flag is used in preprocessing for handling the above three
- * roles.  There are other two-body bonded interactions that could
- * perhaps have this flag added. Or those three roles could be
- * differentiated when we have a use case for that.
- */
-constexpr unsigned int IF_BTYPE = 1 << 4;
-//! \brief Angle interactions
-constexpr unsigned int IF_ANGLE = 1 << 5;
-//! Dihedral interactions
-constexpr unsigned int IF_DIHEDRAL = 1 << 6;
-//! Pair interactions
-constexpr unsigned int IF_PAIR = 1 << 7;
-//! Tabulated interactions
-constexpr unsigned int IF_TABULATED = 1 << 8;
-/*! \brief IF_LIMZERO indicates that for a bonded interaction the potential
- * does goes to zero for large distances.
- *
- * Thus if such an interaction it not assigned to any domain by the
- * domain decomposition, the simulation still continues, if mdrun has
- * been told to do so.
- */
-constexpr unsigned int IF_LIMZERO = 1 << 9;
+// clang-format off
+static constexpr InteractionFunctionCategoryFlags sc_ifcNull =                 0;
+static constexpr InteractionFunctionCategoryFlags sc_ifcBondedForce =          1 << static_cast<int>(InteractionFunctionCategory::BondedForce);
+static constexpr InteractionFunctionCategoryFlags sc_ifcVirtualSite =          1 << static_cast<int>(InteractionFunctionCategory::VirtualSite);
+static constexpr InteractionFunctionCategoryFlags sc_ifcConstraint =           1 << static_cast<int>(InteractionFunctionCategory::Constraint);
+static constexpr InteractionFunctionCategoryFlags sc_ifcChemicalBond =         1 << static_cast<int>(InteractionFunctionCategory::ChemicalBond);
+static constexpr InteractionFunctionCategoryFlags sc_ifcBType =                1 << static_cast<int>(InteractionFunctionCategory::BType);
+static constexpr InteractionFunctionCategoryFlags sc_ifcAngle =                1 << static_cast<int>(InteractionFunctionCategory::Angle);
+static constexpr InteractionFunctionCategoryFlags sc_ifcDihedral =             1 << static_cast<int>(InteractionFunctionCategory::Dihedral);
+static constexpr InteractionFunctionCategoryFlags sc_ifcPair =                 1 << static_cast<int>(InteractionFunctionCategory::Pair);
+static constexpr InteractionFunctionCategoryFlags sc_ifcTabulated =            1 << static_cast<int>(InteractionFunctionCategory::Tabulated);
+static constexpr InteractionFunctionCategoryFlags sc_ifcZeroAtLargeDistances = 1 << static_cast<int>(InteractionFunctionCategory::ZeroAtLargeDistances);
+// clang-format on
 //! \}
 
 //! Interaction function.
 struct t_interaction_function // NOLINT(clang-analyzer-optin.performance.Padding)
 {
-    const char* name;         //!< The name of this function.
-    const char* longname;     //!< The name for printing etc.
-    int         nratoms;      //!< Number of atoms needed for this function.
-    int         nrfpA, nrfpB; /*!< \brief Number of parameters for this function.
-                               *
-                               * This corresponds to the number of parameters in
-                               * iparams struct.
-                               *
-                               * A and B are for normal and free energy components
-                               * respectively.
-                               */
-    unsigned int flags;       //!< Flags (IF_NULL, IF_BONDED_FORCE, etc.).
+    const char* name;                            //!< The name of this function.
+    const char* longname;                        //!< The name for printing etc.
+    int         nratoms;                         //!< Number of atoms needed for this function.
+    int         nrfpA, nrfpB;                    /*!< \brief Number of parameters for this function.
+                                                  *
+                                                  * This corresponds to the number of parameters in
+                                                  * iparams struct.
+                                                  *
+                                                  * A and B are for normal and free energy components
+                                                  * respectively.
+                                                  */
+    InteractionFunctionCategoryFlags categories; //!< Categories for this interaction (bond, constraint, etc.)
 };
 
 /*! \brief Interaction function enums.
@@ -276,10 +311,10 @@ static inline int NRAL(InteractionFunction iftype)
 //! \brief Tells if function type ftype represents a two-bond Lewis-style chemical bond.
 static inline bool IS_CHEMBOND(InteractionFunction iftype)
 {
-    // Note that SETTLE has IF_CHEMBOND, so we need to check for the
+    // Note that SETTLE has sc_ifcChemicalBond, so we need to check for the
     // atom count.
     return interaction_function[iftype].nratoms == 2
-           && (interaction_function[iftype].flags & IF_CHEMBOND) != 0;
+           && (interaction_function[iftype].categories & sc_ifcChemicalBond) != 0;
 }
 
 /*! \brief Tells if a function type ftype represents an angle.
@@ -289,17 +324,17 @@ static inline bool IS_CHEMBOND(InteractionFunction iftype)
 static inline bool IS_ANGLE(InteractionFunction iftype)
 {
     return interaction_function[iftype].nratoms == 3
-           && (interaction_function[iftype].flags & IF_ANGLE) != 0;
+           && (interaction_function[iftype].categories & sc_ifcAngle) != 0;
 }
 
 static inline bool IS_VSITE(InteractionFunction iftype)
 {
-    return (interaction_function[iftype].flags & IF_VSITE) != 0;
+    return (interaction_function[iftype].categories & sc_ifcVirtualSite) != 0;
 }
 
 static inline bool IS_TABULATED(InteractionFunction iftype)
 {
-    return (interaction_function[iftype].flags & IF_TABULATED) != 0;
+    return (interaction_function[iftype].categories & sc_ifcTabulated) != 0;
 }
 
 #endif

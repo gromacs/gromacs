@@ -446,7 +446,7 @@ void modifyEmbeddedTwoCenterInteractions(gmx_mtop_t*              mtop,
             {
                 // If not bonded interaction or InteractionFunction::ConnectBonds, or some form of Restraints,
                 // or not pair interaction, or no interactions of that type: then go the next type
-                if (!(interaction_function[ftype].flags & IF_BONDED_FORCE)
+                if (!(interaction_function[ftype].categories & sc_ifcBondedForce)
                     || ftype == InteractionFunction::ConnectBonds || ftype == InteractionFunction::RestraintBonds
                     || ftype == InteractionFunction::HarmonicPotential
                     || ftype == InteractionFunction::DistanceRestraints
@@ -467,7 +467,7 @@ void modifyEmbeddedTwoCenterInteractions(gmx_mtop_t*              mtop,
                 for (int j = 0; j < molType->ilist[ftype].size(); j += numInteractionElements)
                 {
 
-                    // If both atoms are embedded and it is IF_CHEMBOND then convert it to F_CONNBONDS
+                    // If both atoms are embedded and it is sc_ifcChemicalBond then convert it to F_CONNBONDS
                     if (isEmbeddedAtom(molType->ilist[ftype].iatoms[j + 1] + start, embeddedIndices)
                         && isEmbeddedAtom(molType->ilist[ftype].iatoms[j + 2] + start, embeddedIndices))
                     {
@@ -544,8 +544,8 @@ std::vector<LinkFrontierAtom> buildLinkFrontier(gmx_mtop_t*              mtop,
             {
                 // If not chemical bond interaction or not pair interaction
                 // or no interactions of that type: then skip current ftype
-                if (!(interaction_function[ftype].flags & IF_CHEMBOND) || NRAL(ftype) != 2
-                    || molType->ilist[ftype].empty())
+                if (!(interaction_function[ftype].categories & sc_ifcChemicalBond)
+                    || NRAL(ftype) != 2 || molType->ilist[ftype].empty())
                 {
                     continue;
                 }
@@ -610,7 +610,7 @@ void modifyEmbeddedThreeCenterInteractions(gmx_mtop_t*              mtop,
                 // If not bonded interaction or Restraints
                 // or not three-particle interaction or no interactions of that type
                 // and not Settle: then go the next type
-                if ((!(interaction_function[ftype].flags & IF_BONDED_FORCE)
+                if ((!(interaction_function[ftype].categories & sc_ifcBondedForce)
                      || ftype == InteractionFunction::RestrictedBendingPotential || NRAL(ftype) != 3
                      || molType->ilist[ftype].empty())
                     && (ftype != InteractionFunction::SETTLE))
@@ -723,7 +723,7 @@ void modifyEmbeddedFourCenterInteractions(gmx_mtop_t*              mtop,
             {
                 // If not bonded interaction or Restraints
                 // or not four-particle interaction or no interactions of that type: then go the next type
-                if (!(interaction_function[ftype].flags & IF_BONDED_FORCE)
+                if (!(interaction_function[ftype].categories & sc_ifcBondedForce)
                     || ftype == InteractionFunction::RestrictedTorsionPotential || NRAL(ftype) != 4
                     || molType->ilist[ftype].empty())
                 {
@@ -798,8 +798,8 @@ void checkConstrainedBonds(gmx_mtop_t*              mtop,
             {
                 // If not chemical bond interaction or not pair interaction
                 // or no interactions of that type: then skip current ftype
-                if (!(interaction_function[ftype].flags & IF_CHEMBOND) || NRAL(ftype) != 2
-                    || molType->ilist[ftype].empty())
+                if (!(interaction_function[ftype].categories & sc_ifcChemicalBond)
+                    || NRAL(ftype) != 2 || molType->ilist[ftype].empty())
                 {
                     continue;
                 }
@@ -816,7 +816,7 @@ void checkConstrainedBonds(gmx_mtop_t*              mtop,
 
                     // Check if it is constrained bond within embedded subsystem
                     if (isEmbeddedAtom(a2, embeddedIndices) && isEmbeddedAtom(a1, embeddedIndices)
-                        && (interaction_function[ftype].flags & IF_CONSTRAINT))
+                        && (interaction_function[ftype].categories & sc_ifcConstraint))
                     {
                         numConstrainedBonds++;
                     }

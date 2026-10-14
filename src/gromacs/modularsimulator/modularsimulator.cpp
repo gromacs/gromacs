@@ -433,7 +433,7 @@ MessageStringCollector getReasonsForIncompatibility(const t_inputrec*           
                     || inputrec->deform[ZZ][XX] != 0.0 || inputrec->deform[ZZ][YY] != 0.0
                     || inputrec->deform[ZZ][ZZ] != 0.0,
             "Deformation is not supported by the modular simulator.");
-    reasonsForIncompatibility.appendIf(gmx_mtop_interaction_count(globalTopology, IF_VSITE) > 0,
+    reasonsForIncompatibility.appendIf(gmx_mtop_interaction_count(globalTopology, sc_ifcVirtualSite) > 0,
                                        "Virtual sites are not supported by the modular simulator.");
     reasonsForIncompatibility.appendIf(inputrec->bDoAwh,
                                        "AWH is not supported by the modular simulator.");

@@ -217,7 +217,8 @@ void convert_harmonics(ArrayRef<MoleculeInformation> mols, PreprocessingAtomType
          */
         for (const auto bb : EnumerationWrapper<InteractionFunction>{})
         {
-            if ((interaction_function[bb].flags & IF_BTYPE) && (bb != InteractionFunction::MorsePotential))
+            if ((interaction_function[bb].categories & sc_ifcBType)
+                && (bb != InteractionFunction::MorsePotential))
             {
                 int nrharm = mol.interactions[bb].size();
 

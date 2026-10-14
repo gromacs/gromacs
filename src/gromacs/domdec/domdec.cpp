@@ -1560,7 +1560,7 @@ static int multi_body_bondeds_count(const gmx_mtop_t& mtop)
     int n = 0;
     for (const auto ilists : IListRange(mtop))
     {
-        for (auto& ilist : extractILists(ilists.list(), IF_BONDED_FORCE))
+        for (auto& ilist : extractILists(ilists.list(), sc_ifcBondedForce))
         {
             if (NRAL(ilist.functionType) > 2)
             {

@@ -2495,7 +2495,7 @@ int countNonlinearVsites(const gmx_mtop_t& mtop)
     {
         const gmx_moltype_t& molt = mtop.moltype[molb.type];
 
-        for (const auto& ilist : extractILists(molt.ilist, IF_VSITE))
+        for (const auto& ilist : extractILists(molt.ilist, sc_ifcVirtualSite))
         {
             if (ilist.functionType != InteractionFunction::VirtualSite2
                 && ilist.functionType != InteractionFunction::VirtualSite3
@@ -2640,7 +2640,7 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
     int nvsite = 0;
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if (interaction_function[ftype].flags & IF_VSITE)
+        if (interaction_function[ftype].categories & sc_ifcVirtualSite)
         {
             GMX_ASSERT(ftype >= c_ftypeVsiteStart && ftype < c_ftypeVsiteEnd,
                        "c_ftypeVsiteStart and/or c_ftypeVsiteEnd do not have correct values");

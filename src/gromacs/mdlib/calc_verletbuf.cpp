@@ -206,7 +206,7 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
     int numNonlinearVsites = 0;
 
     /* Check for virtual sites, determine mass from constructing atoms */
-    for (const auto& ilist : extractILists(moltype.ilist, IF_VSITE))
+    for (const auto& ilist : extractILists(moltype.ilist, sc_ifcVirtualSite))
     {
         for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
         {
@@ -1660,7 +1660,7 @@ static std::vector<AtomConstraintProps> getAtomConstraintProps(const gmx_moltype
     const t_atoms&                   atoms = moltype.atoms;
     std::vector<AtomConstraintProps> props(atoms.nr);
 
-    for (const auto& ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
+    for (const auto& ilist : extractILists(moltype.ilist, sc_ifcConstraint))
     {
         // Settles are handled separately
         if (ilist.functionType == InteractionFunction::SETTLE)

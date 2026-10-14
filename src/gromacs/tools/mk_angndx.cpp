@@ -251,7 +251,8 @@ static InteractionFunction* select_ftype(const char* opt, int* nft, int* mult)
         *mult = 3;
         for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
         {
-            if ((interaction_function[ftype].flags & IF_ANGLE) || ftype == InteractionFunction::TabulatedAngles)
+            if ((interaction_function[ftype].categories & sc_ifcAngle)
+                || ftype == InteractionFunction::TabulatedAngles)
             {
                 (*nft)++;
                 srenew(ft, *nft);

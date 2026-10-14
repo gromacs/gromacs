@@ -96,7 +96,7 @@ static const EnumerationArray<IncompatibilityReasons, std::string> reasonStrings
 /*! \brief Returns whether \p moltype contains flexible constraints */
 static bool hasFlexibleConstraints(const gmx_moltype_t& moltype, gmx::ArrayRef<const t_iparams> iparams)
 {
-    for (auto& ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
+    for (auto& ilist : extractILists(moltype.ilist, sc_ifcConstraint))
     {
         if (ilist.functionType != InteractionFunction::SETTLE)
         {
@@ -122,7 +122,7 @@ static bool hasIncompatibleVsites(const gmx_moltype_t& moltype, gmx::ArrayRef<co
 {
     bool hasIncompatibleVsites = false;
 
-    for (auto& ilist : extractILists(moltype.ilist, IF_VSITE))
+    for (auto& ilist : extractILists(moltype.ilist, sc_ifcVirtualSite))
     {
         if (ilist.functionType == InteractionFunction::VirtualSite2
             || ilist.functionType == InteractionFunction::VirtualSite3)
@@ -165,7 +165,7 @@ static InteractionList jointConstraintList(const gmx_moltype_t& moltype)
     InteractionList   ilistCombined;
     std::vector<int>& iatoms = ilistCombined.iatoms;
 
-    for (auto& ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
+    for (auto& ilist : extractILists(moltype.ilist, sc_ifcConstraint))
     {
         if (ilist.functionType == InteractionFunction::SETTLE)
         {
@@ -206,7 +206,7 @@ static AtomIndexExtremes vsiteConstructRange(int a, const gmx_moltype_t& moltype
 {
     AtomIndexExtremes extremes = { -1, -1 };
 
-    for (auto& ilist : extractILists(moltype.ilist, IF_VSITE))
+    for (auto& ilist : extractILists(moltype.ilist, sc_ifcVirtualSite))
     {
         for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
         {
@@ -254,7 +254,7 @@ static std::vector<bool> buildIsParticleVsite(const gmx_moltype_t& moltype)
 {
     std::vector<bool> isVsite(moltype.atoms.nr);
 
-    for (auto& ilist : extractILists(moltype.ilist, IF_VSITE))
+    for (auto& ilist : extractILists(moltype.ilist, sc_ifcVirtualSite))
     {
         for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
         {
@@ -796,10 +796,11 @@ ArrayRef<const RangePartitioning> UpdateGroups::updateGroupingPerMoleculeType() 
 bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 {
     IListRange ilistRange(mtop);
-    return std::any_of(ilistRange.begin(),
-                       ilistRange.end(),
-                       [](const auto& ilists)
-                       { return !extractILists(ilists.list(), IF_CONSTRAINT | IF_VSITE).empty(); });
+    return std::any_of(
+            ilistRange.begin(),
+            ilistRange.end(),
+            [](const auto& ilists)
+            { return !extractILists(ilists.list(), sc_ifcConstraint | sc_ifcVirtualSite).empty(); });
 }
 
 UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,

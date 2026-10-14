@@ -551,11 +551,11 @@ static void enter_function(const InteractionsOfType* p,
 
 bool shouldConvertInteractionType(InteractionFunction ftype)
 {
-    const unsigned long flags = interaction_function[ftype].flags;
+    const unsigned long flags = interaction_function[ftype].categories;
     return ((ftype != InteractionFunction::LennardJonesShortRange)
             && (ftype != InteractionFunction::BuckinghamShortRange)
-            && ((flags & IF_BONDED_FORCE) != 0u || (flags & IF_VSITE) != 0u
-                || (flags & IF_CONSTRAINT) != 0u));
+            && ((flags & sc_ifcBondedForce) != 0u || (flags & sc_ifcVirtualSite) != 0u
+                || (flags & sc_ifcConstraint) != 0u));
 }
 
 void convertInteractionsOfType(int atnr,
@@ -633,13 +633,13 @@ void convertInteractionsOfType(int atnr,
 
             if (!interactions[i].interactionTypes.empty())
             {
-                const unsigned long flags = interaction_function[i].flags;
+                const unsigned long flags = interaction_function[i].categories;
                 /* For intermolecular interactions we (currently)
                  * only support potentials.
                  * Constraints and virtual sites would be possible,
                  * but require a lot of extra (bug-prone) code.
                  */
-                if (!(flags & IF_BONDED_FORCE))
+                if (!(flags & sc_ifcBondedForce))
                 {
                     gmx_fatal(FARGS,
                               "The intermolecular_interaction section may only contain bonded "
@@ -652,7 +652,7 @@ void convertInteractionsOfType(int atnr,
                               "intermolecular_interaction section, you can put them in the "
                               "moleculetype section");
                 }
-                else if (flags & IF_CHEMBOND)
+                else if (flags & sc_ifcChemicalBond)
                 {
                     gmx_fatal(FARGS,
                               "The intermolecular_interaction can not contain chemically bonding "

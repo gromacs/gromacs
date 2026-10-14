@@ -210,7 +210,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         bEner_[i] = (gmx_mtop_ftype_count(mtop, i) > 0)
-                    && ((interaction_function[i].flags & IF_VSITE) == 0);
+                    && ((interaction_function[i].categories & sc_ifcVirtualSite) == 0);
     }
 
     if (!isRerun)

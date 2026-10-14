@@ -115,7 +115,7 @@ struct gmx_reverse_top_t::Impl
 int nral_rt(InteractionFunction ftype)
 {
     int nral = NRAL(ftype);
-    if (interaction_function[ftype].flags & IF_VSITE)
+    if (interaction_function[ftype].categories & sc_ifcVirtualSite)
     {
         /* With vsites the reverse topology contains an extra entry
          * for storing if constructing atoms are vsites.
@@ -128,10 +128,10 @@ int nral_rt(InteractionFunction ftype)
 
 bool dd_check_ftype(const InteractionFunction ftype, const ReverseTopOptions& rtOptions)
 {
-    return ((((interaction_function[ftype].flags & IF_BONDED_FORCE) != 0U)
-             && ((interaction_function[ftype].flags & IF_VSITE) == 0U)
+    return ((((interaction_function[ftype].categories & sc_ifcBondedForce) != 0U)
+             && ((interaction_function[ftype].categories & sc_ifcVirtualSite) == 0U)
              && ((rtOptions.ddBondedChecking_ == DDBondedChecking::All)
-                 || ((interaction_function[ftype].flags & IF_LIMZERO) == 0U)))
+                 || ((interaction_function[ftype].categories & sc_ifcZeroAtLargeDistances) == 0U)))
             || (rtOptions.includeConstraints_
                 && (ftype == InteractionFunction::Constraints
                     || ftype == InteractionFunction::ConstraintsNoCoupling))
@@ -211,15 +211,15 @@ static void low_make_reverse_ilist(const InteractionLists&  il_mt,
 
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if ((interaction_function[ftype].flags & (IF_BONDED_FORCE | IF_VSITE))
+        if ((interaction_function[ftype].categories & (sc_ifcBondedForce | sc_ifcVirtualSite))
             || (includeConstraints
                 && (ftype == InteractionFunction::Constraints
                     || ftype == InteractionFunction::ConstraintsNoCoupling))
             || (includeSettles && ftype == InteractionFunction::SETTLE))
         {
-            const bool  isVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0U);
-            const int   nral    = NRAL(ftype);
-            const auto& il      = il_mt[ftype];
+            const bool isVSite = ((interaction_function[ftype].categories & sc_ifcVirtualSite) != 0U);
+            const int   nral = NRAL(ftype);
+            const auto& il   = il_mt[ftype];
             for (int i = 0; i < il.size(); i += 1 + nral)
             {
                 const int* ia = il.iatoms.data() + i;
@@ -243,7 +243,7 @@ static void low_make_reverse_ilist(const InteractionLists&  il_mt,
                             r_il[r_index[a] + count[a] + 1 + j] = ia[j];
                         }
                     }
-                    if (interaction_function[ftype].flags & IF_VSITE)
+                    if (interaction_function[ftype].categories & sc_ifcVirtualSite)
                     {
                         if (assignReverseIlist)
                         {

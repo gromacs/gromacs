@@ -752,7 +752,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
         return false;
     }
 
-    const bool hasAnyConstraints      = gmx_mtop_interaction_count(mtop, IF_CONSTRAINT) > 0;
+    const bool hasAnyConstraints      = gmx_mtop_interaction_count(mtop, sc_ifcConstraint) > 0;
     const bool pmeSpreadGatherUsesCpu = (pmeRunMode == PmeRunMode::CPU);
 
     gmx::MessageStringCollector errorReasons;
@@ -823,7 +823,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf((usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0),
                           // The graph is needed, but not supported
                           "Ewald surface correction is not supported.");
-    errorReasons.appendIf((gmx_mtop_interaction_count(mtop, IF_VSITE) > 0),
+    errorReasons.appendIf((gmx_mtop_interaction_count(mtop, sc_ifcVirtualSite) > 0),
                           "Virtual sites are not supported.");
     errorReasons.appendIf(useEssentialDynamics, "Essential dynamics is not supported.");
     errorReasons.appendIf((inputrec.bPull && pull_have_constraint(*inputrec.pull)),

@@ -467,7 +467,7 @@ static void cmp_iparm_AB(FILE*               fp,
     {
         nrfpB = 2;
     }
-    else if (interaction_function[ft].flags & IF_TABULATED)
+    else if (interaction_function[ft].categories & sc_ifcTabulated)
     {
         /* For tabulated interactions only the second parameter is perturbable */
         p0    = 1;

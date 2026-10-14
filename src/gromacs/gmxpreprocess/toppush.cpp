@@ -2677,7 +2677,7 @@ void push_bond(Directive                                                  d,
         {
             if (!bFoundA)
             {
-                if (interaction_function[ftype].flags & IF_VSITE)
+                if (interaction_function[ftype].categories & sc_ifcVirtualSite)
                 {
                     for (int j = 0; j < MAXFORCEPARAM; j++)
                     {

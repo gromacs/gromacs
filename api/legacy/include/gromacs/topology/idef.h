@@ -341,17 +341,18 @@ struct InteractionListHandle
     const std::vector<int>&   iatoms;       //!< Reference to interaction list.
 };
 
-/*! \brief Returns a list of all non-empty InteractionList entries with any of the interaction flags in \p flags set
+/*! \brief Returns a list of all non-empty InteractionList entries with
+ * any of the interaction categories in \p categories set
  *
- * \param[in] ilists Set of interaction lists.
- * \param[in] flags Bit mask with one or more IF_... bits set.
+ * \param[in] ilists      Set of interaction lists.
+ * \param[in] categories  Bit mask describing one or more interaction-function categories set.
  */
-static inline std::vector<InteractionListHandle> extractILists(const InteractionLists& ilists, int flags)
+static inline std::vector<InteractionListHandle> extractILists(const InteractionLists& ilists, int categories)
 {
     std::vector<InteractionListHandle> handles;
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if ((interaction_function[ftype].flags & flags) && !ilists[ftype].empty())
+        if ((interaction_function[ftype].categories & categories) && !ilists[ftype].empty())
         {
             handles.push_back({ ftype, ilists[ftype].iatoms });
         }
