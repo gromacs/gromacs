@@ -404,7 +404,7 @@ static inline nbnxm_cu_kfunc_ptr_t select_nbnxm_kernel(enum ElecType elecType,
     const int vdwTypeIdx  = static_cast<int>(vdwType);
 
     GMX_ASSERT(elecTypeIdx < c_numElecTypes && elecTypeIdx != static_cast<int>(ElecType::Fmm)
-                       && (!GMX_USE_EXT_FMM && elecTypeIdx != static_cast<int>(ElecType::None)),
+                       && (GMX_USE_EXT_FMM || elecTypeIdx != static_cast<int>(ElecType::None)),
                "The electrostatics type requested is not implemented in the CUDA kernels.");
     GMX_ASSERT(vdwTypeIdx < c_numVdwTypes,
                "The VdW type requested is not implemented in the CUDA kernels.");
