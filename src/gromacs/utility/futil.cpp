@@ -539,8 +539,10 @@ static int makeTemporaryFilename(char* buf)
 // TODO use std::string
 void gmx_tmpnam(char* buf)
 {
+#if GMX_NATIVE_WINDOWS
+    makeTemporaryFilename(buf);
+#else
     int fd = makeTemporaryFilename(buf);
-#if !GMX_NATIVE_WINDOWS
     close(fd);
 #endif
 }
@@ -549,19 +551,18 @@ void gmx_tmpnam(char* buf)
 FILE* gmx_fopen_temporary(char* buf)
 {
     FILE* fpout = nullptr;
-    int   fd    = makeTemporaryFilename(buf);
 
 #if GMX_NATIVE_WINDOWS
-    if ((fpout = std::fopen(buf, "w")) == NULL)
-    {
-        gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
-    }
+    makeTemporaryFilename(buf);
+    fpout = std::fopen(buf, "w");
 #else
-    if ((fpout = fdopen(fd, "w")) == nullptr)
+    int fd = makeTemporaryFilename(buf);
+    fpout  = fdopen(fd, "w");
+#endif
+    if (!fpout)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
-#endif
 
     return fpout;
 }
