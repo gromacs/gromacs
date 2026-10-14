@@ -259,7 +259,7 @@ public:
                       InteractionModifiers   vdwMod)
     {
         icHelper_.initInteractionConst(coulType, vdwType, vdwMod);
-        const bool addFillerType = false;
+        const bool addFillerType = true;
         nbfp_        = makeNonBondedParameterLists(idef.atnr, addFillerType, idef.iparams, false);
         ljPmeC6Grid_ = makeLJPmeC6GridCorrectionParameters(
                 idef.atnr, addFillerType, idef.iparams, LongRangeVdW::Geom);
@@ -291,7 +291,7 @@ public:
         fr->nbfp         = nbfp_;
         fr->shift_vec    = { { 0.0, 0.0, 0.0 } };
         fr->rlist        = rlist_;
-        fr->ntype        = c_numAtomTypes;
+        fr->ntype        = c_numAtomTypes + 1;
 
         // simd
         fr->use_simd_kernels = GMX_USE_SIMD_KERNELS;
@@ -347,8 +347,8 @@ struct AtomData
     // atom data
     std::vector<real> chargeA = { 1.0, -1.0, -1.0, 1.0 };
     std::vector<real> chargeB = { 1.0, 0.0, 0.0, 1.0 };
-    std::vector<int>  typeA   = { 0, 0, 0, 0 };
-    std::vector<int>  typeB   = { 0, 1, 2, 1 };
+    std::vector<int>  typeA   = { 2, 2, 2, 2 };
+    std::vector<int>  typeB   = { 2, 1, 0, 1 };
     // perturbation pattern: {no-pert, vdw- and coul-pert, coul-pert, vdw-pert}
 
     // neighbourhood information
