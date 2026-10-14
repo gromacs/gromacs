@@ -26,37 +26,33 @@ public:
   /// Create a slot for a volumetric map not requested yet
   int add_volmap_slot(int volmap_id);
 
-  /// Request and prepare this volumetric map for use by Colvars
+  /// Request this map for computation by the MD engine
   /// \param volmap_id Numeric ID used by the MD engine
   /// \returns Index of the map in the colvarproxy arrays
-  virtual int init_volmap_by_id(int volmap_id);
+  virtual int request_engine_volmap_by_id(int volmap_id);
 
-  /// Request and prepare this volumetric map for use by Colvars
+  /// Request this map for computation by the MD engine
   /// \param volmap_name Name used by the MD engine
   /// \returns Index of the map in the colvarproxy arrays
-  virtual int init_volmap_by_name(char const *volmap_name);
+  virtual int request_engine_volmap_by_name(std::string const &volmap_name);
 
-  /// Check that the given volmap ID is valid (return COLVARS_OK if it is)
+  /// Select a map from the MD engine for internal computation
   /// \param volmap_id Numeric ID used by the MD engine
-  /// \returns Error code
-  virtual int check_volmap_by_id(int volmap_id);
+  /// \returns Index of the map in the colvarproxy arrays
+  virtual int init_internal_volmap_by_id(int volmap_id);
 
-  /// Check that the given volmap name is valid (return COLVARS_OK if it is)
+  /// Select a map from the MD engine for internal computation
   /// \param volmap_name Name used by the MD engine
-  /// \returns Error code
-  virtual int check_volmap_by_name(char const *volmap_name);
+  /// \returns Index of the map in the colvarproxy arrays
+  virtual int init_internal_volmap_by_name(std::string const &filename);
 
-  /// Request and prepare this volumetric map for use by Colvars
-  int init_volmap_by_name(std::string const &volmap_name);
+  /// Load a map internally in Colvars, and select it for internal computation
+  /// \param filename Name of file containing the map
+  /// \returns Index of the map in the colvarproxy arrays
+  virtual int load_internal_volmap_from_file(std::string const &filename);
 
-  /// Check that the given volmap name is valid (return COLVARS_OK if it is)
-  int check_volmap_by_name(std::string const &volmap_name);
-
-  /// \brief Used by the CVC destructors
-  virtual void clear_volmap(int index);
-
-  /// Get the numeric ID of the given volumetric map (for the MD program)
-  virtual int get_volmap_id_from_name(char const *volmap_name);
+  /// Used by the CVC destructors
+  virtual int clear_volmap(int index);
 
   /// Get the numeric ID of the given volumetric map (for the MD program)
   inline int get_volmap_id(int index) const
@@ -65,13 +61,13 @@ public:
   }
 
   /// Read the current value of the volumetric map
-  inline cvm::real get_volmap_value(int index) const
+  inline cvm::real get_engine_volmap_value(int index) const
   {
     return volmaps_values[index];
   }
 
-  /// Request that this force is applied to the given volumetric map
-  inline void apply_volmap_force(int index, cvm::real const &new_force)
+  /// Request that this force is applied to the given volumetric map by the engine
+  inline void apply_engine_volmap_force(int index, cvm::real const &new_force)
   {
     volmaps_new_colvar_forces[index] += new_force;
   }
@@ -79,12 +75,12 @@ public:
   /// Re-weigh an atomic field (e.g. a colvar) by the value of a volumetric map
 
   /// \param flags Combination of flags
-  /// \param volmap_id Numeric index of the map (no need to request it)
+  /// \param volmap_index Index of the map in the proxy arrays
   /// \param ag Pointer to the SOA atom group
   /// \param value Pointer to location of total to increment
   /// \param atom_field Array of atomic field values (if NULL, ones are used)
   virtual int compute_volmap(int flags,
-                             int volmap_id,
+                             int volmap_index,
                              cvm::atom_group* ag,
                              cvm::real *value,
                              cvm::real *atom_field);
@@ -104,19 +100,20 @@ public:
 
 protected:
 
-  /// \brief Array of numeric IDs of volumetric maps
+  /// Array of numeric IDs of volumetric maps (-1 if loaded internally)
   std::vector<int>          volmaps_ids;
 
-  /// \brief Keep track of how many times each vol map is used by a
-  /// separate colvar object
+  /// Keep track of how many times each vol map is used by a separate colvar object
   std::vector<size_t>       volmaps_refcount;
 
-  /// \brief Current values of the vol maps
+  /// Current total values of the volmaps (when computed by the MD engine)
   std::vector<cvm::real>    volmaps_values;
 
-  /// \brief Forces applied from colvars, to be communicated to the MD
-  /// integrator
+  /// Forces applied from colvars, to be communicated to the MD engine
   std::vector<cvm::real>    volmaps_new_colvar_forces;
+
+  /// Names of files containing maps (empty when maps are loaded by MD engine)
+  std::vector<std::string>  volmaps_filenames;
 
   /// Root-mean-square of the the applied forces
   cvm::real volmaps_rms_applied_force_;

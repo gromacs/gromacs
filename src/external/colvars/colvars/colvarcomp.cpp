@@ -10,14 +10,25 @@
 #include <algorithm>
 #include <array>
 
+#include "colvar_gpu_support.h"
+#include "colvardeps.h"
 #include "colvarmodule.h"
 #include "colvarvalue.h"
 #include "colvar.h"
 #include "colvarcomp.h"
 
 
-
+// This constructor depends on a static cvm pointer and is deprecated
 colvar::cvc::cvc()
+ : colvardeps(colvardeps::object_t::colvarcomp, cvm::main())
+{
+  description = "uninitialized colvar component";
+  cvc::init_dependencies();
+}
+
+
+colvar::cvc::cvc(colvarmodule *cvmodule_in)
+  : colvardeps(colvardeps::object_t::colvarcomp, cvmodule_in)
 {
   description = "uninitialized colvar component";
   cvc::init_dependencies();
@@ -49,9 +60,9 @@ int colvar::cvc::set_function_type(std::string const &type)
 {
   function_types.push_back(type);
   update_description();
-  cvm::main()->cite_feature(function_types[0]+" colvar component");
+  cvmodule->cite_feature(function_types[0]+" colvar component");
   for (size_t i = function_types.size()-1; i > 0; i--) {
-    cvm::main()->cite_feature(function_types[i]+" colvar component"+
+    cvmodule->cite_feature(function_types[i]+" colvar component"+
                               " (derived from "+function_types[i-1]+")");
   }
   return COLVARS_OK;
@@ -61,19 +72,19 @@ int colvar::cvc::set_function_type(std::string const &type)
 int colvar::cvc::init(std::string const &conf)
 {
   if (cvm::debug())
-    cvm::log("Initializing cvc base object.\n");
+    cvmodule->log("Initializing cvc base object.\n");
 
   int error_code = COLVARS_OK;
 
   std::string const old_name(name);
 
   if (name.size() > 0) {
-    cvm::log("Updating configuration for component \""+name+"\"\n");
+    cvmodule->log("Updating configuration for component \""+name+"\"\n");
   }
 
   if (get_keyval(conf, "name", name, name)) {
     if ((name != old_name) && (old_name.size() > 0)) {
-      error_code |= cvm::error("Error: cannot rename component \"" + old_name +
+      error_code |= cvmodule->error("Error: cannot rename component \"" + old_name +
                                    "\" after initialization (new name = \"" + name + "\")",
                                COLVARS_INPUT_ERROR);
       name = old_name;
@@ -84,7 +95,7 @@ int colvar::cvc::init(std::string const &conf)
   get_keyval(conf, "componentCoeff", sup_coeff, sup_coeff);
   get_keyval(conf, "componentExp", sup_np, sup_np);
   if (sup_coeff != 1.0 || sup_np != 1) {
-    cvm::main()->cite_feature("Linear and polynomial combination of colvar components");
+    cvmodule->cite_feature("Linear and polynomial combination of colvar components");
   }
   // TODO these could be condensed into get_keyval()
   register_param("componentCoeff", reinterpret_cast<void *>(&sup_coeff));
@@ -99,7 +110,7 @@ int colvar::cvc::init(std::string const &conf)
   if (period != 0.0) {
     if (!is_available(f_cvc_periodic)) {
       error_code |=
-          cvm::error("Error: invalid use of period and/or "
+          cvmodule->error("Error: invalid use of period and/or "
                      "wrapAround in a \"" +
                          function_type() + "\" component.\n" + "Period: " + cvm::to_str(period) +
                          " wrapAround: " + cvm::to_str(wrap_center),
@@ -110,7 +121,7 @@ int colvar::cvc::init(std::string const &conf)
   }
 
   if ((wrap_center != 0.0) && !is_enabled(f_cvc_periodic)) {
-    error_code |= cvm::error("Error: wrapAround was defined for a non-periodic component.\n",
+    error_code |= cvmodule->error("Error: wrapAround was defined for a non-periodic component.\n",
                              COLVARS_INPUT_ERROR);
   }
 
@@ -129,24 +140,47 @@ int colvar::cvc::init(std::string const &conf)
   get_keyval(conf, "scalable", b_try_scalable, b_try_scalable);
 
   if (cvm::debug())
-    cvm::log("Done initializing cvc base object.\n");
+    cvmodule->log("Done initializing cvc base object.\n");
 
+  error_code |= init_gpu();
+  return error_code;
+}
+
+int colvar::cvc::init_gpu() {
+  int error_code = COLVARS_OK;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  if (is_available(f_cvc_support_gpu)) {
+    // Reset and initialize events
+    for (auto& e: events) {
+      if (e) {
+        error_code |= checkGPUError(cudaEventSynchronize(e));
+        error_code |= checkGPUError(cudaEventDestroy(e));
+      }
+      error_code |= checkGPUError(cudaEventCreateWithFlags(&e, cudaEventDisableTiming));
+    }
+  }
+  if (cvmodule->debug()) {
+#if defined (COLVARS_NVTX_PROFILING)
+    nvtxNameCudaStreamA(get_stream(), name.c_str());
+#endif
+  }
+#endif
   return error_code;
 }
 
 
 int colvar::cvc::init_total_force_params(std::string const &conf)
 {
-  if (cvm::get_error()) return COLVARS_ERROR;
+  if (cvmodule->get_error()) return COLVARS_ERROR;
 
   if (get_keyval_feature(this, conf, "oneSiteSystemForce",
                          f_cvc_one_site_total_force, is_enabled(f_cvc_one_site_total_force))) {
-    cvm::log("Warning: keyword \"oneSiteSystemForce\" is deprecated: "
+    cvmodule->log("Warning: keyword \"oneSiteSystemForce\" is deprecated: "
              "please use \"oneSiteTotalForce\" instead.\n");
   }
   if (get_keyval_feature(this, conf, "oneSiteTotalForce",
                          f_cvc_one_site_total_force, is_enabled(f_cvc_one_site_total_force))) {
-    cvm::log("Computing total force on group 1 only\n");
+    cvmodule->log("Computing total force on group 1 only\n");
   }
 
   if (! is_enabled(f_cvc_one_site_total_force)) {
@@ -190,7 +224,7 @@ cvm::atom_group *colvar::cvc::parse_group(std::string const &conf,
     }
 
     if (group_conf.empty()) {
-      error_code |= cvm::error("Error: atom group \"" + group->key + "\" has no definition.\n",
+      error_code |= cvmodule->error("Error: atom group \"" + group->key + "\" has no definition.\n",
                                COLVARS_INPUT_ERROR);
       delete group;
       group = nullptr;
@@ -199,11 +233,11 @@ cvm::atom_group *colvar::cvc::parse_group(std::string const &conf,
       return group;
     }
 
-    cvm::increase_depth();
+    cvmodule->increase_depth();
     error_code |= group->parse(group_conf);
     if (error_code != COLVARS_OK) {
       error_code |=
-          cvm::error("Error: in definition of atom group \"" + std::string(group_key) + "\".",
+          cvmodule->error("Error: in definition of atom group \"" + std::string(group_key) + "\".",
                      COLVARS_INPUT_ERROR);
       delete group;
       group = nullptr;
@@ -211,13 +245,13 @@ cvm::atom_group *colvar::cvc::parse_group(std::string const &conf,
       register_atom_group(group);
       error_code |= group->check_keywords(group_conf, group_key);
     }
-    cvm::decrease_depth();
+    cvmodule->decrease_depth();
 
   } else {
 
     if (!optional) {
       error_code |=
-          cvm::error("Error: atom group \"" + std::string(group_key) + "\" is required.\n",
+          cvmodule->error("Error: atom group \"" + std::string(group_key) + "\" is required.\n",
                      COLVARS_INPUT_ERROR);
     }
   }
@@ -294,10 +328,13 @@ int colvar::cvc::init_dependencies() {
     // require_feature_children(f_cvc_scalable, f_ag_scalable);
     // require_feature_children(f_cvc_scalable_com, f_ag_scalable_com);
 
+    init_feature(f_cvc_support_gpu, "support_gpu", f_type_static);
+    init_feature(f_cvc_require_cpu_buffers, "require_cpu_buffers", f_type_static);
+
     // check that everything is initialized
     for (i = 0; i < colvardeps::f_cvc_ntot; i++) {
       if (is_not_set(i)) {
-        cvm::error("Uninitialized feature " + cvm::to_str(i) + " in " + description);
+        cvmodule->error("Uninitialized feature " + cvm::to_str(i) + " in " + description);
       }
     }
   }
@@ -328,11 +365,17 @@ int colvar::cvc::init_dependencies() {
   // Use minimum-image distances by default
   enable(f_cvc_pbc_minimum_image);
 
+  // Use CPU buffers by default
+  enable(f_cvc_require_cpu_buffers);
+
+  // Disable GPU support by default
+  disable(f_cvc_support_gpu);
+
   // Features that are implemented by default if their requirements are
   feature_states[f_cvc_one_site_total_force].available = true;
 
   // Features That are implemented only for certain simulation engine configurations
-  feature_states[f_cvc_scalable_com].available = (cvm::proxy->scalable_group_coms() == COLVARS_OK);
+  feature_states[f_cvc_scalable_com].available = (cvmodule->proxy->scalable_group_coms() == COLVARS_OK);
   feature_states[f_cvc_scalable].available = feature_states[f_cvc_scalable_com].available;
 
   return COLVARS_OK;
@@ -353,6 +396,15 @@ colvar::cvc::~cvc()
   for (size_t i = 0; i < atom_groups.size(); i++) {
     if (atom_groups[i] != NULL) delete atom_groups[i];
   }
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  for (auto& e: events) {
+    if (e) {
+      checkGPUError(cudaEventSynchronize(e));
+      checkGPUError(cudaEventDestroy(e));
+      e = nullptr;
+    }
+  }
+#endif
 }
 
 
@@ -440,6 +492,14 @@ int colvar::cvc::set_param(std::string const &param_name,
 
 void colvar::cvc::read_data()
 {
+  if (is_enabled(f_cvc_pbc_minimum_image)) {
+    // Copy boundary conditions from the proxy
+    boundary_conditions = cvmodule->proxy->get_system_boundaries();
+  } else {
+    // Set as non-periodic boundary conditions (default) for this CVC
+    boundary_conditions.reset();
+  }
+
   if (is_enabled(f_cvc_explicit_atom_groups)) {
     for (auto agi = atom_groups.begin(); agi != atom_groups.end(); agi++) {
       auto &atoms = *(*agi);
@@ -449,6 +509,41 @@ void colvar::cvc::read_data()
       // each atom group will take care of its own fitting_group, if defined
     }
   }
+}
+
+int colvar::cvc::read_data_gpu() {
+  int error_code = COLVARS_OK;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  colvarproxy* proxy = cvmodule->proxy;
+  if ((proxy->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) && is_enabled(f_cvc_explicit_atom_groups)) {
+    if (is_enabled(colvardeps::f_cvc_require_cpu_buffers)) {
+      // We need to reset the atom group data if it requires CPU buffers
+      for (auto agi = atom_groups.begin(); agi != atom_groups.end(); agi++) {
+        (*agi)->reset_atoms_data();
+      }
+    }
+    for (auto agi = atom_groups.begin(); agi != atom_groups.end(); agi++) {
+      error_code |= (*agi)->get_gpu_atom_group()->read_data_gpu(*agi);
+    }
+    // NOTE: In after_read_data_sync, there are calls to synchronize the
+    // CUDA events for checking if the eigendecompositions are failed, so
+    // I separate read_data_gpu and after_read_data_sync into two loops for possibly
+    // better parallelization.
+    for (auto agi = atom_groups.begin(); agi != atom_groups.end(); agi++) {
+      // Synchronize the results to CPU if necessary
+      error_code |= (*agi)->get_gpu_atom_group()->after_read_data_sync(
+        *agi, is_enabled(colvardeps::f_cvc_require_cpu_buffers));
+    }
+  }
+#endif
+  if (is_enabled(f_cvc_pbc_minimum_image)) {
+    // Copy boundary conditions from the proxy
+    boundary_conditions = cvmodule->proxy->get_system_boundaries();
+  } else {
+    // Set as non-periodic boundary conditions (default) for this CVC
+    boundary_conditions.reset();
+  }
+  return error_code;
 }
 
 
@@ -517,15 +612,15 @@ void colvar::cvc::collect_gradients(std::vector<int> const &atom_ids, std::vecto
 
 void colvar::cvc::calc_force_invgrads()
 {
-  cvm::error("Error: calculation of inverse gradients is not implemented "
-             "for colvar components of type \""+function_type()+"\".\n",
-             COLVARS_NOT_IMPLEMENTED);
+  cvmodule->error("Error: calculation of inverse gradients is not implemented "
+            "for colvar components of type \""+function_type()+"\".\n",
+            COLVARS_NOT_IMPLEMENTED);
 }
 
 
 void colvar::cvc::calc_Jacobian_derivative()
 {
-  cvm::error("Error: calculation of Jacobian derivatives is not implemented "
+  cvmodule->error("Error: calculation of Jacobian derivatives is not implemented "
              "for colvar components of type \""+function_type()+"\".\n",
              COLVARS_NOT_IMPLEMENTED);
 }
@@ -559,8 +654,11 @@ void colvar::cvc::debug_gradients()
   // NOTE: this assumes that groups for this cvc are non-overlapping,
   // since atom coordinates are modified only within the current group
 
-  cvm::log("Debugging gradients for " + description);
-
+  cvmodule->log("Debugging gradients for " + description);
+  colvarproxy *p = cvmodule->proxy;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  const bool to_cpu = is_enabled(f_cvc_require_cpu_buffers);
+#endif
   /**
    * @note Some CVCs change the gradients when running calc_value(), so it is
    * better to copy the original gradients out at first.
@@ -573,6 +671,13 @@ void colvar::cvc::debug_gradients()
     const auto rot_inv = group->rot.inverse().matrix();
     auto *group_for_fit = group->fitting_group ? group->fitting_group : group;
     const bool add_fit_gradients_to_main = group->is_enabled(f_ag_fit_gradients) && group_for_fit == group;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+    if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+      // Wait for the fit gradients events
+      checkGPUError(cudaEventSynchronize(
+        group->get_gpu_atom_group()->get_event(colvars_gpu::colvaratoms_gpu::event_type::calc_fit_gradients)));
+    }
+#endif
     std::array<std::vector<cvm::rvector>, 2> gradients;
     for (size_t ia = 0; ia < group->size(); ia++) {
       cvm::rvector g(group->grad_x(ia),
@@ -606,7 +711,7 @@ void colvar::cvc::debug_gradients()
 
     const auto rot_0 = group->rot.matrix();
 
-    // cvm::log("gradients     = "+cvm::to_str (gradients)+"\n");
+    // cvmodule->log("gradients     = "+cvm::to_str (gradients)+"\n");
 
     auto *group_for_fit = group->fitting_group ? group->fitting_group : group;
     cvm::atom_pos fit_gradient_sum, gradient_sum;
@@ -617,13 +722,13 @@ void colvar::cvc::debug_gradients()
         size_t j;
 
         // fit_gradients are in the simulation frame: we should print them in the rotated frame
-        cvm::log("Fit gradients for group " + group->key + ":\n");
+        cvmodule->log("Fit gradients for group " + group->key + ":\n");
         for (j = 0; j < group_for_fit->size(); j++) {
           const cvm::rvector fit_grad(
             group_for_fit->fit_gradients_x(j),
             group_for_fit->fit_gradients_y(j),
             group_for_fit->fit_gradients_z(j));
-          cvm::log((group->fitting_group ? std::string("fittingGroup") : group->key) +
+          cvmodule->log((group->fitting_group ? std::string("fittingGroup") : group->key) +
                   "[" + cvm::to_str(j) + "] = " +
                   (group->is_enabled(f_ag_rotate) ?
                     cvm::to_str(rot_0 * (fit_grad)) :
@@ -632,7 +737,7 @@ void colvar::cvc::debug_gradients()
       }
     }
 
-    cvm::log("Gradients for group " + group->key + ":\n");
+    cvmodule->log("Gradients for group " + group->key + ":\n");
     std::vector<cvm::rvector> gradients = ag_gradients.at(group)[0];
     // debug the gradients
     for (size_t ia = 0; ia < group->size(); ia++) {
@@ -642,38 +747,59 @@ void colvar::cvc::debug_gradients()
 
       auto const this_atom = (*group)[ia];
       for (size_t id = 0; id < 3; id++) {
-        // (re)read original positions
-        group->read_positions();
-        // change one coordinate
-        switch (id) {
-          case 0: group->pos_x(ia) += cvm::debug_gradients_step_size; break;
-          case 1: group->pos_y(ia) += cvm::debug_gradients_step_size; break;
-          case 2: group->pos_z(ia) += cvm::debug_gradients_step_size; break;
+        if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+          group->get_gpu_atom_group()->read_positions_gpu_debug(
+            group, false, ia, id, to_cpu, 1, group->get_stream());
+          group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+            group, to_cpu, group->get_stream());
+          group->get_gpu_atom_group()->after_read_data_sync(group, to_cpu);
+#endif
+        } else {
+          // (re)read original positions
+          group->read_positions();
+          // change one coordinate
+          switch (id) {
+            case 0: group->pos_x(ia) += cvmodule->debug_gradients_step_size; break;
+            case 1: group->pos_y(ia) += cvmodule->debug_gradients_step_size; break;
+            case 2: group->pos_z(ia) += cvmodule->debug_gradients_step_size; break;
+          }
+          group->calc_required_properties();
         }
-        group->calc_required_properties();
         calc_value();
         cvm::real x_1 = x.real_value;
         if ((x.type() == colvarvalue::type_vector) && (x.size() == 1)) x_1 = x[0];
 
-        // (re)read original positions
-        group->read_positions();
-        // change one coordinate
-        switch (id) {
-          case 0: group->pos_x(ia) -= cvm::debug_gradients_step_size; break;
-          case 1: group->pos_y(ia) -= cvm::debug_gradients_step_size; break;
-          case 2: group->pos_z(ia) -= cvm::debug_gradients_step_size; break;
+        if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+          group->get_gpu_atom_group()->read_positions_gpu_debug(group, false, ia, id, to_cpu, -1, group->get_stream());
+          group->get_gpu_atom_group()->calc_required_properties_gpu_debug(group, to_cpu, group->get_stream());
+          group->get_gpu_atom_group()->after_read_data_sync(group, to_cpu);
+#endif
+        } else {
+          // (re)read original positions
+          group->read_positions();
+          // change one coordinate
+          switch (id) {
+            case 0: group->pos_x(ia) -= cvmodule->debug_gradients_step_size; break;
+            case 1: group->pos_y(ia) -= cvmodule->debug_gradients_step_size; break;
+            case 2: group->pos_z(ia) -= cvmodule->debug_gradients_step_size; break;
+          }
+          group->calc_required_properties();
         }
-        group->calc_required_properties();
         calc_value();
         cvm::real x_2 = x.real_value;
         if ((x.type() == colvarvalue::type_vector) && (x.size() == 1)) x_2 = x[0];
 
         cvm::real const num_diff = 0.5 * (x_1 - x_2);
-        cvm::real const dx_pred = cvm::debug_gradients_step_size * gradients[ia][id];
-        cvm::real rel_error = cvm::fabs (num_diff - dx_pred) / (cvm::fabs (num_diff) + cvm::fabs(dx_pred));
-        cvm::main()->record_gradient_error(rel_error);
+        cvm::real const dx_pred = cvmodule->debug_gradients_step_size * gradients[ia][id];
+        cvm::real norm = (cvm::fabs (num_diff) + cvm::fabs(dx_pred));
+        cvm::real const eps = 1.e-14;
+        if (norm < eps) norm = eps;
+        cvm::real rel_error = cvm::fabs (num_diff - dx_pred) / norm;
+        cvmodule->record_gradient_error(rel_error);
 
-        cvm::log("Atom "+cvm::to_str(ia) + ", ID " + cvm::to_str(this_atom.id) + \
+        cvmodule->log("Atom "+cvm::to_str(ia) + ", ID " + cvm::to_str(this_atom.id) + \
                   ", comp. " + cvm::to_str(id) + ":" + \
                   "  dx(actual) = " + cvm::to_str (num_diff, 19, 12) + \
                   "  dx(interp) = " + cvm::to_str (dx_pred, 19, 12) + \
@@ -683,8 +809,18 @@ void colvar::cvc::debug_gradients()
 
     if ((group->is_enabled(f_ag_fit_gradients)) && (group->fitting_group != NULL)) {
       auto *ref_group = group->fitting_group;
-      group->read_positions();
-      group->calc_required_properties();
+      if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+        group->get_gpu_atom_group()->read_positions_gpu_debug(
+          group, false, 0, -1, to_cpu, 1.0, group->get_stream());
+        group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+          group, to_cpu, group->get_stream());
+        group->get_gpu_atom_group()->after_read_data_sync(group, to_cpu);
+#endif
+      } else {
+        group->read_positions();
+        group->calc_required_properties();
+      }
 
       std::vector<cvm::rvector> fit_gradients = ag_gradients.at(group)[1];
       for (size_t ia = 0; ia < ref_group->size(); ia++) {
@@ -696,37 +832,57 @@ void colvar::cvc::debug_gradients()
 
         for (size_t id = 0; id < 3; id++) {
           // (re)read original positions
-          group->read_positions();
-          ref_group->read_positions();
-          // change one coordinate
-          switch (id) {
-            case 0: ref_group->pos_x(ia) += cvm::debug_gradients_step_size; break;
-            case 1: ref_group->pos_y(ia) += cvm::debug_gradients_step_size; break;
-            case 2: ref_group->pos_z(ia) += cvm::debug_gradients_step_size; break;
+          if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+            group->get_gpu_atom_group()->read_positions_gpu_debug(
+              group, true, ia, id, to_cpu, 1.0, group->get_stream());
+            group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+              group, to_cpu, group->get_stream());
+            group->get_gpu_atom_group()->after_read_data_sync(group, to_cpu);
+#endif
+          } else {
+            group->read_positions();
+            ref_group->read_positions();
+            // change one coordinate
+            switch (id) {
+              case 0: ref_group->pos_x(ia) += cvmodule->debug_gradients_step_size; break;
+              case 1: ref_group->pos_y(ia) += cvmodule->debug_gradients_step_size; break;
+              case 2: ref_group->pos_z(ia) += cvmodule->debug_gradients_step_size; break;
+            }
+            group->calc_required_properties();
           }
-          group->calc_required_properties();
           calc_value();
           cvm::real const x_1 = x.real_value;
 
           // (re)read original positions
-          group->read_positions();
-          ref_group->read_positions();
-          // change one coordinate
-          switch (id) {
-            case 0: ref_group->pos_x(ia) -= cvm::debug_gradients_step_size; break;
-            case 1: ref_group->pos_y(ia) -= cvm::debug_gradients_step_size; break;
-            case 2: ref_group->pos_z(ia) -= cvm::debug_gradients_step_size; break;
+          if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+            group->get_gpu_atom_group()->read_positions_gpu_debug(
+              group, true, ia, id, to_cpu, -1.0, group->get_stream());
+            group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+              group, to_cpu, group->get_stream());
+            group->get_gpu_atom_group()->after_read_data_sync(group, to_cpu);
+#endif
+          } else {
+            group->read_positions();
+            ref_group->read_positions();
+            // change one coordinate
+            switch (id) {
+              case 0: ref_group->pos_x(ia) -= cvmodule->debug_gradients_step_size; break;
+              case 1: ref_group->pos_y(ia) -= cvmodule->debug_gradients_step_size; break;
+              case 2: ref_group->pos_z(ia) -= cvmodule->debug_gradients_step_size; break;
+            }
+            group->calc_required_properties();
           }
-          group->calc_required_properties();
           calc_value();
           cvm::real const x_2 = x.real_value;
 
           cvm::real const num_diff = 0.5 * (x_1 - x_2);
-          cvm::real const dx_pred = cvm::debug_gradients_step_size * atom_grad[id];
+          cvm::real const dx_pred = cvmodule->debug_gradients_step_size * atom_grad[id];
           cvm::real rel_error = cvm::fabs (num_diff - dx_pred) / (cvm::fabs (num_diff) + cvm::fabs(dx_pred));
-          cvm::main()->record_gradient_error(rel_error);
+          cvmodule->record_gradient_error(rel_error);
 
-          cvm::log("fittingGroup atom " + cvm::to_str(ia) + ", ID " + cvm::to_str(this_atom.id) + \
+          cvmodule->log("fittingGroup atom " + cvm::to_str(ia) + ", ID " + cvm::to_str(this_atom.id) + \
                     ", comp. " + cvm::to_str(id) + ":" + \
                     "  dx(actual) = " + cvm::to_str (num_diff, 19, 12) + \
                     "  dx(interp) = " + cvm::to_str (dx_pred, 19, 12) + \
@@ -735,7 +891,7 @@ void colvar::cvc::debug_gradients()
       }
     }
 
-    cvm::log("Gradient sum: " +  cvm::to_str(gradient_sum) +
+    cvmodule->log("Gradient sum: " +  cvm::to_str(gradient_sum) +
           "  Fit gradient sum: " + cvm::to_str(fit_gradient_sum) +
           "  Total " + cvm::to_str(gradient_sum + fit_gradient_sum));
   }
@@ -752,12 +908,313 @@ void colvar::cvc::debug_gradients()
       group->grad_z(ia) = 0;
     }
     // (re)read original positions
-    group->read_positions();
-    group->calc_required_properties();
+    if (p->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu) {
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+      group->get_gpu_atom_group()->read_positions_gpu_debug(
+        group, false, 0, -1, to_cpu, -1.0, group->get_stream());
+      group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+        group, to_cpu, group->get_stream());
+      checkGPUError(cudaEventRecord(group->get_gpu_atom_group()->get_event(colvars_gpu::colvaratoms_gpu::event_type::read_and_calculate), group->get_stream()));
+      group->get_gpu_atom_group()->after_read_data_sync(group, to_cpu);
+#endif
+    } else {
+      group->read_positions();
+      group->calc_required_properties();
+    }
   }
   calc_value();
   calc_gradients();
   return;
+}
+
+
+int colvar::cvc::debug_gradients_gpu() {
+  int error_code = COLVARS_OK;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  // this function should work for any scalar cvc:
+  // the only difference will be the name of the atom group (here, "group")
+  // NOTE: this assumes that groups for this cvc are non-overlapping,
+  // since atom coordinates are modified only within the current group
+
+  cvmodule->log("Debugging GPU gradients for " + description);
+  colvarproxy *p = cvmodule->proxy;
+  error_code |= checkGPUError(cudaStreamSynchronize(get_stream()));
+
+  /**
+   * @note Some CVCs change the gradients when running calc_value(), so it is
+   * better to copy the original gradients out at first.
+   */
+  // using pos_vector_t = std::vector<cvm::rvector, cvm::allocator_type<cvm::rvector>>;
+  std::unordered_map<cvm::atom_group*, std::array<cvm::ag_vector_real_t, 2>> ag_gradients;
+  for (size_t ig = 0; ig < atom_groups.size(); ig++) {
+    auto *group = atom_groups[ig];
+    if (group->b_dummy) continue;
+    const auto& rot = group->get_gpu_atom_group()->get_rot_gpu();
+    auto *group_for_fit = group->fitting_group ? group->fitting_group : group;
+    const bool add_fit_gradients_to_main =
+      group->is_enabled(f_ag_fit_gradients) && group_for_fit == group;
+    std::array<cvm::ag_vector_real_t, 2> gradients;
+    gradients[0].assign(3 * group->size(), 0);
+    // Copy gradients DtoH
+    error_code |= p->copy_DtoH(
+      group->get_gpu_atom_group()->get_gpu_buffers().d_atoms_grad,
+      gradients[0].data(), 3 * group->size());
+    cvm::ag_vector_real_t fit_gradients;
+    if (add_fit_gradients_to_main) {
+      fit_gradients.assign(3 * group_for_fit->size(), 0);
+      error_code |= p->copy_DtoH(
+        group_for_fit->get_gpu_atom_group()->get_gpu_buffers().d_fit_gradients,
+        fit_gradients.data(), 3 * group_for_fit->size());
+    }
+    if (group->is_enabled(f_ag_rotate)) {
+      cvm::rotation rot_cpu;
+      rot.to_cpu(rot_cpu);
+      const auto rot_inv = rot_cpu.inverse().matrix();
+      // cvmodule->log("quaternion = " + cvm::to_str(rot_cpu.q));
+      auto grad_x = gradients[0].begin();
+      auto grad_y = grad_x + group->size();
+      auto grad_z = grad_y + group->size();
+      const auto fit_gradients_x = fit_gradients.begin();
+      const auto fit_gradients_y = fit_gradients_x + group_for_fit->size();
+      const auto fit_gradients_z = fit_gradients_y + group_for_fit->size();
+      for (size_t ia = 0; ia < group->size(); ia++) {
+        cvm::rvector g(grad_x[ia], grad_y[ia], grad_z[ia]);
+        g = rot_inv * g;
+        if (add_fit_gradients_to_main) {
+          g.x += fit_gradients_x[ia];
+          g.y += fit_gradients_y[ia];
+          g.z += fit_gradients_z[ia];
+        }
+        grad_x[ia] = g.x;
+        grad_y[ia] = g.y;
+        grad_z[ia] = g.z;
+      }
+    }
+    if ((group->is_enabled(f_ag_fit_gradients)) &&
+        (group->fitting_group != nullptr)) {
+      auto *ref_group = group->fitting_group;
+      gradients[1].assign(3 * ref_group->size(), 0);
+      error_code |= p->copy_DtoH(
+        ref_group->get_gpu_atom_group()->get_gpu_buffers().d_fit_gradients,
+        gradients[1].data(), 3 * ref_group->size());
+    }
+    ag_gradients[group] = gradients;
+  }
+
+  for (size_t ig = 0; ig < atom_groups.size(); ig++) {
+    auto *group = atom_groups[ig];
+    if (group->b_dummy) continue;
+
+    auto *group_for_fit = group->fitting_group ? group->fitting_group : group;
+    cvm::atom_pos fit_gradient_sum, gradient_sum;
+
+    // print the values of the fit gradients
+    if (group->is_enabled(f_ag_center) || group->is_enabled(f_ag_rotate)) {
+      if (group->is_enabled(f_ag_fit_gradients)) {
+        const auto& rot = group->get_gpu_atom_group()->get_rot_gpu();
+        auto& group_for_fit_gpu = group_for_fit->get_gpu_atom_group();
+        // Obtain the rotation matrix from GPU
+        cvm::rotation rot_cpu;
+        rot.to_cpu(rot_cpu);
+        const auto rot_0 = rot_cpu.matrix();
+        // fit_gradients are in the simulation frame: we should print them in the rotated frame
+        cvmodule->log("Fit gradients for group " + group->key + ":\n");
+        // Synchronized copy the fit gradients from GPU
+        cvm::ag_vector_real_t h_fit_gradients(3 * group_for_fit->size());
+        error_code |= p->copy_DtoH(
+          group_for_fit_gpu->get_gpu_buffers().d_fit_gradients,
+          h_fit_gradients.data(), 3 * group_for_fit->size());
+        const auto h_fit_gradients_x = h_fit_gradients.begin();
+        const auto h_fit_gradients_y = h_fit_gradients_x + group_for_fit->size();
+        const auto h_fit_gradients_z = h_fit_gradients_y + group_for_fit->size();
+        for (size_t j = 0; j < group_for_fit->size(); j++) {
+          const cvm::rvector fit_grad(
+            h_fit_gradients_x[j],
+            h_fit_gradients_y[j],
+            h_fit_gradients_z[j]);
+          cvmodule->log((group->fitting_group ? std::string("fittingGroup") : group->key) +
+              "[" + cvm::to_str(j) + "] = " +
+              (group->is_enabled(f_ag_rotate) ?
+                cvm::to_str(rot_0 * (fit_grad)) :
+                cvm::to_str(fit_grad)));
+        }
+      }
+    }
+
+    cvmodule->log("Gradients for group " + group->key + ":\n");
+    const auto gradients_x = ag_gradients.at(group)[0].begin();
+    const auto gradients_y = gradients_x + group->size();
+    const auto gradients_z = gradients_y + group->size();
+    const auto& ag_event = group->get_gpu_atom_group()->get_event(
+          colvars_gpu::colvaratoms_gpu::event_type::read_and_calculate);
+    // debug the gradients
+    for (size_t ia = 0; ia < group->size(); ia++) {
+      // tests are best conducted in the unrotated (simulation) frame
+      const cvm::rvector g {gradients_x[ia], gradients_y[ia], gradients_z[ia]};
+      gradient_sum += g;
+      auto const this_atom = (*group)[ia];
+      for (size_t id = 0; id < 3; id++) {
+        // Compute CV in case of x+Δx
+        // Read data and change a position
+        error_code |= group->get_gpu_atom_group()->read_positions_gpu_debug(
+          group, false, ia, id, false, 1, group->get_stream());
+        error_code |= group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+          group, false, group->get_stream());
+        // Record the atom group update event
+        error_code |= checkGPUError(cudaEventRecord(ag_event, group->get_stream()));
+        error_code |= group->get_gpu_atom_group()->after_read_data_sync(group, false);
+        // Wait for the atom group
+        error_code |= checkGPUError(cudaStreamWaitEvent(get_stream(), ag_event));
+        // Calculate value
+        error_code |= calc_value_gpu();
+        // Synchronize event
+        error_code |= checkGPUError(cudaEventSynchronize(get_event(event_type::calc_value)));
+        // Update the x
+        error_code |= calc_value_after_gpu();
+        cvm::real x_1 = x.real_value;
+        if ((x.type() == colvarvalue::type_vector) && (x.size() == 1)) x_1 = x[0];
+
+        // Compute CV in case of x-Δx
+        // Read data and change a position
+        error_code |= group->get_gpu_atom_group()->read_positions_gpu_debug(
+          group, false, ia, id, false, -1, group->get_stream());
+        error_code |= group->get_gpu_atom_group()->calc_required_properties_gpu_debug(group, false, group->get_stream());
+        // Record the atom group update event
+        error_code |= checkGPUError(cudaEventRecord(ag_event, group->get_stream()));
+        error_code |= group->get_gpu_atom_group()->after_read_data_sync(group, false);
+        // Wait for the atom group
+        error_code |= checkGPUError(cudaStreamWaitEvent(get_stream(), ag_event));
+        // Calculate value
+        error_code |= calc_value_gpu();
+        // Synchronize event
+        error_code |= checkGPUError(cudaEventSynchronize(get_event(event_type::calc_value)));
+        // Update the x
+        error_code |= calc_value_after_gpu();
+        cvm::real x_2 = x.real_value;
+        if ((x.type() == colvarvalue::type_vector) && (x.size() == 1)) x_2 = x[0];
+
+        cvm::real const num_diff = 0.5 * (x_1 - x_2);
+        cvm::real const dx_pred = cvm::debug_gradients_step_size * g[id];
+        cvm::real rel_error = cvm::fabs (num_diff - dx_pred) / (cvm::fabs (num_diff) + cvm::fabs(dx_pred));
+        cvmodule->record_gradient_error(rel_error);
+
+        cvmodule->log("Atom "+cvm::to_str(ia) + ", ID " + cvm::to_str(this_atom.id) + \
+                  ", comp. " + cvm::to_str(id) + ":" + \
+                  "  dx(actual) = " + cvm::to_str (num_diff, 19, 12) + \
+                  "  dx(interp) = " + cvm::to_str (dx_pred, 19, 12) + \
+                  "  rel. error = " + cvm::to_str(rel_error, 12, 5) + ".\n");
+      }
+    }
+
+    if ((group->is_enabled(f_ag_fit_gradients)) && (group->fitting_group != nullptr)) {
+      auto *ref_group = group->fitting_group;
+      error_code |= group->get_gpu_atom_group()->read_positions_gpu_debug(
+        group, false, 0, -1, false, 1.0, group->get_stream());
+      error_code |= group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+        group, false, group->get_stream());
+      // Record the atom group update event
+      error_code |= checkGPUError(cudaEventRecord(ag_event, group->get_stream()));
+      error_code |= group->get_gpu_atom_group()->after_read_data_sync(group, false);
+
+      const auto fit_gradients_x = ag_gradients.at(group)[1].begin();
+      const auto fit_gradients_y = fit_gradients_x + ref_group->size();
+      const auto fit_gradients_z = fit_gradients_y + ref_group->size();
+      for (size_t ia = 0; ia < ref_group->size(); ia++) {
+
+        auto const this_atom = (*ref_group)[ia];
+        // fit gradients are in the unrotated (simulation) frame
+        cvm::rvector const atom_grad{
+          fit_gradients_x[ia],
+          fit_gradients_y[ia],
+          fit_gradients_z[ia]};
+        fit_gradient_sum += atom_grad;
+
+        for (size_t id = 0; id < 3; id++) {
+          error_code |= group->get_gpu_atom_group()->read_positions_gpu_debug(
+            group, true, ia, id, false, 1.0, group->get_stream());
+          error_code |= group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+            group, false, group->get_stream());
+          // Record the atom group update event
+          error_code |= checkGPUError(cudaEventRecord(ag_event, group->get_stream()));
+          error_code |= group->get_gpu_atom_group()->after_read_data_sync(group, false);
+          // Wait for the atom group
+          error_code |= checkGPUError(cudaStreamWaitEvent(get_stream(), ag_event));
+          // Calculate value
+          error_code |= calc_value_gpu();
+          // Synchronize event
+          error_code |= checkGPUError(cudaEventSynchronize(get_event(event_type::calc_value)));
+          // Update the x
+          error_code |= calc_value_after_gpu();
+          cvm::real const x_1 = x.real_value;
+
+          error_code |= group->get_gpu_atom_group()->read_positions_gpu_debug(
+            group, true, ia, id, false, -1.0, group->get_stream());
+          error_code |= group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+            group, false, group->get_stream());
+          // Record the atom group update event
+          error_code |= checkGPUError(cudaEventRecord(ag_event, group->get_stream()));
+          error_code |= group->get_gpu_atom_group()->after_read_data_sync(
+            group, false);
+          // Wait for the atom group
+          error_code |= checkGPUError(cudaStreamWaitEvent(get_stream(), ag_event));
+          // Calculate value
+          error_code |= calc_value_gpu();
+          // Synchronize event
+          error_code |= checkGPUError(cudaEventSynchronize(get_event(event_type::calc_value)));
+          // Update the x
+          error_code |= calc_value_after_gpu();
+          cvm::real const x_2 = x.real_value;
+
+          cvm::real const num_diff = 0.5 * (x_1 - x_2);
+          cvm::real const dx_pred = cvm::debug_gradients_step_size * atom_grad[id];
+          cvm::real rel_error = cvm::fabs (num_diff - dx_pred) / (cvm::fabs (num_diff) + cvm::fabs(dx_pred));
+          cvmodule->record_gradient_error(rel_error);
+
+          cvmodule->log("fittingGroup atom " + cvm::to_str(ia) + ", ID " + cvm::to_str(this_atom.id) + \
+                    ", comp. " + cvm::to_str(id) + ":" + \
+                    "  dx(actual) = " + cvm::to_str (num_diff, 19, 12) + \
+                    "  dx(interp) = " + cvm::to_str (dx_pred, 19, 12) + \
+                    "  rel. error = " + cvm::to_str(rel_error, 12, 5) + ".\n");
+        }
+
+      }
+    }
+    cvmodule->log("Gradient sum: " +  cvm::to_str(gradient_sum) +
+          "  Fit gradient sum: " + cvm::to_str(fit_gradient_sum) +
+          "  Total " + cvm::to_str(gradient_sum + fit_gradient_sum));
+  }
+  // Do cleanups
+  // Reset the atom groups and restore the CV value after debugging gradients
+  for (size_t ig = 0; ig < atom_groups.size(); ig++) {
+    cvm::atom_group *group = atom_groups[ig];
+    if (group->b_dummy) continue;
+    const auto& ag_event = group->get_gpu_atom_group()->get_event(colvars_gpu::colvaratoms_gpu::event_type::read_and_calculate);
+    // Clear the gradients, because some CVCs may calculate the gradients in calc_value()
+    auto& group_gpu = group->get_gpu_atom_group();
+    error_code |= p->clear_device_array(
+      group_gpu->get_gpu_buffers().d_atoms_grad,
+      group->size() * 3);
+    // (re)read original positions
+    error_code |= group->get_gpu_atom_group()->read_positions_gpu_debug(
+      group, false, 0, -1, false, -1.0, group->get_stream());
+    error_code |= group->get_gpu_atom_group()->calc_required_properties_gpu_debug(
+      group, false, group->get_stream());
+    error_code |= checkGPUError(cudaEventRecord(ag_event, group->get_stream()));
+    // Wait for the atom group
+    error_code |= checkGPUError(cudaStreamWaitEvent(get_stream(), ag_event));
+    error_code |= group->get_gpu_atom_group()->after_read_data_sync(
+      group, false);
+  }
+  // Update the x
+  error_code |= calc_value_gpu();
+  error_code |= calc_value_after_gpu();
+  // Calculate the gradients again
+  error_code |= calc_gradients_gpu();
+  error_code |= calc_gradients_after_gpu();
+  // Synchronize stream
+  error_code |= checkGPUError(cudaStreamSynchronize(get_stream()));
+#endif // defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  return error_code;
 }
 
 
@@ -797,6 +1254,32 @@ void colvar::cvc::wrap(colvarvalue &x_unwrapped) const
   }
 }
 
+
+int colvar::cvc::calc_fit_gradients_gpu() {
+  int error_code = COLVARS_OK;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  if (is_enabled(f_cvc_explicit_gradient)) {
+    for (auto agi = atom_groups.begin(); agi != atom_groups.end(); agi++) {
+      error_code |= (*agi)->get_gpu_atom_group()->calc_fit_gradients_gpu(*agi);
+    }
+  }
+#endif
+  return error_code;
+}
+
+
+int colvar::cvc::begin_apply_force_from_cpu_to_gpu() {
+  int error_code = COLVARS_OK;
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  colvarproxy* proxy = cvmodule->proxy;
+  if ((proxy->get_smp_mode() == colvarproxy_smp::smp_mode_t::gpu)) {
+    for (auto agi = atom_groups.begin(); agi != atom_groups.end(); agi++) {
+      error_code |= (*agi)->get_gpu_atom_group()->begin_apply_force_gpu();
+    }
+  }
+#endif
+  return error_code;
+}
 
 // Static members
 

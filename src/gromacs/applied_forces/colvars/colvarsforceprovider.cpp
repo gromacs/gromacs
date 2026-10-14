@@ -201,7 +201,7 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
 
     if (doParsing_)
     {
-        colvars->setup_output();
+        cvmodule->setup_output();
     }
 
 
@@ -258,7 +258,7 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
         {
             if (stateToCheckpoint_.nColvarsAtoms_ != nColvarsAtoms)
             {
-                cvm::error(
+                cvmodule->error(
                         "Number of colvars atoms in the .cpt file differs from the one in .tpr "
                         "file");
             }
@@ -271,8 +271,8 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
 
             int errorCode = colvarproxy::setup();
             // Read input state file
-            errorCode |= colvars->set_input_state_buffer(stateToCheckpoint_.colvarStateFile_);
-            errorCode |= colvars->setup_input();
+            errorCode |= cvmodule->set_input_state_buffer(stateToCheckpoint_.colvarStateFile_);
+            errorCode |= cvmodule->setup_input();
 
             if (errorCode != COLVARS_OK)
             {
@@ -303,19 +303,19 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
 
     if (mpiComm.isMainRank() && cvm::debug())
     {
-        cvm::log("atoms_ids = " + cvm::to_str(atoms_ids) + "\n");
-        cvm::log("atoms_refcount = " + cvm::to_str(atoms_refcount) + "\n");
-        cvm::log("positions = " + cvm::to_str(atoms_positions) + "\n");
-        cvm::log("total_forces = " + cvm::to_str(atoms_total_forces) + "\n");
-        cvm::log("atoms_new_colvar_forces = " + cvm::to_str(atoms_new_colvar_forces) + "\n");
-        cvm::log(cvm::line_marker);
+        cvmodule->log("atoms_ids = " + cvm::to_str(atoms_ids) + "\n");
+        cvmodule->log("atoms_refcount = " + cvm::to_str(atoms_refcount) + "\n");
+        cvmodule->log("positions = " + cvm::to_str(atoms_positions) + "\n");
+        cvmodule->log("total_forces = " + cvm::to_str(atoms_total_forces) + "\n");
+        cvmodule->log("atoms_new_colvar_forces = " + cvm::to_str(atoms_new_colvar_forces) + "\n");
+        cvmodule->log(cvm::line_marker);
         log("Done initializing the colvars proxy object.\n");
     }
 
     if (mpiComm.isMainRank())
     {
-        cvm::log(cvm::line_marker);
-        cvm::log("End colvars Initialization.\n\n");
+        cvmodule->log(cvm::line_marker);
+        cvmodule->log("End colvars Initialization.\n\n");
     }
 }
 
@@ -336,19 +336,52 @@ ColvarsForceProvider::~ColvarsForceProvider()
 void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProviderInput,
                                            ForceProviderOutput*      forceProviderOutput)
 {
+    auto const& box = forceProviderInput.box_;
 
-    // Construct t_pbc struct
-    set_pbc(&gmxPbc_, pbcType_, forceProviderInput.box_);
+    // Set PBC struct for use in ColvarProxyGromacs::position_distance()
+    set_pbc(&gmxPbc_, pbcType_, box);
+
+    // Share PBCs with the library as well
+    switch (pbcType_)
+    {
+        case PbcType::Unset:
+            GMX_RELEASE_ASSERT(false, "PBC type not set when being used by ColvarsForceProvider.");
+            break;
+        case PbcType::XY:
+            boundaries_.set_boundaries(true,
+                                       true,
+                                       false,
+                                       cvm::rvector{ box[0][0], box[0][1], box[0][2] },
+                                       cvm::rvector{ box[1][0], box[1][1], box[1][2] },
+                                       cvm::rvector{ 0.0, 0.0, 0.0 });
+            break;
+        case PbcType::Xyz:
+            boundaries_.set_boundaries(true,
+                                       true,
+                                       true,
+                                       cvm::rvector{ box[0][0], box[0][1], box[0][2] },
+                                       cvm::rvector{ box[1][0], box[1][1], box[1][2] },
+                                       cvm::rvector{ box[2][0], box[2][1], box[2][2] });
+            break;
+        case PbcType::Screw:
+            boundaries_.reset();
+            boundaries_.set_type(cvm::system_boundary_conditions::types::unsupported);
+            break;
+        case PbcType::No: boundaries_.reset(); break;
+        default:
+            GMX_RELEASE_ASSERT(false, "Invalid pbcType in ColvarsForceProvider::calculateForces");
+    }
 
     const MpiComm& mpiComm = forceProviderInput.mpiComm_;
     // Local atom coords
     const gmx::ArrayRef<const gmx::RVec> x = forceProviderInput.x_;
     // Local atom coords (coerced into into old gmx type)
     const rvec* xPointer = &(x.data()->as_vec());
-    const auto& box      = forceProviderInput.box_;
 
-    colvars->it = forceProviderInput.step_;
-
+    if (cvmodule) // Only one thread has a pointer to the module
+    {
+        cvmodule->it = forceProviderInput.step_; // 'it' is not a static class member anymore
+    }
 
     // Eventually there needs to be an interface to update local data upon neighbor search
     // We could check if by chance all atoms are in one node, and skip communication
@@ -389,9 +422,16 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
 
         biasEnergy = 0.0;
         // Call the collective variable module to fill atoms_new_colvar_forces
-        if (colvars->calc() != COLVARS_OK)
+        if (cvmodule)
         {
-            cvm::error("Error calling colvars->calc()\n");
+            if (cvmodule->calc() != COLVARS_OK)
+            {
+                cvmodule->error("Error calling cvmodule->calc()\n");
+            }
+        }
+        else
+        {
+            error("Colvars module not (yet) initialized.");
         }
 
         // Copy the forces to C array for broadcasting
@@ -462,7 +502,7 @@ void ColvarsForceProvider::add_energy(cvm::real energy)
 void ColvarsForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
                                                std::string_view             moduleName)
 {
-    colvars->write_state_buffer(stateToCheckpoint_.colvarStateFile_);
+    cvmodule->write_state_buffer(stateToCheckpoint_.colvarStateFile_);
     stateToCheckpoint_.writeState(checkpointWriting.builder_, moduleName);
 }
 

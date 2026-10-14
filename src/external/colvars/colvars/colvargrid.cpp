@@ -16,14 +16,6 @@
 #include "colvargrid.h"
 #include "colvargrid_def.h"
 
-
-
-colvar_grid_count::colvar_grid_count()
-  : colvar_grid<size_t>()
-{
-  mult = 1;
-}
-
 colvar_grid_count::colvar_grid_count(std::vector<colvar *>  &colvars,
                                      std::string config)
   : colvar_grid<size_t>(colvars, 0, 1, false, nullptr, config)
@@ -32,6 +24,10 @@ colvar_grid_count::colvar_grid_count(std::vector<colvar *>  &colvars,
 colvar_grid_count::colvar_grid_count(std::vector<colvar *>  &colvars,
                                      std::shared_ptr<const colvar_grid_params> params)
   : colvar_grid<size_t>(colvars, 0, 1, false, params)
+{}
+
+colvar_grid_count::colvar_grid_count(std::string &filename)
+: colvar_grid<size_t>(filename, 1)
 {}
 
 std::string colvar_grid_count::get_state_params() const
@@ -305,8 +301,8 @@ cvm::real colvar_grid_scalar::entropy() const
 cvm::real colvar_grid_scalar::grid_rmsd(colvar_grid_scalar const &other_grid) const
 {
   if (other_grid.data.size() != this->data.size()) {
-    cvm::error("Error: trying to subtract two grids with "
-                "different size.\n");
+    cvmodule->error("Error: trying to subtract two grids with "
+               "different size.\n");
     return -1.;
   }
 
@@ -337,33 +333,29 @@ colvar_grid_gradient::colvar_grid_gradient()
 {}
 
 
-// colvar_grid_gradient::colvar_grid_gradient(std::vector<colvar *> &colvars, std::string config)
-//   : colvar_grid<cvm::real>(colvars, 0.0, colvars.size(), false, nullptr, config), samples(NULL)
-// {}
-
-// colvar_grid_gradient::colvar_grid_gradient(std::vector<colvar *> &colvars,
-//                                            std::shared_ptr<colvar_grid_count> samples_in)
-//   : colvar_grid<cvm::real>(colvars, 0.0, colvars.size(), false, samples_in), samples(samples_in)
-// {
-//   if (samples_in)
-//     samples_in->has_parent_data = true;
-// }
-
 colvar_grid_gradient::colvar_grid_gradient(std::vector<colvar *> &colvars,
                                            std::shared_ptr<colvar_grid_count> samples_in,
                                            std::shared_ptr<const colvar_grid_params> params,
                                            std::string config)
-  : colvar_grid<cvm::real>(colvars, 0.0, colvars.size(), false, params, config), samples(samples_in)
+  : colvar_grid<cvm::real>(colvars, 0.0, colvars.size(), false, params ? params : samples_in, config), samples(samples_in)
 {
   if (samples_in)
     samples_in->has_parent_data = true;
 }
 
-
-colvar_grid_gradient::colvar_grid_gradient(std::string const &filename)
+colvar_grid_gradient::colvar_grid_gradient(std::string const &filename, std::shared_ptr<colvar_grid_count> samples_in)
   : colvar_grid<cvm::real>(filename, 0),
-    samples(nullptr)
+    samples(samples_in)
 {
+  // We have called the colvar_grid constructor, which doesn't know about samples
+  if (samples) {
+    // Need to multiply by weights
+    for (size_t i = 0; i < samples->data.size(); i++) {
+      for (size_t a = 0; a < nd; a++) {
+        data[i*nd+a] *= samples->data[i];
+      }
+    }
+  }
 }
 
 std::string colvar_grid_gradient::get_state_params() const
@@ -461,7 +453,7 @@ void colvar_grid_gradient::write_1D_integral(std::ostream &os)
   os << "#       xi            A(xi)\n";
 
   if (cv.size() != 1) {
-    cvm::error("Cannot write integral for multi-dimensional gradient grids.");
+    cvm::error_static("Cannot write integral for multi-dimensional gradient grids.");
     return;
   }
 
@@ -494,15 +486,12 @@ void colvar_grid_gradient::write_1D_integral(std::ostream &os)
   bin = 0.0;
   for ( int i = 0; i < nx[0]; i++, bin += 1.0 ) {
     os << std::setw(10) << cv[0]->lower_boundary.real_value + cv[0]->width * bin << " "
-       << std::setw(cvm::cv_width)
-       << std::setprecision(cvm::cv_prec)
-       << int_vals[i] - min << "\n";
+       << std::setw(cvm::cv_width) << std::setprecision(cvm::cv_prec) << int_vals[i] - min << "\n";
   }
 
   os << std::setw(10) << cv[0]->lower_boundary.real_value + cv[0]->width * bin << " "
-     << std::setw(cvm::cv_width)
-     << std::setprecision(cvm::cv_prec)
-     << int_vals[nx[0]] - min << "\n";
+     << std::setw(cvm::cv_width) << std::setprecision(cvm::cv_prec) << int_vals[nx[0]] - min
+     << "\n";
 
   return;
 }
@@ -513,14 +502,14 @@ void colvar_grid_gradient::write_1D_integral(std::ostream &os)
 cvm::real colvar_grid_gradient::grid_rmsd(colvar_grid_gradient const &other_grid) const
 {
   if (other_grid.multiplicity() != this->multiplicity()) {
-    cvm::error("Error: trying to subtract two grids with "
-                "different multiplicity.\n");
+    cvmodule->error("Error: trying to subtract two grids with "
+               "different multiplicity.\n");
     return -1.;
   }
 
   if (other_grid.data.size() != this->data.size()) {
-    cvm::error("Error: trying to subtract two grids with "
-                "different size.\n");
+    cvmodule->error("Error: trying to subtract two grids with "
+               "different size.\n");
     return -1.;
   }
 

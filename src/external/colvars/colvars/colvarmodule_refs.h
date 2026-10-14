@@ -228,6 +228,16 @@
     "  url     = {https://doi.org/10.1021/acs.jctc.1c00593},\n"
     "}\n";
 
+  paper_count_[std::string("ChenFDM101")] = 0;
+  paper_url_[std::string("ChenFDM101")] = "https://www.math.uci.edu/~chenlong/226/FDM.pdf";
+  paper_bibtex_[std::string("ChenFDM101")] =
+    "\n"
+    "@misc{ChenFDM101,\n"
+    "  author = {Long Chen},\n"
+    "  title = {Finite difference methods for Poisson equation},\n"
+    "  url = {https://www.math.uci.edu/~chenlong/226/FDM.pdf},\n"
+    "}\n";
+
   paper_count_[std::string("Humphrey1996")] = 0;
   paper_url_[std::string("Humphrey1996")] = "https://doi.org/10.1016/0263-7855(96)00018-5";
   paper_bibtex_[std::string("Humphrey1996")] =
@@ -627,6 +637,9 @@
 
   feature_count_[std::string("Poisson integration of 2D/3D free energy surfaces")] = 0;
   feature_paper_map_[std::string("Poisson integration of 2D/3D free energy surfaces")] = "Henin2021";
+
+  feature_count_[std::string("Poisson equation resolution using discrete difference scheme")] = 0;
+  feature_paper_map_[std::string("Poisson equation resolution using discrete difference scheme")] = "ChenFDM101";
 
   feature_count_[std::string("VMD engine")] = 0;
   feature_paper_map_[std::string("VMD engine")] = "Humphrey1996";

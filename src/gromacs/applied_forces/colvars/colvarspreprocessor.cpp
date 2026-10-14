@@ -78,8 +78,8 @@ ColvarsPreProcessor::ColvarsPreProcessor(const std::string&   colvarsConfigStrin
     // Initialize t_pbc struct
     set_pbc(&gmxPbc_, pbcType, box);
 
-    cvm::log(cvm::line_marker);
-    cvm::log("End colvars Initialization.\n\n");
+    cvmodule->log(cvmodule->line_marker);
+    cvmodule->log("End colvars Initialization.\n\n");
 }
 
 std::vector<RVec> ColvarsPreProcessor::getColvarsCoords()

@@ -31,11 +31,30 @@
 /// all its children dependencies are dereferenced (free_children_deps)
 /// While the object is inactive, no dependency solving is done on children
 /// it is done when the object is activated back (restore_children_deps)
-class colvardeps {
+class colvardeps : public colvarparse {
 public:
 
-  colvardeps();
+  enum class object_t {
+    atom_group,
+    colvarcomp,
+    colvar,
+    colvarbias,
+    undefined
+  };
+  // This is used for inspecting the type of children and parents
+  object_t my_type = object_t::undefined;
+
+  colvardeps (object_t type_in);
+  colvardeps(object_t type_in, colvarmodule *cvmodule_in);
   virtual ~colvardeps();
+  object_t get_object_type() const {return my_type;}
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  /// \brief Function to initialize the GPU stream and event
+  void init_gpu();
+#elif defined (COLVARS_SYCL)
+#endif
+  /// \brief Function to call when proxy buffer pointers are changed (re-allocated)
+  virtual int proxy_gpu_buffers_reallocated();
 
   // Subclasses should initialize the following members:
 
@@ -87,12 +106,25 @@ protected:
     f_type_static
   };
 
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  /// \brief GPU stream for the computations of this colvardeps
+  cudaStream_t m_stream = 0;
+#elif defined (COLVARS_SYCL)
+  // TODO: SYCL
+#endif
+
 public:
   /// \brief returns time_step_factor
   inline int get_time_step_factor() const {return time_step_factor;}
 
   /// Pair a numerical feature ID with a description and type
   void init_feature(int feature_id, const char *description, feature_type type);
+
+#if defined (COLVARS_CUDA) || defined (COLVARS_HIP)
+  /// \brief Get the GPU stream
+  const cudaStream_t& get_stream() const {return m_stream;}
+#elif defined (COLVARS_SYCL)
+#endif
 
   /// Describes a feature and its dependencies
   /// used in a static array within each subclass
@@ -394,6 +426,10 @@ public:
     f_cvc_scalable_com,
     /// \brief Build list of atoms involved in CVC calculation
     f_cvc_collect_atom_ids,
+    /// \brief This CVC supports GPU calculation
+    f_cvc_support_gpu,
+    /// \brief This CVC requires CPU buffers
+    f_cvc_require_cpu_buffers,
     /// Number of CVC features
     f_cvc_ntot
   };
@@ -442,14 +478,11 @@ public:
   /// \brief print all enabled features and those of children, for debugging
   void print_state();
 
-  /// \brief Check that a feature is enabled, raising COLVARS_BUG_ERROR if not
-  inline void check_enabled(int f, std::string const &reason) const
-  {
-    if (! is_enabled(f)) {
-      cvm::error("Error: "+reason+" requires that the feature \""+
-                 features()[f]->description+"\" is active.\n", COLVARS_BUG_ERROR);
-    }
-  }
+  /// Return the parents
+  std::vector<colvardeps *> get_parents() const {return parents;}
+
+  /// Return the children
+  std::vector<colvardeps *> get_children() const {return children;}
 
 };
 

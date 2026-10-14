@@ -101,13 +101,11 @@ protected:
 /// Options to change the restraint configuration over time (shared between centers and k moving)
 class colvarbias_restraint_moving
   : public virtual colvarbias_restraint,
-    public virtual colvarparse,
     public virtual colvardeps {
 public:
 
   colvarbias_restraint_moving(char const *key)
-    : colvarbias(key),
-      colvarbias_ti(key),
+    : colvarbias_ti(key),
       colvarbias_restraint(key) {}
   // Note: despite the diamond inheritance, most of this function gets only executed once
   virtual int init(std::string const &conf) override;
@@ -160,7 +158,7 @@ protected:
   /// \brief Update the stage number based on the current step
   /// Note: this is idempotent so multiple calls are safe
   inline void update_stage() {
-    stage = (cvm::step_absolute() - first_step) / target_nsteps;
+    stage = (cvmodule->step_absolute() - first_step) / target_nsteps;
     if (stage > target_nstages) {
       stage = target_nstages;
     }
@@ -234,7 +232,8 @@ class colvarbias_restraint_k_moving
     public virtual colvarbias_restraint_moving
 {
 public:
-
+  // Do not initialize colvarbias here to avoid diamond inheritance issues
+  // because this is an intermediate class
   colvarbias_restraint_k_moving(char const *key);
   virtual int init(std::string const &conf) override;
   virtual int change_configuration(std::string const & /* conf */) override { return COLVARS_NOT_IMPLEMENTED; }
@@ -277,7 +276,7 @@ class colvarbias_restraint_harmonic
     public colvarbias_restraint_k_moving
 {
 public:
-  colvarbias_restraint_harmonic(char const *key);
+  colvarbias_restraint_harmonic(colvarmodule *cvmodule_in, char const *key);
   virtual int init(std::string const &conf);
   virtual int update();
   virtual std::string const get_state_params() const;
@@ -302,7 +301,7 @@ class colvarbias_restraint_harmonic_walls
 {
 public:
 
-  colvarbias_restraint_harmonic_walls(char const *key);
+  colvarbias_restraint_harmonic_walls(colvarmodule *cvmodule_in, char const *key);
   virtual int init(std::string const &conf) override;
   virtual int update() override;
   virtual int update_acc_work();
@@ -369,7 +368,7 @@ class colvarbias_restraint_linear
 {
 
 public:
-  colvarbias_restraint_linear(char const *key);
+  colvarbias_restraint_linear(colvarmodule *cvmodule_in, char const *key);
   virtual int init(std::string const &conf);
   virtual int update();
   virtual int change_configuration(std::string const &conf);
@@ -394,7 +393,7 @@ class colvarbias_restraint_histogram : public colvarbias {
 
 public:
 
-  colvarbias_restraint_histogram(char const *key);
+  colvarbias_restraint_histogram(colvarmodule *cvmodule_in, char const *key);
   int init(std::string const &conf);
   ~colvarbias_restraint_histogram();
 

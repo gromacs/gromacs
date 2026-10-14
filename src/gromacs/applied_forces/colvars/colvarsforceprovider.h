@@ -171,7 +171,7 @@ private:
 
 
 public:
-    friend class cvm::atom;
+    friend struct cvm::atom;
 
     /*! \brief Construct ColvarsForceProvider from its parameters
      *

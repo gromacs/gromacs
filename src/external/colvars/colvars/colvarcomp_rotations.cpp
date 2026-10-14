@@ -50,9 +50,9 @@ int colvar::orientation::init(std::string const &conf)
   ref_pos.reserve(atoms->size());
 
   if (get_keyval(conf, "refPositions", ref_pos, ref_pos)) {
-    cvm::log("Using reference positions from input file.\n");
+    cvmodule->log("Using reference positions from input file.\n");
     if (ref_pos.size() != atoms->size()) {
-      return cvm::error("Error: reference positions do not "
+      return cvmodule->error("Error: reference positions do not "
                         "match the number of requested atoms.\n", COLVARS_INPUT_ERROR);
     }
   }
@@ -67,13 +67,13 @@ int colvar::orientation::init(std::string const &conf)
         // use PDB flags if column is provided
         bool found = get_keyval(conf, "refPositionsColValue", file_col_value, 0.0);
         if (found && file_col_value==0.0) {
-          return cvm::error("Error: refPositionsColValue, "
+          return cvmodule->error("Error: refPositionsColValue, "
                             "if provided, must be non-zero.\n", COLVARS_INPUT_ERROR);
         }
       }
 
       ref_pos.resize(atoms->size());
-      error_code |= cvm::load_coords(file_name.c_str(), &ref_pos, atoms,
+      error_code |= cvmodule->load_coords(file_name.c_str(), &ref_pos, atoms,
                        file_col, file_col_value);
     }
   }
@@ -81,7 +81,7 @@ int colvar::orientation::init(std::string const &conf)
   if (error_code != COLVARS_OK) return error_code;
 
   if (!ref_pos.size()) {
-    return cvm::error("Error: must define a set of "
+    return cvmodule->error("Error: must define a set of "
                       "reference coordinates.\n", COLVARS_INPUT_ERROR);
   }
 
@@ -91,7 +91,7 @@ int colvar::orientation::init(std::string const &conf)
     ref_cog += ref_pos[i];
   }
   ref_cog /= cvm::real(ref_pos.size());
-  cvm::log("Centering the reference coordinates on the origin by subtracting "
+  cvmodule->log("Centering the reference coordinates on the origin by subtracting "
            "the center of geometry at "+
            cvm::to_str(-1.0 * ref_cog)+"; it is "
            "assumed that each atom is the closest "
@@ -117,7 +117,7 @@ int colvar::orientation::init(std::string const &conf)
 void colvar::orientation::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   if ((rot.q).inner(ref_quat) >= 0.0) {
@@ -190,7 +190,7 @@ colvar::orientation_angle::orientation_angle()
 void colvar::orientation_angle::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   if ((rot.q).q0 >= 0.0) {
@@ -263,7 +263,7 @@ colvar::orientation_proj::orientation_proj()
 void colvar::orientation_proj::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
   x.real_value = 2.0 * (rot.q).q0 * (rot.q).q0 - 1.0;
 }
@@ -300,7 +300,7 @@ int colvar::tilt::init(std::string const &conf)
   get_keyval(conf, "axis", axis, cvm::rvector(0.0, 0.0, 1.0));
   if (axis.norm2() != 1.0) {
     axis /= axis.norm();
-    cvm::log("Normalizing rotation axis to "+cvm::to_str(axis)+".\n");
+    cvmodule->log("Normalizing rotation axis to "+cvm::to_str(axis)+".\n");
   }
 
   return error_code;
@@ -311,7 +311,7 @@ void colvar::tilt::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
 
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   x.real_value = rot.cos_theta(axis);
@@ -346,7 +346,7 @@ void colvar::spin_angle::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
 
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   x.real_value = rot.spin_angle(axis);
@@ -381,7 +381,7 @@ colvar::euler_phi::euler_phi()
 void colvar::euler_phi::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   const cvm::real& q0 = rot.q.q0;
@@ -428,7 +428,7 @@ colvar::euler_psi::euler_psi()
 void colvar::euler_psi::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   const cvm::real& q0 = rot.q.q0;
@@ -475,7 +475,7 @@ colvar::euler_theta::euler_theta()
 void colvar::euler_theta::calc_value()
 {
   atoms_cog = atoms->center_of_geometry();
-  shifted_pos_soa = atoms->positions_shifted(-1.0 * atoms_cog);
+  (void)atoms->positions_shifted(-1.0 * atoms_cog, shifted_pos_soa);
   rot.calc_optimal_rotation_soa(ref_pos_soa, shifted_pos_soa, num_ref_pos, atoms->size());
 
   const cvm::real& q0 = rot.q.q0;

@@ -79,9 +79,6 @@ ColvarProxyGromacs::ColvarProxyGromacs(const std::string& colvarsConfigString,
     // Retrieve masses and charges from input file
     updated_masses_ = updated_charges_ = true;
 
-    // User-scripted forces are not available in GROMACS
-    have_scripts = false;
-
     angstrom_value_ = 0.1;
 
     // From Gnu units
@@ -117,23 +114,23 @@ ColvarProxyGromacs::ColvarProxyGromacs(const std::string& colvarsConfigString,
             input_streams_[inputName] = new std::istringstream(content);
         }
 
-        colvars = new colvarmodule(this);
-        cvm::log(cvm::line_marker);
-        cvm::log("Start colvars Initialization.");
+        cvmodule = new colvarmodule(this);
+        cvmodule->log(cvmodule->line_marker);
+        cvmodule->log("Start colvars Initialization.");
 
 
-        colvars->cite_feature("GROMACS engine");
-        colvars->cite_feature("Colvars-GROMACS interface");
+        cvmodule->cite_feature("GROMACS engine");
+        cvmodule->cite_feature("Colvars-GROMACS interface");
 
         if (cvm::debug())
         {
-            cvm::log("Initializing the colvars proxy object.\n");
+            cvmodule->log("Initializing the colvars proxy object.\n");
         }
 
         int errorCode = colvarproxy::setup();
-        errorCode |= colvars->read_config_string(colvarsConfigString);
-        errorCode |= colvars->update_engine_parameters();
-        errorCode |= colvars->setup_input();
+        errorCode |= cvmodule->read_config_string(colvarsConfigString);
+        errorCode |= cvmodule->update_engine_parameters();
+        errorCode |= cvmodule->setup_input();
 
         if (errorCode != COLVARS_OK)
         {
@@ -141,10 +138,10 @@ ColvarProxyGromacs::ColvarProxyGromacs(const std::string& colvarsConfigString,
         }
 
         // Citation Reporter
-        cvm::log(std::string("\n") + colvars->feature_report(0) + std::string("\n"));
+        cvmodule->log(std::string("\n") + cvmodule->feature_report(0) + std::string("\n"));
 
         // TODO get initial step number from MDModules
-        // colvars->set_initial_step(static_cast<cvm::step_number>(0L));
+        // cvmodule->set_initial_step(static_cast<cvm::step_number>(0L));
     }
 }
 
@@ -196,7 +193,7 @@ int ColvarProxyGromacs::set_unit_system(std::string const& unitsIn, bool /*colva
 {
     if (unitsIn != "gromacs")
     {
-        cvm::error(
+        cvmodule->error(
                 "Specified unit system \"" + unitsIn
                 + "\" is unsupported in Gromacs. Supported units are \"gromacs\" (nm, kJ/mol).\n");
         return COLVARS_ERROR;
@@ -218,8 +215,8 @@ int ColvarProxyGromacs::check_atom_id(int atomNumber)
     }
     if ((aid < 0) || (aid >= gmxAtoms_.nr))
     {
-        cvm::error("Error: invalid atom number specified, " + cvm::to_str(atomNumber) + "\n",
-                   COLVARS_INPUT_ERROR);
+        cvmodule->error("Error: invalid atom number specified, " + cvm::to_str(atomNumber) + "\n",
+                        COLVARS_INPUT_ERROR);
         return COLVARS_INPUT_ERROR;
     }
 
@@ -273,10 +270,10 @@ void ColvarProxyGromacs::updateAtomProperties(int index)
 
 ColvarProxyGromacs::~ColvarProxyGromacs()
 {
-    if (colvars != nullptr)
+    if (cvmodule != nullptr)
     {
-        delete colvars;
-        colvars = nullptr;
+        delete cvmodule;
+        cvmodule = nullptr;
     }
 }
 
