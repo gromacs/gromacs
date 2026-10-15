@@ -763,9 +763,9 @@ int gmx_trjconv(int argc, char* argv[])
         if (bVels)
         {
             /* check if velocities are possible in input and output files */
-            bVels = (ftp == efTRR || ftp == efGRO || ftp == efG96 || ftp == efTNG)
+            bVels = (ftp == efTRR || ftp == efGRO || ftp == efG96 || ftp == efTNG || ftp == efH5MD)
                     && (ftpin == efTRR || ftpin == efGRO || ftpin == efG96 || ftpin == efTNG
-                        || ftpin == efCPT);
+                        || ftpin == efH5MD || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
