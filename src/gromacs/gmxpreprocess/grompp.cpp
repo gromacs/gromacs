@@ -2687,8 +2687,11 @@ int gmx_grompp(int argc, char* argv[])
     /* With the atom masses available, we can process constant acceleration options */
     processConstantAcceleration(ir, sys);
 
-    /* After we are done with all checks on the state, we can add the flow profile */
-    if (opts->deformInitFlow)
+    /* After we are done with all checks on the state, we can add the flow profile.
+     * Only dynamical integrators have velocities in the state, e.g. energy
+     * minimization has none.
+     */
+    if (opts->deformInitFlow && state.hasEntry(StateEntry::V))
     {
         deformInitFlow(&state, ir->deform);
     }

@@ -40,6 +40,22 @@ atoms were perturbed. This bug has been present in release 2025.0 to 2026.4.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed grompp crash with deform-init-flow for integrators without velocities
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With ``deform-init-flow = yes``, :ref:`gmx grompp` crashed with a segmentation
+fault for energy minimization, normal-mode analysis and test-particle insertion,
+since these integrators do not use velocities. Now ``deform-init-flow`` is
+ignored with these integrators, with a note when ``deform`` is set. With these
+integrators, :ref:`gmx grompp` also no longer asks for
+``deform-init-flow = yes`` when the box is deformed. With ``integrator = bd``,
+which does not use the initial velocities, the error for ``gen-vel = yes``
+without ``deform-init-flow = yes`` is now a warning and the note asking for
+``deform-init-flow = yes`` is no longer given. This has been present in versions
+2024.0 to 2026.4.
+
+:issue:`5738`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
