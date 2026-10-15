@@ -35,10 +35,11 @@ gmx_add_libgromacs_sources(
     qmmminputgenerator.cpp
     qmmmforceproviderstate.cpp
     qmmmoptions.cpp
+    qmmmversion.cpp
     qmmm.cpp
     )
 
-# If we have libcp2k linked then compile qmmmforceprovider.cpp
+# If we have libcp2k linked then compile qmmmforceprovider.cpp 
 # In other case compile stub implementation qmmmforceprovider_stub.cpp
 if (GMX_CP2K)
 gmx_add_libgromacs_sources(
@@ -49,6 +50,12 @@ gmx_add_libgromacs_sources(
     qmmmforceprovider_stub.cpp
     )
 endif()
+
+# Pass GMX_CP2K to qmmmversion.cpp
+set_source_files_properties(qmmmversion.cpp
+    DIRECTORY ../..
+    PROPERTIES COMPILE_DEFINITIONS "GMX_CP2K=$<BOOL:${GMX_CP2K}>"
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

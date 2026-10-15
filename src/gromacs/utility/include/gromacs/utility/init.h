@@ -74,6 +74,12 @@ namespace gmx
  * has already been called, or if the MPI library \Gromacs is compiled against
  * allows it.
  *
+ * With external MPI, setting GMX_USE_MPI_THREAD_MULTIPLE to any value requests
+ * MPI_THREAD_MULTIPLE and terminates if the MPI library cannot provide it.
+ * Otherwise, the default MPI initialization is used (MPI_THREAD_FUNNELED with
+ * OpenMP). If MPI was initialized by the caller, its thread-support level is
+ * left unchanged; the caller must request the level required by its workload.
+ *
  * Does not throw.
  *
  * \ingroup module_utility

@@ -1349,8 +1349,28 @@ double-precision version of |Gromacs| compiled with MPI support:
 
 .. _installing with CP2K:
 
-Building with CP2K QM/MM support
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building with CP2K QM/MM support for CP2K 2026 and newer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The primary way to build |Gromacs|-CP2K QM/MM interface is using spack package manager. 
+The :file:`make_cp2k.sh` script from CP2K source can perform building of CP2K and its dependencies 
+together with |Gromacs| and test the QM/MM interface. 
+To use it, run the following command from the CP2K source directory::
+
+    ./make_cp2k.sh -bd --test_gromacs
+
+This builds the latest |Gromacs| release supported by the script. To select
+a specific |Gromacs| version, use the ``-gromacs`` option, for example::
+
+    ./make_cp2k.sh -bd -gromacs v2025.2 --test_gromacs
+
+The ``-bd`` option rebuilds all the dependencies from scratch, removing the
+script's existing :file:`spack/` directory. 
+For additional information follow the `GROMACS/CP2K QM/MM build instructions in the CP2K manual
+<https://manual.cp2k.org/trunk/getting-started/build-from-source.html#gromacs-cp2k-qm-mm>`__.
+
+Building with CP2K QM/MM support for CP2K versions older than 2026 and for manual builds
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CP2K QM/MM interface integration will require linking against libcp2k
 library, that incorporates CP2K functionality into |Gromacs|.

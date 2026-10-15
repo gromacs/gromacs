@@ -27,3 +27,15 @@ Analysis tools now always process time values in double precision
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This avoids picking incorrect frames when times values are large.
+
+Request the MPI thread support required by CP2K
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+With external MPI, setting the new environment variable
+``GMX_USE_MPI_THREAD_MULTIPLE`` to any value requests ``MPI_THREAD_MULTIPLE``.
+The default MPI initialization is unchanged. QM/MM setup checks the linked
+CP2K version and reports a helpful fatal error if it requires
+``MPI_THREAD_MULTIPLE`` but MPI was initialized with insufficient thread support.
+This applies to CP2K 2027 or later, CP2K 2026.2 development builds, and
+unrecognized CP2K versions. Users are instructed to set the environment
+variable before launching |Gromacs|.

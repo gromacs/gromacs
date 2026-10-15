@@ -131,9 +131,6 @@ private:
 
 CLANG_DIAGNOSTIC_RESET
 
-//! Returns information for describing the CP2K QM/MM support
-std::string qmmmDescription();
-
 } // namespace gmx
 
 #endif // GMX_APPLIED_FORCES_QMMMFORCEPROVIDER_H

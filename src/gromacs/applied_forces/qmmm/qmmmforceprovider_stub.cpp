@@ -129,9 +129,4 @@ void QMMMForceProvider::writeCheckpointData(MDModulesWriteCheckpointData /*check
 
 CLANG_DIAGNOSTIC_RESET
 
-std::string qmmmDescription()
-{
-    return "disabled";
-}
-
 } // namespace gmx

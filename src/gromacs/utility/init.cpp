@@ -44,6 +44,8 @@
 
 #include "config.h"
 
+#include <cstdlib>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -80,38 +82,52 @@ void init(int* argc, char*** argv) // NOLINT(readability-non-const-parameter)
     }
     else
     {
-#    if GMX_OPENMP
-        /* Formally we need to use MPI_Init_thread and ask for MPI_THREAD_FUNNELED
-         * level of thread support when using OpenMP. However, in practice we
-         * have never seen any problems with just using MPI_Init(), and some MPI
-         * versions that only return MPI_THREAD_SINGLE as their support level
-         * still return an OK initialization code when we request MPI_THREAD_FUNNELED.
-         *
-         * To avoid requiring users to recompile and install new libraries for something
-         * that probably isn't a problem, we don't make a fuss about it (no warning)
-         * if MPI_Init_thread() returns ok. If it does not return OK we
-         * call a second init call without thread support, but since the library
-         * apparently tried to prevent this we do issue a warning in this case.
-         *
-         * support, and if that doesn't work we simply use the simple MPI_Init().
-         * Note that MPICH does not allow us to call MPI_Query_thread() before
-         * we have initialized the library, and calling MPI_Init twice could
-         * be a bit fragile. However, some implementations also advice against
-         * doing anything else after calling MPI_Finalize, so at the end of the
-         * day we'll have to cross our fingers...
-         */
-        int provided, rc;
-        rc = MPI_Init_thread(argc, argv, MPI_THREAD_FUNNELED, &provided);
-        if (rc != 0 && provided < MPI_THREAD_FUNNELED)
+        if (std::getenv("GMX_USE_MPI_THREAD_MULTIPLE") != nullptr)
         {
-            gmx_warning(
-                    "GROMACS was compiled with OpenMP support, but there is no thread support in "
-                    "the MPI library. Keep your fingers crossed.");
-            MPI_Init(argc, argv);
+            // Request MPI_THREAD_MULTIPLE explicitly even when GROMACS does not use OpenMP.
+            int       provided = MPI_THREAD_SINGLE;
+            const int rc       = MPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
+            GMX_RELEASE_ASSERT(rc == MPI_SUCCESS,
+                               "MPI_Init_thread failed with GMX_USE_MPI_THREAD_MULTIPLE set");
+            GMX_RELEASE_ASSERT(provided >= MPI_THREAD_MULTIPLE,
+                               "GMX_USE_MPI_THREAD_MULTIPLE is set, but the MPI library could not "
+                               "provide MPI_THREAD_MULTIPLE");
         }
+        else
+        {
+#    if GMX_OPENMP
+            /* Formally we need to use MPI_Init_thread and ask for MPI_THREAD_FUNNELED
+             * level of thread support when using OpenMP. However, in practice we
+             * have never seen any problems with just using MPI_Init(), and some MPI
+             * versions that only return MPI_THREAD_SINGLE as their support level
+             * still return an OK initialization code when we request MPI_THREAD_FUNNELED.
+             *
+             * To avoid requiring users to recompile and install new libraries for something
+             * that probably isn't a problem, we don't make a fuss about it (no warning)
+             * if MPI_Init_thread() returns ok. If it does not return OK we
+             * call a second init call without thread support, but since the library
+             * apparently tried to prevent this we do issue a warning in this case.
+             *
+             * support, and if that doesn't work we simply use the simple MPI_Init().
+             * Note that MPICH does not allow us to call MPI_Query_thread() before
+             * we have initialized the library, and calling MPI_Init twice could
+             * be a bit fragile. However, some implementations also advice against
+             * doing anything else after calling MPI_Finalize, so at the end of the
+             * day we'll have to cross our fingers...
+             */
+            int provided, rc;
+            rc = MPI_Init_thread(argc, argv, MPI_THREAD_FUNNELED, &provided);
+            if (rc != 0 && provided < MPI_THREAD_FUNNELED)
+            {
+                gmx_warning(
+                        "GROMACS was compiled with OpenMP support, but there is no thread support "
+                        "in the MPI library. Keep your fingers crossed.");
+                MPI_Init(argc, argv);
+            }
 #    else
-        MPI_Init(argc, argv);
+            MPI_Init(argc, argv);
 #    endif
+        }
     }
     // Bump the counter to record this initialization event
     g_initializationCounter++;

@@ -42,13 +42,17 @@
 
 #include "gromacs/applied_forces/qmmm/qmmmforceprovider.h"
 
+#include "config.h"
+
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/qmmm/qmmmtypes.h"
+#include "gromacs/applied_forces/qmmm/qmmmversion.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/confio.h"
@@ -59,6 +63,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/path.h"
@@ -78,6 +83,42 @@ namespace test
 {
 namespace
 {
+
+using QmmmVersionTest = ::testing::TestWithParam<std::tuple<const char*, bool>>;
+
+TEST_P(QmmmVersionTest, RequiresMpiThreadMultiple)
+{
+    const auto& [description, requiresMultiple] = GetParam();
+    EXPECT_EQ(requiresMultiple, qmmmRequiresMpiThreadMultiple(description));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+        Cp2kDescriptions,
+        QmmmVersionTest,
+        ::testing::Values(std::make_tuple("disabled", false),
+                          std::make_tuple("enabled (CP2K version 8.1)", false),
+                          std::make_tuple("enabled (CP2K version 9.1)", false),
+                          std::make_tuple("enabled (CP2K version 2024.2)", false),
+                          std::make_tuple("enabled (CP2K version 2026.1 (Development Version))", false),
+                          std::make_tuple("enabled (CP2K version 2026.2)", false),
+                          std::make_tuple("enabled (CP2K version 2026.2.1)", false),
+                          std::make_tuple("enabled (CP2K version 2026.2 (Development Version))", true),
+                          std::make_tuple("enabled (CP2K version 2026.2.1 (Development Version))", true),
+                          std::make_tuple("enabled (CP2K version 2027.1)", true),
+                          std::make_tuple("enabled (CP2K version 2027.1 (Development Version))", true),
+                          std::make_tuple("enabled (CP2K version 2028.1)", true),
+                          std::make_tuple("enabled", true),
+                          std::make_tuple("", true),
+                          std::make_tuple("enabled (unknown)", true),
+                          std::make_tuple("enabled (CP2K version )", true),
+                          std::make_tuple("enabled (CP2K version 2026)", true),
+                          std::make_tuple("enabled (CP2K version 2026.)", true),
+                          std::make_tuple("enabled (CP2K version 2026.2.)", true),
+                          std::make_tuple("enabled (CP2K version 2026.2", true),
+                          std::make_tuple("enabled (CP2K version -2026.2)", true),
+                          std::make_tuple("enabled (CP2K version 99999999999999999999.2)", true),
+                          std::make_tuple("enabled (CP2K version 2026.99999999999999999999)", true),
+                          std::make_tuple("enabled (CP2K version 2026.2 custom)", true)));
 
 class QMMMForceProviderTest : public ::testing::Test
 {
@@ -157,8 +198,19 @@ TEST_F(QMMMForceProviderTest, CanConstructOrNot)
 {
     setDefaultParameters();
 
-    // GMX_CP2K is defined in CMakeList.txt through set_source_files_properties()
-    if (GMX_CP2K)
+#if GMX_LIB_MPI
+    if (qmmmRequiresMpiThreadMultiple(qmmmDescription()))
+    {
+        int provided = MPI_THREAD_SINGLE;
+        ASSERT_EQ(MPI_SUCCESS, MPI_Query_thread(&provided));
+        if (provided < MPI_THREAD_MULTIPLE)
+        {
+            GTEST_SKIP() << "This CP2K build requires MPI_THREAD_MULTIPLE. Set "
+                            "GMX_USE_MPI_THREAD_MULTIPLE=1 before running this test.";
+        }
+    }
+#endif
+    if (qmmmDescription() != "disabled")
     {
         // if libcp2k linked then we do not expect throws
         EXPECT_NO_THROW(QMMMForceProvider forceProvider(

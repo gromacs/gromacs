@@ -450,6 +450,14 @@ Performance and Run Control
         should contain multiple masses used for test particle insertion into a cavity.
         The center of mass of the last atoms is used for insertion into the cavity.
 
+``GMX_USE_MPI_THREAD_MULTIPLE``
+        when set to any value, including an empty string or ``0``, request
+        ``MPI_THREAD_MULTIPLE`` when |Gromacs| initializes external MPI.
+        Terminate if the MPI library cannot provide this thread-support level.
+        Required for QM/MM with CP2K versions 2026.2(dev) and later (see :ref:`qmmm`).
+        This can slightly reduce classical MD performance. Leave it unset to
+        retain the default MPI initialization.
+        
 ``GMX_VERLET_BUFFER_PRESSURE_TOLERANCE``
         sets the maximum tolerated error in the pressure in bar for the
         automated tuning of the Verlet pair-list buffering. Can only be used

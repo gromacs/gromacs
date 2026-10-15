@@ -61,7 +61,7 @@
 #include "gromacs/applied_forces/colvars/colvarsMDModule.h"
 #include "gromacs/applied_forces/nnpot/binary_information.h"
 #include "gromacs/applied_forces/plumed/plumedMDModule.h"
-#include "gromacs/applied_forces/qmmm/qmmmforceprovider.h"
+#include "gromacs/applied_forces/qmmm/qmmmversion.h"
 #include "gromacs/fft/binary_information.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/gpu_utils/binary_information.h"

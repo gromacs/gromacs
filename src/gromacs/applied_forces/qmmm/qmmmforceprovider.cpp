@@ -55,10 +55,13 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "qmmmversion.h"
 
 namespace gmx
 {
@@ -149,6 +152,30 @@ void QMMMForceProvider::appendLog(const std::string& msg)
 
 void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
 {
+    /* Check for CP2K version requirements regarding MPI thread support
+     * CP2K>=2026.2(dev) requires GROMACS to initialize with MPI_THREAD_MULTIPLE
+     */
+#if GMX_LIB_MPI
+    const std::string description = qmmmDescription();
+    if (qmmmRequiresMpiThreadMultiple(description))
+    {
+        int provided = MPI_THREAD_SINGLE;
+        if (MPI_Query_thread(&provided) != MPI_SUCCESS)
+        {
+            GMX_THROW(InternalError("Could not query the MPI thread-support level for CP2K."));
+        }
+        if (provided < MPI_THREAD_MULTIPLE)
+        {
+            GMX_THROW(InvalidInputError(formatString(
+                    "CP2K version is %s and requires MPI_THREAD_MULTIPLE. "
+                    "Set the environment variable GMX_USE_MPI_THREAD_MULTIPLE to any value "
+                    "(for example, export GMX_USE_MPI_THREAD_MULTIPLE=1) before launching "
+                    "GROMACS.",
+                    description.c_str())));
+        }
+    }
+#endif
+
     // Check that we have filename either defined in KVT or deduced from *.tpr name
     GMX_RELEASE_ASSERT(!parameters_.qmFileNameBase_.empty(),
                        "Names of CP2K input/output files is not defined in QMMMParameters");
@@ -362,13 +389,6 @@ void QMMMForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpo
                                             std::string_view             moduleName)
 {
     state_.writeState(checkpointWriting.builder_, moduleName);
-}
-
-std::string qmmmDescription()
-{
-    std::vector<char> cp2kVersion(100);
-    cp2k_get_version(cp2kVersion.data(), 100);
-    return cp2kVersion[0] != '\0' ? formatString("enabled (version %s)", cp2kVersion.data()) : "enabled";
 }
 
 } // namespace gmx
