@@ -37,6 +37,19 @@ atoms were perturbed. This bug has been present in release 2025.0 to 2026.4.
 :issue:`5730`
 
 
+Fixed the exclusion check of free energy calculations with multiple molecule types
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In free energy calculations with Ewald, PME or LJ-PME, mdrun checks that the number of
+perturbed excluded pairs found in the pair search matches the number expected from the topology.
+When the inter-molecular exclusion group contained atoms of different molecule types, the
+expected number used the perturbation state of an atom from the wrong molecule type.
+This could cause a spurious fatal error, could let the check pass although perturbed excluded
+pairs were beyond the pair-list cut-off, or could read memory beyond the end of the atom data.
+This has been present in versions 2026.0 to 2026.4.
+
+:issue:`5736`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

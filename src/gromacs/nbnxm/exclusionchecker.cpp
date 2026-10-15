@@ -163,7 +163,8 @@ static int computeNumGlobalPerturbedExclusions(const gmx_mtop_t& mtop)
             int moleculeIndexJ;
             int atomIndexInMoleculeJ;
             mtopGetMolblockIndex(mtop, globalAtomJ, &moleculeBlockJ, &moleculeIndexJ, &atomIndexInMoleculeJ);
-            if ((atomIIsPerturbed || PERTURBED(moltypeI.atoms.atom[atomIndexInMoleculeJ]))
+            const gmx_moltype_t& moltypeJ = mtop.moltype[mtop.molblock[moleculeBlockJ].type];
+            if ((atomIIsPerturbed || PERTURBED(moltypeJ.atoms.atom[atomIndexInMoleculeJ]))
                 && !(moleculeBlockJ == moleculeBlockI && moleculeIndexJ == moleculeIndexI
                      && std::find(exclsI.begin(), exclsI.end(), atomIndexInMoleculeJ) != exclsI.end()))
             {
