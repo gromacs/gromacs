@@ -524,20 +524,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*                     pme,
                 // forces are always transferred each step, even for empty domains.
                 if (pmeSimWork.useGpuPmePpCommunication)
                 {
-                    if (GMX_THREAD_MPI)
-                    {
-                        pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesSynchronizerFromPpPeerToPeer(
-                                sender.rankId);
-                    }
-                    else
-                    {
-                        pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpGpuAwareMpi(
-                                stateGpu->getCoordinates(),
-                                nat,
-                                sender.numAtoms * sizeof(rvec),
-                                sender.rankId,
-                                senderCount);
-                    }
+                    pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPp(
+                            stateGpu->getCoordinates(), nat, sender.numAtoms * sizeof(rvec), senderCount);
                 }
                 else if (sender.numAtoms > 0)
                 {

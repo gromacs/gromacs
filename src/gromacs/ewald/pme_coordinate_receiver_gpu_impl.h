@@ -92,44 +92,38 @@ public:
     void reinitCoordinateReceiver(DeviceBuffer<RVec> d_x);
 
     /*! \brief
-     * Receive coordinate synchronizer pointer from the PP ranks.
-     * \param[in] ppRank  PP rank to receive the synchronizer from.
-     */
-    void receiveCoordinatesSynchronizerFromPpPeerToPeer(int ppRank);
-
-    /*! \brief
-     * Used for lib MPI, receives co-ordinates from PP ranks
+     * Launch the receive of coordinates from a PP rank.
+     *
+     * With lib-MPI, a GPU-aware receive of the coordinate data is
+     * posted. With thread-MPI, the PP rank pushes the coordinates
+     * into the buffer whose address was sent by reinitCoordinateReceiver().
+     * A receive is posted for a pointer to the event recorded after
+     * that copy was queued (and the buffer arguments are unused).
+     *
      * \param[in] recvbuf      coordinates buffer in GPU memory
-     * \param[in] numAtoms     starting element in buffer
+     * \param[in] atomOffset   starting element in buffer
      * \param[in] numBytes     number of bytes to transfer
-     * \param[in] ppRank       PP rank to send data
      * \param[in] senderIndex  Index of PP rank within those involved in communication with this PME rank
      */
-    void launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceBuffer<RVec> recvbuf,
-                                                   int                numAtoms,
-                                                   int                numBytes,
-                                                   int                ppRank,
-                                                   int                senderIndex);
+    void launchReceiveCoordinatesFromPp(DeviceBuffer<RVec> recvbuf, int atomOffset, int numBytes, int senderIndex);
 
     /*! \brief
-     * Return PP co-ordinate transfer event received from PP
-     * rank determined from \c senderIndex, for consumer to enqueue
+     * Wait for a coordinate receive from any PP rank.
+     *
+     * With thread-MPI, this waits for the event pointer; the GPU copy
+     * may still be in flight when this function returns.
      *
      * The returned sender index may correspond to a PP rank with an
      * empty domain, which transfers no particles but still takes part
      * in the communication.
      *
-     * \param[in]  senderIndex   Index of the sender within the set of PP ranks
-     * \returns                  tuple with index of sending PP rank
-     *                           and corresponding event.
+     * \returns  tuple with the index of the sending PP rank within the
+     *           set of PP ranks that collaborate with this PME rank,
+     *           and, with thread-MPI, the event that the caller must
+     *           enqueue into the stream consuming the coordinates
+     *           (nullptr with lib-MPI, where the transfer is complete).
      */
-    std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int senderIndex);
-
-    /*! \brief
-     * Wait for coordinates from any PP rank
-     * \returns                  rank of sending PP task
-     */
-    int waitForCoordinatesFromAnyPpRank();
+    std::tuple<int, GpuEventSynchronizer*> waitForCoordinatesFromAnyPpRank();
 
     /*! \brief
      * Return pointer to stream associated with specific PP rank sender index

@@ -1805,28 +1805,27 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
 /*! \brief
  * Manages synchronization with remote GPU's PP coordinate sender, for a stage of the communication operation.
  *
- * For thread-MPI, an event associated with a stage of the operation is enqueued to the GPU stream that will be used by the consumer.
- * For lib-MPI, the CPU task executing this function will wait for a stage to be completed.
- * In each case, the index of the sending PP rank associated with the corresponding stage is returned.
+ * Waits for coordinate data (lib-MPI) or a coordinate-transfer event
+ * pointer (thread-MPI) from one of the PP ranks.
+ * With thread-MPI, the event is enqueued into the device stream that will consume the coordinates.
+ * With lib-MPI, the wait itself ensures that the data has arrived.
  *
  * \param[in]  pmeGpu                    The PME GPU structure.
  * \param[in]  pmeCoordinateReceiverGpu  The PME coordinate receiver GPU object
  * \param[in]  usePipeline               Whether pipelining is in use for PME-PP communication
- * \param[in]  senderIndex               Index of the sender within the set of PP ranks
  *
  * \return The index, within the set of PP ranks, of a sender whose
- *         coordinates have arrived. Its domain may be empty.
+ *         coordinate receive has completed. Its domain may be empty.
  */
 static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
                                                gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
-                                               bool usePipeline,
-                                               int  senderIndex)
+                                               bool usePipeline)
 {
+    const auto [senderIndex, event] = pmeCoordinateReceiverGpu->waitForCoordinatesFromAnyPpRank();
+    GMX_ASSERT(senderIndex >= 0, "Must get a useful sender index back");
     if (GMX_THREAD_MPI)
     {
-        GpuEventSynchronizer* event;
-        std::tie(senderIndex, event) = pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(senderIndex);
-        GMX_ASSERT(senderIndex >= 0, "Must get a useful sender index back");
+        GMX_ASSERT(event != nullptr, "Must get a useful event pointer back");
         if (usePipeline)
         {
             event->enqueueWaitEvent(*(pmeCoordinateReceiverGpu->ppCommStream(senderIndex)));
@@ -1835,10 +1834,6 @@ static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
         {
             event->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
         }
-    }
-    else
-    {
-        senderIndex = pmeCoordinateReceiverGpu->waitForCoordinatesFromAnyPpRank();
     }
     return senderIndex;
 }
@@ -1977,7 +1972,7 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
             {
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
                 const int senderIndex =
-                        manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, true, i);
+                        manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, true);
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
 
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
@@ -2058,7 +2053,7 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
                 for (int i = 0; i < numPpRanks; i++)
                 {
-                    manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, false, i);
+                    manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, false);
                 }
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
             }
