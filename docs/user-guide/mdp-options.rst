@@ -3288,7 +3288,9 @@ Non-equilibrium MD
       When the :mdp:`deform` option is active, add a velocity profile
       corresponding to the box deformation to the initial velocities.
       This is done after computing observables from the initial state
-      such as the initial temperature.
+      such as the initial temperature. Ignored with integrators without
+      velocities, i.e. energy minimization, normal-mode analysis and
+      test-particle insertion.
 
 Electric fields
 ^^^^^^^^^^^^^^^

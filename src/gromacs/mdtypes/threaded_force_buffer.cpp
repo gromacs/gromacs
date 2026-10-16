@@ -388,7 +388,8 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduceTemplated(
         {
             GMX_ASSERT(forceBuffer, "Need a valid force buffer for reduction");
 
-            reduceVirialData(forceBuffer, f_t.subArray(1, numBuffers - 1));
+            reduceVirialData(forceBuffer,
+                             f_t.subArray(reductionBeginIndex, numBuffers - reductionBeginIndex));
         }
     }
 

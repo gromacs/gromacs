@@ -160,8 +160,9 @@ static int computeNumGlobalPerturbedExclusions(const gmx_mtop_t& mtop)
             }
 
             // We count this exclusion when this is not also a "normal" intra-molecular exclusion
-            const auto indexJ = mtopLookUp.getMolblockAtomIndex(globalAtomJ);
-            if ((atomIIsPerturbed || PERTURBED(moltypeI.atoms.atom[indexJ.atomIndex]))
+            const auto           indexJ   = mtopLookUp.getMolblockAtomIndex(globalAtomJ);
+            const gmx_moltype_t& moltypeJ = mtop.moltype[mtop.molblock[indexJ.molBlock].type];
+            if ((atomIIsPerturbed || PERTURBED(moltypeJ.atoms.atom[indexJ.atomIndex]))
                 && !(indexJ.molBlock == indexI.molBlock && indexJ.molIndex == indexI.molIndex
                      && std::find(exclsI.begin(), exclsI.end(), indexJ.atomIndex) != exclsI.end()))
             {

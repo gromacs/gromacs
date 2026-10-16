@@ -50,6 +50,7 @@
 
 #include <filesystem>
 #include <string>
+#include <tuple>
 
 #include <gtest/gtest.h>
 
@@ -57,6 +58,7 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -98,19 +100,21 @@ public:
 
     /*! \brief Test mdp reading and writing
      *
+     * \returns The warning handler, so the numbers of notes and errors can be checked
+     *
      * \todo Modernize read_inp and write_inp to use streams,
      * which will make these tests run faster, because they don't
      * use disk files. */
-    void runTest(const std::string& inputMdpFileContents,
-                 const TestBehavior testBehavior = TestBehavior::NoErrorAndCompareOutput,
-                 const bool         setGenVelSeedToKnownValue = true)
+    WarningHandler runTest(const std::string& inputMdpFileContents,
+                           const TestBehavior testBehavior = TestBehavior::NoErrorAndCompareOutput,
+                           const bool         setGenVelSeedToKnownValue = true)
     {
         const bool expectError = testBehavior == TestBehavior::ErrorAndCompareOutput
                                  || testBehavior == TestBehavior::ErrorAndDoNotCompareOutput;
         const bool compareOutput = testBehavior == TestBehavior::ErrorAndCompareOutput
                                    || testBehavior == TestBehavior::NoErrorAndCompareOutput;
 
-        WarningHandler wi{ false, 0 };
+        WarningHandler wi{ allowWarnings_, 0 };
         std::string    inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp").string();
         std::string    outputMdpFilename;
         if (compareOutput)
@@ -149,12 +153,17 @@ public:
             auto outputMdpContents = TextReader::readFileToString(outputMdpFilename);
             checker.checkString(outputMdpContents, "OutputMdpFile");
         }
+
+        return wi;
     }
 
     TestFileManager fileManager_;
     t_inputrec      ir_;
     MDModules       mdModules_;
     t_gromppopts    opts_;
+
+    //! Whether warnings are counted as such, instead of being turned into errors
+    bool allowWarnings_ = false;
 };
 
 TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
@@ -301,6 +310,88 @@ TEST_F(GetIrTest, AcceptsMimic)
     const char* inputMdpFile[] = { "integrator = mimic", "QMMM-grps = QMatoms" };
     runTest(joinStrings(inputMdpFile, "\n"));
 }
+
+//! Parameters for the checks of deform-init-flow: integrator, deform-init-flow and gen-vel
+using DeformInitFlowParameters = std::tuple<IntegrationAlgorithm, bool, bool>;
+
+//! Test fixture for the checks of deform-init-flow with box deformation
+class GetIrDeformInitFlowTest : public GetIrTest, public ::testing::WithParamInterface<DeformInitFlowParameters>
+{
+public:
+    GetIrDeformInitFlowTest() { allowWarnings_ = true; }
+};
+
+//! Returns the name of a deform-init-flow test from its parameters
+static std::string nameOfDeformInitFlowTest(const ::testing::TestParamInfo<DeformInitFlowParameters>& info)
+{
+    const auto [integrator, deformInitFlow, generateVelocities] = info.param;
+    // Test names may only contain alphanumeric characters and underscores
+    std::string name = replaceAll(enumValueToString(integrator), "-", "");
+    name += deformInitFlow ? "_DeformInitFlow" : "_NoDeformInitFlow";
+    name += generateVelocities ? "_GenVel" : "_NoGenVel";
+    return name;
+}
+
+TEST_P(GetIrDeformInitFlowTest, GivesExpectedNotesAndErrors)
+{
+    const auto [integrator, deformInitFlow, generateVelocities] = GetParam();
+    // Use PME, so L-BFGS does not warn about cut-off interactions
+    std::string inputMdpFileContents =
+            "nsteps = 10\ncoulombtype = PME\nvdwtype = PME\ndeform = 0 0 0 0.01 0 0\n";
+    inputMdpFileContents += formatString("integrator = %s\n", enumValueToString(integrator));
+    inputMdpFileContents += formatString("deform-init-flow = %s\n", deformInitFlow ? "yes" : "no");
+    inputMdpFileContents += formatString("gen-vel = %s\n", generateVelocities ? "yes" : "no");
+
+    int expectedNumErrors   = 0;
+    int expectedNumWarnings = 0;
+    int expectedNumNotes    = 0;
+    if (!EI_DYNAMICS(integrator))
+    {
+        // There are no velocities, so deform-init-flow is ignored with a note
+        // and initializing the flow profile is not asked for
+        expectedNumNotes = deformInitFlow ? 1 : 0;
+    }
+    else if (!deformInitFlow)
+    {
+        if (integrator == IntegrationAlgorithm::BD)
+        {
+            // BD does not use the initial velocities: generating them only gives a warning
+            expectedNumWarnings = generateVelocities ? 1 : 0;
+        }
+        else if (generateVelocities)
+        {
+            // Initializing the flow profile is required with generated velocities
+            expectedNumErrors = 1;
+        }
+        else
+        {
+            // and otherwise suggested
+            expectedNumNotes = 1;
+        }
+    }
+
+    const WarningHandler wi = runTest(inputMdpFileContents,
+                                      expectedNumErrors > 0 ? TestBehavior::ErrorAndDoNotCompareOutput
+                                                            : TestBehavior::NoErrorAndDoNotCompareOutput);
+    EXPECT_EQ(wi.errorCount(), expectedNumErrors);
+    EXPECT_EQ(wi.warningCount(), expectedNumWarnings);
+    EXPECT_EQ(wi.noteCount(), expectedNumNotes);
+}
+
+INSTANTIATE_TEST_SUITE_P(WithBoxDeformation,
+                         GetIrDeformInitFlowTest,
+                         ::testing::Combine(::testing::Values(IntegrationAlgorithm::MD,
+                                                              IntegrationAlgorithm::SD1,
+                                                              IntegrationAlgorithm::BD,
+                                                              IntegrationAlgorithm::Steep,
+                                                              IntegrationAlgorithm::CG,
+                                                              IntegrationAlgorithm::LBFGS,
+                                                              IntegrationAlgorithm::NM,
+                                                              IntegrationAlgorithm::TPI,
+                                                              IntegrationAlgorithm::TPIC),
+                                            ::testing::Bool(),
+                                            ::testing::Bool()),
+                         nameOfDeformInitFlowTest);
 
 #if HAVE_MUPARSER
 

@@ -1,0 +1,39 @@
+; Flexible SPC water for the 216 water molecules in spc216.gro.
+; The flexible model allows its use with all integrators, including
+; normal-mode analysis. The last molecule is listed separately, so it
+; can be inserted with test-particle insertion.
+
+[ defaults ]
+; nbfunc  comb-rule  gen-pairs  fudgeLJ  fudgeQQ
+  1       2          no         1.0      1.0
+
+[ atomtypes ]
+; name  mass     charge  ptype  sigma     epsilon
+  OW    15.9994  0.0     A      0.316557  0.650194
+  HW    1.008    0.0     A      0.0       0.0
+
+[ moleculetype ]
+; name  nrexcl
+  SOL   2
+
+[ atoms ]
+; nr  type  resnr  residue  atom  cgnr  charge  mass
+  1   OW    1      SOL      OW    1     -0.82   15.9994
+  2   HW    1      SOL      HW1   1      0.41    1.008
+  3   HW    1      SOL      HW2   1      0.41    1.008
+
+[ bonds ]
+; i  j  funct  b0   kb
+  1  2  1      0.1  345000
+  1  3  1      0.1  345000
+
+[ angles ]
+; i  j  k  funct  theta0  ktheta
+  2  1  3  1      109.47  383
+
+[ system ]
+Flexible SPC water
+
+[ molecules ]
+SOL  215
+SOL  1
