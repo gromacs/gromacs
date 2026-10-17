@@ -54,7 +54,7 @@
  * e.g. "Conserved En."
  */
 // clang-format off
-constexpr gmx::EnumerationArray<InteractionFunction, t_interaction_function> interaction_function = {
+const gmx::EnumerationArray<InteractionFunction, t_interaction_function> interaction_function = {
 //    Name                Long name         Number of atoms
 //                                             Number of A-state parameters
 //                                                Number of B-state parameters
