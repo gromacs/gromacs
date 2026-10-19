@@ -94,7 +94,6 @@ elseif(GMX_GPU_SYCL)
     _gmx_add_files_to_property(SYCL_SOURCES
         binary_information.cpp
         devicebuffer_sycl.cpp
-        device_context_manager.cpp
         device_context_sycl.cpp
         device_stream_manager.cpp
         device_stream_sycl.cpp

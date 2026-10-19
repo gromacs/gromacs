@@ -126,7 +126,6 @@ elseif (GMX_GPU_HIP)
         pme_gpu_internal.cpp
         pme_gpu_program.cpp
         pme_gpu_program_impl_hip.cpp
-        pme_gpu_3dfft_hip.cpp
         pme_gpu_timings.cpp
         pme_pp_comm_gpu_impl_gpu.cpp
         pme_force_sender_gpu_impl_gpu.cpp
@@ -155,7 +154,6 @@ elseif (GMX_GPU_SYCL)
         pme_gpu_internal.cpp
         pme_gpu_program.cpp
         pme_gpu_program_impl_sycl.cpp
-        pme_gpu_3dfft_sycl.cpp
         pme_gpu_timings.cpp
         pme_pp_comm_gpu_impl_gpu.cpp
         pme_force_sender_gpu_impl_gpu.cpp
