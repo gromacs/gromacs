@@ -45,11 +45,15 @@ set(libgromacs_object_library_dependencies "")
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
         if (IS_ABSOLUTE "${_file}")
-            set_property(GLOBAL APPEND PROPERTY ${PROPERTY} ${_file})
+            set(_path ${_file})
         else()
-            set_property(GLOBAL APPEND PROPERTY ${PROPERTY}
-                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
+            set(_path ${CMAKE_CURRENT_LIST_DIR}/${_file})
         endif()
+        # Catch misspelled or stale file names early
+        if (NOT EXISTS "${_path}")
+            message(FATAL_ERROR "Source file ${_path} added to ${PROPERTY} does not exist")
+        endif()
+        set_property(GLOBAL APPEND PROPERTY ${PROPERTY} ${_path})
     endforeach()
 endfunction ()
 
