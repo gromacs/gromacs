@@ -26,6 +26,7 @@ accessed was used for other data. And finally, the PME grids were mixed up for c
 B-state forces and energies. These issues have been present in versions 2025.0 to 2026.4.
 
 :issue:`5716`
+
 Fix incorrect virial and pressure with perturbed atoms
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -35,7 +36,6 @@ This led to incorrect pressures. The effect would be small when only a few
 atoms were perturbed. This bug has been present in release 2025.0 to 2026.4.
 
 :issue:`5730`
-
 
 Fixed the exclusion check of free energy calculations with multiple molecule types
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

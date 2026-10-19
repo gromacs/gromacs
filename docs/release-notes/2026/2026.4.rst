@@ -203,7 +203,7 @@ unless ``-time`` was also specified.
 Fixes to the Colvars library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This release contains the following bugfixes from the`Colvars repository
+This release contains the following bugfixes from the `Colvars repository
 <https://github.com/Colvars/colvars>`_:
 
 * fix: correctly implement the wrap function for orientation_angle (`Colvars PR 943
