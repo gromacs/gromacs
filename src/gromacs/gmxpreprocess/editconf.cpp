@@ -1287,7 +1287,7 @@ int gmx_editconf(int argc, char* argv[])
     /* We have already checked that the output is a pdb file and the input a tpr file */
     if (bCONECT)
     {
-        conect = gmx_conect_generate(top);
+        conect = gmx_conect_generate(top->idef);
     }
     else
     {

@@ -57,7 +57,14 @@
 
 enum class PbcType : int;
 
-void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, PbcType pbcType, rvec x[], const int index[], matrix box)
+void calc_pbc_cluster(int       ecenter,
+                      int       nrefat,
+                      t_block*  block,
+                      int       natoms,
+                      PbcType   pbcType,
+                      rvec      x[],
+                      const int index[],
+                      matrix    box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
@@ -80,14 +87,14 @@ void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, PbcType pbcType,
     set_pbc(&pbc, pbcType, box);
 
     /* Convert atom index to molecular */
-    nmol   = top->mols.nr;
-    molind = top->mols.index;
+    nmol   = block->nr;
+    molind = block->index;
     snew(bMol, nmol);
     snew(m_com, nmol);
     snew(m_shift, nmol);
     snew(cluster, nmol);
     snew(added, nmol);
-    snew(bTmp, top->atoms.nr);
+    snew(bTmp, natoms);
 
     for (i = 0; (i < nrefat); i++)
     {

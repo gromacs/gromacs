@@ -52,8 +52,14 @@ enum
     euNR
 };
 
-void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, PbcType pbcType, rvec x[], const int index[], matrix box);
-
+void calc_pbc_cluster(int       ecenter,
+                      int       nrefat,
+                      t_block*  block,
+                      int       natoms,
+                      PbcType   pbcType,
+                      rvec      x[],
+                      const int index[],
+                      matrix    box);
 
 void put_molecule_com_in_box(int      unitcell_enum,
                              int      ecenter,

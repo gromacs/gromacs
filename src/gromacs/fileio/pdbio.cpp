@@ -1095,7 +1095,7 @@ void gmx_pdb_read_conf(const std::filesystem::path& infile,
     gmx_fio_fclose(in);
 }
 
-gmx_conect gmx_conect_generate(const t_topology* top)
+gmx_conect gmx_conect_generate(const t_idef& idef)
 {
     int        i;
     gmx_conect gc;
@@ -1107,9 +1107,9 @@ gmx_conect gmx_conect_generate(const t_topology* top)
     {
         if (IS_CHEMBOND(f))
         {
-            for (i = 0; (i < top->idef.il[f].nr); i += interaction_function[f].nratoms + 1)
+            for (i = 0; (i < idef.il[f].nr); i += interaction_function[f].nratoms + 1)
             {
-                gmx_conect_add(gc, top->idef.il[f].iatoms[i + 1], top->idef.il[f].iatoms[i + 2]);
+                gmx_conect_add(gc, idef.il[f].iatoms[i + 1], idef.il[f].iatoms[i + 2]);
             }
         }
     }
