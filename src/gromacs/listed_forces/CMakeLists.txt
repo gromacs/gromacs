@@ -38,7 +38,7 @@ gmx_add_libgromacs_sources(
     listed_forces_gpu_impl.cpp
     listed_forces.cpp
     listed_internal.cpp
-    manage_threading.cpp
+    bonded_threading.cpp
     orires.cpp
     pairs.cpp
     position_restraints.cpp

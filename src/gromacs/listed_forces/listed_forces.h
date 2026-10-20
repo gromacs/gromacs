@@ -67,8 +67,6 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
-#include <cstdio>
-
 #include <bitset>
 #include <memory>
 #include <vector>
@@ -80,7 +78,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
-struct bonded_threading_t;
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_ffparams_t;
@@ -91,12 +88,14 @@ class history_t;
 struct t_fcdata;
 struct t_forcerec;
 struct t_nrnb;
-class WorkDivision;
 
 namespace gmx
 {
+class BondedThreading;
 class ForceOutputs;
+class MDLogger;
 class StepWorkload;
+class WorkDivision;
 template<typename>
 class ArrayRefWithPadding;
 } // namespace gmx
@@ -140,7 +139,7 @@ public:
      * \param[in] interactionSelection  Select of interaction groups through bits set
      * \param[in] domDec           Domain decomposition data, pass nulltpr without DD
      * \param[in] commMultiSim     Multi-simulation communication, can be nullptr
-     * \param[in] fplog            Log file for printing env.var. override, can be nullptr
+     * \param[in] mdlog            Log file for printing env.var. override, can be nullptr
      * \param[in] wcycle           Manages wallcycle counting
      * \param[in] fr               Manages PP-rank force computations
      * \param[in] nrnb             Manages FLOPs accounting
@@ -152,7 +151,7 @@ public:
                  InteractionSelection  interactionSelection,
                  const gmx_domdec_t*   domDec,
                  const gmx_multisim_t* commMultiSim,
-                 FILE*                 fplog,
+                 const gmx::MDLogger&  mdlog,
                  gmx_wallcycle*        wcycle,
                  const t_forcerec&     fr,
                  t_nrnb*               nrnb);
@@ -282,7 +281,7 @@ private:
                      const InteractionDefinitions&       idef,
                      gmx::ArrayRef<const int>            iatoms,
                      bool                                havePerturbedInteractions,
-                     const WorkDivision&                 workDivision,
+                     const gmx::WorkDivision&            workDivision,
                      const rvec                          x[],
                      rvec4                               f[],
                      rvec                                fshift[],
@@ -305,8 +304,8 @@ private:
     int numEnergyGroups_;
     //! Interaction definitions used for storing selections
     InteractionDefinitions idefSelection_;
-    //! Thread parallelization setup, unique_ptr to avoid declaring bonded_threading_t
-    std::unique_ptr<bonded_threading_t> threading_;
+    //! Thread parallelization setup, unique_ptr to avoid declaring BondedThreading
+    std::unique_ptr<gmx::BondedThreading> threading_;
     //! Tells which interactions to select for computation
     const InteractionSelection interactionSelection_;
     //! Force buffer for free-energy forces

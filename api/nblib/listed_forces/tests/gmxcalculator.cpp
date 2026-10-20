@@ -58,6 +58,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/booltype.h"
+#include "gromacs/utility/logger.h"
 
 #include "nblib/exception.h"
 #include "nblib/listed_forces/bondtypes.h"
@@ -99,7 +100,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
 
     gmx_wallcycle* wcycle = nullptr;
     gmxListedForces_      = std::make_unique<ListedForces>(
-            *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, nullptr, wcycle, fr, &nrnb);
+            *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, gmx::MDLogger{}, wcycle, fr, &nrnb);
     gmxListedForces_->setup(*idef, nP, false, mdAtoms_.cVCM);
 
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());

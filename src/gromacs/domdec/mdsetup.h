@@ -44,7 +44,6 @@
 
 #include "gromacs/utility/vectypes.h"
 
-struct bonded_threading_t;
 struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;

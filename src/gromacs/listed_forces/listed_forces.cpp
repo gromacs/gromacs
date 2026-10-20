@@ -78,8 +78,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "bonded_threading.h"
 #include "listed_internal.h"
-#include "manage_threading.h"
 #include "utilities.h"
 
 ListedForces::ListedForces(const gmx_ffparams_t&      ffparams,
@@ -89,13 +89,13 @@ ListedForces::ListedForces(const gmx_ffparams_t&      ffparams,
                            const InteractionSelection interactionSelection,
                            const gmx_domdec_t*        domDec,
                            const gmx_multisim_t*      commMultiSim,
-                           FILE*                      fplog,
+                           const gmx::MDLogger&       mdlog,
                            gmx_wallcycle*             wcycle,
                            const t_forcerec&          fr,
                            t_nrnb*                    nrnb) :
     numEnergyGroups_(numEnergyGroups),
     idefSelection_(ffparams),
-    threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, numComGroups, fplog)),
+    threading_(std::make_unique<gmx::BondedThreading>(numThreads, numEnergyGroups, numComGroups, mdlog)),
     interactionSelection_(interactionSelection),
     foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups)),
     domDec_(domDec),
@@ -188,7 +188,7 @@ void ListedForces::setup(const InteractionDefinitions&             domainIdef,
         }
     }
 
-    setup_bonded_threading(threading_.get(), numAtomsForce, useGpu, *idef_);
+    threading_->updateAfterPartition(numAtomsForce, useGpu, *idef_);
 
     if (idef_->ilsort == ilsortFE_SORTED)
     {
@@ -258,7 +258,7 @@ real ListedForces::calcOneBond(int                                 thread,
                                const InteractionDefinitions&       idef,
                                gmx::ArrayRef<const int>            iatoms,
                                const bool                          havePerturbedInteractions,
-                               const WorkDivision&                 workDivision,
+                               const gmx::WorkDivision&            workDivision,
                                const rvec                          x[],
                                rvec4                               f[],
                                rvec                                fshift[],
@@ -392,12 +392,12 @@ void ListedForces::calcPositionRestraintForces(const InteractionDefinitions& ide
                                                gmx::ArrayRef<const real> lambda,
                                                gmx::ArrayRef<real>       dvdl)
 {
-#pragma omp parallel for num_threads(threading_->nthreads) schedule(static)
-    for (int thread = 0; thread < threading_->nthreads; thread++)
+#pragma omp parallel for num_threads(threading_->numThreads_) schedule(static)
+    for (int thread = 0; thread < threading_->numThreads_; thread++)
     {
         try
         {
-            auto& threadBuffer = threading_->threadedForceBuffer.threadForceBuffer(thread);
+            auto& threadBuffer = threading_->threadedForceBuffers_.threadForceBuffer(thread);
 
             auto& comBuffers = threading_->centersOfMassScaledBuffers_[thread];
 
@@ -415,9 +415,9 @@ void ListedForces::calcPositionRestraintForces(const InteractionDefinitions& ide
 
             if (!idef.il[InteractionFunction::PositionRestraints].empty())
             {
-                int bound0 = threading_->workDivision.bound(InteractionFunction::PositionRestraints, thread);
-                int bound1 = threading_->workDivision.bound(InteractionFunction::PositionRestraints,
-                                                            thread + 1);
+                int bound0 = threading_->workDivision_.bound(InteractionFunction::PositionRestraints, thread);
+                int bound1 = threading_->workDivision_.bound(
+                        InteractionFunction::PositionRestraints, thread + 1);
                 auto iatoms = gmx::arrayRefFromArray(
                         idef.il[InteractionFunction::PositionRestraints].iatoms.data() + bound0,
                         bound1 - bound0);
@@ -439,9 +439,9 @@ void ListedForces::calcPositionRestraintForces(const InteractionDefinitions& ide
 
             if (!idef.il[InteractionFunction::FlatBottomedPositionRestraints].empty())
             {
-                int bound0 = threading_->workDivision.bound(
+                int bound0 = threading_->workDivision_.bound(
                         InteractionFunction::FlatBottomedPositionRestraints, thread);
-                int bound1 = threading_->workDivision.bound(
+                int bound1 = threading_->workDivision_.bound(
                         InteractionFunction::FlatBottomedPositionRestraints, thread + 1);
                 auto iatoms = gmx::arrayRefFromArray(
                         idef.il[InteractionFunction::FlatBottomedPositionRestraints].iatoms.data() + bound0,
@@ -481,12 +481,12 @@ void ListedForces::calcBondedForces(const InteractionDefinitions& idef,
                                     const gmx::StepWorkload&            stepWork,
                                     int*                                global_atom_index)
 {
-#pragma omp parallel for num_threads(threading_->nthreads) schedule(static)
-    for (int thread = 0; thread < threading_->nthreads; thread++)
+#pragma omp parallel for num_threads(threading_->numThreads_) schedule(static)
+    for (int thread = 0; thread < threading_->numThreads_; thread++)
     {
         try
         {
-            auto& threadBuffer = threading_->threadedForceBuffer.threadForceBuffer(thread);
+            auto& threadBuffer = threading_->threadedForceBuffers_.threadForceBuffer(thread);
             /* thread stuff */
             rvec*                                             fshift;
             gmx::ArrayRef<real>                               dvdlt;
@@ -532,7 +532,7 @@ void ListedForces::calcBondedForces(const InteractionDefinitions& idef,
                                          idef,
                                          iatoms,
                                          havePerturbedInteractions,
-                                         threading_->workDivision,
+                                         threading_->workDivision_,
                                          x,
                                          ft,
                                          fshift,
@@ -567,7 +567,7 @@ bool ListedForces::haveRestraints(const t_fcdata& fcdata) const
 
 bool ListedForces::haveCpuBondeds() const
 {
-    return threading_->haveBondeds;
+    return threading_->haveBondeds_;
 }
 
 bool ListedForces::haveCpuListedForces(const t_fcdata& fcdata) const
@@ -591,7 +591,7 @@ void ListedForces::calcListed(const InteractionDefinitions&       idef,
                               int*                                global_atom_index,
                               const gmx::StepWorkload&            stepWork)
 {
-    if (threading_->haveBondeds)
+    if (threading_->haveBondeds_)
     {
         gmx::ForceWithShiftForces& forceWithShiftForces = forceOutputs->forceWithShiftForces();
 
@@ -618,7 +618,7 @@ void ListedForces::calcListed(const InteractionDefinitions&       idef,
         wallcycle_sub_stop(wcycle_, WallCycleSubCounter::Listed);
 
         wallcycle_sub_start(wcycle_, WallCycleSubCounter::ListedBufOps);
-        threading_->threadedForceBuffer.reduce(
+        threading_->threadedForceBuffers_.reduce(
                 &forceWithShiftForces, &enerd->term, &enerd->grpp, dvdl, stepWork, 1);
 
         if (stepWork.computeDhdl)
@@ -657,7 +657,7 @@ void ListedForces::calcListedLambda(const InteractionDefinitions& idef,
 {
     GMX_ASSERT(idef.ilsort == ilsortFE_SORTED, "Must have sorted perturbed interactions to the end");
 
-    WorkDivision& workDivision = threading_->foreignLambdaWorkDivision;
+    gmx::WorkDivision& workDivision = threading_->foreignLambdaWorkDivision_;
 
     const t_pbc* pbc_null;
     if (fr_.bMolPBC)
@@ -790,7 +790,7 @@ void ListedForces::calculate(const matrix                              box,
             {
                 forceOutputs->forceWithVirial().addVirialContribution(diagonalVirial);
 
-                threading_->threadedForceBuffer.reduce(
+                threading_->threadedForceBuffers_.reduce(
                         &forceOutputs->forceWithVirial(), &enerd->term, &enerd->grpp, dvdl, stepWork, 1);
 
                 if (stepWork.computeDhdl)

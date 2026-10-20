@@ -53,7 +53,6 @@
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_pme_t;
-struct bonded_threading_t;
 class DispersionCorrection;
 class ListedForces;
 class CpuPpLongRangeNonbondeds;

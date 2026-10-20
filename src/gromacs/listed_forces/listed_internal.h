@@ -33,8 +33,8 @@
  */
 /*! \internal \file
  *
- * \brief This file contains declarations for functions needed
- * internally by the module.
+ * \brief This file contains the declaration for a function needed
+ * internally by several parts of the module.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \author Berk Hess <hess@kth.se>
@@ -42,98 +42,6 @@
  */
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
-
-#include <cstdio>
-
-#include <memory>
-#include <vector>
-
-#include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/mdtypes/threaded_force_buffer.h"
-#include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/alignedallocator.h"
-#include "gromacs/utility/bitmask.h"
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/vectypes.h"
-
-/*! \internal \brief The division of bonded interactions of the threads */
-class WorkDivision
-{
-public:
-    //! Constructor
-    WorkDivision(int numThreads) :
-        stride_(numThreads + 1), packedBounds_(static_cast<int>(InteractionFunction::Count) * stride_)
-    {
-    }
-
-    //! Sets the bound between threads \p boundIndex-1 and \p boundIndex to \p count
-    void setBound(InteractionFunction functionType, int boundIndex, int count)
-    {
-        packedBounds_[static_cast<int>(functionType) * stride_ + boundIndex] = count;
-    }
-
-    int bound(InteractionFunction functionType, int boundIndex) const
-    {
-        return bound(static_cast<int>(functionType), boundIndex);
-    }
-
-    //! Returns the bound between threads \p boundIndex-1 and \p boundIndex
-    int bound(int functionType, int boundIndex) const
-    {
-        return packedBounds_[functionType * stride_ + boundIndex];
-    }
-
-    //! Returns the last bound
-    int end(int ftype) const { return bound(ftype, stride_ - 1); }
-
-private:
-    //! The stride_ between and size of the entries for a function type
-    int stride_;
-    //! The bounds stored as a flat array for fast access
-    std::vector<int> packedBounds_;
-};
-
-struct CentersOfMassScaledBuffers
-{
-    //! Buffer for computing scaled centers of mass for position restraints
-    std::vector<gmx::RVec> comA_;
-    //! Buffer for computing scaled centers of mass for topology B for position restraints
-    std::vector<gmx::RVec> comB_;
-};
-
-/*! \internal \brief struct contain all data for bonded force threading */
-struct bonded_threading_t
-{
-    //! Constructor
-    bonded_threading_t(int numThreads, int numEnergyGroups, int numComGroups, FILE* fplog);
-
-    //! Number of threads to be used for bondeds
-    int nthreads = 0;
-    //! The thread parallel force and energy buffers
-    gmx::ThreadedForceBuffer<rvec4> threadedForceBuffer;
-    //! true if we have and thus need to reduce bonded forces
-    bool haveBondeds = false;
-
-    /* There are two different ways to distribute the bonded force calculation
-     * over the threads. We decide which to use based on the number of threads.
-     */
-    //! Maximum thread count for uniform distribution of bondeds over threads
-    int max_nthread_uniform = 0;
-
-    //! The division of work in the t_list over threads.
-    WorkDivision workDivision;
-
-    //! Work division for free-energy foreign lambda calculations, always uses 1 thread
-    WorkDivision foreignLambdaWorkDivision;
-
-    //! Buffers for each thread for computing scaled centers of mass for position restraints
-    std::vector<CentersOfMassScaledBuffers> centersOfMassScaledBuffers_;
-
-    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(bonded_threading_t);
-};
-
 
 /*! \brief Returns the global topology atom number belonging to local
  * atom index i.
