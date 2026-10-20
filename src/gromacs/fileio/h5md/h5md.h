@@ -304,31 +304,22 @@ private:
                                                     std::optional<int64_t> restartingFromStep,
                                                     std::optional<int64_t> expectedNumParticles);
 
-    /*! \brief Set up the H5MD metadata group according to the H5md specification.
+    /*! \brief Set up the H5MD module group and add our used modules.
      *
-     * \note Also sets up the modules group with GROMACS and units modules. This
-     * method must be called before adding any other H5MD module information.
+     * Sets up the modules group with GROMACS and units modules. This
+     * must be called before adding any other H5MD module information.
      *
      * Creates the following groups and attributes (relative to the HDF5 root):
      *
-     * /h5md                (H5md metadata group)
-     * \++ version          (H5md specification version attribute)
-     * \-- /author          (author group)
-     *     \++ name         (current username, or a dummy name if we cannot get it)
-     * \-- /creator         (creator group)
-     *     \++ name         (GROMACS)
-     *     \++ version      (GROMACS version)
-     * \-- /modules         (modules group)
-     *     \-- /gromacs     (GROMACS module group)
-     *         \++ version  (GROMACS module version)
-     *     \-- /units       (units module group)
-     *         \++ version  (units module version)
-     *         \++ system   (unit system string)
-     *
-     * These groups and attributes are required by the H5MD specification to exist
-     * in the file. After setting these up we can proceed with the rest of the file.
+     * /h5md               (H5md metadata group)
+     * \-- modules         (modules group)
+     *     \-- gromacs     (GROMACS module group)
+     *         \++ version (GROMACS module version)
+     *     \-- units       (units module group)
+     *         \++ version (units module version)
+     *         \++ system  (unit system string)
      */
-    void setupMetadataGroup();
+    void setupModules();
 
     /*! \brief Set up the module for GROMACS molecular topology
      *

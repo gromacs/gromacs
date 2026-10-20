@@ -101,6 +101,34 @@ TEST(H5mdFileTest, CanCreateAndCloseH5mdFile)
     }
 }
 
+TEST(H5mdFileTest, OpeningFileInWriteModeCreatesMetadata)
+{
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+
+    {
+        H5md file(filename, H5mdFileMode::Write);
+
+        const auto [h5mdGroup, h5mdGroupGuard] =
+                makeH5mdGroupGuard(openGroup(file.fileid(), "/h5md"));
+        EXPECT_THAT(getAttributeVector<int>(h5mdGroup, "version"), ::testing::Optional(std::vector<int>{ 1, 1 }))
+                << "H5md specification version should be 1.1";
+
+        const auto [creatorGroup, creatorGroupGuard] =
+                makeH5mdGroupGuard(openGroup(h5mdGroup, "creator"));
+        EXPECT_THAT(getAttribute<std::string>(creatorGroup, "name"),
+                    ::testing::Optional(::testing::StrEq("GROMACS")));
+        EXPECT_THAT(getAttribute<std::string>(creatorGroup, "version"),
+                    ::testing::Optional(::testing::StrEq(gmx_version())));
+
+        const auto [authorGroup, authorGroupGuard] =
+                makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
+        // The author name can be set using environment variables, checked
+        // separately below. Only assert that a value was written here.
+        EXPECT_TRUE(getAttribute<std::string>(authorGroup, "name").has_value());
+    }
+}
+
 TEST(H5mdFileTest, OpeningFileInReadModeDoesNotAllowWrite)
 {
     TestFileManager       fileManager;
@@ -171,7 +199,7 @@ TEST(H5mdFileTest, OpeningFileInAppendModeDoesNotEraseData)
         H5md h5md(filename, H5mdFileMode::Write);
 
         const auto [creatorGroup, creatorGroupGuard] =
-                makeH5mdGroupGuard(createGroup(h5md.fileid(), "/h5md/creator"));
+                makeH5mdGroupGuard(createGroup(h5md.fileid(), "/h5md/mygroup"));
         setAttribute(creatorGroup, "name", "GROMACS");
         setAttribute(creatorGroup, "version", "2026.0");
 
@@ -184,7 +212,7 @@ TEST(H5mdFileTest, OpeningFileInAppendModeDoesNotEraseData)
         H5md file(filename, H5mdFileMode::Append);
 
         const auto [creatorGroup, creatorGroupGuard] =
-                makeH5mdGroupGuard(openGroup(file.fileid(), "/h5md/creator"));
+                makeH5mdGroupGuard(openGroup(file.fileid(), "/h5md/mygroup"));
         EXPECT_EQ(getAttribute<std::string>(creatorGroup, "name").value_or(""), "GROMACS");
         EXPECT_EQ(getAttribute<std::string>(creatorGroup, "version").value_or(""), "2026.0");
 
@@ -195,35 +223,8 @@ TEST(H5mdFileTest, OpeningFileInAppendModeDoesNotEraseData)
     }
 }
 
-TEST_F(H5mdIoTest, SetupFileFromInputWritesMetadataGroup)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-
-    file().setupFileFromInput(mtop, inputRecord);
-
-    const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
-
-    EXPECT_TRUE(getAttributeVector<int>(group, "version").has_value())
-            << "H5md specification version attribute must be written";
-    EXPECT_EQ(getAttributeVector<int>(group, "version").value(), (std::vector<int>{ 1, 1 }))
-            << "H5md specification version should be 1.1";
-
-    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(group, "author"));
-    EXPECT_TRUE(getAttribute<std::string>(authorGroup, "name").has_value())
-            << "Author name must be written";
-
-    const auto [creatorGroup, creatorGroupGuard] = makeH5mdGroupGuard(openGroup(group, "creator"));
-    EXPECT_EQ(getAttribute<std::string>(creatorGroup, "name").value_or(""), "GROMACS")
-            << "Creator name must be GROMACS";
-
-    EXPECT_EQ(getAttribute<std::string>(creatorGroup, "version").value_or(""), gmx_version())
-            << "Program version must match";
-}
-
 //! \brief Test fixture which unsets author-related environment variables for each test
-class H5mdAuthorGroupTest : public H5mdTestBase
+class H5mdAuthorGroupTest : public ::testing::Test
 {
     gmx::test::GmxEnvGuard disableAuthorName_{ "GMX_AUTHOR_NAME", nullptr };
     gmx::test::GmxEnvGuard disableAuthorEmail_{ "GMX_AUTHOR_EMAIL", nullptr };
@@ -236,12 +237,11 @@ TEST_F(H5mdAuthorGroupTest, AuthorNameAndEmailIsSetFromEnvironmentVariable)
     gmx::test::GmxEnvGuard envAuthorName{ "GMX_AUTHOR_NAME", authorName };
     gmx::test::GmxEnvGuard envAuthorEmail{ "GMX_AUTHOR_EMAIL", authorEmail };
 
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    file().setupFileFromInput(mtop, inputRecord);
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+    H5md                  file(filename, H5mdFileMode::Write);
 
-    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [h5mdGroup, h5mdGroupGuard] = makeH5mdGroupGuard(openGroup(file.fileid(), "h5md"));
     const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
     EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"),
                 ::testing::Optional(::testing::StrEq(authorName)));
@@ -251,12 +251,11 @@ TEST_F(H5mdAuthorGroupTest, AuthorNameAndEmailIsSetFromEnvironmentVariable)
 
 TEST_F(H5mdAuthorGroupTest, AuthorNameDefaultsToPlaceHolder)
 {
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    file().setupFileFromInput(mtop, inputRecord);
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+    H5md                  file(filename, H5mdFileMode::Write);
 
-    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [h5mdGroup, h5mdGroupGuard] = makeH5mdGroupGuard(openGroup(file.fileid(), "h5md"));
     const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
 
     EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"),
@@ -265,12 +264,11 @@ TEST_F(H5mdAuthorGroupTest, AuthorNameDefaultsToPlaceHolder)
 
 TEST_F(H5mdAuthorGroupTest, AuthorEmailDefaultsToNotBeingSet)
 {
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    file().setupFileFromInput(mtop, inputRecord);
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+    H5md                  file(filename, H5mdFileMode::Write);
 
-    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [h5mdGroup, h5mdGroupGuard] = makeH5mdGroupGuard(openGroup(file.fileid(), "h5md"));
     const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
 
     EXPECT_FALSE(getAttribute<std::string>(authorGroup, "email").has_value());
@@ -281,12 +279,11 @@ TEST_F(H5mdAuthorGroupTest, EmptyAuthorNameAndEmailVariablesAreWrittenAsEmptyStr
     gmx::test::GmxEnvGuard envAuthorName{ "GMX_AUTHOR_NAME", "" };
     gmx::test::GmxEnvGuard envAuthorEmail{ "GMX_AUTHOR_EMAIL", "" };
 
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    file().setupFileFromInput(mtop, inputRecord);
+    TestFileManager       fileManager;
+    std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
+    H5md                  file(filename, H5mdFileMode::Write);
 
-    const auto [h5mdGroup, h5mdGroupGuard]     = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+    const auto [h5mdGroup, h5mdGroupGuard] = makeH5mdGroupGuard(openGroup(file.fileid(), "h5md"));
     const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(h5mdGroup, "author"));
 
     EXPECT_THAT(getAttribute<std::string>(authorGroup, "name"), ::testing::Optional(::testing::StrEq("")));

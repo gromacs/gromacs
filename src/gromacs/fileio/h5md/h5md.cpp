@@ -206,6 +206,41 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
                     makeH5mdPropertyListGuard(H5Pcreate(H5P_FILE_CREATE));
             make_backup(fileName);
             file_ = H5Fcreate(fileName.string().c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
+
+            /* Set up the H5MD metadata according to the H5md specification:
+             *
+             * /h5md               (H5md metadata group)
+             * \++ version         (H5md specification version attribute)
+             * \-- author          (author group)
+             *     \++ name        (author name, or a dummy name if we cannot get it)
+             *     \++ email       (author email, if available)
+             * \-- creator         (creator group)
+             *     \++ name        (GROMACS)
+             *     \++ version     (GROMACS version)
+             *
+             * These groups and attributes are required by the H5MD specification to exist
+             * in the file. After setting these up we can proceed with the rest of the file.
+             */
+            const auto [group, groupGuard] =
+                    makeH5mdGroupGuard(createGroup(file_, c_h5mdMetaDataGroupName));
+            setAttributeVector<int>(group, c_h5mdVersionAttributeKey, c_h5mdSpecificationVersion);
+
+            const auto [authorGroup, authorGroupGuard] =
+                    makeH5mdGroupGuard(createGroup(group, c_h5mdAuthorGroupName));
+            // Author name and email are optionally set from environment variables,
+            // write if available. The H5MD spec requires a name to be written, so
+            // use a fallback if it is not set.
+            const char* authorName = std::getenv("GMX_AUTHOR_NAME");
+            setAttribute(authorGroup, c_h5mdNameAttributeKey, authorName != nullptr ? authorName : "N/A");
+            if (const char* authorEmail = std::getenv("GMX_AUTHOR_EMAIL"); authorEmail != nullptr)
+            {
+                setAttribute(authorGroup, c_h5mdEmailAttributeKey, authorEmail);
+            }
+
+            const auto [creatorGroup, creatorGroupGuard] =
+                    makeH5mdGroupGuard(createGroup(group, c_h5mdCreatorGroupName));
+            setAttribute(creatorGroup, c_h5mdNameAttributeKey, "GROMACS");
+            setAttribute(creatorGroup, c_h5mdVersionAttributeKey, gmx_version());
         }
         break;
         case H5mdFileMode::Read:
@@ -453,32 +488,11 @@ void H5md::setupBondConnectivity(const gmx_mtop_t& topology)
 #endif
 }
 
-
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::setupMetadataGroup()
+void H5md::setupModules()
 {
 #if GMX_USE_HDF5
-    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(file_, c_h5mdMetaDataGroupName));
-    setAttributeVector<int>(group, c_h5mdVersionAttributeKey, c_h5mdSpecificationVersion);
-
-    const auto [authorGroup, authorGroupGuard] =
-            makeH5mdGroupGuard(createGroup(group, c_h5mdAuthorGroupName));
-
-    // Author name and email are optionally set from environment variables,
-    // write if available. The H5MD spec requires a name to be written, so
-    // use a fallback if it is not set.
-    const char* authorName = std::getenv("GMX_AUTHOR_NAME");
-    setAttribute(authorGroup, c_h5mdNameAttributeKey, authorName != nullptr ? authorName : "N/A");
-    if (const char* authorEmail = std::getenv("GMX_AUTHOR_EMAIL"); authorEmail != nullptr)
-    {
-        setAttribute(authorGroup, c_h5mdEmailAttributeKey, authorEmail);
-    }
-
-    const auto [creatorGroup, creatorGroupGuard] =
-            makeH5mdGroupGuard(createGroup(group, c_h5mdCreatorGroupName));
-    setAttribute(creatorGroup, c_h5mdNameAttributeKey, "GROMACS");
-    setAttribute(creatorGroup, c_h5mdVersionAttributeKey, gmx_version());
-
+    const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, c_h5mdMetaDataGroupName));
     const auto [modulesGroup, modulesGroupGuard] =
             makeH5mdGroupGuard(createGroup(group, c_h5mdModulesGroupName));
     setupGromacsModule(modulesGroup);
@@ -490,7 +504,7 @@ void H5md::setupMetadataGroup()
 void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord)
 {
 #if GMX_USE_HDF5
-    setupMetadataGroup();
+    setupModules();
     setupParticleBlockForGroup(topology, {}, c_fullSystemGroupName, inputRecord);
     setupGromacsTopology(topology);
     setupBondConnectivity(topology);
