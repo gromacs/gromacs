@@ -472,6 +472,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    const gmx_hw_info_t& hardwareInfo,
                                                    const bool           useGpuForNonbonded,
                                                    const bool           useGpuForNonbondedFE,
+                                                   const bool           useGpuUpdate,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t& mtop,
                                                    const bool localAtomOrderMatchesNbnxmOrder,
@@ -524,7 +525,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     if (kernelSetup.kernelType != NbnxmKernelType::Cpu1x1_PlainC)
     {
         setupDynamicPairlistPruning(
-                mdlog, inputrec, mtop, effectiveAtomDensity, *forcerec.ic, &pairlistParams);
+                mdlog, inputrec, mtop, effectiveAtomDensity, *forcerec.ic, useGpuUpdate, &pairlistParams);
     }
 
     if (EI_DYNAMICS(inputrec.eI))

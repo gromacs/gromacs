@@ -27,3 +27,11 @@ host memory and copied asynchronously, rather than with blocking copies.
 This cuts the host-side cost of the GPU update and constraints setup by
 roughly a factor of 2.6, with the largest benefit for runs with frequent
 pair-list updates.
+
+Improved dual-pairlist pruning interval heuristics
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For large nstlist values, the pairlist pruning interval is now larger.
+This improves performance, in particular with reaction-field electrostatics.
+
+:issue:`5701`

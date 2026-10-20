@@ -1958,6 +1958,7 @@ int Mdrunner::mdrunner()
                 *hwinfo_,
                 runScheduleWork.simulationWork.useGpuNonbonded,
                 runScheduleWork.simulationWork.useGpuNonbondedFE,
+                runScheduleWork.simulationWork.useGpuUpdate,
                 deviceStreamManager.get(),
                 mtop,
                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState,

@@ -513,6 +513,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    const gmx_hw_info_t&       hardwareInfo,
                                                    bool                       useGpuForNonbonded,
                                                    bool                       useGpuForNonbondedFE,
+                                                   bool                       useGpuUpdate,
                                                    const DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&          mtop,
                                                    bool localAtomOrderMatchesNbnxmOrder,

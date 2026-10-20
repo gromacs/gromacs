@@ -87,6 +87,7 @@ void increaseNstlist(FILE*             fplog,
  * \param[in]     mtop             The global topology
  * \param[in]     effectiveAtomDensity  The effective atom density of the system
  * \param[in]     interactionConst The nonbonded interactions constants
+ * \param[in]     useGpuUpdate     Whether update is performed on the GPU
  * \param[in,out] listParams       The list setup parameters
  */
 void setupDynamicPairlistPruning(const MDLogger&            mdlog,
@@ -94,6 +95,7 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
                                  const gmx_mtop_t&          mtop,
                                  real                       effectiveAtomDensity,
                                  const interaction_const_t& interactionConst,
+                                 bool                       useGpuUpdate,
                                  PairlistParams*            listParams);
 
 /*! \brief Prints an estimate of the error in the pressure due to missing interactions

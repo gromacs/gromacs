@@ -326,7 +326,7 @@ TEST_F(PullIntegrationTest, CylinderWithAwh)
     // Do mdrun
     {
         auto        relativeEnergyTolerance   = relativeToleranceAsFloatingPoint(1, 1e-3);
-        auto        relativePressureTolerance = relativeToleranceAsFloatingPoint(1, 2e-3);
+        auto        relativePressureTolerance = relativeToleranceAsFloatingPoint(1, 5e-3);
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         EnergyTermsToCompare energyTermsToCompare{ {
