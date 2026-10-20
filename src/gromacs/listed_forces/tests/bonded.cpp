@@ -461,12 +461,13 @@ protected:
                                  "GPU bonded does not support free-energy perturbation (FEP)");
             skipReasons.appendIf(lambda_ != 0.0, "GPU does not support lambda != 0.0");
             skipReasons.appendIf(!input_.ftype.has_value(), "Interaction type not specified");
-            skipReasons.appendIf(
-                    input_.ftype.has_value()
-                            && std::find(fTypesOnGpu.begin(), fTypesOnGpu.end(), input_.ftype.value())
-                                       == fTypesOnGpu.end(),
-                    formatString("Interaction type '%s' not implemented on GPU",
-                                 interaction_function[input_.ftype.value()].name));
+            skipReasons.appendIf(input_.ftype.has_value()
+                                         && std::find(sc_functionTypesOnGpu.begin(),
+                                                      sc_functionTypesOnGpu.end(),
+                                                      input_.ftype.value())
+                                                    == sc_functionTypesOnGpu.end(),
+                                 formatString("Interaction type '%s' not implemented on GPU",
+                                              interaction_function[input_.ftype.value()].name));
         }
         // CPU-specific skip conditions
         else

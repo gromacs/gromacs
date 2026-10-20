@@ -77,7 +77,7 @@ using mode = sycl::access_mode;
 template<bool calcVir, bool calcEner, typename CommandGroupHandler>
 auto bondedKernel(CommandGroupHandler              cgh,
                   const BondedGpuKernelParameters& kernelParams,
-                  const DeviceBuffer<t_iatom>      gm_iatoms_[numFTypesOnGpu],
+                  const DeviceBuffer<t_iatom>      gm_iatoms_[sc_numFunctionTypesOnGpu],
                   float* __restrict__ gm_vTot,
                   const t_iparams* __restrict__ gm_forceParams_,
                   const sycl::float4* __restrict__ gm_xq_in_,
@@ -86,15 +86,15 @@ auto bondedKernel(CommandGroupHandler              cgh,
 {
     static_assert(sizeof(DeviceFloat4) == sizeof(sycl::float4));
     const DeviceFloat4*             gm_xq_ = reinterpret_cast<const DeviceFloat4*>(gm_xq_in_);
-    sycl::global_ptr<const t_iatom> gm_iatomsTemp[numFTypesOnGpu];
-    for (int i = 0; i < numFTypesOnGpu; i++)
+    sycl::global_ptr<const t_iatom> gm_iatomsTemp[sc_numFunctionTypesOnGpu];
+    for (int i = 0; i < sc_numFunctionTypesOnGpu; i++)
     {
         gm_iatomsTemp[i] = gm_iatoms_[i].get_pointer();
     }
     const FTypeArray<sycl::global_ptr<const t_iatom>> gm_iatoms(gm_iatomsTemp);
 
-    const FTypeArray<int> fTypeRangeStart(kernelParams.fTypeRangeStart);
-    const FTypeArray<int> fTypeRangeEnd(kernelParams.fTypeRangeEnd);
+    const FTypeArray<int> functionTypeRangeStart(kernelParams.functionTypeRangeStart);
+    const FTypeArray<int> functionTypeRangeEnd(kernelParams.functionTypeRangeEnd);
     const FTypeArray<int> numFTypeBonds(kernelParams.numFTypeBonds);
 
     const auto electrostaticsScaleFactor = kernelParams.electrostaticsScaleFactor;
@@ -131,57 +131,57 @@ auto bondedKernel(CommandGroupHandler              cgh,
             itemIdx.barrier(fence_space::local_space);
         }
 
-        InteractionFunction fType;
+        InteractionFunction functionType;
         bool                threadComputedPotential = false;
 #pragma unroll
-        for (int j = 0; j < numFTypesOnGpu; j++)
+        for (int j = 0; j < sc_numFunctionTypesOnGpu; j++)
         {
-            if (tid >= fTypeRangeStart[j] && tid <= fTypeRangeEnd[j])
+            if (tid >= functionTypeRangeStart[j] && tid <= functionTypeRangeEnd[j])
             {
-                const int                             numBonds = numFTypeBonds[j];
-                const int                             fTypeTid = tid - fTypeRangeStart[j];
-                const sycl::global_ptr<const t_iatom> iatoms   = gm_iatoms[j];
-                fType                                          = fTypesOnGpu[j];
+                const int numBonds                           = numFTypeBonds[j];
+                const int functionTypeTid                    = tid - functionTypeRangeStart[j];
+                const sycl::global_ptr<const t_iatom> iatoms = gm_iatoms[j];
+                functionType                                 = sc_functionTypesOnGpu[j];
 
                 if (calcEner)
                 {
                     threadComputedPotential = true;
                 }
 
-                if (fTypeTid >= numBonds)
+                if (functionTypeTid >= numBonds)
                 {
                     break;
                 }
 
-                switch (fType)
+                switch (functionType)
                 {
                     case InteractionFunction::Bonds:
                         bonds_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case InteractionFunction::Angles:
                         angles_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case InteractionFunction::UreyBradleyPotential:
                         urey_bradley_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case InteractionFunction::ProperDihedrals:
                     case InteractionFunction::PeriodicImproperDihedrals:
                         pdihs_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case InteractionFunction::RyckaertBellemansDihedrals:
                         rbdihs_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case InteractionFunction::ImproperDihedrals:
                         idihs_gpu<calcVir, calcEner>(
-                                fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
                     case InteractionFunction::LennardJones14:
-                        pairs_gpu<calcVir, calcEner>(fTypeTid,
+                        pairs_gpu<calcVir, calcEner>(functionTypeTid,
                                                      iatoms,
                                                      gm_forceParams,
                                                      gm_xq,
@@ -209,8 +209,8 @@ auto bondedKernel(CommandGroupHandler              cgh,
             vtotElec_loc       = sycl::reduce_over_group(sg, vtotElec_loc, sycl::plus<float>());
             if (sg.leader())
             {
-                atomicFetchAdd(gm_vTot[static_cast<int>(fType)], vtot_loc);
-                if (fType == InteractionFunction::LennardJones14)
+                atomicFetchAdd(gm_vTot[static_cast<int>(functionType)], vtot_loc);
+                if (functionType == InteractionFunction::LennardJones14)
                 {
                     atomicFetchAdd(gm_vTot[static_cast<int>(InteractionFunction::Coulomb14)], vtotElec_loc);
                 }
@@ -239,7 +239,7 @@ void ListedForcesGpu::Impl::launchKernel()
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
 
-    if (kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1] < 0)
+    if (kernelParams_.functionTypeRangeEnd[sc_numFunctionTypesOnGpu - 1] < 0)
     {
         return;
     }

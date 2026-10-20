@@ -71,17 +71,17 @@ template<typename>
 class ArrayRef;
 class StepWorkload;
 
-/*! \brief The number on bonded function types supported on GPUs */
-static constexpr int numFTypesOnGpu = 8;
+/*! \brief The number of bonded function types supported on GPUs */
+static constexpr int sc_numFunctionTypesOnGpu = 8;
 
 /*! \brief List of all bonded function types supported on GPUs
  *
  * \note This list should be in sync with the actual GPU code.
  * \note Perturbed interactions are not supported on GPUs.
  * \note The function types in the list are ordered on increasing value.
- * \note Currently bonded are only supported with CUDA and SYCL, not with OpenCL.
+ * \note Currently bonded are only supported on GPUs when not using OpenCL.
  */
-constexpr std::array<InteractionFunction, numFTypesOnGpu> fTypesOnGpu = {
+static constexpr std::array<InteractionFunction, sc_numFunctionTypesOnGpu> sc_functionTypesOnGpu = {
     InteractionFunction::Bonds,
     InteractionFunction::Angles,
     InteractionFunction::UreyBradleyPotential,

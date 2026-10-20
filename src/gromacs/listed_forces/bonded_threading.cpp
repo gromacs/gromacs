@@ -164,7 +164,7 @@ void BondedThreading::divideByLocality(const int numType,
         /* Store the bonded end boundaries (at index t) for thread t-1 */
         for (f = 0; f < numType; f++)
         {
-            workDivision_.setBound(ild[f].ftype, t, ind[f]);
+            workDivision_.setBound(ild[f].functionType, t, ind[f]);
         }
     }
 
@@ -174,15 +174,15 @@ void BondedThreading::divideByLocality(const int numType,
     }
 }
 
-//! Return whether function type \p ftype in \p idef has perturbed interactions
-static bool ftypeHasPerturbedEntries(const InteractionDefinitions& idef, InteractionFunction ftype)
+//! Return whether function type \p functionType in \p idef has perturbed interactions
+static bool functionTypeHasPerturbedEntries(const InteractionDefinitions& idef, InteractionFunction functionType)
 {
     GMX_ASSERT(idef.ilsort == ilsortNO_FE || idef.ilsort == ilsortFE_SORTED,
                "Perturbed interactions should be sorted here");
 
-    const InteractionList& ilist = idef.il[ftype];
+    const InteractionList& ilist = idef.il[functionType];
 
-    return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[ftype] != ilist.size());
+    return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[functionType] != ilist.size());
 }
 
 void BondedThreading::divideWork(const bool useGpuForBondeds, const InteractionDefinitions& idef)
@@ -194,28 +194,29 @@ void BondedThreading::divideWork(const bool useGpuForBondeds, const InteractionD
 
     ArrayRef<const t_iparams> iparams = idef.iparams;
 
-    haveBondeds_         = false;
-    int    numType       = 0;
-    size_t fTypeGpuIndex = 0;
-    for (const auto fType : EnumerationWrapper<InteractionFunction>{})
+    haveBondeds_                = false;
+    int    numType              = 0;
+    size_t functionTypeGpuIndex = 0;
+    for (const auto functionType : EnumerationWrapper<InteractionFunction>{})
     {
-        if (!ftypeIsListedPotential(fType))
+        if (!functionTypeIsListedPotential(functionType))
         {
             continue;
         }
 
-        const InteractionList& il                     = idef.il[fType];
+        const InteractionList& il                     = idef.il[functionType];
         int                    nrToAssignToCpuThreads = il.size();
 
-        if (useGpuForBondeds && fTypeGpuIndex < fTypesOnGpu.size() && fTypesOnGpu[fTypeGpuIndex] == fType)
+        if (useGpuForBondeds && functionTypeGpuIndex < sc_functionTypesOnGpu.size()
+            && sc_functionTypesOnGpu[functionTypeGpuIndex] == functionType)
         {
-            fTypeGpuIndex++;
+            functionTypeGpuIndex++;
 
             /* Perturbation is not implemented in the GPU bonded kernels.
              * But instead of doing all on the CPU, we could do only
              * the actually perturbed interactions on the CPU.
              */
-            if (!ftypeHasPerturbedEntries(idef, fType))
+            if (!functionTypeHasPerturbedEntries(idef, functionType))
             {
                 /* We will assign this interaction type to the GPU */
                 nrToAssignToCpuThreads = 0;
@@ -232,23 +233,23 @@ void BondedThreading::divideWork(const bool useGpuForBondeds, const InteractionD
             /* No interactions, avoid all the integer math below */
             for (int t = 0; t <= numThreads; t++)
             {
-                workDivision_.setBound(fType, t, 0);
+                workDivision_.setBound(functionType, t, 0);
             }
         }
-        else if (numThreads <= maxNthreadUniform_ || fType == InteractionFunction::DistanceRestraints)
+        else if (numThreads <= maxNthreadUniform_ || functionType == InteractionFunction::DistanceRestraints)
         {
             /* On up to 4 threads, load balancing the bonded work
              * is more important than minimizing the reduction cost.
              */
 
-            const int stride = 1 + NRAL(fType);
+            const int stride = 1 + NRAL(functionType);
 
             for (int t = 0; t <= numThreads; t++)
             {
                 /* Divide equally over the threads */
                 int nr_t = (((nrToAssignToCpuThreads / stride) * t) / numThreads) * stride;
 
-                if (fType == InteractionFunction::DistanceRestraints)
+                if (functionType == InteractionFunction::DistanceRestraints)
                 {
                     /* Ensure that distance restraint pairs with the same label
                      * end up on the same thread.
@@ -261,19 +262,19 @@ void BondedThreading::divideWork(const bool useGpuForBondeds, const InteractionD
                     }
                 }
 
-                workDivision_.setBound(fType, t, nr_t);
+                workDivision_.setBound(functionType, t, nr_t);
             }
         }
         else
         {
-            /* Add this fType to the list to be distributed */
-            int numAtoms          = NRAL(fType);
-            ild[numType].ftype    = fType;
-            ild[numType].il       = &il;
-            ild[numType].numAtoms = numAtoms;
+            /* Add this functionType to the list to be distributed */
+            int numAtoms              = NRAL(functionType);
+            ild[numType].functionType = functionType;
+            ild[numType].il           = &il;
+            ild[numType].numAtoms     = numAtoms;
 
             /* The first index for the thread division is always 0 */
-            workDivision_.setBound(fType, 0, 0);
+            workDivision_.setBound(functionType, 0, 0);
 
             numType++;
         }
@@ -287,18 +288,19 @@ void BondedThreading::divideWork(const bool useGpuForBondeds, const InteractionD
     if (debug)
     {
         fprintf(debug, "Division of bondeds over threads:\n");
-        for (const auto f : EnumerationWrapper<InteractionFunction>{})
+        for (const auto functionType : EnumerationWrapper<InteractionFunction>{})
         {
-            if (ftypeIsListedPotential(f) && !idef.il[f].empty())
+            if (functionTypeIsListedPotential(functionType) && !idef.il[functionType].empty())
             {
                 int t;
 
-                fprintf(debug, "%16s", interaction_function[f].name);
+                fprintf(debug, "%16s", interaction_function[functionType].name);
                 for (t = 0; t < numThreads; t++)
                 {
                     fprintf(debug,
                             " %4d",
-                            (workDivision_.bound(f, t + 1) - workDivision_.bound(f, t)) / (1 + NRAL(f)));
+                            (workDivision_.bound(functionType, t + 1) - workDivision_.bound(functionType, t))
+                                    / (1 + NRAL(functionType)));
                 }
                 fprintf(debug, "\n");
             }
@@ -325,23 +327,23 @@ void BondedThreading::calculateReductionMask(const int natoms, const Interaction
     ThreadForceBuffer<rvec4>& forceBufferForThisThread = threadedForceBuffers_.threadForceBuffer(thread);
     forceBufferForThisThread.resizeBufferAndClearMask(natoms);
 
-    for (const auto ftype : EnumerationWrapper<InteractionFunction>{})
+    for (const auto functionType : EnumerationWrapper<InteractionFunction>{})
     {
-        if (ftypeIsListedPotential(ftype))
+        if (functionTypeIsListedPotential(functionType))
         {
-            int nb = idef.il[ftype].size();
+            int nb = idef.il[functionType].size();
             if (nb > 0)
             {
-                int nat1 = interaction_function[ftype].nratoms + 1;
+                int nat1 = interaction_function[functionType].nratoms + 1;
 
-                int nb0 = workDivision_.bound(ftype, thread);
-                int nb1 = workDivision_.bound(ftype, thread + 1);
+                int nb0 = workDivision_.bound(functionType, thread);
+                int nb1 = workDivision_.bound(functionType, thread + 1);
 
                 for (int i = nb0; i < nb1; i += nat1)
                 {
                     for (int a = 1; a < nat1; a++)
                     {
-                        forceBufferForThisThread.addAtomToMask(idef.il[ftype].iatoms[i + a]);
+                        forceBufferForThisThread.addAtomToMask(idef.il[functionType].iatoms[i + a]);
                     }
                 }
             }

@@ -92,13 +92,13 @@ struct BondedGpuKernelParameters
     //! Scale factor
     float electrostaticsScaleFactor;
     //! The bonded types on GPU
-    InteractionFunction fTypesOnGpu[numFTypesOnGpu];
+    InteractionFunction functionTypesOnGpu[sc_numFunctionTypesOnGpu];
     //! The number of bonds for every function type
-    int numFTypeBonds[numFTypesOnGpu];
+    int numFTypeBonds[sc_numFunctionTypesOnGpu];
     //! The start index in the range of each interaction type
-    int fTypeRangeStart[numFTypesOnGpu];
+    int functionTypeRangeStart[sc_numFunctionTypesOnGpu];
     //! The end index in the range of each interaction type
-    int fTypeRangeEnd[numFTypesOnGpu];
+    int functionTypeRangeEnd[sc_numFunctionTypesOnGpu];
     BondedGpuKernelParameters()
     {
         matrix boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
@@ -113,7 +113,7 @@ struct BondedGpuKernelBuffers
     //! Total Energy (on GPU)
     DeviceBuffer<float> d_vTot = nullptr;
     //! Interaction list atoms (on GPU)
-    DeviceBuffer<t_iatom> d_iatoms[numFTypesOnGpu];
+    DeviceBuffer<t_iatom> d_iatoms[sc_numFunctionTypesOnGpu];
 };
 
 /*! \internal \brief Implements GPU bondeds */

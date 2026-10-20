@@ -86,7 +86,7 @@ public:
     }
 
     //! Returns the last bound
-    int end(int ftype) const { return bound(ftype, stride_ - 1); }
+    int end(int functionType) const { return bound(functionType, stride_ - 1); }
 
 private:
     //! The stride_ between and size of the entries for a function type
@@ -106,9 +106,9 @@ struct CentersOfMassScaledBuffers
 /*! \brief struct for passing all data required for a function type */
 struct IListData
 {
-    const InteractionList* il;       /**< pointer to t_ilist entry corresponding to ftype */
-    InteractionFunction    ftype;    /**< the function type index */
-    int                    numAtoms; /**< Number of atoms involved in a single ftype interaction */
+    const InteractionList* il; /**< pointer to t_ilist entry corresponding to functionType */
+    InteractionFunction    functionType; /**< the function type */
+    int numAtoms; /**< Number of atoms involved in a single functionType interaction */
 };
 
 

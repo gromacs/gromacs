@@ -98,9 +98,9 @@ constexpr float        c_Pi       = M_PI;
 template<typename T>
 struct FTypeArray
 {
-    static_assert(gmx::numFTypesOnGpu == 8,
+    static_assert(gmx::sc_numFunctionTypesOnGpu == 8,
                   "Please update the member initializer list and the switch below");
-    constexpr FTypeArray(const T in[gmx::numFTypesOnGpu]) :
+    constexpr FTypeArray(const T in[gmx::sc_numFunctionTypesOnGpu]) :
         data{ in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7] }
     {
     }
@@ -118,7 +118,7 @@ struct FTypeArray
             default: return data[7];
         }
     }
-    T data[gmx::numFTypesOnGpu];
+    T data[gmx::sc_numFunctionTypesOnGpu];
 };
 
 /* Harmonic */
