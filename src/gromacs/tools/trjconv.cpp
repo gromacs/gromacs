@@ -784,9 +784,9 @@ int gmx_trjconv(int argc, char* argv[])
         }
 
         // Legacy topology data structs, will only be filled if needed (bTPS = true)
-        std::unique_ptr<t_atoms> atoms;
-        std::unique_ptr<t_block> block;
-        std::unique_ptr<t_idef>  idef;
+        std::unique_ptr<t_atoms>                atoms;
+        std::unique_ptr<t_block>                block;
+        std::unique_ptr<InteractionDefinitions> interactionDefinitions;
         if (bTPS)
         {
             if (bCONECT && !haveFullTopology)
@@ -823,9 +823,8 @@ int gmx_trjconv(int argc, char* argv[])
             // Initiate and fill all legacy topology data structs
             atoms = std::make_unique<t_atoms>(gmx_mtop_global_atoms(*mtop));
             block = std::make_unique<t_block>(gmx_mtop_molecules_t_block(*mtop));
-            idef  = std::make_unique<t_idef>();
-            init_idef(idef.get());
-            copyIListsFromMtop(*mtop, idef.get(), false);
+            interactionDefinitions =
+                    std::make_unique<InteractionDefinitions>(gmx_mtop_to_InteractionDefinitions(*mtop));
 
             std::strncpy(top_title, *mtop->name, 255);
             top_title[255] = '\0';
@@ -848,11 +847,11 @@ int gmx_trjconv(int argc, char* argv[])
 
             if (bCONECT)
             {
-                gc = gmx_conect_generate(*idef);
+                gc = gmx_conect_generate(*mtop);
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(idef.get(), pbcType, mtop->natoms);
+                gpbc = gmx_rmpbc_init(*interactionDefinitions, pbcType, mtop->natoms);
             }
         }
 
@@ -1710,10 +1709,6 @@ int gmx_trjconv(int argc, char* argv[])
         if (block)
         {
             done_block(block.get());
-        }
-        if (idef)
-        {
-            done_idef(idef.get());
         }
     }
 

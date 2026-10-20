@@ -862,6 +862,7 @@ void gmx_conect_done(gmx_conect conect)
     gmx_conect_t* gc = conect;
 
     sfree(gc->conect);
+    sfree(gc);
 }
 
 gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)
@@ -1095,6 +1096,7 @@ void gmx_pdb_read_conf(const std::filesystem::path& infile,
     gmx_fio_fclose(in);
 }
 
+// DEPRECATED
 gmx_conect gmx_conect_generate(const t_idef& idef)
 {
     int        i;
@@ -1110,6 +1112,38 @@ gmx_conect gmx_conect_generate(const t_idef& idef)
             for (i = 0; (i < idef.il[f].nr); i += interaction_function[f].nratoms + 1)
             {
                 gmx_conect_add(gc, idef.il[f].iatoms[i + 1], idef.il[f].iatoms[i + 2]);
+            }
+        }
+    }
+    return gc;
+}
+
+gmx_conect gmx_conect_generate(const gmx_mtop_t& mtop)
+{
+    gmx_conect gc = gmx_conect_init();
+
+    int indexOfFirstAtomInMolecule = 0;
+    // Loop over the molecule blocks
+    for (const gmx_molblock_t& molblock : mtop.molblock)
+    {
+        const gmx_moltype_t& moltype = mtop.moltype[molblock.type];
+        // Loop over each molecule in the block
+        for (int mol = 0; mol < molblock.nmol; mol++, indexOfFirstAtomInMolecule += moltype.atoms.nr)
+        {
+            // Find each "chemical bond"
+            for (const auto functionType : gmx::EnumerationWrapper<InteractionFunction>{})
+            {
+                if (IS_CHEMBOND(functionType))
+                {
+                    // Record a connection between its two atoms
+                    const InteractionList& ilist = moltype.ilist[functionType];
+                    for (int i = 1; i < ilist.size(); i += NRAL(functionType) + 1)
+                    {
+                        gmx_conect_add(gc,
+                                       indexOfFirstAtomInMolecule + ilist.iatoms[i],
+                                       indexOfFirstAtomInMolecule + ilist.iatoms[i + 1]);
+                    }
+                }
             }
         }
     }

@@ -151,6 +151,12 @@ gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t& mtop);
  */
 std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_moltype_t& moltype);
 
+/*! \brief Converts a gmx_mtop_t struct to flat InteractionDefinitions
+ *
+ * This is like a constructor, but is here to avoid coupling
+ * the implementations. */
+InteractionDefinitions gmx_mtop_to_InteractionDefinitions(const gmx_mtop_t& mtop);
+
 /* Converts a gmx_mtop_t struct to t_topology.
  *
  * If the lifetime of the returned topology should be longer than that

@@ -772,6 +772,13 @@ t_block gmx_mtop_molecules_t_block(const gmx_mtop_t& mtop)
     return mols;
 }
 
+InteractionDefinitions gmx_mtop_to_InteractionDefinitions(const gmx_mtop_t& mtop)
+{
+    InteractionDefinitions interactionDefinitions(mtop.ffparams);
+    copyIListsFromMtop(mtop, &interactionDefinitions, false);
+    return interactionDefinitions;
+}
+
 static void gen_t_topology(const gmx_mtop_t& mtop, bool bMergeConstr, t_topology* top)
 {
     for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})

@@ -63,6 +63,14 @@ namespace test
  */
 void addNWaterMolecules(gmx_mtop_t* mtop, int numWaters);
 
+/*! \brief Add an ethane molecule with uniform charges on all atoms and FEP states
+ *
+ * Optionally, the bonds can be flexible. */
+void addEthane(gmx_mtop_t* mtop, bool bondsAreFlexible);
+
+/*! \brief Adds intermolecular bonds, assuming atoms 0 to 5 exist */
+void addIntermolecularInteractionBonds(gmx_mtop_t* mtop);
+
 } // namespace test
 
 } // namespace gmx

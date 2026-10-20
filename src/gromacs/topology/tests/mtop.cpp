@@ -102,24 +102,6 @@ std::vector<gmx::Range<int>> createTwoResidueTopology(gmx_mtop_t* mtop)
     return residueRange;
 }
 
-/*! \brief Adds intermolecular bonds, assuming atoms 0 to 5 exist */
-void addIntermolecularInteractionBonds(gmx_mtop_t* mtop)
-{
-    mtop->bIntermolecularInteractions = true;
-    mtop->intermolecular_ilist        = std::make_unique<InteractionLists>();
-    std::vector<int>& iatoms   = (*mtop->intermolecular_ilist)[InteractionFunction::Bonds].iatoms;
-    const int         bondType = 0;
-    iatoms.push_back(bondType);
-    iatoms.push_back(0);
-    iatoms.push_back(1);
-    iatoms.push_back(bondType);
-    iatoms.push_back(2);
-    iatoms.push_back(3);
-    iatoms.push_back(bondType);
-    iatoms.push_back(4);
-    iatoms.push_back(5);
-}
-
 TEST(MtopTest, RangeBasedLoop)
 {
     gmx_mtop_t mtop;
@@ -182,83 +164,18 @@ TEST(MtopTest, CanFindResidueStartAndEndAtoms)
     }
 }
 
-/*! \brief Add an ethane molecule with uniform charges on all atoms and states */
-void addEthane(gmx_mtop_t* mtop)
-{
-    t_iparams iparams;
-    // Add a constraint type
-    iparams.constr = { 0.5, 0.5 };
-    mtop->ffparams.iparams.push_back(iparams);
-    const int constraintInteractionType = 0;
-    // Add an angle type
-    iparams.harmonic = { 120, 1000, 120, 1000 };
-    mtop->ffparams.iparams.push_back(iparams);
-    const int angleInteractionType = 1;
-    // Add an LJ-14 type
-    iparams.lj14 = { 1, 100, 1, 100 };
-    mtop->ffparams.iparams.push_back(iparams);
-    const int oneFourInteractionType = 2;
-
-    const int numAtoms = 8;
-    const int carbon0  = 0;
-    const int carbon1  = 4;
-    // Atoms 1,2,3,5,6,7 are hydrogens.
-
-    gmx_moltype_t& ethaneMoleculeType = mtop->moltype.emplace_back(gmx_moltype_t{});
-
-    // Describe the interactions
-    // clang-format off
-    ethaneMoleculeType.ilist[InteractionFunction::Constraints].iatoms = { constraintInteractionType, carbon0, 1,
-                                                  constraintInteractionType, carbon0, 2,
-                                                  constraintInteractionType, carbon0, 3,
-                                                  constraintInteractionType, carbon1, 5,
-                                                  constraintInteractionType, carbon1, 6,
-                                                  constraintInteractionType, carbon1, 7 };
-    ethaneMoleculeType.ilist[InteractionFunction::Angles].iatoms = { angleInteractionType, 1, carbon0, 2,
-                                                  angleInteractionType, 1, carbon0, 3,
-                                                  angleInteractionType, 2, carbon0, 3,
-                                                  angleInteractionType, 5, carbon1, 6,
-                                                  angleInteractionType, 5, carbon1, 7,
-                                                  angleInteractionType, 6, carbon1, 7 };
-    ethaneMoleculeType.ilist[InteractionFunction::LennardJones14].iatoms = { oneFourInteractionType, 1, 5,
-                                                oneFourInteractionType, 1, 6,
-                                                oneFourInteractionType, 1, 7,
-                                                oneFourInteractionType, 2, 5,
-                                                oneFourInteractionType, 2, 6,
-                                                oneFourInteractionType, 2, 7,
-                                                oneFourInteractionType, 3, 5,
-                                                oneFourInteractionType, 3, 6,
-                                                oneFourInteractionType, 3, 7 };
-    // clang-format on
-
-    // Set up the atoms, including arbitrary uniform charges
-    ethaneMoleculeType.atoms.nr = numAtoms;
-    snew(ethaneMoleculeType.atoms.atom, numAtoms);
-    for (int i = 0; i != numAtoms; ++i)
-    {
-        ethaneMoleculeType.atoms.atom[i].q  = 1.0;
-        ethaneMoleculeType.atoms.atom[i].qB = 1.0;
-    }
-}
-
 TEST(MtopTest, CanSortPerturbedInteractionsCorrectly)
 {
     gmx_mtop_t mtop;
 
     // Add a molecule type of normal ethane
-    addEthane(&mtop);
+    const bool bondsAreFlexible = false;
+    addEthane(&mtop, bondsAreFlexible);
     // Perturb the charge on atoms 1 and 7 by changing the B-state
     // value.
     const auto& ethaneMoleculeType = mtop.moltype.back();
     ethaneMoleculeType.atoms.atom[1].qB *= -1.0;
     ethaneMoleculeType.atoms.atom[7].qB *= -1.0;
-
-    // Add a molecule block of ethane with perturbed charge
-    gmx_molblock_t molblock;
-    molblock.type = 0;
-    molblock.nmol = 1;
-    mtop.molblock.push_back(molblock);
-    mtop.natoms += mtop.moltype[molblock.type].atoms.nr;
     mtop.finalize();
 
     SCOPED_TRACE("Make a local topology without sorting perturbed interactions to the end");
