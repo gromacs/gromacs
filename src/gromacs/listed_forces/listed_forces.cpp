@@ -143,10 +143,13 @@ static void selectInteractions(InteractionDefinitions*                   idef,
             if (assign)
             {
                 idef->il[ftype] = idefSrc.il[ftype];
+                // With perturbed interactions sorted to the end, we need the count as well
+                idef->numNonperturbedInteractions[ftype] = idefSrc.numNonperturbedInteractions[ftype];
             }
             else
             {
                 idef->il[ftype].clear();
+                idef->numNonperturbedInteractions[ftype] = 0;
             }
         }
     }

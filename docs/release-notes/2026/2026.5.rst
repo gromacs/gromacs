@@ -50,6 +50,19 @@ This has been present in versions 2026.0 to 2026.4.
 
 :issue:`5736`
 
+Fixed free energy calculations with multiple time stepping of listed interactions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With multiple time stepping and pair, dihedral or angle interactions
+in ``mts-level2-forces``, the listed interactions computed at each
+time-stepping level did not get the count of non-perturbed interactions.
+In free energy calculations with perturbed listed interactions,
+``mdrun`` then used uninitialized values, which could cause
+crashes, incorrect forces and dH/dlambda, or incorrect foreign-lambda
+energies. This has been present since version 2021.
+
+:issue:`5737`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
