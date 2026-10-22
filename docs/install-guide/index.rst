@@ -914,6 +914,12 @@ options, but note that these will be appended to those set by
 some of this with advanced CMake options, such as ``CMAKE_C_FLAGS``
 and its relatives.
 
+Note that C++ compiler flags are not applied to CUDA and HIP source files.
+Flags that should affect them must be passed separately, via
+the ``CMAKE_CUDA_FLAGS``/``CMAKE_HIP_FLAGS`` CMake options.
+When nvcc is used, host compiler flags must be wrapped
+with ``-Xcompiler=``, e.g., ``-DCMAKE_CUDA_FLAGS=-Xcompiler=-march=native``.
+
 See also the page on `CMake environment variables`_.
 
 .. _CUDA GPU acceleration:
@@ -1783,7 +1789,9 @@ NVIDIA Grace
 
 For best performance on Grace, use GCC >= 13.1 or LLVM >= 17, and set the
 ``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 -DCMAKE_C_FLAGS=-mcpu=neoverse-v2``
-flags when configuring |Gromacs|.
+flags when configuring |Gromacs|. When building with CUDA, also set
+``-DCMAKE_CUDA_FLAGS=-Xcompiler=-mcpu=neoverse-v2``
+so that the host code in CUDA source files is compiled for the same target.
 
 With short-range non-bonded interactions calculations on the CPU (``-nb cpu`` or
 when building without GPU support), performance can be improved by also setting

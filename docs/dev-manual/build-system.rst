@@ -139,6 +139,8 @@ Standard CMake mechanism for specifying the compiler flags is to use
 ``CMAKE_C_FLAGS``/``CMAKE_CXX_FLAGS`` for flags that affect all build types,
 and :samp:`CMAKE_C_FLAGS_{buildtype}`/:samp:`CMAKE_CXX_FLAGS_{buildtype}` for
 flags that only affect a specific build type.  CMake provides some default flags.
+The C++ flags are not used when compiling CUDA or HIP sources; use
+``CMAKE_CUDA_FLAGS``/``CMAKE_HIP_FLAGS`` and their per-build-type variants for those.
 
 |Gromacs| determines its own set of default flags, grouped into two categories:
 
