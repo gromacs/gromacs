@@ -691,7 +691,7 @@ int gmx_enemat(int argc, char* argv[])
             gmx_ffclose(out);
          */
     }
-    close_enx(in);
+    done_ener_file(in);
 
     return 0;
 }

@@ -203,7 +203,7 @@ int gmx_lie(int argc, char* argv[])
             fprintf(out, "%10g  %10g\n", fr->t, lie);
         }
     }
-    close_enx(fp);
+    done_ener_file(fp);
     xvgrclose(out);
     fprintf(stderr, "\n");
 

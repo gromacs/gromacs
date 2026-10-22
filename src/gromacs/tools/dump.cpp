@@ -580,7 +580,7 @@ void list_ene(const char* fn)
         }
     } while (bCont);
 
-    close_enx(in);
+    done_ener_file(in);
 
     free_enxframe(fr);
     sfree(fr);

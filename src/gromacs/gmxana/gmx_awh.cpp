@@ -653,7 +653,7 @@ int gmx_awh(int argc, char* argv[])
 
     fprintf(stderr, "\n");
 
-    close_enx(fp);
+    done_ener_file(fp);
 
     return 0;
 }
