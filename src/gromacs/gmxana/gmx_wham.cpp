@@ -1545,6 +1545,7 @@ static void read_wham_in(const char* fn, char*** filenamesRet, int* nfilesRet, t
         }
         nread++;
     }
+    gmx_ffclose(fp);
     *filenamesRet = filename;
     *nfilesRet    = nread;
 }
@@ -2823,6 +2824,7 @@ static void readPullCoordSelection(t_UmbrellaOptions* opt, char** fnTpr, int nTp
         }
         iline++;
     }
+    gmx_ffclose(fp);
     opt->nCoordsel = iline;
     if (nTpr != opt->nCoordsel)
     {

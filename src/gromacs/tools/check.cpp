@@ -763,6 +763,7 @@ static void chk_enx(const char* fn)
     }
     fprintf(stderr, ".\n");
 
+    done_ener_file(in);
     free_enxframe(fr);
     sfree(fr);
 }

@@ -1068,6 +1068,7 @@ int gmx_current(int argc, char* argv[])
                qmol,
                eps_rf,
                oenv);
+    close_trx(status);
 
     xvgrclose(fmj);
     xvgrclose(fmd);

@@ -547,6 +547,7 @@ extern int do_scattering_intensity(const char*             fnTPS,
     }
 
     while (read_next_frame(oenv, status, &fr));
+    close_trx(status);
 
     save_data(static_cast<structure_factor_t*>(sf), fnXVG, ng, start_q, end_q, oenv);
 

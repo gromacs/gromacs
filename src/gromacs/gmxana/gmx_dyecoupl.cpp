@@ -502,6 +502,7 @@ int gmx_dyecoupl(int argc, char* argv[])
     {
         gmx_fatal(FARGS, "Could not read first frame of the trajectory.\n");
     }
+    close_trx(status);
 
     return 0;
 }

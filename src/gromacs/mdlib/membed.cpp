@@ -1000,6 +1000,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
         }
     }
 
+    gmx_ffclose(fpin);
     gmx_ffclose(fpout);
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");

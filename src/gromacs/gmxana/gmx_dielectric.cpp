@@ -142,6 +142,7 @@ numerical_deriv(int nx, real x[], const real y[], const real fity[], real combin
 
     tmpfp        = gmx_ffopen("integral_smth.xvg", "w");
     integralSmth = print_and_integrate(tmpfp, nx, x[1] - x[0], combined, nullptr, 1);
+    gmx_ffclose(tmpfp);
     printf("SMOOTH integral = %10.5e\n", integralSmth);
 
     dy[0] = (combined[1] - combined[0]) / (x[1] - x[0]);

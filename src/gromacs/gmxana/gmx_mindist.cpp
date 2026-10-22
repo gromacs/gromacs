@@ -225,6 +225,7 @@ static void periodic_mindist_plot(const char*             trxfn,
                 norm(box[2]));
         bFirst = FALSE;
     } while (read_next_x(oenv, status, &t, x, box));
+    close_trx(status);
 
     if (nullptr != top)
     {

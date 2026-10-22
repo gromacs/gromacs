@@ -112,6 +112,7 @@ int gmx_rama(int argc, char* argv[])
     {
         plot_rama(out, xr);
     } while (new_data(xr));
+    close_trx(xr->traj);
     fprintf(stderr, "\n");
     xvgrclose(out);
 

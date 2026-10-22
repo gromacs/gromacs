@@ -396,7 +396,8 @@ int gmx_mdmat(int argc, char* argv[])
             totmdmat[i][j] /= nframes;
         }
     }
-    write_xpm(opt2FILE("-mean", NFILE, fnm, "w"),
+    FILE* meanFile = opt2FILE("-mean", NFILE, fnm, "w");
+    write_xpm(meanFile,
               0,
               "Mean smallest distance",
               "Distance (nm)",
@@ -412,6 +413,7 @@ int gmx_mdmat(int argc, char* argv[])
               rlo,
               rhi,
               &nlevels);
+    gmx_ffclose(meanFile);
 
     if (bCalcN)
     {

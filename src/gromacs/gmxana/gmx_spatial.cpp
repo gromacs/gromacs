@@ -329,6 +329,7 @@ int gmx_spatial(int argc, char* argv[])
         /* printf("%f\t%f\t%f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]); */
 
     } while (read_next_frame(oenv, status, &fr));
+    close_trx(status);
 
     if (bPBC)
     {

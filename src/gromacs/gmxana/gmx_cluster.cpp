@@ -236,6 +236,7 @@ static rvec** read_whole_trj(const char*             fn,
         }
         i++;
     } while (read_next_x(oenv, status, &t, x, box));
+    close_trx(status);
     fprintf(stderr, "Allocated %zu bytes for frames\n", (max_nf * isize * sizeof(**xx)));
     fprintf(stderr, "Read %d frames from trajectory %s\n", clusterIndex, fn);
     *nframe = clusterIndex;

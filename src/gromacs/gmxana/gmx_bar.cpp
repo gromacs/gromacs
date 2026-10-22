@@ -3291,6 +3291,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
             }
         }
     }
+    done_ener_file(fp);
     /* Now store all our extant sample collections */
     for (int i = 0; i < nsamples; i++)
     {

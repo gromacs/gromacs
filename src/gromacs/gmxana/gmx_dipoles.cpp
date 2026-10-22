@@ -1409,7 +1409,11 @@ static void do_dip(const t_topology*       top,
 
     gmx_rmpbc_done(gpbc);
 
-    if (!bMU)
+    if (bMU)
+    {
+        done_ener_file(fmu);
+    }
+    else
     {
         close_trx(status);
     }

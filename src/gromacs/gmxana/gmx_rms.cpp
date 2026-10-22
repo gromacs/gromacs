@@ -1000,7 +1000,8 @@ int gmx_rms(int argc, char* argv[])
                 fprintf(stderr, "Min and Max value set to resp. %f and %f\n", rmsd_min, rmsd_max);
             }
             sprintf(buf, "%s %s matrix", gn_rms[0], whatname[ewhat]);
-            write_xpm(opt2FILE("-m", NFILE, fnm, "w"),
+            FILE* matrixFile = opt2FILE("-m", NFILE, fnm, "w");
+            write_xpm(matrixFile,
                       0,
                       buf,
                       whatlabel[ewhat],
@@ -1016,6 +1017,7 @@ int gmx_rms(int argc, char* argv[])
                       rlo,
                       rhi,
                       &nlevels);
+            gmx_ffclose(matrixFile);
             /* Print the distribution of RMSD values */
             if (opt2bSet("-dist", NFILE, fnm))
             {
@@ -1132,7 +1134,8 @@ int gmx_rms(int argc, char* argv[])
             rhi.g = 0;
             rhi.b = 0;
             sprintf(buf, "%s av. bond angle deviation", gn_rms[0]);
-            write_xpm(opt2FILE("-bm", NFILE, fnm, "w"),
+            FILE* bondMatrixFile = opt2FILE("-bm", NFILE, fnm, "w");
+            write_xpm(bondMatrixFile,
                       0,
                       buf,
                       "degrees",
@@ -1148,6 +1151,7 @@ int gmx_rms(int argc, char* argv[])
                       rlo,
                       rhi,
                       &nlevels);
+            gmx_ffclose(bondMatrixFile);
         }
     }
 

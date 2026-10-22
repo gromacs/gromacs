@@ -1382,6 +1382,7 @@ static void fec(const char*                      ene2fn,
             }
         }
     } while (bCont && (timecheck == 0));
+    done_ener_file(enx);
 
     /* check */
     if (edat->nframes != nenergy2)

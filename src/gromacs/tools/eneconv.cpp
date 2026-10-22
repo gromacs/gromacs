@@ -187,7 +187,7 @@ static int scan_ene_files(const std::vector<std::string>& files, double* readtim
             t2          = fr->t;
             *timestep   = t2 - t1;
             readtime[f] = t1;
-            close_enx(in);
+            done_ener_file(in);
         }
         else
         {
@@ -219,7 +219,7 @@ static int scan_ene_files(const std::vector<std::string>& files, double* readtim
             }
             do_enx(in, fr);
             readtime[f] = fr->t;
-            close_enx(in);
+            done_ener_file(in);
         }
         fprintf(stderr, "\n");
     }
@@ -805,10 +805,11 @@ int gmx_eneconv(int argc, char* argv[])
         }
 
         /* move energies to lastee */
-        close_enx(in);
+        done_ener_file(in);
 
         fprintf(stderr, "\n");
     }
+    done_ener_file(out);
     if (noutfr == 0)
     {
         fprintf(stderr, "No frames written.\n");

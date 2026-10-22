@@ -141,6 +141,7 @@ static void dump_sd(const char* fn, t_shiftdata* sd)
     sprintf(buf, "%s.xpm", fn);
     fp = gmx_ffopen(buf, "w");
     write_xpm(fp, 0, fn, fn, "Phi", "Psi", nnx, nny, x_phi, y_psi, newdata, lo, hi, rlo, rhi, &nlevels);
+    gmx_ffclose(fp);
     for (i = 0; (i < nnx); i++)
     {
         sfree(newdata[i]);

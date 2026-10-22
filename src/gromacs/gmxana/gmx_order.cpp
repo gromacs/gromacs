@@ -734,6 +734,7 @@ static void calc_order(const char*                     fn,
 
     } while (read_next_x(oenv, status, &t, x0, box));
     /*********** done with status file **********/
+    close_trx(status);
 
     fprintf(stderr, "\nRead trajectory. Printing parameters to file\n");
     gmx_rmpbc_done(gpbc);

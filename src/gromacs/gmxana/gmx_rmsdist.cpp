@@ -913,7 +913,8 @@ int gmx_rmsdist(int argc, char* argv[])
 
     if (bRMS)
     {
-        write_xpm(opt2FILE("-rms", NFILE, fnm, "w"),
+        FILE* rmsFile = opt2FILE("-rms", NFILE, fnm, "w");
+        write_xpm(rmsFile,
                   0,
                   "RMS of distance",
                   "RMS (nm)",
@@ -929,11 +930,13 @@ int gmx_rmsdist(int argc, char* argv[])
                   rlo,
                   rhi,
                   &nlevels);
+        gmx_ffclose(rmsFile);
     }
 
     if (bScale)
     {
-        write_xpm(opt2FILE("-scl", NFILE, fnm, "w"),
+        FILE* scaledFile = opt2FILE("-scl", NFILE, fnm, "w");
+        write_xpm(scaledFile,
                   0,
                   "Relative RMS",
                   "RMS",
@@ -949,11 +952,13 @@ int gmx_rmsdist(int argc, char* argv[])
                   rlo,
                   rhi,
                   &nlevels);
+        gmx_ffclose(scaledFile);
     }
 
     if (bMean)
     {
-        write_xpm(opt2FILE("-mean", NFILE, fnm, "w"),
+        FILE* meanFile = opt2FILE("-mean", NFILE, fnm, "w");
+        write_xpm(meanFile,
                   0,
                   "Mean Distance",
                   "Distance (nm)",
@@ -969,11 +974,13 @@ int gmx_rmsdist(int argc, char* argv[])
                   rlo,
                   rhi,
                   &nlevels);
+        gmx_ffclose(meanFile);
     }
 
     if (bNMR3)
     {
-        write_xpm(opt2FILE("-nmr3", NFILE, fnm, "w"),
+        FILE* nmr3File = opt2FILE("-nmr3", NFILE, fnm, "w");
+        write_xpm(nmr3File,
                   0,
                   "1/r^3 averaged distances",
                   "Distance (nm)",
@@ -989,10 +996,12 @@ int gmx_rmsdist(int argc, char* argv[])
                   rlo,
                   rhi,
                   &nlevels);
+        gmx_ffclose(nmr3File);
     }
     if (bNMR6)
     {
-        write_xpm(opt2FILE("-nmr6", NFILE, fnm, "w"),
+        FILE* nmr6File = opt2FILE("-nmr6", NFILE, fnm, "w");
+        write_xpm(nmr6File,
                   0,
                   "1/r^6 averaged distances",
                   "Distance (nm)",
@@ -1008,11 +1017,14 @@ int gmx_rmsdist(int argc, char* argv[])
                   rlo,
                   rhi,
                   &nlevels);
+        gmx_ffclose(nmr6File);
     }
 
     if (bNOE)
     {
-        write_noe(opt2FILE("-noe", NFILE, fnm, "w"), gnr, noe, noe_gr, scalemax);
+        FILE* noeFile = opt2FILE("-noe", NFILE, fnm, "w");
+        write_noe(noeFile, gnr, noe, noe_gr, scalemax);
+        gmx_ffclose(noeFile);
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), nullptr);
