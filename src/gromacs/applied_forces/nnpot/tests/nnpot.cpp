@@ -45,13 +45,16 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/mdrunutility/plainpairlistranges.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -75,6 +78,38 @@ public:
     void addMdpOptionNNPotActive()
     {
         mdpValueBuilder_.rootObject().addValue("nnpot-active", std::string("true"));
+    }
+
+    //! Request the given model inputs and a pair cutoff through the mdp options
+    void addMdpOptionModelInputs(const std::vector<std::string>& inputs, const std::string& pairCutoff)
+    {
+        for (size_t i = 0; i < inputs.size(); ++i)
+        {
+            const std::string key = "nnpot-model-input" + std::to_string(i + 1);
+            mdpValueBuilder_.rootObject().addValue(key, inputs[i]);
+        }
+        mdpValueBuilder_.rootObject().addValue("nnpot-pair-cutoff", pairCutoff);
+    }
+
+    //! Collect the pair-list range the module requests during simulation setup
+    std::vector<real> requestedPairlistRanges()
+    {
+        MDModulesNotifiers notifiers;
+        NNPotModule_->subscribeToSimulationSetupNotifications(&notifiers);
+        const gmx_mtop_t    mtop;
+        const t_inputrec    inputrec;
+        PlainPairlistRanges ranges(mtop, inputrec);
+        notifiers.simulationSetupNotifier_.notify(&ranges);
+        return { ranges.ranges().begin(), ranges.ranges().end() };
+    }
+
+    //! Whether the module subscribes to the pair-list construction signal during the run
+    bool subscribesToPairlistConstruction()
+    {
+        MDModulesNotifiers notifiers;
+        NNPotModule_->subscribeToSimulationRunNotifications(&notifiers);
+        using Signal = const MDModulesPairlistConstructedSignal&;
+        return notifiers.simulationRunNotifier_.haveSubscribers<Signal>();
     }
 
     //! build an mdp options tree that sets the options for the NNPot module
@@ -103,6 +138,45 @@ protected:
     MDLogger                   logger_;
     MpiComm                    mpiComm_{ MpiComm::SingleRank{} };
 };
+
+//! A model that takes the pair list requests a pair-list range equal to the cutoff
+//! and is told when the pair list is built
+TEST_F(NNPotTest, AtomPairsInputRequestsPairlist)
+{
+    addMdpOptionNNPotActive();
+    addMdpOptionModelInputs({ "atom-positions", "atom-numbers", "atom-pairs" }, "0.5");
+    makeNNPotModuleWithSetOptions();
+
+    const std::vector<real> ranges = requestedPairlistRanges();
+    ASSERT_EQ(ranges.size(), 1U);
+    EXPECT_FLOAT_EQ(ranges[0], 0.5);
+    EXPECT_TRUE(subscribesToPairlistConstruction());
+}
+
+//! A model that takes only the periodic pair shifts needs the pair list just as much
+TEST_F(NNPotTest, PairShiftsInputRequestsPairlist)
+{
+    addMdpOptionNNPotActive();
+    addMdpOptionModelInputs({ "atom-positions", "atom-numbers", "pair-shifts" }, "0.5");
+    makeNNPotModuleWithSetOptions();
+
+    const std::vector<real> ranges = requestedPairlistRanges();
+    ASSERT_EQ(ranges.size(), 1U);
+    EXPECT_FLOAT_EQ(ranges[0], 0.5);
+    EXPECT_TRUE(subscribesToPairlistConstruction());
+}
+
+//! Without pair-list inputs the module neither requests a range nor asks to be told
+//! about the pair list
+TEST_F(NNPotTest, NoPairlistInputRequestsNoPairlist)
+{
+    addMdpOptionNNPotActive();
+    addMdpOptionModelInputs({ "atom-positions", "atom-numbers" }, "0.5");
+    makeNNPotModuleWithSetOptions();
+
+    EXPECT_TRUE(requestedPairlistRanges().empty());
+    EXPECT_FALSE(subscribesToPairlistConstruction());
+}
 
 TEST_F(NNPotTest, ForceProviderLackingInputThrows)
 {

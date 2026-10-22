@@ -63,6 +63,17 @@ energies. This has been present since version 2021.
 
 :issue:`5737`
 
+Fixed NNPot pair-list input for models requesting only ``pair-shifts``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A neural network potential model whose inputs include ``pair-shifts`` but not
+``atom-pairs`` was never subscribed to the pair-list construction, because the
+option name was misspelled in that check, so the model was passed an empty
+shift list without any error. Models that also request ``atom-pairs`` were not
+affected. This has been present in versions 2026.0 to 2026.4.
+
+:issue:`5753`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

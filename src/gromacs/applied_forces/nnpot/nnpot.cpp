@@ -177,7 +177,7 @@ public:
 
         // set pairlist range
         if (nnpotOptions_.parameters().modelNeedsInput("atom-pairs")
-            || nnpotOptions_.parameters().modelNeedsInput("pairs-shifts"))
+            || nnpotOptions_.parameters().modelNeedsInput("pair-shifts"))
         {
             const auto setPlainPairlistRangeFunction = [this](PlainPairlistRanges* plainPairlistRanges)
             { plainPairlistRanges->addRange(nnpotOptions_.parameters().pairCutoff_); };
@@ -207,7 +207,7 @@ public:
 
         // subscribe to pairlist construction notification
         if (nnpotOptions_.parameters().modelNeedsInput("atom-pairs")
-            || nnpotOptions_.parameters().modelNeedsInput("pairs-shifts"))
+            || nnpotOptions_.parameters().modelNeedsInput("pair-shifts"))
         {
             const auto notifyPairlistFunction = [this](const MDModulesPairlistConstructedSignal& signal)
             { nnpotForceProvider_->setPairlist(signal); };
