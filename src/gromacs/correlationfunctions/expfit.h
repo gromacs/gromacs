@@ -76,9 +76,9 @@ enum
 extern const char* s_ffn[effnNR + 2];
 
 /*! \brief
- * Returns  description corresponding to the enum above, or NULL if out of range
- * \param[in] effn Index
- * \return Description or NULL
+ * Returns  description corresponding to the enum above
+ * \param[in] effn Index, must be in range
+ * \return Description
  */
 const char* effnDescription(int effn);
 

@@ -106,14 +106,8 @@ int effnNparams(int effn)
 
 const char* effnDescription(int effn)
 {
-    if ((0 <= effn) && (effn < effnNR))
-    {
-        return longs_ffn[effn];
-    }
-    else
-    {
-        return nullptr;
-    }
+    GMX_RELEASE_ASSERT((0 <= effn) && (effn < effnNR), "Invalid fitting function index");
+    return longs_ffn[effn];
 }
 
 int sffn2effn(const char** sffn)
