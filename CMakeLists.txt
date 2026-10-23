@@ -1025,7 +1025,11 @@ if(HAVE_TIME_H AND HAVE_UNISTD_H AND NOT HAVE_CLOCK_GETTIME_IN_LIBC AND HAVE_CLO
 endif()
 
 # Math and thread libraries must often come after all others when linking...
-if (LIBM_LIBRARY)
+# The C++ compiler driver normally links libm itself (it is then listed in
+# CMAKE_CXX_IMPLICIT_LINK_LIBRARIES). Adding it again by full path makes some
+# linkers (e.g. on illumos) see the same library twice, so only add it when
+# the driver does not.
+if (LIBM_LIBRARY AND NOT "m" IN_LIST CMAKE_CXX_IMPLICIT_LINK_LIBRARIES)
     list(APPEND GMX_PUBLIC_LIBRARIES ${LIBM_LIBRARY})
 endif()
 
