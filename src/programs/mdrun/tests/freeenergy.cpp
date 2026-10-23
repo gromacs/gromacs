@@ -36,8 +36,8 @@
  * \brief
  * Tests to compare free energy simulations to reference
  *
- * The tests are parameterized over CPU and every compatible GPU. CPU and GPU
- * runs share reference data; only the test name records the hardware context.
+ * The tests are parameterized over running nonbonded FEP on the CPU or a GPU.
+ * CPU and GPU runs share reference data; only the test name records which was used.
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_mdrun_integration_tests
@@ -50,12 +50,15 @@
 #include <filesystem>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/gpu_utils/capabilities.h"
+#include "gromacs/hardware/device_management.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -68,7 +71,6 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "testutils/hardware_test_fixture.h"
 #include "testutils/mpitest.h"
 #include "testutils/naming.h"
 #include "testutils/refdata.h"
@@ -114,12 +116,18 @@ enum class FreeEnergyUpdate : int
 using FreeEnergyReferenceInputConfig =
         std::tuple<IntegrationAlgorithm, std::string, MaxNumWarnings, ListOfInteractionsToTest>;
 
-//! Execution modes (how, not what): whether the update runs on the CPU or the GPU.
-using FreeEnergyReferenceExecutionModes = std::tuple<FreeEnergyUpdate>;
+//! Where nonbonded FEP runs (mdrun '-nbfe').
+enum class FreeEnergyNonbonded : int
+{
+    Cpu,
+    Gpu,
+    Count
+};
 
-//! The update location is an execution mode, so it is skipped from reference-data names.
-using FreeEnergyReferenceTestHelper =
-        HardwareAndExecutionTestHelper<FreeEnergyReferenceInputConfig, FreeEnergyReferenceExecutionModes>;
+//! Input config followed by the execution modes.
+using FreeEnergyReferenceTestParameters =
+        decltype(std::tuple_cat(std::declval<FreeEnergyReferenceInputConfig>(),
+                                std::declval<std::tuple<FreeEnergyUpdate, FreeEnergyNonbonded>>()));
 
 //! The GPU-update execution mode contributes a "gpu" token (the update location); CPU update
 //! adds nothing. The token is kept short so that the longest test names (the SD1 variant of
@@ -135,11 +143,16 @@ static const auto sc_referenceConfigFormatters = std::make_tuple(formatIntegrato
                                                                  useString,
                                                                  toEmptyString<MaxNumWarnings>,
                                                                  toEmptyString<ListOfInteractionsToTest>);
-//! The update location contributes to test names only, not to reference-data names.
-static const auto sc_executionModeFormatters = std::make_tuple(sc_updateNames);
+static const EnumerationArray<FreeEnergyNonbonded, const char*> sc_nonbondedNames = { { "CPU",
+                                                                                        "GPU" } };
 
-static const NameOfTestFromTuple<FreeEnergyReferenceTestHelper::DynamicParameters> sc_referenceTestNamer =
-        FreeEnergyReferenceTestHelper::testNamer(sc_referenceConfigFormatters, sc_executionModeFormatters);
+//! Execution modes contribute to test names only, not to reference-data names.
+static const NameOfTestFromTuple<FreeEnergyReferenceTestParameters> sc_referenceTestNamer{
+    std::tuple_cat(sc_referenceConfigFormatters, std::make_tuple(sc_updateNames, sc_nonbondedNames))
+};
+static const RefDataFilenameMaker<FreeEnergyReferenceTestParameters> sc_refDataFilenameMaker{ std::tuple_cat(
+        sc_referenceConfigFormatters,
+        std::make_tuple(toEmptyString<FreeEnergyUpdate>, toEmptyString<FreeEnergyNonbonded>)) };
 
 /*! \brief Describes a free-energy system and the integrators to run it with.
  *
@@ -325,74 +338,70 @@ void addFreeEnergySkipReasons(MessageStringCollector& skipReasons)
                          "Skipping tests with OpenCL in CI, as compilation there is too slow");
 }
 
-//! `-nbfe` follows the hardware context; `-update` follows the execution mode.
-std::vector<SimulationOptionTuple> makeFreeEnergyMdrunOptions(bool isGpuTest, FreeEnergyUpdate updateMode)
+//! Set `-nbfe` and `-update` from the selected execution modes.
+std::vector<SimulationOptionTuple> makeFreeEnergyMdrunOptions(FreeEnergyNonbonded nonbondedMode,
+                                                              FreeEnergyUpdate    updateMode)
 {
-    return { SimulationOptionTuple{ "-nbfe", isGpuTest ? "gpu" : "cpu" },
+    return { SimulationOptionTuple{ "-nbfe", nonbondedMode == FreeEnergyNonbonded::Gpu ? "gpu" : "cpu" },
              SimulationOptionTuple{ "-update", updateMode == FreeEnergyUpdate::Gpu ? "gpu" : "cpu" } };
 }
 
-/*! \brief Compare a free-energy simulation to reference data on one hardware context.
+/*! \brief Compare a free-energy simulation to reference data with the selected execution modes.
  *
- * \c SimulationRunner still needs the mdrun fixture's communicator and hardware
- * detection, so suite setup delegates to \c MdrunTestFixtureBase.
+ * Use mdrun's hardware detection without creating HardwareTestFixture's TestDevice
+ * streams, which would be invalidated when mdrun resets the device after each run.
  */
-class FreeEnergyReferenceTest : public HardwareTestFixture<FreeEnergyReferenceTestHelper>
+class FreeEnergyReferenceTest :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<FreeEnergyReferenceTestParameters>
 {
-public:
-    static void SetUpTestSuite() { MdrunTestFixtureBase::SetUpTestSuite(); }
-    static void TearDownTestSuite() { MdrunTestFixtureBase::TearDownTestSuite(); }
-
-    ~FreeEnergyReferenceTest() override
-    {
-#if GMX_LIB_MPI
-        MPI_Barrier(MdrunTestFixtureBase::s_communicator);
-#endif
-    }
-
 protected:
-    FreeEnergyReferenceTest() :
-        HardwareTestFixture(sc_referenceConfigFormatters), runner_(&fileManager_)
-    {
-        checkTestNameLength();
-    }
+    FreeEnergyReferenceTest() { checkTestNameLength(); }
 
-    void addCustomSkipReasons(MessageStringCollector& skipReasons) override
+    void SetUp() override
     {
+        const auto [integrator, simulationName, maxNumWarnings, interactionsList, updateMode, nonbondedMode] =
+                GetParam();
+        const bool isGpuNonbonded = (nonbondedMode == FreeEnergyNonbonded::Gpu);
+
+        MessageStringCollector skipReasons;
         addFreeEnergySkipReasons(skipReasons);
-        const IntegrationAlgorithm testIntegrator = std::get<0>(GetParam());
-        const auto&                simulationName = std::get<1>(GetParam());
-        const auto                 updateMode     = std::get<4>(GetParam());
+        skipReasons.appendIf(
+                isGpuNonbonded
+                        && (!GpuConfigurationCapabilities::NonbondedFE
+                            || getCompatibleDevices(s_hwinfo->deviceInfoList).empty()),
+                "Nonbonded FEP on GPU is not supported or no compatible GPU was found");
         // Expanded ensemble simulations are not implemented on GPUs yet.
-        skipReasons.appendIf(isGpuTest() && simulationName == "expanded",
+        skipReasons.appendIf(isGpuNonbonded && simulationName == "expanded",
                              "Expanded ensemble simulations are not implemented on GPUs");
-        // The GPU update path can only be exercised on GPU hardware.
-        skipReasons.appendIf(updateMode == FreeEnergyUpdate::Gpu && !isGpuTest(),
-                             "GPU update requires GPU hardware");
+        // The GPU update path requires nonbonded FEP to run on the GPU.
+        skipReasons.appendIf(updateMode == FreeEnergyUpdate::Gpu && !isGpuNonbonded,
+                             "GPU update requires nonbonded FEP on GPU");
         // GPU update supports only the md integrator and does not support
         // free-energy perturbation of masses or constraints.
-        skipReasons.appendIf(updateMode == FreeEnergyUpdate::Gpu && isGpuTest()
-                                     && !freeEnergyGpuUpdateIsSupported(simulationName, testIntegrator),
+        skipReasons.appendIf(updateMode == FreeEnergyUpdate::Gpu && isGpuNonbonded
+                                     && !freeEnergyGpuUpdateIsSupported(simulationName, integrator),
                              "GPU update is not supported for this system and integrator");
+        if (!skipReasons.isEmpty())
+        {
+            GTEST_SKIP() << skipReasons.toString();
+        }
     }
-
-    //! Manages temporary files during the test.
-    TestFileManager fileManager_;
-    //! Helper object to manage the preparation for and call of mdrun
-    SimulationRunner runner_;
 };
 
 TEST_P(FreeEnergyReferenceTest, WithinTolerances)
 {
-    auto [integrator, simulationName, maxNumWarnings, interactionsList, updateMode, _] = GetParam();
+    const auto [integrator, simulationName, maxNumWarnings, interactionsList, updateMode, nonbondedMode] =
+            GetParam();
+    const bool isGpuNonbonded = (nonbondedMode == FreeEnergyNonbonded::Gpu);
 
     SCOPED_TRACE(
-            formatString("Comparing FEP simulation '%s' using the %s integrator with %s update to "
-                         "reference on %s",
+            formatString("Comparing FEP simulation '%s' using the %s integrator with %s update "
+                         "and %s nonbonded FEP to reference",
                          simulationName.c_str(),
                          enumValueToString(integrator),
                          updateMode == FreeEnergyUpdate::Gpu ? "GPU" : "CPU",
-                         hardwareContext()->description().c_str()));
+                         isGpuNonbonded ? "GPU" : "CPU"));
 
     // Tolerance set to pass with identical code version and a range of different test setups for most tests
     const auto defaultEnergyTolerance = relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 5e-6 : 5e-5);
@@ -434,7 +443,7 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     runner_.edrFileName_                     = simulationEdrFileName.string();
     runner_.dhdlFileName_                    = simulationDhdlFileName.string();
 
-    runMdrun(&runner_, makeFreeEnergyMdrunOptions(isGpuTest(), updateMode));
+    runMdrun(&runner_, makeFreeEnergyMdrunOptions(nonbondedMode, updateMode));
 
     /* Currently used tests write trajectory (x/v/f) frames every 20 steps.
      * Except for the expanded ensemble test, all tests run for 20 steps total,
@@ -455,7 +464,8 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     const MaxNumFrames numForceFramesToCheck = alsoCheckFinalForces ? MaxNumFrames(2) : MaxNumFrames(1);
 
     // Compare simulation results. Hardware is omitted from the reference-data name.
-    TestReferenceChecker& rootChecker = checker();
+    TestReferenceData    refData(sc_refDataFilenameMaker(GetParam()));
+    TestReferenceChecker rootChecker = refData.rootChecker();
     // Check that the energies agree with the refdata within tolerance.
     checkEnergiesAgainstReferenceData(simulationEdrFileName.string(), energyTermsToCompare, &rootChecker);
     // Check that the forces agree with the refdata within tolerance.
@@ -471,25 +481,25 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     }
 }
 
-//! Flatten tuple<InputConfig, ExecutionMode, hardware context> into the flat parameter tuple.
-auto flattenFreeEnergyTupleWithHardwareContext()
+//! Flatten tuple<InputConfig, ExecutionMode, ExecutionMode> into the flat parameter tuple.
+auto flattenFreeEnergyTuple()
 {
-    return [](const std::tuple<FreeEnergyReferenceInputConfig, FreeEnergyUpdate, const TestHardwareContext*>& nested)
+    return [](const std::tuple<FreeEnergyReferenceInputConfig, FreeEnergyUpdate, FreeEnergyNonbonded>& nested)
     {
         return std::tuple_cat(std::get<0>(nested),
                               std::make_tuple(std::get<1>(nested), std::get<2>(nested)));
     };
 }
 
-INSTANTIATE_TEST_SUITE_P(EquivalentToReference,
-                         FreeEnergyReferenceTest,
-                         ::testing::ConvertGenerator(
-                                 ::testing::Combine(::testing::ValuesIn(sc_freeEnergyReferenceConfigs),
-                                                    ::testing::ValuesIn(sc_freeEnergyUpdateModes),
-                                                    ::testing::ValuesIn(getHardwareContextsWithCapability(
-                                                            GpuConfigurationCapabilities::NonbondedFE))),
-                                 flattenFreeEnergyTupleWithHardwareContext()),
-                         sc_referenceTestNamer);
+INSTANTIATE_TEST_SUITE_P(
+        EquivalentToReference,
+        FreeEnergyReferenceTest,
+        ::testing::ConvertGenerator(::testing::Combine(::testing::ValuesIn(sc_freeEnergyReferenceConfigs),
+                                                       ::testing::ValuesIn(sc_freeEnergyUpdateModes),
+                                                       ::testing::Values(FreeEnergyNonbonded::Cpu,
+                                                                         FreeEnergyNonbonded::Gpu)),
+                                    flattenFreeEnergyTuple()),
+        sc_referenceTestNamer);
 
 } // namespace
 } // namespace gmx::test
