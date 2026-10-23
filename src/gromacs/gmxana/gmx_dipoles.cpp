@@ -559,7 +559,7 @@ static void mol_dip(int k0, int k1, rvec x[], const t_atom atom[], rvec mu)
     }
 }
 
-static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
+static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quadrupole)
 {
     int      i, k, m, n, niter;
     real     q, r2, mass, masstot;
@@ -662,14 +662,14 @@ static void mol_quad(int k0, int k1, rvec x[], const t_atom atom[], rvec quad)
 
     for (m = 0; (m < DIM); m++)
     {
-        quad[0] = dd[2]; /* yy */
-        quad[1] = dd[0]; /* zz */
-        quad[2] = dd[1]; /* xx */
+        quadrupole[0] = dd[2]; /* yy */
+        quadrupole[1] = dd[0]; /* zz */
+        quadrupole[2] = dd[1]; /* xx */
     }
 
     if (debug)
     {
-        pr_rvec(debug, 0, "Quadrupole", quad, DIM, TRUE);
+        pr_rvec(debug, 0, "Quadrupole", quadrupole, DIM, TRUE);
     }
 
     /* clean-up */
@@ -843,7 +843,7 @@ static void do_dip(const t_topology*       top,
 
     FILE *         outdd, *outmtot, *outaver, *outeps, *caver = nullptr;
     FILE *         dip3d = nullptr, *adip = nullptr;
-    rvec *         x, *dipole = nullptr, mu_t, quad, *dipsp = nullptr;
+    rvec *         x, *dipole = nullptr, mu_t, quadrupole, *dipsp = nullptr;
     t_gkrbin*      gkrbin = nullptr;
     t_enxframe*    fr;
     int            nframes = 1000, nre, timecheck = 0, ncolour = 0;
@@ -1159,10 +1159,10 @@ static void do_dip(const t_topology*       top,
                     }
                     if (bQuad)
                     {
-                        mol_quad(ind0, ind1, x, atom, quad);
+                        mol_quad(ind0, ind1, x, atom, quadrupole);
                         for (m = 0; (m < DIM); m++)
                         {
-                            gmx::stats_add_point(Qlsq[m], 0, quad[m], 0, 0);
+                            gmx::stats_add_point(Qlsq[m], 0, quadrupole[m], 0, 0);
                         }
                     }
                     if (bCorr && !bTotal)
