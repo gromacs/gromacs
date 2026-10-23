@@ -512,15 +512,14 @@ void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandler* wi)
  * we can make the previous code count the numbers of such
  * particles and then we would know in advance whether we need to
  * do such clearing. */
-void clearSpecialParticleVelocities(const bool        bGenVel,
+void clearSpecialParticleVelocities(const bool        clearNonFrozenSpecialParticles,
                                     const t_inputrec& ir,
                                     const gmx_mtop_t& mtop,
                                     ArrayRef<RVec>    v)
 {
     GMX_RELEASE_ASSERT(v.ssize() == mtop.natoms, "Need velocities for all atoms");
 
-    const bool clearNonFrozenSpecialParticles = bGenVel;
-    const bool hasFrozenParticles             = inputrecFrozenAtoms(&ir);
+    const bool hasFrozenParticles = inputrecFrozenAtoms(&ir);
     if (!clearNonFrozenSpecialParticles and !hasFrozenParticles)
     {
         // nothing to do
@@ -978,6 +977,7 @@ void cont_status(const char*                                 slog,
                 vi = { 0, 0, 0 };
             }
             close_trx(fp);
+            done_frame(&fr);
             /* Search for a frame without velocities */
             bReadVel = false;
             read_first_frame(oenv, &fp, slog, &fr, nullptr, TRX_NEED_X);
@@ -1000,6 +1000,7 @@ void cont_status(const char*                                 slog,
     }
 
     close_trx(fp);
+    done_frame(&fr);
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
@@ -2640,10 +2641,12 @@ int gmx_grompp(int argc, char* argv[])
     // must come after the topology has been read and MD groups have
     // been built and before initial temperatures have been
     // calculated. Only dynamical integrators have velocities in the
-    // state, e.g. energy minimization has none.
+    // state, e.g. energy minimization has none. The frozen dimensions
+    // are cleared again after cont_status().
     if (state.hasEntry(StateEntry::V))
     {
-        clearSpecialParticleVelocities(bGenVel, *ir, sys, state.v);
+        const bool clearNonFrozenSpecialParticles = bGenVel;
+        clearSpecialParticleVelocities(clearNonFrozenSpecialParticles, *ir, sys, state.v);
     }
 
     // Notify topology to MdModules for pre-processing after all indexes were built
@@ -2798,6 +2801,14 @@ int gmx_grompp(int argc, char* argv[])
                     &sys,
                     oenv,
                     logger);
+    }
+
+    // deform-init-flow and -t can change the velocities after the clearing above,
+    // so clear the frozen dimensions again. Shells and virtual sites keep the flow profile.
+    if (state.hasEntry(StateEntry::V))
+    {
+        const bool clearNonFrozenSpecialParticles = false;
+        clearSpecialParticleVelocities(clearNonFrozenSpecialParticles, *ir, sys, state.v);
     }
 
     if (ir->pbcType == PbcType::XY && ir->nwall != 2)
