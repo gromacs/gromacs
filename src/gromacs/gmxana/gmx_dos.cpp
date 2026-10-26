@@ -304,10 +304,10 @@ int gmx_dos(int argc, char* argv[])
     double            invNormalize;
     gmx_bool          normalizeAutocorrelation;
 
-    static gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
-    static gmx_bool bRecip = FALSE;
-    static real     Temp = 298.15, toler = 1e-6;
-    int             min_frames = 100;
+    gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
+    gmx_bool bRecip = FALSE;
+    real     Temp = 298.15, toler = 1e-6;
+    int      min_frames = 100;
 
     t_pargs pa[] = {
         { "-v", FALSE, etBOOL, { &bVerbose }, "Be loud and noisy." },

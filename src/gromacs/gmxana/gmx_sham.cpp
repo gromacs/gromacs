@@ -1069,58 +1069,58 @@ int gmx_sham(int argc, char* argv[])
         "is the natural quantity to use, as it will produce bins of the same",
         "volume."
     };
-    static real     tb = -1, te = -1;
-    static gmx_bool bHaveT = TRUE, bDer = FALSE;
-    static gmx_bool bSham = TRUE;
-    static real     Tref = 298.15, pmin = 0, ttol = 0, pmax = 0, gmax = 0, emin = 0, emax = 0;
-    static rvec     nrdim = { 1, 1, 1 };
-    static rvec     nrbox = { 32, 32, 32 };
-    static rvec     xmin = { 0, 0, 0 }, xmax = { 1, 1, 1 };
-    static int      nsets_in = 1, nlevels = 25;
-    t_pargs         pa[] = {
+    real     tb = -1, te = -1;
+    gmx_bool bHaveT = TRUE, bDer = FALSE;
+    gmx_bool bSham = TRUE;
+    real     Tref = 298.15, pmin = 0, ttol = 0, pmax = 0, gmax = 0, emin = 0, emax = 0;
+    rvec     nrdim = { 1, 1, 1 };
+    rvec     nrbox = { 32, 32, 32 };
+    rvec     xmin = { 0, 0, 0 }, xmax = { 1, 1, 1 };
+    int      nsets_in = 1, nlevels = 25;
+    t_pargs  pa[] = {
         { "-time", FALSE, etBOOL, { &bHaveT }, "Expect a time in the input" },
         { "-b", FALSE, etREAL, { &tb }, "First time to read from set" },
         { "-e", FALSE, etREAL, { &te }, "Last time to read from set" },
         { "-ttol", FALSE, etREAL, { &ttol }, "Tolerance on time in appropriate units (usually ps)" },
         { "-n",
-                  FALSE,
-                  etINT,
-                  { &nsets_in },
-                  "Read this number of sets separated by lines containing only an ampersand" },
+           FALSE,
+           etINT,
+           { &nsets_in },
+           "Read this number of sets separated by lines containing only an ampersand" },
         { "-d", FALSE, etBOOL, { &bDer }, "Use the derivative" },
         { "-sham",
-                  FALSE,
-                  etBOOL,
-                  { &bSham },
-                  "Turn off energy weighting even if energies are given" },
+           FALSE,
+           etBOOL,
+           { &bSham },
+           "Turn off energy weighting even if energies are given" },
         { "-tsham", FALSE, etREAL, { &Tref }, "Temperature for single histogram analysis" },
         { "-pmin",
-                  FALSE,
-                  etREAL,
-                  { &pmin },
-                  "Minimum probability. Anything lower than this will be set to zero" },
+           FALSE,
+           etREAL,
+           { &pmin },
+           "Minimum probability. Anything lower than this will be set to zero" },
         { "-dim",
-                  FALSE,
-                  etRVEC,
-                  { nrdim },
-                  "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will "
-                          "get the same value as the last)" },
+           FALSE,
+           etRVEC,
+           { nrdim },
+           "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will "
+            "get the same value as the last)" },
         { "-ngrid",
-                  FALSE,
-                  etRVEC,
-                  { nrbox },
-                  "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same "
-                          "value as the last)" },
+           FALSE,
+           etRVEC,
+           { nrbox },
+           "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same "
+            "value as the last)" },
         { "-xmin",
-                  FALSE,
-                  etRVEC,
-                  { xmin },
-                  "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
+           FALSE,
+           etRVEC,
+           { xmin },
+           "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
         { "-xmax",
-                  FALSE,
-                  etRVEC,
-                  { xmax },
-                  "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
+           FALSE,
+           etRVEC,
+           { xmax },
+           "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
         { "-pmax", FALSE, etREAL, { &pmax }, "Maximum probability in output, default is calculate" },
         { "-gmax", FALSE, etREAL, { &gmax }, "Maximum free energy in output, default is calculate" },
         { "-emin", FALSE, etREAL, { &emin }, "Minimum enthalpy in output, default is calculate" },

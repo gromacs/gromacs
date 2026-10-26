@@ -81,9 +81,9 @@ int gmx_nmens(int argc, char* argv[])
         "By default the starting eigenvector is set to 7, since the first six",
         "normal modes are the translational and rotational degrees of freedom."
     };
-    static int  nstruct = 100, first = 7, last = -1, seed = 0;
-    static real temp = 300.0;
-    t_pargs     pa[] = {
+    int     nstruct = 100, first = 7, last = -1, seed = 0;
+    real    temp = 300.0;
+    t_pargs pa[] = {
         { "-temp", FALSE, etREAL, { &temp }, "Temperature in Kelvin" },
         { "-seed", FALSE, etINT, { &seed }, "Random seed (0 means generate)" },
         { "-num", FALSE, etINT, { &nstruct }, "Number of structures to generate" },

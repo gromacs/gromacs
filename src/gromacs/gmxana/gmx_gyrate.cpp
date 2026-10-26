@@ -206,30 +206,30 @@ int gmx_gyrate(int argc, char* argv[])
         "With the option [TT]-nz[tt] 2D radii of gyration in the [IT]x-y[it] plane",
         "of slices along the [IT]z[it]-axis are calculated."
     };
-    static int      nmol = 1, nz = 0;
-    static gmx_bool bQ = FALSE, bRot = FALSE, bMOI = FALSE;
-    t_pargs         pa[] = {
+    int      nmol = 1, nz = 0;
+    gmx_bool bQ = FALSE, bRot = FALSE, bMOI = FALSE;
+    t_pargs  pa[] = {
         { "-nmol", FALSE, etINT, { &nmol }, "The number of molecules to analyze" },
         { "-q",
-                  FALSE,
-                  etBOOL,
-                  { &bQ },
-                  "Use absolute value of the charge of an atom as weighting factor instead of mass" },
+           FALSE,
+           etBOOL,
+           { &bQ },
+           "Use absolute value of the charge of an atom as weighting factor instead of mass" },
         { "-p",
-                  FALSE,
-                  etBOOL,
-                  { &bRot },
-                  "Calculate the radii of gyration about the principal axes." },
+           FALSE,
+           etBOOL,
+           { &bRot },
+           "Calculate the radii of gyration about the principal axes." },
         { "-moi",
-                  FALSE,
-                  etBOOL,
-                  { &bMOI },
-                  "Calculate the moments of inertia (defined by the principal axes)." },
+           FALSE,
+           etBOOL,
+           { &bMOI },
+           "Calculate the moments of inertia (defined by the principal axes)." },
         { "-nz",
-                  FALSE,
-                  etINT,
-                  { &nz },
-                  "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
+           FALSE,
+           etINT,
+           { &nz },
+           "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
     FILE*                      out;
     t_trxstatus*               status;

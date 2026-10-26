@@ -84,7 +84,7 @@ int gmx_dyecoupl(int argc, char* argv[])
         "The [TT]-norm[tt] option (area-) normalizes the histograms."
     };
 
-    static gmx_bool   bPBCdist = FALSE, bNormHist = FALSE;
+    gmx_bool          bPBCdist = FALSE, bNormHist = FALSE;
     int               histbins = 50;
     gmx_output_env_t* oenv;
     gmx::TimeControl  timeControl;

@@ -160,11 +160,10 @@ int gmx_rms(int argc, char* argv[])
         "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
         "comparison group are considered."
     };
-    static gmx_bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
-    static gmx_bool bDeltaLog = FALSE;
-    static int      prev = 0, freq = 1, freq2 = 1, nlevels = 80, avl = 0;
-    static real     rmsd_user_max = -1, rmsd_user_min = -1, bond_user_max = -1, bond_user_min = -1,
-                delta_maxy = 0.0;
+    gmx_bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
+    gmx_bool bDeltaLog = FALSE;
+    int      prev = 0, freq = 1, freq2 = 1, nlevels = 80, avl = 0;
+    real rmsd_user_max = -1, rmsd_user_min = -1, bond_user_max = -1, bond_user_min = -1, delta_maxy = 0.0;
     /* strings and things for selecting difference method */
     enum
     {
@@ -189,12 +188,12 @@ int gmx_rms(int argc, char* argv[])
         efNone,
         efNR
     };
-    int             efit;
-    const char*     fit[efNR + 1] = { nullptr, "rot+trans", "translation", "none", nullptr };
-    const char*     fitgraphlabel[efNR + 1] = { nullptr, "lsq fit", "translational fit", "no fit" };
-    static int      nrms                    = 1;
-    static gmx_bool bMassWeighted           = TRUE;
-    t_pargs         pa[]                    = {
+    int         efit;
+    const char* fit[efNR + 1]           = { nullptr, "rot+trans", "translation", "none", nullptr };
+    const char* fitgraphlabel[efNR + 1] = { nullptr, "lsq fit", "translational fit", "no fit" };
+    int         nrms                    = 1;
+    gmx_bool    bMassWeighted           = TRUE;
+    t_pargs     pa[]                    = {
         { "-what", FALSE, etENUM, { what }, "Structural difference measure" },
         { "-pbc", FALSE, etBOOL, { &bPBC }, "PBC check" },
         { "-fit", FALSE, etENUM, { fit }, "Fit to reference structure" },

@@ -284,18 +284,17 @@ int gmx_mk_angndx(int argc, char* argv[])
         "angle distributions etc. It uses a run input file ([REF].tpx[ref]) for the",
         "definitions of the angles, dihedrals etc."
     };
-    static const char* opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans",
-                                 nullptr };
-    static gmx_bool    bH    = TRUE;
-    static real        hq    = -1;
-    t_pargs            pa[]  = { { "-type", FALSE, etENUM, { opt }, "Type of angle" },
-                                 { "-hyd", FALSE, etBOOL, { &bH }, "Include angles with atoms with mass < 1.5" },
-                                 { "-hq",
-                                   FALSE,
-                                   etREAL,
-                                   { &hq },
-                                   "Ignore angles with atoms with mass < 1.5 and magnitude of their charge "
-                                               "less than this value" } };
+    const char* opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans", nullptr };
+    gmx_bool    bH    = TRUE;
+    real        hq    = -1;
+    t_pargs     pa[]  = { { "-type", FALSE, etENUM, { opt }, "Type of angle" },
+                          { "-hyd", FALSE, etBOOL, { &bH }, "Include angles with atoms with mass < 1.5" },
+                          { "-hq",
+                            FALSE,
+                            etREAL,
+                            { &hq },
+                            "Ignore angles with atoms with mass < 1.5 and magnitude of their charge "
+                                 "less than this value" } };
 
     gmx_output_env_t* oenv;
     FILE*             out;

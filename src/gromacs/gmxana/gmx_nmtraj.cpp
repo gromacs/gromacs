@@ -90,11 +90,11 @@ int gmx_nmtraj(int argc, char* argv[])
         "the first six normal modes are the translational and rotational degrees of freedom."
     };
 
-    static real        refamplitude = 0.25;
-    static int         nframes      = 30;
-    static real        temp         = 300.0;
-    static const char* eignrvec     = "7";
-    static const char* phasevec     = "0.0";
+    real        refamplitude = 0.25;
+    int         nframes      = 30;
+    real        temp         = 300.0;
+    const char* eignrvec     = "7";
+    const char* phasevec     = "0.0";
 
     t_pargs pa[] = {
         { "-eignr", FALSE, etSTR, { &eignrvec }, "String of eigenvectors to use (first is 1)" },

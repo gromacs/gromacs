@@ -114,7 +114,7 @@ static void dump_dih_trr(int nframes, int nangles, real** dih, const char* fn, r
 
 int gmx_g_angle(int argc, char* argv[])
 {
-    static const char* desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes the angle distribution for a number of angles",
         "or dihedrals.[PAR]",
         "With option [TT]-ov[tt], you can plot the average angle of",
@@ -137,39 +137,36 @@ int gmx_g_angle(int argc, char* argv[])
         "assuming the input trajectory frames are equally spaced in time. Output files are only",
         "generated if [TT]-type dihedral[tt] is specified."
     };
-    static const char* opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans",
-                                 nullptr };
-    static gmx_bool    bALL = FALSE, bChandler = FALSE, bAverCorr = FALSE, bPBC = TRUE;
-    static real        binwidth = 1;
-    t_pargs            pa[]     = {
+    const char* opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans", nullptr };
+    gmx_bool    bALL = FALSE, bChandler = FALSE, bAverCorr = FALSE, bPBC = TRUE;
+    real        binwidth = 1;
+    t_pargs     pa[]     = {
         { "-type", FALSE, etENUM, { opt }, "Type of angle to analyse" },
         { "-all",
-                         FALSE,
-                         etBOOL,
-                         { &bALL },
-                         "Plot all angles separately in the averages file, in the order of appearance in the "
-                                        "index file." },
+                  FALSE,
+                  etBOOL,
+                  { &bALL },
+                  "Plot all angles separately in the averages file, in the order of appearance in the "
+                          "index file." },
         { "-binwidth",
-                         FALSE,
-                         etREAL,
-                         { &binwidth },
-                         "binwidth (degrees) for calculating the distribution" },
+                  FALSE,
+                  etREAL,
+                  { &binwidth },
+                  "binwidth (degrees) for calculating the distribution" },
         { "-periodic", FALSE, etBOOL, { &bPBC }, "Print dihedral angles modulo 360 degrees" },
         { "-chandler",
-                         FALSE,
-                         etBOOL,
-                         { &bChandler },
-                         "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine "
-                                        "correlation function. Trans is defined as phi < -60 or phi > 60." },
+                  FALSE,
+                  etBOOL,
+                  { &bChandler },
+                  "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine "
+                          "correlation function. Trans is defined as phi < -60 or phi > 60." },
         { "-avercorr",
-                         FALSE,
-                         etBOOL,
-                         { &bAverCorr },
-                         "Average the correlation functions for the individual angles/dihedrals" }
+                  FALSE,
+                  etBOOL,
+                  { &bAverCorr },
+                  "Average the correlation functions for the individual angles/dihedrals" }
     };
-    static const char* bugs[] = {
-        "Counting transitions only works for dihedrals with multiplicity 3"
-    };
+    const char* bugs[] = { "Counting transitions only works for dihedrals with multiplicity 3" };
 
     FILE*         out;
     real          dt;

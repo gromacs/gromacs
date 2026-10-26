@@ -146,8 +146,8 @@ int gmx_helixorient(int argc, char* argv[])
     gmx::TimeControl  timeControl;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    static gmx_bool bSC          = FALSE;
-    static gmx_bool bIncremental = FALSE;
+    gmx_bool bSC          = FALSE;
+    gmx_bool bIncremental = FALSE;
 
     t_pargs pa[] = {
         { "-sidechain",

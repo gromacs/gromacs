@@ -1014,7 +1014,7 @@ static void rmsf(const char*             outfile,
 
 int gmx_anaeig(int argc, char* argv[])
 {
-    static const char* desc[] = {
+    const char* desc[] = {
         "[THISMODULE] analyzes eigenvectors. The eigenvectors can be of a",
         "covariance matrix ([gmx-covar]) or of a Normal Modes analysis",
         "([gmx-nmeig]).[PAR]",
@@ -1093,35 +1093,35 @@ int gmx_anaeig(int argc, char* argv[])
         "computed based on the Quasiharmonic approach and based on",
         "Schlitter's formula."
     };
-    static int      first = 1, last = -1, skip = 1, nextr = 2, nskip = 6;
-    static real     max = 0.0, temp = 298.15;
-    static gmx_bool bSplit = FALSE, bEntropy = FALSE;
-    t_pargs         pa[] = {
+    int      first = 1, last = -1, skip = 1, nextr = 2, nskip = 6;
+    real     max = 0.0, temp = 298.15;
+    gmx_bool bSplit = FALSE, bEntropy = FALSE;
+    t_pargs  pa[] = {
         { "-first", FALSE, etINT, { &first }, "First eigenvector for analysis (-1 is select)" },
         { "-last", FALSE, etINT, { &last }, "Last eigenvector for analysis (-1 is till the last)" },
         { "-skip", FALSE, etINT, { &skip }, "Only analyse every nr-th frame" },
         { "-max",
-                  FALSE,
-                  etREAL,
-                  { &max },
-                  "Maximum for projection of the eigenvector on the average structure, "
-                          "max=0 gives the extremes" },
+           FALSE,
+           etREAL,
+           { &max },
+           "Maximum for projection of the eigenvector on the average structure, "
+            "max=0 gives the extremes" },
         { "-nframes", FALSE, etINT, { &nextr }, "Number of frames for the extremes output" },
         { "-split", FALSE, etBOOL, { &bSplit }, "Split eigenvector projections where time is zero" },
         { "-entropy",
-                  FALSE,
-                  etBOOL,
-                  { &bEntropy },
-                  "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
+           FALSE,
+           etBOOL,
+           { &bEntropy },
+           "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
         { "-temp", FALSE, etREAL, { &temp }, "Temperature for entropy calculations" },
         { "-nevskip",
-                  FALSE,
-                  etINT,
-                  { &nskip },
-                  "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic "
-                          "approximation. When you do a rotational and/or translational fit prior to the "
-                          "covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which "
-                          "should not be taken into account when computing the entropy." }
+           FALSE,
+           etINT,
+           { &nskip },
+           "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic "
+            "approximation. When you do a rotational and/or translational fit prior to the "
+            "covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which "
+            "should not be taken into account when computing the entropy." }
     };
 #define NPA asize(pa)
 

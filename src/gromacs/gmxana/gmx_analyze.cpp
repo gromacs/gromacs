@@ -957,7 +957,7 @@ static void print_fitted_function(const char*       fitfile,
 
 int gmx_analyze(int argc, char* argv[])
 {
-    static const char* desc[] = {
+    const char* desc[] = {
         "[THISMODULE] reads an ASCII file and analyzes data sets.",
         "A line in the input file may start with a time",
         "(see option [TT]-time[tt]) and any number of [IT]y[it]-values may follow.",
@@ -1051,15 +1051,15 @@ int gmx_analyze(int argc, char* argv[])
         "original data and the fitted function to a new data file. The fitting",
         "parameters are stored as comment in the output file."
     };
-    static real     tb = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1, aver_start = 0;
-    static gmx_bool bHaveT = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
-    static gmx_bool bEESEF = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
-    static gmx_bool bIntegrate = FALSE, bRegression = FALSE, bLuzar = FALSE;
-    static int      nsets_in = 1, d = 1, nb_min = 4, resol = 10;
-    static real     temp = 298.15, fit_start = 1, fit_end = 60;
+    real     tb = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1, aver_start = 0;
+    gmx_bool bHaveT = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
+    gmx_bool bEESEF = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
+    gmx_bool bIntegrate = FALSE, bRegression = FALSE, bLuzar = FALSE;
+    int      nsets_in = 1, d = 1, nb_min = 4, resol = 10;
+    real     temp = 298.15, fit_start = 1, fit_end = 60;
 
     /* must correspond to enum avbar* declared at beginning of file */
-    static const char* avbar_opt[avbarNR + 1] = { nullptr, "none", "stddev", "error", "90", nullptr };
+    const char* avbar_opt[avbarNR + 1] = { nullptr, "none", "stddev", "error", "90", nullptr };
 
     t_pargs pa[] = {
         { "-time", FALSE, etBOOL, { &bHaveT }, "Expect a time in the input" },

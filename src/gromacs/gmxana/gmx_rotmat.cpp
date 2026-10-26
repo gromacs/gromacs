@@ -226,17 +226,17 @@ int gmx_rotmat(int argc, char* argv[])
         "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
-    const char*     reffit[] = { nullptr, "none", "xyz", "xy", nullptr };
-    static int      skip     = 1;
-    static gmx_bool bFitXY = FALSE, bMW = TRUE;
-    t_pargs         pa[] = {
+    const char* reffit[] = { nullptr, "none", "xyz", "xy", nullptr };
+    int         skip     = 1;
+    gmx_bool    bFitXY = FALSE, bMW = TRUE;
+    t_pargs     pa[] = {
         { "-ref", FALSE, etENUM, { reffit }, "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, { &skip }, "Use every nr-th frame for [TT]-ref[tt]" },
         { "-fitxy",
-                  FALSE,
-                  etBOOL,
-                  { &bFitXY },
-                  "Fit the x/y rotation before determining the rotation" },
+              FALSE,
+              etBOOL,
+              { &bFitXY },
+              "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, { &bMW }, "Use mass weighted fitting" }
     };
     FILE*                      out;

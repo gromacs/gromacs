@@ -340,9 +340,9 @@ int gmx_tcaf(int argc, char* argv[])
         "is very important for obtaining a good fit."
     };
 
-    static gmx_bool bMol = FALSE, bK34 = FALSE;
-    static real     wt   = 5;
-    t_pargs         pa[] = {
+    gmx_bool bMol = FALSE, bK34 = FALSE;
+    real     wt   = 5;
+    t_pargs  pa[] = {
         { "-mol", FALSE, etBOOL, { &bMol }, "Calculate TCAF of molecules" },
         { "-k34", FALSE, etBOOL, { &bK34 }, "Also use k=(3,0,0) and k=(4,0,0)" },
         { "-wt", FALSE, etREAL, { &wt }, "Exponential decay time for the TCAF fit weights" }

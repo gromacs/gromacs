@@ -544,19 +544,19 @@ int gmx_potential(int argc, char* argv[])
         "automatically turn on [TT]-center[tt] too.",
 
     };
-    gmx_output_env_t*  oenv;
-    gmx::TimeControl   timeControl;
-    static int         axis        = 2; /* normal to memb. default z  */
-    static const char* axtitle     = "Z";
-    static int         nslices     = 10; /* nr of slices defined       */
-    static int         ngrps       = 1;
-    static gmx_bool    bSpherical  = FALSE; /* default is bilayer types   */
-    static real        fudge_z     = 0;     /* translate coordinates      */
-    static gmx_bool    bCorrect    = false;
-    int                cb          = 0;
-    int                ce          = 0;
-    static gmx_bool    bSymmetrize = false;
-    static gmx_bool    bCenter     = false;
+    gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
+    int               axis        = 2; /* normal to memb. default z  */
+    const char*       axtitle     = "Z";
+    int               nslices     = 10; /* nr of slices defined       */
+    int               ngrps       = 1;
+    gmx_bool          bSpherical  = FALSE; /* default is bilayer types   */
+    real              fudge_z     = 0;     /* translate coordinates      */
+    gmx_bool          bCorrect    = false;
+    int               cb          = 0;
+    int               ce          = 0;
+    gmx_bool          bSymmetrize = false;
+    gmx_bool          bCenter     = false;
 
     t_pargs pa[] = {
         { "-d",

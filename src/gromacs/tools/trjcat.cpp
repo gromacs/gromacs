@@ -467,16 +467,16 @@ int gmx_trjcat(int argc, char* argv[])
         "the trajectory does not match that in the [REF].xvg[ref] file then the program",
         "tries to be smart. Beware."
     };
-    static gmx_bool bCat            = FALSE;
-    static gmx_bool bSort           = TRUE;
-    static gmx_bool bKeepLast       = FALSE;
-    static gmx_bool bKeepLastAppend = FALSE;
-    static gmx_bool bOverwrite      = FALSE;
-    static gmx_bool bSetTime        = FALSE;
-    static gmx_bool bDeMux;
-    static double   begin = -1;
-    static double   end   = -1;
-    static double   dt    = 0;
+    gmx_bool bCat            = FALSE;
+    gmx_bool bSort           = TRUE;
+    gmx_bool bKeepLast       = FALSE;
+    gmx_bool bKeepLastAppend = FALSE;
+    gmx_bool bOverwrite      = FALSE;
+    gmx_bool bSetTime        = FALSE;
+    gmx_bool bDeMux          = FALSE;
+    double   begin           = -1;
+    double   end             = -1;
+    double   dt              = 0;
 
     t_pargs pa[] = {
         { "-b", FALSE, etTIME, { &begin }, "First time to use (%t)" },

@@ -83,7 +83,7 @@ int gmx_rotacf(int argc, char* argv[])
         "file. The correlation function will be fitted from 2.5 ps until 20.0 ps",
         "to a two-parameter exponential."
     };
-    static gmx_bool bVec = FALSE, bAver = TRUE;
+    gmx_bool bVec = FALSE, bAver = TRUE;
 
     t_pargs pa[] = {
         { "-d",

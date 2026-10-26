@@ -489,15 +489,15 @@ int gmx_eneconv(int argc, char* argv[])
     };
 
 #define NFILE asize(fnm)
-    gmx_bool        bWrite;
-    static double   delta_t  = 0.0;
-    static double   toffset  = 0;
-    static real     scalefac = 1;
-    static gmx_bool bSetTime = FALSE;
-    static gmx_bool bSort = TRUE, bError = TRUE;
-    static double   begin     = -1;
-    static double   end       = -1;
-    gmx_bool        remove_dh = FALSE;
+    gmx_bool bWrite;
+    double   delta_t  = 0.0;
+    double   toffset  = 0;
+    real     scalefac = 1;
+    gmx_bool bSetTime = FALSE;
+    gmx_bool bSort = TRUE, bError = TRUE;
+    double   begin     = -1;
+    double   end       = -1;
+    gmx_bool remove_dh = FALSE;
 
     t_pargs pa[] = {
         { "-b", FALSE, etTIME, { &begin }, "First time to use" },

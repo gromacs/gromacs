@@ -100,19 +100,19 @@ int gmx_helix(int argc, char* argv[])
         " * Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).",
         " * Ellipticity at 222 nm according to Hirst and Brooks."
     };
-    static gmx_bool bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
-    static int      rStart = 0, rEnd = 0, r0 = 1;
-    t_pargs pa[] = { { "-r0", FALSE, etINT, { &r0 }, "The first residue number in the sequence" },
-                     { "-q",
-                       FALSE,
-                       etBOOL,
-                       { &bCheck },
-                       "Check at every step which part of the sequence is helical" },
-                     { "-F", FALSE, etBOOL, { &bFit }, "Toggle fit to a perfect helix" },
-                     { "-db", FALSE, etBOOL, { &bDBG }, "Print debug info" },
-                     { "-ev", FALSE, etBOOL, { &bEV }, "Write a new 'trajectory' file for ED" },
-                     { "-ahxstart", FALSE, etINT, { &rStart }, "First residue in helix" },
-                     { "-ahxend", FALSE, etINT, { &rEnd }, "Last residue in helix" } };
+    gmx_bool bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
+    int      rStart = 0, rEnd = 0, r0 = 1;
+    t_pargs  pa[] = { { "-r0", FALSE, etINT, { &r0 }, "The first residue number in the sequence" },
+                      { "-q",
+                        FALSE,
+                        etBOOL,
+                        { &bCheck },
+                        "Check at every step which part of the sequence is helical" },
+                      { "-F", FALSE, etBOOL, { &bFit }, "Toggle fit to a perfect helix" },
+                      { "-db", FALSE, etBOOL, { &bDBG }, "Print debug info" },
+                      { "-ev", FALSE, etBOOL, { &bEV }, "Write a new 'trajectory' file for ED" },
+                      { "-ahxstart", FALSE, etINT, { &rStart }, "First residue in helix" },
+                      { "-ahxend", FALSE, etINT, { &rEnd }, "Last residue in helix" } };
 
     typedef struct
     { // NOLINT(clang-analyzer-optin.performance.Padding)

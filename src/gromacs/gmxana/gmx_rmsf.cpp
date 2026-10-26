@@ -237,16 +237,16 @@ int gmx_rmsf(int argc, char* argv[])
         "This shows the directions in which the atoms fluctuate the most and",
         "the least."
     };
-    static gmx_bool bRes = FALSE, bAniso = FALSE, bFit = TRUE;
-    t_pargs         pargs[] = {
+    gmx_bool bRes = FALSE, bAniso = FALSE, bFit = TRUE;
+    t_pargs  pargs[] = {
         { "-res", FALSE, etBOOL, { &bRes }, "Calculate averages for each residue" },
         { "-aniso", FALSE, etBOOL, { &bAniso }, "Compute anisotropic temperature factors" },
         { "-fit",
-                  FALSE,
-                  etBOOL,
-                  { &bFit },
-                  "Do a least squares superposition before computing RMSF. Without this you must "
-                          "make sure that the reference structure and the trajectory match." }
+           FALSE,
+           etBOOL,
+           { &bFit },
+           "Do a least squares superposition before computing RMSF. Without this you must "
+            "make sure that the reference structure and the trajectory match." }
     };
     int    natom;
     int    i, m;

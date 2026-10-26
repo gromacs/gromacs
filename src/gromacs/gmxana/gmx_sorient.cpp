@@ -185,8 +185,8 @@ int gmx_sorient(int argc, char* argv[])
 
     gmx_output_env_t* oenv;
     gmx::TimeControl  timeControl;
-    static gmx_bool   bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
-    static real       rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
+    gmx_bool          bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
+    real              rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
     t_pargs           pa[] = {
         { "-com", FALSE, etBOOL, { &bCom }, "Use the center of mass as the reference position" },
         { "-v23", FALSE, etBOOL, { &bVec23 }, "Use the vector between atoms 2 and 3" },

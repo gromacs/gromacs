@@ -517,8 +517,8 @@ int gmx_confrms(int argc, char* argv[])
         "(use [TT]rasmol -nmrpdb[tt]). Also in a [REF].pdb[ref] file, B-factors",
         "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
     };
-    static gmx_bool bOne = FALSE, bRmpbc = FALSE, bMW = TRUE, bName = FALSE, bBfac = FALSE,
-                    bFit = TRUE, bLabel = FALSE;
+    gmx_bool bOne = FALSE, bRmpbc = FALSE, bMW = TRUE, bName = FALSE, bBfac = FALSE, bFit = TRUE,
+             bLabel = FALSE;
 
     t_pargs pa[] = {
         { "-one", FALSE, etBOOL, { &bOne }, "Only write the fitted structure to file" },

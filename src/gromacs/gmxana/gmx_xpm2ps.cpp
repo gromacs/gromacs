@@ -1469,9 +1469,9 @@ int gmx_xpm2ps(int argc, char* argv[])
     const char*       fn2;
     int               i, etitle, elegend, ediag, erainbow, ecombine;
     gmx_bool          bTitle, bTitleOnce, bDiag, bFirstDiag, bGrad;
-    static gmx_bool   bFrame = TRUE, bZeroLine = FALSE, bYonce = FALSE;
-    static real       size = 400, boxx = 0, boxy = 0, cmin = 0, cmax = 0;
-    static rvec       grad = { 0, 0, 0 };
+    gmx_bool          bFrame = TRUE, bZeroLine = FALSE, bYonce = FALSE;
+    real              size = 400, boxx = 0, boxy = 0, cmin = 0, cmax = 0;
+    rvec              grad = { 0, 0, 0 };
     enum
     {
         etSel,
@@ -1504,7 +1504,7 @@ int gmx_xpm2ps(int argc, char* argv[])
     const char* rainbow[] = { nullptr, "no", "blue", "red", nullptr };
     /* MUST correspond to enum ecXxx as defined at top of file */
     const char* combine[] = { nullptr, "halves", "add", "sub", "mult", "div", nullptr };
-    static int  skip = 1, mapoffset = 0;
+    int         skip = 1, mapoffset = 0;
     t_pargs     pa[] = {
         { "-frame", FALSE, etBOOL, { &bFrame }, "Display frame, ticks, labels, title and legend" },
         { "-title", FALSE, etENUM, { title }, "Show title at" },

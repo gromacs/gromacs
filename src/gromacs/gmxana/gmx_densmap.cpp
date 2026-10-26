@@ -106,11 +106,11 @@ int gmx_densmap(int argc, char* argv[])
         "from zero to the maximum density, you can set the maximum",
         "with the option [TT]-dmax[tt]."
     };
-    static int         n1 = 0, n2 = 0;
-    static real        xmin = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
-    static gmx_bool    bMirror = FALSE, bSums = FALSE;
-    static const char* eaver[] = { nullptr, "z", "y", "x", nullptr };
-    static const char* eunit[] = { nullptr, "nm-3", "nm-2", "count", nullptr };
+    int         n1 = 0, n2 = 0;
+    real        xmin = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
+    gmx_bool    bMirror = FALSE, bSums = FALSE;
+    const char* eaver[] = { nullptr, "z", "y", "x", nullptr };
+    const char* eunit[] = { nullptr, "nm-3", "nm-2", "count", nullptr };
 
     t_pargs pa[] = {
         { "-bin", FALSE, etREAL, { &bin }, "Grid size (nm)" },

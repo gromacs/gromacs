@@ -94,14 +94,14 @@ int gmx_genrestr(int argc, char* argv[])
         "maintain the overall conformation of a protein without tieing it to",
         "a specific position (as with position restraints)."
     };
-    static rvec     fc           = { 1000.0, 1000.0, 1000.0 };
-    static real     freeze_level = 0.0;
-    static real     disre_dist   = 0.1;
-    static real     disre_frac   = 0.0;
-    static real     disre_up2    = 1.0;
-    static gmx_bool bDisre       = FALSE;
-    static gmx_bool bConstr      = FALSE;
-    static real     cutoff       = -1.0;
+    rvec     fc           = { 1000.0, 1000.0, 1000.0 };
+    real     freeze_level = 0.0;
+    real     disre_dist   = 0.1;
+    real     disre_frac   = 0.0;
+    real     disre_up2    = 1.0;
+    gmx_bool bDisre       = FALSE;
+    gmx_bool bConstr      = FALSE;
+    real     cutoff       = -1.0;
 
     t_pargs pa[] = {
         { "-fc", FALSE, etRVEC, { fc }, "Force constants (kJ/mol nm^2)" },

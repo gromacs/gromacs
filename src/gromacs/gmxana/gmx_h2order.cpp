@@ -293,8 +293,8 @@ int gmx_h2order(int argc, char* argv[])
         "dipole and the axis from the center of mass to the oxygen is calculated",
         "instead of the angle between the dipole and a box axis."
     };
-    static const char* axisOption[axisNR + 1] = { nullptr, "Z", "Y", "X", nullptr };
-    static int         nslices                = 0; /* nr of slices defined       */
+    const char* axisOption[axisNR + 1] = { nullptr, "Z", "Y", "X", nullptr };
+    int         nslices                = 0; /* nr of slices defined       */
     // The struct that will hold the parsed user input
     t_pargs     pa[]   = { { "-d",
                              FALSE,

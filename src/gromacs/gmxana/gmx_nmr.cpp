@@ -399,18 +399,18 @@ int gmx_nmr(int argc, char* argv[])
 
 
     };
-    static gmx_bool bPrAll = FALSE;
-    static gmx_bool bDp = FALSE, bOrinst = FALSE, bOvec = FALSE;
-    static int      skip = 0;
-    t_pargs         pa[] = {
+    gmx_bool bPrAll = FALSE;
+    gmx_bool bDp = FALSE, bOrinst = FALSE, bOvec = FALSE;
+    int      skip = 0;
+    t_pargs  pa[] = {
         { "-dp", FALSE, etBOOL, { &bDp }, "Print energies in high precision" },
         { "-skip", FALSE, etINT, { &skip }, "Skip number of frames between data points" },
         { "-aver",
-                  FALSE,
-                  etBOOL,
-                  { &bPrAll },
-                  "Also print the exact average and rmsd stored in the energy frames (only when 1 term is "
-                          "requested)" },
+           FALSE,
+           etBOOL,
+           { &bPrAll },
+           "Also print the exact average and rmsd stored in the energy frames (only when 1 term is "
+            "requested)" },
         { "-orinst", FALSE, etBOOL, { &bOrinst }, "Analyse instantaneous orientation data" },
         { "-ovec", FALSE, etBOOL, { &bOvec }, "Also plot the eigenvectors with [TT]-oten[tt]" }
     };

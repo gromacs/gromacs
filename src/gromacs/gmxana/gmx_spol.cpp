@@ -206,9 +206,9 @@ int gmx_spol(int argc, char* argv[])
 
     gmx_output_env_t* oenv;
     gmx::TimeControl  timeControl;
-    static gmx_bool   bCom   = FALSE;
-    static int        srefat = 1;
-    static real       rmin = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
+    gmx_bool          bCom   = FALSE;
+    int               srefat = 1;
+    real              rmin = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
     t_pargs           pa[] = {
         { "-com", FALSE, etBOOL, { &bCom }, "Use the center of mass as the reference position" },
         { "-refat", FALSE, etINT, { &srefat }, "The reference atom of the solvent molecule" },

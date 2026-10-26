@@ -203,9 +203,9 @@ int gmx_mdmat(int argc, char* argv[])
         "residues over the whole trajectory can be made.",
         "The output can be processed with [gmx-xpm2ps] to make a PostScript (tm) plot."
     };
-    static real truncate = 1.5;
-    static int  nlevels  = 40;
-    t_pargs     pa[]     = {
+    real    truncate = 1.5;
+    int     nlevels  = 40;
+    t_pargs pa[]     = {
         { "-t", FALSE, etREAL, { &truncate }, "trunc distance" },
         { "-nlevels", FALSE, etINT, { &nlevels }, "Discretize distance in this number of levels" }
     };

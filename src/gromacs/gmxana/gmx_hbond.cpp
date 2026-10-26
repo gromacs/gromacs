@@ -2422,13 +2422,13 @@ int gmx_hbond(int argc, char* argv[])
         "times the total number of acceptors in the selected group(s)."
     };
 
-    static real acut = 30, abin = 1, rcut = 0.35, r2cut = 0, rbin = 0.005, rshell = -1;
-    static real maxnhb = 0, fit_start = 1, fit_end = 60, temp = 298.15;
-    static bool bNitAcc = true, bDA = true, bMerge = true;
-    static int  nDump    = 0;
-    static int  nThreads = 0;
+    real acut = 30, abin = 1, rcut = 0.35, r2cut = 0, rbin = 0.005, rshell = -1;
+    real maxnhb = 0, fit_start = 1, fit_end = 60, temp = 298.15;
+    bool bNitAcc = true, bDA = true, bMerge = true;
+    int  nDump    = 0;
+    int  nThreads = 0;
 
-    static gmx_bool bContact = FALSE;
+    gmx_bool bContact = FALSE;
 
     /* options */
     t_pargs pa[] = {

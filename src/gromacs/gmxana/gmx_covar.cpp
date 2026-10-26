@@ -154,16 +154,16 @@ int gmx_covar(int argc, char* argv[])
         "should consider carefully whether a reduced set of atoms will meet",
         "your needs for lower costs."
     };
-    static gmx_bool bFit = TRUE, bRef = FALSE, bM = FALSE, bPBC = TRUE;
-    static int      end  = -1;
-    t_pargs         pa[] = {
+    gmx_bool bFit = TRUE, bRef = FALSE, bM = FALSE, bPBC = TRUE;
+    int      end  = -1;
+    t_pargs  pa[] = {
         { "-fit", FALSE, etBOOL, { &bFit }, "Fit to a reference structure" },
         { "-ref",
-                  FALSE,
-                  etBOOL,
-                  { &bRef },
-                  "Use the deviation from the conformation in the structure file instead of from the "
-                          "average" },
+           FALSE,
+           etBOOL,
+           { &bRef },
+           "Use the deviation from the conformation in the structure file instead of from the "
+            "average" },
         { "-mwa", FALSE, etBOOL, { &bM }, "Mass-weighted covariance analysis" },
         { "-last", FALSE, etINT, { &end }, "Last eigenvector to write away (-1 is till the last)" },
         { "-pbc", FALSE, etBOOL, { &bPBC }, "Apply corrections for periodic boundary conditions" }

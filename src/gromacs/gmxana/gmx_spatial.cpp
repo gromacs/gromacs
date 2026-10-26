@@ -116,12 +116,12 @@ int gmx_spatial(int argc, char* argv[])
         "option or increasing the [TT]-nab[tt] value."
     };
 
-    static gmx_bool bPBC         = FALSE;
-    static int      iIGNOREOUTER = -1; /*Positive values may help if the surface is spikey */
-    static gmx_bool bCUTDOWN     = TRUE;
-    static real     rBINWIDTH    = 0.05; /* nm */
-    static gmx_bool bCALCDIV     = TRUE;
-    static int      iNAB         = 16;
+    gmx_bool bPBC         = FALSE;
+    int      iIGNOREOUTER = -1; /*Positive values may help if the surface is spikey */
+    gmx_bool bCUTDOWN     = TRUE;
+    real     rBINWIDTH    = 0.05; /* nm */
+    gmx_bool bCALCDIV     = TRUE;
+    int      iNAB         = 16;
 
     t_pargs pa[] = { { "-pbc",
                        FALSE,

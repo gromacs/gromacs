@@ -453,10 +453,10 @@ int gmx_nmeig(int argc, char* argv[])
         "programs."
     };
 
-    static gmx_bool bM = TRUE, bCons = FALSE;
-    static int      begin = 1, end = 50, maxspec = 4000, sigma_r = 1;
-    static real     T = 298.15, width = 1, P = 1, scale_factor = 1;
-    static real     linear_toler = 1e-5;
+    gmx_bool bM = TRUE, bCons = FALSE;
+    int      begin = 1, end = 50, maxspec = 4000, sigma_r = 1;
+    real     T = 298.15, width = 1, P = 1, scale_factor = 1;
+    real     linear_toler = 1e-5;
 
     t_pargs pa[] = {
         { "-m",

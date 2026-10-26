@@ -636,15 +636,15 @@ int gmx_density(int argc, char* argv[])
         "",
     };
 
-    gmx_output_env_t*  oenv;
-    gmx::TimeControl   timeControl;
-    static const char* dens_opt[]  = { nullptr, "mass", "number", "charge", "electron", nullptr };
-    static int         axis        = 2; /* normal to memb. default z  */
-    static const char* axtitle     = "Z";
-    static int         nslices     = 50; /* nr of slices defined       */
-    static int         ngrps       = 1;  /* nr. of groups              */
-    static gmx_bool    bSymmetrize = FALSE;
-    static gmx_bool    bCenter     = FALSE;
+    gmx_output_env_t* oenv;
+    gmx::TimeControl  timeControl;
+    const char*       dens_opt[]  = { nullptr, "mass", "number", "charge", "electron", nullptr };
+    int               axis        = 2; /* normal to memb. default z  */
+    const char*       axtitle     = "Z";
+    int               nslices     = 50; /* nr of slices defined       */
+    int               ngrps       = 1;  /* nr. of groups              */
+    gmx_bool          bSymmetrize = FALSE;
+    gmx_bool          bCenter     = FALSE;
 
     t_pargs pa[] = {
         { "-d",

@@ -1129,9 +1129,9 @@ int gmx_pme_error(int argc, char* argv[])
     int            seed     = 0;
 
 
-    static t_filenm fnm[] = { { efTPR, "-s", nullptr, ffREAD },
-                              { efOUT, "-o", "error", ffWRITE },
-                              { efTPR, "-so", "tuned", ffOPTWR } };
+    t_filenm fnm[] = { { efTPR, "-s", nullptr, ffREAD },
+                       { efOUT, "-o", "error", ffWRITE },
+                       { efTPR, "-so", "tuned", ffOPTWR } };
 
     gmx_output_env_t* oenv = nullptr;
 

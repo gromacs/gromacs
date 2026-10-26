@@ -3333,7 +3333,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
 
 int gmx_bar(int argc, char* argv[])
 {
-    static const char* desc[] = {
+    const char* desc[] = {
         "[THISMODULE] calculates free energy difference estimates through ",
         "Bennett's acceptance ratio method (BAR). It also automatically",
         "adds series of individual free energies obtained with BAR into",
@@ -3438,11 +3438,11 @@ int gmx_bar(int argc, char* argv[])
         "[TT]-oh[tt] option to write series of histograms, together with the ",
         "[TT]-nbin[tt] option.[PAR]"
     };
-    static real begin = 0, end = -1, temp = -1;
-    int         nd = 2, nbmin = 5, nbmax = 5;
-    int         nbin     = 100;
-    gmx_bool    use_dhdl = FALSE;
-    t_pargs     pa[]     = {
+    real     begin = 0, end = -1, temp = -1;
+    int      nd = 2, nbmin = 5, nbmax = 5;
+    int      nbin     = 100;
+    gmx_bool use_dhdl = FALSE;
+    t_pargs  pa[]     = {
         { "-b", FALSE, etREAL, { &begin }, "Begin time for BAR" },
         { "-e", FALSE, etREAL, { &end }, "End time for BAR" },
         { "-temp", FALSE, etREAL, { &temp }, "Temperature (K)" },
@@ -3451,10 +3451,10 @@ int gmx_bar(int argc, char* argv[])
         { "-nbmax", FALSE, etINT, { &nbmax }, "Maximum number of blocks for error estimation" },
         { "-nbin", FALSE, etINT, { &nbin }, "Number of bins for histogram output" },
         { "-extp",
-                  FALSE,
-                  etBOOL,
-                  { &use_dhdl },
-                  "Whether to linearly extrapolate dH/dl values to use as energies" }
+               FALSE,
+               etBOOL,
+               { &use_dhdl },
+               "Whether to linearly extrapolate dH/dl values to use as energies" }
     };
 
     t_filenm fnm[] = { { efXVG, "-f", "dhdl", ffOPTRDMULT },

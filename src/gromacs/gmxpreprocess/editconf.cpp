@@ -661,85 +661,84 @@ int gmx_editconf(int argc, char* argv[])
         "For complex molecules, the periodicity removal routine may break down, "
         "in that case you can use [gmx-trjconv].",
     };
-    static real dist = 0.0;
-    static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW = FALSE, bCONECT = FALSE;
-    static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead = FALSE,
-                    bGrasp = FALSE, bSig56 = FALSE;
-    static rvec scale = { 1, 1, 1 }, newbox = { 0, 0, 0 }, newang = { 90, 90, 90 };
-    static real rho = 1000.0, rvdw = 0.12;
-    static rvec center = { 0, 0, 0 }, translation = { 0, 0, 0 }, rotangles = { 0, 0, 0 },
-                aligncenter = { 0, 0, 0 }, targetvec = { 0, 0, 0 };
-    static const char *btype[] = { nullptr,        "triclinic",  "cubic",
-                                   "dodecahedron", "octahedron", nullptr },
-                      *label   = "A";
-    static rvec visbox         = { 0, 0, 0 };
-    static int  resnr_start    = -1;
-    t_pargs     pa[]           = {
+    real     dist  = 0.0;
+    gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW = FALSE, bCONECT = FALSE;
+    gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead = FALSE, bGrasp = FALSE,
+             bSig56 = FALSE;
+    rvec scale = { 1, 1, 1 }, newbox = { 0, 0, 0 }, newang = { 90, 90, 90 };
+    real rho = 1000.0, rvdw = 0.12;
+    rvec center = { 0, 0, 0 }, translation = { 0, 0, 0 }, rotangles = { 0, 0, 0 },
+         aligncenter = { 0, 0, 0 }, targetvec = { 0, 0, 0 };
+    const char *btype[] = { nullptr, "triclinic", "cubic", "dodecahedron", "octahedron", nullptr },
+               *label   = "A";
+    rvec    visbox      = { 0, 0, 0 };
+    int     resnr_start = -1;
+    t_pargs pa[]        = {
         { "-ndef", FALSE, etBOOL, { &bNDEF }, "Choose output from default index groups" },
         { "-visbox",
-                        FALSE,
-                        etRVEC,
-                        { visbox },
-                        "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
+                 FALSE,
+                 etRVEC,
+                 { visbox },
+                 "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
         { "-bt", FALSE, etENUM, { btype }, "Box type for [TT]-box[tt] and [TT]-d[tt]" },
         { "-box", FALSE, etRVEC, { newbox }, "Box vector lengths (a,b,c)" },
         { "-angles", FALSE, etRVEC, { newang }, "Angles between the box vectors (bc,ac,ab)" },
         { "-d", FALSE, etREAL, { &dist }, "Distance between the solute and the box" },
         { "-c",
-                        FALSE,
-                        etBOOL,
-                        { &bCenter },
-                        "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
+                 FALSE,
+                 etBOOL,
+                 { &bCenter },
+                 "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
         { "-center", FALSE, etRVEC, { center }, "Shift the geometrical center to (x,y,z)" },
         { "-aligncenter", FALSE, etRVEC, { aligncenter }, "Center of rotation for alignment" },
         { "-align", FALSE, etRVEC, { targetvec }, "Align to target vector" },
         { "-translate", FALSE, etRVEC, { translation }, "Translation" },
         { "-rotate",
-                        FALSE,
-                        etRVEC,
-                        { rotangles },
-                        "Rotation around the X, Y and Z axes in degrees" },
+                 FALSE,
+                 etRVEC,
+                 { rotangles },
+                 "Rotation around the X, Y and Z axes in degrees" },
         { "-princ", FALSE, etBOOL, { &bOrient }, "Orient molecule(s) along their principal axes" },
         { "-scale", FALSE, etRVEC, { scale }, "Scaling factor" },
         { "-density",
-                        FALSE,
-                        etREAL,
-                        { &rho },
-                        "Density (g/L) of the output box achieved by scaling" },
+                 FALSE,
+                 etREAL,
+                 { &rho },
+                 "Density (g/L) of the output box achieved by scaling" },
         { "-pbc", FALSE, etBOOL, { &bRMPBC }, "Remove the periodicity (make molecule whole again)" },
         { "-resnr", FALSE, etINT, { &resnr_start }, " Renumber residues starting from resnr" },
         { "-grasp",
-                        FALSE,
-                        etBOOL,
-                        { &bGrasp },
-                        "Store the charge of the atom in the B-factor field and the radius of the atom in the "
-                                      "occupancy field" },
+                 FALSE,
+                 etBOOL,
+                 { &bGrasp },
+                 "Store the charge of the atom in the B-factor field and the radius of the atom in the "
+                        "occupancy field" },
         { "-rvdw",
-                        FALSE,
-                        etREAL,
-                        { &rvdw },
-                        "Default Van der Waals radius (in nm) if one can not be found in the database or if no "
-                                      "parameters are present in the topology file" },
+                 FALSE,
+                 etREAL,
+                 { &rvdw },
+                 "Default Van der Waals radius (in nm) if one can not be found in the database or if no "
+                        "parameters are present in the topology file" },
         { "-sig56",
-                        FALSE,
-                        etBOOL,
-                        { &bSig56 },
-                        "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
+                 FALSE,
+                 etBOOL,
+                 { &bSig56 },
+                 "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
         { "-vdwread",
-                        FALSE,
-                        etBOOL,
-                        { &bReadVDW },
-                        "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing "
-                                      "the radii based on the force field" },
+                 FALSE,
+                 etBOOL,
+                 { &bReadVDW },
+                 "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing "
+                        "the radii based on the force field" },
         { "-atom", FALSE, etBOOL, { &peratom }, "Force B-factor attachment per atom" },
         { "-legend", FALSE, etBOOL, { &bLegend }, "Make B-factor legend" },
         { "-label", FALSE, etSTR, { &label }, "Add chain label for all residues" },
         { "-conect",
-                        FALSE,
-                        etBOOL,
-                        { &bCONECT },
-                        "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a "
-                                      "topology (tpr file) is present" }
+                 FALSE,
+                 etBOOL,
+                 { &bCONECT },
+                 "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a "
+                        "topology (tpr file) is present" }
     };
 #define NPA asize(pa)
 

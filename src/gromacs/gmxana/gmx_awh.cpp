@@ -526,26 +526,26 @@ void AwhReader::processAwhFrame(const t_enxblock& block, double time, const gmx_
 /*! \brief The main function for the AWH tool */
 int gmx_awh(int argc, char* argv[])
 {
-    const char*     desc[]     = { "[THISMODULE] extracts AWH data from an energy file.",
-                                   "One or two files are written per AWH bias per time frame.",
-                                   "The bias index, if more than one, is appended to the file, as well as",
-                                   "the time of the frame. By default only the PMF is printed.",
-                                   "With [TT]-more[tt] the bias, target and coordinate distributions",
-                                   "are also printed, as well as the metric sqrt(det(friction_tensor))",
-                                   "normalized such that the average is 1.",
-                                   "Option [TT]-fric[tt] prints all components of the friction tensor",
-                                   "to an additional set of files." };
-    static gmx_bool moreGraphs = FALSE;
-    static int      skip       = 0;
-    static gmx_bool kTUnit     = FALSE;
-    t_pargs         pa[]       = {
+    const char* desc[]     = { "[THISMODULE] extracts AWH data from an energy file.",
+                               "One or two files are written per AWH bias per time frame.",
+                               "The bias index, if more than one, is appended to the file, as well as",
+                               "the time of the frame. By default only the PMF is printed.",
+                               "With [TT]-more[tt] the bias, target and coordinate distributions",
+                               "are also printed, as well as the metric sqrt(det(friction_tensor))",
+                               "normalized such that the average is 1.",
+                               "Option [TT]-fric[tt] prints all components of the friction tensor",
+                               "to an additional set of files." };
+    gmx_bool    moreGraphs = FALSE;
+    int         skip       = 0;
+    gmx_bool    kTUnit     = FALSE;
+    t_pargs     pa[]       = {
         { "-skip", FALSE, etINT, { &skip }, "Skip number of frames between data points" },
         { "-more", FALSE, etBOOL, { &moreGraphs }, "Print more output" },
         { "-kt",
-                        FALSE,
-                        etBOOL,
-                        { &kTUnit },
-                        "Print free energy output in units of kT instead of kJ/mol" }
+                    FALSE,
+                    etBOOL,
+                    { &kTUnit },
+                    "Print free energy output in units of kT instead of kJ/mol" }
     };
 
     ener_file_t       fp;

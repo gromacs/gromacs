@@ -197,8 +197,8 @@ int gmx_velacc(int argc, char* argv[])
                            "and that the time interval between data collection points is",
                            "much shorter than the time scale of the autocorrelation." };
 
-    static gmx_bool bMass = FALSE, bMol = FALSE, bRecip = TRUE;
-    t_pargs         pa[] = {
+    gmx_bool bMass = FALSE, bMol = FALSE, bRecip = TRUE;
+    t_pargs  pa[] = {
         { "-m", FALSE, etBOOL, { &bMass }, "Calculate the momentum autocorrelation function" },
         { "-recip", FALSE, etBOOL, { &bRecip }, "Use cm^-1 on X-axis instead of 1/ps for spectra." },
         { "-mol", FALSE, etBOOL, { &bMol }, "Calculate the velocity acf of molecules" }

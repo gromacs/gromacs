@@ -640,18 +640,18 @@ int gmx_traj(int argc, char* argv[])
         "",
         "See [gmx-trajectory] for plotting similar data for selections."
     };
-    static gmx_bool bMol = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
-    static gmx_bool bX = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
-    static int      ngroups = 1;
-    static real     ctime = -1, scale = 0, binwidth = 1;
-    t_pargs         pa[] = {
+    gmx_bool bMol = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
+    gmx_bool bX = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
+    int      ngroups = 1;
+    real     ctime = -1, scale = 0, binwidth = 1;
+    t_pargs  pa[] = {
         { "-com", FALSE, etBOOL, { &bCom }, "Plot data for the com of each group" },
         { "-pbc", FALSE, etBOOL, { &bPBC }, "Make molecules whole for COM" },
         { "-mol",
-                  FALSE,
-                  etBOOL,
-                  { &bMol },
-                  "Index contains molecule numbers instead of atom numbers" },
+           FALSE,
+           etBOOL,
+           { &bMol },
+           "Index contains molecule numbers instead of atom numbers" },
         { "-nojump", FALSE, etBOOL, { &bNoJump }, "Remove jumps of atoms across the box" },
         { "-x", FALSE, etBOOL, { &bX }, "Plot X-component" },
         { "-y", FALSE, etBOOL, { &bY }, "Plot Y-component" },
@@ -661,15 +661,15 @@ int gmx_traj(int argc, char* argv[])
         { "-fp", FALSE, etBOOL, { &bFP }, "Full precision output" },
         { "-bin", FALSE, etREAL, { &binwidth }, "Binwidth for velocity histogram (nm/ps)" },
         { "-ctime",
-                  FALSE,
-                  etREAL,
-                  { &ctime },
-                  "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
+           FALSE,
+           etREAL,
+           { &ctime },
+           "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
         { "-scale",
-                  FALSE,
-                  etREAL,
-                  { &scale },
-                  "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
+           FALSE,
+           etREAL,
+           { &scale },
+           "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
     FILE *       outx = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
     FILE *       outekt = nullptr, *outekr = nullptr;

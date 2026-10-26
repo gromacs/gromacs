@@ -59,8 +59,8 @@ int gmx_saxs(int argc, char* argv[])
                            "groups based on Cromer's method.",
                            "Both topology and trajectory files are required." };
 
-    static real start_q = 0.0, end_q = 60.0, energy = 12.0;
-    static int  ngroups = 1;
+    real start_q = 0.0, end_q = 60.0, energy = 12.0;
+    int  ngroups = 1;
 
     t_pargs pa[] = {
         { "-ng", FALSE, etINT, { &ngroups }, "Number of groups to compute SAXS" },

@@ -119,23 +119,23 @@ int gmx_trjorder(int argc, char* argv[])
         "With option [TT]-nshell[tt] the number of molecules within a shell",
         "of radius [TT]-r[tt] around the reference group are printed."
     };
-    static int      na = 3, ref_a = 1;
-    static real     rcut = 0;
-    static gmx_bool bCOM = FALSE, bZ = FALSE;
-    t_pargs         pa[] = {
+    int      na = 3, ref_a = 1;
+    real     rcut = 0;
+    gmx_bool bCOM = FALSE, bZ = FALSE;
+    t_pargs  pa[] = {
         { "-na", FALSE, etINT, { &na }, "Number of atoms in a molecule" },
         { "-da", FALSE, etINT, { &ref_a }, "Atom used for the distance calculation, 0 is COM" },
         { "-com",
-                  FALSE,
-                  etBOOL,
-                  { &bCOM },
-                  "Use the distance to the center of mass of the reference group" },
+           FALSE,
+           etBOOL,
+           { &bCOM },
+           "Use the distance to the center of mass of the reference group" },
         { "-r",
-                  FALSE,
-                  etREAL,
-                  { &rcut },
-                  "Cutoff used for the distance calculation when computing the number of molecules in a "
-                          "shell around e.g. a protein" },
+           FALSE,
+           etREAL,
+           { &rcut },
+           "Cutoff used for the distance calculation when computing the number of molecules in a "
+            "shell around e.g. a protein" },
         { "-z", FALSE, etBOOL, { &bZ }, "Order molecules on z-coordinate" }
     };
     FILE*             fp;

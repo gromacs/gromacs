@@ -972,36 +972,36 @@ int gmx_order(int argc, char* argv[])
         "worked ever since it was added and has thus been removed."
     };
 
-    static int         nslices       = 1;     /* nr of slices defined       */
-    static gmx_bool    bSzonly       = FALSE; /* True if only Sz is wanted  */
-    static bool        bUnsatRemoved = false; /* Removed because it doesn't work. */
-    static const char* normal_axis[] = { nullptr, "z", "x", "y", nullptr };
-    static gmx_bool    permolecule   = FALSE; /*compute on a per-molecule basis */
-    static gmx_bool    radial        = FALSE; /*compute a radial membrane normal */
-    static gmx_bool    distcalc      = FALSE; /*calculate distance from a reference group */
-    t_pargs            pa[]          = {
+    int         nslices       = 1;     /* nr of slices defined       */
+    gmx_bool    bSzonly       = FALSE; /* True if only Sz is wanted  */
+    bool        bUnsatRemoved = false; /* Removed because it doesn't work. */
+    const char* normal_axis[] = { nullptr, "z", "x", "y", nullptr };
+    gmx_bool    permolecule   = FALSE; /*compute on a per-molecule basis */
+    gmx_bool    radial        = FALSE; /*compute a radial membrane normal */
+    gmx_bool    distcalc      = FALSE; /*calculate distance from a reference group */
+    t_pargs     pa[]          = {
         { "-d", FALSE, etENUM, { normal_axis }, "Direction of the normal on the membrane" },
         { "-sl",
-                              FALSE,
-                              etINT,
-                              { &nslices },
-                              "Calculate order parameter as function of box length, dividing the box"
-                                                  " into this number of slices." },
+                       FALSE,
+                       etINT,
+                       { &nslices },
+                       "Calculate order parameter as function of box length, dividing the box"
+                                    " into this number of slices." },
         { "-szonly",
-                              FALSE,
-                              etBOOL,
-                              { &bSzonly },
-                              "Only give Sz element of order tensor. (axis can be specified with [TT]-d[tt])" },
+                       FALSE,
+                       etBOOL,
+                       { &bSzonly },
+                       "Only give Sz element of order tensor. (axis can be specified with [TT]-d[tt])" },
         { "-unsat",
-                              FALSE,
-                              etBOOL,
-                              { &bUnsatRemoved },
-                              "HIDDENThis option has been removed as it didn't ever properly work." },
+                       FALSE,
+                       etBOOL,
+                       { &bUnsatRemoved },
+                       "HIDDENThis option has been removed as it didn't ever properly work." },
         { "-permolecule",
-                              FALSE,
-                              etBOOL,
-                              { &permolecule },
-                              "Compute per-molecule Scd order parameters" },
+                       FALSE,
+                       etBOOL,
+                       { &permolecule },
+                       "Compute per-molecule Scd order parameters" },
         { "-radial", FALSE, etBOOL, { &radial }, "Compute a radial membrane normal" },
         { "-calcdist", FALSE, etBOOL, { &distcalc }, "Compute distance from a reference" },
     };

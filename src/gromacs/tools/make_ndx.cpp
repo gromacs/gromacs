@@ -1437,20 +1437,20 @@ int gmx_make_ndx(int argc, char* argv[])
                            "for constructing index groups.  It covers nearly all of [THISMODULE]",
                            "functionality, and in many cases much more." };
 
-    static int      natoms     = 0;
-    static gmx_bool bVerbose   = FALSE;
-    static gmx_bool bDuplicate = FALSE;
-    t_pargs         pa[]       = { { "-natoms",
-                                     FALSE,
-                                     etINT,
-                                     { &natoms },
-                                     "set number of atoms (default: read from coordinate or index file)" },
-                                   { "-twin",
-                                     FALSE,
-                                     etBOOL,
-                                     { &bDuplicate },
-                                     "Duplicate all index groups with an offset of -natoms" },
-                                   { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" } };
+    int      natoms     = 0;
+    gmx_bool bVerbose   = FALSE;
+    gmx_bool bDuplicate = FALSE;
+    t_pargs  pa[]       = { { "-natoms",
+                              FALSE,
+                              etINT,
+                              { &natoms },
+                              "set number of atoms (default: read from coordinate or index file)" },
+                            { "-twin",
+                              FALSE,
+                              etBOOL,
+                              { &bDuplicate },
+                              "Duplicate all index groups with an offset of -natoms" },
+                            { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" } };
 #define NPA asize(pa)
 
     gmx_output_env_t* oenv;

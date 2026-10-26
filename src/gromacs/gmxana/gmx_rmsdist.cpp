@@ -745,10 +745,10 @@ int gmx_rmsdist(int argc, char* argv[])
     t_rgb        rlo, rhi;
     gmx_bool     bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
 
-    static int        nlevels  = 40;
-    static real       scalemax = -1.0;
-    static gmx_bool   bSumH    = TRUE;
-    static gmx_bool   bPBC     = TRUE;
+    int               nlevels  = 40;
+    real              scalemax = -1.0;
+    gmx_bool          bSumH    = TRUE;
+    gmx_bool          bPBC     = TRUE;
     gmx_output_env_t* oenv;
     gmx::TimeControl  timeControl;
 

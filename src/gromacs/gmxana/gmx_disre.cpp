@@ -728,28 +728,28 @@ int gmx_disre(int argc, char* argv[])
         "the program will compute average violations using the third power",
         "averaging algorithm and print them in the log file."
     };
-    static int      ntoppar = 0;
-    static int      nlevels = 20;
-    static real     max_dr  = 0;
-    static gmx_bool bThird  = TRUE;
-    t_pargs         pa[]    = {
+    int      ntoppar = 0;
+    int      nlevels = 20;
+    real     max_dr  = 0;
+    gmx_bool bThird  = TRUE;
+    t_pargs  pa[]    = {
         { "-ntop",
-                     FALSE,
-                     etINT,
-                     { &ntoppar },
-                     "Number of large violations that are stored in the log file every step" },
+              FALSE,
+              etINT,
+              { &ntoppar },
+              "Number of large violations that are stored in the log file every step" },
         { "-maxdr",
-                     FALSE,
-                     etREAL,
-                     { &max_dr },
-                     "Maximum distance violation in matrix output. If less than or equal to 0 the "
-                                "maximum will be determined by the data." },
+              FALSE,
+              etREAL,
+              { &max_dr },
+              "Maximum distance violation in matrix output. If less than or equal to 0 the "
+                  "maximum will be determined by the data." },
         { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels in the matrix output" },
         { "-third",
-                     FALSE,
-                     etBOOL,
-                     { &bThird },
-                     "Use inverse third power averaging or linear for matrix output" }
+              FALSE,
+              etBOOL,
+              { &bThird },
+              "Use inverse third power averaging or linear for matrix output" }
     };
 
     FILE *       out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;

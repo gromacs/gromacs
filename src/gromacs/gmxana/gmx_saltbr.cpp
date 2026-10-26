@@ -121,30 +121,30 @@ int gmx_saltbr(int argc, char* argv[])
         "[TT]sb-(Resname)(Resnr)-(Atomnr)[tt].",
         "There may be [BB]many[bb] such files."
     };
-    static gmx_bool bSep     = FALSE;
-    static real     truncate = 1000.0;
-    t_pargs         pa[]     = { { "-t",
-                                   FALSE,
-                                   etREAL,
-                                   { &truncate },
-                                   "Groups that are never closer than this distance are not plotted" },
-                                 { "-sep",
-                                   FALSE,
-                                   etBOOL,
-                                   { &bSep },
-                                   "Use separate files for each interaction (may be MANY)" } };
-    t_filenm        fnm[]    = {
+    gmx_bool bSep     = FALSE;
+    real     truncate = 1000.0;
+    t_pargs  pa[]     = { { "-t",
+                            FALSE,
+                            etREAL,
+                            { &truncate },
+                            "Groups that are never closer than this distance are not plotted" },
+                          { "-sep",
+                            FALSE,
+                            etBOOL,
+                            { &bSep },
+                            "Use separate files for each interaction (may be MANY)" } };
+    t_filenm fnm[]    = {
         { efTRX, "-f", nullptr, ffREAD },
         { efTPR, nullptr, nullptr, ffREAD },
     };
 #define NFILE asize(fnm)
 
-    FILE *             out[3], *fp;
-    static const char* title[3] = { "Distance between positively charged groups",
-                                    "Distance between negatively charged groups",
-                                    "Distance between oppositely charged groups" };
-    static const char* fn[3]    = { "plus-plus.xvg", "min-min.xvg", "plus-min.xvg" };
-    int                nset[3]  = { 0, 0, 0 };
+    FILE *      out[3], *fp;
+    const char* title[3] = { "Distance between positively charged groups",
+                             "Distance between negatively charged groups",
+                             "Distance between oppositely charged groups" };
+    const char* fn[3]    = { "plus-plus.xvg", "min-min.xvg", "plus-min.xvg" };
+    int         nset[3]  = { 0, 0, 0 };
 
     t_topology*  top;
     PbcType      pbcType;

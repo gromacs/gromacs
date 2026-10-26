@@ -645,7 +645,7 @@ static void get_structure(const t_atoms* atoms,
 int gmx_make_edi(int argc, char* argv[])
 {
 
-    static const char* desc[] = {
+    const char* desc[] = {
         "[THISMODULE] generates an essential dynamics (ED) sampling input file to be used with ",
         "[TT]mdrun[tt] based on eigenvectors of a covariance matrix ([gmx-covar]) or from a",
         "normal modes analysis ([gmx-nmeig]).",

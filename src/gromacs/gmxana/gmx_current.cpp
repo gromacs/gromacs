@@ -812,50 +812,50 @@ static void dielectric(FILE*                   fmj,
 int gmx_current(int argc, char* argv[])
 {
 
-    static int      nshift  = 1000;
-    static real     temp    = 300.0;
-    static real     eps_rf  = 0.0;
-    static gmx_bool bNoJump = TRUE;
-    static real     bfit    = 100.0;
-    static real     bvit    = 0.5;
-    static real     efit    = 400.0;
-    static real     evit    = 5.0;
-    t_pargs         pa[]    = {
+    int      nshift  = 1000;
+    real     temp    = 300.0;
+    real     eps_rf  = 0.0;
+    gmx_bool bNoJump = TRUE;
+    real     bfit    = 100.0;
+    real     bvit    = 0.5;
+    real     efit    = 400.0;
+    real     evit    = 5.0;
+    t_pargs  pa[]    = {
         { "-sh",
-                     FALSE,
-                     etINT,
-                     { &nshift },
-                     "Shift of the frames for averaging the correlation functions and the mean-square "
-                                "displacement." },
+              FALSE,
+              etINT,
+              { &nshift },
+              "Shift of the frames for averaging the correlation functions and the mean-square "
+                  "displacement." },
         { "-nojump", FALSE, etBOOL, { &bNoJump }, "Removes jumps of atoms across the box." },
         { "-eps",
-                     FALSE,
-                     etREAL,
-                     { &eps_rf },
-                     "Dielectric constant of the surrounding medium. The value zero corresponds to "
-                                "infinity (tin-foil boundary conditions)." },
+              FALSE,
+              etREAL,
+              { &eps_rf },
+              "Dielectric constant of the surrounding medium. The value zero corresponds to "
+                  "infinity (tin-foil boundary conditions)." },
         { "-bfit",
-                     FALSE,
-                     etREAL,
-                     { &bfit },
-                     "Begin of the fit of the straight line to the MSD of the translational fraction "
-                                "of the dipole moment." },
+              FALSE,
+              etREAL,
+              { &bfit },
+              "Begin of the fit of the straight line to the MSD of the translational fraction "
+                  "of the dipole moment." },
         { "-efit",
-                     FALSE,
-                     etREAL,
-                     { &efit },
-                     "End of the fit of the straight line to the MSD of the translational fraction of "
-                                "the dipole moment." },
+              FALSE,
+              etREAL,
+              { &efit },
+              "End of the fit of the straight line to the MSD of the translational fraction of "
+                  "the dipole moment." },
         { "-bvit",
-                     FALSE,
-                     etREAL,
-                     { &bvit },
-                     "Begin of the fit of the current autocorrelation function to a*t^b." },
+              FALSE,
+              etREAL,
+              { &bvit },
+              "Begin of the fit of the current autocorrelation function to a*t^b." },
         { "-evit",
-                     FALSE,
-                     etREAL,
-                     { &evit },
-                     "End of the fit of the current autocorrelation function to a*t^b." },
+              FALSE,
+              etREAL,
+              { &evit },
+              "End of the fit of the current autocorrelation function to a*t^b." },
         { "-temp", FALSE, etREAL, { &temp }, "Temperature for calculating epsilon." }
     };
 

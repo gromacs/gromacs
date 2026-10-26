@@ -141,25 +141,25 @@ int gmx_lie(int argc, char* argv[])
         "are written to the [REF].edr[ref] file. Values from the molecule-in-water simulation",
         "are necessary for supplying suitable values for -Elj and -Eqq."
     };
-    static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
-    static const char* ligand = "none";
-    t_pargs            pa[]   = {
+    real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
+    const char* ligand = "none";
+    t_pargs     pa[]   = {
         { "-Elj",
-                       FALSE,
-                       etREAL,
-                       { &lie_lj },
-                       "Lennard-Jones interaction between ligand and solvent" },
+                FALSE,
+                etREAL,
+                { &lie_lj },
+                "Lennard-Jones interaction between ligand and solvent" },
         { "-Eqq", FALSE, etREAL, { &lie_qq }, "Coulomb interaction between ligand and solvent" },
         { "-Clj",
-                       FALSE,
-                       etREAL,
-                       { &fac_lj },
-                       "Factor in the LIE equation for Lennard-Jones component of energy" },
+                FALSE,
+                etREAL,
+                { &fac_lj },
+                "Factor in the LIE equation for Lennard-Jones component of energy" },
         { "-Cqq",
-                       FALSE,
-                       etREAL,
-                       { &fac_qq },
-                       "Factor in the LIE equation for Coulomb component of energy" },
+                FALSE,
+                etREAL,
+                { &fac_qq },
+                "Factor in the LIE equation for Coulomb component of energy" },
         { "-ligand", FALSE, etSTR, { &ligand }, "Name of the ligand in the energy file" }
     };
 #define NPA asize(pa)
