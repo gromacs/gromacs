@@ -118,6 +118,12 @@ void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
+void UpdateConstrainGpu::markStreamSynchronized()
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
+}
+
 void UpdateConstrainGpu::setPbc(const PbcType /* pbcType */, const matrix /* box */)
 {
     GMX_ASSERT(!impl_,

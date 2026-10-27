@@ -141,7 +141,8 @@ public:
      *
      * The copies to the GPU are asynchronous and this function may reallocate buffers that earlier
      * copies and kernels still use, so the device stream has to be synchronized between calls. In
-     * mdrun this is implicit, because a search step needs the coordinates on the host.
+     * mdrun this is implicit, because a search step needs the coordinates on the host. The caller
+     * declares each such synchronization with markStreamSynchronized(), which is checked here.
      *
      * \param[in,out]  d_x                 Device buffer with coordinates.
      * \param[in,out]  d_v                 Device buffer with velocities.
@@ -154,6 +155,12 @@ public:
              DeviceBuffer<RVec>            d_f,
              const InteractionDefinitions& idef,
              const MDAtoms&                mdAtoms);
+
+    /*! \brief Record that the host has waited for all work in the update stream.
+     *
+     * This allows the next set() call, see there.
+     */
+    void markStreamSynchronized();
 
     /*! \brief
      * Update PBC data.

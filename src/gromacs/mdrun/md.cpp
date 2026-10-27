@@ -928,6 +928,8 @@ void LegacySimulator::do_md()
             stateGpu->copyCoordinatesFromGpu(state_->x, AtomLocality::Local);
             stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            // The local coordinates are copied in the update stream, so all its earlier work is done
+            integrator->markStreamSynchronized();
         }
 
         // We need to calculate virtual velocities if we are writing them in the current step.
@@ -1713,6 +1715,8 @@ void LegacySimulator::do_md()
                 {
                     stateGpu->copyCoordinatesFromGpu(state_->x, AtomLocality::Local);
                     stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+                    // The local coordinates are copied in the update stream, so all its earlier work is done
+                    integrator->markStreamSynchronized();
                 }
 
                 // Copy velocities back to the host if:

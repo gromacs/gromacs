@@ -154,6 +154,9 @@ public:
              const InteractionDefinitions& idef,
              const MDAtoms&                mdAtoms);
 
+    //! Record that the host has waited for all work in the update stream
+    void markStreamSynchronized();
+
     /*! \brief
      * Update PBC data.
      *
@@ -219,6 +222,10 @@ private:
 
     //! The event to indicate when the update of coordinates is complete
     GpuEventSynchronizer xUpdatedOnDeviceEvent_;
+
+    //! Whether the stream was synchronized since the last set() call, so set() may be called
+    bool streamSynchronizedSinceSet_ = true;
+
     //! The wallclock counter
     gmx_wallcycle* wcycle_ = nullptr;
 };

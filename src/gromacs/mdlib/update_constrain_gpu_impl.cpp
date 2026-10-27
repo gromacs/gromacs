@@ -193,6 +193,11 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
 {
     wallcycle_start(wcycle_, WallCycleCounter::GpuSetConstr);
 
+    GMX_ASSERT(streamSynchronizedSinceSet_,
+               "The update stream should be synchronized between set() calls, as the earlier "
+               "copies may still read the host buffers that are about to be changed.");
+    streamSynchronizedSinceSet_ = false;
+
     GMX_ASSERT(d_x, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v, "Velocities device buffer should not be null.");
     GMX_ASSERT(d_f, "Forces device buffer should not be null.");
@@ -226,6 +231,11 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     }
 
     wallcycle_stop(wcycle_, WallCycleCounter::GpuSetConstr);
+}
+
+void UpdateConstrainGpu::Impl::markStreamSynchronized()
+{
+    streamSynchronizedSinceSet_ = true;
 }
 
 void UpdateConstrainGpu::Impl::setPbc(const PbcType pbcType, const matrix box)
@@ -291,6 +301,11 @@ void UpdateConstrainGpu::set(DeviceBuffer<Float3>          d_x,
                              const MDAtoms&                mdAtoms)
 {
     impl_->set(d_x, d_v, d_f, idef, mdAtoms);
+}
+
+void UpdateConstrainGpu::markStreamSynchronized()
+{
+    impl_->markStreamSynchronized();
 }
 
 void UpdateConstrainGpu::setPbc(const PbcType pbcType, const matrix box)
