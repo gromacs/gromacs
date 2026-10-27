@@ -195,6 +195,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
             "tc-grps          = system\n"
             "ref-t            = 298\n"
             "tau-t            = 0.5\n"
+            "ld-seed          = 4\n"
             "deform           = 0 0 0 0 2.5 0\n"
             "deform-init-flow = yes\n";
 
@@ -213,7 +214,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
     {
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
-        auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1.5e-2 : 5e-2);
+        auto                 relativeTolerance = relativeToleranceAsFloatingPoint(1, 5e-4);
         EnergyTermsToCompare energyTermsToCompare{
             { { interaction_function[InteractionFunction::PositionRestraints].longname, relativeTolerance } }
         };
