@@ -48,7 +48,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
@@ -59,20 +61,63 @@ namespace gmx
 namespace test
 {
 
-TprAndFileManager::TprAndFileManager(const std::string& name, const std::string& mdpContent)
+TprAndFileManager::TprAndFileManager(const std::string& baseName, const std::string& mdpContent) :
+    tprFileName_{ fileManager_.getTemporaryFilePath(baseName + ftp2ext_with_dot(efTPR)) },
+    mdpInputFileName_{ fileManager_.getTemporaryFilePath(baseName + ftp2ext_with_dot(efMDP)) },
+    inputConf_{ baseName + ftp2ext_with_dot(efPDB) },
+    topology_{ baseName + ftp2ext_with_dot(efTOP) }
 {
-    const std::string mdpInputFileName = fileManager_.getTemporaryFilePath(name + ".mdp").string();
-    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpContent);
-    tprFileName_ = fileManager_.getTemporaryFilePath(name + ".tpr").string();
+    TextWriter::writeFileFromString(mdpInputFileName_, mdpContent);
+}
+
+void TprAndFileManager::setInputConf(const std::filesystem::path& name)
+{
+    if (hasGeneratedTpr_)
+    {
+        GMX_THROW(APIError("Cannot set file name after a TPR file has been generated"));
+    }
+    inputConf_ = name;
+}
+
+void TprAndFileManager::setPositionRestraintConf(const std::filesystem::path& name)
+{
+    if (hasGeneratedTpr_)
+    {
+        GMX_THROW(APIError("Cannot set file name after a TPR file has been generated"));
+    }
+    positionRestraints_ = name;
+}
+
+void TprAndFileManager::setTopology(const std::filesystem::path& name)
+{
+    if (hasGeneratedTpr_)
+    {
+        GMX_THROW(APIError("Cannot set file name after a TPR file has been generated"));
+    }
+    topology_ = name;
+}
+
+const std::filesystem::path& TprAndFileManager::tprName() const
+{
+    if (!hasGeneratedTpr_)
     {
         CommandLine caller;
         caller.append("grompp");
-        caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top").string());
-        caller.addOption("-c", TestFileManager::getInputFilePath(name + ".pdb").string());
+
+        caller.addOption("-f", mdpInputFileName_);
+        caller.addOption("-p", fileManager_.getInputFilePath(topology_));
+        caller.addOption("-c", fileManager_.getInputFilePath(inputConf_));
+        if (!positionRestraints_.empty())
+        {
+            caller.addOption("-r", fileManager_.getInputFilePath(positionRestraints_));
+        }
         caller.addOption("-o", tprFileName_);
+
         EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
+        hasGeneratedTpr_ = true;
     }
+
+    return tprFileName_;
 }
 
 } // namespace test

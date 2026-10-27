@@ -41,6 +41,7 @@
 #ifndef GMX_TESTUTILS_TPRFILEGENERATOR_H
 #define GMX_TESTUTILS_TPRFILEGENERATOR_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -62,18 +63,53 @@ public:
     /*! \brief
      * Generates the file when needed.
      *
-     * \param[in] name The basename of the input files and the generated TPR.
+     * \param[in] baseName The basename of the input files and the generated TPR.
      * \param[in] mdpContent Optionally, content of the MDP file used to generate the tpr
      */
-    TprAndFileManager(const std::string& name, const std::string& mdpContent = "");
-    //! Access to the string.
-    const std::string& tprName() const { return tprFileName_; }
+    TprAndFileManager(const std::string& baseName, const std::string& mdpContent = "");
+
+    //! Set the path to the input configuration file (-c for grompp)
+    void setInputConf(const std::filesystem::path& name);
+
+    //! Set the path to the position restraints file (-r for grompp)
+    void setPositionRestraintConf(const std::filesystem::path& name);
+
+    //! Set the path to the topology file (-p for grompp)
+    void setTopology(const std::filesystem::path& name);
+
+    /*! \brief Construct a .tpr file and return a path to it.
+     *
+     * \note Subsequent calls do not generate a new .tpr file, but only
+     * return the same handle.
+     */
+    const std::filesystem::path& tprName() const;
 
 private:
-    //! Tpr file name.
-    std::string tprFileName_;
     //! Filemanager, needed to clean up the file later.
     TestFileManager fileManager_;
+
+    /*! \brief Whether grompp has been called and a .tpr file generated
+     *
+     * Mutable so the lazy construction of the tpr
+     * file does not inhibit use cases that are
+     * const correct from the caller's perspective.
+     */
+    mutable bool hasGeneratedTpr_ = false;
+
+    //! Output .tpr file (-o)
+    const std::filesystem::path tprFileName_;
+
+    //! Input .mdp file (-f)
+    const std::filesystem::path mdpInputFileName_;
+
+    //! Input configuration (-c)
+    std::filesystem::path inputConf_;
+
+    //! Position restraints file (-r), only used if not-empty
+    std::filesystem::path positionRestraints_;
+
+    //! Topology file (-p)
+    std::filesystem::path topology_;
 };
 
 } // namespace test

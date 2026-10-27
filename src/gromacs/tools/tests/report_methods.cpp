@@ -181,7 +181,8 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
 TEST_F(ReportMethodsTest, ToolEndToEndTest)
 {
-    const char* const command[] = { "report-methods", "-s", s_tprFileHandle->tprName().c_str() };
+    const std::string tprName   = s_tprFileHandle->tprName().string();
+    const char* const command[] = { "report-methods", "-s", tprName.c_str() };
     CommandLine       cmdline(command);
     EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create, &cmdline));
 }
