@@ -117,6 +117,7 @@ public:
          const MpiComm&             mpiComm_p,
          gmx_domdec_t*              dd_p,
          bool                       useUpdateGroups,
+         bool                       hasMassPerturbedAtoms,
          const gmx_multisim_t*      ms,
          t_nrnb*                    nrnb,
          gmx_wallcycle*             wcycle_p,
@@ -130,7 +131,6 @@ public:
                         int                                 numHomeAtoms,
                         gmx::ArrayRef<const real>           masses,
                         gmx::ArrayRef<const real>           inverseMasses,
-                        bool                                hasMassPerturbedAtoms,
                         real                                lambda,
                         gmx::ArrayRef<const unsigned short> cFREEZE);
     bool apply(bool                      computeRmsd,
@@ -187,8 +187,6 @@ public:
     gmx::ArrayRef<const real> masses_;
     //! Inverse masses.
     gmx::ArrayRef<const real> inverseMasses_;
-    //! If there are atoms with perturbed mass (for FEP).
-    bool hasMassPerturbedAtoms_;
     //! FEP lambda value.
     real lambda_;
     //! Freeze groups data
@@ -533,7 +531,6 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
                               min_proj,
                               box,
                               pbc_null,
-                              hasMassPerturbedAtoms_,
                               lambda,
                               dvdlambda,
                               invdt,
@@ -979,17 +976,15 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
                                        int                                 numHomeAtoms,
                                        gmx::ArrayRef<const real>           masses,
                                        gmx::ArrayRef<const real>           inverseMasses,
-                                       const bool                          hasMassPerturbedAtoms,
                                        const real                          lambda,
                                        gmx::ArrayRef<const unsigned short> cFREEZE)
 {
-    numAtoms_              = numAtoms;
-    numHomeAtoms_          = numHomeAtoms;
-    masses_                = masses;
-    inverseMasses_         = inverseMasses;
-    hasMassPerturbedAtoms_ = hasMassPerturbedAtoms;
-    lambda_                = lambda;
-    cFREEZE_               = cFREEZE;
+    numAtoms_      = numAtoms;
+    numHomeAtoms_  = numHomeAtoms;
+    masses_        = masses;
+    inverseMasses_ = inverseMasses;
+    lambda_        = lambda;
+    cFREEZE_       = cFREEZE;
 
     idef = &top->idef;
 
@@ -1041,12 +1036,10 @@ void Constraints::setConstraints(gmx_localtop_t*                     top,
                                  const int                           numHomeAtoms,
                                  gmx::ArrayRef<const real>           masses,
                                  gmx::ArrayRef<const real>           inverseMasses,
-                                 const bool                          hasMassPerturbedAtoms,
                                  const real                          lambda,
                                  gmx::ArrayRef<const unsigned short> cFREEZE)
 {
-    impl_->setConstraints(
-            top, numAtoms, numHomeAtoms, masses, inverseMasses, hasMassPerturbedAtoms, lambda, cFREEZE);
+    impl_->setConstraints(top, numAtoms, numHomeAtoms, masses, inverseMasses, lambda, cFREEZE);
 }
 
 /*! \brief Makes a per-moleculetype container of mappings from atom
@@ -1086,6 +1079,7 @@ Constraints::Constraints(const gmx_mtop_t&          mtop,
                          const MpiComm&             mpiComm,
                          gmx_domdec_t*              dd,
                          const bool                 useUpdateGroups,
+                         const bool                 hasMassPerturbedAtoms,
                          const gmx_multisim_t*      ms,
                          t_nrnb*                    nrnb,
                          gmx_wallcycle*             wcycle,
@@ -1100,6 +1094,7 @@ Constraints::Constraints(const gmx_mtop_t&          mtop,
                    mpiComm,
                    dd,
                    useUpdateGroups,
+                   hasMassPerturbedAtoms,
                    ms,
                    nrnb,
                    wcycle,
@@ -1117,6 +1112,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
                         const MpiComm&             mpiComm_p,
                         gmx_domdec_t*              dd_p,
                         const bool                 useUpdateGroups,
+                        const bool                 hasMassPerturbedAtoms,
                         const gmx_multisim_t*      ms_p,
                         t_nrnb*                    nrnb_p,
                         gmx_wallcycle*             wcycle_p,
@@ -1181,8 +1177,15 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
             GMX_RELEASE_ASSERT(
                     observablesReducerBuilder == nullptr || mpiComm.isParallel(),
                     "ObservablesReducer only works with LINCS when there is more than one rank");
-            lincsd = init_lincs(
-                    log, mtop, nflexcon, at2con_mt, mayHaveSplitConstraints, ir.nLincsIter, ir.nProjOrder, observablesReducerBuilder);
+            lincsd = init_lincs(log,
+                                mtop,
+                                nflexcon,
+                                at2con_mt,
+                                mayHaveSplitConstraints,
+                                hasMassPerturbedAtoms,
+                                ir.nLincsIter,
+                                ir.nProjOrder,
+                                observablesReducerBuilder);
         }
 
         if (ir.eConstrAlg == ConstraintAlgorithm::Shake)

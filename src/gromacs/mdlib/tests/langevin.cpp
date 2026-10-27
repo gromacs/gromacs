@@ -111,11 +111,10 @@ void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
     {
         testData->update_->update_coords(testData->inputRecord_,
                                          step,
-                                         testData->mdAtoms_.numHomeAtoms,
-                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
-                                         testData->mdAtoms_.ptype,
-                                         testData->mdAtoms_.invmass,
-                                         testData->mdAtoms_.invMassPerDim,
+                                         testData->numAtoms_,
+                                         testData->ptype_,
+                                         testData->inverseMasses_,
+                                         testData->inverseMassesPerDim_,
                                          &testData->state_,
                                          testData->f_,
                                          &testData->forceCalculationData_,
@@ -124,12 +123,8 @@ void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
                                          etrtNONE,
                                          nullptr,
                                          false);
-        testData->update_->finish_update(testData->inputRecord_,
-                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
-                                         testData->mdAtoms_.numHomeAtoms,
-                                         &testData->state_,
-                                         nullptr,
-                                         false);
+        testData->update_->finish_update(
+                testData->inputRecord_, testData->numAtoms_, &testData->state_, nullptr, false);
     }
     const auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
     for (int i = 0; i < testData->numAtoms_; i++)

@@ -468,8 +468,7 @@ void LegacySimulator::do_md()
                         || ir->pressureCouplingOptions.epc == PressureCoupling::CRescale,
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are supported "
                 "with the GPU update.\n");
-        GMX_RELEASE_ASSERT(!mdAtoms_->haveVsites,
-                           "Virtual sites are not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!virtualSites_, "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
                            "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(*ir->pull),
@@ -1010,7 +1009,7 @@ void LegacySimulator::do_md()
 
         if (ir->efep == FreeEnergyPerturbationType::SlowGrowth)
         {
-            updateMdAtomsForMassLambda(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+            mdAtoms_->updateForMassLambda(state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         if (bExchanged)
@@ -1585,7 +1584,6 @@ void LegacySimulator::do_md()
                     {
                         upd.update_for_constraint_virial(*ir,
                                                          mdAtoms_->numHomeAtoms,
-                                                         mdAtoms_->havePartiallyFrozenAtoms,
                                                          mdAtoms_->invmass,
                                                          mdAtoms_->invMassPerDim,
                                                          *state_,
@@ -1616,7 +1614,6 @@ void LegacySimulator::do_md()
                     upd.update_coords(*ir,
                                       step,
                                       mdAtoms_->numHomeAtoms,
-                                      mdAtoms_->havePartiallyFrozenAtoms,
                                       mdAtoms_->ptype,
                                       mdAtoms_->invmass,
                                       mdAtoms_->invMassPerDim,
@@ -1653,12 +1650,8 @@ void LegacySimulator::do_md()
                                               constr_,
                                               do_log,
                                               do_ene);
-                    upd.finish_update(*ir,
-                                      mdAtoms_->havePartiallyFrozenAtoms,
-                                      mdAtoms_->numHomeAtoms,
-                                      state_,
-                                      wallCycleCounters_,
-                                      constr_ != nullptr);
+                    upd.finish_update(
+                            *ir, mdAtoms_->numHomeAtoms, state_, wallCycleCounters_, constr_ != nullptr);
                 }
 
                 if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)

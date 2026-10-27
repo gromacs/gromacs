@@ -1992,10 +1992,17 @@ int Mdrunner::mdrunner()
 
         /* Initialize the mdAtoms structure.
          * mdAtoms is not filled with atom data,
-         * as this can not be done now with domain decomposition.
+         * as this can not be done yet with domain decomposition.
          */
-        mdAtoms = makeMDAtoms(
-                fplog, mtop, *inputrec, thisRankHasPmeGpuTask, useGpuForUpdate, deviceStreamManager.get());
+        mdAtoms = std::make_unique<MDAtoms>(
+                mtop, *inputrec, thisRankHasPmeGpuTask, useGpuForUpdate, deviceStreamManager.get());
+        if (fplog && inputrec->efep != FreeEnergyPerturbationType::No)
+        {
+            fprintf(fplog,
+                    "There are %d atoms and %d charges for free energy perturbation\n",
+                    mdAtoms->nPerturbed,
+                    mdAtoms->nChargePerturbed);
+        }
         if (globalState && thisRankHasPmeGpuTask)
         {
             // The pinning of coordinates in the global state object works, because we only use
@@ -2258,7 +2265,8 @@ int Mdrunner::mdrunner()
             }
 
             /* Let makeConstraints know whether we have essential dynamics constraints. */
-            auto constr = makeConstraints(
+            const bool hasMassPerturbedAtoms = haveFepPerturbedMasses(mtop);
+            auto       constr                = makeConstraints(
                     mtop,
                     *inputrec,
                     pull_work,
@@ -2268,6 +2276,7 @@ int Mdrunner::mdrunner()
                     cr->commMyGroup,
                     cr->dd,
                     updateGroups.useUpdateGroups(),
+                    hasMassPerturbedAtoms,
                     ms,
                     &nrnb,
                     wcycle.get(),

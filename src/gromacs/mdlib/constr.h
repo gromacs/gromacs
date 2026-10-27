@@ -111,6 +111,7 @@ private:
                 const MpiComm&             mpiComm,
                 gmx_domdec_t*              dd,
                 bool                       useUpdateGroups,
+                bool                       hasMassPerturbedAtoms,
                 const gmx_multisim_t*      ms,
                 t_nrnb*                    nrnb,
                 gmx_wallcycle*             wcycle,
@@ -142,7 +143,6 @@ public:
                         int                                 numHomeAtoms,
                         gmx::ArrayRef<const real>           masses,
                         gmx::ArrayRef<const real>           inverseMasses,
-                        bool                                hasMassPerturbedAtoms,
                         real                                lambda,
                         gmx::ArrayRef<const unsigned short> cFREEZE);
 

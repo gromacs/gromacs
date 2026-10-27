@@ -116,7 +116,6 @@ public:
      * \param[in]  inputRecord               Input record.
      * \param[in]  step                      Current timestep.
      * \param[in]  homenr                    The number of atoms on this processor.
-     * \param[in]  havePartiallyFrozenAtoms  Whether atoms are frozen along 1 or 2 (not 3) dimensions?
      * \param[in]  ptype                     The list of particle types.
      * \param[in]  invMass                   Inverse atomic mass per atom, 0 for vsites and shells.
      * \param[in]  invMassPerDim             Inverse atomic mass per atom and dimension, 0 for vsites, shells and frozen dimensions
@@ -132,7 +131,6 @@ public:
     void update_coords(const t_inputrec&                      inputRecord,
                        int64_t                                step,
                        int                                    homenr,
-                       bool                                   havePartiallyFrozenAtoms,
                        ArrayRef<const ParticleType>           ptype,
                        ArrayRef<const real>                   invMass,
                        ArrayRef<const RVec>                   invMassPerDim,
@@ -150,14 +148,12 @@ public:
      * Copy the updated coordinates to the main coordinates buffer for the atoms that are not frozen.
      *
      * \param[in]  inputRecord      Input record.
-     * \param[in]  havePartiallyFrozenAtoms  Whether atoms are frozen along 1 or 2 (not 3) dimensions?
      * \param[in]  homenr                    The number of atoms on this processor.
      * \param[in]  state            System state object.
      * \param[in]  wcycle           Wall-clock cycle counter.
      * \param[in]  haveConstraints  If the system has constraints.
      */
     void finish_update(const t_inputrec& inputRecord,
-                       bool              havePartiallyFrozenAtoms,
                        int               homenr,
                        t_state*          state,
                        gmx_wallcycle*    wcycle,
@@ -200,12 +196,11 @@ public:
     /*! \brief Performs a leap-frog update without updating \p state so the constrain virial
      * can be computed.
      */
-    void update_for_constraint_virial(const t_inputrec&    inputRecord,
-                                      int                  homenr,
-                                      bool                 havePartiallyFrozenAtoms,
-                                      ArrayRef<const real> invmass,
-                                      ArrayRef<const RVec> invMassPerDim,
-                                      const t_state&       state,
+    void update_for_constraint_virial(const t_inputrec&                      inputRecord,
+                                      int                                    homenr,
+                                      ArrayRef<const real>                   invmass,
+                                      ArrayRef<const RVec>                   invMassPerDim,
+                                      const t_state&                         state,
                                       const ArrayRefWithPadding<const RVec>& f,
                                       const gmx_ekindata_t&                  ekind);
 

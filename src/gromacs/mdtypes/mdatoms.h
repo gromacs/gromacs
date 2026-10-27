@@ -63,6 +63,12 @@ class DeviceStreamManager;
  * removed. */
 class MDAtoms
 {
+private:
+    //! Molecular topology
+    const gmx_mtop_t& mtop_;
+    //! Input record
+    const t_inputrec& inputrec_;
+
 public:
     //! Total mass in state A
     real tmassA;
@@ -70,22 +76,16 @@ public:
     real tmassB;
     //! Total mass
     real tmass;
-    //! Do we have multiple center of mass motion removal groups
-    bool bVCMgrps;
-    //! Do we have any virtual sites?
-    bool haveVsites;
-    //! Do we have atoms that are frozen along 1 or 2 (not 3) dimensions?
-    bool havePartiallyFrozenAtoms;
+    // Are there center-of-mass-motion removal groups in the whole system?
+    bool bVCMgrps = false;
     //! Number of perturbed atoms
-    int nPerturbed;
+    int nPerturbed = 0;
     //! Number of atoms for which the mass is perturbed
-    int nMassPerturbed;
+    int nMassPerturbed = 0;
     //! Number of atoms for which the charge is perturbed
-    int nChargePerturbed;
+    int nChargePerturbed = 0;
     //! Number of atoms for which the type is perturbed
-    int nTypePerturbed;
-    //! Do we have orientation restraints
-    bool bOrires;
+    int nTypePerturbed = 0;
     //! Number of home atoms in this domain
     int numHomeAtoms;
     //! Atomic mass in A state
@@ -136,59 +136,45 @@ public:
     std::vector<unsigned short> cU1;
     //! Group index for user 2
     std::vector<unsigned short> cU2;
-    //! Group index for orientation restraints
-    std::vector<unsigned short> cORF;
 
-    // TODO make this private
-    MDAtoms(bool rankHasPmeGpuTask, bool useGpuForUpdate, const DeviceStreamManager* deviceStreamManager);
-    //! Builder function.
-    friend std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
-                                                const gmx_mtop_t&          mtop,
-                                                const t_inputrec&          ir,
-                                                bool                       rankHasPmeGpuTask,
-                                                const DeviceStreamManager* deviceStreamManager);
+    MDAtoms(const gmx_mtop_t&          mtop,
+            const t_inputrec&          inputrec,
+            bool                       rankHasPmeGpuTask,
+            bool                       useGpuForUpdate,
+            const DeviceStreamManager* deviceStreamManager);
+
+    /*! \brief Write out per-atom arrays for this domain
+     *
+     * Force, update, and constraint modules need various per-atom
+     * fields that are efficient to look up when fully written out
+     * for the whole domain. As particles may have moved between
+     * domain repartitionings, these vectors must be re-filled at
+     * the start of every domain lifetime.
+     *
+     * \param[in]    numTotalAtoms  The number of atoms used on this domain
+     * \param[in]    index          Lookup table for global atom index.
+     * \param[in]    numHomeAtoms   Number of home atoms for this domain
+     * \param[in]    massLambda     The FEP lambda value relevant to mass perturbation
+     *
+     * When using DD, numTotalAtoms indicates the size of the map from
+     * local to global atom indices.
+     *
+     * If \c index is non-empty only the indexed atoms are copied.
+     */
+    void updateAfterPartition(int numTotalAtoms, ArrayRef<const int> index, int numHomeAtoms, real massLambda);
+
+    /*! \brief This routine updates the mass-related values in \c mdAtoms to
+     * respect \c massLambda
+     *
+     * Intended to cater for possible per-step changes to the
+     * lambda value for masses with slow-growth FEP, but also
+     * called by \c atoms2md() during reinit after DD repartitioning.
+     *
+     * \param[in]    massLambda    The FEP lambda value relevant to mass perturbation
+     */
+    void updateForMassLambda(real massLambda);
 };
 
-//! Builder function for MdAtomsWrapper.
-std::unique_ptr<MDAtoms> makeMDAtoms(FILE*                      fp,
-                                     const gmx_mtop_t&          mtop,
-                                     const t_inputrec&          ir,
-                                     bool                       useGpuForPme,
-                                     bool                       useGpuForUpdate,
-                                     const DeviceStreamManager* deviceStreamManager);
-
 } // namespace gmx
-
-/*! \brief This routine copies the atoms->atom struct into mdAtoms.
- *
- * \param[in]    mtop          The molecular topology.
- * \param[in]    inputrec      The input record.
- * \param[in]    nindex        If nindex>=0 we are doing DD.
- * \param[in]    index         Lookup table for global atom index.
- * \param[in]    numHomeAtoms  Number of home atoms on this rank.
- * \param[inout] mdAtoms       Data set up by this routine.
- * \param[in]    massLambda    The FEP lambda value relevant to mass perturbation
- *
- * If index!=NULL only the indexed atoms are copied.
- */
-void atoms2md(const gmx_mtop_t&        mtop,
-              const t_inputrec&        inputrec,
-              int                      nindex,
-              gmx::ArrayRef<const int> index,
-              int                      numHomeAtoms,
-              gmx::MDAtoms*            mdAtoms,
-              real                     massLambda);
-
-/*! \brief This routine updates the mass-related values in \c mdAtoms to
- * respect \c massLambda
- *
- * Intended to cater for possible per-step changes to the
- * lambda value for masses with slow-growth FEP, but also
- * called by \c atoms2md() during reinit after DD repartitioning.
- *
- * \param[inout] mdAtoms       Data set up by this routine.
- * \param[in]    massLambda    The FEP lambda value relevant to mass perturbation
- */
-void updateMdAtomsForMassLambda(gmx::MDAtoms* mdAtoms, real massLambda);
 
 #endif

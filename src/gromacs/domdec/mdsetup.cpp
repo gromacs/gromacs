@@ -85,19 +85,20 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
                                StatePropagatorDataGpu*   stateGpu,
                                gmx_wallcycle*            wcycle)
 {
-    int numAtomIndex;
-    int numHomeAtoms;
-    int numTotalAtoms;
+    int                 numHomeAtoms;
+    int                 numTotalAtoms;
+    ArrayRef<const int> globalAtomIndices;
 
     if (dd)
     {
-        numAtomIndex  = dd_natoms_mdatoms(*dd);
-        numHomeAtoms  = dd_numHomeAtoms(*dd);
-        numTotalAtoms = dd_natoms_mdatoms(*dd);
+        numHomeAtoms      = dd_numHomeAtoms(*dd);
+        numTotalAtoms     = dd_natoms_mdatoms(*dd);
+        globalAtomIndices = dd->globalAtomIndices;
+        GMX_RELEASE_ASSERT(numTotalAtoms == globalAtomIndices.ssize(),
+                           "Total atoms should match size of global atom indices\n");
     }
     else
     {
-        numAtomIndex  = -1;
         numHomeAtoms  = top_global.natoms;
         numTotalAtoms = top_global.natoms;
     }
@@ -107,12 +108,7 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
         force->resize(numTotalAtoms);
     }
 
-    ArrayRef<const int> globalAtomIndices;
-    if (dd)
-    {
-        globalAtomIndices = dd->globalAtomIndices;
-    }
-    atoms2md(top_global, inputrec, numAtomIndex, globalAtomIndices, numHomeAtoms, mdAtomsModifiable, massLambda);
+    mdAtomsModifiable->updateAfterPartition(numTotalAtoms, globalAtomIndices, numHomeAtoms, massLambda);
 
     // No changes to mdAtoms after here
     const MDAtoms& mdAtoms = *mdAtomsModifiable;
@@ -221,14 +217,8 @@ void mdAlgorithmsSetupAtomData(const SimulationWorkload& simulationWork,
 
     if (constr)
     {
-        constr->setConstraints(top,
-                               numTotalAtoms,
-                               mdAtoms.numHomeAtoms,
-                               mdAtoms.massT,
-                               mdAtoms.invmass,
-                               mdAtoms.nMassPerturbed != 0,
-                               massLambda,
-                               mdAtoms.cFREEZE);
+        constr->setConstraints(
+                top, numTotalAtoms, mdAtoms.numHomeAtoms, mdAtoms.massT, mdAtoms.invmass, massLambda, mdAtoms.cFREEZE);
     }
 }
 

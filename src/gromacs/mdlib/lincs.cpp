@@ -190,6 +190,8 @@ public:
     int ntriangle = 0;
     //! The number of constraint connections in triangles.
     int ncc_triangle = 0;
+    //! Whether the system has atoms whose masses are perturbed
+    bool hasMassPerturbedAtoms = false;
     //! Communicate before each LINCS interation.
     bool bCommIter = false;
     //! Matrix of mass factors for constraint connections.
@@ -1532,6 +1534,7 @@ Lincs* init_lincs(FILE*                            fplog,
                   int                              nflexcon_global,
                   ArrayRef<const ListOfLists<int>> atomToConstraintsPerMolType,
                   bool                             bPLINCS,
+                  const bool                       hasMassPerturbedAtoms,
                   int                              nIter,
                   int                              nProjOrder,
                   ObservablesReducerBuilder*       observablesReducerBuilder)
@@ -1668,6 +1671,8 @@ Lincs* init_lincs(FILE*                            fplog,
                                                  std::move(callbackFromBuilder),
                                                  std::move(callbackAfterReduction));
     }
+    li->hasMassPerturbedAtoms = hasMassPerturbedAtoms;
+
 
     return li;
 }
@@ -2460,7 +2465,6 @@ bool constrain_lincs(bool                            computeRmsd,
                      ArrayRef<RVec>                  min_proj,
                      const matrix                    box,
                      t_pbc*                          pbc,
-                     const bool                      hasMassPerturbed,
                      real                            lambda,
                      real*                           dvdlambda,
                      real                            invdt,
@@ -2496,7 +2500,7 @@ bool constrain_lincs(bool                            computeRmsd,
          */
         if (ir.efep != FreeEnergyPerturbationType::No)
         {
-            if (hasMassPerturbed && lincsd->matlam != lambda)
+            if (lincsd->hasMassPerturbedAtoms && lincsd->matlam != lambda)
             {
                 // Uncomment this to expose the issue of #5733
                 // GMX_RELEASE_ASSERT(ir.efep == FreeEnergyPerturbationType::SlowGrowth,

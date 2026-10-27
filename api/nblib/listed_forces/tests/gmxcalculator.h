@@ -56,11 +56,11 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/booltype.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -120,7 +120,6 @@ private:
     t_forcerec   fr;
     t_disresdata disres_;
     t_fcdata     fcdata_;
-    gmx::MDAtoms mdAtoms_;
 
     t_pbc             pbc;
     gmx_enerdata_t    enerd;

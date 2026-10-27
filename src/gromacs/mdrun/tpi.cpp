@@ -958,7 +958,7 @@ void LegacySimulator::do_tpi()
             (inputRec_->efep == FreeEnergyPerturbationType::No
                      ? 0.0
                      : inputRec_->fepvals->initialLambda(FreeEnergyPerturbationCouplingType::Mass));
-    atoms2md(topGlobal_, *inputRec_, -1, {}, topGlobal_.natoms, mdAtoms_, initMassLambda);
+    mdAtoms_->updateAfterPartition(topGlobal_.natoms, {}, topGlobal_.natoms, initMassLambda);
 
     /* Print to log file  */
     walltime_accounting_start_time(wallTimeAccounting_);

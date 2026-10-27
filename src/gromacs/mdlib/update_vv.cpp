@@ -154,7 +154,6 @@ void integrateVVFirstStep(int64_t                   step,
         upd->update_coords(*ir,
                            step,
                            mdAtoms.numHomeAtoms,
-                           mdAtoms.havePartiallyFrozenAtoms,
                            mdAtoms.ptype,
                            mdAtoms.invmass,
                            mdAtoms.invMassPerDim,
@@ -367,7 +366,6 @@ void integrateVVSecondStep(int64_t                   step,
     upd->update_coords(*ir,
                        step,
                        mdAtoms.numHomeAtoms,
-                       mdAtoms.havePartiallyFrozenAtoms,
                        mdAtoms.ptype,
                        mdAtoms.invmass,
                        mdAtoms.invMassPerDim,
@@ -400,7 +398,6 @@ void integrateVVSecondStep(int64_t                   step,
     upd->update_coords(*ir,
                        step,
                        mdAtoms.numHomeAtoms,
-                       mdAtoms.havePartiallyFrozenAtoms,
                        mdAtoms.ptype,
                        mdAtoms.invmass,
                        mdAtoms.invMassPerDim,
@@ -431,8 +428,7 @@ void integrateVVSecondStep(int64_t                   step,
                                constr,
                                do_log,
                                do_ene);
-    upd->finish_update(
-            *ir, mdAtoms.havePartiallyFrozenAtoms, mdAtoms.numHomeAtoms, state, wcycle, constr != nullptr);
+    upd->finish_update(*ir, mdAtoms.numHomeAtoms, state, wcycle, constr != nullptr);
 
     if (ir->eI == IntegrationAlgorithm::VVAK)
     {
@@ -478,7 +474,6 @@ void integrateVVSecondStep(int64_t                   step,
         upd->update_coords(*ir,
                            step,
                            mdAtoms.numHomeAtoms,
-                           mdAtoms.havePartiallyFrozenAtoms,
                            mdAtoms.ptype,
                            mdAtoms.invmass,
                            mdAtoms.invMassPerDim,
@@ -497,8 +492,7 @@ void integrateVVSecondStep(int64_t                   step,
          * to numerical errors, or are they important
          * physically? I'm thinking they are just errors, but not completely sure.
          * For now, will call without actually constraining, constr=NULL*/
-        upd->finish_update(
-                *ir, mdAtoms.havePartiallyFrozenAtoms, mdAtoms.numHomeAtoms, state, wcycle, false);
+        upd->finish_update(*ir, mdAtoms.numHomeAtoms, state, wcycle, false);
     }
     /* this factor or 2 correction is necessary
         because half of the constraint force is removed

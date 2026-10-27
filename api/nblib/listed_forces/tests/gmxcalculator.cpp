@@ -85,7 +85,6 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     virialProxy(forceBuffer, true),
     forceOutputs(shiftProxy, true, virialProxy),
     fr(gmx::HostAllocationPolicy{}),
-    mdAtoms_(false, false, nullptr),
     enerd(1, nullptr),
     lambdaBuffer(42) // values unused; just initialized with something larger than the number of enum types in FreeEnergyPerturbationCouplingType
 {
@@ -101,7 +100,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     gmx_wallcycle* wcycle = nullptr;
     gmxListedForces_      = std::make_unique<ListedForces>(
             *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, gmx::MDLogger{}, wcycle, fr, &nrnb);
-    gmxListedForces_->setup(*idef, nP, false, mdAtoms_.cVCM);
+    gmxListedForces_->setup(*idef, nP, false, {});
 
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());
 
@@ -111,8 +110,6 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     stepWork.computeEnergy       = true;
 
     fr.natoms_force = numParticles;
-
-    mdAtoms_.nPerturbed = 0;
 }
 
 void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
@@ -146,6 +143,7 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
     std::fill(forceBuffer.begin(), forceBuffer.end(), gmx::RVec{ 0, 0, 0 });
     std::fill(shiftBuffer.begin(), shiftBuffer.end(), gmx::RVec{ 0, 0, 0 });
 
+    const int numPerturbed = 0;
     gmxListedForces_->calculate(box_.legacyMatrix(),
                                 { x.data(), x.data() + x.size(), x.data() + x.size() },
                                 gmx::ArrayRef<const gmx::RVec>{},
@@ -155,11 +153,11 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
                                 &pbc,
                                 &enerd,
                                 lambdaBuffer,
-                                mdAtoms_.chargeA,
-                                mdAtoms_.chargeB,
-                                makeConstArrayRef(mdAtoms_.bPerturbed),
-                                mdAtoms_.cENER,
-                                mdAtoms_.nPerturbed,
+                                gmx::ArrayRef<real>{},
+                                gmx::ArrayRef<real>{},
+                                {},
+                                {},
+                                numPerturbed,
                                 nullptr,
                                 stepWork);
 

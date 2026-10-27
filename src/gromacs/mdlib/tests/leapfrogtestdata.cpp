@@ -53,7 +53,6 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -84,7 +83,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     f_(numAtoms),
     inverseMasses_(),
     inverseMassesPerDim_(numAtoms),
-    mdAtoms_(false, false, nullptr),
+    cTC_(numAtoms_),
     kineticEnergyData_(std::vector<real>(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0),
                        EnsembleTemperatureSetting::NotAvailable,
                        0.0,
@@ -120,11 +119,6 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
             inverseMassesPerDim_[i][d] = inverseMasses_[i];
         }
     }
-    mdAtoms_.invmass       = inverseMasses_;
-    mdAtoms_.invMassPerDim = inverseMassesPerDim_;
-
-    // Temperature coupling
-    mdAtoms_.cTC.resize(numAtoms_);
 
     // To do temperature coupling at each step
     inputRecord_.nsttcouple = 1;
@@ -134,7 +128,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
         inputRecord_.etc = TemperatureCoupling::No;
         for (int i = 0; i < numAtoms_; i++)
         {
-            mdAtoms_.cTC[i] = 0;
+            cTC_[i] = 0;
         }
         t_grp_tcstat temperatureCouplingGroupData;
         temperatureCouplingGroupData.lambda = 1.0;
@@ -145,7 +139,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
         inputRecord_.etc = TemperatureCoupling::Yes;
         for (int i = 0; i < numAtoms_; i++)
         {
-            mdAtoms_.cTC[i] = i % numTCoupleGroups_;
+            cTC_[i] = i % numTCoupleGroups_;
         }
         for (int i = 0; i < numTCoupleGroups_; i++)
         {
@@ -171,15 +165,9 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     state_.box[ZZ][YY] = 0.0;
     state_.box[ZZ][ZZ] = 10.0;
 
-    mdAtoms_.numHomeAtoms             = numAtoms_;
-    mdAtoms_.haveVsites               = false;
-    mdAtoms_.havePartiallyFrozenAtoms = false;
-
     update_ = std::make_unique<Update>(inputRecord_, kineticEnergyData_, nullptr);
-    update_->updateAfterPartition(numAtoms,
-                                  gmx::ArrayRef<const unsigned short>{},
-                                  mdAtoms_.cTC,
-                                  gmx::ArrayRef<const unsigned short>{});
+    update_->updateAfterPartition(
+            numAtoms, gmx::ArrayRef<const unsigned short>{}, cTC_, gmx::ArrayRef<const unsigned short>{});
 
     doPressureCouple_ = (nstpcouple != 0);
 

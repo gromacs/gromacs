@@ -150,7 +150,7 @@ int FreeEnergyPerturbationData::currentFEPState() const
 
 void FreeEnergyPerturbationData::updateMDAtoms()
 {
-    updateMdAtomsForMassLambda(mdAtoms_, lambda_[FreeEnergyPerturbationCouplingType::Mass]);
+    mdAtoms_->updateForMassLambda(lambda_[FreeEnergyPerturbationCouplingType::Mass]);
 }
 
 FepStateSetting* FreeEnergyPerturbationData::enableExternalFepStateSetting() const

@@ -132,7 +132,6 @@ public:
     void update_coords(const t_inputrec&                      inputRecord,
                        int64_t                                step,
                        int                                    homenr,
-                       bool                                   havePartiallyFrozenAtoms,
                        ArrayRef<const ParticleType>           ptype,
                        ArrayRef<const real>                   invMass,
                        ArrayRef<const RVec>                   invMassPerDim,
@@ -146,7 +145,6 @@ public:
                        bool                                   haveConstraints);
 
     void finish_update(const t_inputrec&              inputRecord,
-                       bool                           havePartiallyFrozenAtoms,
                        int                            homenr,
                        ArrayRef<const unsigned short> cFREEZE,
                        t_state*                       state,
@@ -167,12 +165,11 @@ public:
                                bool                         do_log,
                                bool                         do_ene);
 
-    void update_for_constraint_virial(const t_inputrec&    inputRecord,
-                                      int                  homenr,
-                                      bool                 havePartiallyFrozenAtoms,
-                                      ArrayRef<const real> invmass,
-                                      ArrayRef<const RVec> invMassPerDim,
-                                      const t_state&       state,
+    void update_for_constraint_virial(const t_inputrec&                      inputRecord,
+                                      int                                    homenr,
+                                      ArrayRef<const real>                   invmass,
+                                      ArrayRef<const RVec>                   invMassPerDim,
+                                      const t_state&                         state,
                                       const ArrayRefWithPadding<const RVec>& f,
                                       const gmx_ekindata_t&                  ekind);
 
@@ -202,6 +199,8 @@ private:
     PaddedVector<RVec> xp_;
     //! Box deformation handler (or nullptr if inactive).
     BoxDeformation* deform_ = nullptr;
+    //! Whether atoms are frozen along 1 or 2 (not 3) dimensions?
+    bool havePartiallyFrozenAtoms_ = false;
 };
 
 Update::Update(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation) :
@@ -232,7 +231,6 @@ BoxDeformation* Update::deform() const
 void Update::update_coords(const t_inputrec&                      inputRecord,
                            int64_t                                step,
                            const int                              homenr,
-                           const bool                             havePartiallyFrozenAtoms,
                            ArrayRef<const ParticleType>           ptype,
                            ArrayRef<const real>                   invMass,
                            ArrayRef<const RVec>                   invMassPerDim,
@@ -248,7 +246,6 @@ void Update::update_coords(const t_inputrec&                      inputRecord,
     impl_->update_coords(inputRecord,
                          step,
                          homenr,
-                         havePartiallyFrozenAtoms,
                          ptype,
                          invMass,
                          invMassPerDim,
@@ -263,14 +260,12 @@ void Update::update_coords(const t_inputrec&                      inputRecord,
 }
 
 void Update::finish_update(const t_inputrec& inputRecord,
-                           const bool        havePartiallyFrozenAtoms,
                            const int         homenr,
                            t_state*          state,
                            gmx_wallcycle*    wcycle,
                            const bool        haveConstraints)
 {
-    impl_->finish_update(
-            inputRecord, havePartiallyFrozenAtoms, homenr, impl_->cFREEZE_, state, wcycle, haveConstraints);
+    impl_->finish_update(inputRecord, homenr, impl_->cFREEZE_, state, wcycle, haveConstraints);
 }
 
 void Update::update_sd_second_half(const t_inputrec&            inputRecord,
@@ -291,17 +286,15 @@ void Update::update_sd_second_half(const t_inputrec&            inputRecord,
             inputRecord, step, dvdlambda, homenr, ptype, invMass, state, dd, nrnb, wcycle, constr, do_log, do_ene);
 }
 
-void Update::update_for_constraint_virial(const t_inputrec&    inputRecord,
-                                          const int            homenr,
-                                          const bool           havePartiallyFrozenAtoms,
-                                          ArrayRef<const real> invmass,
-                                          ArrayRef<const RVec> invMassPerDim,
-                                          const t_state&       state,
+void Update::update_for_constraint_virial(const t_inputrec&                      inputRecord,
+                                          const int                              homenr,
+                                          ArrayRef<const real>                   invmass,
+                                          ArrayRef<const RVec>                   invMassPerDim,
+                                          const t_state&                         state,
                                           const ArrayRefWithPadding<const RVec>& f,
                                           const gmx_ekindata_t&                  ekind)
 {
-    impl_->update_for_constraint_virial(
-            inputRecord, homenr, havePartiallyFrozenAtoms, invmass, invMassPerDim, state, f, ekind);
+    impl_->update_for_constraint_virial(inputRecord, homenr, invmass, invMassPerDim, state, f, ekind);
 }
 
 void Update::update_temperature_constants(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind)
@@ -721,7 +714,7 @@ void do_update_md(int                             start,
                   const matrix                    box,
                   const double* gmx_restrict      nh_vxi,
                   const Matrix3x3&                parrinelloRahmanM,
-                  bool gmx_unused                 havePartiallyFrozenAtoms)
+                  bool                            havePartiallyFrozenAtoms)
 {
     GMX_ASSERT(nrend == start || xprime != x,
                "For SIMD optimization certain compilers need to have xprime != x");
@@ -871,6 +864,7 @@ void do_update_md(int                             start,
                             }
                         },
                         numTempScaleValues);
+                GMX_UNUSED_VALUE(havePartiallyFrozenAtoms);
             }
         }
     }
@@ -883,7 +877,7 @@ void doUpdateMDDoNotUpdateVelocities(int                             start,
                                      RVec* gmx_restrict              xprime,
                                      const RVec* gmx_restrict        v,
                                      const RVec* gmx_restrict        f,
-                                     bool gmx_unused                 havePartiallyFrozenAtoms,
+                                     bool                            havePartiallyFrozenAtoms,
                                      ArrayRef<const real> gmx_unused invmass,
                                      ArrayRef<const RVec>            invMassPerDim,
                                      const gmx_ekindata_t&           ekind)
@@ -903,6 +897,7 @@ void doUpdateMDDoNotUpdateVelocities(int                             start,
     {
         updateMDLeapfrogSimple<StoreUpdatedVelocities::No, NumTempScaleValues::Single, ParrinelloRahmanVelocityScaling::No>(
                 start, nrend, dt, dt, invMassPerDim.data(), tcstat, ArrayRef<const unsigned short>{}, {}, x, xprime, v, f);
+        GMX_UNUSED_VALUE(havePartiallyFrozenAtoms);
     }
 }
 
@@ -1120,6 +1115,17 @@ Update::Impl::Impl(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, B
 {
     update_temperature_constants(inputRecord, ekind);
     xp_.resizeWithPadding(0);
+
+    // Do any atoms have partially frozen dimensions?
+    for (int g = 0; g < inputRecord.opts.ngfrz; g++)
+    {
+        if (inputRecord.opts.nFreeze[g][YY] != inputRecord.opts.nFreeze[g][XX]
+            || inputRecord.opts.nFreeze[g][ZZ] != inputRecord.opts.nFreeze[g][XX])
+        {
+            havePartiallyFrozenAtoms_ = true;
+            break;
+        }
+    }
 }
 
 void Update::updateAfterPartition(int                            numAtoms,
@@ -1698,7 +1704,6 @@ void Update::Impl::update_sd_second_half(const t_inputrec&            inputRecor
 }
 
 void Update::Impl::finish_update(const t_inputrec&              inputRecord,
-                                 const bool                     havePartiallyFrozenAtoms,
                                  const int                      homenr,
                                  ArrayRef<const unsigned short> cFREEZE,
                                  t_state*                       state,
@@ -1714,7 +1719,7 @@ void Update::Impl::finish_update(const t_inputrec&              inputRecord,
     auto xp = makeConstArrayRef(xp_).subArray(0, homenr);
     auto x  = makeArrayRef(state->x).subArray(0, homenr);
 
-    if (havePartiallyFrozenAtoms && haveConstraints)
+    if (havePartiallyFrozenAtoms_ && haveConstraints)
     {
         /* We have atoms that are frozen along some, but not all dimensions,
          * then constraints will have moved them also along the frozen dimensions.
@@ -1755,7 +1760,6 @@ void Update::Impl::finish_update(const t_inputrec&              inputRecord,
 void Update::Impl::update_coords(const t_inputrec&                      inputRecord,
                                  int64_t                                step,
                                  int                                    homenr,
-                                 bool                                   havePartiallyFrozenAtoms,
                                  ArrayRef<const ParticleType>           ptype,
                                  ArrayRef<const real>                   invMass,
                                  ArrayRef<const RVec>                   invMassPerDim,
@@ -1830,7 +1834,7 @@ void Update::Impl::update_coords(const t_inputrec&                      inputRec
                                  state->box,
                                  state->nosehoover_vxi.data(),
                                  parrinelloRahmanM,
-                                 havePartiallyFrozenAtoms);
+                                 havePartiallyFrozenAtoms_);
                     break;
                 case (IntegrationAlgorithm::SD1):
                     do_update_sd(start_th,
@@ -1931,7 +1935,6 @@ void Update::Impl::update_coords(const t_inputrec&                      inputRec
 
 void Update::Impl::update_for_constraint_virial(const t_inputrec&    inputRecord,
                                                 int                  homenr,
-                                                bool                 havePartiallyFrozenAtoms,
                                                 ArrayRef<const real> invmass,
                                                 ArrayRef<const RVec> invMassPerDim,
                                                 const t_state&       state,
@@ -1960,7 +1963,7 @@ void Update::Impl::update_for_constraint_virial(const t_inputrec&    inputRecord
             const RVec* f_rvec  = f.unpaddedConstArrayRef().data();
 
             doUpdateMDDoNotUpdateVelocities(
-                    start_th, end_th, dt, x_rvec, xp_rvec, v_rvec, f_rvec, havePartiallyFrozenAtoms, invmass, invMassPerDim, ekind);
+                    start_th, end_th, dt, x_rvec, xp_rvec, v_rvec, f_rvec, havePartiallyFrozenAtoms_, invmass, invMassPerDim, ekind);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

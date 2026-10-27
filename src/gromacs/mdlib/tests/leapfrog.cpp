@@ -62,7 +62,6 @@
 #include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
@@ -114,11 +113,10 @@ void integrateLeapFrogCpu(LeapFrogTestData* testData, int numSteps)
     {
         testData->update_->update_coords(testData->inputRecord_,
                                          step,
-                                         testData->mdAtoms_.numHomeAtoms,
-                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
-                                         testData->mdAtoms_.ptype,
-                                         testData->mdAtoms_.invmass,
-                                         testData->mdAtoms_.invMassPerDim,
+                                         testData->numAtoms_,
+                                         {},
+                                         testData->inverseMasses_,
+                                         testData->inverseMassesPerDim_,
                                          &testData->state_,
                                          testData->f_,
                                          &testData->forceCalculationData_,
@@ -127,12 +125,8 @@ void integrateLeapFrogCpu(LeapFrogTestData* testData, int numSteps)
                                          etrtNONE,
                                          nullptr,
                                          false);
-        testData->update_->finish_update(testData->inputRecord_,
-                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
-                                         testData->mdAtoms_.numHomeAtoms,
-                                         &testData->state_,
-                                         nullptr,
-                                         false);
+        testData->update_->finish_update(
+                testData->inputRecord_, testData->numAtoms_, &testData->state_, nullptr, false);
     }
     const auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
     for (int i = 0; i < testData->numAtoms_; i++)
@@ -178,9 +172,8 @@ void integrateLeapFrogGpu(const DeviceContext& deviceContext,
     testData->inverseMasses_ = PaddedHostVector<real>(
             testData->inverseMasses_,
             HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
-    testData->mdAtoms_.cTC = HostVector<unsigned short>(
-            testData->mdAtoms_.cTC,
-            HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+    testData->cTC_ = HostVector<unsigned short>(
+            testData->cTC_, HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
 
     {
         SCOPED_TRACE("Preliminary call to set() to cover resizing edge cases");
@@ -208,7 +201,7 @@ void integrateLeapFrogGpu(const DeviceContext& deviceContext,
         deviceStream.synchronize();
     }
 
-    integrator->set(numAtoms, testData->inverseMasses_, testData->mdAtoms_.cTC);
+    integrator->set(numAtoms, testData->inverseMasses_, testData->cTC_);
 
     bool doTempCouple = testData->numTCoupleGroups_ > 0;
     for (int step = 0; step < numSteps; step++)

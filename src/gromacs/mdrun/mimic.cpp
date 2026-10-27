@@ -518,7 +518,7 @@ void LegacySimulator::do_mimic()
 
         if (ir->efep == FreeEnergyPerturbationType::SlowGrowth)
         {
-            updateMdAtomsForMassLambda(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+            mdAtoms_->updateForMassLambda(state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         fr_->longRangeNonbondeds->updateAfterPartition(*mdAtoms_);

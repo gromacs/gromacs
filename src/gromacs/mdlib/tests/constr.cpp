@@ -162,6 +162,7 @@ void applyLincsCpu(ConstraintsTestData* testData, t_pbc pbc)
                         testData->nflexcon_,
                         at2con_mt,
                         false,
+                        testData->hasMassPerturbed_,
                         testData->ir_.nLincsIter,
                         testData->ir_.nProjOrder,
                         nullptr);
@@ -185,7 +186,6 @@ void applyLincsCpu(ConstraintsTestData* testData, t_pbc pbc)
                                    testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(),
                                    pbc.box,
                                    &pbc,
-                                   testData->hasMassPerturbed_,
                                    testData->lambda_,
                                    &testData->dHdLambda_,
                                    testData->invdt_,

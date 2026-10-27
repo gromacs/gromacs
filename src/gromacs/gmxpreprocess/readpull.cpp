@@ -695,9 +695,11 @@ pull_t* set_pull_init(t_inputrec*               ir,
     pull_params_t*           pull = ir->pull.get();
     const gmx::MpiComm       mpiComm(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
     gmx::LocalAtomSetManager atomSets;
-    pull_work    = init_pull(nullptr, pull, ir, mtop, mpiComm, nullptr, &atomSets, massLambda);
-    auto mdAtoms = gmx::makeMDAtoms(nullptr, mtop, *ir, false, false, nullptr);
-    atoms2md(mtop, *ir, -1, {}, mtop.natoms, mdAtoms.get(), massLambda);
+    pull_work = init_pull(nullptr, pull, ir, mtop, mpiComm, nullptr, &atomSets, massLambda);
+    gmx::MDAtoms mdAtoms(mtop, *ir, false, false, nullptr);
+    // This is a pretty expensive way to get the vector of (possibly
+    // perturbed) masses (and nothing else).
+    mdAtoms.updateAfterPartition(mtop.natoms, {}, mtop.natoms, massLambda);
 
     set_pbc(&pbc, ir->pbcType, box);
 
@@ -705,9 +707,9 @@ pull_t* set_pull_init(t_inputrec*               ir,
 
     if (pull->bSetPbcRefToPrevStepCOM)
     {
-        initPullComFromPrevStep(mpiComm, pull_work, mdAtoms->massT, pbc, x);
+        initPullComFromPrevStep(mpiComm, pull_work, mdAtoms.massT, pbc, x);
     }
-    pull_calc_coms(mpiComm, pull_work, mdAtoms->massT, pbc, t_start, x, {});
+    pull_calc_coms(mpiComm, pull_work, mdAtoms.massT, pbc, t_start, x, {});
 
     for (int g = 0; g < pull->ngroup; g++)
     {

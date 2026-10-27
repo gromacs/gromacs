@@ -73,7 +73,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -338,12 +337,11 @@ protected:
 
         std::vector<int> ddgatindex = { 0, 1, 2 };
 
-        MDAtoms mdAtoms(false, false, nullptr);
-        mdAtoms.chargeA    = { 1.0, -0.5, -0.5 };
-        mdAtoms.chargeB    = { 0.0, 0.0, 0.0 };
-        mdAtoms.bPerturbed = { true, true, true };
-        mdAtoms.cENER      = { 0, 0, 0 };
-        mdAtoms.nPerturbed = 3;
+        std::vector<real>           chargeA    = { 1.0, -0.5, -0.5 };
+        std::vector<real>           chargeB    = { 0.0, 0.0, 0.0 };
+        std::vector<BoolType>       bPerturbed = { true, true, true };
+        std::vector<unsigned short> cENER      = { 0, 0, 0 };
+        const int                   nPerturbed = 3;
 
         t_forcerec* fr = frHelper.get();
         fr->efep = input_.fep ? FreeEnergyPerturbationType::Yes : FreeEnergyPerturbationType::No;
@@ -390,11 +388,11 @@ protected:
                      &pbc_,
                      lambdas.data(),
                      output.dvdLambda.data(),
-                     mdAtoms.chargeA,
-                     mdAtoms.chargeB,
-                     makeArrayRef(mdAtoms.bPerturbed),
-                     mdAtoms.cENER,
-                     mdAtoms.nPerturbed,
+                     chargeA,
+                     chargeB,
+                     makeConstArrayRef(bPerturbed),
+                     cENER,
+                     nPerturbed,
                      *fr,
                      havePerturbedInteractions,
                      stepWork,

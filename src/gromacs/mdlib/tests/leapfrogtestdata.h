@@ -49,12 +49,12 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatoms.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/matrix.h"
 #include "gromacs/utility/real.h"
@@ -95,8 +95,8 @@ public:
     //! Inverse masses of the particles per dimension
     std::vector<RVec> inverseMassesPerDim_;
 
-    //! MD atoms structure in which inverse masses will be passed to the integrator
-    MDAtoms mdAtoms_;
+    //! Group index for temperature coupling
+    HostVector<unsigned short> cTC_;
     //! Input record (to get integrator type, temperature and pressure coupling)
     t_inputrec inputRecord_;
     //! System state
