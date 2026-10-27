@@ -481,6 +481,53 @@ INSTANTIATE_TEST_SUITE_P(Works,
                          ::testing::Combine(::testing::ValuesIn(g_fromTrajectoryFiles),
                                             ::testing::Values(-1, 0, 0.3, 1, 999999)),
                          nameOfTrjconvDumpTest);
+
+//! \brief Test fixture for gmx trjconv -pbc (option) tests
+class TrjconvPbcTest : public CommandLineTestBase, public ::testing::WithParamInterface<const char*>
+{
+};
+
+TEST_P(TrjconvPbcTest, MoleculeCrossingBox)
+{
+    auto&             cmdline = commandLine();
+    TprAndFileManager tprManager("spc2-traj");
+    StdioTestHelper   stdioHelper(&fileManager());
+
+    SCOPED_TRACE("Test -pbc <GetParam()> option for trajectory with molecule broken across PBC");
+    setInputFile("-f", fileManager().getInputFilePath("spc2-traj-shifted-across-pbc-boundaries.gro"));
+    setInputFile("-s", tprManager.tprName());
+    setInputFile("-n", "spc2.ndx");
+    setOutputFile("-o", "out.gro", ExactTextMatch());
+    cmdline.addOption("-pbc", GetParam());
+    cmdline.addOption("-dump", 0); // Only test the first frame
+
+    stdioHelper.redirectStringToStdin("System");
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    checkOutputFiles();
+}
+
+//! Help GoogleTest name our test cases.
+std::string nameOfPbcTest(const testing::TestParamInfo<const char*>& info)
+{
+    std::string testName = info.param;
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+INSTANTIATE_TEST_SUITE_P(Works,
+                         TrjconvPbcTest,
+                         ::testing::Values("mol", "res", "atom", "nojump", "whole"),
+                         nameOfPbcTest);
+
 } // namespace
 } // namespace test
 } // namespace gmx

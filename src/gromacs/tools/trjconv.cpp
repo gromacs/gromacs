@@ -568,7 +568,6 @@ int gmx_trjconv(int argc, char* argv[])
     int          m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
     gmx_conect   gc      = nullptr;
     PbcType      pbcType = PbcType::Unset;
-    t_atoms      useatoms;
     matrix       top_box;
     int *        index = nullptr, *cindex = nullptr;
     char*        grpnm = nullptr;
@@ -969,27 +968,33 @@ int gmx_trjconv(int argc, char* argv[])
             drop1 = 0;
         }
 
-        /* Make atoms struct for output in GRO or PDB files */
+        // Make atoms struct for output of the selection into GRO,
+        // G96, or PDB files.
+        std::optional<t_atoms> useatoms;
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB))
         {
             /* get memory for stuff to go in .pdb file, and initialize
              * the pdbinfo structure part if the input has it.
              */
-            init_t_atoms(&useatoms, atoms->nr, atoms->havePdbInfo);
-            sfree(useatoms.resinfo);
-            useatoms.resinfo = atoms->resinfo;
+            useatoms = std::make_optional<t_atoms>();
+            init_t_atoms(&useatoms.value(), atoms->nr, atoms->havePdbInfo);
+            sfree(useatoms->resinfo);
+            useatoms->resinfo = atoms->resinfo;
+            // Reuse the memory from the main atoms struct, be
+            // careful not to free this later!
             for (i = 0; (i < nout); i++)
             {
-                useatoms.atomname[i] = atoms->atomname[index[i]];
-                useatoms.atom[i]     = atoms->atom[index[i]];
+                useatoms->atomname[i] = atoms->atomname[index[i]];
+                useatoms->atom[i]     = atoms->atom[index[i]];
                 if (atoms->havePdbInfo)
                 {
-                    useatoms.pdbinfo[i] = atoms->pdbinfo[index[i]];
+                    useatoms->pdbinfo[i] = atoms->pdbinfo[index[i]];
                 }
-                useatoms.nres = std::max(useatoms.nres, useatoms.atom[i].resind + 1);
+                useatoms->nres = std::max(useatoms->nres, useatoms->atom[i].resind + 1);
             }
-            useatoms.nr = nout;
+            useatoms->nr = nout;
         }
+
         /* select what to read */
         if (ftp == efTRR)
         {
@@ -1566,7 +1571,7 @@ int gmx_trjconv(int argc, char* argv[])
                                     case efGRO:
                                         write_hconf_p(out,
                                                       title.c_str(),
-                                                      &useatoms,
+                                                      &useatoms.value(),
                                                       frout.x,
                                                       frout.bV ? frout.v : nullptr,
                                                       frout.box);
@@ -1586,7 +1591,7 @@ int gmx_trjconv(int argc, char* argv[])
                                         }
                                         write_pdbfile(out,
                                                       title.c_str(),
-                                                      &useatoms,
+                                                      &useatoms.value(),
                                                       frout.x,
                                                       frout.pbcType,
                                                       frout.box,
@@ -1603,7 +1608,7 @@ int gmx_trjconv(int argc, char* argv[])
                                             {
                                                 frout.bAtoms = TRUE;
                                             }
-                                            frout.atoms = &useatoms;
+                                            frout.atoms = &useatoms.value();
                                             frout.bStep = FALSE;
                                             frout.bTime = FALSE;
                                         }
@@ -1702,6 +1707,13 @@ int gmx_trjconv(int argc, char* argv[])
             gmx_ffclose(out);
         }
 
+        if (useatoms.has_value())
+        {
+            // Don't use done_atom, part of useatoms is shared with
+            // atoms.
+            sfree(useatoms->atomname);
+            sfree(useatoms->atom);
+        }
         if (atoms)
         {
             done_atom(atoms.get());

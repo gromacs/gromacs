@@ -101,18 +101,6 @@ gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_m
 /* Returns a single t_atoms struct for the whole system */
 t_atoms gmx_mtop_global_atoms(const gmx_mtop_t& mtop);
 
-/*! \brief Copy idef structure from \p mtop.
- *
- * Makes a deep copy of an idef data structure from a gmx_mtop_t.
- * Used to initialize legacy topology types.
- *
- * \param[in] mtop Reference to input mtop.
- * \param[in] idef Pointer to idef to populate.
- * \param[in] mergeConstr Decide if constraints will be merged.
- */
-template<typename IdefType>
-void copyIListsFromMtop(const gmx_mtop_t& mtop, IdefType* idef, bool mergeConstr);
-
 /*! \brief Creates and returns a deprecated t_block struct with molecule indices
  *
  * \param[in] mtop  The global topology
@@ -200,7 +188,5 @@ bool haveFepPerturbedMassesInSettles(const gmx_mtop_t& mtop);
 
 //! Checks whether constraints are perturbed for free-energy calculations
 bool havePerturbedConstraints(const gmx_mtop_t& mtop);
-
-extern template void copyIListsFromMtop(const gmx_mtop_t&, t_idef*, bool);
 
 #endif

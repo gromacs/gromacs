@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+spc2 t=   0.00000 step= 0
+    6
+    1SOL     OW    1   2.069   2.775   2.665  0.5690  1.2150  1.9650
+    1SOL    HW1    2   1.976   2.768   2.628  0.6690  1.2250  1.8650
+    1SOL    HW2    3   2.080   2.864   2.709  0.7690  1.2350  1.7650
+    2SOL     OW    4   0.045   0.001   2.203  0.8690  1.2450  1.6650
+    2SOL    HW1    5  -0.012  -0.015   2.284  0.1690  0.2750  1.5650
+    2SOL    HW2    6  -0.014   0.011   2.123  0.2690  2.2750  1.4650
+   3.01000   3.01000   3.01000
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

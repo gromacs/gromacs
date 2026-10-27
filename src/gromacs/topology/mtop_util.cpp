@@ -492,8 +492,17 @@ static void copyFFParametersFromMtop(const gmx_mtop_t& mtop, t_idef* idef)
     idef->ilsort           = ilsortUNKNOWN;
 }
 
+/*! \brief Copy idef structure from \p mtop.
+ *
+ * Makes a deep copy of an idef data structure from a gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Reference to input mtop.
+ * \param[in] idef Pointer to idef to populate.
+ * \param[in] mergeConstr Decide if constraints will be merged.
+ */
 template<typename IdefType>
-void copyIListsFromMtop(const gmx_mtop_t& mtop, IdefType* idef, bool mergeConstr)
+static void copyIListsFromMtop(const gmx_mtop_t& mtop, IdefType* idef, bool mergeConstr)
 {
     int natoms = 0;
     for (const gmx_molblock_t& molb : mtop.molblock)
@@ -924,5 +933,3 @@ bool havePerturbedConstraints(const gmx_mtop_t& mtop)
 
     return false;
 }
-
-template void copyIListsFromMtop(const gmx_mtop_t&, t_idef*, bool);
