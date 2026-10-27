@@ -44,6 +44,7 @@
 #define GMX_MDLIB_LINCS_GPU_CUH
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
@@ -193,23 +194,31 @@ private:
     //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ])
     gmx::HostVector<float> h_virialScaled_;
 
-    /*! \brief Maximum total number of constraints so far.
-     *
-     * If the new number of constraints is larger then previous maximum, the GPU data arrays are
-     * reallocated.
-     */
-    int numConstraintsThreadsAlloc_;
+    //! Sizes and capacities of the device buffers in kernelParams_, see reallocateDeviceBuffer()
+    //! \{
+    int d_constraintsSize_                   = -1;
+    int d_constraintsCapacity_               = -1;
+    int d_constraintsTargetLengthsSize_      = -1;
+    int d_constraintsTargetLengthsCapacity_  = -1;
+    int d_coupledConstraintsCountsSize_      = -1;
+    int d_coupledConstraintsCountsCapacity_  = -1;
+    int d_coupledConstraintsIndicesSize_     = -1;
+    int d_coupledConstraintsIndicesCapacity_ = -1;
+    int d_massFactorsSize_                   = -1;
+    int d_massFactorsCapacity_               = -1;
+    int d_matrixASize_                       = -1;
+    int d_matrixACapacity_                   = -1;
+    int d_constraintGroupsSizesSize_         = -1;
+    int d_constraintGroupsSizesCapacity_     = -1;
+    int d_inverseMassesSize_                 = -1;
+    int d_inverseMassesCapacity_             = -1;
+    //! \}
 
-    /*! \brief Maximum total number of atoms so far.
-     *
-     * If the new number of atoms is larger then previous maximum, the GPU array with masses is
-     * reallocated.
-     */
-    int numAtomsAlloc_;
-
-    //! Maximum number of coupled constraints
+    //! Maximum number of coupled constraints of any constraint in the last set() call
     int maxCoupledConstraints_ = 0;
 
+    //! Constraint in each device slot, -1 for padding; kept to avoid reallocating it in set()
+    std::vector<int> slotToConstraint_;
     //! Host buffer for constrained atom pairs
     gmx::HostVector<AtomPair> h_constraints_;
     //! Host buffer for constraint target lengths

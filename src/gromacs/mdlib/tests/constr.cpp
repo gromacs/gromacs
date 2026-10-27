@@ -233,11 +233,22 @@ void applyLincsGpu(const DeviceContext& deviceContext,
         }
         {
             SCOPED_TRACE("Call set() with one constraint more");
-            InteractionDefinitions   largerIdef = *testData->idef_;
+            /* The extra constraint has a target length that no real constraint has, so a stale
+             * slot left from this call changes the result even in systems with a single
+             * constraint type. */
+            gmx_ffparams_t largerFfparams = testData->mtop_.ffparams;
+            const int firstType   = testData->idef_->il[InteractionFunction::Constraints].iatoms[0];
+            t_iparams extraParams = largerFfparams.iparams[firstType];
+            extraParams.constr.dA *= 1.5;
+            extraParams.constr.dB *= 1.5;
+            const int extraType = gmx::ssize(largerFfparams.iparams);
+            largerFfparams.iparams.push_back(extraParams);
+
+            InteractionDefinitions largerIdef(largerFfparams);
+            largerIdef.il                       = testData->idef_->il;
             InteractionList&         largerList = largerIdef.il[InteractionFunction::Constraints];
-            const int                type       = largerList.iatoms[0];
             const std::array<int, 2> atoms      = { largerList.iatoms[1], largerList.iatoms[2] };
-            largerList.push_back(type, atoms);
+            largerList.push_back(extraType, atoms);
             lincsGpu->set(largerIdef, testData->numAtoms_, testData->invmass_);
             deviceStream.synchronize();
         }
