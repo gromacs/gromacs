@@ -48,12 +48,17 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"
 #include "testutils/refdata.h"
+#include "testutils/stdiohelper.h"
 #include "testutils/textblockmatchers.h"
+#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
@@ -65,7 +70,7 @@ namespace
 using test::CommandLine;
 using test::TextFileMatch;
 
-//! Test parameter struct.
+//! Test parameters: input file, output format
 using CommandLineOptionParams = std::tuple<std::string, int>;
 
 class EditconfTest :
@@ -86,12 +91,24 @@ public:
 
     void runTest(const char* testName)
     {
+        MessageStringCollector skipReasons;
+        // TODO These reproduce slightly differently in double precision or
+        // with different compilers, and we don't yet have a
+        // precision-agnostic way to check on the output coordinates. It's
+        // better to run the tests only under some conditions than not have
+        // the tests. When we improve the structure of the tests (#4926)
+        // we can relax these restrictions.
+        skipReasons.appendIf(GMX_DOUBLE, "double-precision build not reproducible");
+#if (defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER >= 20240000))
+        skipReasons.append("Intel compiler build not reproducible");
+#endif
+        if (!skipReasons.isEmpty())
+        {
+            GTEST_SKIP() << skipReasons.toString();
+        }
+
         // Get the command line flags that were set up in the constructor
         CommandLine& cmdline = commandLine();
-
-        // Provide the name of the module to call
-        std::string module[] = { "editconf" };
-        cmdline.merge(CommandLine(module));
 
         // Call the module
         ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
@@ -135,20 +152,216 @@ TEST_P(EditconfTest, HandlesBothNoCenterAndDiameter)
     runTest("Correct box dimensions with -d and -noc");
 }
 
-// TODO These reproduce slightly differently in double precision or
-// with different compilers, and we don't yet have a
-// precision-agnostic way to check on the output coordinates. It's
-// better to run the tests only under some conditions than not have
-// the tests. When we improve the structure of the tests (#4926)
-// we can relax these restrictions.
-#if !GMX_DOUBLE && !(defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER >= 20240000))
 INSTANTIATE_TEST_SUITE_P(SinglePeptideFragments,
                          EditconfTest,
                          ::testing::Combine(::testing::Values("A.pdb", "A.gro", "A.g96"),
                                             ::testing::Values(efPDB, efGRO, efG96)));
-#else
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EditconfTest);
-#endif
+
+class EditconfTprTest : public test::CommandLineTestBase
+{
+public:
+    //! Prepare tpr resource shared over all test cases (for efficiency)
+    static void SetUpTestSuite()
+    {
+        // This requires earlier setup work to decide what the name of
+        // the temporary directory is.
+        s_tprFileManager = std::make_unique<TprAndFileManager>("spc-and-methanol");
+    }
+    //! Storage for tpr file manager
+    static std::unique_ptr<TprAndFileManager> s_tprFileManager;
+    EditconfTprTest() { setInputFile("-f", s_tprFileManager->tprName()); }
+};
+
+std::unique_ptr<TprAndFileManager> EditconfTprTest::s_tprFileManager;
+
+TEST_F(EditconfTprTest, ConectOptionWorks)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-conect");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, ConectOptionWorksWithIndexFileChoosingMethanol)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-conect");
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("Methanol");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, ConectOptionWorksWithIndexFileChoosingMethanolAlcohol)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-conect");
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("Methanol-alcohol");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, ConectOptionWorksWithIndexFileChoosingSOL)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-conect");
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SOL");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, MeadOptionWorks)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-mead", "spc-and-methanol.pqr", TextFileMatch(settings));
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, MeadOptionWorksWithIndexChoosingSOL)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-mead", "spc-and-methanol.pqr", TextFileMatch(settings));
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SOL");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, MeadOptionWorksReadingVdw)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-mead", "spc-and-methanol.pqr", TextFileMatch(settings));
+    cmdline.addOption("-vdwread");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, MeadOptionWorksReadingVdwWithIndexChoosingSOL)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-mead", "spc-and-methanol.pqr", TextFileMatch(settings));
+    cmdline.addOption("-vdwread");
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SOL");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, GraspOptionWorks)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-grasp");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, GraspOptionWorksWithIndexChoosingSOL)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-grasp");
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SOL");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, GraspOptionWorksReadingVdw)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-grasp");
+    cmdline.addOption("-vdwread");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
+
+TEST_F(EditconfTprTest, GraspOptionWorksReadingVdwWithIndexChoosingSOL)
+{
+    CommandLine& cmdline = commandLine();
+
+    ExactTextMatch settings;
+    setOutputFile("-o", "spc-and-methanol.pdb", TextFileMatch(settings));
+    cmdline.addOption("-grasp");
+    cmdline.addOption("-vdwread");
+    setInputFile("-n", "spc-and-methanol.ndx");
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SOL");
+
+    // Call the module
+    ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+
+    checkOutputFiles();
+}
 
 } // namespace
 } // namespace test

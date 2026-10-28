@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-mead">
+      <String Name="Contents"><![CDATA[
+REMARK    The B-factors in this file hold atomic radii
+REMARK    The occupancy in this file hold atomic charges
+TITLE     spc-and-methanol
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   30.100   30.100   30.100  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      1 Me1 MeOH    1   19.700   14.600   12.090   0.18   1.20
+ATOM      2 O2  MeOH    1   19.780   14.150   10.820  -0.57   1.52
+ATOM      3 H3  MeOH    1   19.050   14.600   10.300   0.40   1.20
+ATOM      4 OW   SOL    2   15.550   15.110    7.030  -0.82   1.52
+ATOM      5 HW1  SOL    2   14.980   14.950    7.840   0.41   1.20
+ATOM      6 HW2  SOL    2   14.960   15.210    6.230   0.41   1.20
+TER
+ENDMDL
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

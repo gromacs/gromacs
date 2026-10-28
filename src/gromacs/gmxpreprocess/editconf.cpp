@@ -879,6 +879,10 @@ int gmx_editconf(int argc, char* argv[])
         {
             gmx_fatal(FARGS, "Atom numbers don't match (%d vs. %d)", atoms.nr, top->atoms.nr);
         }
+        if (atoms.pdbinfo != nullptr)
+        {
+            sfree(atoms.pdbinfo);
+        }
         snew(atoms.pdbinfo, top->atoms.nr);
         ntype = top->idef.atnr;
         for (int i = 0; (i < atoms.nr); i++)
@@ -1413,6 +1417,15 @@ int gmx_editconf(int argc, char* argv[])
     if (v)
     {
         sfree(v);
+    }
+    if (bCONECT)
+    {
+        gmx_conect_done(conect);
+    }
+    if (top)
+    {
+        done_top(top);
+        sfree(top);
     }
     do_view(oenv, outfile, nullptr);
     output_env_done(oenv);

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+TITLE     spc-and-methanol
+REMARK    THIS IS A SIMULATION BOX
+CRYST1   30.100   30.100   30.100  90.00  90.00  90.00 P 1           1
+MODEL        1
+ATOM      2  O2  MeOH    1      19.780  14.150  10.820  1.00  0.00           O
+ATOM      3  H3  MeOH    1      19.050  14.600  10.300  1.00  0.00           H
+TER
+ENDMDL
+CONECT    2    3
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

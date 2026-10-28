@@ -112,6 +112,8 @@ const std::filesystem::path& TprAndFileManager::tprName() const
             caller.addOption("-r", fileManager_.getInputFilePath(positionRestraints_));
         }
         caller.addOption("-o", tprFileName_);
+        // Ensure mdout.mdp file is cleaned up
+        caller.addOption("-po", fileManager_.getTemporaryFilePath("mdout.mdp"));
 
         EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
         hasGeneratedTpr_ = true;

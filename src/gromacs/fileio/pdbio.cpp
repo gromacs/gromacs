@@ -492,10 +492,24 @@ void write_pdbfile_indexed(FILE*          out,
 
     if (nullptr != gc)
     {
-        /* Write conect records */
-        for (int i = 0; (i < gc->nconect); i++)
+        // Write CONECT records, checking whether both atoms exist in
+        // the index.
+        for (int c = 0; (c < gc->nconect); c++)
         {
-            fprintf(out, "CONECT%5d%5d\n", gc->conect[i].ai + 1, gc->conect[i].aj + 1);
+            int  iAtom      = gc->conect[c].ai;
+            int  jAtom      = gc->conect[c].aj;
+            bool foundIAtom = false, foundJAtom = false;
+            for (int i = 0; i < nindex; ++i)
+            {
+                foundIAtom = foundIAtom || (index[i] == iAtom);
+                foundJAtom = foundJAtom || (index[i] == jAtom);
+            }
+            if (foundIAtom && foundJAtom)
+            {
+                // Both i and j atom are in the index, so print
+                // the CONECT record.
+                fprintf(out, "CONECT%5d%5d\n", iAtom + 1, jAtom + 1);
+            }
         }
     }
 }

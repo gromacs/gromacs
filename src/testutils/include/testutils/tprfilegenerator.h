@@ -85,8 +85,13 @@ public:
     const std::filesystem::path& tprName() const;
 
 private:
-    //! Filemanager, needed to clean up the file later.
-    TestFileManager fileManager_;
+    /*! \brief Filemanager, needed to clean up the file later.
+     *
+     * Mutable so the lazy construction of the tpr
+     * file does not inhibit use cases that are
+     * const correct from the caller's perspective.
+     */
+    mutable TestFileManager fileManager_;
 
     /*! \brief Whether grompp has been called and a .tpr file generated
      *

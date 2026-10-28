@@ -68,21 +68,18 @@ public:
     //! Run test case.
     static void runTest(CommandLine* cmdline);
 
-protected:
-    // TODO this is changed in newer googletest versions
-    //! Prepare shared resources.
-    static void SetUpTestSuite() { s_tprFileHandle = new TprAndFileManager("lysozyme"); }
-    //! Clean up shared resources.
-    static void TearDownTestSuite()
+    //! Prepare tpr resource shared over all test cases (for efficiency)
+    static void SetUpTestSuite()
     {
-        delete s_tprFileHandle;
-        s_tprFileHandle = nullptr;
+        // This requires earlier setup work to decide what the name of
+        // the temporary directory is.
+        s_tprFileManager = std::make_unique<TprAndFileManager>("spc-and-methanol");
     }
-    //! Storage for opened file handles.
-    static TprAndFileManager* s_tprFileHandle;
+    //! Storage for tpr file manager
+    static std::unique_ptr<TprAndFileManager> s_tprFileManager;
 };
 
-TprAndFileManager* DumpTest::s_tprFileHandle = nullptr;
+std::unique_ptr<TprAndFileManager> DumpTest::s_tprFileManager;
 
 void DumpTest::runTest(CommandLine* cmdline)
 {
@@ -91,7 +88,7 @@ void DumpTest::runTest(CommandLine* cmdline)
 
 TEST_F(DumpTest, WorksWithTpr)
 {
-    const std::string tprName   = s_tprFileHandle->tprName().string();
+    const std::string tprName   = s_tprFileManager->tprName().string();
     const char* const command[] = { "dump", "-s", tprName.c_str() };
     CommandLine       cmdline(command);
     runTest(&cmdline);
@@ -100,7 +97,7 @@ TEST_F(DumpTest, WorksWithTpr)
 TEST_F(DumpTest, WorksWithTprAndMdpWriting)
 {
     TestFileManager   fileManager;
-    const std::string tprName   = s_tprFileHandle->tprName().string();
+    const std::string tprName   = s_tprFileManager->tprName().string();
     const std::string mdpName   = fileManager.getTemporaryFilePath("output.mdp").string();
     const char* const command[] = { "dump", "-s", tprName.c_str(), "-om", mdpName.c_str() };
     CommandLine       cmdline(command);

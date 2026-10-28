@@ -72,21 +72,19 @@ namespace test
 
 class ReportMethodsTest : public ::testing::Test
 {
-protected:
-    // TODO this is changed in newer googletest versions
-    //! Prepare shared resources.
-    static void SetUpTestSuite() { s_tprFileHandle = new TprAndFileManager("lysozyme"); }
-    //! Clean up shared resources.
-    static void TearDownTestSuite()
+public:
+    //! Prepare tpr resource shared over all test cases (for efficiency)
+    static void SetUpTestSuite()
     {
-        delete s_tprFileHandle;
-        s_tprFileHandle = nullptr;
+        // This requires earlier setup work to decide what the name of
+        // the temporary directory is.
+        s_tprFileManager = std::make_unique<TprAndFileManager>("lysozyme");
     }
-    //! Storage for opened file handles.
-    static TprAndFileManager* s_tprFileHandle;
+    //! Storage for tpr file manager
+    static std::unique_ptr<TprAndFileManager> s_tprFileManager;
 };
 
-TprAndFileManager* ReportMethodsTest::s_tprFileHandle = nullptr;
+std::unique_ptr<TprAndFileManager> ReportMethodsTest::s_tprFileManager;
 
 /*! \brief
  * Reads a tpr for the test.
@@ -97,12 +95,12 @@ TprAndFileManager* ReportMethodsTest::s_tprFileHandle = nullptr;
  * \param[in] mtop Pointer to topology datastructure to populate.
  * \param[in] ir Pointer to inputrec to populate.
  */
-static void readTprInput(const TprAndFileManager* tprHandle, gmx_mtop_t* mtop, t_inputrec* ir)
+static void readTprInput(const TprAndFileManager& tprHandle, gmx_mtop_t* mtop, t_inputrec* ir)
 {
     // read tpr into variables needed for output
     {
         t_state state;
-        read_tpx_state(tprHandle->tprName(), ir, &state, mtop);
+        read_tpx_state(tprHandle.tprName(), ir, &state, mtop);
     }
 }
 
@@ -131,7 +129,7 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 {
     gmx_mtop_t top;
     t_inputrec ir;
-    EXPECT_NO_THROW(readTprInput(s_tprFileHandle, &top, &ir));
+    EXPECT_NO_THROW(readTprInput(*s_tprFileManager, &top, &ir));
 
     // Test both formatted and unformatted output in the same test
     {
@@ -181,7 +179,7 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
 TEST_F(ReportMethodsTest, ToolEndToEndTest)
 {
-    const std::string tprName   = s_tprFileHandle->tprName().string();
+    const std::string tprName   = s_tprFileManager->tprName().string();
     const char* const command[] = { "report-methods", "-s", tprName.c_str() };
     CommandLine       cmdline(command);
     EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create, &cmdline));
