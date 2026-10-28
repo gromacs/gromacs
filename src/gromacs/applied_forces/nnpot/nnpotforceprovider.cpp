@@ -365,10 +365,10 @@ void NNPotForceProvider::preparePairlistInput()
 
         // we only want to add pairs where both atoms are part of the NNP input
         // if any of the two (or more commonly both) is not, we skip this pair
-        if (const std::optional<ptrdiff_t> inputIdxA = indexOf(inputToGlobalIndex_, atomPair.first);
+        if (const std::optional<ptrdiff_t> inputIdxA = indexOf(inputToLocalIndex_, atomPair.first);
             inputIdxA.has_value())
         {
-            if (const std::optional<ptrdiff_t> inputIdxB = indexOf(inputToGlobalIndex_, atomPair.second);
+            if (const std::optional<ptrdiff_t> inputIdxB = indexOf(inputToLocalIndex_, atomPair.second);
                 inputIdxB.has_value())
             {
                 // no need to check cutoff: pairlist already comes filtered by cutoff

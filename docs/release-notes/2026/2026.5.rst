@@ -74,6 +74,20 @@ affected. This has been present in versions 2026.0 to 2026.4.
 
 :issue:`5753`
 
+Fixed NNPot pair-list input with single-rank domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+For neural network potential models with ``atom-pairs`` or ``pair-shifts``
+inputs, the local atom indices in the pair list were interpreted as global
+indices. With domain decomposition, which reorders the local atoms and is
+also used by default even on a single rank when non-bonded interactions are
+computed on the CPU with PME or Ewald electrostatics, the model was passed
+pairs that did not match the atom positions. This led to incorrect energies
+and forces without any error. Single-rank runs with non-bonded interactions
+on a GPU were not affected. This has been present in versions 2026.0 to 2026.4.
+
+:issue:`5778`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
