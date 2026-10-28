@@ -65,6 +65,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topology_enums.h"
@@ -745,10 +746,9 @@ int gmx_editconf(int argc, char* argv[])
     FILE*             out;
     const char*       infile;
     const char*       outfile;
-    int               outftp, inftp, natom, j, n_bfac, itype, ntype;
-    double *          bfac    = nullptr, c6, c12;
+    int               outftp, inftp, natom, j, n_bfac;
+    double*           bfac    = nullptr;
     int*              bfac_nr = nullptr;
-    t_topology*       top     = nullptr;
     char *            grpname, *sgrpname, *agrpname;
     int               isize, ssize, numAlignmentAtoms;
     int *             sindex, *aindex;
@@ -758,7 +758,7 @@ int gmx_editconf(int argc, char* argv[])
     rvec              princd, tmpvec;
     gmx_bool          bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
     gmx_bool          bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
-    real              diam = 0, mass = 0, d, vdw;
+    real              diam = 0, mass = 0, d;
     gmx_conect        conect;
     gmx_output_env_t* oenv;
     t_filenm          fnm[] = { { efSTX, "-f", nullptr, ffREAD },
@@ -868,41 +868,44 @@ int gmx_editconf(int argc, char* argv[])
                100 * (static_cast<int>(vol * 4.5)));
     }
 
+    std::unique_ptr<gmx_mtop_t> mtop;
     if (bMead || bGrasp || bCONECT)
     {
-        top = read_top(infile, nullptr);
+        mtop = std::make_unique<gmx_mtop_t>();
+        // Note this is the second time this file was read!
+        read_tpx(infile, nullptr, nullptr, nullptr, nullptr, nullptr, mtop.get());
     }
 
     if (bMead || bGrasp)
     {
-        if (atoms.nr != top->atoms.nr)
+        // Replace the PDB info (ie. B-factors and occupancy) with
+        // fresh data.
+        if (atoms.nr != mtop->natoms)
         {
-            gmx_fatal(FARGS, "Atom numbers don't match (%d vs. %d)", atoms.nr, top->atoms.nr);
+            gmx_fatal(FARGS, "Atom numbers don't match (%d vs. %d)", atoms.nr, mtop->natoms);
         }
         if (atoms.pdbinfo != nullptr)
         {
             sfree(atoms.pdbinfo);
         }
-        snew(atoms.pdbinfo, top->atoms.nr);
-        ntype = top->idef.atnr;
-        for (int i = 0; (i < atoms.nr); i++)
+        snew(atoms.pdbinfo, mtop->natoms);
+        const int ntype = mtop->ffparams.atnr;
+        for (const AtomProxy atom : AtomRange(*mtop))
         {
-            /* Determine the Van der Waals radius from the force field */
+            real vdw;
+            // Determine the Van der Waals radius from the force field
             if (bReadVDW)
             {
-                if (!aps.setAtomProperty(epropVDW,
-                                         *top->atoms.resinfo[top->atoms.atom[i].resind].name,
-                                         *top->atoms.atomname[i],
-                                         &vdw))
+                if (!aps.setAtomProperty(epropVDW, atom.residueName(), atom.atomName(), &vdw))
                 {
                     vdw = rvdw;
                 }
             }
             else
             {
-                itype = top->atoms.atom[i].type;
-                c12   = top->idef.iparams[itype * ntype + itype].lj.c12;
-                c6    = top->idef.iparams[itype * ntype + itype].lj.c6;
+                const int    itype = atom.atom().type;
+                const double c12   = mtop->ffparams.iparams[itype * ntype + itype].lj.c12;
+                const double c6    = mtop->ffparams.iparams[itype * ntype + itype].lj.c6;
                 if ((c6 != 0) && (c12 != 0))
                 {
                     real sig6;
@@ -921,18 +924,19 @@ int gmx_editconf(int argc, char* argv[])
                     vdw = rvdw;
                 }
             }
-            /* Factor of 10 for nm -> Angstroms */
-            vdw *= 10;
+            // Scale nm -> Angstrom
+            vdw *= c_nano / c_angstrom;
 
+            const int globalAtomNumber = atom.globalAtomNumber();
             if (bMead)
             {
-                atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
-                atoms.pdbinfo[i].bfac  = vdw;
+                atoms.pdbinfo[globalAtomNumber].occup = atom.atom().q;
+                atoms.pdbinfo[globalAtomNumber].bfac  = vdw;
             }
             else
             {
-                atoms.pdbinfo[i].occup = vdw;
-                atoms.pdbinfo[i].bfac  = top->atoms.atom[i].q;
+                atoms.pdbinfo[globalAtomNumber].occup = vdw;
+                atoms.pdbinfo[globalAtomNumber].bfac  = atom.atom().q;
             }
         }
     }
@@ -1290,7 +1294,7 @@ int gmx_editconf(int argc, char* argv[])
     /* We have already checked that the output is a pdb file and the input a tpr file */
     if (bCONECT)
     {
-        conect = gmx_conect_generate(top->idef);
+        conect = gmx_conect_generate(*mtop);
     }
     else
     {
@@ -1421,11 +1425,6 @@ int gmx_editconf(int argc, char* argv[])
     if (bCONECT)
     {
         gmx_conect_done(conect);
-    }
-    if (top)
-    {
-        done_top(top);
-        sfree(top);
     }
     do_view(oenv, outfile, nullptr);
     output_env_done(oenv);
