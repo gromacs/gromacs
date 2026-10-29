@@ -721,9 +721,11 @@ static void new_status(const char*                                 topfile,
     /* Discourage using the, previously common, setup of applying constraints
      * to all bonds with force fields that have been parametrized with H-bond
      * constraints only. Do not print note with large timesteps or vsites.
+     * Note that the interaction lists in sys are not yet filled here,
+     * so we need to count the interactions using mi.
      */
     if (opts->nshake == eshALLBONDS && ffParametrizedWithHBondConstraints && ir->delta_t < 0.0026
-        && gmx_mtop_ftype_count(*sys, InteractionFunction::VirtualSite3FlexibleDistance) == 0)
+        && nint_ftype(sys, *mi, InteractionFunction::VirtualSite3FlexibleDistance) == 0)
     {
         wi->setFileAndLineNumber("unknown", -1);
         wi->addNote(
