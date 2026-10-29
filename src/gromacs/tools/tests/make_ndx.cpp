@@ -57,7 +57,7 @@ namespace test
 namespace
 {
 
-class GmxMakeNdx : public gmx::test::CommandLineTestBase
+class GmxMakeNdx : public CommandLineTestBase
 {
 public:
     /*! \brief runs the test for the filename prefix \p sysName from the simulation data base
@@ -82,9 +82,9 @@ public:
         {
             setInputFile("-f", groFileName);
         }
-        setOutputFile("-o", outputFileName.c_str(), gmx::test::ExactTextMatch());
+        setOutputFile("-o", outputFileName.c_str(), ExactTextMatch());
 
-        gmx::test::StdioTestHelper stdioHelper(&fileManager());
+        StdioTestHelper stdioHelper(&fileManager());
         stdioHelper.redirectStringToStdin(stdinContent.c_str());
 
         ASSERT_EQ(0, gmx_make_ndx(cmdline.argc(), cmdline.argv()));

@@ -121,7 +121,7 @@ void list_tpr(const char* fn,
     read_tpx_state(fn, tpx.bIr ? &ir : nullptr, &state, tpx.bTop ? &mtop : nullptr);
 
     // Set up MDModules and OutputControl before any module operations
-    gmx::MDModules mdModules;
+    MDModules mdModules;
     if (tpx.bIr)
     {
         if (!bOriginalInputrec)
@@ -179,7 +179,7 @@ void list_tpr(const char* fn,
 
         const SimulationGroups& groups = mtop.groups;
 
-        gmx::EnumerationArray<SimulationAtomGroupType, std::vector<int>> gcount;
+        EnumerationArray<SimulationAtomGroupType, std::vector<int>> gcount;
         for (auto group : keysOf(gcount))
         {
             gcount[group].resize(groups.groups[group].size());

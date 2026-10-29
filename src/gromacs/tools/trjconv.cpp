@@ -597,7 +597,7 @@ int gmx_trjconv(int argc, char* argv[])
     const char*  outf_ext  = nullptr;
     char         top_title[256], timestr[32], stepstr[32], filemode[5];
     gmx_output_env_t* oenv;
-    gmx::TimeControl  timeControl;
+    TimeControl       timeControl;
 
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },     { efTRO, "-o", nullptr, ffWRITE },
                        { efTPS, nullptr, nullptr, ffOPTRD }, { efNDX, nullptr, nullptr, ffOPTRD },

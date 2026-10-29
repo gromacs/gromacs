@@ -106,8 +106,8 @@ static void readTprInput(const TprAndFileManager& tprHandle, gmx_mtop_t* mtop, t
 
 TEST_F(ReportMethodsTest, WritesCorrectHeadersFormated)
 {
-    gmx::StringOutputStream stream;
-    gmx::TextWriter         test(&stream);
+    StringOutputStream stream;
+    TextWriter         test(&stream);
     writeHeader(&test, "Test", "Test", true);
 
     std::string referenceString = "\\Test{Test}\n";
@@ -116,8 +116,8 @@ TEST_F(ReportMethodsTest, WritesCorrectHeadersFormated)
 }
 TEST_F(ReportMethodsTest, WritesCorrectHeadersUnformatted)
 {
-    gmx::StringOutputStream stream;
-    gmx::TextWriter         test(&stream);
+    StringOutputStream stream;
+    TextWriter         test(&stream);
     writeHeader(&test, "Test", "Test", false);
 
     std::string referenceString = "Test: Test\n";
@@ -133,8 +133,8 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
     // Test both formatted and unformatted output in the same test
     {
-        gmx::StringOutputStream stream;
-        gmx::TextWriter         test(&stream);
+        StringOutputStream stream;
+        TextWriter         test(&stream);
 
         writeSystemInformation(&test, top, true);
 
@@ -146,8 +146,8 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
     }
 
     {
-        gmx::StringOutputStream stream;
-        gmx::TextWriter         test(&stream);
+        StringOutputStream stream;
+        TextWriter         test(&stream);
 
         writeSystemInformation(&test, top, false);
 
@@ -160,8 +160,8 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
     // Test for correct parameter information as well
     {
-        gmx::StringOutputStream stream;
-        gmx::TextWriter         test(&stream);
+        StringOutputStream stream;
+        TextWriter         test(&stream);
 
         writeParameterInformation(&test, ir, true);
 
@@ -182,7 +182,7 @@ TEST_F(ReportMethodsTest, ToolEndToEndTest)
     const std::string tprName   = s_tprFileManager->tprName().string();
     const char* const command[] = { "report-methods", "-s", tprName.c_str() };
     CommandLine       cmdline(command);
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create, &cmdline));
+    EXPECT_EQ(0, CommandLineTestHelper::runModuleFactory(&ReportMethodsInfo::create, &cmdline));
 }
 
 } // namespace test

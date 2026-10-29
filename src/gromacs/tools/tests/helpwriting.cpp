@@ -64,15 +64,15 @@ namespace test
 namespace
 {
 
-class HelpwritingTest : public gmx::test::CommandLineTestBase
+class HelpwritingTest : public CommandLineTestBase
 {
 public:
-    void runTest(gmx::ICommandLineModule* module) { testWriteHelp(module); }
+    void runTest(ICommandLineModule* module) { testWriteHelp(module); }
 };
 
 TEST_F(HelpwritingTest, ConvertTprWritesHelp)
 {
-    const std::unique_ptr<gmx::ICommandLineModule> module(gmx::ICommandLineOptionsModule::createModule(
+    const std::unique_ptr<ICommandLineModule> module(ICommandLineOptionsModule::createModule(
             "convert-tpr", "Dummy Info", ConvertTprInfo::create()));
     runTest(module.get());
 };
@@ -80,14 +80,14 @@ TEST_F(HelpwritingTest, ConvertTprWritesHelp)
 
 TEST_F(HelpwritingTest, DumpWritesHelp)
 {
-    const std::unique_ptr<gmx::ICommandLineModule> module(
-            gmx::ICommandLineOptionsModule::createModule("dump", "Dummy Info", DumpInfo::create()));
+    const std::unique_ptr<ICommandLineModule> module(
+            ICommandLineOptionsModule::createModule("dump", "Dummy Info", DumpInfo::create()));
     runTest(module.get());
 };
 
 TEST_F(HelpwritingTest, ReportMethodsWritesHelp)
 {
-    const std::unique_ptr<gmx::ICommandLineModule> module(gmx::ICommandLineOptionsModule::createModule(
+    const std::unique_ptr<ICommandLineModule> module(ICommandLineOptionsModule::createModule(
             "report-methods", "Dummy Info", ReportMethodsInfo::create()));
     runTest(module.get());
 };

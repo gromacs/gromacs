@@ -88,7 +88,7 @@ TEST_F(ConvertTprTest, selectIndexTest)
     StdioTestHelper stdioHelper(&fileManager);
     stdioHelper.redirectStringToStdin("Protein-H\n");
 
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
     {
         gmx_mtop_t top_after;
@@ -118,7 +118,7 @@ TEST_F(ConvertTprNoVelocityTest, selectIndexTestWithoutVelocity)
     StdioTestHelper stdioHelper(&fileManager);
     stdioHelper.redirectStringToStdin("Protein-H\n");
 
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
     {
         gmx_mtop_t top_after;

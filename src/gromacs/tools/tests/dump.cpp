@@ -83,7 +83,7 @@ std::unique_ptr<TprAndFileManager> DumpTest::s_tprFileManager;
 
 void DumpTest::runTest(CommandLine* cmdline)
 {
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::DumpInfo::create, cmdline));
+    EXPECT_EQ(0, CommandLineTestHelper::runModuleFactory(&DumpInfo::create, cmdline));
 }
 
 TEST_F(DumpTest, WorksWithTpr)

@@ -407,9 +407,7 @@ INSTANTIATE_TEST_SUITE_P(Works,
 
 using DumpTestParameters = std::tuple<const char*, double>;
 
-class TrjconvDumpTest :
-    public gmx::test::CommandLineTestBase,
-    public ::testing::WithParamInterface<DumpTestParameters>
+class TrjconvDumpTest : public CommandLineTestBase, public ::testing::WithParamInterface<DumpTestParameters>
 {
 };
 
@@ -433,7 +431,7 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     setInputFile("-f", std::get<0>(GetParam()));
     const real dumpTime = std::get<1>(GetParam());
     cmdline.addOption("-dump", std::to_string(dumpTime));
-    std::string outputFile = setOutputFile("-o", "dumped-frame.trr", gmx::test::NoTextMatch());
+    std::string outputFile = setOutputFile("-o", "dumped-frame.trr", NoTextMatch());
 
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 

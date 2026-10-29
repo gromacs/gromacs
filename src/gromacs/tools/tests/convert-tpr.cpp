@@ -96,7 +96,7 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
                                                    extendByString };
     CommandLine                 cmdline(command);
 
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
     {
         gmx_mtop_t top_after;
@@ -104,7 +104,7 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
         t_state    state_after;
         read_tpx_state(outTprFilename, &ir_after, &state_after, &top_after);
 
-        EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(extendByPs / ir.delta_t));
+        EXPECT_EQ(ir_after.nsteps, originalNStep + roundToInt64(extendByPs / ir.delta_t));
     }
 
 
@@ -118,7 +118,7 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
         "-extend",     extendByString
     };
     CommandLine secondCmdline(secondCommand);
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &secondCmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &secondCmdline);
 
 
     {
@@ -127,7 +127,7 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
         t_state    state_after;
         read_tpx_state(anotherOutTprFilename, &ir_after, &state_after, &top_after);
 
-        EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(2 * extendByPs / ir.delta_t));
+        EXPECT_EQ(ir_after.nsteps, originalNStep + roundToInt64(2 * extendByPs / ir.delta_t));
     }
 }
 
@@ -151,7 +151,7 @@ TEST_F(ConvertTprTest, UntilRuntimeExtensionTest)
     };
     CommandLine cmdline(command);
 
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
     {
         gmx_mtop_t top_after;
@@ -159,7 +159,7 @@ TEST_F(ConvertTprTest, UntilRuntimeExtensionTest)
         t_state    state_after;
         read_tpx_state(outTprFilename, &ir_after, &state_after, &top_after);
 
-        EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(untilPs / ir.delta_t));
+        EXPECT_EQ(ir_after.nsteps, originalNStep + roundToInt64(untilPs / ir.delta_t));
     }
 }
 
@@ -183,7 +183,7 @@ TEST_F(ConvertTprTest, nstepRuntimeExtensionTest)
     };
     CommandLine cmdline(command);
 
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
     {
         gmx_mtop_t top_after;
@@ -212,7 +212,7 @@ TEST_F(ConvertTprTest, generateVelocitiesTest)
                                     "-velocity_seed",        "12345" };
     CommandLine       cmdline(command);
 
-    gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);
+    CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
     {
         gmx_mtop_t top_after;
@@ -220,9 +220,9 @@ TEST_F(ConvertTprTest, generateVelocitiesTest)
         t_state    state_after;
         read_tpx_state(outTprFilename, &ir_after, &state_after, &top_after);
 
-        gmx::test::TestReferenceData    data;
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
-        std::vector<real>               result;
+        TestReferenceData    data;
+        TestReferenceChecker checker(data.rootChecker());
+        std::vector<real>    result;
         // Check that the X coordinates did NOT change
         for (int i = 0; i < state.x.size(); i++)
         {
@@ -253,9 +253,8 @@ TEST_F(ConvertTprNoVelocityTest, refuseToGenerateVelocitiesWhenTprDidNotHaveVelo
                                     "-velocity_seed",        "12345" };
     CommandLine       cmdline(command);
 
-    GMX_EXPECT_DEATH_IF_SUPPORTED(
-            gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline),
-            "does not contain velocities");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline),
+                                  "does not contain velocities");
 }
 
 } // namespace
