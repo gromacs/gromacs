@@ -145,3 +145,15 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Updated references to the paper describing AMBER14SB and AMBER19SB conversion and validation
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The paper describing the conversion and validation of AMBER14SB and AMBER19SB
+has been published in J. Chem. Theory Comput.,
+`doi:10.1021/acs.jctc.6c01592 <https://doi.org/10.1021/acs.jctc.6c01592>`_.
+The force field files and the documentation now refer to it instead of the
+preprint, and :ref:`gmx grompp` asks to cite it when these force fields,
+Amber LEaP-like dihedral atom reordering or residue-type-specific CMAPs are used.
+
+:issue:`5786`

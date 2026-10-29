@@ -35,10 +35,10 @@ included with |Gromacs| are:
    Proteins 78, 1950-58, 2010)
 
 -  AMBER14SB protein (Maier, J. A. et al., J. Chem. Theory Comput. 11,
-   3696–3713, 2015))
+   3696–3713, 2015; Miletić, V. et al., J. Chem. Theory Comput., 2026)
 
 -  AMBER19SB protein (Tian, C. et al., J. Chem. Theory Comput. 16,
-   528–552, 2020)
+   528–552, 2020; Miletić, V. et al., J. Chem. Theory Comput., 2026)
 
 -  AMBERGS force field (Garcia & Sanbonmatsu, PNAS 99, 2782-2787, 2002)
 

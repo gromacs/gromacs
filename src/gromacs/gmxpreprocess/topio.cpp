@@ -1173,6 +1173,19 @@ static char** read_topol(const char*                                 infile,
         }
     }
 
+    const auto& cmapResTypes = interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapResTypes_;
+    if (cpp_find_define(&handle, "_FF_AMBER14SB") != nullptr
+        || cpp_find_define(&handle, "_FF_AMBER19SB") != nullptr
+        || cpp_find_define(&handle, "_FF_AMBER_LEAP_ATOM_REORDERING") != nullptr
+        || std::any_of(cmapResTypes.begin(),
+                       cmapResTypes.end(),
+                       [](const std::string& resType) { return !resType.empty(); }))
+    {
+        // This paper describes the port of Amber ff14SB and ff19SB, including
+        // the Amber LEaP-like dihedral atom reordering and residue-type-specific CMAPs
+        please_cite(stdout, "Miletic2026");
+    }
+
     if (cpp_find_define(&handle, "_FF_GROMOS96") != nullptr)
     {
         wi->addWarning(

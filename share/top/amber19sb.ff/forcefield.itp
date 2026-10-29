@@ -1,9 +1,8 @@
 ; AMBER19SB (Amber ff19SB) protein
 ;
-; Converted using the Gromologist library and manual modification
-; <https://gitlab.com/KomBioMol/gromologist>
-; Validated using the Barnsteen workflow
-; <https://gitlab.mpcdf.mpg.de/barnsteen/workflow>
+; If you are using this force field in GROMACS, please cite
+; Miletic, V. et al. J. Chem. Theory Comput. (2026).
+; <https://doi.org/10.1021/acs.jctc.6c01592>
 ;
 ; This force field requires the usage of GROMACS version 2026 or later
 ;
