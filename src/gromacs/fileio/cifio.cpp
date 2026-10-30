@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <set>
@@ -67,9 +68,9 @@
 // strictly inside this translation unit so that cifio.h stays free of any
 // third-party types.
 //
-// Note that its accessors are not const-qualified: CifFile::GetBlock(),
-// Block::GetTablePtr(), ISTable::IsColumnPresent() and ISTable::GetColumn()
-// all need a non-const object even though none of them modifies the file.
+// Note that most of its accessors are not const-qualified: CifFile::GetBlock(),
+// Block::GetTablePtr() and ISTable::IsColumnPresent() all need a non-const
+// object even though none of them modifies the file.
 // The reading code below therefore has to hold non-const pointers throughout,
 // however read-only its intent.
 #include "CifFile.h"
@@ -86,48 +87,54 @@ bool isCifNull(std::string_view s)
     return s.empty() || s == "?" || s == ".";
 }
 
-//! Fetch a whole atom_site column by name; returns an empty vector if absent.
-std::vector<std::string> getColumn(ISTable* table, const std::string& name)
-{
-    std::vector<std::string> col;
-    if (table != nullptr && table->IsColumnPresent(name))
-    {
-        table->GetColumn(col, name);
-    }
-    return col;
-}
-
-//! Value of column \p col at row \p row, or an empty view if the column is absent.
-std::string_view cell(gmx::ArrayRef<const std::string> col, size_t row)
-{
-    return (row < col.size()) ? std::string_view(col[row]) : std::string_view();
-}
-
-/*! \brief Value of column \p col at row \p row as a null-terminated C string.
+/*! \brief The first of \p candidates that is a column of \p table, or an empty string if none is.
  *
- * The C library conversion functions and the symbol table need a terminated
- * string, which a std::string_view cannot promise. An absent column yields "".
+ * Many items are optional, so the reading loops resolve each column name once
+ * with this and then address cells with ISTable::operator() through valueAt().
  */
-const char* cellCstr(gmx::ArrayRef<const std::string> col, size_t row)
+std::string findColumn(ISTable* table, std::initializer_list<std::string> candidates)
 {
-    return (row < col.size()) ? col[row].c_str() : "";
+    for (const std::string& name : candidates)
+    {
+        if (table->IsColumnPresent(name))
+        {
+            return name;
+        }
+    }
+    return std::string();
+}
+
+//! Value at \p row of \p column as resolved by findColumn(); "" when no column was found.
+const std::string& valueAt(const ISTable& table, unsigned int row, const std::string& column)
+{
+    static const std::string c_absent;
+    return column.empty() ? c_absent : table(row, column);
 }
 
 /*! \brief Row indices of the atom_site table that belong to the first model.
  *
  * mmCIF files may hold several NMR/ensemble models in one atom_site loop; like
- * the PDB reader we keep only the first one. If there is no model column, all
- * rows are returned.
+ * the PDB reader we keep only the first one.
  */
 std::vector<unsigned int> firstModelRows(ISTable* atomSite)
 {
     const unsigned int        nRows = atomSite->GetNumRows();
     std::vector<unsigned int> rows;
-    std::vector<std::string>  model = getColumn(atomSite, "pdbx_PDB_model_num");
-    const std::string         first = model.empty() ? std::string() : model[0];
+    rows.reserve(nRows);
+    const std::string modelColumn = "pdbx_PDB_model_num";
+    if (nRows == 0 || !atomSite->IsColumnPresent(modelColumn))
+    {
+        // Without a model column, every row belongs to the one model there is.
+        for (unsigned int r = 0; r < nRows; r++)
+        {
+            rows.push_back(r);
+        }
+        return rows;
+    }
+    const std::string& firstModel = (*atomSite)(0, modelColumn);
     for (unsigned int r = 0; r < nRows; r++)
     {
-        if (model.empty() || model[r] == first)
+        if ((*atomSite)(r, modelColumn) == firstModel)
         {
             rows.push_back(r);
         }
@@ -170,7 +177,7 @@ ISTable* parseFirstBlock(const std::filesystem::path& infile,
 }
 
 //! Convert unit-cell parameters (in Angstrom / degrees) to a GROMACS box (nm).
-void cellToBox(double a, double b, double c, double alpha, double beta, double gamma, matrix box)
+void unitCellToBox(double a, double b, double c, double alpha, double beta, double gamma, matrix box)
 {
     // Same construction as read_cryst1() in pdbio.cpp, Angstrom -> nm.
     const double fa = a * 0.1;
@@ -199,22 +206,22 @@ void cellToBox(double a, double b, double c, double alpha, double beta, double g
 
 /*! \brief Read the unit cell of \p block into \p box / \p pbcType.
  *
- * Returns whether a usable cell was found, and touches \p box and \p pbcType
+ * Returns whether a usable unit cell was found, and touches \p box and \p pbcType
  * only when it was. Callers must therefore have set them to their no-box
- * defaults beforehand: an mmCIF file legitimately carries no cell at all (an
+ * defaults beforehand: an mmCIF file legitimately carries no unit cell at all (an
  * NMR ensemble, for one), so that is reported by returning false rather than
- * treated as an error. A cell that is present but unusable does warn, since
+ * treated as an error. A unit cell that is present but unusable does warn, since
  * unlike an absent one it means the file is malformed.
  */
-bool readCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix box)
+bool readUnitCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix box)
 {
-    ISTable* cellTable = cif->GetBlock(block).GetTablePtr("cell");
-    if (cellTable == nullptr || cellTable->GetNumRows() == 0)
+    ISTable* unitCellTable = cif->GetBlock(block).GetTablePtr("cell");
+    if (unitCellTable == nullptr || unitCellTable->GetNumRows() == 0)
     {
         return false;
     }
-    auto get = [cellTable](const char* name) -> std::string
-    { return cellTable->IsColumnPresent(name) ? (*cellTable)(0, name) : std::string(); };
+    auto get = [unitCellTable](const char* name) -> std::string
+    { return unitCellTable->IsColumnPresent(name) ? (*unitCellTable)(0, name) : std::string(); };
 
     const std::string lengths[DIM] = { get("length_a"), get("length_b"), get("length_c") };
     double            edge[DIM];
@@ -249,7 +256,8 @@ bool readCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix b
     };
     if (box != nullptr)
     {
-        cellToBox(edge[XX], edge[YY], edge[ZZ], angle("angle_alpha"), angle("angle_beta"), angle("angle_gamma"), box);
+        unitCellToBox(
+                edge[XX], edge[YY], edge[ZZ], angle("angle_alpha"), angle("angle_beta"), angle("angle_gamma"), box);
     }
     if (pbcType != nullptr)
     {
@@ -635,13 +643,33 @@ std::string connectionKey(std::string_view asym, std::string_view seq, std::stri
     return key;
 }
 
-//! Value of \p primary at row \p row, falling back to \p fallback when it is null.
-std::string_view preferredCell(gmx::ArrayRef<const std::string> primary,
-                               gmx::ArrayRef<const std::string> fallback,
-                               size_t                           row)
+//! The struct_conn columns that address one bond partner, each with the column to fall back on.
+struct PartnerColumns
 {
-    const std::string_view value = cell(primary, row);
-    return isCifNull(value) ? cell(fallback, row) : value;
+    std::string asym, asymFallback;
+    std::string seq, seqFallback;
+    std::string atom, atomFallback;
+};
+
+//! Resolve the columns of bond partner \p ptnr ("ptnr1" or "ptnr2") in \p structConn.
+PartnerColumns partnerColumns(ISTable* structConn, const std::string& ptnr)
+{
+    return { findColumn(structConn, { ptnr + "_auth_asym_id" }),
+             findColumn(structConn, { ptnr + "_label_asym_id" }),
+             findColumn(structConn, { ptnr + "_auth_seq_id" }),
+             findColumn(structConn, { ptnr + "_label_seq_id" }),
+             findColumn(structConn, { ptnr + "_label_atom_id" }),
+             findColumn(structConn, { ptnr + "_auth_atom_id" }) };
+}
+
+//! Value of \p column at \p row of \p table, or of \p fallback when that is null.
+const std::string& preferredValue(const ISTable&     table,
+                                  unsigned int       row,
+                                  const std::string& column,
+                                  const std::string& fallback)
+{
+    const std::string& value = valueAt(table, row, column);
+    return isCifNull(value) ? valueAt(table, row, fallback) : value;
 }
 
 /*! \brief Add the bonds listed in the struct_conn table of \p block to \p conect.
@@ -670,34 +698,33 @@ void readStructConn(CifFile* cif, const std::string& block, const t_atoms* atoms
                           i);
     }
 
-    const std::vector<std::string> authAsym1  = getColumn(structConn, "ptnr1_auth_asym_id");
-    const std::vector<std::string> labelAsym1 = getColumn(structConn, "ptnr1_label_asym_id");
-    const std::vector<std::string> authSeq1   = getColumn(structConn, "ptnr1_auth_seq_id");
-    const std::vector<std::string> labelSeq1  = getColumn(structConn, "ptnr1_label_seq_id");
-    const std::vector<std::string> labelAtom1 = getColumn(structConn, "ptnr1_label_atom_id");
-    const std::vector<std::string> authAtom1  = getColumn(structConn, "ptnr1_auth_atom_id");
-    const std::vector<std::string> authAsym2  = getColumn(structConn, "ptnr2_auth_asym_id");
-    const std::vector<std::string> labelAsym2 = getColumn(structConn, "ptnr2_label_asym_id");
-    const std::vector<std::string> authSeq2   = getColumn(structConn, "ptnr2_auth_seq_id");
-    const std::vector<std::string> labelSeq2  = getColumn(structConn, "ptnr2_label_seq_id");
-    const std::vector<std::string> labelAtom2 = getColumn(structConn, "ptnr2_label_atom_id");
-    const std::vector<std::string> authAtom2  = getColumn(structConn, "ptnr2_auth_atom_id");
+    const PartnerColumns partner1Columns = partnerColumns(structConn, "ptnr1");
+    const PartnerColumns partner2Columns = partnerColumns(structConn, "ptnr2");
+    // The atom a struct_conn row names as one partner, or atomIndex.end() if it was not read.
+    auto findPartner = [&atomIndex, structConn](unsigned int row, const PartnerColumns& columns)
+    {
+        return atomIndex.find(
+                connectionKey(preferredValue(*structConn, row, columns.asym, columns.asymFallback),
+                              preferredValue(*structConn, row, columns.seq, columns.seqFallback),
+                              preferredValue(*structConn, row, columns.atom, columns.atomFallback)));
+    };
 
     int numUnresolved = 0;
     for (unsigned int r = 0; r < structConn->GetNumRows(); r++)
     {
-        const auto first  = atomIndex.find(connectionKey(preferredCell(authAsym1, labelAsym1, r),
-                                                        preferredCell(authSeq1, labelSeq1, r),
-                                                        preferredCell(labelAtom1, authAtom1, r)));
-        const auto second = atomIndex.find(connectionKey(preferredCell(authAsym2, labelAsym2, r),
-                                                         preferredCell(authSeq2, labelSeq2, r),
-                                                         preferredCell(labelAtom2, authAtom2, r)));
-        if (first == atomIndex.end() || second == atomIndex.end())
+        const auto partner1 = findPartner(r, partner1Columns);
+        if (partner1 == atomIndex.end())
         {
             numUnresolved++;
             continue;
         }
-        gmx_conect_add(conect, first->second, second->second);
+        const auto partner2 = findPartner(r, partner2Columns);
+        if (partner2 == atomIndex.end())
+        {
+            numUnresolved++;
+            continue;
+        }
+        gmx_conect_add(conect, partner1->second, partner2->second);
     }
     if (numUnresolved > 0)
     {
@@ -747,44 +774,29 @@ void CifIO::read(const std::filesystem::path& infile,
         return;
     }
 
-    // Read the columns we care about once each; author (auth_*) items match the
-    // PDB semantics GROMACS users expect, with the label_* items as fallback.
-    const std::vector<std::string> group    = getColumn(atomSite, "group_PDB");
-    const std::vector<std::string> serial   = getColumn(atomSite, "id");
-    const std::vector<std::string> element  = getColumn(atomSite, "type_symbol");
-    std::vector<std::string>       atomName = getColumn(atomSite, "auth_atom_id");
-    if (atomName.empty())
-    {
-        atomName = getColumn(atomSite, "label_atom_id");
-    }
-    std::vector<std::string> resName = getColumn(atomSite, "auth_comp_id");
-    if (resName.empty())
-    {
-        resName = getColumn(atomSite, "label_comp_id");
-    }
-    std::vector<std::string> chain = getColumn(atomSite, "auth_asym_id");
-    if (chain.empty())
-    {
-        chain = getColumn(atomSite, "label_asym_id");
-    }
-    std::vector<std::string> seq = getColumn(atomSite, "auth_seq_id");
-    if (seq.empty())
-    {
-        seq = getColumn(atomSite, "label_seq_id");
-    }
-    const std::vector<std::string> insCode = getColumn(atomSite, "pdbx_PDB_ins_code");
-    const std::vector<std::string> altLoc  = getColumn(atomSite, "label_alt_id");
-    const std::vector<std::string> cartnX  = getColumn(atomSite, "Cartn_x");
-    const std::vector<std::string> cartnY  = getColumn(atomSite, "Cartn_y");
-    const std::vector<std::string> cartnZ  = getColumn(atomSite, "Cartn_z");
-    const std::vector<std::string> occCol  = getColumn(atomSite, "occupancy");
-    const std::vector<std::string> bfacCol = getColumn(atomSite, "B_iso_or_equiv");
+    // Resolve the column of each item we read once; author (auth_*) items match
+    // the PDB semantics GROMACS users expect, with the label_* items as fallback.
+    const std::string groupColumn    = findColumn(atomSite, { "group_PDB" });
+    const std::string serialColumn   = findColumn(atomSite, { "id" });
+    const std::string elementColumn  = findColumn(atomSite, { "type_symbol" });
+    const std::string atomNameColumn = findColumn(atomSite, { "auth_atom_id", "label_atom_id" });
+    const std::string resNameColumn  = findColumn(atomSite, { "auth_comp_id", "label_comp_id" });
+    const std::string chainColumn    = findColumn(atomSite, { "auth_asym_id", "label_asym_id" });
+    const std::string seqColumn      = findColumn(atomSite, { "auth_seq_id", "label_seq_id" });
+    const std::string insCodeColumn  = findColumn(atomSite, { "pdbx_PDB_ins_code" });
+    const std::string altLocColumn   = findColumn(atomSite, { "label_alt_id" });
+    const std::string xColumn        = findColumn(atomSite, { "Cartn_x" });
+    const std::string yColumn        = findColumn(atomSite, { "Cartn_y" });
+    const std::string zColumn        = findColumn(atomSite, { "Cartn_z" });
+    const std::string occupColumn    = findColumn(atomSite, { "occupancy" });
+    const std::string bfacColumn     = findColumn(atomSite, { "B_iso_or_equiv" });
 
+    const ISTable&                  site = *atomSite;
     const std::vector<unsigned int> rows = firstModelRows(atomSite);
 
-    int              natom     = 0;
-    int              chainnum  = 0;
-    std::string_view prevChain = cell(chain, rows.empty() ? 0 : rows[0]);
+    int natom    = 0;
+    int chainnum = 0;
+    std::string_view prevChain = rows.empty() ? std::string_view() : valueAt(site, rows[0], chainColumn);
     // mmCIF permits chain identifiers of more than one character, while t_resinfo
     // stores a single char, so collect whatever has to be truncated and report it
     // once rather than per atom.
@@ -799,16 +811,16 @@ void CifIO::read(const std::filesystem::path& infile,
                                       atoms->nr)));
         }
 
-        const std::string_view chainStr = cell(chain, r);
+        const std::string_view chainStr = valueAt(site, r, chainColumn);
         if (natom > 0 && chainStr != prevChain)
         {
             chainnum++;
         }
         prevChain = chainStr;
 
-        const char*            resnm   = cellCstr(resName, r);
-        const int              resnr   = std::atoi(cellCstr(seq, r));
-        const std::string_view ins     = cell(insCode, r);
+        const char*            resnm   = valueAt(site, r, resNameColumn).c_str();
+        const int              resnr   = std::atoi(valueAt(site, r, seqColumn).c_str());
+        const std::string_view ins     = valueAt(site, r, insCodeColumn);
         const unsigned char    resic   = isCifNull(ins) ? ' ' : static_cast<unsigned char>(ins[0]);
         const char             chainid = chainStr.empty() ? ' ' : chainStr[0];
         if (chainStr.size() > 1)
@@ -830,32 +842,32 @@ void CifIO::read(const std::filesystem::path& infile,
             atoms->atom[natom].resind = atoms->atom[natom - 1].resind;
         }
 
-        const char* elem              = cellCstr(element, r);
-        atoms->atomname[natom]        = put_symtab(symtab, cellCstr(atomName, r));
+        const std::string& atomName   = valueAt(site, r, atomNameColumn);
+        const char*        elem       = valueAt(site, r, elementColumn).c_str();
+        atoms->atomname[natom]        = put_symtab(symtab, atomName.c_str());
         atoms->atom[natom].m          = 0.0;
         atoms->atom[natom].q          = 0.0;
         atoms->atom[natom].atomnumber = 0;
         std::strncpy(atoms->atom[natom].elem, elem, sizeof(atoms->atom[natom].elem) - 1);
         atoms->atom[natom].elem[sizeof(atoms->atom[natom].elem) - 1] = '\0';
 
-        x[natom][XX] = std::strtod(cellCstr(cartnX, r), nullptr) * 0.1;
-        x[natom][YY] = std::strtod(cellCstr(cartnY, r), nullptr) * 0.1;
-        x[natom][ZZ] = std::strtod(cellCstr(cartnZ, r), nullptr) * 0.1;
+        x[natom][XX] = std::strtod(valueAt(site, r, xColumn).c_str(), nullptr) * 0.1;
+        x[natom][YY] = std::strtod(valueAt(site, r, yColumn).c_str(), nullptr) * 0.1;
+        x[natom][ZZ] = std::strtod(valueAt(site, r, zColumn).c_str(), nullptr) * 0.1;
 
         if (atoms->pdbinfo != nullptr)
         {
-            const std::string_view group_r = cell(group, r);
-            const std::string_view alt     = cell(altLoc, r);
-            atoms->pdbinfo[natom].type =
-                    (group_r == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
-            atoms->pdbinfo[natom].atomnr = std::atoi(cellCstr(serial, r));
+            const std::string_view group = valueAt(site, r, groupColumn);
+            const std::string_view alt   = valueAt(site, r, altLocColumn);
+            atoms->pdbinfo[natom].type = (group == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
+            atoms->pdbinfo[natom].atomnr = std::atoi(valueAt(site, r, serialColumn).c_str());
             atoms->pdbinfo[natom].altloc = isCifNull(alt) ? ' ' : alt[0];
             std::strncpy(atoms->pdbinfo[natom].atomnm,
-                         cellCstr(atomName, r),
+                         atomName.c_str(),
                          sizeof(atoms->pdbinfo[natom].atomnm) - 1);
             atoms->pdbinfo[natom].atomnm[sizeof(atoms->pdbinfo[natom].atomnm) - 1] = '\0';
-            atoms->pdbinfo[natom].occup        = std::strtod(cellCstr(occCol, r), nullptr);
-            atoms->pdbinfo[natom].bfac         = std::strtod(cellCstr(bfacCol, r), nullptr);
+            atoms->pdbinfo[natom].occup = std::strtod(valueAt(site, r, occupColumn).c_str(), nullptr);
+            atoms->pdbinfo[natom].bfac = std::strtod(valueAt(site, r, bfacColumn).c_str(), nullptr);
             atoms->pdbinfo[natom].bAnisotropic = FALSE;
         }
         natom++;
@@ -876,7 +888,7 @@ void CifIO::read(const std::filesystem::path& infile,
                      list.c_str());
     }
 
-    readCell(cif.get(), block, pbcType, box);
+    readUnitCell(cif.get(), block, pbcType, box);
 
     if (conect != nullptr)
     {
@@ -1019,9 +1031,10 @@ void CifIO::write(const std::filesystem::path& outfile,
 struct CifTrajectory
 {
     std::unique_ptr<CifFile>               cif;
-    std::vector<std::string>               cartnX;
-    std::vector<std::string>               cartnY;
-    std::vector<std::string>               cartnZ;
+    ISTable*                               atomSite = nullptr; //!< owned by cif
+    std::string                            xColumn;
+    std::string                            yColumn;
+    std::string                            zColumn;
     std::vector<std::vector<unsigned int>> modelRows; //!< row indices per model, in file order
     int                                    natoms  = 0;
     bool                                   haveBox = false;
@@ -1038,18 +1051,20 @@ CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
     {
         return nullptr;
     }
-    traj->cartnX = getColumn(atomSite, "Cartn_x");
-    traj->cartnY = getColumn(atomSite, "Cartn_y");
-    traj->cartnZ = getColumn(atomSite, "Cartn_z");
+    traj->atomSite = atomSite;
+    traj->xColumn  = findColumn(atomSite, { "Cartn_x" });
+    traj->yColumn  = findColumn(atomSite, { "Cartn_y" });
+    traj->zColumn  = findColumn(atomSite, { "Cartn_z" });
 
-    const std::vector<std::string> model = getColumn(atomSite, "pdbx_PDB_model_num");
-    const unsigned int             nRows = atomSite->GetNumRows();
-    std::vector<std::string>       order; // model ids in first-seen order
+    // Without a model column every row reads as model "", so all go to one model.
+    const std::string        modelColumn = findColumn(atomSite, { "pdbx_PDB_model_num" });
+    const unsigned int       nRows       = atomSite->GetNumRows();
+    std::vector<std::string> order; // model ids in first-seen order
     for (unsigned int r = 0; r < nRows; r++)
     {
-        const std::string id = model.empty() ? std::string("1") : model[r];
-        auto              it = std::find(order.begin(), order.end(), id);
-        size_t            mi;
+        const std::string& id = valueAt(*atomSite, r, modelColumn);
+        auto               it = std::find(order.begin(), order.end(), id);
+        size_t             mi;
         if (it == order.end())
         {
             mi = order.size();
@@ -1064,7 +1079,7 @@ CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
     }
     traj->natoms = traj->modelRows.empty() ? 0 : static_cast<int>(traj->modelRows[0].size());
 
-    traj->haveBox = readCell(traj->cif.get(), block, nullptr, traj->box);
+    traj->haveBox = readUnitCell(traj->cif.get(), block, nullptr, traj->box);
 
     return traj.release();
 }
@@ -1081,14 +1096,15 @@ bool CifIO::readTrajectoryFrame(CifTrajectory* traj, t_trxframe* fr)
         return false;
     }
     const std::vector<unsigned int>& rows = traj->modelRows[traj->cursor];
+    const ISTable&                   site = *traj->atomSite;
     fr->natoms                            = traj->natoms;
     const int n                           = std::min(traj->natoms, static_cast<int>(rows.size()));
     for (int i = 0; i < n; i++)
     {
         const unsigned int r = rows[i];
-        fr->x[i][XX]         = std::strtod(cellCstr(traj->cartnX, r), nullptr) * 0.1;
-        fr->x[i][YY]         = std::strtod(cellCstr(traj->cartnY, r), nullptr) * 0.1;
-        fr->x[i][ZZ]         = std::strtod(cellCstr(traj->cartnZ, r), nullptr) * 0.1;
+        fr->x[i][XX]         = std::strtod(valueAt(site, r, traj->xColumn).c_str(), nullptr) * 0.1;
+        fr->x[i][YY]         = std::strtod(valueAt(site, r, traj->yColumn).c_str(), nullptr) * 0.1;
+        fr->x[i][ZZ]         = std::strtod(valueAt(site, r, traj->zColumn).c_str(), nullptr) * 0.1;
     }
     fr->bX = TRUE;
     if (traj->haveBox)
