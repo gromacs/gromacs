@@ -90,9 +90,12 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
 
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename = fileManager.getTemporaryFilePath("extended.tpr");
-    const std::string           command[]      = { "convert-tpr",           "-s",
-                                                   tprFileHandle.tprName(), "-o",
-                                                   outTprFilename.string(), "-extend",
+    const std::string           command[]      = { "convert-tpr",
+                                                   "-s",
+                                                   tprFileHandle.tprName().string(),
+                                                   "-o",
+                                                   outTprFilename.string(),
+                                                   "-extend",
                                                    extendByString };
     CommandLine                 cmdline(command);
 
@@ -145,11 +148,14 @@ TEST_F(ConvertTprTest, UntilRuntimeExtensionTest)
 
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename = fileManager.getTemporaryFilePath("extended.tpr");
-    const std::string           command[]      = {
-        "convert-tpr", "-s",         tprFileHandle.tprName(), "-o", outTprFilename.string(),
-        "-until",      untilPsString
-    };
-    CommandLine cmdline(command);
+    const std::string           command[]      = { "convert-tpr",
+                                                   "-s",
+                                                   tprFileHandle.tprName().string(),
+                                                   "-o",
+                                                   outTprFilename.string(),
+                                                   "-until",
+                                                   untilPsString };
+    CommandLine                 cmdline(command);
 
     CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
 
@@ -178,7 +184,7 @@ TEST_F(ConvertTprTest, nstepRuntimeExtensionTest)
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename = fileManager.getTemporaryFilePath("extended.tpr");
     const std::string           command[]      = {
-        "convert-tpr", "-s",     tprFileHandle.tprName(), "-o", outTprFilename.string(),
+        "convert-tpr", "-s",     tprFileHandle.tprName().string(), "-o", outTprFilename.string(),
         "-nsteps",     nstepsStr
     };
     CommandLine cmdline(command);
@@ -205,11 +211,16 @@ TEST_F(ConvertTprTest, generateVelocitiesTest)
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename =
             fileManager.getTemporaryFilePath("new_velocities.tpr");
-    const std::string command[] = { "convert-tpr",           "-s",
-                                    tprFileHandle.tprName(), "-o",
-                                    outTprFilename.string(), "-generate_velocities",
-                                    "-velocity_temp",        "300",
-                                    "-velocity_seed",        "12345" };
+    const std::string command[] = { "convert-tpr",
+                                    "-s",
+                                    tprFileHandle.tprName().string(),
+                                    "-o",
+                                    outTprFilename.string(),
+                                    "-generate_velocities",
+                                    "-velocity_temp",
+                                    "300",
+                                    "-velocity_seed",
+                                    "12345" };
     CommandLine       cmdline(command);
 
     CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline);
@@ -246,11 +257,16 @@ TEST_F(ConvertTprNoVelocityTest, refuseToGenerateVelocitiesWhenTprDidNotHaveVelo
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename =
             fileManager.getTemporaryFilePath("new_velocities.tpr");
-    const std::string command[] = { "convert-tpr",           "-s",
-                                    tprFileHandle.tprName(), "-o",
-                                    outTprFilename.string(), "-generate_velocities",
-                                    "-velocity_temp",        "300",
-                                    "-velocity_seed",        "12345" };
+    const std::string command[] = { "convert-tpr",
+                                    "-s",
+                                    tprFileHandle.tprName().string(),
+                                    "-o",
+                                    outTprFilename.string(),
+                                    "-generate_velocities",
+                                    "-velocity_temp",
+                                    "300",
+                                    "-velocity_seed",
+                                    "12345" };
     CommandLine       cmdline(command);
 
     GMX_EXPECT_DEATH_IF_SUPPORTED(CommandLineTestHelper::runModuleFactory(&ConvertTprInfo::create, &cmdline),

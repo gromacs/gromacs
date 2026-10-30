@@ -480,6 +480,11 @@ void CommandLineTestBase::setInputFile(const char* option, const std::string& fi
     setInputFile(option, filename.c_str());
 }
 
+void CommandLineTestBase::setInputFile(const char* option, const std::filesystem::path& filename)
+{
+    setInputFile(option, filename.string().c_str());
+}
+
 void CommandLineTestBase::setModifiableInputFile(const char* option, const std::string& filename)
 {
     setModifiableInputFile(option, filename.c_str());

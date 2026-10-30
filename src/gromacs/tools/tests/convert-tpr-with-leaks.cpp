@@ -81,7 +81,7 @@ TEST_F(ConvertTprTest, selectIndexTest)
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename = fileManager.getTemporaryFilePath("extended.tpr");
     const std::string           command[]      = {
-        "convert-tpr", "-s", tprFileHandle.tprName(), "-o", outTprFilename.string()
+        "convert-tpr", "-s", tprFileHandle.tprName().string(), "-o", outTprFilename.string()
     };
     CommandLine cmdline(command);
 
@@ -111,7 +111,7 @@ TEST_F(ConvertTprNoVelocityTest, selectIndexTestWithoutVelocity)
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename = fileManager.getTemporaryFilePath("extended.tpr");
     const std::string           command[]      = {
-        "convert-tpr", "-s", tprFileHandle.tprName(), "-o", outTprFilename.string()
+        "convert-tpr", "-s", tprFileHandle.tprName().string(), "-o", outTprFilename.string()
     };
     CommandLine cmdline(command);
 

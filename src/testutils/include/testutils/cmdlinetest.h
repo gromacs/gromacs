@@ -420,6 +420,8 @@ public:
     void setInputFile(const char* option, const char* filename);
     //! \copydoc setInputFile(const char *, const char *);
     void setInputFile(const char* option, const std::string& filename);
+    //! \copydoc setInputFile(const char *, const char *);
+    void setInputFile(const char* option, const std::filesystem::path& filename);
     /*! \brief
      * Sets an input file that may be modified. The file is copied to a
      * temporary file, which is used as the test input
