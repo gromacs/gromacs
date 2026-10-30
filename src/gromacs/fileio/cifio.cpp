@@ -142,18 +142,14 @@ std::vector<unsigned int> firstModelRows(ISTable* atomSite)
     return rowNums;
 }
 
-//! Parse \p infile and return the atom_site table of its first data block (or nullptr).
-ISTable* parseFirstBlock(const std::filesystem::path& infile,
-                         std::unique_ptr<CifFile>&    cifOwner,
-                         std::string*                 blockName)
+//! Parse \p infile, throwing when the parser reports an error.
+std::unique_ptr<CifFile> parseCifFile(const std::filesystem::path& infile)
 {
-    CifFile* raw = ParseCifSimple(infile.string());
+    std::unique_ptr<CifFile> cif(ParseCifSimple(infile.string()));
     // ParseCifSimple() always hands back a file object, even for input it could
     // not make sense of: what went wrong is reported in the parsing diagnostics.
-    GMX_RELEASE_ASSERT(raw != nullptr, "ParseCifSimple() should always return a file");
-    // Take ownership before anything below can throw.
-    cifOwner.reset(raw);
-    const std::string& diagnostics = raw->GetParsingDiags();
+    GMX_RELEASE_ASSERT(cif != nullptr, "ParseCifSimple() should always return a file");
+    const std::string& diagnostics = cif->GetParsingDiags();
     const std::string  fileName    = infile.string();
     if (diagnostics.find("ERROR") != std::string::npos)
     {
@@ -164,16 +160,19 @@ ISTable* parseFirstBlock(const std::filesystem::path& infile,
         // Not fatal, but the file is not clean and that should not pass unnoticed.
         std::fprintf(stderr, "WARNING: while parsing %s:\n%s", fileName.c_str(), diagnostics.c_str());
     }
-    if (raw->GetNumBlocks() == 0)
-    {
-        return nullptr;
-    }
-    const std::string block = raw->GetFirstBlockName();
-    if (blockName != nullptr)
-    {
-        *blockName = block;
-    }
-    return raw->GetBlock(block).GetTablePtr("atom_site");
+    return cif;
+}
+
+//! The first data block of \p cif, or nullptr when it has none.
+Block* firstBlock(CifFile* cif)
+{
+    return (cif->GetNumBlocks() == 0) ? nullptr : &cif->GetBlock(cif->GetFirstBlockName());
+}
+
+//! The atom_site table of \p block, or nullptr when there is no block or no such table.
+ISTable* atomSiteTable(Block* block)
+{
+    return (block == nullptr) ? nullptr : block->GetTablePtr("atom_site");
 }
 
 //! Convert unit-cell parameters (in Angstrom / degrees) to a GROMACS box (nm).
@@ -213,9 +212,9 @@ void unitCellToBox(double a, double b, double c, double alpha, double beta, doub
  * treated as an error. A unit cell that is present but unusable does warn, since
  * unlike an absent one it means the file is malformed.
  */
-bool readUnitCell(CifFile* cif, const std::string& block, PbcType* pbcType, matrix box)
+bool readUnitCell(Block& block, PbcType* pbcType, matrix box)
 {
-    ISTable* unitCellTable = cif->GetBlock(block).GetTablePtr("cell");
+    ISTable* unitCellTable = block.GetTablePtr("cell");
     if (unitCellTable == nullptr || unitCellTable->GetNumRows() == 0)
     {
         return false;
@@ -268,11 +267,10 @@ bool readUnitCell(CifFile* cif, const std::string& block, PbcType* pbcType, matr
 }
 
 //! Extract the (possibly extended) PDB entry ID / title of \p block.
-std::string readEntryId(CifFile* cif, const std::string& block)
+std::string readEntryId(Block& block)
 {
-    Block& b = cif->GetBlock(block);
     // _entry.id is the canonical (extended, up to 12 char) identifier.
-    if (ISTable* entry = b.GetTablePtr("entry");
+    if (ISTable* entry = block.GetTablePtr("entry");
         entry != nullptr && entry->GetNumRows() > 0 && entry->IsColumnPresent("id"))
     {
         const std::string id = (*entry)(0, "id");
@@ -282,7 +280,7 @@ std::string readEntryId(CifFile* cif, const std::string& block)
         }
     }
     // Fall back to a human-readable title, then to the deposition database code.
-    if (ISTable* st = b.GetTablePtr("struct");
+    if (ISTable* st = block.GetTablePtr("struct");
         st != nullptr && st->GetNumRows() > 0 && st->IsColumnPresent("title"))
     {
         const std::string title = (*st)(0, "title");
@@ -291,7 +289,7 @@ std::string readEntryId(CifFile* cif, const std::string& block)
             return title;
         }
     }
-    if (ISTable* db = b.GetTablePtr("database_2");
+    if (ISTable* db = block.GetTablePtr("database_2");
         db != nullptr && db->GetNumRows() > 0 && db->IsColumnPresent("database_code"))
     {
         const std::string code = (*db)(0, "database_code");
@@ -680,9 +678,9 @@ const std::string& preferredValue(const ISTable&     table,
  * subset, so the other set of items is used as a fallback. Records naming atoms
  * that were not read, such as those of a further model, are counted and reported.
  */
-void readStructConn(CifFile* cif, const std::string& block, const t_atoms* atoms, int numAtoms, gmx_conect_t* conect)
+void readStructConn(Block& block, const t_atoms* atoms, int numAtoms, gmx_conect_t* conect)
 {
-    ISTable* structConn = cif->GetBlock(block).GetTablePtr("struct_conn");
+    ISTable* structConn = block.GetTablePtr("struct_conn");
     if (structConn == nullptr)
     {
         return;
@@ -763,9 +761,9 @@ void CifIO::read(const std::filesystem::path& infile,
     atoms->haveBState  = FALSE;
     atoms->havePdbInfo = (atoms->pdbinfo != nullptr);
 
-    std::unique_ptr<CifFile> cif;
-    std::string              block;
-    ISTable*                 atomSite = parseFirstBlock(infile, cif, &block);
+    const std::unique_ptr<CifFile> cif      = parseCifFile(infile);
+    Block* const                   block    = firstBlock(cif.get());
+    ISTable* const                 atomSite = atomSiteTable(block);
     if (atomSite == nullptr)
     {
         if (name != nullptr)
@@ -891,24 +889,24 @@ void CifIO::read(const std::filesystem::path& infile,
                      list.c_str());
     }
 
-    readUnitCell(cif.get(), block, pbcType, box);
+    readUnitCell(*block, pbcType, box);
 
     if (conect != nullptr)
     {
-        readStructConn(cif.get(), block, atoms, natom, conect);
+        readStructConn(*block, atoms, natom, conect);
     }
 
     if (name != nullptr)
     {
-        *name = gmx_strdup(readEntryId(cif.get(), block).c_str());
+        *name = gmx_strdup(readEntryId(*block).c_str());
     }
 }
 
 void CifIO::countAtoms(const std::filesystem::path& infile, int* natoms)
 {
-    std::unique_ptr<CifFile> cif;
-    ISTable*                 atomSite = parseFirstBlock(infile, cif, nullptr);
-    *natoms                           = (atomSite == nullptr) ? 0 : firstModelRows(atomSite).size();
+    const std::unique_ptr<CifFile> cif      = parseCifFile(infile);
+    ISTable* const                 atomSite = atomSiteTable(firstBlock(cif.get()));
+    *natoms = (atomSite == nullptr) ? 0 : firstModelRows(atomSite).size();
 }
 
 void CifIO::writeIndexed(const std::filesystem::path& outfile,
@@ -1047,9 +1045,10 @@ struct CifTrajectory
 
 CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
 {
-    auto        traj = std::make_unique<CifTrajectory>();
-    std::string block;
-    ISTable*    atomSite = parseFirstBlock(infile, traj->cif, &block);
+    auto traj               = std::make_unique<CifTrajectory>();
+    traj->cif               = parseCifFile(infile);
+    Block* const   block    = firstBlock(traj->cif.get());
+    ISTable* const atomSite = atomSiteTable(block);
     if (atomSite == nullptr)
     {
         return nullptr;
@@ -1082,7 +1081,7 @@ CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
     }
     traj->natoms = traj->modelRowNums.empty() ? 0 : static_cast<int>(traj->modelRowNums[0].size());
 
-    traj->haveBox = readUnitCell(traj->cif.get(), block, nullptr, traj->box);
+    traj->haveBox = readUnitCell(*block, nullptr, traj->box);
 
     return traj.release();
 }
