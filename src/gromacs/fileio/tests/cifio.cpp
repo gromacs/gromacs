@@ -250,6 +250,49 @@ TEST_F(CifStructureIoTest, RoundTripPreservesLongComponentName)
     sfree(top);
 }
 
+TEST(CifResidueTest, ChainChangeStartsNewResidue)
+{
+    // Two ligands with the same name and number on adjacent rows, as when each
+    // chain numbers its own ligands; only the chain tells them apart.
+    TestFileManager   fileManager;
+    const std::string cifFile = fileManager.getTemporaryFilePath("chains.cif").string();
+    {
+        std::ofstream out(cifFile);
+        out << "data_chains\n"
+               "loop_\n"
+               "_atom_site.group_PDB\n"
+               "_atom_site.id\n"
+               "_atom_site.type_symbol\n"
+               "_atom_site.label_atom_id\n"
+               "_atom_site.label_comp_id\n"
+               "_atom_site.auth_asym_id\n"
+               "_atom_site.auth_seq_id\n"
+               "_atom_site.Cartn_x\n"
+               "_atom_site.Cartn_y\n"
+               "_atom_site.Cartn_z\n"
+               "HETATM 1 C C1 NAG A 401 1.0 1.0 1.0\n"
+               "HETATM 2 C C1 NAG H 401 2.0 2.0 2.0\n";
+    }
+
+    t_topology* top;
+    snew(top, 1);
+    PbcType pbcType = PbcType::Unset;
+    rvec*   x       = nullptr;
+    matrix  box;
+    read_tps_conf(cifFile, top, &pbcType, &x, nullptr, box, FALSE);
+
+    ASSERT_EQ(top->atoms.nr, 2);
+    ASSERT_EQ(top->atoms.nres, 2);
+    EXPECT_EQ(top->atoms.atom[1].resind, 1);
+    EXPECT_EQ(top->atoms.resinfo[0].chainid, 'A');
+    EXPECT_EQ(top->atoms.resinfo[1].chainid, 'H');
+    EXPECT_NE(top->atoms.resinfo[0].chainnum, top->atoms.resinfo[1].chainnum);
+
+    sfree(x);
+    done_top(top);
+    sfree(top);
+}
+
 /*! \brief One atom of the small structures used by the connectivity tests.
  *
  * These are written directly with CifIO rather than through write_sto_conf(),

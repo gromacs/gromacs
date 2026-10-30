@@ -815,8 +815,9 @@ void CifIO::read(const std::filesystem::path& infile,
                                       atoms->nr)));
         }
 
-        const std::string_view chainStr = valueAt(site, rowNum, chainColName);
-        if (natom > 0 && chainStr != prevChain)
+        const std::string_view chainStr     = valueAt(site, rowNum, chainColName);
+        const bool             chainChanged = (natom > 0 && chainStr != prevChain);
+        if (chainChanged)
         {
             chainnum++;
         }
@@ -832,8 +833,10 @@ void CifIO::read(const std::filesystem::path& infile,
             truncatedChains.emplace(chainStr);
         }
 
-        // Start a new residue on any change of number, insertion code or name.
-        if (natom == 0 || atoms->resinfo[atoms->atom[natom - 1].resind].nr != resnr
+        // Start a new residue on any change of chain, number, insertion code or name.
+        // Chains numbered independently can put two residues with the same name and
+        // number next to each other, e.g. a ligand 401 on chain A, then on chain B.
+        if (natom == 0 || chainChanged || atoms->resinfo[atoms->atom[natom - 1].resind].nr != resnr
             || atoms->resinfo[atoms->atom[natom - 1].resind].ic != resic
             || std::strcmp(*atoms->resinfo[atoms->atom[natom - 1].resind].name, resnm) != 0)
         {
