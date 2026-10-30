@@ -421,12 +421,12 @@ static int assign_param(InteractionFunction  ftype,
             break;
         case InteractionFunction::VirtualSite1:
         case InteractionFunction::VirtualSite2:
-        case InteractionFunction::VirtualSite2FlexibleDistance:
+        case InteractionFunction::VirtualSite2FixedDistance:
         case InteractionFunction::VirtualSite3:
-        case InteractionFunction::VirtualSite3FlexibleDistance:
+        case InteractionFunction::VirtualSite3FixedDistance:
         case InteractionFunction::VirtualSite3Outside:
-        case InteractionFunction::VirtualSite4FlexibleDistance:
-        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+        case InteractionFunction::VirtualSite4FixedDistance:
+        case InteractionFunction::VirtualSite4FixedDistanceNormalization:
             newparam->vsite.a = old[0];
             newparam->vsite.b = old[1];
             newparam->vsite.c = old[2];
@@ -434,7 +434,7 @@ static int assign_param(InteractionFunction  ftype,
             newparam->vsite.e = old[4];
             newparam->vsite.f = old[5];
             break;
-        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+        case InteractionFunction::VirtualSite3FixedAngleDistance:
             newparam->vsite.a = old[1] * std::cos(c_deg2Rad * old[0]);
             newparam->vsite.b = old[1] * std::sin(c_deg2Rad * old[0]);
             newparam->vsite.c = old[2];

@@ -198,23 +198,23 @@ InteractionFunction ifunc_index(Directive d, int type)
             switch (type)
             {
                 case 1: return InteractionFunction::VirtualSite2;
-                case 2: return InteractionFunction::VirtualSite2FlexibleDistance;
+                case 2: return InteractionFunction::VirtualSite2FixedDistance;
                 default: gmx_fatal(FARGS, "Invalid vsites2 type %d", type);
             }
         case Directive::d_vsites3:
             switch (type)
             {
                 case 1: return InteractionFunction::VirtualSite3;
-                case 2: return InteractionFunction::VirtualSite3FlexibleDistance;
-                case 3: return InteractionFunction::VirtualSite3FlexibleAngleDistance;
+                case 2: return InteractionFunction::VirtualSite3FixedDistance;
+                case 3: return InteractionFunction::VirtualSite3FixedAngleDistance;
                 case 4: return InteractionFunction::VirtualSite3Outside;
                 default: gmx_fatal(FARGS, "Invalid vsites3 type %d", type);
             }
         case Directive::d_vsites4:
             switch (type)
             {
-                case 1: return InteractionFunction::VirtualSite4FlexibleDistance;
-                case 2: return InteractionFunction::VirtualSite4FlexibleDistanceNormalization;
+                case 1: return InteractionFunction::VirtualSite4FixedDistance;
+                case 2: return InteractionFunction::VirtualSite4FixedDistanceNormalization;
                 default: gmx_fatal(FARGS, "Invalid vsites4 type %d", type);
             }
         case Directive::d_vsitesn: return InteractionFunction::VirtualSiteN;

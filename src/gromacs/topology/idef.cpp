@@ -358,17 +358,17 @@ void printInteractionParameters(gmx::TextWriter* writer, InteractionFunction fty
             break;
         case InteractionFunction::VirtualSite1: writer->ensureEmptyLine(); break;
         case InteractionFunction::VirtualSite2:
-        case InteractionFunction::VirtualSite2FlexibleDistance:
+        case InteractionFunction::VirtualSite2FixedDistance:
             writer->writeLineFormatted("a=%15.8e", iparams.vsite.a);
             break;
         case InteractionFunction::VirtualSite3:
-        case InteractionFunction::VirtualSite3FlexibleDistance:
-        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+        case InteractionFunction::VirtualSite3FixedDistance:
+        case InteractionFunction::VirtualSite3FixedAngleDistance:
             writer->writeLineFormatted("a=%15.8e, b=%15.8e", iparams.vsite.a, iparams.vsite.b);
             break;
         case InteractionFunction::VirtualSite3Outside:
-        case InteractionFunction::VirtualSite4FlexibleDistance:
-        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+        case InteractionFunction::VirtualSite4FixedDistance:
+        case InteractionFunction::VirtualSite4FixedDistanceNormalization:
             writer->writeLineFormatted(
                     "a=%15.8e, b=%15.8e, c=%15.8e", iparams.vsite.a, iparams.vsite.b, iparams.vsite.c);
             break;

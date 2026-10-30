@@ -2395,12 +2395,12 @@ void push_bond(Directive                                                  d,
         {
             switch (ftype)
             {
-                case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+                case InteractionFunction::VirtualSite3FixedAngleDistance:
                 case InteractionFunction::VirtualSite3Outside: break;
                 default:
                     auto message = formatString(
                             "Negative function types only allowed for %s and %s",
-                            interaction_function[InteractionFunction::VirtualSite3FlexibleAngleDistance]
+                            interaction_function[InteractionFunction::VirtualSite3FixedAngleDistance]
                                     .longname,
                             interaction_function[InteractionFunction::VirtualSite3Outside].longname);
                     warning_error_and_exit(wi, message, FARGS);
@@ -2717,7 +2717,7 @@ void push_bond(Directive                                                  d,
                 {
                     switch (ftype)
                     {
-                        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+                        case InteractionFunction::VirtualSite3FixedAngleDistance:
                             param.setForceParameter(0, 360 - param.c0());
                             break;
                         case InteractionFunction::VirtualSite3Outside:

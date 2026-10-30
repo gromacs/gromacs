@@ -297,7 +297,7 @@ static const t_ftupd ftupd[] = {
     { tpxv_Pre96Version76, InteractionFunction::AnharmonicPolarization },
     { tpxv_Pre96Version90, InteractionFunction::FlatBottomedPositionRestraints },
     { tpxv_VSite1, InteractionFunction::VirtualSite1 },
-    { tpxv_VSite2FD, InteractionFunction::VirtualSite2FlexibleDistance },
+    { tpxv_VSite2FD, InteractionFunction::VirtualSite2FixedDistance },
     { tpxv_GenericInternalParameters, InteractionFunction::DensityFitting },
     { tpxv_NNPotIFuncType, InteractionFunction::NeuralNetworkPotentialEnergy },
     { tpxv_Pre96Version69, InteractionFunction::VirialTemperatureUnused },
@@ -2263,18 +2263,18 @@ static void do_iparams(gmx::ISerializer* serializer, InteractionFunction ftype, 
             break;
         case InteractionFunction::VirtualSite1: break; // VSite1 has 0 parameters
         case InteractionFunction::VirtualSite2:
-        case InteractionFunction::VirtualSite2FlexibleDistance:
+        case InteractionFunction::VirtualSite2FixedDistance:
             serializer->doReal(&iparams->vsite.a);
             break;
         case InteractionFunction::VirtualSite3:
-        case InteractionFunction::VirtualSite3FlexibleDistance:
-        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+        case InteractionFunction::VirtualSite3FixedDistance:
+        case InteractionFunction::VirtualSite3FixedAngleDistance:
             serializer->doReal(&iparams->vsite.a);
             serializer->doReal(&iparams->vsite.b);
             break;
         case InteractionFunction::VirtualSite3Outside:
-        case InteractionFunction::VirtualSite4FlexibleDistance:
-        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+        case InteractionFunction::VirtualSite4FixedDistance:
+        case InteractionFunction::VirtualSite4FixedDistanceNormalization:
             serializer->doReal(&iparams->vsite.a);
             serializer->doReal(&iparams->vsite.b);
             serializer->doReal(&iparams->vsite.c);

@@ -769,7 +769,7 @@ void new_status(const char*                                 topfile,
      * constraints only. Do not print note with large timesteps or vsites.
      */
     if (opts->nshake == eshALLBONDS && ffParametrizedWithHBondConstraints && ir->delta_t < 0.0026
-        && gmx_mtop_ftype_count(*sys, InteractionFunction::VirtualSite3FlexibleDistance) == 0)
+        && gmx_mtop_ftype_count(*sys, InteractionFunction::VirtualSite3FixedDistance) == 0)
     {
         wi->setFileAndLineNumber("unknown", -1);
         wi->addNote(

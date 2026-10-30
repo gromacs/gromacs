@@ -745,16 +745,16 @@ void write_top(FILE*                                                            
         print_bondeds(out, at->nr, Directive::d_vsites2, InteractionFunction::VirtualSite2, 0, plist);
         print_bondeds(out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3, 0, plist);
         print_bondeds(
-                out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3FlexibleDistance, 0, plist);
+                out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3FixedDistance, 0, plist);
         print_bondeds(
-                out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3FlexibleAngleDistance, 0, plist);
+                out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3FixedAngleDistance, 0, plist);
         print_bondeds(out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3Outside, 0, plist);
         print_bondeds(
-                out, at->nr, Directive::d_vsites4, InteractionFunction::VirtualSite4FlexibleDistance, 0, plist);
+                out, at->nr, Directive::d_vsites4, InteractionFunction::VirtualSite4FixedDistance, 0, plist);
         print_bondeds(out,
                       at->nr,
                       Directive::d_vsites4,
-                      InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+                      InteractionFunction::VirtualSite4FixedDistanceNormalization,
                       0,
                       plist);
 
@@ -1647,11 +1647,11 @@ void pdb2top(FILE*                             top_file,
                     plist[InteractionFunction::Bonds].size(),
                     plist[InteractionFunction::VirtualSite2].size()
                             + plist[InteractionFunction::VirtualSite3].size()
-                            + plist[InteractionFunction::VirtualSite3FlexibleDistance].size()
-                            + plist[InteractionFunction::VirtualSite3FlexibleAngleDistance].size()
+                            + plist[InteractionFunction::VirtualSite3FixedDistance].size()
+                            + plist[InteractionFunction::VirtualSite3FixedAngleDistance].size()
                             + plist[InteractionFunction::VirtualSite3Outside].size()
-                            + plist[InteractionFunction::VirtualSite4FlexibleDistance].size()
-                            + plist[InteractionFunction::VirtualSite4FlexibleDistanceNormalization].size());
+                            + plist[InteractionFunction::VirtualSite4FixedDistance].size()
+                            + plist[InteractionFunction::VirtualSite4FixedDistanceNormalization].size());
 
     print_sums(atoms, FALSE, logger);
 

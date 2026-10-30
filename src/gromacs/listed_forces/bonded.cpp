@@ -4087,13 +4087,13 @@ constexpr gmx::EnumerationArray<InteractionFunction, BondedInteractions> c_bonde
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::SETTLE
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite1
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite2
-    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite2FlexibleDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite2FixedDistance
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3
-    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3FlexibleDistance
-    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3FlexibleAngleDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3FixedDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3FixedAngleDistance
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite3Outside
-    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite4FlexibleDistance
-    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite4FlexibleDistanceNormalization
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite4FixedDistance
+    BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSite4FixedDistanceNormalization
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::VirtualSiteN
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::CenterOfMassPullingEnergy
     BondedInteractions{ unimplemented, -1 }, // InteractionFunction::DensityFitting

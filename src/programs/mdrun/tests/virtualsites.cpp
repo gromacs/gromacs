@@ -193,12 +193,12 @@ public:
         std::vector<VirtualSite> virtualSites = {
             { InteractionFunction::VirtualSite1, 6, { 0 }, {} },
             { InteractionFunction::VirtualSite2, 6, { 0, 1 }, { 0.710573 } },
-            { InteractionFunction::VirtualSite2FlexibleDistance, 6, { 0, 1 }, { 0.292430 } },
+            { InteractionFunction::VirtualSite2FixedDistance, 6, { 0, 1 }, { 0.292430 } },
             { InteractionFunction::VirtualSite3, 6, { 0, 1, 2 }, { 0.060990, 0.543636 } },
-            { InteractionFunction::VirtualSite3FlexibleDistance, 6, { 0, 1, 2 }, { 0.125024, 0.444587 } },
-            { InteractionFunction::VirtualSite3FlexibleAngleDistance, 6, { 0, 1, 2 }, { 0.414850, 0.349767 } },
+            { InteractionFunction::VirtualSite3FixedDistance, 6, { 0, 1, 2 }, { 0.125024, 0.444587 } },
+            { InteractionFunction::VirtualSite3FixedAngleDistance, 6, { 0, 1, 2 }, { 0.414850, 0.349767 } },
             { InteractionFunction::VirtualSite3Outside, 6, { 0, 1, 2 }, { 0.779323, 0.093773, 0.743164 } },
-            { InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+            { InteractionFunction::VirtualSite4FixedDistanceNormalization,
               6,
               { 0, 1, 2, 3 },
               { 0.975111, 0.952180, 0.757594 } }
@@ -365,17 +365,17 @@ public:
         printf("Reading virtual site types...\n");
         for (InteractionFunction vsiteType : { InteractionFunction::VirtualSite1,
                                                InteractionFunction::VirtualSite2,
-                                               InteractionFunction::VirtualSite2FlexibleDistance,
+                                               InteractionFunction::VirtualSite2FixedDistance,
                                                InteractionFunction::VirtualSite3,
-                                               InteractionFunction::VirtualSite3FlexibleDistance,
-                                               InteractionFunction::VirtualSite3FlexibleAngleDistance,
+                                               InteractionFunction::VirtualSite3FixedDistance,
+                                               InteractionFunction::VirtualSite3FixedAngleDistance,
                                                InteractionFunction::VirtualSite3Outside,
-                                               InteractionFunction::VirtualSite4FlexibleDistance,
-                                               InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+                                               InteractionFunction::VirtualSite4FixedDistance,
+                                               InteractionFunction::VirtualSite4FixedDistanceNormalization,
                                                InteractionFunction::VirtualSiteN })
         {
             const auto& interactionList = localTopology.idef.il[vsiteType];
-            if (vsiteType == InteractionFunction::VirtualSite4FlexibleDistance || interactionList.empty())
+            if (vsiteType == InteractionFunction::VirtualSite4FixedDistance || interactionList.empty())
             {
                 // 4FD is deprecated. Interaction list empty means system doesn't contain this type.
                 continue;
@@ -445,7 +445,7 @@ VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite2>(
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite2FlexibleDistance>(
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite2FixedDistance>(
         ArrayRef<const RVec> positions,
         ArrayRef<const RVec> velocities) const
 {
@@ -478,7 +478,7 @@ VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3>(
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3FlexibleDistance>(
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3FixedDistance>(
         ArrayRef<const RVec> positions,
         ArrayRef<const RVec> velocities) const
 {
@@ -504,7 +504,7 @@ VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3Fl
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3FlexibleAngleDistance>(
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3FixedAngleDistance>(
         ArrayRef<const RVec> positions,
         ArrayRef<const RVec> velocities) const
 {
@@ -561,7 +561,7 @@ VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3Ou
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite4FlexibleDistanceNormalization>(
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite4FixedDistanceNormalization>(
         ArrayRef<const RVec> positions,
         ArrayRef<const RVec> velocities) const
 {
@@ -629,23 +629,23 @@ VirtualSiteTest::VirtualSite::calculate(ArrayRef<const RVec> constructingPositio
         case InteractionFunction::VirtualSite2:
             return calculateVSite<InteractionFunction::VirtualSite2>(constructingPositions,
                                                                      constructingVelocities);
-        case InteractionFunction::VirtualSite2FlexibleDistance:
-            return calculateVSite<InteractionFunction::VirtualSite2FlexibleDistance>(
+        case InteractionFunction::VirtualSite2FixedDistance:
+            return calculateVSite<InteractionFunction::VirtualSite2FixedDistance>(
                     constructingPositions, constructingVelocities);
         case InteractionFunction::VirtualSite3:
             return calculateVSite<InteractionFunction::VirtualSite3>(constructingPositions,
                                                                      constructingVelocities);
-        case InteractionFunction::VirtualSite3FlexibleDistance:
-            return calculateVSite<InteractionFunction::VirtualSite3FlexibleDistance>(
+        case InteractionFunction::VirtualSite3FixedDistance:
+            return calculateVSite<InteractionFunction::VirtualSite3FixedDistance>(
                     constructingPositions, constructingVelocities);
-        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
-            return calculateVSite<InteractionFunction::VirtualSite3FlexibleAngleDistance>(
+        case InteractionFunction::VirtualSite3FixedAngleDistance:
+            return calculateVSite<InteractionFunction::VirtualSite3FixedAngleDistance>(
                     constructingPositions, constructingVelocities);
         case InteractionFunction::VirtualSite3Outside:
             return calculateVSite<InteractionFunction::VirtualSite3Outside>(constructingPositions,
                                                                             constructingVelocities);
-        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
-            return calculateVSite<InteractionFunction::VirtualSite4FlexibleDistanceNormalization>(
+        case InteractionFunction::VirtualSite4FixedDistanceNormalization:
+            return calculateVSite<InteractionFunction::VirtualSite4FixedDistanceNormalization>(
                     constructingPositions, constructingVelocities);
         case InteractionFunction::VirtualSiteN:
             return calculateVSite<InteractionFunction::VirtualSiteN>(constructingPositions,

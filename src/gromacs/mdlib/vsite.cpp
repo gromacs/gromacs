@@ -979,7 +979,7 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
                         constr_vsite2<calculatePosition, calculateVelocity>(
                                 x[ai], x[aj], x[avsite], a1, pbc_null, getVOrNull(ai), getVOrNull(aj), getVOrNull(avsite));
                         break;
-                    case InteractionFunction::VirtualSite2FlexibleDistance:
+                    case InteractionFunction::VirtualSite2FixedDistance:
                         aj = ia[3];
                         constr_vsite2FD<calculatePosition, calculateVelocity>(
                                 x[ai], x[aj], x[avsite], a1, pbc_null, getVOrNull(ai), getVOrNull(aj), getVOrNull(avsite));
@@ -1000,7 +1000,7 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
                                                                             getVOrNull(ak),
                                                                             getVOrNull(avsite));
                         break;
-                    case InteractionFunction::VirtualSite3FlexibleDistance:
+                    case InteractionFunction::VirtualSite3FixedDistance:
                         aj = ia[3];
                         ak = ia[4];
                         b1 = ip[tp].vsite.b;
@@ -1016,7 +1016,7 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
                                                                               getVOrNull(ak),
                                                                               getVOrNull(avsite));
                         break;
-                    case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+                    case InteractionFunction::VirtualSite3FixedAngleDistance:
                         aj = ia[3];
                         ak = ia[4];
                         b1 = ip[tp].vsite.b;
@@ -1050,7 +1050,7 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
                                                                                getVOrNull(ak),
                                                                                getVOrNull(avsite));
                         break;
-                    case InteractionFunction::VirtualSite4FlexibleDistance:
+                    case InteractionFunction::VirtualSite4FixedDistance:
                         aj = ia[3];
                         ak = ia[4];
                         al = ia[5];
@@ -1071,7 +1071,7 @@ static void construct_vsites_thread(ArrayRef<RVec>            x,
                                                                               getVOrNull(al),
                                                                               getVOrNull(avsite));
                         break;
-                    case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+                    case InteractionFunction::VirtualSite4FixedDistanceNormalization:
                         aj = ia[3];
                         ak = ia[4];
                         al = ia[5];
@@ -2161,18 +2161,18 @@ static void spreadForceForThread(ArrayRef<const RVec>      x,
                     case InteractionFunction::VirtualSite2:
                         spread_vsite2<virialHandling>(ia, a1, x, f, fshift, pbc_null);
                         break;
-                    case InteractionFunction::VirtualSite2FlexibleDistance:
+                    case InteractionFunction::VirtualSite2FixedDistance:
                         spread_vsite2FD<virialHandling>(ia, a1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case InteractionFunction::VirtualSite3:
                         b1 = ip[tp].vsite.b;
                         spread_vsite3<virialHandling>(ia, a1, b1, x, f, fshift, pbc_null);
                         break;
-                    case InteractionFunction::VirtualSite3FlexibleDistance:
+                    case InteractionFunction::VirtualSite3FixedDistance:
                         b1 = ip[tp].vsite.b;
                         spread_vsite3FD<virialHandling>(ia, a1, b1, x, f, fshift, dxdf, pbc_null);
                         break;
-                    case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+                    case InteractionFunction::VirtualSite3FixedAngleDistance:
                         b1 = ip[tp].vsite.b;
                         spread_vsite3FAD<virialHandling>(ia, a1, b1, x, f, fshift, dxdf, pbc_null);
                         break;
@@ -2181,12 +2181,12 @@ static void spreadForceForThread(ArrayRef<const RVec>      x,
                         c1 = ip[tp].vsite.c;
                         spread_vsite3OUT<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null);
                         break;
-                    case InteractionFunction::VirtualSite4FlexibleDistance:
+                    case InteractionFunction::VirtualSite4FixedDistance:
                         b1 = ip[tp].vsite.b;
                         c1 = ip[tp].vsite.c;
                         spread_vsite4FD<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null);
                         break;
-                    case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+                    case InteractionFunction::VirtualSite4FixedDistanceNormalization:
                         b1 = ip[tp].vsite.b;
                         c1 = ip[tp].vsite.c;
                         spread_vsite4FDN<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null);
@@ -2457,15 +2457,15 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
 
     inc_nrnb(nrnb, eNR_VSITE1, vsite_count(*ilists_, InteractionFunction::VirtualSite1));
     inc_nrnb(nrnb, eNR_VSITE2, vsite_count(*ilists_, InteractionFunction::VirtualSite2));
-    inc_nrnb(nrnb, eNR_VSITE2FD, vsite_count(*ilists_, InteractionFunction::VirtualSite2FlexibleDistance));
+    inc_nrnb(nrnb, eNR_VSITE2FD, vsite_count(*ilists_, InteractionFunction::VirtualSite2FixedDistance));
     inc_nrnb(nrnb, eNR_VSITE3, vsite_count(*ilists_, InteractionFunction::VirtualSite3));
-    inc_nrnb(nrnb, eNR_VSITE3FD, vsite_count(*ilists_, InteractionFunction::VirtualSite3FlexibleDistance));
-    inc_nrnb(nrnb, eNR_VSITE3FAD, vsite_count(*ilists_, InteractionFunction::VirtualSite3FlexibleAngleDistance));
+    inc_nrnb(nrnb, eNR_VSITE3FD, vsite_count(*ilists_, InteractionFunction::VirtualSite3FixedDistance));
+    inc_nrnb(nrnb, eNR_VSITE3FAD, vsite_count(*ilists_, InteractionFunction::VirtualSite3FixedAngleDistance));
     inc_nrnb(nrnb, eNR_VSITE3OUT, vsite_count(*ilists_, InteractionFunction::VirtualSite3Outside));
-    inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(*ilists_, InteractionFunction::VirtualSite4FlexibleDistance));
+    inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(*ilists_, InteractionFunction::VirtualSite4FixedDistance));
     inc_nrnb(nrnb,
              eNR_VSITE4FDN,
-             vsite_count(*ilists_, InteractionFunction::VirtualSite4FlexibleDistanceNormalization));
+             vsite_count(*ilists_, InteractionFunction::VirtualSite4FixedDistanceNormalization));
     inc_nrnb(nrnb, eNR_VSITEN, vsite_count(*ilists_, InteractionFunction::VirtualSiteN));
 
     wallcycle_stop(wcycle, WallCycleCounter::VsiteSpread);

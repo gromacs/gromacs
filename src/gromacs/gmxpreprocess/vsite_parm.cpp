@@ -866,11 +866,11 @@ int set_vsites(bool                                                       bVerbo
                             bERROR = calc_vsite3_param(
                                     atypes, &param, atoms, allVsiteBondeds.bonds, allVsiteBondeds.angles);
                             break;
-                        case InteractionFunction::VirtualSite3FlexibleDistance:
+                        case InteractionFunction::VirtualSite3FixedDistance:
                             bERROR = calc_vsite3fd_param(
                                     &param, allVsiteBondeds.bonds, allVsiteBondeds.angles);
                             break;
-                        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+                        case InteractionFunction::VirtualSite3FixedAngleDistance:
                             bERROR = calc_vsite3fad_param(
                                     &param, allVsiteBondeds.bonds, allVsiteBondeds.angles);
                             break;
@@ -878,11 +878,11 @@ int set_vsites(bool                                                       bVerbo
                             bERROR = calc_vsite3out_param(
                                     atypes, &param, atoms, allVsiteBondeds.bonds, allVsiteBondeds.angles);
                             break;
-                        case InteractionFunction::VirtualSite4FlexibleDistance:
+                        case InteractionFunction::VirtualSite4FixedDistance:
                             bERROR = calc_vsite4fd_param(
                                     &param, allVsiteBondeds.bonds, allVsiteBondeds.angles, logger);
                             break;
-                        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+                        case InteractionFunction::VirtualSite4FixedDistanceNormalization:
                             bERROR = calc_vsite4fdn_param(
                                     &param, allVsiteBondeds.bonds, allVsiteBondeds.angles, logger);
                             break;
@@ -1050,10 +1050,10 @@ static void clean_vsite_bonds(EnumerationArray<InteractionFunction, Interactions
                 const InteractionFunction iftype = pindex[atom].value().functionType();
                 const int  interactionIndex      = pindex[atom].value().interactionIndex();
                 const bool bThisFD =
-                        ((iftype == InteractionFunction::VirtualSite3FlexibleDistance)
-                         || (iftype == InteractionFunction::VirtualSite3FlexibleAngleDistance)
-                         || (iftype == InteractionFunction::VirtualSite4FlexibleDistance)
-                         || (iftype == InteractionFunction::VirtualSite4FlexibleDistanceNormalization));
+                        ((iftype == InteractionFunction::VirtualSite3FixedDistance)
+                         || (iftype == InteractionFunction::VirtualSite3FixedAngleDistance)
+                         || (iftype == InteractionFunction::VirtualSite4FixedDistance)
+                         || (iftype == InteractionFunction::VirtualSite4FixedDistanceNormalization));
                 const bool bThisOUT =
                         ((iftype == InteractionFunction::VirtualSite3Outside)
                          && ((interaction_function[cftype].categories & sc_ifcConstraint) != 0U));
@@ -1284,7 +1284,7 @@ static void clean_vsite_angles(EnumerationArray<InteractionFunction, Interaction
                                    "Virtual-site atom mapping inconsistency in angles");
                 const InteractionFunction iftype = pindex[atom].value().functionType();
                 const int interactionIndex       = pindex[atom].value().interactionIndex();
-                bAll3FAD = bAll3FAD && (iftype == InteractionFunction::VirtualSite3FlexibleAngleDistance);
+                bAll3FAD = bAll3FAD && (iftype == InteractionFunction::VirtualSite3FixedAngleDistance);
                 if (nvsite == 1)
                 {
                     /* store construction atoms of first vsite */

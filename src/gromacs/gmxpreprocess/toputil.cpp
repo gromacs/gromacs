@@ -116,10 +116,10 @@ static void print_bt(FILE*                                                      
             bDih = TRUE;
             break;
         case InteractionFunction::ConstraintsNoCoupling: // Intended to fall through
-        case InteractionFunction::VirtualSite3FlexibleDistance: f = 1; break;
-        case InteractionFunction::VirtualSite3FlexibleAngleDistance: f = 2; break;
+        case InteractionFunction::VirtualSite3FixedDistance: f = 1; break;
+        case InteractionFunction::VirtualSite3FixedAngleDistance: f = 2; break;
         case InteractionFunction::VirtualSite3Outside: f = 3; break;
-        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization: // Intended to fall through
+        case InteractionFunction::VirtualSite4FixedDistanceNormalization: // Intended to fall through
         case InteractionFunction::DihedralEnergyCorrectionMap: f = 1; break;
 
         default: bDih = FALSE;

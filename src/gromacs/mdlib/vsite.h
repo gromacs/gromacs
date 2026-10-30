@@ -83,25 +83,25 @@ static constexpr int numFtypes = static_cast<int>(c_ftypeVsiteEnd) - static_cast
 const std::array<InteractionFunction, numFtypes> vSiteFunctionTypes = {
     InteractionFunction::VirtualSite1,
     InteractionFunction::VirtualSite2,
-    InteractionFunction::VirtualSite2FlexibleDistance,
+    InteractionFunction::VirtualSite2FixedDistance,
     InteractionFunction::VirtualSite3,
-    InteractionFunction::VirtualSite3FlexibleDistance,
-    InteractionFunction::VirtualSite3FlexibleAngleDistance,
+    InteractionFunction::VirtualSite3FixedDistance,
+    InteractionFunction::VirtualSite3FixedAngleDistance,
     InteractionFunction::VirtualSite3Outside,
-    InteractionFunction::VirtualSite4FlexibleDistance,
-    InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+    InteractionFunction::VirtualSite4FixedDistance,
+    InteractionFunction::VirtualSite4FixedDistanceNormalization,
     InteractionFunction::VirtualSiteN
 };
 
 const std::array<InteractionFunction, numFtypes> vSiteFunctionTypesReversed = {
     InteractionFunction::VirtualSiteN,
-    InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
-    InteractionFunction::VirtualSite4FlexibleDistance,
+    InteractionFunction::VirtualSite4FixedDistanceNormalization,
+    InteractionFunction::VirtualSite4FixedDistance,
     InteractionFunction::VirtualSite3Outside,
-    InteractionFunction::VirtualSite3FlexibleAngleDistance,
-    InteractionFunction::VirtualSite3FlexibleDistance,
+    InteractionFunction::VirtualSite3FixedAngleDistance,
+    InteractionFunction::VirtualSite3FixedDistance,
     InteractionFunction::VirtualSite3,
-    InteractionFunction::VirtualSite2FlexibleDistance,
+    InteractionFunction::VirtualSite2FixedDistance,
     InteractionFunction::VirtualSite2,
     InteractionFunction::VirtualSite1
 };

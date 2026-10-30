@@ -690,7 +690,7 @@ static void add_vsites(EnumerationArray<InteractionFunction, InteractionsOfType>
             switch (ftype)
             {
                 case InteractionFunction::VirtualSite3:
-                case InteractionFunction::VirtualSite3FlexibleDistance:
+                case InteractionFunction::VirtualSite3FixedDistance:
                 case InteractionFunction::VirtualSite3Outside:
                     if (nrheavies < 2)
                     {
@@ -701,7 +701,7 @@ static void add_vsites(EnumerationArray<InteractionFunction, InteractionsOfType>
                     }
                     add_vsite3_atoms(&plist[ftype], Hatoms[i], Heavy, heavies[0], heavies[1], swapParity);
                     break;
-                case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+                case InteractionFunction::VirtualSite3FixedAngleDistance:
                 {
                     int moreheavy;
 
@@ -740,8 +740,8 @@ static void add_vsites(EnumerationArray<InteractionFunction, InteractionsOfType>
                     add_vsite3_atoms(&plist[ftype], Hatoms[i], Heavy, heavies[0], moreheavy, swapParity);
                     break;
                 }
-                case InteractionFunction::VirtualSite4FlexibleDistance:
-                case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+                case InteractionFunction::VirtualSite4FixedDistance:
+                case InteractionFunction::VirtualSite4FixedDistanceNormalization:
                     if (nrheavies < 3)
                     {
                         gmx_fatal(FARGS,
@@ -2014,14 +2014,14 @@ void do_vsites(ArrayRef<const PreprocessResidue>                          rtpFFD
                         else /* planar geometry */
                         {
 
-                            vsite_type[i].ftype = InteractionFunction::VirtualSite3FlexibleDistance;
+                            vsite_type[i].ftype = InteractionFunction::VirtualSite3FixedDistance;
                         }
                         break;
                     case 4: /* --CH- (tert) */
                         /* The old type 4FD had stability issues, so
                          * all new constructs should use 4FDN
                          */
-                        vsite_type[i].ftype = InteractionFunction::VirtualSite4FlexibleDistanceNormalization;
+                        vsite_type[i].ftype = InteractionFunction::VirtualSite4FixedDistanceNormalization;
 
                         /* Check parity of heavy atoms from coordinates */
                         ai = Heavy;
@@ -2080,8 +2080,8 @@ void do_vsites(ArrayRef<const PreprocessResidue>                          rtpFFD
                 if ((nrHatoms == 2) && (nrbonds == 3) && (!isN || planarN))
                 {
                     /* =CH2 or, if it is a nitrogen NH2, it is a planar one */
-                    vsite_type[Hatoms[0]] = { InteractionFunction::VirtualSite3FlexibleAngleDistance, false };
-                    vsite_type[Hatoms[1]] = { InteractionFunction::VirtualSite3FlexibleAngleDistance, true };
+                    vsite_type[Hatoms[0]] = { InteractionFunction::VirtualSite3FixedAngleDistance, false };
+                    vsite_type[Hatoms[1]] = { InteractionFunction::VirtualSite3FixedAngleDistance, true };
                 }
                 else if (((nrHatoms == 2) && (nrbonds == 3) && (isN && !planarN))
                          || ((nrHatoms == 3) && (nrbonds == 4)))
