@@ -41,8 +41,9 @@
  * the (possibly extended, > 4 character) PDB entry ID.
  *
  * The interface deliberately mirrors the legacy pdbio.h free functions and is
- * kept self-contained (no mmCIF-library types appear here) so that it can serve
- * as a drop-in structure-format plugin for a future unified I/O framework.
+ * kept self-contained (no mmCIF-library header is included here; the few
+ * library types named are only declared) so that it can serve as a drop-in
+ * structure-format plugin for a future unified I/O framework.
  *
  * \author Amr Alhossary
  * \ingroup module_fileio
@@ -53,6 +54,9 @@
 #include <cstdio>
 
 #include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "gromacs/utility/vectypes.h"
 
@@ -60,14 +64,53 @@ enum class PbcType : int;
 struct t_atoms;
 struct t_symtab;
 struct t_trxframe;
-//! Opaque parsed-mmCIF trajectory handle; defined in cifio.cpp.
-struct CifTrajectory;
+class Block;
+class CifFile;
+class ISTable;
 /*! \brief Bond list, as used for PDB CONECT records; defined in pdbio.cpp.
  *
  * Declared here rather than including pdbio.h so that this header stays
  * self-contained. The pdbio.h typedef \c gmx_conect is a pointer to this type,
  * so callers can pass their gmx_conect unchanged. */
 struct gmx_conect_t;
+
+/*! \brief A parsed multi-model mmCIF file, read back one model (frame) at a time.
+ *
+ * Made by CifIO::openTrajectory(). The constructor and destructor are defined
+ * in cifio.cpp, where the mmCIF-library types are complete.
+ */
+class CifTrajectory
+{
+public:
+    //! Take over \p cif, whose first data block \p block holds the models in \p atomSite.
+    CifTrajectory(std::unique_ptr<CifFile> cif, Block& block, ISTable* atomSite);
+    ~CifTrajectory();
+
+    //! Number of atoms per model.
+    int numAtoms() const;
+    /*! \brief Fill \p fr with the next model's coordinates/box/time.
+     * \p fr->x must already be allocated for numAtoms() atoms.
+     * Returns false when all models have been consumed. */
+    bool readNextFrame(t_trxframe* fr);
+
+private:
+    //! The parsed file, which owns everything below that points into it.
+    std::unique_ptr<CifFile> cif_;
+    //! The atom_site table holding the models.
+    ISTable* atomSite_;
+    //! Names of the coordinate columns, empty when absent.
+    std::string xColName_, yColName_, zColName_;
+    //! Row numbers of each model, in file order.
+    std::vector<std::vector<unsigned int>> modelRowNums_;
+    //! Number of atoms per model, taken from the first.
+    int numAtoms_ = 0;
+    //! Whether the file has a usable unit cell, held in box_.
+    bool haveBox_ = false;
+    //! The box of every model.
+    matrix box_ = { { 0 } };
+    //! Next model to hand out.
+    size_t cursor_ = 0;
+};
 
 /*! \brief Reader/writer for mmCIF/PDBx structure files.
  *
@@ -140,16 +183,8 @@ public:
      * \{
      */
 
-    //! Parse \p infile and return an opaque multi-model handle (nullptr on empty).
-    static CifTrajectory* openTrajectory(const std::filesystem::path& infile);
-    //! Number of atoms per model in an opened trajectory handle.
-    static int trajectoryNumAtoms(CifTrajectory* handle);
-    /*! \brief Fill \p fr with the next model's coordinates/box/time.
-     * \p fr->x must already be allocated for trajectoryNumAtoms() atoms.
-     * Returns false when all models have been consumed. */
-    static bool readTrajectoryFrame(CifTrajectory* handle, t_trxframe* fr);
-    //! Release a handle from openTrajectory().
-    static void closeTrajectory(CifTrajectory* handle);
+    //! Parse \p infile for reading model by model; nullptr when it has no atom_site table.
+    static std::unique_ptr<CifTrajectory> openTrajectory(const std::filesystem::path& infile);
 
     /*! \brief Stream one model (frame) of \p nindex atoms to \p out.
      * When \p writeHeader is true the data block, optional cell, the optional

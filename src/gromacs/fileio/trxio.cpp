@@ -110,8 +110,8 @@ struct t_trxstatus
     int                        fileType = efNR;
     int                        natoms   = 0;
     std::vector<char>          persistent_line; /* Persistent line for reading g96 trajectories */
-    CifTrajectory* cifReader = nullptr; /* Parsed multi-model mmCIF being read frame by frame */
-    int numCifModelsWritten  = 0; /* Number of models already streamed to an mmCIF trajectory */
+    std::unique_ptr<CifTrajectory> cifReader; /* Parsed multi-model mmCIF being read frame by frame */
+    int numCifModelsWritten = 0; /* Number of models already streamed to an mmCIF trajectory */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;
 #endif
@@ -691,10 +691,6 @@ void close_trx(t_trxstatus* status)
     {
         gmx_fio_close(status->fio);
     }
-    if (status->cifReader)
-    {
-        CifIO::closeTrajectory(status->cifReader);
-    }
 #if GMX_USE_PLUGINS
     delete status->vmdplugin;
 #endif
@@ -871,7 +867,7 @@ static int pdb_first_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
 static bool cif_next_x(t_trxstatus* status, t_trxframe* fr)
 {
     // The whole mmCIF file was parsed in cif_first_x; hand out one model per call.
-    return status->cifReader != nullptr && CifIO::readTrajectoryFrame(status->cifReader, fr);
+    return status->cifReader != nullptr && status->cifReader->readNextFrame(fr);
 }
 
 static int cif_first_x(t_trxstatus* status, const std::filesystem::path& fn, t_trxframe* fr)
@@ -885,7 +881,7 @@ static int cif_first_x(t_trxstatus* status, const std::filesystem::path& fn, t_t
         fr->natoms = 0;
         return 0;
     }
-    fr->natoms = CifIO::trajectoryNumAtoms(status->cifReader);
+    fr->natoms = status->cifReader->numAtoms();
     if (fr->natoms == 0)
     {
         gmx_fatal(FARGS, "\nNo coordinates in cif file\n");

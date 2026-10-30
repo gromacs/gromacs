@@ -64,9 +64,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
 
-// RCSB mmCIF library (bundled under src/external/mmcif-dict-suite). Kept
-// strictly inside this translation unit so that cifio.h stays free of any
-// third-party types.
+// RCSB mmCIF library (bundled under src/external/mmcif-dict-suite). Its headers
+// are included only here; cifio.h merely declares the few library types that
+// CifTrajectory names.
 //
 // Note that most of its accessors are not const-qualified: CifFile::GetBlock(),
 // Block::GetTablePtr() and ISTable::IsColumnPresent() all need a non-const
@@ -1028,105 +1028,88 @@ void CifIO::write(const std::filesystem::path& outfile,
     writeIndexed(outfile, title, atoms, x, pbcType, box, atoms->nr, index.data(), conect);
 }
 
-//! Internal state behind CifIO's opaque CifTrajectory handle (see cifio.h).
-struct CifTrajectory
+CifTrajectory::CifTrajectory(std::unique_ptr<CifFile> cif, Block& block, ISTable* atomSite) :
+    cif_(std::move(cif)),
+    atomSite_(atomSite),
+    xColName_(findColName(atomSite, { "Cartn_x" })),
+    yColName_(findColName(atomSite, { "Cartn_y" })),
+    zColName_(findColName(atomSite, { "Cartn_z" }))
 {
-    std::unique_ptr<CifFile>               cif;
-    ISTable*                               atomSite = nullptr; //!< owned by cif
-    std::string                            xColName;
-    std::string                            yColName;
-    std::string                            zColName;
-    std::vector<std::vector<unsigned int>> modelRowNums; //!< row indices per model, in file order
-    int                                    natoms  = 0;
-    bool                                   haveBox = false;
-    matrix                                 box     = { { 0 } };
-    size_t                                 cursor  = 0; //!< next model to hand out
-};
-
-CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
-{
-    auto traj               = std::make_unique<CifTrajectory>();
-    traj->cif               = parseCifFile(infile);
-    Block* const   block    = firstBlock(traj->cif.get());
-    ISTable* const atomSite = atomSiteTable(block);
-    if (atomSite == nullptr)
-    {
-        return nullptr;
-    }
-    traj->atomSite = atomSite;
-    traj->xColName = findColName(atomSite, { "Cartn_x" });
-    traj->yColName = findColName(atomSite, { "Cartn_y" });
-    traj->zColName = findColName(atomSite, { "Cartn_z" });
-
     // Without a model column every row reads as model "", so all go to one model.
-    const std::string        modelColName = findColName(atomSite, { "pdbx_PDB_model_num" });
-    const unsigned int       numRows      = atomSite->GetNumRows();
+    const std::string        modelColName = findColName(atomSite_, { "pdbx_PDB_model_num" });
+    const unsigned int       numRows      = atomSite_->GetNumRows();
     std::vector<std::string> order; // model ids in first-seen order
     for (unsigned int rowNum = 0; rowNum < numRows; rowNum++)
     {
-        const std::string& id = valueAt(*atomSite, rowNum, modelColName);
+        const std::string& id = valueAt(*atomSite_, rowNum, modelColName);
         auto               it = std::find(order.begin(), order.end(), id);
         size_t             mi;
         if (it == order.end())
         {
             mi = order.size();
             order.push_back(id);
-            traj->modelRowNums.emplace_back();
+            modelRowNums_.emplace_back();
         }
         else
         {
             mi = static_cast<size_t>(std::distance(order.begin(), it));
         }
-        traj->modelRowNums[mi].push_back(rowNum);
+        modelRowNums_[mi].push_back(rowNum);
     }
-    traj->natoms = traj->modelRowNums.empty() ? 0 : static_cast<int>(traj->modelRowNums[0].size());
-
-    traj->haveBox = readUnitCell(*block, nullptr, traj->box);
-
-    return traj.release();
+    numAtoms_ = modelRowNums_.empty() ? 0 : static_cast<int>(modelRowNums_[0].size());
+    haveBox_  = readUnitCell(block, nullptr, box_);
 }
 
-int CifIO::trajectoryNumAtoms(CifTrajectory* traj)
+CifTrajectory::~CifTrajectory() = default;
+
+int CifTrajectory::numAtoms() const
 {
-    return (traj != nullptr) ? traj->natoms : 0;
+    return numAtoms_;
 }
 
-bool CifIO::readTrajectoryFrame(CifTrajectory* traj, t_trxframe* fr)
+bool CifTrajectory::readNextFrame(t_trxframe* fr)
 {
-    if (traj == nullptr || traj->cursor >= traj->modelRowNums.size())
+    if (cursor_ >= modelRowNums_.size())
     {
         return false;
     }
-    const std::vector<unsigned int>& rowNums = traj->modelRowNums[traj->cursor];
-    const ISTable&                   site    = *traj->atomSite;
-    fr->natoms                               = traj->natoms;
-    const int n = std::min(traj->natoms, static_cast<int>(rowNums.size()));
+    const std::vector<unsigned int>& rowNums = modelRowNums_[cursor_];
+    const ISTable&                   site    = *atomSite_;
+    fr->natoms                               = numAtoms_;
+    const int n = std::min(numAtoms_, static_cast<int>(rowNums.size()));
     for (int i = 0; i < n; i++)
     {
         const unsigned int rowNum = rowNums[i];
-        fr->x[i][XX] = std::strtod(valueAt(site, rowNum, traj->xColName).c_str(), nullptr) * 0.1;
-        fr->x[i][YY] = std::strtod(valueAt(site, rowNum, traj->yColName).c_str(), nullptr) * 0.1;
-        fr->x[i][ZZ] = std::strtod(valueAt(site, rowNum, traj->zColName).c_str(), nullptr) * 0.1;
+        fr->x[i][XX] = std::strtod(valueAt(site, rowNum, xColName_).c_str(), nullptr) * 0.1;
+        fr->x[i][YY] = std::strtod(valueAt(site, rowNum, yColName_).c_str(), nullptr) * 0.1;
+        fr->x[i][ZZ] = std::strtod(valueAt(site, rowNum, zColName_).c_str(), nullptr) * 0.1;
     }
     fr->bX = TRUE;
-    if (traj->haveBox)
+    if (haveBox_)
     {
-        copy_mat(traj->box, fr->box);
+        copy_mat(box_, fr->box);
     }
-    fr->bBox  = traj->haveBox;
-    fr->step  = static_cast<int64_t>(traj->cursor);
+    fr->bBox  = haveBox_;
+    fr->step  = static_cast<int64_t>(cursor_);
     fr->bStep = TRUE;
-    fr->time  = static_cast<real>(traj->cursor);
+    fr->time  = static_cast<real>(cursor_);
     fr->bTime = TRUE;
     fr->bPrec = TRUE;
     fr->prec  = 10000;
-    traj->cursor++;
+    cursor_++;
     return true;
 }
 
-void CifIO::closeTrajectory(CifTrajectory* traj)
+std::unique_ptr<CifTrajectory> CifIO::openTrajectory(const std::filesystem::path& infile)
 {
-    delete traj;
+    std::unique_ptr<CifFile> cif      = parseCifFile(infile);
+    Block* const             block    = firstBlock(cif.get());
+    ISTable* const           atomSite = atomSiteTable(block);
+    if (atomSite == nullptr)
+    {
+        return nullptr;
+    }
+    return std::make_unique<CifTrajectory>(std::move(cif), *block, atomSite);
 }
 
 void CifIO::writeTrajectoryFrame(FILE*          out,

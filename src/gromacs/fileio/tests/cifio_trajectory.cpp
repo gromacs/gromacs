@@ -48,6 +48,7 @@
 
 #include <array>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -148,9 +149,9 @@ TEST_F(CifTrajectoryIoTest, WriteReadTwoModelsRoundTrips)
     std::fclose(out);
 
     // Read the models back as frames.
-    CifTrajectory* handle = CifIO::openTrajectory(cifFile);
-    ASSERT_NE(handle, nullptr);
-    EXPECT_EQ(CifIO::trajectoryNumAtoms(handle), c_numAtoms);
+    const std::unique_ptr<CifTrajectory> trajectory = CifIO::openTrajectory(cifFile);
+    ASSERT_NE(trajectory, nullptr);
+    EXPECT_EQ(trajectory->numAtoms(), c_numAtoms);
 
     t_trxframe fr;
     clear_trxframe(&fr, TRUE);
@@ -159,7 +160,7 @@ TEST_F(CifTrajectoryIoTest, WriteReadTwoModelsRoundTrips)
     for (int m = 0; m < numModels; ++m)
     {
         SCOPED_TRACE("model " + std::to_string(m));
-        ASSERT_TRUE(CifIO::readTrajectoryFrame(handle, &fr));
+        ASSERT_TRUE(trajectory->readNextFrame(&fr));
         const auto expected = modelCoords(m);
         for (int i = 0; i < c_numAtoms; ++i)
         {
@@ -171,9 +172,8 @@ TEST_F(CifTrajectoryIoTest, WriteReadTwoModelsRoundTrips)
         EXPECT_NEAR(fr.box[XX][XX], box_[XX][XX], 1e-3);
     }
     // No more models.
-    EXPECT_FALSE(CifIO::readTrajectoryFrame(handle, &fr));
+    EXPECT_FALSE(trajectory->readNextFrame(&fr));
 
-    CifIO::closeTrajectory(handle);
     sfree(fr.x);
 }
 
@@ -224,25 +224,24 @@ TEST_F(CifTrajectoryIoTest, ConnectivityIsWrittenOnceForAllModels)
     EXPECT_NE(content.find("covale2"), std::string::npos) << content;
 
     // The models are still readable afterwards.
-    CifTrajectory* handle = CifIO::openTrajectory(cifFile);
-    ASSERT_NE(handle, nullptr);
-    EXPECT_EQ(CifIO::trajectoryNumAtoms(handle), c_numAtoms);
+    const std::unique_ptr<CifTrajectory> trajectory = CifIO::openTrajectory(cifFile);
+    ASSERT_NE(trajectory, nullptr);
+    EXPECT_EQ(trajectory->numAtoms(), c_numAtoms);
     t_trxframe fr;
     clear_trxframe(&fr, TRUE);
     snew(fr.x, c_numAtoms);
     for (int m = 0; m < numModels; ++m)
     {
         SCOPED_TRACE("model " + std::to_string(m));
-        ASSERT_TRUE(CifIO::readTrajectoryFrame(handle, &fr));
+        ASSERT_TRUE(trajectory->readNextFrame(&fr));
         const auto expected = modelCoords(m);
         EXPECT_NEAR(fr.x[0][XX], expected[0][XX], 1e-3);
     }
-    EXPECT_FALSE(CifIO::readTrajectoryFrame(handle, &fr));
-    CifIO::closeTrajectory(handle);
+    EXPECT_FALSE(trajectory->readNextFrame(&fr));
     sfree(fr.x);
 }
 
-TEST_F(CifTrajectoryIoTest, EmptyFileYieldsNoHandle)
+TEST_F(CifTrajectoryIoTest, EmptyFileYieldsNoTrajectory)
 {
     const std::string emptyFile = fileManager_.getTemporaryFilePath("empty.cif").string();
     FILE*             out       = std::fopen(emptyFile.c_str(), "w");
@@ -250,9 +249,8 @@ TEST_F(CifTrajectoryIoTest, EmptyFileYieldsNoHandle)
     std::fprintf(out, "data_empty\n#\n");
     std::fclose(out);
 
-    CifTrajectory* handle = CifIO::openTrajectory(emptyFile);
-    EXPECT_EQ(handle, nullptr);
-    CifIO::closeTrajectory(handle); // must tolerate nullptr
+    const std::unique_ptr<CifTrajectory> trajectory = CifIO::openTrajectory(emptyFile);
+    EXPECT_EQ(trajectory, nullptr);
 }
 
 } // namespace
