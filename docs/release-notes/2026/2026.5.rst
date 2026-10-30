@@ -37,6 +37,17 @@ atoms were perturbed. This bug has been present in release 2025.0 to 2026.4.
 
 :issue:`5730`
 
+Fixed check for SETTLE interactions on particles with perturbed atoms
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using SETTLE constraints on water molecules whose masses are perturbed
+is not supported, and grompp and mdrun both check for this. Formerly
+the check worked correctly in the normal case where a SETTLE is used
+in a molecule type representing a single water molecule. Now it also
+works correctly in the general case of a fused molecule type
+containing a SETTLE *and* another molecule with an atom whose mass is
+perturbed.
+
 Fixed the exclusion check of free energy calculations with multiple molecule types
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

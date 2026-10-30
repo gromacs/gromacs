@@ -895,11 +895,14 @@ bool haveFepPerturbedMassesInSettles(const gmx_mtop_t& mtop)
 {
     for (const gmx_moltype_t& molt : mtop.moltype)
     {
-        if (!molt.ilist[InteractionFunction::SETTLE].empty())
+        // Only the masses of atoms that are in settles matter here
+        const InteractionList& settles      = molt.ilist[InteractionFunction::SETTLE];
+        const int              settleStride = 1 + NRAL(InteractionFunction::SETTLE);
+        for (int i = 0; i < settles.size(); i += settleStride)
         {
-            for (int a = 0; a < molt.atoms.nr; a++)
+            for (int j = 1; j < settleStride; j++)
             {
-                const t_atom& atom = molt.atoms.atom[a];
+                const t_atom& atom = molt.atoms.atom[settles.iatoms[i + j]];
                 if (atom.m != atom.mB)
                 {
                     return true;
