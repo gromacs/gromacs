@@ -113,7 +113,7 @@ protected:
         std::array<RVec, c_numAtoms> x;
         for (int i = 0; i < c_numAtoms; ++i)
         {
-            x[i] = { 1.0F + 0.1F * i + static_cast<real>(m), 1.0F, 1.0F };
+            x[i] = { 1.0F + (0.1F * i) + static_cast<real>(m), 1.0F, 1.0F };
         }
         return x;
     }

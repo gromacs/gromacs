@@ -194,7 +194,7 @@ void unitCellToBox(double a, double b, double c, double alpha, double beta, doub
         box[YY][YY]       = fb * sing;
         box[ZZ][XX]       = fc * cosb;
         box[ZZ][YY]       = fc * (cosa - cosb * cosg) / sing;
-        box[ZZ][ZZ] = std::sqrt(fc * fc - box[ZZ][XX] * box[ZZ][XX] - box[ZZ][YY] * box[ZZ][YY]);
+        box[ZZ][ZZ] = std::sqrt((fc * fc) - (box[ZZ][XX] * box[ZZ][XX]) - (box[ZZ][YY] * box[ZZ][YY]));
     }
     else
     {
