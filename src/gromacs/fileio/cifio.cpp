@@ -314,8 +314,12 @@ char chainId(const t_atoms* atoms, int resind)
     return (chainCh == 0 || chainCh == ' ') ? 'A' : chainCh;
 }
 
-//! Build the 18 atom_site field values for atom \p i (column order as written below).
-std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rvec x[], int modelNr)
+/*! \brief Fill row \p rowNum of \p atomSite, which has the atomSiteColNames() columns, with atom \p i.
+ *
+ * Each value is put in its cell by column name, so this is where a GROMACS
+ * field meets the mmCIF item that holds it.
+ */
+void fillAtomSiteRow(ISTable& atomSite, unsigned int rowNum, const t_atoms* atoms, int i, const rvec x[], int modelNr)
 {
     const int         resind = atoms->atom[i].resind;
     const std::string resnm  = *atoms->resinfo[resind].name;
@@ -341,29 +345,29 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
         }
     }
 
-    return std::vector<std::string>{ groupPdb,
-                                     std::to_string(i + 1),
-                                     symbol,
-                                     atomnm,
-                                     altLoc,
-                                     resnm,
-                                     chainStr,
-                                     // GROMACS has no notion of an mmCIF entity and writes
-                                     // no entity category, so there is nothing to point at.
-                                     ".",
-                                     seqStr,
-                                     coordToStr(x[i][XX]),
-                                     coordToStr(x[i][YY]),
-                                     coordToStr(x[i][ZZ]),
-                                     gmx::formatString("%.2f", occup),
-                                     gmx::formatString("%.2f", bfac),
-                                     seqStr,
-                                     resnm,
-                                     chainStr,
-                                     std::to_string(modelNr) };
+    atomSite.UpdateCell(rowNum, "group_PDB", groupPdb);
+    atomSite.UpdateCell(rowNum, "id", std::to_string(i + 1));
+    atomSite.UpdateCell(rowNum, "type_symbol", symbol);
+    atomSite.UpdateCell(rowNum, "label_atom_id", atomnm);
+    atomSite.UpdateCell(rowNum, "label_alt_id", altLoc);
+    atomSite.UpdateCell(rowNum, "label_comp_id", resnm);
+    atomSite.UpdateCell(rowNum, "label_asym_id", chainStr);
+    // GROMACS has no notion of an mmCIF entity and writes no entity category,
+    // so there is nothing to point at.
+    atomSite.UpdateCell(rowNum, "label_entity_id", ".");
+    atomSite.UpdateCell(rowNum, "label_seq_id", seqStr);
+    atomSite.UpdateCell(rowNum, "Cartn_x", coordToStr(x[i][XX]));
+    atomSite.UpdateCell(rowNum, "Cartn_y", coordToStr(x[i][YY]));
+    atomSite.UpdateCell(rowNum, "Cartn_z", coordToStr(x[i][ZZ]));
+    atomSite.UpdateCell(rowNum, "occupancy", gmx::formatString("%.2f", occup));
+    atomSite.UpdateCell(rowNum, "B_iso_or_equiv", gmx::formatString("%.2f", bfac));
+    atomSite.UpdateCell(rowNum, "auth_seq_id", seqStr);
+    atomSite.UpdateCell(rowNum, "auth_comp_id", resnm);
+    atomSite.UpdateCell(rowNum, "auth_asym_id", chainStr);
+    atomSite.UpdateCell(rowNum, "pdbx_PDB_model_num", std::to_string(modelNr));
 }
 
-/*! \brief The atom_site column names, in the order produced by buildAtomSiteRow().
+/*! \brief The atom_site column names, in the order they are written.
  *
  * label_alt_id and label_entity_id carry nothing GROMACS knows about, but readers
  * are entitled to expect them: gemmi, for one, reads no atoms at all from a file
@@ -494,7 +498,7 @@ const std::vector<const char*>& structConnTypeColNames()
  * The LINK/SSBOND correspondence points at the auth_* chain, residue name and
  * residue number and at the label_ atom name; the label_ chain, residue name and
  * residue number are written as well because deposited entries carry both and
- * readers differ in which they use. Both sets repeat what buildAtomSiteRow()
+ * readers differ in which they use. Both sets repeat what fillAtomSiteRow()
  * writes for the same atom, so the pointers resolve by construction.
  */
 void appendConnPartner(std::vector<std::string>* row, const t_atoms* atoms, int i)
@@ -1006,7 +1010,8 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
     }
     for (int ii = 0; ii < nindex; ii++)
     {
-        atomSite.AddRow(buildAtomSiteRow(atoms, index[ii], x, /*modelNr*/ 1));
+        atomSite.AddRow();
+        fillAtomSiteRow(atomSite, atomSite.GetNumRows() - 1, atoms, index[ii], x, /*modelNr*/ 1);
     }
 
     cif.Write(outfile.string());
@@ -1178,12 +1183,24 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
             std::fprintf(out, "_atom_site.%s\n", colName);
         }
     }
+    // Each atom is filled into one reusable row by the same code as the table
+    // writer uses, and then streamed out in column order.
+    const std::vector<const char*>& colNames = atomSiteColNames();
+    ISTable                         atomSiteRow;
+    for (const char* colName : colNames)
+    {
+        atomSiteRow.AddColumn(colName);
+    }
+    atomSiteRow.AddRow();
     for (int ii = 0; ii < nindex; ii++)
     {
-        const std::vector<std::string> row = buildAtomSiteRow(atoms, index[ii], x, modelNr);
-        for (size_t colNum = 0; colNum < row.size(); colNum++)
+        fillAtomSiteRow(atomSiteRow, 0, atoms, index[ii], x, modelNr);
+        for (size_t colNum = 0; colNum < colNames.size(); colNum++)
         {
-            std::fprintf(out, "%s%s", cifToken(row[colNum]).c_str(), (colNum + 1 < row.size()) ? " " : "\n");
+            std::fprintf(out,
+                         "%s%s",
+                         cifToken(atomSiteRow(0, colNames[colNum])).c_str(),
+                         (colNum + 1 < colNames.size()) ? " " : "\n");
         }
     }
 }
