@@ -92,7 +92,7 @@ bool isCifNull(std::string_view s)
  * Many items are optional, so the reading loops resolve each column name once
  * with this and then address cells with ISTable::operator() through valueAt().
  */
-std::string findColumn(ISTable* table, std::initializer_list<std::string> candidates)
+std::string findColName(ISTable* table, std::initializer_list<std::string> candidates)
 {
     for (const std::string& name : candidates)
     {
@@ -104,42 +104,42 @@ std::string findColumn(ISTable* table, std::initializer_list<std::string> candid
     return std::string();
 }
 
-//! Value at \p row of \p column as resolved by findColumn(); "" when no column was found.
-const std::string& valueAt(const ISTable& table, unsigned int row, const std::string& column)
+//! Value at \p rowNum of \p colName as resolved by findColName(); "" when there is none.
+const std::string& valueAt(const ISTable& table, unsigned int rowNum, const std::string& colName)
 {
     static const std::string c_absent;
-    return column.empty() ? c_absent : table(row, column);
+    return colName.empty() ? c_absent : table(rowNum, colName);
 }
 
-/*! \brief Row indices of the atom_site table that belong to the first model.
+/*! \brief Row numbers of the atom_site table that belong to the first model.
  *
  * mmCIF files may hold several NMR/ensemble models in one atom_site loop; like
  * the PDB reader we keep only the first one.
  */
 std::vector<unsigned int> firstModelRows(ISTable* atomSite)
 {
-    const unsigned int        nRows = atomSite->GetNumRows();
-    std::vector<unsigned int> rows;
-    rows.reserve(nRows);
-    const std::string modelColumn = "pdbx_PDB_model_num";
-    if (nRows == 0 || !atomSite->IsColumnPresent(modelColumn))
+    const unsigned int        numRows = atomSite->GetNumRows();
+    std::vector<unsigned int> rowNums;
+    rowNums.reserve(numRows);
+    const std::string modelColName = "pdbx_PDB_model_num";
+    if (numRows == 0 || !atomSite->IsColumnPresent(modelColName))
     {
         // Without a model column, every row belongs to the one model there is.
-        for (unsigned int r = 0; r < nRows; r++)
+        for (unsigned int rowNum = 0; rowNum < numRows; rowNum++)
         {
-            rows.push_back(r);
+            rowNums.push_back(rowNum);
         }
-        return rows;
+        return rowNums;
     }
-    const std::string& firstModel = (*atomSite)(0, modelColumn);
-    for (unsigned int r = 0; r < nRows; r++)
+    const std::string& firstModel = (*atomSite)(0, modelColName);
+    for (unsigned int rowNum = 0; rowNum < numRows; rowNum++)
     {
-        if ((*atomSite)(r, modelColumn) == firstModel)
+        if ((*atomSite)(rowNum, modelColName) == firstModel)
         {
-            rows.push_back(r);
+            rowNums.push_back(rowNum);
         }
     }
-    return rows;
+    return rowNums;
 }
 
 //! Parse \p infile and return the atom_site table of its first data block (or nullptr).
@@ -220,8 +220,9 @@ bool readUnitCell(CifFile* cif, const std::string& block, PbcType* pbcType, matr
     {
         return false;
     }
-    auto get = [unitCellTable](const char* name) -> std::string
-    { return unitCellTable->IsColumnPresent(name) ? (*unitCellTable)(0, name) : std::string(); };
+    auto get = [unitCellTable](const char* colName) -> std::string {
+        return unitCellTable->IsColumnPresent(colName) ? (*unitCellTable)(0, colName) : std::string();
+    };
 
     const std::string lengths[DIM] = { get("length_a"), get("length_b"), get("length_c") };
     double            edge[DIM];
@@ -370,18 +371,18 @@ std::vector<std::string> buildAtomSiteRow(const t_atoms* atoms, int i, const rve
  * are entitled to expect them: gemmi, for one, reads no atoms at all from a file
  * that leaves them out.
  */
-const std::vector<const char*>& atomSiteColumns()
+const std::vector<const char*>& atomSiteColNames()
 {
-    static const std::vector<const char*> columns = { "group_PDB",     "id",
-                                                      "type_symbol",   "label_atom_id",
-                                                      "label_alt_id",  "label_comp_id",
-                                                      "label_asym_id", "label_entity_id",
-                                                      "label_seq_id",  "Cartn_x",
-                                                      "Cartn_y",       "Cartn_z",
-                                                      "occupancy",     "B_iso_or_equiv",
-                                                      "auth_seq_id",   "auth_comp_id",
-                                                      "auth_asym_id",  "pdbx_PDB_model_num" };
-    return columns;
+    static const std::vector<const char*> colNames = { "group_PDB",     "id",
+                                                       "type_symbol",   "label_atom_id",
+                                                       "label_alt_id",  "label_comp_id",
+                                                       "label_asym_id", "label_entity_id",
+                                                       "label_seq_id",  "Cartn_x",
+                                                       "Cartn_y",       "Cartn_z",
+                                                       "occupancy",     "B_iso_or_equiv",
+                                                       "auth_seq_id",   "auth_comp_id",
+                                                       "auth_asym_id",  "pdbx_PDB_model_num" };
+    return colNames;
 }
 
 //! Format \p value as a CIF token, quoting it when it holds a space.
@@ -399,7 +400,7 @@ std::string cifToken(const std::string& value)
 //! Add \p rows to \p block as a loop named \p category; does nothing when empty.
 void addLoopTable(Block&                                        block,
                   const char*                                   category,
-                  gmx::ArrayRef<const char* const>              columns,
+                  gmx::ArrayRef<const char* const>              colNames,
                   gmx::ArrayRef<const std::vector<std::string>> rows)
 {
     if (rows.empty())
@@ -407,9 +408,9 @@ void addLoopTable(Block&                                        block,
         return;
     }
     ISTable& table = block.AddTable(category);
-    for (const char* col : columns)
+    for (const char* colName : colNames)
     {
-        table.AddColumn(col);
+        table.AddColumn(colName);
     }
     for (const std::vector<std::string>& row : rows)
     {
@@ -420,7 +421,7 @@ void addLoopTable(Block&                                        block,
 //! Stream \p rows to \p out as a loop named \p category; does nothing when empty.
 void writeLoop(FILE*                                         out,
                const char*                                   category,
-               gmx::ArrayRef<const char* const>              columns,
+               gmx::ArrayRef<const char* const>              colNames,
                gmx::ArrayRef<const std::vector<std::string>> rows)
 {
     if (rows.empty())
@@ -428,15 +429,15 @@ void writeLoop(FILE*                                         out,
         return;
     }
     std::fprintf(out, "loop_\n");
-    for (const char* col : columns)
+    for (const char* colName : colNames)
     {
-        std::fprintf(out, "_%s.%s\n", category, col);
+        std::fprintf(out, "_%s.%s\n", category, colName);
     }
     for (const std::vector<std::string>& row : rows)
     {
-        for (size_t k = 0; k < row.size(); k++)
+        for (size_t colNum = 0; colNum < row.size(); colNum++)
         {
-            std::fprintf(out, "%s%s", cifToken(row[k]).c_str(), (k + 1 < row.size()) ? " " : "\n");
+            std::fprintf(out, "%s%s", cifToken(row[colNum]).c_str(), (colNum + 1 < row.size()) ? " " : "\n");
         }
     }
     std::fprintf(out, "#\n");
@@ -455,39 +456,39 @@ void writeLoop(FILE*                                         out,
  */
 
 //! The struct_conn column names, in the order produced by buildStructConnRows().
-const std::vector<const char*>& structConnColumns()
+const std::vector<const char*>& structConnColNames()
 {
-    static const std::vector<const char*> columns = { "id",
-                                                      "conn_type_id",
-                                                      "ptnr1_label_asym_id",
-                                                      "ptnr1_label_comp_id",
-                                                      "ptnr1_label_seq_id",
-                                                      "ptnr1_label_atom_id",
-                                                      "pdbx_ptnr1_label_alt_id",
-                                                      "pdbx_ptnr1_PDB_ins_code",
-                                                      "ptnr1_auth_asym_id",
-                                                      "ptnr1_auth_comp_id",
-                                                      "ptnr1_auth_seq_id",
-                                                      "ptnr1_symmetry",
-                                                      "ptnr2_label_asym_id",
-                                                      "ptnr2_label_comp_id",
-                                                      "ptnr2_label_seq_id",
-                                                      "ptnr2_label_atom_id",
-                                                      "pdbx_ptnr2_label_alt_id",
-                                                      "pdbx_ptnr2_PDB_ins_code",
-                                                      "ptnr2_auth_asym_id",
-                                                      "ptnr2_auth_comp_id",
-                                                      "ptnr2_auth_seq_id",
-                                                      "ptnr2_symmetry",
-                                                      "pdbx_dist_value" };
-    return columns;
+    static const std::vector<const char*> colNames = { "id",
+                                                       "conn_type_id",
+                                                       "ptnr1_label_asym_id",
+                                                       "ptnr1_label_comp_id",
+                                                       "ptnr1_label_seq_id",
+                                                       "ptnr1_label_atom_id",
+                                                       "pdbx_ptnr1_label_alt_id",
+                                                       "pdbx_ptnr1_PDB_ins_code",
+                                                       "ptnr1_auth_asym_id",
+                                                       "ptnr1_auth_comp_id",
+                                                       "ptnr1_auth_seq_id",
+                                                       "ptnr1_symmetry",
+                                                       "ptnr2_label_asym_id",
+                                                       "ptnr2_label_comp_id",
+                                                       "ptnr2_label_seq_id",
+                                                       "ptnr2_label_atom_id",
+                                                       "pdbx_ptnr2_label_alt_id",
+                                                       "pdbx_ptnr2_PDB_ins_code",
+                                                       "ptnr2_auth_asym_id",
+                                                       "ptnr2_auth_comp_id",
+                                                       "ptnr2_auth_seq_id",
+                                                       "ptnr2_symmetry",
+                                                       "pdbx_dist_value" };
+    return colNames;
 }
 
 //! The struct_conn_type column names.
-const std::vector<const char*>& structConnTypeColumns()
+const std::vector<const char*>& structConnTypeColNames()
 {
-    static const std::vector<const char*> columns = { "id", "criteria", "reference" };
-    return columns;
+    static const std::vector<const char*> colNames = { "id", "criteria", "reference" };
+    return colNames;
 }
 
 /*! \brief Append the eleven fields describing bond partner \p i to \p row.
@@ -606,7 +607,7 @@ std::vector<std::vector<std::string>> buildStructConnRows(const t_atoms*        
         const bool disulfide = isThiolSulfur(atoms, ai) && isThiolSulfur(atoms, aj);
 
         std::vector<std::string> row;
-        row.reserve(structConnColumns().size());
+        row.reserve(structConnColNames().size());
         row.push_back(disulfide ? "disulf" + std::to_string(++numDisulf)
                                 : "covale" + std::to_string(++numCovale));
         row.emplace_back(disulfide ? "disulf" : "covale");
@@ -643,33 +644,33 @@ std::string connectionKey(std::string_view asym, std::string_view seq, std::stri
     return key;
 }
 
-//! The struct_conn columns that address one bond partner, each with the column to fall back on.
-struct PartnerColumns
+//! The names of the struct_conn columns that address one bond partner, each with a fallback.
+struct PartnerColNames
 {
     std::string asym, asymFallback;
     std::string seq, seqFallback;
     std::string atom, atomFallback;
 };
 
-//! Resolve the columns of bond partner \p ptnr ("ptnr1" or "ptnr2") in \p structConn.
-PartnerColumns partnerColumns(ISTable* structConn, const std::string& ptnr)
+//! Resolve the column names of bond partner \p ptnr ("ptnr1" or "ptnr2") in \p structConn.
+PartnerColNames partnerColNames(ISTable* structConn, const std::string& ptnr)
 {
-    return { findColumn(structConn, { ptnr + "_auth_asym_id" }),
-             findColumn(structConn, { ptnr + "_label_asym_id" }),
-             findColumn(structConn, { ptnr + "_auth_seq_id" }),
-             findColumn(structConn, { ptnr + "_label_seq_id" }),
-             findColumn(structConn, { ptnr + "_label_atom_id" }),
-             findColumn(structConn, { ptnr + "_auth_atom_id" }) };
+    return { findColName(structConn, { ptnr + "_auth_asym_id" }),
+             findColName(structConn, { ptnr + "_label_asym_id" }),
+             findColName(structConn, { ptnr + "_auth_seq_id" }),
+             findColName(structConn, { ptnr + "_label_seq_id" }),
+             findColName(structConn, { ptnr + "_label_atom_id" }),
+             findColName(structConn, { ptnr + "_auth_atom_id" }) };
 }
 
-//! Value of \p column at \p row of \p table, or of \p fallback when that is null.
+//! Value of \p colName at \p rowNum of \p table, or of \p fallbackColName when that is null.
 const std::string& preferredValue(const ISTable&     table,
-                                  unsigned int       row,
-                                  const std::string& column,
-                                  const std::string& fallback)
+                                  unsigned int       rowNum,
+                                  const std::string& colName,
+                                  const std::string& fallbackColName)
 {
-    const std::string& value = valueAt(table, row, column);
-    return isCifNull(value) ? valueAt(table, row, fallback) : value;
+    const std::string& value = valueAt(table, rowNum, colName);
+    return isCifNull(value) ? valueAt(table, rowNum, fallbackColName) : value;
 }
 
 /*! \brief Add the bonds listed in the struct_conn table of \p block to \p conect.
@@ -698,27 +699,27 @@ void readStructConn(CifFile* cif, const std::string& block, const t_atoms* atoms
                           i);
     }
 
-    const PartnerColumns partner1Columns = partnerColumns(structConn, "ptnr1");
-    const PartnerColumns partner2Columns = partnerColumns(structConn, "ptnr2");
+    const PartnerColNames partner1ColNames = partnerColNames(structConn, "ptnr1");
+    const PartnerColNames partner2ColNames = partnerColNames(structConn, "ptnr2");
     // The atom a struct_conn row names as one partner, or atomIndex.end() if it was not read.
-    auto findPartner = [&atomIndex, structConn](unsigned int row, const PartnerColumns& columns)
+    auto findPartner = [&atomIndex, structConn](unsigned int rowNum, const PartnerColNames& colNames)
     {
-        return atomIndex.find(
-                connectionKey(preferredValue(*structConn, row, columns.asym, columns.asymFallback),
-                              preferredValue(*structConn, row, columns.seq, columns.seqFallback),
-                              preferredValue(*structConn, row, columns.atom, columns.atomFallback)));
+        return atomIndex.find(connectionKey(
+                preferredValue(*structConn, rowNum, colNames.asym, colNames.asymFallback),
+                preferredValue(*structConn, rowNum, colNames.seq, colNames.seqFallback),
+                preferredValue(*structConn, rowNum, colNames.atom, colNames.atomFallback)));
     };
 
     int numUnresolved = 0;
-    for (unsigned int r = 0; r < structConn->GetNumRows(); r++)
+    for (unsigned int rowNum = 0; rowNum < structConn->GetNumRows(); rowNum++)
     {
-        const auto partner1 = findPartner(r, partner1Columns);
+        const auto partner1 = findPartner(rowNum, partner1ColNames);
         if (partner1 == atomIndex.end())
         {
             numUnresolved++;
             continue;
         }
-        const auto partner2 = findPartner(r, partner2Columns);
+        const auto partner2 = findPartner(rowNum, partner2ColNames);
         if (partner2 == atomIndex.end())
         {
             numUnresolved++;
@@ -776,32 +777,33 @@ void CifIO::read(const std::filesystem::path& infile,
 
     // Resolve the column of each item we read once; author (auth_*) items match
     // the PDB semantics GROMACS users expect, with the label_* items as fallback.
-    const std::string groupColumn    = findColumn(atomSite, { "group_PDB" });
-    const std::string serialColumn   = findColumn(atomSite, { "id" });
-    const std::string elementColumn  = findColumn(atomSite, { "type_symbol" });
-    const std::string atomNameColumn = findColumn(atomSite, { "auth_atom_id", "label_atom_id" });
-    const std::string resNameColumn  = findColumn(atomSite, { "auth_comp_id", "label_comp_id" });
-    const std::string chainColumn    = findColumn(atomSite, { "auth_asym_id", "label_asym_id" });
-    const std::string seqColumn      = findColumn(atomSite, { "auth_seq_id", "label_seq_id" });
-    const std::string insCodeColumn  = findColumn(atomSite, { "pdbx_PDB_ins_code" });
-    const std::string altLocColumn   = findColumn(atomSite, { "label_alt_id" });
-    const std::string xColumn        = findColumn(atomSite, { "Cartn_x" });
-    const std::string yColumn        = findColumn(atomSite, { "Cartn_y" });
-    const std::string zColumn        = findColumn(atomSite, { "Cartn_z" });
-    const std::string occupColumn    = findColumn(atomSite, { "occupancy" });
-    const std::string bfacColumn     = findColumn(atomSite, { "B_iso_or_equiv" });
+    const std::string groupColName    = findColName(atomSite, { "group_PDB" });
+    const std::string serialColName   = findColName(atomSite, { "id" });
+    const std::string elementColName  = findColName(atomSite, { "type_symbol" });
+    const std::string atomNameColName = findColName(atomSite, { "auth_atom_id", "label_atom_id" });
+    const std::string resNameColName  = findColName(atomSite, { "auth_comp_id", "label_comp_id" });
+    const std::string chainColName    = findColName(atomSite, { "auth_asym_id", "label_asym_id" });
+    const std::string seqColName      = findColName(atomSite, { "auth_seq_id", "label_seq_id" });
+    const std::string insCodeColName  = findColName(atomSite, { "pdbx_PDB_ins_code" });
+    const std::string altLocColName   = findColName(atomSite, { "label_alt_id" });
+    const std::string xColName        = findColName(atomSite, { "Cartn_x" });
+    const std::string yColName        = findColName(atomSite, { "Cartn_y" });
+    const std::string zColName        = findColName(atomSite, { "Cartn_z" });
+    const std::string occupColName    = findColName(atomSite, { "occupancy" });
+    const std::string bfacColName     = findColName(atomSite, { "B_iso_or_equiv" });
 
-    const ISTable&                  site = *atomSite;
-    const std::vector<unsigned int> rows = firstModelRows(atomSite);
+    const ISTable&                  site    = *atomSite;
+    const std::vector<unsigned int> rowNums = firstModelRows(atomSite);
 
-    int natom    = 0;
-    int chainnum = 0;
-    std::string_view prevChain = rows.empty() ? std::string_view() : valueAt(site, rows[0], chainColumn);
+    int              natom    = 0;
+    int              chainnum = 0;
+    std::string_view prevChain =
+            rowNums.empty() ? std::string_view() : valueAt(site, rowNums[0], chainColName);
     // mmCIF permits chain identifiers of more than one character, while t_resinfo
     // stores a single char, so collect whatever has to be truncated and report it
     // once rather than per atom.
     std::set<std::string> truncatedChains;
-    for (unsigned int r : rows)
+    for (unsigned int rowNum : rowNums)
     {
         if (natom >= atoms->nr)
         {
@@ -811,16 +813,16 @@ void CifIO::read(const std::filesystem::path& infile,
                                       atoms->nr)));
         }
 
-        const std::string_view chainStr = valueAt(site, r, chainColumn);
+        const std::string_view chainStr = valueAt(site, rowNum, chainColName);
         if (natom > 0 && chainStr != prevChain)
         {
             chainnum++;
         }
         prevChain = chainStr;
 
-        const char*            resnm   = valueAt(site, r, resNameColumn).c_str();
-        const int              resnr   = std::atoi(valueAt(site, r, seqColumn).c_str());
-        const std::string_view ins     = valueAt(site, r, insCodeColumn);
+        const char*            resnm   = valueAt(site, rowNum, resNameColName).c_str();
+        const int              resnr   = std::atoi(valueAt(site, rowNum, seqColName).c_str());
+        const std::string_view ins     = valueAt(site, rowNum, insCodeColName);
         const unsigned char    resic   = isCifNull(ins) ? ' ' : static_cast<unsigned char>(ins[0]);
         const char             chainid = chainStr.empty() ? ' ' : chainStr[0];
         if (chainStr.size() > 1)
@@ -842,8 +844,8 @@ void CifIO::read(const std::filesystem::path& infile,
             atoms->atom[natom].resind = atoms->atom[natom - 1].resind;
         }
 
-        const std::string& atomName   = valueAt(site, r, atomNameColumn);
-        const char*        elem       = valueAt(site, r, elementColumn).c_str();
+        const std::string& atomName   = valueAt(site, rowNum, atomNameColName);
+        const char*        elem       = valueAt(site, rowNum, elementColName).c_str();
         atoms->atomname[natom]        = put_symtab(symtab, atomName.c_str());
         atoms->atom[natom].m          = 0.0;
         atoms->atom[natom].q          = 0.0;
@@ -851,23 +853,24 @@ void CifIO::read(const std::filesystem::path& infile,
         std::strncpy(atoms->atom[natom].elem, elem, sizeof(atoms->atom[natom].elem) - 1);
         atoms->atom[natom].elem[sizeof(atoms->atom[natom].elem) - 1] = '\0';
 
-        x[natom][XX] = std::strtod(valueAt(site, r, xColumn).c_str(), nullptr) * 0.1;
-        x[natom][YY] = std::strtod(valueAt(site, r, yColumn).c_str(), nullptr) * 0.1;
-        x[natom][ZZ] = std::strtod(valueAt(site, r, zColumn).c_str(), nullptr) * 0.1;
+        x[natom][XX] = std::strtod(valueAt(site, rowNum, xColName).c_str(), nullptr) * 0.1;
+        x[natom][YY] = std::strtod(valueAt(site, rowNum, yColName).c_str(), nullptr) * 0.1;
+        x[natom][ZZ] = std::strtod(valueAt(site, rowNum, zColName).c_str(), nullptr) * 0.1;
 
         if (atoms->pdbinfo != nullptr)
         {
-            const std::string_view group = valueAt(site, r, groupColumn);
-            const std::string_view alt   = valueAt(site, r, altLocColumn);
+            const std::string_view group = valueAt(site, rowNum, groupColName);
+            const std::string_view alt   = valueAt(site, rowNum, altLocColName);
             atoms->pdbinfo[natom].type = (group == "HETATM") ? PdbRecordType::Hetatm : PdbRecordType::Atom;
-            atoms->pdbinfo[natom].atomnr = std::atoi(valueAt(site, r, serialColumn).c_str());
+            atoms->pdbinfo[natom].atomnr = std::atoi(valueAt(site, rowNum, serialColName).c_str());
             atoms->pdbinfo[natom].altloc = isCifNull(alt) ? ' ' : alt[0];
             std::strncpy(atoms->pdbinfo[natom].atomnm,
                          atomName.c_str(),
                          sizeof(atoms->pdbinfo[natom].atomnm) - 1);
             atoms->pdbinfo[natom].atomnm[sizeof(atoms->pdbinfo[natom].atomnm) - 1] = '\0';
-            atoms->pdbinfo[natom].occup = std::strtod(valueAt(site, r, occupColumn).c_str(), nullptr);
-            atoms->pdbinfo[natom].bfac = std::strtod(valueAt(site, r, bfacColumn).c_str(), nullptr);
+            atoms->pdbinfo[natom].occup =
+                    std::strtod(valueAt(site, rowNum, occupColName).c_str(), nullptr);
+            atoms->pdbinfo[natom].bfac = std::strtod(valueAt(site, rowNum, bfacColName).c_str(), nullptr);
             atoms->pdbinfo[natom].bAnisotropic = FALSE;
         }
         natom++;
@@ -956,24 +959,24 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
         const real beta  = (a * c != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]) : 90.0F;
         const real gamma = (a * b != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]) : 90.0F;
 
-        ISTable& cell = block.AddTable("cell");
-        for (const char* col : { "entry_id",
-                                 "length_a",
-                                 "length_b",
-                                 "length_c",
-                                 "angle_alpha",
-                                 "angle_beta",
-                                 "angle_gamma" })
+        ISTable& unitCellTable = block.AddTable("cell");
+        for (const char* colName : { "entry_id",
+                                     "length_a",
+                                     "length_b",
+                                     "length_c",
+                                     "angle_alpha",
+                                     "angle_beta",
+                                     "angle_gamma" })
         {
-            cell.AddColumn(col);
+            unitCellTable.AddColumn(colName);
         }
-        cell.AddRow(std::vector<std::string>{ entryId,
-                                              gmx::formatString("%.3f", 10.0 * a),
-                                              gmx::formatString("%.3f", 10.0 * b),
-                                              gmx::formatString("%.3f", 10.0 * c),
-                                              gmx::formatString("%.2f", alpha),
-                                              gmx::formatString("%.2f", beta),
-                                              gmx::formatString("%.2f", gamma) });
+        unitCellTable.AddRow(std::vector<std::string>{ entryId,
+                                                       gmx::formatString("%.3f", 10.0 * a),
+                                                       gmx::formatString("%.3f", 10.0 * b),
+                                                       gmx::formatString("%.3f", 10.0 * c),
+                                                       gmx::formatString("%.2f", alpha),
+                                                       gmx::formatString("%.2f", beta),
+                                                       gmx::formatString("%.2f", gamma) });
 
         ISTable& sym = block.AddTable("symmetry");
         sym.AddColumn("entry_id");
@@ -987,7 +990,7 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
     std::vector<std::string> connTypes;
     addLoopTable(block,
                  "struct_conn",
-                 structConnColumns(),
+                 structConnColNames(),
                  buildStructConnRows(atoms, x, nindex, index, conect, &connTypes));
     std::vector<std::vector<std::string>> connTypeRows;
     connTypeRows.reserve(connTypes.size());
@@ -995,13 +998,13 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
     {
         connTypeRows.push_back(std::vector<std::string>{ type, ".", "." });
     }
-    addLoopTable(block, "struct_conn_type", structConnTypeColumns(), connTypeRows);
+    addLoopTable(block, "struct_conn_type", structConnTypeColNames(), connTypeRows);
 
     // atom_site loop.
     ISTable& atomSite = block.AddTable("atom_site");
-    for (const char* col : atomSiteColumns())
+    for (const char* colName : atomSiteColNames())
     {
-        atomSite.AddColumn(col);
+        atomSite.AddColumn(colName);
     }
     for (int ii = 0; ii < nindex; ii++)
     {
@@ -1032,10 +1035,10 @@ struct CifTrajectory
 {
     std::unique_ptr<CifFile>               cif;
     ISTable*                               atomSite = nullptr; //!< owned by cif
-    std::string                            xColumn;
-    std::string                            yColumn;
-    std::string                            zColumn;
-    std::vector<std::vector<unsigned int>> modelRows; //!< row indices per model, in file order
+    std::string                            xColName;
+    std::string                            yColName;
+    std::string                            zColName;
+    std::vector<std::vector<unsigned int>> modelRowNums; //!< row indices per model, in file order
     int                                    natoms  = 0;
     bool                                   haveBox = false;
     matrix                                 box     = { { 0 } };
@@ -1052,32 +1055,32 @@ CifTrajectory* CifIO::openTrajectory(const std::filesystem::path& infile)
         return nullptr;
     }
     traj->atomSite = atomSite;
-    traj->xColumn  = findColumn(atomSite, { "Cartn_x" });
-    traj->yColumn  = findColumn(atomSite, { "Cartn_y" });
-    traj->zColumn  = findColumn(atomSite, { "Cartn_z" });
+    traj->xColName = findColName(atomSite, { "Cartn_x" });
+    traj->yColName = findColName(atomSite, { "Cartn_y" });
+    traj->zColName = findColName(atomSite, { "Cartn_z" });
 
     // Without a model column every row reads as model "", so all go to one model.
-    const std::string        modelColumn = findColumn(atomSite, { "pdbx_PDB_model_num" });
-    const unsigned int       nRows       = atomSite->GetNumRows();
+    const std::string        modelColName = findColName(atomSite, { "pdbx_PDB_model_num" });
+    const unsigned int       numRows      = atomSite->GetNumRows();
     std::vector<std::string> order; // model ids in first-seen order
-    for (unsigned int r = 0; r < nRows; r++)
+    for (unsigned int rowNum = 0; rowNum < numRows; rowNum++)
     {
-        const std::string& id = valueAt(*atomSite, r, modelColumn);
+        const std::string& id = valueAt(*atomSite, rowNum, modelColName);
         auto               it = std::find(order.begin(), order.end(), id);
         size_t             mi;
         if (it == order.end())
         {
             mi = order.size();
             order.push_back(id);
-            traj->modelRows.emplace_back();
+            traj->modelRowNums.emplace_back();
         }
         else
         {
             mi = static_cast<size_t>(std::distance(order.begin(), it));
         }
-        traj->modelRows[mi].push_back(r);
+        traj->modelRowNums[mi].push_back(rowNum);
     }
-    traj->natoms = traj->modelRows.empty() ? 0 : static_cast<int>(traj->modelRows[0].size());
+    traj->natoms = traj->modelRowNums.empty() ? 0 : static_cast<int>(traj->modelRowNums[0].size());
 
     traj->haveBox = readUnitCell(traj->cif.get(), block, nullptr, traj->box);
 
@@ -1091,20 +1094,20 @@ int CifIO::trajectoryNumAtoms(CifTrajectory* traj)
 
 bool CifIO::readTrajectoryFrame(CifTrajectory* traj, t_trxframe* fr)
 {
-    if (traj == nullptr || traj->cursor >= traj->modelRows.size())
+    if (traj == nullptr || traj->cursor >= traj->modelRowNums.size())
     {
         return false;
     }
-    const std::vector<unsigned int>& rows = traj->modelRows[traj->cursor];
-    const ISTable&                   site = *traj->atomSite;
-    fr->natoms                            = traj->natoms;
-    const int n                           = std::min(traj->natoms, static_cast<int>(rows.size()));
+    const std::vector<unsigned int>& rowNums = traj->modelRowNums[traj->cursor];
+    const ISTable&                   site    = *traj->atomSite;
+    fr->natoms                               = traj->natoms;
+    const int n = std::min(traj->natoms, static_cast<int>(rowNums.size()));
     for (int i = 0; i < n; i++)
     {
-        const unsigned int r = rows[i];
-        fr->x[i][XX]         = std::strtod(valueAt(site, r, traj->xColumn).c_str(), nullptr) * 0.1;
-        fr->x[i][YY]         = std::strtod(valueAt(site, r, traj->yColumn).c_str(), nullptr) * 0.1;
-        fr->x[i][ZZ]         = std::strtod(valueAt(site, r, traj->zColumn).c_str(), nullptr) * 0.1;
+        const unsigned int rowNum = rowNums[i];
+        fr->x[i][XX] = std::strtod(valueAt(site, rowNum, traj->xColName).c_str(), nullptr) * 0.1;
+        fr->x[i][YY] = std::strtod(valueAt(site, rowNum, traj->yColName).c_str(), nullptr) * 0.1;
+        fr->x[i][ZZ] = std::strtod(valueAt(site, rowNum, traj->zColName).c_str(), nullptr) * 0.1;
     }
     fr->bX = TRUE;
     if (traj->haveBox)
@@ -1177,7 +1180,7 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
         std::vector<std::string> connTypes;
         writeLoop(out,
                   "struct_conn",
-                  structConnColumns(),
+                  structConnColNames(),
                   buildStructConnRows(atoms, x, nindex, index, conect, &connTypes));
         std::vector<std::vector<std::string>> connTypeRows;
         connTypeRows.reserve(connTypes.size());
@@ -1185,20 +1188,20 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
         {
             connTypeRows.push_back(std::vector<std::string>{ type, ".", "." });
         }
-        writeLoop(out, "struct_conn_type", structConnTypeColumns(), connTypeRows);
+        writeLoop(out, "struct_conn_type", structConnTypeColNames(), connTypeRows);
 
         std::fprintf(out, "loop_\n");
-        for (const char* col : atomSiteColumns())
+        for (const char* colName : atomSiteColNames())
         {
-            std::fprintf(out, "_atom_site.%s\n", col);
+            std::fprintf(out, "_atom_site.%s\n", colName);
         }
     }
     for (int ii = 0; ii < nindex; ii++)
     {
         const std::vector<std::string> row = buildAtomSiteRow(atoms, index[ii], x, modelNr);
-        for (size_t k = 0; k < row.size(); k++)
+        for (size_t colNum = 0; colNum < row.size(); colNum++)
         {
-            std::fprintf(out, "%s%s", cifToken(row[k]).c_str(), (k + 1 < row.size()) ? " " : "\n");
+            std::fprintf(out, "%s%s", cifToken(row[colNum]).c_str(), (colNum + 1 < row.size()) ? " " : "\n");
         }
     }
 }
