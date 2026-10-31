@@ -313,6 +313,14 @@ void FusedGpuHaloExchange::reinitAllHaloExchanges(const t_commrec&       cr,
 
         const gmx_domdec_comm_dim_t& cd = comm.cd[dimIndex];
 
+        if (!cd.receiveInPlace)
+        {
+            gmx_fatal(FARGS,
+                      "The NVSHMEM-based GPU halo exchange does not support domain decompositions "
+                      "with multiple pulses along the second or third dimension. Change the "
+                      "decomposition setting (-dd) or unset GMX_ENABLE_NVSHMEM.");
+        }
+
         for (int pulse = 0; pulse < cd.numPulses(); pulse++)
         {
             const auto plan =

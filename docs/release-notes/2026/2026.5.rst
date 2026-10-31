@@ -99,6 +99,16 @@ on a GPU were not affected. This has been present in versions 2026.0 to 2026.4.
 
 :issue:`5778`
 
+Added fatal error for unsupported domain decomposition with NVSHMEM
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The experimental NVSHMEM-based PP halo exchange does not support domain
+decompositions with more than one communication pulse along the second or
+third decomposition dimension.
+Now ``mdrun`` exits with a fatal error instead of crashing.
+
+:issue:`5790`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
