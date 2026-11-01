@@ -567,6 +567,7 @@ std::vector<iListInput> c_InputBondsZeroLength = {
 //! Function types for testing angles with zero angle, has zero reference angle to make physical sense.
 std::vector<iListInput> c_InputAnglesZeroAngle = {
     { iListInput(2e-3, 1e-8).setHarmonic(InteractionFunction::Angles, 0.0, 50.0) },
+    { iListInput(8e-3, 1e-8).setHarmonic(InteractionFunction::GROMOS96Angles, 0.0, 50.0) },
 };
 
 } // namespace

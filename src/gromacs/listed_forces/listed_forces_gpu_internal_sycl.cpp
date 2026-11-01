@@ -163,6 +163,10 @@ auto bondedKernel(CommandGroupHandler              cgh,
                         angles_gpu<calcVir, calcEner>(
                                 functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
+                    case InteractionFunction::GROMOS96Angles:
+                        g96angles_gpu<calcVir, calcEner>(
+                                functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
+                        break;
                     case InteractionFunction::UreyBradleyPotential:
                         urey_bradley_gpu<calcVir, calcEner>(
                                 functionTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);

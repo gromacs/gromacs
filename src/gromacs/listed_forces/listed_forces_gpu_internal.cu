@@ -153,6 +153,17 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                   kernelParams.pbcAiuc,
                                                   threadIdx.x);
                     break;
+                case InteractionFunction::GROMOS96Angles:
+                    g96angles_gpu<calcVir, calcEner>(functionTypeTid,
+                                                     &vtot_loc,
+                                                     iatoms,
+                                                     kernelBuffers.d_forceParams,
+                                                     gm_xq,
+                                                     gm_f,
+                                                     sm_fShiftLoc,
+                                                     kernelParams.pbcAiuc,
+                                                     threadIdx.x);
+                    break;
                 case InteractionFunction::UreyBradleyPotential:
                     urey_bradley_gpu<calcVir, calcEner>(functionTypeTid,
                                                         &vtot_loc,

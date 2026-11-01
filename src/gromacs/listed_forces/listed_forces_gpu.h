@@ -72,7 +72,7 @@ class ArrayRef;
 class StepWorkload;
 
 /*! \brief The number of bonded function types supported on GPUs */
-static constexpr int sc_numFunctionTypesOnGpu = 8;
+static constexpr int sc_numFunctionTypesOnGpu = 9;
 
 /*! \brief List of all bonded function types supported on GPUs
  *
@@ -84,6 +84,7 @@ static constexpr int sc_numFunctionTypesOnGpu = 8;
 static constexpr std::array<InteractionFunction, sc_numFunctionTypesOnGpu> sc_functionTypesOnGpu = {
     InteractionFunction::Bonds,
     InteractionFunction::Angles,
+    InteractionFunction::GROMOS96Angles,
     InteractionFunction::UreyBradleyPotential,
     InteractionFunction::ProperDihedrals,
     InteractionFunction::RyckaertBellemansDihedrals,

@@ -35,3 +35,12 @@ For large nstlist values, the pairlist pruning interval is now larger.
 This improves performance, in particular with reaction-field electrostatics.
 
 :issue:`5701`
+
+GROMOS-96 angle interactions are now supported with GPU bonded forces
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+GROMOS-96 cosine-harmonic angle potentials (``F_G96ANGLES``) are now
+computed on the GPU with CUDA, HIP, and SYCL whenever bonded interactions
+are offloaded to the GPU (``-bonded gpu``).
+
+:issue:`5776`

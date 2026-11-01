@@ -98,10 +98,10 @@ constexpr float        c_Pi       = M_PI;
 template<typename T>
 struct FTypeArray
 {
-    static_assert(gmx::sc_numFunctionTypesOnGpu == 8,
+    static_assert(gmx::sc_numFunctionTypesOnGpu == 9,
                   "Please update the member initializer list and the switch below");
     constexpr FTypeArray(const T in[gmx::sc_numFunctionTypesOnGpu]) :
-        data{ in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7] }
+        data{ in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7], in[8] }
     {
     }
     GMX_DEVICE_FUNC_ATTRIBUTE constexpr T operator[](int idx) const
@@ -115,7 +115,8 @@ struct FTypeArray
             case 4: return data[4];
             case 5: return data[5];
             case 6: return data[6];
-            default: return data[7];
+            case 7: return data[7];
+            default: return data[8];
         }
     }
     T data[gmx::sc_numFunctionTypesOnGpu];
@@ -273,6 +274,56 @@ GMX_DEVICE_FUNC_ATTRIBUTE static inline void angles_gpu(const int               
             atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, f_j);
             atomicFetchAddLocal(sm_fShiftLoc, t2, f_k);
         }
+    }
+}
+
+template<bool calcVir, bool calcEner>
+GMX_DEVICE_FUNC_ATTRIBUTE static inline void g96angles_gpu(const int               i,
+                                                           DevicePrivatePtr<float> vtot_loc,
+                                                           const DeviceGlobalPtr<const t_iatom> gm_forceatoms,
+                                                           const DeviceGlobalPtr<const t_iparams> gm_forceparams,
+                                                           const DeviceGlobalPtr<const DeviceFloat4> gm_xq,
+                                                           DeviceGlobalPtr<DeviceFloat3> gm_f,
+                                                           DeviceLocalPtr<DeviceFloat3> sm_fShiftLoc,
+                                                           const PbcAiuc& pbcAiuc,
+                                                           const int      localId)
+{
+    DeviceInt4 angleData = loadInt4(gm_forceatoms, i);
+    const int  type      = angleData[0];
+    const int  ai        = angleData[1];
+    const int  aj        = angleData[2];
+    const int  ak        = angleData[3];
+
+    DeviceFloat3 r_ij;
+    DeviceFloat3 r_kj;
+    const int    t1        = pbcDxAiucGpu<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], r_ij);
+    const int    t2        = pbcDxAiucGpu<calcVir>(pbcAiuc, gm_xq[ak], gm_xq[aj], r_kj);
+    const float  cos_theta = gmxDeviceCosAngle(r_ij, r_kj);
+
+    float va;
+    float dVdt;
+    harmonic_gpu<calcEner>(
+            gm_forceparams[type].harmonic.krA, gm_forceparams[type].harmonic.rA, cos_theta, &va, &dVdt);
+    if constexpr (calcEner)
+    {
+        *vtot_loc += va;
+    }
+
+    const float        rij_1    = gmxDeviceRSqrt(gmxDeviceNorm2(r_ij));
+    const float        rkj_1    = gmxDeviceRSqrt(gmxDeviceNorm2(r_kj));
+    const float        rijrkj_1 = rij_1 * rkj_1;
+    const DeviceFloat3 f_i      = dVdt * (rijrkj_1 * r_kj - (rij_1 * rij_1 * cos_theta) * r_ij);
+    const DeviceFloat3 f_k      = dVdt * (rijrkj_1 * r_ij - (rkj_1 * rkj_1 * cos_theta) * r_kj);
+    const DeviceFloat3 f_j      = -f_i - f_k;
+
+    staggeredAtomicAddForce(gm_f, f_i, ai, localId);
+    staggeredAtomicAddForce(gm_f, f_j, aj, localId);
+    staggeredAtomicAddForce(gm_f, f_k, ak, localId);
+    if constexpr (calcVir)
+    {
+        atomicFetchAddLocal(sm_fShiftLoc, t1, f_i);
+        atomicFetchAddLocal(sm_fShiftLoc, gmx::c_centralShiftIndex, f_j);
+        atomicFetchAddLocal(sm_fShiftLoc, t2, f_k);
     }
 }
 
