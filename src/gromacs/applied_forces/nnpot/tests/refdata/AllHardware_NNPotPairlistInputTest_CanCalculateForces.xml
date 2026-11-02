@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Energy">16.252615</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">12</Int>
+    <Vector>
+      <Real Name="X">6.8480034</Real>
+      <Real Name="Y">20.543991</Real>
+      <Real Name="Z">57.104023</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4.0900035</Real>
+      <Real Name="Y">2.2120004</Real>
+      <Real Name="Z">5.7260051</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.43599892</Real>
+      <Real Name="Y">-0.73799706</Real>
+      <Real Name="Z">8.5059986</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-12.080006</Real>
+      <Real Name="Y">-18.143993</Real>
+      <Real Name="Z">-62.672028</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.35200024</Real>
+      <Real Name="Y">-0.84599972</Real>
+      <Real Name="Z">-2.6699984</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.9299979</Real>
+      <Real Name="Y">-3.0280013</Real>
+      <Real Name="Z">-5.9940033</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

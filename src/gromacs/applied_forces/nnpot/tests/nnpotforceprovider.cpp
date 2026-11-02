@@ -44,31 +44,43 @@
 
 #include "config.h"
 
+#include <algorithm>
+#include <numeric>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/nnpot/nnpotoptions.h"
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/mpicomm.h"
-#include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
-#include "testutils/cmdlinetest.h"
+#include "testutils/hardware_test_fixture.h"
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/setenv.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
@@ -84,45 +96,24 @@ public:
      */
     void readDataFromFile(const std::string& fileName, const std::string& mdpContent)
     {
-        const std::filesystem::path simData =
-                gmx::test::TestFileManager::getTestSimulationDatabaseDirectory();
-
-        // Generate empty mdp file
-        const std::string mdpInputFileName =
-                fileManager_.getTemporaryFilePath(fileName + ".mdp").string();
-        gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpContent);
-
-        // Generate tpr file
-        const std::string tprName = fileManager_.getTemporaryFilePath(fileName + ".tpr").string();
-        {
-            gmx::test::CommandLine caller;
-            caller.append("grompp");
-            caller.addOption("-f", mdpInputFileName);
-            caller.addOption("-p", (simData / fileName).replace_extension(".top").string());
-            caller.addOption("-c", (simData / fileName).replace_extension(".gro").string());
-            caller.addOption("-o", tprName);
-            ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
-        }
-
-        // Load topology
+        TprAndFileManager tprManager(fileName, mdpContent);
+        tprManager.setInputConf(fileName + ".gro");
         bool fullTopology;
-
-        readConfAndTopology(tprName.c_str(), &fullTopology, &mtop_, &pbcType_, &coords, nullptr, box_);
-
+        readConfAndTopology(tprManager.tprName(), &fullTopology, &mtop_, &pbcType_, &coords, nullptr, box_);
         x_ = gmx::constArrayRefFromArray(reinterpret_cast<gmx::RVec*>(coords), mtop_.natoms);
     }
 
     void setDefaultParameters()
     {
         params_.active_        = true;
-        params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
+        params_.modelFileName_ = TestFileManager::getInputFilePath("model.pt").string();
         params_.numAtoms_      = 6;
     }
 
     void setParametersTopology()
     {
         params_.active_        = true;
-        params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
+        params_.modelFileName_ = TestFileManager::getInputFilePath("model.pt").string();
         params_.atoms_         = gmx_mtop_global_atoms(mtop_);
         params_.numAtoms_      = params_.atoms_.nr;
         params_.modelInput_    = { "atom-positions", "atom-numbers", "box", "pbc" };
@@ -133,9 +124,9 @@ public:
         params_.pbcType_            = std::make_unique<PbcType>(pbcType_);
     }
 
-    void testCalculateForces(gmx::test::TestReferenceData& testData)
+    void testCalculateForces(TestReferenceData& testData)
     {
-        gmx::test::TestReferenceChecker checker(testData.rootChecker());
+        TestReferenceChecker checker(testData.rootChecker());
 
         std::unique_ptr<NNPotForceProvider> nnpotForceProvider;
         ASSERT_NO_THROW(nnpotForceProvider =
@@ -154,10 +145,10 @@ public:
 
         ASSERT_NO_THROW(nnpotForceProvider->calculateForces(fInput, &forceProviderOutput));
 
-        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100000.0, 5e-5));
+        checker.setDefaultTolerance(relativeToleranceAsFloatingPoint(100000.0, 5e-5));
         checker.checkReal(enerdDummy.term[InteractionFunction::NeuralNetworkPotentialEnergy],
                           "Energy");
-        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100.0, 5e-5));
+        checker.setDefaultTolerance(relativeToleranceAsFloatingPoint(100.0, 5e-5));
         checker.checkSequence(forces.begin(), forces.end(), "Forces");
     }
 
@@ -168,7 +159,6 @@ protected:
     std::unique_ptr<LocalAtomSet> inpAtomSet_;
     const MpiComm                 mpiComm_ = MpiComm(MpiComm::SingleRank{});
     const gmx_domdec_t*           dd_      = nullptr;
-    gmx::test::TestFileManager    fileManager_;
 
     rvec*                coords = nullptr;
     ArrayRef<const RVec> x_;
@@ -193,7 +183,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
             SCOPED_TRACE("Check construction with invalid model file name");
             params_.modelFileName_ = "model";
             EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_), FileIOError);
-            params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
+            params_.modelFileName_ = TestFileManager::getInputFilePath("model.pt").string();
         }
 
         for (const auto& device : getTestHardwareEnvironment()->getTestDeviceList())
@@ -222,7 +212,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
 // Temporary skip while we iron out version incompatibilities in CI
 TEST_F(NNPotForceProviderTest, CanCalculateForces)
 {
-    gmx::test::TestReferenceData data;
+    TestReferenceData data;
 
     readDataFromFile("spc2", "");
     setParametersTopology();
@@ -250,6 +240,217 @@ TEST_F(NNPotForceProviderTest, CanCalculateForces)
 
     done_atom(&params_.atoms_);
 }
+
+//! Order of local atom indices relative to global atom indices
+enum class LocalAtomOrder : int
+{
+    Global,   //!< Local order equals global order
+    Reversed, //!< Local order differs from global order
+    Count
+};
+
+//! Names for local atom orders
+static const EnumerationArray<LocalAtomOrder, const char*> sc_localAtomOrderNames = {
+    { "GlobalOrder", "ReversedOrder" }
+};
+
+//! Whether NNP models can run on a GPU in this configuration, cf. getMdrunActiveDevice()
+static constexpr bool sc_nnpotSupportsGpu = GMX_GPU_CUDA || GMX_GPU_HIP || GMX_TORCH_XPU;
+
+/*! \brief Hardware test helper for models with pairlist input
+ *
+ * All test cases compute the same energy and forces, so there is no input
+ * configuration, and the local atom order is an execution mode.
+ */
+using NNPotPairlistTestHelper = HardwareAndExecutionTestHelper<std::tuple<>, std::tuple<LocalAtomOrder>>;
+
+//! Helper object to name tests using all parameters
+static const NameOfTestFromTuple<NNPotPairlistTestHelper::DynamicParameters> sc_pairlistTestNamer =
+        NNPotPairlistTestHelper::testNamer(
+                std::make_tuple(),
+                std::make_tuple([](LocalAtomOrder order) { return sc_localAtomOrderNames[order]; }));
+
+/*! \brief Test fixture for models with pairlist input (atom pairs and pair shifts)
+ *
+ * Runs on CPU and all compatible GPUs, with local atom order equal to the global
+ * order and with reordered local atoms, as with domain decomposition (which is
+ * also used on a single rank). All cases share the same reference data.
+ * The NNP region straddles the periodic boundary, so we also test non-central
+ * shift vectors.
+ *
+ * model_pairs.pt computes E = sum_pairs Z_i Z_j |x_i - x_j + shift|^2. It was generated with:
+ *
+ *     class PairModel(torch.nn.Module):
+ *         def forward(self, positions, atomic_numbers, pairs, shifts):
+ *             i = pairs[:, 0].long()
+ *             j = pairs[:, 1].long()
+ *             d = positions[i] - positions[j] + shifts.to(positions.dtype)
+ *             z = atomic_numbers.to(positions.dtype)
+ *             return (z[i] * z[j] * (d * d).sum(dim=1)).sum()
+ *
+ *     torch.jit.script(PairModel()).save("model_pairs.pt")
+ */
+class NNPotPairlistInputTest : public HardwareTestFixture<NNPotPairlistTestHelper>
+{
+public:
+    NNPotPairlistInputTest() : HardwareTestFixture(std::make_tuple())
+    {
+        TprAndFileManager tprManager("4water");
+        tprManager.setInputConf("4water.gro");
+        bool  fullTopology;
+        rvec* coords = nullptr;
+        readConfAndTopology(tprManager.tprName(), &fullTopology, &mtop_, &pbcType_, &coords, nullptr, box_);
+        xGlobal_.assign(reinterpret_cast<RVec*>(coords), reinterpret_cast<RVec*>(coords) + mtop_.natoms);
+        sfree(coords);
+
+        params_.active_        = true;
+        params_.modelFileName_ = TestFileManager::getInputFilePath("model_pairs.pt").string();
+        params_.atoms_         = gmx_mtop_global_atoms(mtop_);
+        params_.numAtoms_      = mtop_.natoms;
+        params_.modelInput_    = { "atom-positions", "atom-numbers", "atom-pairs", "pair-shifts" };
+        params_.pairCutoff_    = sc_pairCutoff;
+        params_.pbcType_       = std::make_unique<PbcType>(pbcType_);
+        LocalAtomSet nnpSet    = atomSetManager_.add(ArrayRef<const Index>(sc_nnpIndices));
+        params_.nnpAtoms_      = std::make_unique<LocalAtomSet>(nnpSet);
+
+        // Translate the system so the NNP waters straddle the periodic boundary,
+        // which causes non-central shift vectors in the pairlist
+        for (auto& x : xGlobal_)
+        {
+            x -= RVec{ 0.8, 1.25, 1.2 };
+        }
+        put_atoms_in_box(pbcType_, box_, xGlobal_);
+
+        calc_shifts(box_, shiftVecs_);
+    }
+
+    ~NNPotPairlistInputTest() override { done_atom(&params_.atoms_); }
+
+    void addCustomSkipReasons(MessageStringCollector& skipReasons) override
+    {
+        // With the XPU backend, the model always runs on the first XPU, since SYCL has no
+        // current device that activateHardware() could set, cf. getMdrunActiveDevice()
+        skipReasons.appendIf(
+                GMX_TORCH_XPU && isGpuTest() && hardwareContext() != &getTestHardwareContexts()[1],
+                "With the LibTorch XPU backend, NNP models only run on the first GPU");
+    }
+
+    /*! \brief Calculates NNP forces with the given local atom order and checks them
+     *
+     * \param[in] localToGlobal  localToGlobal[l] is the global index of the atom at local index l
+     */
+    void testCalculateForces(ArrayRef<const int> localToGlobal)
+    {
+        const int numAtoms = params_.numAtoms_;
+
+        gmx_ga2la_t       ga2la(numAtoms, numAtoms);
+        std::vector<RVec> xLocal(numAtoms);
+        for (int i = 0; i < numAtoms; i++)
+        {
+            ga2la.insert(localToGlobal[i], { i, 0 });
+            xLocal[i] = xGlobal_[localToGlobal[i]];
+        }
+        atomSetManager_.setIndicesInDomainDecomposition(ga2la);
+
+        // Excluded pairlist over all atoms in local indices, as nbnxm provides it,
+        // using the convention: distance = x[first] - x[second] + shiftVec[shiftIndex]
+        auto isNNPAtom = [](int globalIndex)
+        {
+            return std::find(sc_nnpIndices.begin(), sc_nnpIndices.end(), globalIndex)
+                   != sc_nnpIndices.end();
+        };
+        std::vector<PairlistEntry> excludedPairs;
+        int                        numPeriodicNNPPairs = 0;
+        for (int first = 0; first < numAtoms; first++)
+        {
+            for (int second = first + 1; second < numAtoms; second++)
+            {
+                for (int shiftIndex = 0; shiftIndex < c_numShiftVectors; shiftIndex++)
+                {
+                    if (norm(xLocal[first] - xLocal[second] + shiftVecs_[shiftIndex]) < sc_pairCutoff)
+                    {
+                        excludedPairs.push_back({ { first, second }, shiftIndex });
+                        numPeriodicNNPPairs +=
+                                (isNNPAtom(localToGlobal[first]) && isNNPAtom(localToGlobal[second])
+                                 && shiftIndex != c_centralShiftIndex);
+                    }
+                }
+            }
+        }
+        ASSERT_GT(numPeriodicNNPPairs, 0)
+                << "Test setup should produce NNP pairs across the boundary";
+
+        NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_);
+        nnpotForceProvider.gatherAtomNumbersIndices(
+                MDModulesAtomsRedistributedSignal{ box_, xLocal, {}, {}, std::nullopt });
+        nnpotForceProvider.setPairlist(MDModulesPairlistConstructedSignal{ {}, excludedPairs, {} });
+
+        ForceProviderInput  fInput(xLocal, numAtoms, {}, {}, 0.0, 0, box_, mpiComm_, nullptr);
+        std::vector<RVec>   forces(numAtoms, RVec{ 0, 0, 0 });
+        ForceWithVirial     forceWithVirial(forces, true);
+        gmx_enerdata_t      enerd(1, nullptr);
+        ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerd);
+        nnpotForceProvider.calculateForces(fInput, &forceProviderOutput);
+
+        // Check forces in global order, so all local orders share the same reference
+        std::vector<RVec> forcesGlobal(numAtoms);
+        for (int i = 0; i < numAtoms; i++)
+        {
+            forcesGlobal[localToGlobal[i]] = forces[i];
+        }
+
+        checker().setDefaultTolerance(relativeToleranceAsFloatingPoint(10.0, 5e-5));
+        checker().checkReal(enerd.term[InteractionFunction::NeuralNetworkPotentialEnergy], "Energy");
+        checker().setDefaultTolerance(relativeToleranceAsFloatingPoint(100.0, 5e-5));
+        checker().checkSequence(forcesGlobal.begin(), forcesGlobal.end(), "Forces");
+    }
+
+protected:
+    //! NNP region: first two of four waters
+    static inline const std::vector<Index> sc_nnpIndices = { 0, 1, 2, 3, 4, 5 };
+    //! Cutoff for NNP pairs
+    static constexpr real sc_pairCutoff = 0.5;
+
+    NNPotParameters                     params_;
+    MDLogger                            logger_;
+    LocalAtomSetManager                 atomSetManager_;
+    const MpiComm                       mpiComm_ = MpiComm(MpiComm::SingleRank{});
+    gmx_mtop_t                          mtop_;
+    PbcType                             pbcType_;
+    matrix                              box_;
+    std::vector<RVec>                   xGlobal_;
+    std::array<RVec, c_numShiftVectors> shiftVecs_;
+};
+
+TEST_P(NNPotPairlistInputTest, CanCalculateForces)
+{
+    auto [localAtomOrder, _] = GetParam();
+
+    SCOPED_TRACE(formatString("Testing on %s with %s",
+                              hardwareContext()->description().c_str(),
+                              sc_localAtomOrderNames[localAtomOrder]));
+
+    // The model runs on the active GPU device if GMX_NN_DEVICE=gpu
+    activateHardware();
+    auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", isGpuTest() ? "gpu" : "cpu");
+
+    std::vector<int> localToGlobal(params_.numAtoms_);
+    std::iota(localToGlobal.begin(), localToGlobal.end(), 0);
+    if (localAtomOrder == LocalAtomOrder::Reversed)
+    {
+        std::reverse(localToGlobal.begin(), localToGlobal.end());
+    }
+
+    testCalculateForces(localToGlobal);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+        AllHardware,
+        NNPotPairlistInputTest,
+        ::testing::Combine(::testing::Values(LocalAtomOrder::Global, LocalAtomOrder::Reversed),
+                           ::testing::ValuesIn(getHardwareContextsWithCapability(sc_nnpotSupportsGpu))),
+        sc_pairlistTestNamer);
+
 #endif // GMX_TORCH
 
 } // namespace test

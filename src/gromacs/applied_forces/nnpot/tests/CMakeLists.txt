@@ -48,6 +48,7 @@ target_link_libraries(
     ${exename} PRIVATE
         applied_forces
         math
+        pbcutil
         topology
         gpu_utils
         testutils

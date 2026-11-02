@@ -63,7 +63,7 @@
 
 /*! \internal Helper function to find the index of a value in a vector
  *
- * Returns the index of the first occurrence of \p val in \p vec, or -1 if not found.
+ * Returns an optional index of the first occurrence of \p val in \p vec, or nullopt if not found.
  * Can be used as an inversion for the index lookup tables.
  * \param[in] vec vector to search in
  * \param[in] val value to search for
@@ -396,17 +396,18 @@ void NNPotForceProvider::preparePairlistInput(const matrix& box)
 
         // we only want to add pairs where both atoms are part of the NNP input
         // if any of the two (or more commonly both) is not, we skip this pair
-        if (const std::optional<ptrdiff_t> inputIdxA = indexOf(inputToGlobalIndex_, atomPair.first);
-            inputIdxA.has_value())
+        GMX_RELEASE_ASSERT(atomPair.first >= 0 && atomPair.first < ssize(localToInputIndex_),
+                           "Invalid atom index");
+        GMX_RELEASE_ASSERT(atomPair.second >= 0 && atomPair.second < ssize(localToInputIndex_),
+                           "Invalid atom index");
+        const int inputIdxA = localToInputIndex_[atomPair.first];
+        const int inputIdxB = localToInputIndex_[atomPair.second];
+        if (inputIdxA >= 0 && inputIdxB >= 0)
         {
-            if (const std::optional<ptrdiff_t> inputIdxB = indexOf(inputToGlobalIndex_, atomPair.second);
-                inputIdxB.has_value())
-            {
-                // no need to check cutoff: pairlist already comes filtered by cutoff
-                pairlistForModel_.push_back(inputIdxA.value());
-                pairlistForModel_.push_back(inputIdxB.value());
-                shiftVectors_.push_back(shiftVecs[shiftIndex]);
-            }
+            // no need to check cutoff: pairlist already comes filtered by cutoff
+            pairlistForModel_.push_back(inputIdxA);
+            pairlistForModel_.push_back(inputIdxB);
+            shiftVectors_.push_back(shiftVecs[shiftIndex]);
         }
     }
     // sanity check
