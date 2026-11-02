@@ -1473,6 +1473,9 @@ Intel oneAPI DPC++ compiler installation at configure time (found through ``SYCL
 or ``CMPLR_ROOT``, which sourcing ``setvars.sh`` sets, or at
 ``/opt/intel/oneapi/compiler/latest``), and the oneAPI runtime libraries that Libtorch
 links against must be on the library path at run time.
+Libtorch 2.14 and later require C++20. Only the sources that include the Libtorch
+headers are then compiled with C++20, while the rest of |Gromacs| keeps the configured
+standard (C++17 by default), so no extra option is needed.
 The NNP interface is enabled by default when a Libtorch installation is found in the
 ``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or
 ``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch

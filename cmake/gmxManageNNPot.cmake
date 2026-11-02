@@ -93,6 +93,17 @@ if(NOT GMX_NNPOT STREQUAL "OFF")
                             "LibTorch with XPU support (PyTorch >= 2.5) to run the model on the GPU.")
         endif()
 
+        # The LibTorch headers of PyTorch 2.14 and later require C++20. The targets that include
+        # them are built with GMX_TORCH_CXX_STANDARD, the rest of GROMACS keeps the configured one.
+        set(GMX_TORCH_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+        if(Torch_VERSION VERSION_GREATER_EQUAL 2.14 AND CMAKE_CXX_STANDARD LESS 20)
+            set(GMX_TORCH_CXX_STANDARD 20)
+            if(NOT FIND_TORCH_QUIETLY)
+                message(STATUS "LibTorch ${Torch_VERSION} requires C++20: the sources that include "
+                               "LibTorch are built with C++20, the rest of GROMACS with C++${CMAKE_CXX_STANDARD}.")
+            endif()
+        endif()
+
         set(GMX_TORCH ON)
     elseif(GMX_NNPOT STREQUAL "TORCH")
         message(FATAL_ERROR "Torch not found. Please install libtorch and add its installation prefix"

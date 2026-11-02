@@ -46,7 +46,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_TORCH
-#    include <torch/torch.h>
+// Only the version macros are needed
+#    include <torch/version.h>
 #endif
 
 namespace gmx

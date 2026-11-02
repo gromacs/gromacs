@@ -33,6 +33,9 @@
 
 include(CheckLinkerFlag)
 
+# Interface target that passes the objects of nnpot_torch on to libgromacs when LibTorch is used
+add_library(nnpot_torch_module INTERFACE)
+
 gmx_add_libgromacs_sources(
     binary_information.cpp
     nnpotoptions.cpp
@@ -42,9 +45,47 @@ gmx_add_libgromacs_sources(
 if (GMX_TORCH)
     gmx_add_libgromacs_sources(
         nnpotforceprovider.cpp
-        torchmodel.cpp
     )
-    
+    # torchmodel.cpp is the only libgromacs source that includes the LibTorch headers, which
+    # can require a newer C++ standard than GROMACS uses (GMX_TORCH_CXX_STANDARD, see
+    # cmake/gmxManageNNPot.cmake). It is built in an object library of its own so that only
+    # this file is compiled with that standard.
+    add_library(nnpot_torch OBJECT torchmodel.cpp)
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(nnpot_torch PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    endif()
+    set_target_properties(nnpot_torch PROPERTIES
+                          CXX_STANDARD ${GMX_TORCH_CXX_STANDARD}
+                          CXX_SCAN_FOR_MODULES OFF)
+    gmx_target_compile_options(nnpot_torch)
+    target_compile_definitions(nnpot_torch PRIVATE HAVE_CONFIG_H)
+    target_link_libraries(nnpot_torch PRIVATE
+                          common
+                          legacy_api
+                          legacy_modules
+                          hardware
+                          math
+                          mdtypes
+                          pbcutil
+                          topology
+                          utility
+                          ${TORCH_LIBRARIES})
+    # torchmodel.cpp asks the GPU runtime for the active device and includes GROMACS headers
+    # that need the GPU runtime headers. libgromacs gets those from its own GPU dependencies;
+    # this target needs them explicitly, as the other separate targets do.
+    if (GMX_GPU_CUDA)
+        target_link_libraries(nnpot_torch PRIVATE CUDA::toolkit)
+    elseif (GMX_GPU_HIP)
+        target_link_libraries(nnpot_torch PRIVATE hip::host)
+    elseif (GMX_GPU_SYCL)
+        add_sycl_to_target(TARGET nnpot_torch)
+    endif()
+    # The objects reach libgromacs through this interface target, as for Colvars
+    # (see src/gromacs/CMakeLists.txt)
+    target_link_libraries(nnpot_torch_module INTERFACE
+                          $<BUILD_INTERFACE:nnpot_torch>
+                          $<TARGET_OBJECTS:nnpot_torch>)
+
     # find torch and python to explicitly link against: required for some torch extensions
     find_package(Python REQUIRED COMPONENTS Development)
 

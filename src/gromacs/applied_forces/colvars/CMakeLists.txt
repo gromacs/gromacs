@@ -64,6 +64,11 @@ if (GMX_HAVE_COLVARS AND GMX_USE_COLVARS STREQUAL "INTERNAL")
         target_compile_options(colvars_library PUBLIC ${TORCH_CXX_FLAGS})
         target_include_directories(colvars_library PUBLIC ${TORCH_INCLUDE_DIRS})
         target_compile_definitions(colvars_library PUBLIC -DCOLVARS_TORCH)
+        # The Colvars sources include the LibTorch headers, which can require a newer
+        # C++ standard than GROMACS uses (see cmake/gmxManageNNPot.cmake)
+        set_target_properties(colvars_library PROPERTIES
+                              CXX_STANDARD ${GMX_TORCH_CXX_STANDARD}
+                              CXX_SCAN_FOR_MODULES OFF)
     endif()
 
     # Set correctly the value of __cplusplus, which MSVC doesn't do by default
