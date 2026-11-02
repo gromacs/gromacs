@@ -81,6 +81,7 @@ target_sources(testutils PRIVATE
                refdata_xml.cpp
                setenv.cpp
                simulationdatabase.cpp
+               stderrcapture.cpp
                stdiohelper.cpp
                stringtest.cpp
                testasserts.cpp
