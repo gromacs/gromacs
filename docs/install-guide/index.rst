@@ -1466,6 +1466,13 @@ You must use the same ABI version as you use when building the rest of
 So get (or build) the CXX11 ABI version of Libtorch.
 For the same reason, it is also not possible to use the Libtorch version that ships
 with a conda installation of Pytorch, because it is built with the pre-CXX11 ABI by default.
+To run model inference on Intel GPUs, use a Libtorch with XPU support (PyTorch 2.5 or
+later, for example the one bundled in the ``torch`` XPU wheel). |Gromacs| itself can be
+built with or without SYCL, but the CMake configuration of such a Libtorch requires an
+Intel oneAPI DPC++ compiler installation at configure time (found through ``SYCL_ROOT``
+or ``CMPLR_ROOT``, which sourcing ``setvars.sh`` sets, or at
+``/opt/intel/oneapi/compiler/latest``), and the oneAPI runtime libraries that Libtorch
+links against must be on the library path at run time.
 The NNP interface is enabled by default when a Libtorch installation is found in the
 ``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or
 ``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch

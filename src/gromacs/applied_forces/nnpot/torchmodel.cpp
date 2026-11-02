@@ -41,6 +41,8 @@
 
 #include "torchmodel.h"
 
+#include "config.h"
+
 #include <dlfcn.h>
 
 #include <iostream>
@@ -56,6 +58,9 @@
 #include <torch/cuda.h>
 #include <torch/script.h>
 #include <torch/torch.h>
+#if GMX_TORCH_XPU
+#    include <torch/xpu.h>
+#endif
 
 #ifdef GMX_RESTORE_DIM_MACRO
 #    define DIM 3
@@ -153,9 +158,39 @@ static std::tuple<std::string, std::optional<int>> getMdrunActiveDevice()
         GMX_THROW(InternalError("Could not get active device: hipGetDevice failed."));
     }
     return { "hip", activeDevice };
+#elif GMX_TORCH_XPU
+    // Intel GPUs through the XPU backend of LibTorch. SYCL has no process-wide current device
+    // that could be inherited from mdrun, so the model runs on the first XPU LibTorch
+    // enumerates; ONEAPI_DEVICE_SELECTOR or ZE_AFFINITY_MASK restrict which GPUs it sees.
+    if (torch::xpu::is_available())
+    {
+        return { "xpu", 0 };
+    }
+    return { "xpu", std::nullopt };
 #else
     return { "cpu", std::nullopt };
 #endif
+}
+
+//! \brief \internal Torch device type for a device type string returned by getMdrunActiveDevice()
+static torch::DeviceType torchDeviceTypeFor(const std::string& deviceType)
+{
+    // LibTorch addresses HIP devices through its CUDA API
+    return deviceType == "xpu" ? torch::kXPU : torch::kCUDA;
+}
+
+//! \brief \internal Whether LibTorch can use a GPU of the type returned by getMdrunActiveDevice()
+static bool torchGpuIsAvailable(const std::string& deviceType)
+{
+    if (deviceType == "xpu")
+    {
+#if GMX_TORCH_XPU
+        return torch::xpu::is_available();
+#else
+        return false;
+#endif
+    }
+    return torch::cuda::is_available();
 }
 
 /*! \brief Determine which device to use depending on GMX_NN_DEVICE environment variable
@@ -183,7 +218,7 @@ static torch::Device determineDevice(const MDLogger& logger, const MpiComm& mpiC
         const std::string devLC = toLowerCase(env);
         if (devLC == "gpu" || devLC == "cuda")
         {
-            if (!torch::cuda::is_available())
+            if (!torchGpuIsAvailable(torchDeviceType))
             {
                 GMX_THROW(InternalError(formatString(
                         "GMX_NN_DEVICE was set to '%s', but no matching device is available.", env)));
@@ -192,7 +227,7 @@ static torch::Device determineDevice(const MDLogger& logger, const MpiComm& mpiC
                     activeDevice.has_value(),
                     "Active device couldn't be determined. Ensure that Libtorch and GROMACS "
                     "are compiled with matching GPU support.");
-            device = torch::Device(torch::kCUDA, activeDevice.value());
+            device = torch::Device(torchDeviceTypeFor(torchDeviceType), activeDevice.value());
         }
         else if (devLC != "cpu")
         {
@@ -206,7 +241,7 @@ static torch::Device determineDevice(const MDLogger& logger, const MpiComm& mpiC
     }
     else // not set: automatically determine device
     {
-        if (torch::cuda::is_available() && activeDevice.has_value())
+        if (torchGpuIsAvailable(torchDeviceType) && activeDevice.has_value())
         {
             GMX_LOG(logger.info)
                     .asParagraph()
@@ -214,7 +249,7 @@ static torch::Device determineDevice(const MDLogger& logger, const MpiComm& mpiC
                             "GMX_NN_DEVICE environment variable not found."
                             " Using "
                             + toUpperCase(torchDeviceType) + " device.");
-            device = torch::Device(torch::kCUDA, activeDevice.value());
+            device = torch::Device(torchDeviceTypeFor(torchDeviceType), activeDevice.value());
         }
         else
         {

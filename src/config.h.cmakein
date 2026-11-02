@@ -470,6 +470,9 @@
 /* Define if we are building with Torch */
 #cmakedefine01 GMX_TORCH
 
+/* Define if LibTorch has XPU (Intel GPU) support */
+#cmakedefine01 GMX_TORCH_XPU
+
 /* Define if we are building with an external FMM implementation */
 #cmakedefine01 GMX_USE_EXT_FMM
 

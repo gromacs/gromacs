@@ -68,6 +68,16 @@ is deprecated, and is treated as ``gpu``.
 If multiple GPUs are available, the active device will be inherited from mdrun.
 For ``gpu``, a CUDA/HIP-aware LibTorch installation should be installed, and the
 corresponding CUDA/HIP installation should be available in your ``PATH``.
+On Intel GPUs, a LibTorch with XPU support (PyTorch 2.5 or later) is needed. Unlike
+for CUDA and HIP, the device is not inherited from mdrun: the model runs on the first
+Intel GPU LibTorch enumerates, which can be restricted with ``ONEAPI_DEVICE_SELECTOR``
+or ``ZE_AFFINITY_MASK``. When |Gromacs| itself is built with SYCL, two things apply at
+run time. First, |Gromacs| and LibTorch must use one and the same SYCL runtime
+(``libsycl``): build |Gromacs| with the oneAPI release whose runtime the LibTorch
+package bundles, or make sure the runtime bundled with LibTorch is the one loaded;
+with two different runtimes in the process either side can crash. Second, expose a
+single SYCL backend, e.g. ``ONEAPI_DEVICE_SELECTOR=level_zero:gpu``, as |Gromacs|
+itself recommends when it detects a GPU through more than one backend.
 
 Find below an example Python code snippet to export a pretrained model in
 PyTorch using TorchScript. As an example, we use the popular ANI models

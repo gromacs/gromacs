@@ -42,6 +42,8 @@
 
 #include "gromacs/applied_forces/nnpot/nnpotforceprovider.h"
 
+#include "config.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/nnpot/nnpotoptions.h"
@@ -197,10 +199,11 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
         for (const auto& device : getTestHardwareEnvironment()->getTestDeviceList())
         {
             const DeviceInformation deviceInfo = device->deviceInfo();
-            if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
+            if (deviceInfo.deviceVendor == DeviceVendor::Nvidia
+                || (GMX_TORCH_XPU && deviceInfo.deviceVendor == DeviceVendor::Intel))
             {
-                SCOPED_TRACE("Check construction on default NVIDIA GPU");
-                auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "cuda");
+                SCOPED_TRACE("Check construction on default GPU");
+                auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "gpu");
                 EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_));
                 break; // Only test one GPU until we have a better way to hande device selection
             }
@@ -235,10 +238,11 @@ TEST_F(NNPotForceProviderTest, CanCalculateForces)
     for (const auto& device : getTestHardwareEnvironment()->getTestDeviceList())
     {
         const DeviceInformation deviceInfo = device->deviceInfo();
-        if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
+        if (deviceInfo.deviceVendor == DeviceVendor::Nvidia
+            || (GMX_TORCH_XPU && deviceInfo.deviceVendor == DeviceVendor::Intel))
         {
-            SCOPED_TRACE("Check calculate forces on default NVIDIA GPU");
-            auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "cuda");
+            SCOPED_TRACE("Check calculate forces on default GPU");
+            auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "gpu");
             testCalculateForces(data);
             break; // Only test one GPU until we have a better way to hande device selection
         }

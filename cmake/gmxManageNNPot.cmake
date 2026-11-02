@@ -82,6 +82,17 @@ if(NOT GMX_NNPOT STREQUAL "OFF")
                                 "compiled with the cxx11 ABI, which is required for building GROMACS.")
         endif()
 
+        # A LibTorch built with XPU support (Intel GPUs, PyTorch >= 2.5) exports the torch_xpu target
+        set(GMX_TORCH_XPU OFF)
+        if(TARGET torch_xpu)
+            set(GMX_TORCH_XPU ON)
+        endif()
+        if(GMX_GPU_SYCL AND GMX_SYCL_DPCPP AND GMX_DPCPP_HAVE_INTEL_TARGET AND NOT GMX_TORCH_XPU AND NOT FIND_TORCH_QUIETLY)
+            message(WARNING "GROMACS is built for Intel GPUs with SYCL, but the LibTorch found has no XPU "
+                            "support, so neural network potential inference will run on the CPU. Use a "
+                            "LibTorch with XPU support (PyTorch >= 2.5) to run the model on the GPU.")
+        endif()
+
         set(GMX_TORCH ON)
     elseif(GMX_NNPOT STREQUAL "TORCH")
         message(FATAL_ERROR "Torch not found. Please install libtorch and add its installation prefix"
