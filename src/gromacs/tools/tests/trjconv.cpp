@@ -216,8 +216,8 @@ TEST_P(TrjconvFormatToFormatTest, FullSystemWithTprTopology)
 
     setInputFile("-f", inputFile());
     setInputFile("-s", tprManager.tprName());
-    const std::string outputFileName = formatString("trjconv-out.%s", ftp2ext(outputExt()));
-    const std::string outputFile     = setOutputFile("-o", outputFileName.c_str(), NoTextMatch());
+    const std::filesystem::path outputFile =
+            setOutputFile("-o", formatString("trjconv-out.%s", ftp2ext(outputExt())), NoTextMatch());
 
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("System\n");
@@ -246,8 +246,8 @@ TEST_P(TrjconvFormatToFormatTest, FullSystemWithGroTopology)
 
     setInputFile("-f", inputFile());
     setInputFile("-s", "spc2.gro");
-    const std::string outputFileName = formatString("trjconv-out.%s", ftp2ext(outputExt()));
-    const std::string outputFile     = setOutputFile("-o", outputFileName.c_str(), NoTextMatch());
+    const std::filesystem::path outputFile =
+            setOutputFile("-o", formatString("trjconv-out.%s", ftp2ext(outputExt())), NoTextMatch());
 
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("System\n");
@@ -279,8 +279,8 @@ TEST_P(TrjconvFormatToFormatTest, FullSystemWithoutTopology)
     auto& cmdline = commandLine();
 
     setInputFile("-f", inputFile());
-    const std::string outputFileName = formatString("trjconv-out.%s", ftp2ext(outputExt()));
-    const std::string outputFile     = setOutputFile("-o", outputFileName.c_str(), NoTextMatch());
+    const std::filesystem::path outputFile =
+            setOutputFile("-o", formatString("trjconv-out.%s", ftp2ext(outputExt())), NoTextMatch());
 
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("System\n");
@@ -310,8 +310,8 @@ TEST_P(TrjconvFormatToFormatTest, WithIndexGroupSubset)
 
     setInputFile("-f", inputFile());
     setInputFile("-s", tprManager.tprName());
-    const std::string outputFileName = formatString("trjconv-out.%s", ftp2ext(outputExt()));
-    const std::string outputFile     = setOutputFile("-o", outputFileName.c_str(), NoTextMatch());
+    const std::filesystem::path outputFile =
+            setOutputFile("-o", formatString("trjconv-out.%s", ftp2ext(outputExt())), NoTextMatch());
 
     constexpr char indexGroupFile[] = "spc2.ndx";
     constexpr char indexGroupName[] = "SecondWaterMolecule";
@@ -431,7 +431,7 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     setInputFile("-f", std::get<0>(GetParam()));
     const real dumpTime = std::get<1>(GetParam());
     cmdline.addOption("-dump", std::to_string(dumpTime));
-    std::string outputFile = setOutputFile("-o", "dumped-frame.trr", NoTextMatch());
+    const std::filesystem::path outputFile = setOutputFile("-o", "dumped-frame.trr", NoTextMatch());
 
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
