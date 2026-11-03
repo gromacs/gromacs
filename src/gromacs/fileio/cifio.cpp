@@ -179,9 +179,9 @@ ISTable* atomSiteTable(Block* block)
 void unitCellToBox(double a, double b, double c, double alpha, double beta, double gamma, matrix box)
 {
     // Same construction as read_cryst1() in pdbio.cpp, Angstrom -> nm.
-    const double fa = a * 0.1;
-    const double fb = b * 0.1;
-    const double fc = c * 0.1;
+    const double fa = a / gmx::c_nm2A;
+    const double fb = b / gmx::c_nm2A;
+    const double fc = c / gmx::c_nm2A;
     clear_mat(box);
     box[XX][XX] = fa;
     if ((alpha != 90.0) || (beta != 90.0) || (gamma != 90.0))
@@ -304,7 +304,7 @@ std::string readEntryId(Block& block)
 //! Format a coordinate (nm) as an Angstrom mmCIF value.
 std::string coordToStr(real xNm)
 {
-    return gmx::formatString("%.3f", 10.0 * xNm);
+    return gmx::formatString("%.3f", gmx::c_nm2A * xNm);
 }
 
 //! The chain identifier written for residue \p resind ('A' when it is unset).
@@ -615,7 +615,7 @@ std::vector<std::vector<std::string>> buildStructConnRows(const t_atoms*        
         row.emplace_back(disulfide ? "disulf" : "covale");
         appendConnPartner(&row, atoms, ai);
         appendConnPartner(&row, atoms, aj);
-        row.push_back(gmx::formatString("%.3f", 10.0 * std::sqrt(distance2(x[ai], x[aj]))));
+        row.push_back(gmx::formatString("%.3f", gmx::c_nm2A * std::sqrt(distance2(x[ai], x[aj]))));
         rows.push_back(std::move(row));
     }
 
@@ -858,9 +858,9 @@ void CifIO::read(const std::filesystem::path& infile,
         std::strncpy(atoms->atom[natom].elem, elem, sizeof(atoms->atom[natom].elem) - 1);
         atoms->atom[natom].elem[sizeof(atoms->atom[natom].elem) - 1] = '\0';
 
-        x[natom][XX] = std::strtod(valueAt(site, rowNum, xColName).c_str(), nullptr) * 0.1;
-        x[natom][YY] = std::strtod(valueAt(site, rowNum, yColName).c_str(), nullptr) * 0.1;
-        x[natom][ZZ] = std::strtod(valueAt(site, rowNum, zColName).c_str(), nullptr) * 0.1;
+        x[natom][XX] = std::strtod(valueAt(site, rowNum, xColName).c_str(), nullptr) / gmx::c_nm2A;
+        x[natom][YY] = std::strtod(valueAt(site, rowNum, yColName).c_str(), nullptr) / gmx::c_nm2A;
+        x[natom][ZZ] = std::strtod(valueAt(site, rowNum, zColName).c_str(), nullptr) / gmx::c_nm2A;
 
         if (atoms->pdbinfo != nullptr)
         {
@@ -976,9 +976,9 @@ void CifIO::writeIndexed(const std::filesystem::path& outfile,
             unitCellTable.AddColumn(colName);
         }
         unitCellTable.AddRow(std::vector<std::string>{ entryId,
-                                                       gmx::formatString("%.3f", 10.0 * a),
-                                                       gmx::formatString("%.3f", 10.0 * b),
-                                                       gmx::formatString("%.3f", 10.0 * c),
+                                                       gmx::formatString("%.3f", gmx::c_nm2A * a),
+                                                       gmx::formatString("%.3f", gmx::c_nm2A * b),
+                                                       gmx::formatString("%.3f", gmx::c_nm2A * c),
                                                        gmx::formatString("%.2f", alpha),
                                                        gmx::formatString("%.2f", beta),
                                                        gmx::formatString("%.2f", gamma) });
@@ -1088,9 +1088,9 @@ bool CifTrajectory::readNextFrame(t_trxframe* fr)
     for (int i = 0; i < n; i++)
     {
         const unsigned int rowNum = rowNums[i];
-        fr->x[i][XX] = std::strtod(valueAt(site, rowNum, xColName_).c_str(), nullptr) * 0.1;
-        fr->x[i][YY] = std::strtod(valueAt(site, rowNum, yColName_).c_str(), nullptr) * 0.1;
-        fr->x[i][ZZ] = std::strtod(valueAt(site, rowNum, zColName_).c_str(), nullptr) * 0.1;
+        fr->x[i][XX] = std::strtod(valueAt(site, rowNum, xColName_).c_str(), nullptr) / gmx::c_nm2A;
+        fr->x[i][YY] = std::strtod(valueAt(site, rowNum, yColName_).c_str(), nullptr) / gmx::c_nm2A;
+        fr->x[i][ZZ] = std::strtod(valueAt(site, rowNum, zColName_).c_str(), nullptr) / gmx::c_nm2A;
     }
     fr->bX = TRUE;
     if (haveBox_)
@@ -1155,9 +1155,9 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
             const real gamma = (a * b != 0.0F) ? gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]) : 90.0F;
             std::fprintf(out,
                          "_cell.length_a   %.3f\n_cell.length_b   %.3f\n_cell.length_c   %.3f\n",
-                         10.0 * a,
-                         10.0 * b,
-                         10.0 * c);
+                         gmx::c_nm2A * a,
+                         gmx::c_nm2A * b,
+                         gmx::c_nm2A * c);
             std::fprintf(out,
                          "_cell.angle_alpha   %.2f\n_cell.angle_beta   %.2f\n_cell.angle_gamma   "
                          "%.2f\n#\n",
