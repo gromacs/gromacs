@@ -360,16 +360,14 @@ public:
      *
      *  Returns either of the event synchronizers, depending on the offload scenario
      *  for the current simulation timestep:
-     *  1. The forces are copied to the device (when GPU buffer ops are off)
-     *  2. The forces are reduced on the device (GPU buffer ops are on)
+     *  1. The forces are copied to the device (\c StepWorkload::copyFinalFToGpu)
+     *  2. The forces are reduced on the device and stay there
      *
      *  \param[in] stepWork        Step workload flags
-     *  \param[in] simulationWork  Simulation workload flags
      *
      *  \returns  The event to synchronize the stream that consumes forces on device.
      */
-    GpuEventSynchronizer* getLocalForcesReadyOnDeviceEvent(StepWorkload       stepWork,
-                                                           SimulationWorkload simulationWork);
+    GpuEventSynchronizer* getLocalForcesReadyOnDeviceEvent(const StepWorkload& stepWork);
 
     /*! \brief Getter for the event synchronizer for the forces are reduced on the GPU.
      *

@@ -262,8 +262,7 @@ void StatePropagatorDataGpu::clearForcesOnGpu(AtomLocality /* atomLocality */,
                "GPU implementation.");
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::getLocalForcesReadyOnDeviceEvent(StepWorkload /* stepWork */,
-                                                                               SimulationWorkload /* simulationWork */)
+GpuEventSynchronizer* StatePropagatorDataGpu::getLocalForcesReadyOnDeviceEvent(const StepWorkload& /* stepWork */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "

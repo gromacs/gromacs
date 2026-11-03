@@ -261,6 +261,50 @@ DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inp
     return domainWork;
 }
 
+// Run release assertions that StepWorkload is internally consistent
+static void validateStepWorkload(const SimulationWorkload& simulationWork,
+                                 const StepWorkload&       stepWork,
+                                 int64_t                   step,
+                                 const OutputControl&      outputControl)
+{
+    if (!stepWork.computeSlowForces)
+    {
+        GMX_RELEASE_ASSERT(!(stepWork.computeEnergy || stepWork.computeVirial || stepWork.computeDhdl),
+                           "Energies, virial or dH/dlambda were requested on "
+                           "a fast MTS step, where they would lack the slow components");
+    }
+    GMX_RELEASE_ASSERT(
+            !(stepWork.copyReducedFFromGpu && stepWork.copyFinalFFromGpu),
+            "The final forces copied from the GPU would overwrite the forces modified on the host");
+    GMX_RELEASE_ASSERT(!(stepWork.copyFinalFToGpu && stepWork.copyFinalFFromGpu),
+                       "The final forces should be either on the host or on the GPU");
+    GMX_RELEASE_ASSERT(!(stepWork.copyReducedFFromGpu && simulationWork.useGpuUpdate) || stepWork.copyFinalFToGpu,
+                       "Forces modified on the host should be copied back for the GPU update");
+
+    // Keep the new force-copy flags equivalent to the conditions they replace.
+    GMX_RELEASE_ASSERT(
+            stepWork.copyFinalFFromGpu
+                    == (stepWork.useGpuFBufferOps && simulationWork.useGpuUpdate
+                        && !simulationWork.haveVirtualSites && !simulationWork.useCpuPmePpCommunication
+                        && do_per_step(step, outputControl.nstfout)),
+            "Force output needs a GPU download only when forces are not already on the host");
+    if (simulationWork.useGpuUpdate)
+    {
+        // GPU update currently excludes virtual sites and separate CPU PME ranks
+        // (see decideWhetherToUseGpuForUpdate). Thus any staged PME forces are
+        // from GPU PME, and no CPU vsite spreading needs a further force upload.
+        GMX_RELEASE_ASSERT(stepWork.copyFinalFToGpu
+                                   == ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
+                                       || !stepWork.useGpuFBufferOps),
+                           "GPU update needs a force upload after CPU reduction or staged GPU PME "
+                           "communication");
+        GMX_RELEASE_ASSERT(!stepWork.copyFinalFToGpu
+                                   == (stepWork.useGpuFBufferOps && !simulationWork.useCpuPmePpCommunication),
+                           "GPU update must wait for the force upload when GPU reduction does not "
+                           "produce the final forces");
+    }
+}
+
 StepWorkload setupStepWorkload(const int                     legacyFlags,
                                ArrayRef<const gmx::MtsLevel> mtsLevels,
                                const int64_t                 step,
@@ -292,13 +336,6 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
                 simulationWork.useGpuNonbonded,
                 "Can only offload buffer ops if nonbonded computation is also offloaded");
     }
-    if (!computeSlowForces)
-    {
-        GMX_RELEASE_ASSERT(!(flags.computeEnergy || flags.computeVirial || flags.computeDhdl),
-                           "Energies, virial or dH/dlambda were requested on "
-                           "a fast MTS step, where they would lack the slow components");
-    }
-
     flags.useGpuXBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed && !flags.doNeighborSearch;
     // on virial steps the CPU reduction path is taken
     flags.useGpuFBufferOps = simulationWork.useGpuFBufferOpsWhenAllowed && !flags.computeVirial;
@@ -331,7 +368,11 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
     flags.copyReducedFFromGpu = flags.useGpuFBufferOps
                                 && (!simulationWork.useGpuUpdate || simulationWork.useCpuPmePpCommunication
                                     || simulationWork.haveVirtualSites);
-
+    flags.copyFinalFToGpu =
+            simulationWork.useGpuUpdate && (!flags.useGpuFBufferOps || flags.copyReducedFFromGpu);
+    flags.copyFinalFFromGpu = flags.useGpuFBufferOps && simulationWork.useGpuUpdate
+                              && !flags.copyReducedFFromGpu && do_per_step(step, outputControl.nstfout);
+    validateStepWorkload(simulationWork, flags, step, outputControl);
     return flags;
 }
 

@@ -1340,19 +1340,12 @@ void LegacySimulator::do_md()
                 stateGpu->copyVelocitiesFromGpu(state_->v, AtomLocality::Local);
                 stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
             }
-            // Copy forces for the output if the forces were reduced on the GPU (not the case on virial steps)
-            // and update is offloaded hence forces are kept on the GPU for update and have not been
-            // already transferred in do_force().
+            // Copy the final forces for the output if they are only on the GPU,
+            // i.e. they were not already copied to the host in do_force().
             // TODO: There should be an improved, explicit mechanism that ensures this copy is only executed
             //       when the forces are ready on the GPU -- the same synchronizer should be used as the one
             //       prior to GPU update.
-            // TODO: When the output flags will be included in step workload, this copy can be combined with the
-            //       copy call in do_force(...).
-            // NOTE: The forces should not be copied here if the vsites or CPU-staged PP-PME comms are present, since they were modified
-            //       on host after the D2H copy in do_force(...).
-            if (runScheduleWork_->stepWork.useGpuFBufferOps
-                && (simulationWork.useGpuUpdate && !virtualSites_ && !simulationWork.useCpuPmePpCommunication)
-                && do_per_step(step, outputControl.nstfout))
+            if (runScheduleWork_->stepWork.copyFinalFFromGpu)
             {
                 stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
                 stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
@@ -1543,13 +1536,11 @@ void LegacySimulator::do_md()
                         stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
                     }
 
-                    if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
-                        || (!runScheduleWork_->stepWork.useGpuFBufferOps))
+                    if (runScheduleWork_->stepWork.copyFinalFToGpu)
                     {
-                        // The PME forces were received to the host, and reduced on the CPU with the
-                        // rest of the forces computed on the GPU, so the final forces have to be
-                        // copied back to the GPU. Or the buffer ops were not offloaded this step,
-                        // so the forces are on the host and have to be copied
+                        /* The final forces are on the host, either because the buffer ops were
+                         * not offloaded this step or because they were modified on the host
+                         * after the GPU reduction */
                         stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
                     }
                     const bool doTemperatureScalingGpu =
@@ -1558,8 +1549,7 @@ void LegacySimulator::do_md()
 
                     // This applies Leap-Frog, LINCS and SETTLE in succession
                     integrator->integrate(
-                            stateGpu->getLocalForcesReadyOnDeviceEvent(
-                                    runScheduleWork_->stepWork, runScheduleWork_->simulationWork),
+                            stateGpu->getLocalForcesReadyOnDeviceEvent(runScheduleWork_->stepWork),
                             ir->delta_t,
                             true,
                             bCalcVir,
