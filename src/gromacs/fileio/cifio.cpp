@@ -654,17 +654,6 @@ struct PartnerColNames
     std::string atom, atomFallback;
 };
 
-//! Resolve the column names of bond partner \p ptnr ("ptnr1" or "ptnr2") in \p structConn.
-PartnerColNames partnerColNames(ISTable* structConn, const std::string& ptnr)
-{
-    return { findColName(structConn, { ptnr + "_auth_asym_id" }),
-             findColName(structConn, { ptnr + "_label_asym_id" }),
-             findColName(structConn, { ptnr + "_auth_seq_id" }),
-             findColName(structConn, { ptnr + "_label_seq_id" }),
-             findColName(structConn, { ptnr + "_label_atom_id" }),
-             findColName(structConn, { ptnr + "_auth_atom_id" }) };
-}
-
 //! Value of \p colName at \p rowNum of \p table, or of \p fallbackColName when that is null.
 const std::string& preferredValue(const ISTable&     table,
                                   unsigned int       rowNum,
@@ -701,8 +690,20 @@ void readStructConn(Block& block, const t_atoms* atoms, int numAtoms, gmx_conect
                           i);
     }
 
-    const PartnerColNames partner1ColNames = partnerColNames(structConn, "ptnr1");
-    const PartnerColNames partner2ColNames = partnerColNames(structConn, "ptnr2");
+    // Prepare the names of the columns so they can be
+    // efficiently reused while reading every row.
+    const PartnerColNames partner1ColNames = { findColName(structConn, { "ptnr1_auth_asym_id" }),
+                                               findColName(structConn, { "ptnr1_label_asym_id" }),
+                                               findColName(structConn, { "ptnr1_auth_seq_id" }),
+                                               findColName(structConn, { "ptnr1_label_seq_id" }),
+                                               findColName(structConn, { "ptnr1_label_atom_id" }),
+                                               findColName(structConn, { "ptnr1_auth_atom_id" }) };
+    const PartnerColNames partner2ColNames = { findColName(structConn, { "ptnr2_auth_asym_id" }),
+                                               findColName(structConn, { "ptnr2_label_asym_id" }),
+                                               findColName(structConn, { "ptnr2_auth_seq_id" }),
+                                               findColName(structConn, { "ptnr2_label_seq_id" }),
+                                               findColName(structConn, { "ptnr2_label_atom_id" }),
+                                               findColName(structConn, { "ptnr2_auth_atom_id" }) };
     // The atom a struct_conn row names as one partner, or atomIndex.end() if it was not read.
     auto findPartner = [&atomIndex, structConn](unsigned int rowNum, const PartnerColNames& colNames)
     {
@@ -779,6 +780,8 @@ void CifIO::read(const std::filesystem::path& infile,
 
     // Resolve the column of each item we read once; author (auth_*) items match
     // the PDB semantics GROMACS users expect, with the label_* items as fallback.
+    // This resolution is done once before entering the loop over rows
+    // so that the loop runs faster.
     const std::string groupColName    = findColName(atomSite, { "group_PDB" });
     const std::string serialColName   = findColName(atomSite, { "id" });
     const std::string elementColName  = findColName(atomSite, { "type_symbol" });
