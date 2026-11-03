@@ -48,7 +48,10 @@ This will build the tools, and compile the dictionaries.
 As CMake is used, the following command line settings may be used:
 
 * MINIMAL\_DICTS:  This indicates that a subset of dictionaries should be downloaded and built. (use ```-DMINIMAL_DICTS=ON```).
+
 * ALWAYS\_DOWNLOAD\_DICTS: When working with a pre-packaged tar distribution, only a subset of the dictionaries are provided. Use this option to force download of dictionaries from GitHub. (use ```-DALWAYS_DOWNLOAD_DICTS=ON```).
+
+* PYTHON\_EXECUTABLE: Allows one to provide the path to a python executable when CMake fails. (Use ```-DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3```)
 
 ### Using the dictionary suite
 
@@ -65,7 +68,7 @@ wget http://mmcif.pdb.org/dictionaries/ascii/mmcif_pdbx_v50.dic
 
 ```
 
-If errors are found, parsing errors are stored in the file *mmcif_pdbx_v50.dic-parser.log* and validation errors, against the DDL, are stored in the file *mmcif_pdbx_v50.dic-diag.log*
+If errors are found, parsing errors are stored in the file *mmcif\_pdbx\_v50.dic-parser.log* and validation errors, against the DDL, are stored in the file *mmcif\_pdbx\_v50.dic-diag.log*
     
 #### Validating a mmCIF/PDBx file against the PDBx dictionary
 
