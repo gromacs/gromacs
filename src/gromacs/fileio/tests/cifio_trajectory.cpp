@@ -47,9 +47,7 @@
 #include <cstdio>
 
 #include <array>
-#include <fstream>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -62,6 +60,7 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/textreader.h"
 #include "gromacs/utility/vec.h"
 
 #include "testutils/testfilemanager.h"
@@ -208,10 +207,7 @@ TEST_F(CifTrajectoryIoTest, ConnectivityIsWrittenOnceForAllModels)
 
     // The connectivity does not change between models, so it is written with the
     // header only; the atom_site loop that follows stays open for all models.
-    std::ifstream     stream(cifFile);
-    std::stringstream buffer;
-    buffer << stream.rdbuf();
-    const std::string content = buffer.str();
+    const std::string content = TextReader::readFileToString(cifFile);
 
     int numLoopHeaders = 0;
     for (size_t pos = content.find("_struct_conn.id"); pos != std::string::npos;
@@ -243,13 +239,9 @@ TEST_F(CifTrajectoryIoTest, ConnectivityIsWrittenOnceForAllModels)
 
 TEST_F(CifTrajectoryIoTest, EmptyFileYieldsNoTrajectory)
 {
-    const std::string emptyFile = fileManager_.getTemporaryFilePath("empty.cif").string();
-    FILE*             out       = std::fopen(emptyFile.c_str(), "w");
-    ASSERT_NE(out, nullptr);
-    std::fprintf(out, "data_empty\n#\n");
-    std::fclose(out);
-
-    const std::unique_ptr<CifTrajectory> trajectory = CifIO::openTrajectory(emptyFile);
+    // A data block with no atom_site table.
+    const std::unique_ptr<CifTrajectory> trajectory =
+            CifIO::openTrajectory(TestFileManager::getInputFilePath("empty.cif"));
     EXPECT_EQ(trajectory, nullptr);
 }
 

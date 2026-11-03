@@ -49,8 +49,6 @@
 #include <cstring>
 
 #include <filesystem>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -63,6 +61,8 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/vec.h"
 
 #include "testutils/testfilemanager.h"
@@ -256,23 +256,21 @@ TEST(CifResidueTest, ChainChangeStartsNewResidue)
     // chain numbers its own ligands; only the chain tells them apart.
     TestFileManager   fileManager;
     const std::string cifFile = fileManager.getTemporaryFilePath("chains.cif").string();
-    {
-        std::ofstream out(cifFile);
-        out << "data_chains\n"
-               "loop_\n"
-               "_atom_site.group_PDB\n"
-               "_atom_site.id\n"
-               "_atom_site.type_symbol\n"
-               "_atom_site.label_atom_id\n"
-               "_atom_site.label_comp_id\n"
-               "_atom_site.auth_asym_id\n"
-               "_atom_site.auth_seq_id\n"
-               "_atom_site.Cartn_x\n"
-               "_atom_site.Cartn_y\n"
-               "_atom_site.Cartn_z\n"
-               "HETATM 1 C C1 NAG A 401 1.0 1.0 1.0\n"
-               "HETATM 2 C C1 NAG H 401 2.0 2.0 2.0\n";
-    }
+    TextWriter::writeFileFromString(cifFile,
+                                    "data_chains\n"
+                                    "loop_\n"
+                                    "_atom_site.group_PDB\n"
+                                    "_atom_site.id\n"
+                                    "_atom_site.type_symbol\n"
+                                    "_atom_site.label_atom_id\n"
+                                    "_atom_site.label_comp_id\n"
+                                    "_atom_site.auth_asym_id\n"
+                                    "_atom_site.auth_seq_id\n"
+                                    "_atom_site.Cartn_x\n"
+                                    "_atom_site.Cartn_y\n"
+                                    "_atom_site.Cartn_z\n"
+                                    "HETATM 1 C C1 NAG A 401 1.0 1.0 1.0\n"
+                                    "HETATM 2 C C1 NAG H 401 2.0 2.0 2.0\n");
 
     t_topology* top;
     snew(top, 1);
@@ -384,15 +382,6 @@ private:
     rvec*    x_;
 };
 
-//! The whole content of \p fileName.
-std::string readFile(const std::string& fileName)
-{
-    std::ifstream     stream(fileName);
-    std::stringstream buffer;
-    buffer << stream.rdbuf();
-    return buffer.str();
-}
-
 //! A two-residue peptide, with its omega dihedral in the trans conformation.
 std::vector<ConnectivityAtomSpec> peptideSpec()
 {
@@ -465,7 +454,7 @@ TEST(CifConnectivityTest, DisulfideBondIsTypedAsSuch)
     gmx_conect_add(conect, 0, 2); // SG-CB
     CifIO::write(cifFile, "ss", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_, conect);
 
-    const std::string content = readFile(cifFile);
+    const std::string content = TextReader::readFileToString(cifFile);
     EXPECT_NE(content.find("disulf1"), std::string::npos) << content;
     EXPECT_NE(content.find("covale1"), std::string::npos) << content;
     // Both connection types must be declared.
@@ -489,7 +478,7 @@ TEST(CifConnectivityTest, BondsToUnselectedAtomsAreDropped)
     CifIO::writeIndexed(
             cifFile, "subset", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_, 3, index, conect);
 
-    const std::string content = readFile(cifFile);
+    const std::string content = TextReader::readFileToString(cifFile);
     EXPECT_NE(content.find("covale1"), std::string::npos) << content;
     EXPECT_NE(content.find("covale2"), std::string::npos) << content;
     EXPECT_EQ(content.find("covale3"), std::string::npos)
@@ -507,7 +496,7 @@ TEST(CifConnectivityTest, WithoutConnectivityNothingIsWritten)
 
     CifIO::write(cifFile, "plain", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
 
-    const std::string content = readFile(cifFile);
+    const std::string content = TextReader::readFileToString(cifFile);
     EXPECT_EQ(content.find("_struct_conn."), std::string::npos) << content;
 }
 
@@ -521,7 +510,7 @@ TEST(CifAtomSiteTest, AlternateLocationAndEntityColumnsAreWritten)
     CifIO::write(cifFile, "altloc", structure.atoms(), structure.x(), PbcType::Xyz, structure.box_);
 
     // Readers are entitled to both columns; gemmi reads no atoms without them.
-    const std::string content = readFile(cifFile);
+    const std::string content = TextReader::readFileToString(cifFile);
     EXPECT_NE(content.find("_atom_site.label_alt_id"), std::string::npos) << content;
     EXPECT_NE(content.find("_atom_site.label_entity_id"), std::string::npos) << content;
 
