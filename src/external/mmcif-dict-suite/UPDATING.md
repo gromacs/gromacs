@@ -2,7 +2,7 @@
 
 - **Upstream:** https://github.com/rcsb/cpp-dict-pack (umbrella; its `modules/*`
   are git submodules of the per-module repos below).
-- **License:** see `LICENSE` (upstream RCSB license).
+- **License:** Apache License 2.0, see `LICENSE` (upstream RCSB license).
 
 **Pinned upstream versions** (each module's `master` HEAD, which is also the commit
 `cpp-dict-pack` currently pins as a submodule). Upstream distributes numbered
@@ -43,21 +43,11 @@ offline, this is a **trimmed** copy:
 - `CMakeLists.txt` here is **GROMACS-authored** (not upstream) and builds a
   single static `mmcif` library.
 
-## Local patches
-
-**None.** These sources are pristine upstream, file for file.
-
-Two changes were carried here while they were in review upstream: replacing the
-`std::bind2nd` / `std::not1` binders and the `std::unary_function` /
-`std::binary_function` bases that C++17 removed, and annotating harmless
-`deadcode.DeadStores` for the Clang-analyzer CI job. Both were accepted upstream
-(rcsb/cpp-common#1, rcsb/cpp-tables#1, rcsb/cpp-cif-file#2) and the commits pinned
-above contain them, so the local copies have been dropped. Upstream fixed the dead
-stores by removing the redundant assignments rather than by annotating them, so no
-`[[clang::suppress]]` remains anywhere under `modules/`.
-
-Keep it this way: if a defect is found here, fix it upstream and refresh, rather
-than patching in place.
+Only `CMakeLists.txt`, `UPDATING.md`, `regenerate-parsers.sh` and `generated/`
+are GROMACS-made. Everything else is copied unchanged from upstream: the files
+under `modules/<m>` from module `<m>` at the commit in the table above, and
+`LICENSE` and `README.md` from `cpp-dict-pack` at `b227176`. If a defect is found
+in those files, fix it upstream and refresh, rather than patching in place.
 
 ## Updating to newer upstream versions
 
@@ -68,11 +58,11 @@ refresh:
    `https://github.com/rcsb/<m>` (or the commit `cpp-dict-pack` pins for `<m>`),
    and overwrite the vendored `modules/<m>/{include,src}` files with it (keep only
    the files already vendored — the trimmed set — unless a new one is required to
-   compile). Update the commit table above.
+   compile). Update the commit table above, and copy `LICENSE` and `README.md`
+   from the matching `cpp-dict-pack` commit.
 2. Verify the new sources need nothing added on top: build with libc++ at
    C++17/20 and run `scan-build`. If something does turn out to be needed, fix it
-   upstream first and vendor the result, so that "Local patches" above stays
-   empty.
+   upstream first and vendor the result.
 3. Regenerate the committed parser sources **only if** the flex/bison grammar
    (`modules/cpp-cif-parser/src/*.l`, `*.y`) changed:
 
