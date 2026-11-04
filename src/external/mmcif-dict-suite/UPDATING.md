@@ -44,8 +44,9 @@ offline, this is a **trimmed** copy:
   single static `mmcif` library.
 
 Only `CMakeLists.txt`, `UPDATING.md`, `regenerate-parsers.sh`, `generated/` and
-`msvc/` are GROMACS-made. `msvc/unistd.h` stands in for the POSIX header, which
-MSVC lacks. Everything else is copied unchanged from upstream: the files
+`msvc/` are GROMACS-made. `msvc/` holds MSVC-only stand-ins: `unistd.h` for the
+POSIX header, which MSVC lacks, and two headers that give the variables shared
+between the C parsers and the parser classes C linkage, which upstream omits. Everything else is copied unchanged from upstream: the files
 under `modules/<m>` from module `<m>` at the commit in the table above, and
 `LICENSE` and `README.md` from `cpp-dict-pack` at `b227176`. If a defect is found
 in those files, fix it upstream and refresh, rather than patching in place.
