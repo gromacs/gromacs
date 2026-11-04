@@ -95,18 +95,17 @@ if (SPHINX_EXECUTABLE AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
 endif()
 
 
-if (NOT Sphinx_pygments_FOUND)
-    # Check if pygments module is available via the Unix error code (ie. 0
-    # for success)
-    execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
-        "import pygments"
-        RESULT_VARIABLE _pygments_status
-        ERROR_QUIET
-        )
-    if (_pygments_status EQUAL 0)
-        set(Sphinx_pygments_FOUND TRUE CACHE INTERNAL "Whether pygments module is available for Sphinx")
+# Check that the Python modules requested as components (Sphinx extensions
+# and themes, given by their import names) can be imported.
+include(FindPythonModule)
+foreach(_module ${Sphinx_FIND_COMPONENTS})
+    find_python_module(${_module} QUIET)
+    string(TOUPPER ${_module} _module_upper)
+    if (PYTHONMODULE_${_module_upper})
+        set(Sphinx_${_module}_FOUND TRUE)
     endif()
-endif()
+endforeach()
+unset(_module_upper)
 
 include(FindPackageHandleStandardArgs)
 

@@ -62,7 +62,17 @@ set(EXPECTED_SPHINX_VERSION 4.0.0)
 if(SPHINX_ALREADY_SEARCHED)
     set(Sphinx_FIND_QUIETLY ON)
 endif()
-find_package(Sphinx ${EXPECTED_SPHINX_VERSION} COMPONENTS pygments)
+# The components are the Python modules (by import name) that conf.cmakein.py
+# loads as extensions or uses as the HTML theme; keep the two in sync.  The
+# packages that provide them are listed in requirements.txt.
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} COMPONENTS
+    furo
+    pygments
+    sphinx_copybutton
+    sphinx_inline_tabs
+    sphinxarg
+    sphinxcontrib.autoprogram
+    )
 set(SPHINX_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for Sphinx has already been done")
 mark_as_advanced(SPHINX_ALREADY_SEARCHED)
 
@@ -116,7 +126,7 @@ else()
     endif()
     if(NOT SPHINX_FOUND)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available, and Sphinx is needed to create the LaTeX input files")
     elseif(NOT PDFLATEX_COMPILER)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex is not available")
@@ -781,27 +791,28 @@ if (SPHINX_FOUND)
 
 else()
     set(MANUAL_BUILD_IS_POSSIBLE OFF)
-    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available")
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available")
 
     add_custom_target(webpage-sphinx
         COMMAND ${CMAKE_COMMAND} -E echo
-            "HTML pages cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
+            "HTML pages cannot be built because Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available"
         VERBATIM)
     add_custom_target(install-guide
         COMMAND ${CMAKE_COMMAND} -E echo
-            "INSTALL cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
+            "INSTALL cannot be built because Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo
-            "man pages cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
+            "man pages cannot be built because Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available"
         VERBATIM)
     add_custom_target(sphinx-create-texman
         COMMAND ${CMAKE_COMMAND} -E echo
-            "Cannot prepare LaTeX input files because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
+            "Cannot prepare LaTeX input files because Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available"
         VERBATIM)
     add_custom_target(manual
         COMMAND ${CMAKE_COMMAND} -E echo
-            "manual cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available")
+            "manual cannot be built because Sphinx ${EXPECTED_SPHINX_VERSION} or the packages in docs/requirements.txt are not available"
+        VERBATIM)
 endif()
 
 if (MAN_PAGE_DIR)
@@ -830,7 +841,7 @@ if (NOT Python3_Interpreter_FOUND)
 elseif (NOT SPHINX_FOUND)
     # Hardly anything gets built if Sphinx is not available, so don't bother.
     set(HTML_BUILD_IS_POSSIBLE OFF)
-    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is required")
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx ${EXPECTED_SPHINX_VERSION} and the packages in docs/requirements.txt are required")
 endif()
 if (NOT MANUAL_BUILD_IS_POSSIBLE)
     list(APPEND HTML_BUILD_WARNINGS

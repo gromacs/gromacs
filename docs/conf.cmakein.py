@@ -116,6 +116,9 @@ needs_sphinx = gmx_min_sphinx
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# The third-party extensions here and the HTML theme are checked for at
+# configure time by find_package(Sphinx COMPONENTS ...) in CMakeLists.txt;
+# keep the two in sync.
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",

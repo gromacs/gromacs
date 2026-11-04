@@ -117,7 +117,9 @@ Sphinx
   source files.
   To install an appropriate version of ``sphinx-build`` and other required Python
   packages, you can use the :file:`requirements.txt` file in the :file:`docs`
-  repository directory. E.g. :command:`pip install -r docs/requirements.txt`
+  repository directory. E.g. :command:`pip install -r docs/requirements.txt`.
+  CMake treats Sphinx as not found if Python cannot import these packages,
+  and reports which ones are missing.
 
 LaTeX
   Also requires ImageMagick for converting graphics file formats.
