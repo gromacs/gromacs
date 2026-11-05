@@ -42,6 +42,7 @@
 #include <filesystem>
 #include <vector>
 
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/readir.h"
@@ -73,7 +74,7 @@ static int count_hydrogens(char*** atomname, int nra, ArrayRef<const int> a)
     nh = 0;
     for (int i = 0; (i < nra); i++)
     {
-        if (std::toupper(**(atomname[a[i]])) == 'H')
+        if (is_hydrogen(*(atomname[a[i]])))
         {
             nh++;
         }

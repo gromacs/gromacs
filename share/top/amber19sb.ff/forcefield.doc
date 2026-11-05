@@ -1,4 +1,4 @@
-AMBER19SB protein (Tian, C. et al. JCTC 16, 528–552, 2020 / Miletic, V. et al. ChemRxiv, 2026)
+AMBER19SB protein (Tian, C. et al. JCTC 16, 528–552, 2020 / Miletic, V. et al. JCTC, 2026)
 
 ********************************************************************
 * Amber ff19SB port, converted and validated by                    *
@@ -12,7 +12,9 @@ AMBER19SB protein (Tian, C. et al. JCTC 16, 528–552, 2020 / Miletic, V. et al.
 * doi:10.1021/acs.jctc.9b00591                                     *
 *                                                                  *
 * If you are using this force field in GROMACS, please cite        *
-* Miletic, V. et al. ChemRxiv (2026).                              *
-* doi:10.26434/chemrxiv.15006112/v1                                *
+* Miletic, V. et al. Force Fields and Simulation Engines: Lessons  *
+* Learned from Porting Amber ff14SB and ff19SB to GROMACS.         *
+* J. Chem. Theory Comput. (2026).                                  *
+* doi:10.1021/acs.jctc.6c01592                                     *
 ********************************************************************
 

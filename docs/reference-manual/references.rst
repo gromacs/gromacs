@@ -2745,7 +2745,7 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
 .. _refMiletic2026:
 
-:sup:`199` Miletić, V., Wieczór, M., Simmerling, C., Rampp, M., De Groot, B. L., Kutzner, C. & Gapsys, V. Force Fields and Simulation Engines: Lessons Learned from Porting Amber ff14SB and ff19SB to GROMACS. Preprint at `doi:10.26434/chemrxiv.15006112/v1 <https://doi.org/10.26434/chemrxiv.15006112/v1>`_ (2026).
+:sup:`199` Miletić, V., Wieczór, M., Simmerling, C., Rampp, M., De Groot, B. L., Kutzner, C. & Gapsys, V. Force Fields and Simulation Engines: Lessons Learned from Porting Amber ff14SB and ff19SB to GROMACS. *J. Chem. Theory Comput.* (2026). `doi:10.1021/acs.jctc.6c01592 <https://doi.org/10.1021/acs.jctc.6c01592>`_
 
 .. raw:: html
 

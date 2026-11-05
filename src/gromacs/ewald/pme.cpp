@@ -853,8 +853,23 @@ static std::unique_ptr<gmx_pme_t> pmeInitWithStorage(const gmx_domdec_t*  dd,
 
         GMX_RELEASE_ASSERT(gridSpacing > 0, "Computed value of grid spacing is 0");
 
-        const int pmeGpuGridHalo = numGridLinesForExtendedHaloRegion(
+        int pmeGpuGridHalo = numGridLinesForExtendedHaloRegion(
                 ir->pme_order, haloExtentForAtomDisplacement, gridSpacing);
+
+        // PP domain boundaries are at uniform fractions of the box, whereas the PME slabs
+        // start at grid lines rounded down (see init_overlap_comm()). When the grid size
+        // is not a multiple of the number of PME domains, a PP domain can therefore extend
+        // up to one grid line beyond the upper end of its PME slab, so we need one more
+        // halo line. The lower side does not need this line: spreading goes upward from
+        // the atom's grid line and the halo is the same on both sides, so the lower side
+        // already has pme_order - 1 spare lines.
+        const bool haveSlabBoundaryOffGridLine =
+                (pme->nnodes_major > 1 && pme->nkx % pme->nnodes_major != 0)
+                || (pme->nnodes_minor > 1 && pme->nky % pme->nnodes_minor != 0);
+        if (haveSlabBoundaryOffGridLine)
+        {
+            pmeGpuGridHalo += 1;
+        }
 
         if (debug)
         {
