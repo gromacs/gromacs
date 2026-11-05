@@ -396,9 +396,9 @@ void NNPotForceProvider::preparePairlistInput(const matrix& box)
 
         // we only want to add pairs where both atoms are part of the NNP input
         // if any of the two (or more commonly both) is not, we skip this pair
-        GMX_RELEASE_ASSERT(atomPair.first >= 0 && atomPair.first < ssize(localToInputIndex_),
+        GMX_RELEASE_ASSERT(atomPair.first >= 0 && atomPair.first < gmx::ssize(localToInputIndex_),
                            "Invalid atom index");
-        GMX_RELEASE_ASSERT(atomPair.second >= 0 && atomPair.second < ssize(localToInputIndex_),
+        GMX_RELEASE_ASSERT(atomPair.second >= 0 && atomPair.second < gmx::ssize(localToInputIndex_),
                            "Invalid atom index");
         const int inputIdxA = localToInputIndex_[atomPair.first];
         const int inputIdxB = localToInputIndex_[atomPair.second];
