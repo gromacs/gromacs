@@ -109,6 +109,18 @@ Now ``mdrun`` exits with a fatal error instead of crashing.
 
 :issue:`5790`
 
+Fixed missing PME grid halo line with GPU PME decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With GPU PME decomposition, the PME grid halo was one line too small when
+the PME grid size along a decomposed dimension was not a multiple of the
+number of PME ranks along that dimension. Then part of the charge of atoms
+close to PME domain boundaries could be missing on the grid, which gave
+errors in PME energies and forces. This has been present since GPU PME
+decomposition was introduced.
+
+:issue:`5803`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
