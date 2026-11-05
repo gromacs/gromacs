@@ -1143,7 +1143,7 @@ void CifIO::writeTrajectoryFrame(FILE*          out,
             blockName.push_back(std::isspace(static_cast<unsigned char>(ch)) ? '_' : ch);
         }
         std::fprintf(out, "data_%s\n#\n", blockName.c_str());
-        std::fprintf(out, "_entry.id   %s\n#\n", entryId.c_str());
+        std::fprintf(out, "_entry.id   %s\n#\n", cifToken(entryId).c_str());
 
         const bool haveBox =
                 box != nullptr

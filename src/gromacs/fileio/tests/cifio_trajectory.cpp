@@ -56,6 +56,7 @@
 #include "gromacs/fileio/cifio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -235,6 +236,41 @@ TEST_F(CifTrajectoryIoTest, ConnectivityIsWrittenOnceForAllModels)
     }
     EXPECT_FALSE(trajectory->readNextFrame(&fr));
     sfree(fr.x);
+}
+
+TEST_F(CifTrajectoryIoTest, TitleWithSpacesIsReadBack)
+{
+    const std::string cifFile = fileManager_.getTemporaryFilePath("title.cif").string();
+    const std::array<int, c_numAtoms> index        = { 0, 1, 2 };
+    const auto                        x            = modelCoords(0);
+    const char* const                 writtenTitle = "a title with spaces";
+
+    FILE* out = std::fopen(cifFile.c_str(), "w");
+    ASSERT_NE(out, nullptr);
+    CifIO::writeTrajectoryFrame(out,
+                                writtenTitle,
+                                &atoms_,
+                                as_rvec_array(x.data()),
+                                box_,
+                                c_numAtoms,
+                                index.data(),
+                                /*modelNr*/ 1,
+                                /*writeHeader*/ true);
+    std::fclose(out);
+
+    t_symtab symtab;
+    open_symtab(&symtab);
+    t_atoms atoms;
+    init_t_atoms(&atoms, c_numAtoms, FALSE);
+    std::array<RVec, c_numAtoms> readX;
+    char*                        title = nullptr;
+    matrix                       box;
+    PbcType                      pbcType = PbcType::Unset;
+    CifIO::read(cifFile, &symtab, &title, &atoms, as_rvec_array(readX.data()), &pbcType, box);
+    EXPECT_STREQ(title, writtenTitle);
+    sfree(title);
+    done_atom(&atoms);
+    done_symtab(&symtab);
 }
 
 TEST_F(CifTrajectoryIoTest, EmptyFileYieldsNoTrajectory)
