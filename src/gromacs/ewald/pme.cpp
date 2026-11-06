@@ -1282,6 +1282,12 @@ static void calc_next_lb_coeffs(gmx::ArrayRef<real> coefficient, gmx::ArrayRef<c
     }
 }
 
+/*! \brief Return whether an FEP reciprocal grid state has zero force weight */
+static bool hasZeroFepForceWeight(const int stateIndex, const real lambda)
+{
+    return (stateIndex == 0 && lambda == 1.0_real) || (stateIndex == 1 && lambda == 0.0_real);
+}
+
 int gmx_pme_do(struct gmx_pme_t*              pme,
                gmx::ArrayRef<const gmx::RVec> coordinates,
                gmx::ArrayRef<gmx::RVec>       forces,
@@ -1369,6 +1375,15 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     const bool computeEnergyAndVirial = stepWork.computeEnergyAndVirial;
     for (gmx_pme_t::GridsRef& gridsRef : pme->gridsRefs)
     {
+        // Zero-weight states are only required for computing dV/dlambda (at nstcalcenergy
+        // steps), not for the virial, but PmeStepWorkload currently combines both.
+        if (!computeEnergyAndVirial
+            && ((gridsRef.isCoulomb && pme->bFEP_q) || (!gridsRef.isCoulomb && pme->bFEP_lj))
+            && hasZeroFepForceWeight(gridsRef.gridsIndex, gridsRef.isCoulomb ? lambda_q : lambda_lj))
+        {
+            continue;
+        }
+
         gmx::ArrayRef<const real> coefficient;
         if (gridsRef.isCoulomb)
         {
@@ -1578,6 +1593,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         /* Loop over A- and B-state if we are doing FEP */
         for (int fep_state = 0; fep_state < fep_states_lj; ++fep_state)
         {
+            if (!computeEnergyAndVirial && pme->bFEP_lj && hasZeroFepForceWeight(fep_state, lambda_lj))
+            {
+                continue;
+            }
+
             std::vector<real>         local_c6;
             std::vector<real>         local_sigma;
             gmx::ArrayRef<const real> RedistC6;

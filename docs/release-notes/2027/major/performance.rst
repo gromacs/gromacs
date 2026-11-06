@@ -44,3 +44,13 @@ computed on the GPU with CUDA, HIP, and SYCL whenever bonded interactions
 are offloaded to the GPU (``-bonded gpu``).
 
 :issue:`5776`
+
+Faster CPU PME free-energy runs when Coulomb or LJ lambda is 0 or 1
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+On steps that compute forces without energies or virials, CPU Coulomb PME
+and LJ-PME free-energy simulations now skip the zero-weight reciprocal grid
+pass whenever the corresponding lambda is 0 or 1 (for example across van der
+Waals windows where charges are already decoupled, or at lambda endpoints).
+
+:issue:`5805`
