@@ -266,9 +266,8 @@ public:
      * \param[in] step          Simulation step for frame.
      * \param[in] time          Simulation time for frame.
      *
-     * \throws H5mdError if \p position, \p velocity or \p force data is given
-     *     but the corresponding data set has not been created, or if the size of
-     *     the data buffers do not match the number of atoms of the system.
+     * \throws H5mdError if the size of the data buffers do not match
+     * the number of atoms of the system.
      */
     void writeNextFrame(ArrayRef<const RVec> positions,
                         ArrayRef<const RVec> velocities,
@@ -295,14 +294,11 @@ private:
      * \param[in] selectionName        Name of group to set up particle block for
      * \param[in] restartingFromStep   (Optional) If restarting simulation, the step that we are
      *                                 restarting from.
-     * \param[in] expectedNumParticles (Optional) Expected number of particles of block in file.
-     *
-     * \throws H5mdError if \p expectedNumParticles is given and the contents of the existing
-     * particle block does not match it.
+     * \param[in] numParticles         Number of particles of block in file.
      */
     void setupParticleBlockForGroupFromExistingFile(const std::string&     selectionName,
                                                     std::optional<int64_t> restartingFromStep,
-                                                    std::optional<int64_t> expectedNumParticles);
+                                                    int64_t                numParticles);
 
     /*! \brief Set up the H5MD module group and add our used modules.
      *

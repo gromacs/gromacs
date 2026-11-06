@@ -45,20 +45,70 @@
 namespace gmx
 {
 
-H5mdParticleBlock::H5mdParticleBlock(std::optional<H5mdTimeDataBlock<RVec>>&& position,
-                                     std::optional<H5mdTimeDataBlock<RVec>>&& velocity,
-                                     std::optional<H5mdTimeDataBlock<RVec>>&& force,
-                                     std::optional<H5mdFrameDataSet<real>>&&  box,
-                                     int64_t                                  numParticles) :
-    position_{ std::move(position) },
-    velocity_{ std::move(velocity) },
-    force_{ std::move(force) },
-    box_{ std::move(box) },
-    hasTime_{ (position_.has_value() && position_->hasTime())
-              || (velocity_.has_value() && velocity_->hasTime())
-              || (force_.has_value() && force_->hasTime()) },
-    numParticles_{ numParticles }
+void H5mdParticleBlock::addPosition(H5mdTimeDataBlock<RVec>&& position)
 {
+    GMX_H5MD_THROW_UPON_ERROR(position_.has_value(), "Cannot add position data block: already set");
+    GMX_H5MD_THROW_UPON_ERROR(
+            position.frameDims().size() != 1,
+            formatString("Position data block must have a 1-dimensional frame (had %ld dimensions)",
+                         gmx::ssize(position.frameDims())));
+
+    const int64_t numParticlesInBlock = static_cast<int64_t>(position.frameDims()[0]);
+    GMX_H5MD_THROW_UPON_ERROR(
+            numParticles_ != numParticlesInBlock,
+            formatString("Inconsistent number of particles: particle block is for %" PRId64
+                         " particles, but trying to add position data block for %" PRId64,
+                         numParticles_,
+                         numParticlesInBlock));
+
+    position_.emplace(std::move(position));
+}
+
+void H5mdParticleBlock::addVelocity(H5mdTimeDataBlock<RVec>&& velocity)
+{
+    GMX_H5MD_THROW_UPON_ERROR(velocity_.has_value(), "Cannot add velocity data block: already set");
+    GMX_H5MD_THROW_UPON_ERROR(
+            velocity.frameDims().size() != 1,
+            formatString("Velocity data block must have a 1-dimensional frame (had %ld dimensions)",
+                         gmx::ssize(velocity.frameDims())));
+
+    const int64_t numParticlesInBlock = static_cast<int64_t>(velocity.frameDims()[0]);
+    GMX_H5MD_THROW_UPON_ERROR(
+            numParticles_ != numParticlesInBlock,
+            formatString("Inconsistent number of particles: particle block is for %" PRId64
+                         " particles, but trying to add velocity data block for %" PRId64,
+                         numParticles_,
+                         numParticlesInBlock));
+
+    velocity_.emplace(std::move(velocity));
+}
+
+void H5mdParticleBlock::addForce(H5mdTimeDataBlock<RVec>&& force)
+{
+    GMX_H5MD_THROW_UPON_ERROR(force_.has_value(), "Cannot add force data block: already set");
+    GMX_H5MD_THROW_UPON_ERROR(
+            force.frameDims().size() != 1,
+            formatString("Force data block must have a 1-dimensional frame (had %ld dimensions)",
+                         gmx::ssize(force.frameDims())));
+
+    const int64_t numParticlesInBlock = static_cast<int64_t>(force.frameDims()[0]);
+    GMX_H5MD_THROW_UPON_ERROR(
+            numParticles_ != numParticlesInBlock,
+            formatString("Inconsistent number of particles: particle block is for %" PRId64
+                         " particles, but trying to add force data block for %" PRId64,
+                         numParticles_,
+                         numParticlesInBlock));
+
+    force_.emplace(std::move(force));
+}
+
+void H5mdParticleBlock::addBox(H5mdFrameDataSet<real>&& box)
+{
+    GMX_H5MD_THROW_UPON_ERROR(box_.has_value(), "Cannot add box data block: already set");
+    GMX_H5MD_THROW_UPON_ERROR(
+            box.frameDims().size() != 2 || box.frameDims()[0] != DIM || box.frameDims()[1] != DIM,
+            "Simulation box does not have required dimensions { 3, 3 }");
+    box_.emplace(std::move(box));
 }
 
 void H5mdParticleBlock::trimDataSetsFromStep(const int64_t maxStep)
@@ -79,67 +129,6 @@ void H5mdParticleBlock::trimDataSetsFromStep(const int64_t maxStep)
     {
         box_->shrinkToNumFrames(position_->numFrames());
     }
-}
-
-H5mdParticleBlock H5mdParticleBlockBuilder::build()
-{
-    return H5mdParticleBlock(std::move(position_),
-                             std::move(velocity_),
-                             std::move(force_),
-                             std::move(box_),
-                             numParticles_.value_or(0));
-}
-
-void H5mdParticleBlockBuilder::ensureParticleCountConsistency(const H5mdTimeDataBlock<RVec>& dataBlock)
-{
-    GMX_H5MD_THROW_UPON_ERROR(dataBlock.frameDims().size() != 1,
-                              "Trajectory data block does not have a 1d frame dimension");
-
-    const int64_t numParticlesInBlock = static_cast<int64_t>(dataBlock.frameDims()[0]);
-    if (!numParticles_.has_value())
-    {
-        numParticles_ = numParticlesInBlock;
-    }
-    else
-    {
-        GMX_H5MD_THROW_UPON_ERROR(
-                numParticles_.value() != numParticlesInBlock,
-                formatString("Inconsistent number of particles: "
-                             "Trying to add data set for %lld particles, but already "
-                             "existing data sets are for %lld particles",
-                             static_cast<long long>(numParticlesInBlock),
-                             static_cast<long long>(numParticles_.value())));
-    }
-}
-
-H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setBox(H5mdFrameDataSet<real>&& box)
-{
-    GMX_H5MD_THROW_UPON_ERROR(
-            box.frameDims().size() != 2 || box.frameDims()[0] != DIM || box.frameDims()[1] != DIM,
-            "Simulation box does not have required dimensions { 3, 3 }");
-    box_.emplace(std::move(box));
-    return *this;
-}
-
-H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setPosition(H5mdTimeDataBlock<RVec>&& position)
-{
-    ensureParticleCountConsistency(position);
-    position_.emplace(std::move(position));
-    return *this;
-}
-
-H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setVelocity(H5mdTimeDataBlock<RVec>&& velocity)
-{
-    ensureParticleCountConsistency(velocity);
-    velocity_.emplace(std::move(velocity));
-    return *this;
-}
-
-H5mdParticleBlockBuilder& H5mdParticleBlockBuilder::setForce(H5mdTimeDataBlock<RVec>&& force)
-{
-    ensureParticleCountConsistency(force);
-    force_.emplace(std::move(force));
-    return *this;
 }
 
 } // namespace gmx

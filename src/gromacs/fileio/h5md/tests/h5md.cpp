@@ -83,6 +83,10 @@ using H5mdIoTest = H5mdTestBase;
 //! \brief Dummy simulation box, used in tests where this is not needed.
 constexpr matrix c_unusedBox = { { -1.0, -1.0, -1.0 }, { -1.0, -1.0, -1.0 }, { -1.0, -1.0, -1.0 } };
 
+// Helper variables
+constexpr int64_t oneParticle    = 1;
+constexpr int64_t sevenParticles = 7;
+
 /*! \brief Test that opening (creating a new), closing, re-opening and closing
  * an H5MD file works
  */
@@ -333,140 +337,8 @@ TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)
     gmx_mtop_t mtop;
     mtop.natoms = 0;
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1; // Trajectory writing is enabled for nstout >0
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
 
     EXPECT_THROW_GMX(file().setupFileFromInput(mtop, inputRecord), H5mdError);
-}
-
-TEST_F(H5mdIoTest, SetupFileFromInputCreatesNoTrajectoryGroupsIfNoOutput)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 0; // Trajectory writing is not enabled for <=0
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 0;
-
-    file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system"));
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
-}
-
-TEST_F(H5mdIoTest, SetupFileFromInputCreatesPositionGroupIfSet)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    // Trajectory writing is enabled for nstout >0: only enable positions here to ensure independence
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 0;
-
-    file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/position"));
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
-
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
-            << "Box group must always be created";
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"))
-            << "Edges group must only be created if position data is output";
-}
-
-TEST_F(H5mdIoTest, SetupFileFromInputCreatesVelocityGroupIfSet)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    // Trajectory writing is enabled for nstout >0: only enable velocities here to ensure independence
-    inputRecord.outputControl.nstxout = 0;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 0;
-
-    file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"));
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
-
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
-            << "Box group must always be created";
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"), H5mdError)
-            << "Edges group must only be created if position data is output";
-}
-
-TEST_F(H5mdIoTest, SetupFileFromInputCreatesForceGroupIfSet)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    // Trajectory writing is enabled for nstout >0: only enable forces here to ensure independence
-    inputRecord.outputControl.nstxout = 0;
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 1;
-
-    file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/force"));
-
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
-            << "Box group must always be created";
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"), H5mdError)
-            << "Edges group must only be created if position data is output";
-}
-
-TEST_F(H5mdIoTest, SetupFileFromInputIgnoresNstxoutCompressed)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    // Trajectory writing is enabled for nstout >0: only enable compressed output here
-    // to assert that this does not create the position group
-    inputRecord.outputControl.nstxout            = 0;
-    inputRecord.outputControl.nstvout            = 0;
-    inputRecord.outputControl.nstfout            = 0;
-    inputRecord.outputControl.nstxout_compressed = 1;
-
-    file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/position"), H5mdError);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/velocity"), H5mdError);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/force"), H5mdError);
-
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system/box"))
-            << "Box group must always be created";
-    EXPECT_THROW_GMX(openGroup(fileid(), "/particles/system/box/edges"), H5mdError)
-            << "Edges group must not be created for compressed output";
-}
-
-TEST_F(H5mdIoTest, SetupFileFromInputSetsCorrectDataSetDims)
-{
-    t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
-
-    // Read the topology from a test system in our simulation data base
-    const std::string fileNameBase = "spc2-traj";
-    TprAndFileManager tprFileHandle(fileNameBase);
-    bool              haveTopology;
-    gmx_mtop_t        mtop;
-    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
-    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
-
-    file().setupFileFromInput(mtop, inputRecord);
-    const H5mdFrameDataSet<RVec> position(fileid(), "/particles/system/position/value");
-    EXPECT_EQ(position.numFrames(), 0);
-    EXPECT_EQ(position.frameDims(), DataSetDims{ numAtoms });
-    const H5mdFrameDataSet<RVec> velocity(fileid(), "/particles/system/velocity/value");
-    EXPECT_EQ(velocity.numFrames(), 0);
-    EXPECT_EQ(velocity.frameDims(), DataSetDims{ numAtoms });
-    const H5mdFrameDataSet<RVec> force(fileid(), "/particles/system/force/value");
-    EXPECT_EQ(force.numFrames(), 0);
-    EXPECT_EQ(force.frameDims(), DataSetDims{ numAtoms });
 }
 
 using H5mdSetupFromExistingFile = H5mdIoTest;
@@ -517,8 +389,6 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryGroupDoesNotExist)
 {
     EXPECT_THROW_GMX(file().setupFromExistingFile(), H5mdError)
             << "Must throw before setting up /particles/system";
-    makeH5mdGroupGuard(createGroup(fileid(), "/particles/system"));
-    EXPECT_NO_THROW_GMX(file().setupFromExistingFile());
 }
 
 TEST_F(H5mdSetupFromExistingFile, ThrowsIfTrajectoryDataBlocksHaveInconsistentNumParticles)
@@ -624,46 +494,10 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritingSkipsEmptyTopology)
     EXPECT_THROW_GMX(openGroup(fileid(), "/h5md/modules/gromacs_topology"), H5mdError);
 }
 
-TEST_F(H5mdIoTest, SetupFileFromInputSetsUnitsToTrajectoryDataSets)
-{
-    gmx_mtop_t mtop;
-    mtop.natoms = 1;
-    t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
-    file().setupFileFromInput(mtop, inputRecord);
-
-    const auto [positionGroup, positionGroupGuard] =
-            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/position"));
-    const auto [velocityGroup, velocityGroupGuard] =
-            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/velocity"));
-    const auto [forceGroup, forceGroupGuard] =
-            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/force"));
-    const auto [boxGroup, boxGroupGuard] =
-            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box/edges"));
-
-    // Open the value data sets as raw handles to check their unit attributes
-    const auto [position, positionGuard] =
-            makeH5mdDataSetGuard(H5Dopen(positionGroup, "value", H5P_DEFAULT));
-    EXPECT_EQ(getAttribute<std::string>(position, "unit").value_or(""), "nm");
-
-    const auto [velocity, velocityGuard] =
-            makeH5mdDataSetGuard(H5Dopen(velocityGroup, "value", H5P_DEFAULT));
-    EXPECT_EQ(getAttribute<std::string>(velocity, "unit").value_or(""), "nm ps-1");
-
-    const auto [force, forceGuard] = makeH5mdDataSetGuard(H5Dopen(forceGroup, "value", H5P_DEFAULT));
-    EXPECT_EQ(getAttribute<std::string>(force, "unit").value_or(""), "kJ mol-1 nm-1");
-
-    const auto [box, boxGuard] = makeH5mdDataSetGuard(H5Dopen(boxGroup, "value", H5P_DEFAULT));
-    EXPECT_EQ(getAttribute<std::string>(box, "unit").value_or(""), "nm");
-}
-
 TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.pbcType               = PbcType::Xyz;
+    inputRecord.pbcType = PbcType::Xyz;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -678,16 +512,12 @@ TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
     EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
               (std::vector<std::string>{ "periodic", "periodic", "periodic" }))
             << "For PBC=Xyz all boundaries are periodic";
-
-    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
-    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
 }
 
 TEST_F(H5mdIoTest, BoxGroupAttributesPbcXy)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.pbcType               = PbcType::XY;
+    inputRecord.pbcType = PbcType::XY;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -702,16 +532,12 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcXy)
     EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
               std::vector<std::string>({ "periodic", "periodic", "none" }))
             << "For PBC=XY the Z value is none";
-
-    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
-    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
 }
 
 TEST_F(H5mdIoTest, BoxGroupAttributesPbcNo)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.pbcType               = PbcType::No;
+    inputRecord.pbcType = PbcType::No;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -726,16 +552,12 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcNo)
     EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
               std::vector<std::string>({ "none", "none", "none" }))
             << "For PBC=no all values are none";
-
-    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
-    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
 }
 
 TEST_F(H5mdIoTest, BoxGroupAttributesPbcScrew)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.pbcType               = PbcType::Screw;
+    inputRecord.pbcType = PbcType::Screw;
 
     const hsize_t numAtoms = 6;
     gmx_mtop_t    mtop;
@@ -750,50 +572,151 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcScrew)
     EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
               std::vector<std::string>({ "none", "none", "none" }))
             << "For PBC=screw all values are none";
-
-    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
-    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
 }
 
-TEST_F(H5mdIoTest, BoxStepAndTimeDataSetsAreHardLinkedToPosition)
+using H5mdWriteNextFrameTest = H5mdIoTest;
+
+TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsCreatesTimeDataBlock)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.pbcType               = PbcType::Xyz;
+    gmx_mtop_t mtop;
+    mtop.natoms = sevenParticles;
 
-    const hsize_t numAtoms = 6;
-    gmx_mtop_t    mtop;
-    mtop.natoms = numAtoms;
+    constexpr char pathToPosition[] = "/particles/system/position";
+    constexpr char pathToVelocity[] = "/particles/system/velocity";
+    constexpr char pathToForce[]    = "/particles/system/force";
 
     file().setupFileFromInput(mtop, inputRecord);
+    std::vector<RVec> valuesToWrite(sevenParticles, { 0.0, 0.0, 0.0 });
 
-    H5mdScalarFrameDataSet<int64_t> stepInPositionGroup(fileid(), "/particles/system/position/step");
-    H5mdScalarFrameDataSet<double> timeInPositionGroup(fileid(), "/particles/system/position/time");
-
-    const int64_t stepToWrite = 51;
-    stepInPositionGroup.writeNextFrame(stepToWrite);
-    const double timeToWrite = -501.5;
-    timeInPositionGroup.writeNextFrame(timeToWrite);
-
-    H5mdScalarFrameDataSet<int64_t> stepInBoxGroup(fileid(), "/particles/system/box/edges/step");
-    int64_t                         readStepBuffer;
-    stepInBoxGroup.readFrame(0, &readStepBuffer);
-    EXPECT_EQ(readStepBuffer, stepToWrite)
-            << "Step written to position block must exist in the box block";
-
-    H5mdScalarFrameDataSet<double> timeInBoxGroup(fileid(), "/particles/system/box/edges/time");
-    double                         readTimeBuffer;
-    timeInBoxGroup.readFrame(0, &readTimeBuffer);
-    EXPECT_EQ(readTimeBuffer, timeToWrite)
-            << "Time written to position block must exist in the box block";
+    {
+        SCOPED_TRACE("Sanity check: No time data blocks should exist before first write");
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
+    }
+    {
+        SCOPED_TRACE("Writing positions creates corresponding time data block only");
+        file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0);
+        ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition));
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
+    }
 }
 
-TEST_F(H5mdIoTest, WriteNextFrameWorks)
+TEST_F(H5mdWriteNextFrameTest, FirstCallWithVelocitiesCreatesTimeDataBlock)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
+    gmx_mtop_t mtop;
+    mtop.natoms = sevenParticles;
+
+    constexpr char pathToPosition[] = "/particles/system/position";
+    constexpr char pathToVelocity[] = "/particles/system/velocity";
+    constexpr char pathToForce[]    = "/particles/system/force";
+
+    file().setupFileFromInput(mtop, inputRecord);
+    std::vector<RVec> valuesToWrite(sevenParticles, { 0.0, 0.0, 0.0 });
+
+    {
+        SCOPED_TRACE("Sanity check: No time data blocks should exist before first write");
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
+    }
+    {
+        SCOPED_TRACE("Writing velocities creates corresponding time data block only");
+        file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
+        ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity));
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
+    }
+}
+
+TEST_F(H5mdWriteNextFrameTest, FirstCallWithForcesCreatesTimeDataBlock)
+{
+    t_inputrec inputRecord;
+    gmx_mtop_t mtop;
+    mtop.natoms = sevenParticles;
+
+    constexpr char pathToPosition[] = "/particles/system/position";
+    constexpr char pathToVelocity[] = "/particles/system/velocity";
+    constexpr char pathToForce[]    = "/particles/system/force";
+
+    file().setupFileFromInput(mtop, inputRecord);
+    std::vector<RVec> valuesToWrite(sevenParticles, { 0.0, 0.0, 0.0 });
+
+    {
+        SCOPED_TRACE("Sanity check: No time data blocks should exist before first write");
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
+    }
+    {
+        SCOPED_TRACE("Writing forces creates corresponding time data block only");
+        file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
+        ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce));
+    }
+}
+
+TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsAlsoCreatesLinkedBoxTimeDataBlock)
+{
+    t_inputrec inputRecord;
+    gmx_mtop_t mtop;
+    mtop.natoms = sevenParticles;
+
+    constexpr char pathToPosition[] = "/particles/system/position";
+    constexpr char pathToBox[]      = "/particles/system/box/edges";
+
+    file().setupFileFromInput(mtop, inputRecord);
+    const std::vector<RVec> valuesToWrite(sevenParticles, { 0.0, 0.0, 0.0 });
+    const matrix boxToWrite = { { 0.1, 0.2, 0.3 }, { 1.1, 1.2, 1.3 }, { 2.1, 2.2, 2.3 } };
+
+    {
+        SCOPED_TRACE("Sanity check: No time data blocks should exist before first write");
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
+        ASSERT_THROW_GMX(H5mdTimeDataBlock<real>(fileid(), pathToBox), H5mdError);
+    }
+    {
+        SCOPED_TRACE("Writing positions creates box data set");
+        file().writeNextFrame(valuesToWrite, {}, {}, boxToWrite, 0, 0);
+        ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition));
+        ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<real>(fileid(), pathToBox));
+    }
+    {
+        SCOPED_TRACE("Assert that box time and step data sets are hard linked");
+
+        // Open the position step and time data sets explicitly
+        // and write an extra frame
+        H5mdScalarFrameDataSet<int64_t> stepInPositionGroup(fileid(),
+                                                            "/particles/system/position/step");
+        H5mdScalarFrameDataSet<double>  timeInPositionGroup(fileid(),
+                                                           "/particles/system/position/time");
+        const int64_t                   stepToWrite = 51;
+        stepInPositionGroup.writeNextFrame(stepToWrite);
+        const double timeToWrite = -501.5;
+        timeInPositionGroup.writeNextFrame(timeToWrite);
+
+        // Open the box step and time data sets and assert that
+        // the values were also "written" here
+        H5mdScalarFrameDataSet<int64_t> stepInBoxGroup(fileid(), "/particles/system/box/edges/step");
+        int64_t readStepBuffer;
+        stepInBoxGroup.readFrame(1, &readStepBuffer);
+        EXPECT_EQ(readStepBuffer, stepToWrite)
+                << "Step written to position block must exist in the box block";
+
+        H5mdScalarFrameDataSet<double> timeInBoxGroup(fileid(), "/particles/system/box/edges/time");
+        double                         readTimeBuffer;
+        timeInBoxGroup.readFrame(1, &readTimeBuffer);
+        EXPECT_EQ(readTimeBuffer, timeToWrite)
+                << "Time written to position block must exist in the box block";
+    }
+}
+
+TEST_F(H5mdWriteNextFrameTest, Works)
+{
+    t_inputrec inputRecord;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -887,12 +810,9 @@ TEST_F(H5mdIoTest, WriteNextFrameWorks)
     }
 }
 
-TEST_F(H5mdIoTest, WriteNextFrameDoesNotWriteEmptyRefs)
+TEST_F(H5mdWriteNextFrameTest, DoesNotWriteEmptyRefs)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -939,38 +859,9 @@ TEST_F(H5mdIoTest, WriteNextFrameDoesNotWriteEmptyRefs)
     }
 }
 
-TEST_F(H5mdIoTest, WriteNextFrameThrowsForNotCreatedDataSets)
+TEST_F(H5mdWriteNextFrameTest, ThrowsForBuffersWithIncorrectSize)
 {
     t_inputrec inputRecord;
-    // Do not construct data sets for any trajectory data
-    inputRecord.outputControl.nstxout = 0;
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 0;
-
-    // Read the topology from a test system in our simulation data base
-    const std::string fileNameBase = "spc2-traj";
-    TprAndFileManager tprFileHandle(fileNameBase);
-    bool              haveTopology;
-    gmx_mtop_t        mtop;
-    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
-    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
-
-    file().setupFileFromInput(mtop, inputRecord);
-
-    std::vector<RVec> valuesToWrite(numAtoms, { 0.0, 0.0, 0.0 });
-    ASSERT_NO_THROW_GMX(file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0))
-            << "Sanity check failed: should not throw when not trying to write any data";
-    EXPECT_THROW_GMX(file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_THROW_GMX(file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0), H5mdError);
-}
-
-TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
-{
-    t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
 
     // Read the topology from a test system in our simulation data base
     const std::string fileNameBase = "spc2-traj";
@@ -986,15 +877,90 @@ TEST_F(H5mdIoTest, WriteNextFrameThrowsForBuffersWithIncorrectSize)
     std::vector<RVec> bufferTooLarge(numAtoms + 1, { 0.0, 0.0, 0.0 });
     std::vector<RVec> bufferJustRight(numAtoms, { 0.0, 0.0, 0.0 });
 
+    EXPECT_NO_THROW_GMX(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0));
     EXPECT_THROW_GMX(file().writeNextFrame(bufferTooSmall, {}, {}, c_unusedBox, 0, 0), H5mdError);
     EXPECT_THROW_GMX(file().writeNextFrame(bufferTooLarge, {}, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_NO_THROW_GMX(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0));
+    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0));
     EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooSmall, {}, c_unusedBox, 0, 0), H5mdError);
     EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooLarge, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0));
+    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
     EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0), H5mdError);
     EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
+}
+
+TEST_F(H5mdWriteNextFrameTest, UnitsAreSetCorrectly)
+{
+    t_inputrec inputRecord;
+    gmx_mtop_t mtop;
+    mtop.natoms = oneParticle;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    std::vector<RVec> valuesToWrite(oneParticle, { 0.0, 0.0, 0.0 });
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0);
+
+    {
+        SCOPED_TRACE("Units for position data sets");
+        const auto [group, groupGuard] =
+                makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/position"));
+        const auto [valueDataSet, valueDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "value", H5P_DEFAULT));
+        const auto [stepDataSet, stepDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "step", H5P_DEFAULT));
+        const auto [timeDataSet, timeDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "time", H5P_DEFAULT));
+
+        EXPECT_THAT(getAttribute<std::string>(valueDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("nm")));
+        EXPECT_EQ(getAttribute<std::string>(stepDataSet, "unit"), std::nullopt);
+        EXPECT_THAT(getAttribute<std::string>(timeDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("ps")));
+    }
+    {
+        SCOPED_TRACE("Units for velocity data sets");
+        const auto [group, groupGuard] =
+                makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/velocity"));
+        const auto [valueDataSet, valueDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "value", H5P_DEFAULT));
+        const auto [stepDataSet, stepDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "step", H5P_DEFAULT));
+        const auto [timeDataSet, timeDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "time", H5P_DEFAULT));
+
+        EXPECT_THAT(getAttribute<std::string>(valueDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("nm ps-1")));
+        EXPECT_EQ(getAttribute<std::string>(stepDataSet, "unit"), std::nullopt);
+        EXPECT_THAT(getAttribute<std::string>(timeDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("ps")));
+    }
+    {
+        SCOPED_TRACE("Units for force data sets");
+        const auto [group, groupGuard] =
+                makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/force"));
+        const auto [valueDataSet, valueDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "value", H5P_DEFAULT));
+        const auto [stepDataSet, stepDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "step", H5P_DEFAULT));
+        const auto [timeDataSet, timeDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "time", H5P_DEFAULT));
+
+        EXPECT_THAT(getAttribute<std::string>(valueDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("kJ mol-1 nm-1")));
+        EXPECT_EQ(getAttribute<std::string>(stepDataSet, "unit"), std::nullopt);
+        EXPECT_THAT(getAttribute<std::string>(timeDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("ps")));
+    }
+    {
+        SCOPED_TRACE("Units for box data set");
+        const auto [group, groupGuard] =
+                makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box/edges"));
+        const auto [valueDataSet, valueDataSetGuard] =
+                makeH5mdDataSetGuard(H5Dopen(group, "value", H5P_DEFAULT));
+
+        // Since the step and time data sets are hard linked to
+        // the position group we only check the value data set here
+        EXPECT_THAT(getAttribute<std::string>(valueDataSet, "unit"),
+                    ::testing::Optional(::testing::StrEq("nm")));
+    }
 }
 
 //! \brief Helper function to return an ArrayRef<RVec> from an input rvec pointer \p values.
@@ -1008,9 +974,6 @@ using H5mdReadNextFrame = H5mdIoTest;
 TEST_F(H5mdReadNextFrame, Works)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
 
     const int  numAtoms = 6;
     gmx_mtop_t mtop;
@@ -1085,10 +1048,7 @@ TEST_F(H5mdReadNextFrame, Works)
 TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
-    const int  numAtoms               = 1;
+    const int  numAtoms = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
     file().setupFileFromInput(mtop, inputRecord);
@@ -1106,10 +1066,7 @@ TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
 TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 0;
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 0;
-    const int  numAtoms               = 1;
+    const int  numAtoms = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
     file().setupFileFromInput(mtop, inputRecord);
@@ -1130,10 +1087,7 @@ TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
 TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 0;
-    const int  numAtoms               = 1;
+    const int  numAtoms = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
 
@@ -1162,10 +1116,7 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
 TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 0;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 0;
-    const int  numAtoms               = 1;
+    const int  numAtoms = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
 
@@ -1189,10 +1140,7 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
 TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 0;
-    inputRecord.outputControl.nstvout = 0;
-    inputRecord.outputControl.nstfout = 1;
-    const int  numAtoms               = 1;
+    const int  numAtoms = 1;
     gmx_mtop_t mtop;
     mtop.natoms = numAtoms;
 
@@ -1217,9 +1165,6 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
 TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
 
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1429,9 +1374,6 @@ TEST_F(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
 TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
 {
     t_inputrec inputRecord;
-    inputRecord.outputControl.nstxout = 1;
-    inputRecord.outputControl.nstvout = 1;
-    inputRecord.outputControl.nstfout = 1;
 
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
