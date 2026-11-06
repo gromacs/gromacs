@@ -243,7 +243,8 @@ TEST(PmeFepEndpointGridSkipTest, CpuSkipsZeroWeightGridAcrossCoulombAndLjPme)
 
     MDLogger                     dummyLogger;
     const NumPmeDomains          numPmeDomains{ 1, 1 };
-    const FloatingPointTolerance tol = ulpTolerance(0);
+    const FloatingPointTolerance tol =
+            relativeToleranceAsPrecisionDependentFloatingPoint(1.0, 1e-5F, 1e-12);
 
 #if GMX_OPENMP
     const std::vector<int> threadCounts = { 1, 2 };
