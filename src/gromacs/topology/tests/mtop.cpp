@@ -301,6 +301,56 @@ TEST(IListRangeTest, RangeBasedLoopWithIntermolecularInteraction)
     done_atom(&mtop.moltype[0].atoms);
 }
 
+/*! \brief Adds a molecule type with a SETTLE on its first three
+ * atoms and a fourth atom that is not in the SETTLE
+ *
+ * The atoms in \p atomsWithPerturbedMass have different masses in
+ * the A and B states. A molecule block with one molecule of this type
+ * is also added.
+ */
+void addMoleculeTypeWithSettleAndExtraAtom(gmx_mtop_t* mtop, std::initializer_list<int> atomsWithPerturbedMass)
+{
+    const int numAtoms = NRAL(InteractionFunction::SETTLE) + 1;
+    auto&     moltype  = mtop->moltype.emplace_back();
+    init_t_atoms(&moltype.atoms, numAtoms, false);
+    for (int a = 0; a < numAtoms; a++)
+    {
+        moltype.atoms.atom[a].m  = 1;
+        moltype.atoms.atom[a].mB = 1;
+    }
+    for (const int a : atomsWithPerturbedMass)
+    {
+        moltype.atoms.atom[a].mB = 2;
+    }
+    const int settleType                              = 0;
+    moltype.ilist[InteractionFunction::SETTLE].iatoms = { settleType, 0, 1, 2 };
+
+    auto& molblock = mtop->molblock.emplace_back();
+    molblock.type  = mtop->moltype.size() - 1;
+    molblock.nmol  = 1;
+    mtop->natoms += numAtoms;
+}
+
+TEST(MtopTest, PerturbedMassOutsideSettleIsNotInSettles)
+{
+    gmx_mtop_t mtop;
+    addMoleculeTypeWithSettleAndExtraAtom(&mtop, { 3 });
+    mtop.finalize();
+
+    EXPECT_TRUE(haveFepPerturbedMasses(mtop));
+    EXPECT_FALSE(haveFepPerturbedMassesInSettles(mtop));
+}
+
+TEST(MtopTest, PerturbedMassInSettleIsFound)
+{
+    gmx_mtop_t mtop;
+    addMoleculeTypeWithSettleAndExtraAtom(&mtop, { 1 });
+    mtop.finalize();
+
+    EXPECT_TRUE(haveFepPerturbedMasses(mtop));
+    EXPECT_TRUE(haveFepPerturbedMassesInSettles(mtop));
+}
+
 } // namespace
 
 } // namespace test
