@@ -46,6 +46,7 @@
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -200,6 +201,36 @@ template<typename ValueType>
 bool valueTypeIsDataType(const hid_t dataType, const ArrayRef<const ValueType> gmx_unused valueBuffer) noexcept
 {
     return valueTypeIsDataType<ValueType>(dataType);
+}
+
+/*! \brief Return true if \p ValueType is of the same HDF5 class as \p dataType.
+ *
+ * This automates conversions of BasicVector or std::string types and
+ * their respective underlying raw types.
+ *
+ * \tparam ValueType Type of value to check.
+ * \param[in] dataType HDF5 data type to check against.
+ * \returns True if the types are of the same class, otherwise false.
+ */
+template<typename ValueType>
+bool valueTypeIsSameClassAsDataType(const hid_t dataType)
+{
+    if constexpr (std::is_same_v<ValueType, BasicVector<float>>)
+    {
+        return valueTypeIsSameClassAsDataType<float>(dataType);
+    }
+    else if constexpr (std::is_same_v<ValueType, BasicVector<double>>)
+    {
+        return valueTypeIsSameClassAsDataType<double>(dataType);
+    }
+    else if constexpr (std::is_same_v<ValueType, std::string>)
+    {
+        return H5Tget_class(dataType) == H5T_STRING;
+    }
+    else
+    {
+        return H5Tget_class(hdf5DataTypeFor<ValueType>()) == H5Tget_class(dataType);
+    }
 }
 
 } // namespace gmx

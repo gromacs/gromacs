@@ -239,6 +239,72 @@ TYPED_TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForAllTypesWithBufferTypeInfere
     }
 }
 
+TEST(H5mdIsSameClassAsTest, FloatTypes)
+{
+    // all floats are same class
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<float>(hdf5DataTypeFor<float>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<float>(hdf5DataTypeFor<double>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<double>(hdf5DataTypeFor<float>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<double>(hdf5DataTypeFor<double>()));
+    // floats are not ints or strings
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<float>(hdf5DataTypeFor<int>()));
+    const auto [variableLengthStringDataType, variableLengthStringDataTypeGuard] =
+            makeH5mdTypeGuard(hdf5DataTypeForVariableLengthString());
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<double>(variableLengthStringDataType));
+}
+
+TEST(H5mdIsSameClassAsTest, BasicVectorTypes)
+{
+    // all BasicVector<T> are same class as T (we only compile for
+    // `float` and `double`, so don't check other types)
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<BasicVector<float>>(hdf5DataTypeFor<float>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<BasicVector<float>>(hdf5DataTypeFor<double>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<BasicVector<double>>(hdf5DataTypeFor<float>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<BasicVector<double>>(hdf5DataTypeFor<double>()));
+    // BasicVector<float/double> are not ints or strings
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<BasicVector<float>>(hdf5DataTypeFor<int>()));
+    const auto [variableLengthStringDataType, variableLengthStringDataTypeGuard] =
+            makeH5mdTypeGuard(hdf5DataTypeForVariableLengthString());
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<BasicVector<double>>(variableLengthStringDataType));
+}
+
+TEST(H5mdIsSameClassAsTest, IntegerTypes)
+{
+    // all ints are same class
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<int32_t>(hdf5DataTypeFor<int32_t>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<int32_t>(hdf5DataTypeFor<int64_t>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<int64_t>(hdf5DataTypeFor<int32_t>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<int64_t>(hdf5DataTypeFor<int64_t>()));
+    // uint are same class as int
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<uint32_t>(hdf5DataTypeFor<int32_t>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<uint32_t>(hdf5DataTypeFor<int64_t>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<uint64_t>(hdf5DataTypeFor<int32_t>()));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<uint64_t>(hdf5DataTypeFor<int64_t>()));
+    // ints are not floats or strings
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<int32_t>(hdf5DataTypeFor<float>()));
+    const auto [variableLengthStringDataType, variableLengthStringDataTypeGuard] =
+            makeH5mdTypeGuard(hdf5DataTypeForVariableLengthString());
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<BasicVector<double>>(variableLengthStringDataType));
+}
+
+TEST(H5mdIsSameClassAsTest, StringTypes)
+{
+    // strings are same class as either variable-size or fixed-size strings
+    const auto [variableLengthStringDataType, variableLengthStringDataTypeGuard] =
+            makeH5mdTypeGuard(hdf5DataTypeForVariableLengthString());
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<std::string>(variableLengthStringDataType));
+    const auto [fixedLengthStringDataType, fixedLengthStringDataTypeGuard] =
+            makeH5mdTypeGuard(hdf5DataTypeForFixedLengthString(5));
+    EXPECT_TRUE(valueTypeIsSameClassAsDataType<std::string>(fixedLengthStringDataType));
+    // strings are not floats or ints
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<std::string>(hdf5DataTypeFor<int32_t>()));
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<std::string>(hdf5DataTypeFor<int64_t>()));
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<std::string>(hdf5DataTypeFor<uint32_t>()));
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<std::string>(hdf5DataTypeFor<uint64_t>()));
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<std::string>(hdf5DataTypeFor<float>()));
+    EXPECT_FALSE(valueTypeIsSameClassAsDataType<std::string>(hdf5DataTypeFor<double>()));
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx
