@@ -96,25 +96,17 @@ static void verifyDataSetConsistency(const hid_t storedDataType, const DataSetDi
         GMX_H5MD_THROW_UPON_ERROR(dims.empty() || dims.back() != DIM,
                                   "Could not open data set: inner dimension of data set must = 3 "
                                   "for BasicVector<float>");
-        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<float>(storedDataType),
-                                  "Could not open data set: compiled type parameter does not match "
-                                  "the primitive type of the data set");
     }
     else if constexpr (std::is_same_v<ValueType, BasicVector<double>>)
     {
         GMX_H5MD_THROW_UPON_ERROR(dims.empty() || dims.back() != DIM,
                                   "Could not open data set: inner dimension of data set must = 3 "
                                   "for BasicVector<double>");
-        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<double>(storedDataType),
-                                  "Could not open data set: compiled type parameter does not match "
-                                  "the primitive type of the data set");
     }
-    else
-    {
-        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsDataType<ValueType>(storedDataType),
-                                  "Could not open data set: compiled type parameter does not match "
-                                  "the primitive type of the data set");
-    }
+
+    GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsSameClassAsDataType<ValueType>(storedDataType),
+                              "Could not open data set: compiled type parameter does not match "
+                              "the primitive type of the data set");
 }
 
 //! \brief Return whether the number of data points in \p values matches the selections.
@@ -304,13 +296,45 @@ static bool writeVariableLengthStringsToDataSet(const hid_t                 data
            >= 0;
 }
 
+/*! \brief Return the in-memory (native) data type to use for a data set.
+ *
+ * The returned type is used to translate from our in-memory types
+ * to the \p storedDataType of the HDF5 data set (in-file). Thus we
+ * derive the returned type for our compiled \c ValueType whenever
+ * possible.
+ *
+ * For std::string data types we need additional information that is
+ * only available in \p storedDataType and so derive the returned type
+ * from it.
+ */
+template<typename ValueType>
+static hid_t getMemoryDataType(const hid_t storedDataType)
+{
+    if constexpr (std::is_same_v<ValueType, BasicVector<float>>)
+    {
+        return getMemoryDataType<float>(storedDataType);
+    }
+    else if constexpr (std::is_same_v<ValueType, BasicVector<double>>)
+    {
+        return getMemoryDataType<double>(storedDataType);
+    }
+    else if constexpr (std::is_same_v<ValueType, std::string>)
+    {
+        return H5Tget_native_type(storedDataType, H5T_DIR_DEFAULT);
+    }
+    else
+    {
+        return H5Tcopy(hdf5DataTypeFor<ValueType>());
+    }
+}
+
 } // namespace
 
 template<typename ValueType>
 H5mdDataSetBase<ValueType>::H5mdDataSetBase(const hid_t dataSetHandle) :
     dataSet_{ dataSetHandle },
     storedDataType_{ H5Dget_type(dataSet_) },
-    nativeDataType_{ H5Tget_native_type(storedDataType_, H5T_DIR_DEFAULT) },
+    nativeDataType_{ getMemoryDataType<ValueType>(storedDataType_) },
     numDims_{ getNumDims(dataSet_) }
 {
     GMX_H5MD_THROW_UPON_INVALID_HID(dataSet_, "Invalid handle to data set.");

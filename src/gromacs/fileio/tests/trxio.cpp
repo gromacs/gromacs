@@ -301,14 +301,9 @@ TEST_P(TrxReadFrameTest, ReadTrajectoryFromSimulationDataBase)
 }
 
 const char* g_trajectoryFilesToTest[] = {
-    "spc2-traj.pdb",
-    "spc2-traj.trr",
-    "spc2-traj-double.trr",
-    "spc2-traj.xtc",
-    "spc2-traj.gro",
-    "spc2-traj.g96",
-#if GMX_USE_HDF5 && !GMX_DOUBLE
-    // NOTE: Currently the build precision must match that of the file (see #5474)
+    "spc2-traj.pdb",  "spc2-traj.trr", "spc2-traj-double.trr",
+    "spc2-traj.xtc",  "spc2-traj.gro", "spc2-traj.g96",
+#if GMX_USE_HDF5
     "spc2-traj.h5md",
 #endif
 #if GMX_USE_TNG

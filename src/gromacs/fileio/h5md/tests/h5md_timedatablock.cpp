@@ -187,7 +187,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForIncorrectTypes)
         {
             // Create the data sets and close them at the end of scope.
             H5mdFrameDataSetBuilder<float>(group, "value").build();
-            H5mdFrameDataSetBuilder<int32_t>(group, "step").build();
+            H5mdFrameDataSetBuilder<double>(group, "step").build();
             H5mdFrameDataSetBuilder<double>(group, "time").build();
         }
         EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
@@ -202,7 +202,7 @@ TEST_F(H5mdTimeDataBlockTest, OpenConstructorThrowsForIncorrectTypes)
             // Create the data sets and close them at the end of scope.
             H5mdFrameDataSetBuilder<float>(group, "value").build();
             H5mdFrameDataSetBuilder<int64_t>(group, "step").build();
-            H5mdFrameDataSetBuilder<float>(group, "time").build();
+            H5mdFrameDataSetBuilder<int64_t>(group, "time").build();
         }
         EXPECT_THROW_GMX(H5mdTimeDataBlock<float>(fileid(), groupName), H5mdError)
                 << "Must throw when opening a time data block where the time data set is not "

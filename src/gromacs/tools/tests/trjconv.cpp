@@ -154,9 +154,6 @@ public:
                           "TNG support is not configured");
         messages.appendIf(!GMX_USE_HDF5 && (inputExt_ == efH5MD || outputExt_ == efH5MD),
                           "H5MD support is not configured");
-        messages.appendIf(
-                GMX_DOUBLE && inputExt_ == efH5MD,
-                "Cannot yet read single-precision H5MD trajectory with double-precision build");
         messages.appendIf(outputExt_ == efH5MD, "H5MD output is not yet implemented");
         // TODO: Remove this conditional once a fix is in (see #5747).
         messages.appendIf(inputExt_ == efTNG && outputExt_ == efTNG,
@@ -420,11 +417,6 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     if (!GMX_USE_HDF5 && std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
     {
         GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
-    }
-    if (GMX_USE_HDF5 && GMX_DOUBLE && std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
-    {
-        GTEST_SKIP() << "Cannot yet test H5MD reading from double precision since trajectory file "
-                        "is single precision";
     }
     auto& cmdline = commandLine();
 

@@ -43,6 +43,8 @@
 
 #include <hdf5.h>
 
+#include <numeric>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/h5md/exceptions.h"
@@ -56,6 +58,7 @@
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -63,6 +66,8 @@ namespace test
 {
 namespace
 {
+
+using ::testing::Pointwise;
 
 //! \brief Test fixture for all relevant data set types
 template<typename ValueType>
@@ -200,7 +205,7 @@ TYPED_TEST(H5mdDataSetBaseTest, OpenDataSetWorksForReadOnlyFiles)
 template<typename AsType, typename OriginalType>
 void testOpenDataSetAsType(const hid_t container)
 {
-    if constexpr (std::is_same_v<AsType, OriginalType>)
+    if (valueTypeIsSameClassAsDataType<AsType>(hdf5DataTypeFor<OriginalType>()))
     {
         EXPECT_NO_THROW_GMX(H5mdDataSetBase<AsType>(container, typeid(OriginalType).name()))
                 << "Sanity check failed: could not open data set of same type";
@@ -540,6 +545,134 @@ INSTANTIATE_TEST_SUITE_P(H5mdDataSetBaseTest,
                          H5mdDataSetBaseStringTest,
                          ::testing::ValuesIn(g_stringDataSetTypes),
                          nameOfStringTest);
+
+//! Tuple of types to create data set for (StoredType) and test I/O for (MemoryType).
+//
+// StoredType is the type of data stored in the HDF5 file.
+// MemoryType is the type for the data allocated in memory.
+//
+// These may be different and the HDF5 library should automatically
+// convert between types of the same class if possible during I/O.
+template<typename StoredType, typename MemoryType>
+struct SourceAndNativeTypeTuple
+{
+    using Stored = StoredType;
+    using Memory = MemoryType;
+};
+
+//! \brief Test fixture for differing StoredType and MemoryType I/O.
+template<typename TypeTuple>
+class H5mdDataSetBaseMixedTypeIoTest : public H5mdTestBase
+{
+};
+
+// List of StoredType and MemoryType tuples to test.
+using SourceAndNativeTypeTuplesToTest = ::testing::Types<SourceAndNativeTypeTuple<int32_t, int64_t>,
+                                                         SourceAndNativeTypeTuple<int64_t, int32_t>,
+                                                         SourceAndNativeTypeTuple<float, double>,
+                                                         SourceAndNativeTypeTuple<double, float>>;
+
+// Set up suite for testing of all relevant types
+TYPED_TEST_SUITE(H5mdDataSetBaseMixedTypeIoTest, SourceAndNativeTypeTuplesToTest);
+
+TYPED_TEST(H5mdDataSetBaseMixedTypeIoTest, ReadingWithDifferentInMemoryTypeWorks)
+{
+    using StoredType = typename TypeParam::Stored;
+    using MemoryType = typename TypeParam::Memory;
+
+    constexpr char name[]    = "testDataSet";
+    constexpr int  numValues = 101;
+
+    std::array<StoredType, numValues> valuesToWrite;
+    std::iota(valuesToWrite.begin(), valuesToWrite.end(), 0.0);
+
+    {
+        SCOPED_TRACE("Create a data set as StoredType and write some values into it");
+        H5mdDataSetBase<StoredType> dataSet =
+                H5mdDataSetBuilder<StoredType>(this->fileid(), name).withDimension({ numValues }).build();
+        dataSet.write(valuesToWrite, H5S_ALL, H5S_ALL);
+    }
+    {
+        SCOPED_TRACE("Open the data set as MemoryType and check that reading works");
+        H5mdDataSetBase<MemoryType>       dataSet(this->fileid(), name);
+        std::array<MemoryType, numValues> readBuffer;
+        dataSet.read(readBuffer, H5S_ALL, H5S_ALL);
+        EXPECT_THAT(readBuffer, Pointwise(::testing::FloatEq(), valuesToWrite));
+    }
+}
+
+TYPED_TEST(H5mdDataSetBaseMixedTypeIoTest, WritingWithDifferentInMemoryTypeWorks)
+{
+    using StoredType = typename TypeParam::Stored;
+    using MemoryType = typename TypeParam::Memory;
+
+    constexpr char name[]    = "testDataSet";
+    constexpr int  numValues = 101;
+
+    std::array<MemoryType, numValues> valuesToWrite;
+    std::iota(valuesToWrite.begin(), valuesToWrite.end(), 0.0);
+
+    H5mdDataSetBuilder<StoredType>(this->fileid(), name).withDimension({ numValues }).build();
+    {
+        SCOPED_TRACE("Open the data set as MemoryType and write some values into it");
+        H5mdDataSetBase<MemoryType> dataSet(this->fileid(), name);
+        dataSet.write(valuesToWrite, H5S_ALL, H5S_ALL);
+    }
+    {
+        SCOPED_TRACE("Open the data set as StoredType and check the written values");
+        H5mdDataSetBase<StoredType>       dataSet(this->fileid(), name);
+        std::array<StoredType, numValues> readBuffer;
+        dataSet.read(readBuffer, H5S_ALL, H5S_ALL);
+        EXPECT_THAT(readBuffer, Pointwise(::testing::FloatEq(), valuesToWrite));
+    }
+}
+
+using H5mdDataSetBaseEndiannessTest = H5mdTestBase;
+
+TEST_F(H5mdDataSetBaseEndiannessTest, IoWorksForEither)
+{
+    constexpr char bigEndianName[]    = "bigEndianDataSet";
+    constexpr char littleEndianName[] = "littleEndianDataSet";
+
+    constexpr int                    numValues = 101;
+    constexpr std::array<hsize_t, 1> dims      = { numValues };
+    std::array<int64_t, numValues>   valuesToWrite;
+    std::iota(valuesToWrite.begin(), valuesToWrite.end(), 0);
+
+    {
+        SCOPED_TRACE("Create big- and little-endian data sets (closed at end of scope)");
+        const auto [dataSpace, dataSpaceGuard] =
+                makeH5mdDataSpaceGuard(H5Screate_simple(dims.size(), dims.data(), dims.data()));
+        makeH5mdDataSetGuard(H5Dcreate2(
+                fileid(), bigEndianName, H5T_STD_I64BE, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
+        makeH5mdDataSetGuard(H5Dcreate2(
+                fileid(), littleEndianName, H5T_STD_I64LE, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
+    }
+    {
+        SCOPED_TRACE("Test writing into data sets of either endianness");
+
+        H5mdDataSetBase<int64_t> bigEndianDataSet(fileid(), bigEndianName);
+        H5mdDataSetBase<int64_t> littleEndianDataSet(fileid(), littleEndianName);
+
+        ASSERT_TRUE(bigEndianDataSet.write(valuesToWrite, H5S_ALL, H5S_ALL))
+                << "Could not write data to big-endian data set";
+        ASSERT_TRUE(littleEndianDataSet.write(valuesToWrite, H5S_ALL, H5S_ALL))
+                << "Could not write data to little-endian data set";
+    }
+    {
+        SCOPED_TRACE("Test reading from data sets of either endianness");
+        std::array<int64_t, numValues> readBuffer;
+        H5mdDataSetBase<int64_t>       bigEndianDataSet(fileid(), bigEndianName);
+        H5mdDataSetBase<int64_t>       littleEndianDataSet(fileid(), littleEndianName);
+
+        ASSERT_TRUE(bigEndianDataSet.read(readBuffer, H5S_ALL, H5S_ALL))
+                << "Could not read data from big-endian data set";
+        EXPECT_EQ(valuesToWrite, readBuffer);
+        ASSERT_TRUE(littleEndianDataSet.read(readBuffer, H5S_ALL, H5S_ALL))
+                << "Could not read data from little-endian data set";
+        EXPECT_EQ(valuesToWrite, readBuffer);
+    }
+}
 
 } // namespace
 } // namespace test
