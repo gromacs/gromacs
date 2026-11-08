@@ -974,8 +974,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle* wcycle)
     }
 }
 
-/*! \brief Return the relative performance loss on the total run time
- * due to the force calculation load imbalance. */
+//! \brief Return the fraction of the total run time spent in the balanceable force calculation.
 static float dd_force_load_fraction(gmx_domdec_t* dd)
 {
     if (dd->comm->nload > 0 && dd->comm->load_step > 0)
@@ -989,12 +988,19 @@ static float dd_force_load_fraction(gmx_domdec_t* dd)
 }
 
 /*! \brief Return the relative performance loss on the total run time
- * due to the force calculation load imbalance. */
+ * due to the force calculation load imbalance.
+ *
+ * With FLOP-based balancing there is no FLOP count for the whole step,
+ * so we consider the step to consist of the force calculation only.
+ * The result is then the load imbalance, an upper bound for the loss.
+ */
 static float dd_force_imb_perf_loss(gmx_domdec_t* dd)
 {
-    if (dd->comm->nload > 0 && dd->comm->load_step > 0)
+    const gmx_domdec_comm_t& comm = *dd->comm;
+    const float stepLoad = comm.ddSettings.eFlop ? comm.load_sum / dd->nnodes : comm.load_step;
+    if (comm.nload > 0 && stepLoad > 0)
     {
-        return (dd->comm->load_max * dd->nnodes - dd->comm->load_sum) / (dd->comm->load_step * dd->nnodes);
+        return (comm.load_max * dd->nnodes - comm.load_sum) / (stepLoad * dd->nnodes);
     }
     else
     {
@@ -1058,13 +1064,21 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
 
         msg += " " + dlbStateStr + "\n";
         msg += gmx::formatString(" Average load imbalance: %.1f%%.\n", imbalance * 100);
-        msg += gmx::formatString(
-                " The balanceable part of the MD step is %d%%, load imbalance is computed from "
-                "this.\n",
-                gmx::roundToInt(dd_force_load_fraction(dd) * 100));
-        msg += gmx::formatString(
-                " Part of the total run time spent waiting due to load imbalance: %.1f%%.\n",
-                lossFraction * 100);
+        if (comm->ddSettings.eFlop)
+        {
+            // Without a FLOP count for the whole step, the time lost can not be computed
+            msg += " The load imbalance is computed from FLOP count estimates.\n";
+        }
+        else
+        {
+            msg += gmx::formatString(
+                    " The balanceable part of the MD step is %d%%, load imbalance is computed "
+                    "from this.\n",
+                    gmx::roundToInt(dd_force_load_fraction(dd) * 100));
+            msg += gmx::formatString(
+                    " Part of the total run time spent waiting due to load imbalance: %.1f%%.\n",
+                    lossFraction * 100);
+        }
         fprintf(fplog, "%s", msg.c_str());
         fprintf(stderr, "\n%s", msg.c_str());
     }
@@ -1116,10 +1130,21 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
 
     if ((lossFraction >= DD_PERF_LOSS_WARN) && (dd->comm->dlbState != DlbState::offTemporarilyLocked))
     {
-        std::string message = gmx::formatString(
-                "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
-                "      in the domain decomposition.\n",
-                lossFraction * 100);
+        std::string message;
+        if (comm->ddSettings.eFlop)
+        {
+            message += gmx::formatString(
+                    "NOTE: The FLOP count load imbalance was %.1f %% in the domain "
+                    "decomposition.\n",
+                    lossFraction * 100);
+        }
+        else
+        {
+            message += gmx::formatString(
+                    "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
+                    "      in the domain decomposition.\n",
+                    lossFraction * 100);
+        }
 
         bool hadSuggestion = false;
         if (dd->comm->dlbState == DlbState::offUser)
