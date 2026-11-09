@@ -80,14 +80,9 @@ public:
         mdpValueBuilder_.rootObject().addValue("nnpot-active", std::string("true"));
     }
 
-    //! Request the given model inputs and a pair cutoff through the mdp options
-    void addMdpOptionModelInputs(const std::vector<std::string>& inputs, const std::string& pairCutoff)
+    //! Set the pair cutoff through the mdp options
+    void addMdpOptionPairCutoff(const std::string& pairCutoff)
     {
-        for (size_t i = 0; i < inputs.size(); ++i)
-        {
-            const std::string key = "nnpot-model-input" + std::to_string(i + 1);
-            mdpValueBuilder_.rootObject().addValue(key, inputs[i]);
-        }
         mdpValueBuilder_.rootObject().addValue("nnpot-pair-cutoff", pairCutoff);
     }
 
@@ -139,12 +134,12 @@ protected:
     MpiComm                    mpiComm_{ MpiComm::SingleRank{} };
 };
 
-//! A model that takes the pair list requests a pair-list range equal to the cutoff
-//! and is told when the pair list is built
-TEST_F(NNPotTest, AtomPairsInputRequestsPairlist)
+//! A non-zero pair cutoff requests a pair-list range equal to the cutoff
+//! and subscribes to pair-list construction
+TEST_F(NNPotTest, NonZeroPairCutoffRequestsPairlist)
 {
     addMdpOptionNNPotActive();
-    addMdpOptionModelInputs({ "atom-positions", "atom-numbers", "atom-pairs" }, "0.5");
+    addMdpOptionPairCutoff("0.5");
     makeNNPotModuleWithSetOptions();
 
     const std::vector<real> ranges = requestedPairlistRanges();
@@ -153,25 +148,12 @@ TEST_F(NNPotTest, AtomPairsInputRequestsPairlist)
     EXPECT_TRUE(subscribesToPairlistConstruction());
 }
 
-//! A model that takes only the periodic pair shifts needs the pair list just as much
-TEST_F(NNPotTest, PairShiftsInputRequestsPairlist)
-{
-    addMdpOptionNNPotActive();
-    addMdpOptionModelInputs({ "atom-positions", "atom-numbers", "pair-shifts" }, "0.5");
-    makeNNPotModuleWithSetOptions();
-
-    const std::vector<real> ranges = requestedPairlistRanges();
-    ASSERT_EQ(ranges.size(), 1U);
-    EXPECT_FLOAT_EQ(ranges[0], 0.5);
-    EXPECT_TRUE(subscribesToPairlistConstruction());
-}
-
-//! Without pair-list inputs the module neither requests a range nor asks to be told
+//! With a zero pair cutoff the module neither requests a range nor asks to be told
 //! about the pair list
-TEST_F(NNPotTest, NoPairlistInputRequestsNoPairlist)
+TEST_F(NNPotTest, ZeroPairCutoffRequestsNoPairlist)
 {
     addMdpOptionNNPotActive();
-    addMdpOptionModelInputs({ "atom-positions", "atom-numbers" }, "0.5");
+    addMdpOptionPairCutoff("0");
     makeNNPotModuleWithSetOptions();
 
     EXPECT_TRUE(requestedPairlistRanges().empty());

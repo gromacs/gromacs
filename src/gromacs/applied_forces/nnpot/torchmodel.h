@@ -77,7 +77,6 @@ public:
      * \param[out] forces forces on atoms
      * \param[in] indexLookup lookup table for atom indices
      * \param[in] mmIndices indices of MM atoms
-     * \param[in] inputs list of strings specifying input data
      * \param[in] positions atom positions
      * \param[in] atomNumbers atom numbers
      * \param[in] atomPairs list of all input atom pairs within cutoff
@@ -93,7 +92,6 @@ public:
                        ArrayRef<RVec>                   forces,
                        ArrayRef<const int32_t>          indexLookup,
                        ArrayRef<const int32_t>          mmIndices,
-                       ArrayRef<const std::string>      inputs,
                        ArrayRef<RVec>                   positions,
                        ArrayRef<int32_t>                atomNumbers,
                        ArrayRef<int32_t>                atomPairs,
@@ -107,6 +105,8 @@ public:
 
     //! helper function to check if model outputs forces
     bool outputsForces() const override;
+    //! helper function to check if model outputs forces on MM atoms
+    bool outputsMMForces() const override;
 
 private:
     class Impl;

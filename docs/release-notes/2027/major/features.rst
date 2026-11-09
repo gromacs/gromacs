@@ -77,3 +77,14 @@ a single character. Such identifiers are truncated to their first character, and
 a warning naming them is printed.
 
 :issue:`4753`
+New I/O format for neural network potentials
+""""""""""""""""""""""""""""""""""""""""""""
+
+The I/O format for neural network potentials in the NNPot interface has been changed to a 
+dictionary-based format. This allows for more flexibility in the input and output of the NNP model,
+and will make it easier to add new features in the future. In particular, the ``model-inputX``
+:ref:`mdp` options have been removed, and instead all available inputs are always passed to
+the model as a dictionary. Similarly, the model is now expected to return a dictionary containing
+the energy and forces, instead of a tuple. Note that this change is not backward-compatible, and 
+models exported for use with past GROMACS versions will no longer work. For more details on how to
+use the new I/O format, please see the :ref:`NNPot section in the reference manual<nnpot>`.

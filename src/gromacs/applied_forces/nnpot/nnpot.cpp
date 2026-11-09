@@ -175,9 +175,8 @@ public:
         { nnpotOptions_.setComm(mpiComm); };
         notifiers->simulationSetupNotifier_.subscribe(setCommFunction);
 
-        // set pairlist range
-        if (nnpotOptions_.parameters().modelNeedsInput("atom-pairs")
-            || nnpotOptions_.parameters().modelNeedsInput("pair-shifts"))
+        // if the user specified a non-zero cutoff (i.e. requested pairlist input), set it
+        if (nnpotOptions_.parameters().pairCutoff_ > 0.0)
         {
             const auto setPlainPairlistRangeFunction = [this](PlainPairlistRanges* plainPairlistRanges)
             { plainPairlistRanges->addRange(nnpotOptions_.parameters().pairCutoff_); };
@@ -205,9 +204,8 @@ public:
         { nnpotForceProvider_->gatherAtomNumbersIndices(signal); };
         notifiers->simulationRunNotifier_.subscribe(notifyDDFunction);
 
-        // subscribe to pairlist construction notification
-        if (nnpotOptions_.parameters().modelNeedsInput("atom-pairs")
-            || nnpotOptions_.parameters().modelNeedsInput("pair-shifts"))
+        // subscribe to pairlist construction notification, if pairlist input is requested (non-zero cutoff)
+        if (nnpotOptions_.parameters().pairCutoff_ > 0.0)
         {
             const auto notifyPairlistFunction = [this](const MDModulesPairlistConstructedSignal& signal)
             { nnpotForceProvider_->setPairlist(signal); };

@@ -81,7 +81,6 @@ public:
                                ArrayRef<RVec> /* forces */,
                                ArrayRef<const int32_t> /* idxLookup */,
                                ArrayRef<const int32_t> /* mmIndices */,
-                               ArrayRef<const std::string> /* inputs */,
                                ArrayRef<RVec> /* positions */,
                                ArrayRef<int32_t> /* atomNumbers */,
                                ArrayRef<int32_t> /* atomPairs */,
@@ -95,6 +94,8 @@ public:
 
     //! helper function to check if model outputs forces
     virtual bool outputsForces() const = 0;
+    //! helper function to check if model outputs forces on MM atoms
+    virtual bool outputsMMForces() const = 0;
 };
 
 } // namespace gmx

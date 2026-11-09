@@ -3770,48 +3770,6 @@ interface implementation follow :ref:`nnpot`.
       In this case, the NNP model is expected to return the total energy, as well as forces on
       NNP and MM atoms.
 
-.. mdp:: nnpot-model-input[1-9]
-
-   Names of input fields to be filled in by |Gromacs| at each step and passed to the NNP model.
-   Up to 9 inputs can be specified:
-
-   .. mdp-value:: atom-positions
-
-      Positions of the NNP atoms specified by :mdp:`nnpot-input-group`.
-
-   .. mdp-value:: atom-numbers
-
-      Atomic numbers of the NNP atoms specified by :mdp:`nnpot-input-group`.
-
-   .. mdp-value:: atom-pairs
-
-      Pairs of NNP atoms specified by :mdp:`nnpot-input-group`, filter by the :mdp:`pair-cutoff`,
-      as a vector of shape (N_pairs, 2).
-
-   .. mdp-value:: pair-shifts
-
-      Periodic box shift vectors for the NNP atom pairs, as a vector of shape (N_pairs, 3).
-
-   .. mdp-value:: atom-positions-mm
-
-      Positions of the MM atoms surrounding the NNP region, needed for :mdp-value:`electrostatic-model` embedding.
-
-   .. mdp-value:: atom-charges-mm
-
-      Charges of the MM atoms surrounding the NNP region, needed for :mdp-value:`electrostatic-model` embedding.
-
-   .. mdp-value:: nnp-charge
-
-      Total charge of the NNP atoms.
-
-   .. mdp-value:: box
-
-      Simulation box vectors.
-
-   .. mdp-value:: pbc
-
-      Periodic boundary conditions.
-
 .. mdp:: pair-cutoff
 
    (0.0) [nm] Cutoff distance for pairs of NNP atoms. Positive cutoff value must be specified

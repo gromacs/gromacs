@@ -156,16 +156,19 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     params_(nnpotParameters), inputToLocalIndex_(params_.numAtoms_, -1), logger_(logger), mpiComm_(mpiComm)
 {
     // for now, dom dec is disabled with pair list input
-    if (mpiComm_.isParallel()
-        && (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts")))
+    if (mpiComm_.isParallel())
     {
-        GMX_THROW(NotImplementedError(
-                "NNPot with pair list input does not support domain decomposition"));
-    }
-    if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel && mpiComm_.isParallel())
-    {
-        GMX_THROW(NotImplementedError(
-                "Electrostatic embedding scheme not yet implemented for domain decomposition."));
+        if (params_.pairCutoff_ > 0.0)
+        {
+            GMX_THROW(NotImplementedError(
+                    "NNPot with pair list input does not support domain decomposition"));
+        }
+        if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel)
+        {
+            GMX_THROW(
+                    NotImplementedError("Electrostatic embedding scheme not yet implemented for "
+                                        "domain decomposition."));
+        }
     }
 
     // initialize the neural network model
@@ -189,25 +192,28 @@ NNPotForceProvider::~NNPotForceProvider() {}
 
 void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput)
 {
-    // make sure inputs are available
-    std::vector<RVec>    positions;
+    // Make sure inputs are available. Positions and atomic numbers are assumed to be always
+    // necessary, and we also always supply box and pbc info, as they are available at no extra
+    // cost. Other inputs are prepared ad-hoc.
+    std::vector<RVec>    positions = gatherAtomPositions(fInput.x_);
     std::vector<RVec>    mmPositions;
     std::vector<real>    mmCharges;
     std::vector<int32_t> mmIndices;
     matrix               box;
     copy_mat(fInput.box_, box);
-    if (params_.modelNeedsInput("atom-positions"))
-    {
-        positions = gatherAtomPositions(fInput.x_);
-    }
-    if (params_.modelNeedsInput("atom-positions-mm") || params_.modelNeedsInput("atom-charges-mm"))
+
+    // for electrostatic embedding, also get MM atom positions and charges
+    if (params_.embeddingScheme_ == NNPotEmbedding::ElectrostaticModel)
     {
         mmIndices.assign(params_.mmIndices_.begin(), params_.mmIndices_.end());
         std::tie(mmPositions, mmCharges) =
                 getMMPositionsAndCharges(params_.mmAtoms_, fInput.x_, fInput.chargeA_);
+        // center positions of NN and MM atoms in the box
+        centerAtomPositions(positions, mmPositions, box, *(params_.pbcType_));
     }
-    // check that pairlist is available if needed
-    if (params_.modelNeedsInput("atom-pairs") || params_.modelNeedsInput("pair-shifts"))
+
+    // prepare pairlist input if requested (non-zero cutoff)
+    if (params_.pairCutoff_ > 0.0)
     {
         preparePairlistInput(box);
     }
@@ -215,17 +221,10 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     // get link atom info
     std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_, positions));
 
-    if (params_.modelNeedsInput("atom-positions-mm"))
-    {
-        // center MM atom positions in the box
-        centerAtomPositions(positions, mmPositions, box, *(params_.pbcType_));
-    }
-
     model_->evaluateModel(&(fOutput->enerd_),
                           fOutput->forceWithVirial_.force_,
                           inputToLocalIndex_,
                           mmIndices,
-                          params_.modelInput_,
                           positions,
                           atomNumbers_,
                           pairlistForModel_,

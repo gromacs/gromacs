@@ -116,7 +116,6 @@ public:
         params_.modelFileName_ = TestFileManager::getInputFilePath("model.pt").string();
         params_.atoms_         = gmx_mtop_global_atoms(mtop_);
         params_.numAtoms_      = params_.atoms_.nr;
-        params_.modelInput_    = { "atom-positions", "atom-numbers", "box", "pbc" };
 
         std::vector<gmx::Index> nnpIndices = { 0, 1, 2, 3, 4, 5 };
         LocalAtomSet            set = atomSetManager_.add(ArrayRef<const gmx::Index>(nnpIndices));
@@ -281,12 +280,16 @@ static const NameOfTestFromTuple<NNPotPairlistTestHelper::DynamicParameters> sc_
  * model_pairs.pt computes E = sum_pairs Z_i Z_j |x_i - x_j + shift|^2. It was generated with:
  *
  *     class PairModel(torch.nn.Module):
- *         def forward(self, positions, atomic_numbers, pairs, shifts):
+ *         def forward(self, input_data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+ *             positions = input_data["positions"]
+ *             atomic_numbers = input_data["atomic-numbers"]
+ *             pairs = input_data["pairs"]
+ *             shifts = input_data["shifts"]
  *             i = pairs[:, 0].long()
  *             j = pairs[:, 1].long()
  *             d = positions[i] - positions[j] + shifts.to(positions.dtype)
  *             z = atomic_numbers.to(positions.dtype)
- *             return (z[i] * z[j] * (d * d).sum(dim=1)).sum()
+ *             return {"energy": (z[i] * z[j] * (d * d).sum(dim=1)).sum()}
  *
  *     torch.jit.script(PairModel()).save("model_pairs.pt")
  */
@@ -307,7 +310,6 @@ public:
         params_.modelFileName_ = TestFileManager::getInputFilePath("model_pairs.pt").string();
         params_.atoms_         = gmx_mtop_global_atoms(mtop_);
         params_.numAtoms_      = mtop_.natoms;
-        params_.modelInput_    = { "atom-positions", "atom-numbers", "atom-pairs", "pair-shifts" };
         params_.pairCutoff_    = sc_pairCutoff;
         params_.pbcType_       = std::make_unique<PbcType>(pbcType_);
         LocalAtomSet nnpSet    = atomSetManager_.add(ArrayRef<const Index>(sc_nnpIndices));
