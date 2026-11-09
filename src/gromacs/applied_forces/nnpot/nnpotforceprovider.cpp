@@ -303,7 +303,7 @@ std::vector<RVec> NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> p
     size_t numInput = inputToLocalIndex_.size();
 
     // initialize NN atom positions vector and fill according to lookup table
-    std::vector<RVec> nnPositions(numInput);
+    std::vector<RVec> nnPositions(numInput, RVec{ 0.0, 0.0, 0.0 });
     for (size_t i = 0; i < numInput; i++)
     {
         // if value in lookup table is -1, the atom is not local to this rank
