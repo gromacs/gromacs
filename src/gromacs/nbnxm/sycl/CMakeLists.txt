@@ -33,6 +33,10 @@
 
 if (GMX_GPU_SYCL)
     set(NBNXM_SYCL_SOURCES
+        nbfe_foreign_sycl_kernel_v.cpp
+        nbfe_sycl.cpp
+        nbfe_sycl_kernel_f.cpp
+        nbfe_sycl_kernel_vf.cpp
         nbnxm_gpu_buffer_ops_internal_sycl.cpp
         nbnxm_sycl.cpp
         nbnxm_sycl_data_mgmt.cpp

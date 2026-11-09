@@ -109,7 +109,7 @@ void gpu_launch_kernel(NbnxmGpu gmx_unused*           nb,
 /*! \brief
  * Launch asynchronously the nonbonded free energy calculations.
  */
-#if (GMX_GPU_SYCL || GMX_GPU_OPENCL)
+#if GMX_GPU_OPENCL
 [[noreturn]]
 #endif
 GPU_FUNC_QUALIFIER void gpu_launch_free_energy_kernel(NbnxmGpu gmx_unused* nb,

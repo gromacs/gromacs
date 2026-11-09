@@ -226,8 +226,8 @@ bool canUseGpusForNonbondedFe(const t_inputrec& ir, std::string* error)
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("Nonbonded free energy interactions on GPUs are not supported:");
     errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
-    errorReasons.appendIf(!GpuConfigurationCapabilities::NonbondedFE,
-                          "Only CUDA GPU backend supported.");
+    errorReasons.appendIf(GMX_GPU && !GpuConfigurationCapabilities::NonbondedFE,
+                          "The GPU backend does not support free energies.");
     if (ir.fepvals->softcoreFunction != SoftcoreType::Beutler)
     {
         errorReasons.append("Only Beutler softcore function supported.");

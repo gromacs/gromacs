@@ -1135,6 +1135,9 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxm_atomdata_t* nbat)
                 nb->fephostdata->q4Host[4 * k]     = nbat->params().qA[k];
                 nb->fephostdata->q4Host[4 * k + 1] = nbat->params().qB[k];
             }
+            static_assert(
+                    4 * sizeof(nb->fephostdata->q4Host[0]) == sizeof(Float4),
+                    "Size of the q4 parameters element should be equal to the size of float4.");
             copyToDeviceBuffer(&atdat->q4,
                                reinterpret_cast<Float4*>(nb->fephostdata->q4Host.data()),
                                0,
@@ -1153,6 +1156,9 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxm_atomdata_t* nbat)
                     nb->fephostdata->ljComb4Host[4 * k + 2] = nbat->params().ljCombB[2 * k];
                     nb->fephostdata->ljComb4Host[4 * k + 3] = nbat->params().ljCombB[2 * k + 1];
                 }
+                static_assert(4 * sizeof(nb->fephostdata->ljComb4Host[0]) == sizeof(Float4),
+                              "Size of the LJ4 parameters element should be equal to the size of "
+                              "float4.");
                 copyToDeviceBuffer(&atdat->ljComb4,
                                    reinterpret_cast<Float4*>(nb->fephostdata->ljComb4Host.data()),
                                    0,
@@ -1169,6 +1175,9 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxm_atomdata_t* nbat)
                     nb->fephostdata->atomTypes4Host[4 * k]     = nbat->params().typeA[k];
                     nb->fephostdata->atomTypes4Host[4 * k + 1] = nbat->params().typeB[k];
                 }
+                static_assert(4 * sizeof(nb->fephostdata->atomTypes4Host[0]) == sizeof(Int4),
+                              "Size of the atomTypes4 parameters element should be equal to the "
+                              "size of Int4.");
                 copyToDeviceBuffer(&atdat->atomTypes4,
                                    reinterpret_cast<Int4*>(nb->fephostdata->atomTypes4Host.data()),
                                    0,

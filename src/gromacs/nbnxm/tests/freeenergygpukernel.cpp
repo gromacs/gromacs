@@ -63,14 +63,13 @@
 
 #include <gtest/gtest.h>
 
-// Currently FEP-on-GPU calculations are only implemented on CUDA and HIP platform
-#if GMX_GPU_CUDA || GMX_GPU_HIP
+// FEP-on-GPU calculations are implemented for every GPU backend except OpenCL
+#if GMX_GPU && !GMX_GPU_OPENCL
 #    include "gromacs/ewald/ewald_utils.h"
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gpu_utils.h"
 #    include "gromacs/gpu_utils/gputraits.h"
-#    include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #    include "gromacs/hardware/device_information.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/math/arrayrefwithpadding.h"
@@ -89,6 +88,8 @@
 #        include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
 #    elif GMX_GPU_HIP
 #        include "gromacs/nbnxm/hip/nbnxm_hip_types.h"
+#    elif GMX_GPU_SYCL
+#        include "gromacs/nbnxm/sycl/nbnxm_sycl_types.h"
 #    endif
 #    include "gromacs/nbnxm/gpu_data_mgmt.h"
 #    include "gromacs/nbnxm/gpu_types_common.h"
@@ -108,7 +109,6 @@
 #    include "gromacs/utility/logger.h"
 #    include "gromacs/utility/real.h"
 #    include "gromacs/utility/stringutil.h"
-#    include "gromacs/utility/template_mp.h"
 #    include "gromacs/utility/vec.h"
 #    include "gromacs/utility/vectypes.h"
 
@@ -456,7 +456,6 @@ static std::unique_ptr<nbnxm_atomdata_t> makeNbatForFepTest(const DeviceContext&
 {
     const int  numAtoms   = c_numAtoms;
     const real lambdaCoul = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
-    const real lambdaVdw  = lambdas[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
 
     std::optional<LJCombinationRule> ljRule = (ljCombinationRule != LJCombinationRule::None)
                                                       ? std::optional<LJCombinationRule>(ljCombinationRule)

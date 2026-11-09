@@ -50,7 +50,7 @@
 namespace gmx
 {
 
-static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistType layoutType)
+int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistType layoutType)
 {
     if (deviceInfo.supportedSubGroupSizes.size() == 1)
     {

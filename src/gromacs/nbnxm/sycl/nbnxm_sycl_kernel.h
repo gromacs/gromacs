@@ -40,7 +40,11 @@
 #ifndef GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_H
 #define GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_H
 
+#include "gromacs/nbnxm/nbnxm_enums.h"
+
 // Forward declarations
+struct DeviceInformation;
+
 namespace gmx
 {
 enum class InteractionLocality;
@@ -56,6 +60,13 @@ struct NbnxmGpu;
 #define SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_64 \
     (GMX_GPU_NB_CLUSTER_SIZE == 8            \
      && (!GMX_SYCL_ACPP || GMX_ACPP_HAVE_HIP_TARGET || GMX_ACPP_HAVE_GENERIC_TARGET))
+
+/*! \brief Return the sub-group size to use for the SYCL NBNXM kernels.
+ *
+ * \param deviceInfo Information about the device the kernels will run on.
+ * \param layoutType The pair-list layout the kernels are compiled for.
+ */
+int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistType layoutType);
 
 /*! \brief Launch SYCL NBNXM kernel.
  *
