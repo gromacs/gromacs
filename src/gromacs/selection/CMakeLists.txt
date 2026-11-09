@@ -118,6 +118,32 @@ target_link_libraries(selection INTERFACE
 # TODO: Explicitly link specific modules.
 #target_link_libraries(selection PRIVATE legacy_modules)
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_include_directories(selection INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_sources(selection
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/selection/indexutil.h
+            include/gromacs/selection/nbsearch.h
+            include/gromacs/selection/position.h
+            include/gromacs/selection/selection.h
+            include/gromacs/selection/selectioncollection.h
+            include/gromacs/selection/selectionenums.h
+            include/gromacs/selection/selectionoption.h
+            include/gromacs/selection/selectionoptionbehavior.h
+            include/gromacs/selection/selectionoptionmanager.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS selection FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

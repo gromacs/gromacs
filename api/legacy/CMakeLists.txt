@@ -40,8 +40,23 @@
 # be propagated when linking to the `common` target) can be added directly
 # to the `common` target.
 add_library(legacy_api INTERFACE)
+# The installed legacy API headers now live in the include/ directory of their
+# owning module under src/gromacs/. During the transition to explicit module
+# target dependencies they are provided through this aggregate target.
 target_include_directories(legacy_api INTERFACE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/analysisdata/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/fileio/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/math/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/mdtypes/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/options/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/pbcutil/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/restraint/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/selection/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/topology/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/trajectory/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/trajectoryanalysis/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/gromacs/utility/include>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
                            $<INSTALL_INTERFACE:include>)
 if(BUILD_SHARED_LIBS AND WIN32)
@@ -58,9 +73,8 @@ install(TARGETS legacy_api
         INCLUDES DESTINATION include)
 
 if(GMX_INSTALL_LEGACY_API)
-    # Install public header directories.
-    install(DIRECTORY include/gromacs
-            DESTINATION include)
+    # The public header directories are installed by the owning module targets
+    # through their public_headers file sets.
 
     # Install "configured" files from the build tree.
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gromacs/version.h

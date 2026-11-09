@@ -176,10 +176,11 @@ Other modules are only expressed by the filesystem hierarchy, and their source
 files are compiled directly into the monolithic ``libgromacs`` CMake target.
 
 Modules under :file:`src/gromacs/` are not part of the public installed interface.
-However, some of the headers that were traditionally installed have been moved
-:file:`api/legacy/include` (not duplicated in :file:`src/`) pending specification
-of an updated public API. These interfaces are grouped into the ``legacy_api``
-CMake target (in the build tree), and are available through the IMPORTED
+However, some of the headers that were traditionally installed live in the
+:file:`include/` directory of their owning module under :file:`src/gromacs/`
+pending specification of an updated public API, and are installed through
+CMake target file sets. In the build tree they are grouped into the
+``legacy_api`` CMake target, and are available through the IMPORTED
 ``Gromacs::libgromacs`` target for an installation configured with ``GMX_INSTALL_LEGACY_API=ON``.
 They are installed into a corresponding hierarchy under
 :file:`include/gromacs/` in the installation directory.

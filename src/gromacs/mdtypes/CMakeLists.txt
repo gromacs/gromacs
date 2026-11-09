@@ -106,6 +106,25 @@ target_link_libraries(mdtypes INTERFACE utility)
 # Source files have the following private module dependencies.
 #target_link_libraries(mdtypes PRIVATE tng_io)
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_include_directories(mdtypes INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_sources(mdtypes
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/mdtypes/inputrec.h
+            include/gromacs/mdtypes/md_enums.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS mdtypes FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

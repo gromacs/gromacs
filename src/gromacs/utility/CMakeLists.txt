@@ -110,6 +110,43 @@ endif ()
 # TODO(#3288): Explicitly link specific modules as legacy_modules is removed.
 #target_link_libraries(utility PRIVATE legacy_modules)
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_sources(utility
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/utility/arrayref.h
+            include/gromacs/utility/basedefinitions.h
+            include/gromacs/utility/baseversion.h
+            include/gromacs/utility/classhelpers.h
+            include/gromacs/utility/current_function.h
+            include/gromacs/utility/enumerationhelpers.h
+            include/gromacs/utility/exceptions.h
+            include/gromacs/utility/fileptr.h
+            include/gromacs/utility/flags.h
+            include/gromacs/utility/functions.h
+            include/gromacs/utility/futil.h
+            include/gromacs/utility/gmxassert.h
+            include/gromacs/utility/listoflists.h
+            include/gromacs/utility/matrix.h
+            include/gromacs/utility/pleasecite.h
+            include/gromacs/utility/programcontext.h
+            include/gromacs/utility/range.h
+            include/gromacs/utility/real.h
+            include/gromacs/utility/smalloc.h
+            include/gromacs/utility/stringutil.h
+            include/gromacs/utility/unique_cptr.h
+            include/gromacs/utility/vec.h
+            include/gromacs/utility/vectypes.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS utility FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif ()

@@ -125,6 +125,29 @@ target_link_libraries(fileio INTERFACE
 
 target_sources(libgromacs PRIVATE ${FILEIO_SOURCES})
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_include_directories(fileio INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_sources(fileio
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/fileio/confio.h
+            include/gromacs/fileio/filetypes.h
+            include/gromacs/fileio/oenv.h
+            include/gromacs/fileio/pdbio.h
+            include/gromacs/fileio/tpxio.h
+            include/gromacs/fileio/trxio.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS fileio FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
      add_subdirectory(tests)
 endif()

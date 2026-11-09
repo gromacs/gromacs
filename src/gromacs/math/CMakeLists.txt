@@ -77,6 +77,23 @@ target_link_libraries(math INTERFACE
 #target_link_libraries(math PRIVATE legacy_modules)
 
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_sources(math
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/math/do_fit.h
+            include/gromacs/math/units.h
+            include/gromacs/math/utilities.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS math FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

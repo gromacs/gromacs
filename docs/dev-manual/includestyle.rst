@@ -47,7 +47,7 @@ command. Many modules provide their own CMake target. Additionally, note
 * The ``common`` CMake target provides access to :file:`gmxpre.h`, :file:`config.h`,
   :file:`gmxpre-config.h`, :file:`buildinfo.h`, and :file:`contributors.h`
 * ``legacy_api`` provides access to those of the old :file:`gromacs/modulename` headers
-  that are in :file:`api/legacy/include`
+  that are installed with the package; they live in :file:`src/gromacs/modulename/include`
 * ``legacy_modules`` adds :file:`src/` to the include path, exposing all headers in
   :file:`gromacs/` and :file:`gromacs/*/` for ``#include`` lines that would appear
   to comply with the guidelines above, but which may not be intended for "public" use.

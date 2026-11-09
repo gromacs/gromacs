@@ -67,6 +67,35 @@ if (BUILD_SHARED_LIBS)
     set_target_properties(options PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_include_directories(options INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_sources(options
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/options/abstractoption.h
+            include/gromacs/options/basicoptions.h
+            include/gromacs/options/filenameoption.h
+            include/gromacs/options/filenameoptionmanager.h
+            include/gromacs/options/ioptionsbehavior.h
+            include/gromacs/options/ioptionscontainer.h
+            include/gromacs/options/ioptionscontainerwithsections.h
+            include/gromacs/options/ivaluestore.h
+            include/gromacs/options/optionfiletype.h
+            include/gromacs/options/optionflags.h
+            include/gromacs/options/options.h
+            include/gromacs/options/timeunitmanager.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS options FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

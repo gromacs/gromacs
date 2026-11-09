@@ -69,6 +69,21 @@ target_link_libraries(pbcutil INTERFACE
 # TODO: Explicitly link specific modules.
 #target_link_libraries(pbcutil PRIVATE legacy_modules)
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_sources(pbcutil
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/pbcutil/pbc.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS pbcutil FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

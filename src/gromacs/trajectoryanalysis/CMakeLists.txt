@@ -88,6 +88,27 @@ target_link_libraries(trajectoryanalysis INTERFACE
 # TODO: Explicitly link specific modules.
 #target_link_libraries(trajectoryanalysis PRIVATE legacy_modules)
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_include_directories(trajectoryanalysis INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_sources(trajectoryanalysis
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/trajectoryanalysis/analysismodule.h
+            include/gromacs/trajectoryanalysis/analysissettings.h
+            include/gromacs/trajectoryanalysis/cmdlinerunner.h
+            include/gromacs/trajectoryanalysis/topologyinformation.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS trajectoryanalysis FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

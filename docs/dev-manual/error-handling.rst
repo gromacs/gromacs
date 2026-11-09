@@ -104,7 +104,7 @@ Specific rules
   decide whether execution should be terminated (if that is in the
   scope of the code making the decision) and, if so, how to terminate.
 * There is a global list of possible exceptions in
-  ``api/legacy/include/gromacs/utility/exceptions.h``, and the library
+  ``src/gromacs/utility/include/gromacs/utility/exceptions.h``, and the library
   should throw one of these when it fails, possibly providing a more
   detailed description of the reason for the failure. The types of
   exceptions can be extended, and currently include:

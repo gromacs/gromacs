@@ -48,9 +48,14 @@ if (NOT DOXYGEN_FOUND)
     add_disabled_doxygen_target(gmxapi-cppdocs)
     add_disabled_doxygen_target(gmxapi-cppdocs-dev)
 else ()
-    set(legacy_api_SOURCE_DIR ${CMAKE_SOURCE_DIR}/api/legacy)
     set(legacy_api_BINARY_DIR ${CMAKE_BINARY_DIR}/api/legacy)
-    set(legacy_api_INCLUDE_DIRECTORIES ${legacy_api_SOURCE_DIR}/include ${legacy_api_BINARY_DIR}/include)
+    # The legacy API headers now live in the include/ directory of their
+    # owning module under src/gromacs/.
+    set(legacy_api_INCLUDE_DIRECTORIES ${legacy_api_BINARY_DIR}/include)
+    foreach(legacy_module analysisdata fileio math mdtypes options pbcutil
+                          restraint selection topology trajectory trajectoryanalysis utility)
+        list(APPEND legacy_api_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/src/gromacs/${legacy_module}/include)
+    endforeach()
     set(GMX_API_INCLUDE_DIRECTORIES ${legacy_api_INCLUDE_DIRECTORIES})
 
     if (GMXAPI)

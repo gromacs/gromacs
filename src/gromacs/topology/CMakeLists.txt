@@ -71,6 +71,30 @@ target_link_libraries(topology INTERFACE
 #target_link_libraries(topology PUBLIC legacy_api)
 #target_link_libraries(topology PRIVATE common)
 
+# Headers that are installed as part of the legacy API. The module owns its
+# part of the installed include tree and installs it through a target file set.
+target_sources(topology
+    INTERFACE
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+        FILES
+            include/gromacs/topology/atomprop.h
+            include/gromacs/topology/atoms.h
+            include/gromacs/topology/block.h
+            include/gromacs/topology/forcefieldparameters.h
+            include/gromacs/topology/idef.h
+            include/gromacs/topology/ifunc.h
+            include/gromacs/topology/index.h
+            include/gromacs/topology/symtab.h
+            include/gromacs/topology/topology.h
+            include/gromacs/topology/topology_enums.h
+)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(TARGETS topology FILE_SET public_headers DESTINATION include)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
