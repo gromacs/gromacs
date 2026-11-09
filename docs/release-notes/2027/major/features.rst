@@ -88,3 +88,11 @@ the model as a dictionary. Similarly, the model is now expected to return a dict
 the energy and forces, instead of a tuple. Note that this change is not backward-compatible, and 
 models exported for use with past GROMACS versions will no longer work. For more details on how to
 use the new I/O format, please see the :ref:`NNPot section in the reference manual<nnpot>`.
+
+Stochastic dynamics simulations with GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Simulations using the stochastic dynamics (langevin) integrator
+can now be run with the update step done on the GPU for the CUDA,
+HIP and SYCL backends. This feature currently needs to be enabled
+by explicitly setting ``-update gpu`` on the command line. 

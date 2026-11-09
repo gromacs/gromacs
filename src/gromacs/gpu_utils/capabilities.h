@@ -83,7 +83,7 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running update with leapfrog on the device
     static constexpr bool UpdateLeapfrog = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running update with stochastic dynamics on the device
-    static constexpr bool UpdateSD = false;
+    static constexpr bool UpdateSD = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the constraint kernels (LINCS+SETTLE) on the device
     static constexpr bool Constraints = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path with thread-MPI

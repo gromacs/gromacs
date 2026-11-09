@@ -456,8 +456,8 @@ void LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuXBufferOpsWhenAllowed),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD,
-                           "Only the md integrator is supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD || ir->eI == IntegrationAlgorithm::SD1,
+                           "Only the md and sd integrators are supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->etc != TemperatureCoupling::NoseHoover,
                 "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
@@ -1520,7 +1520,9 @@ void LegacySimulator::do_md()
                                         stateGpu->getVelocities(),
                                         stateGpu->getForces(),
                                         top_->idef,
-                                        *mdAtoms_);
+                                        *mdAtoms_,
+                                        (cr_->dd != nullptr) ? makeConstArrayRef(cr_->dd->globalAtomIndices)
+                                                             : ArrayRef<const int>{});
 
                         // Copy data to the GPU after buffers might have been reinitialized
                         /* The velocity copy is redundant if we had Center-of-Mass motion removed on
@@ -1560,7 +1562,9 @@ void LegacySimulator::do_md()
                             ekind_->tcstat,
                             doParrinelloRahman,
                             ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
-                            parrinelloRahmanM);
+                            parrinelloRahmanM,
+                            ir->ld_seed,
+                            step);
                 }
                 else
                 {

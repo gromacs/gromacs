@@ -42,8 +42,8 @@
  * \ingroup module_mdlib
  */
 
-#ifndef GMX_MDLIB_TESTS_LANGEVINTESTDATA_H
-#define GMX_MDLIB_TESTS_LANGEVINTESTDATA_H
+#ifndef GMX_MDLIB_TESTS_STOCHASTICDYNAMICSTESTDATA_H
+#define GMX_MDLIB_TESTS_STOCHASTICDYNAMICSTESTDATA_H
 
 #include <cstdint>
 
@@ -68,7 +68,7 @@ namespace test
 /* \brief Declares the class to accumulate the data needed for the Langevin integrator tests
  *
  */
-class LangevinTestData
+class StochasticDynamicsTestData
 {
 public:
     //! Number of atoms in the system
@@ -119,14 +119,14 @@ public:
     //! Number of temperature coupling groups
     int numTCoupleGroups_;
 
-    LangevinTestData(int  numAtoms,
-                     real timestep,
-                     RVec v0,
-                     RVec f0,
-                     int  numTCoupleGroups,
-                     real temperature,
-                     real tauT,
-                     int  seed);
+    StochasticDynamicsTestData(int  numAtoms,
+                               real timestep,
+                               RVec v0,
+                               RVec f0,
+                               int  numTCoupleGroups,
+                               real temperature,
+                               real tauT,
+                               int  seed);
 };
 
 } // namespace test

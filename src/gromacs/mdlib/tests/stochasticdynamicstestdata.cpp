@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "langevintestdata.h"
+#include "stochasticdynamicstestdata.h"
 
 #include <gtest/gtest.h>
 
@@ -55,14 +55,14 @@ namespace gmx
 namespace test
 {
 
-LangevinTestData::LangevinTestData(int        numAtoms,
-                                   real       timestep,
-                                   const RVec v0,
-                                   const RVec f0,
-                                   int        numTCoupleGroups,
-                                   real       temperature,
-                                   real       tauT,
-                                   int        seed) :
+StochasticDynamicsTestData::StochasticDynamicsTestData(int        numAtoms,
+                                                       real       timestep,
+                                                       const RVec v0,
+                                                       const RVec f0,
+                                                       int        numTCoupleGroups,
+                                                       real       temperature,
+                                                       real       tauT,
+                                                       int        seed) :
     numAtoms_(numAtoms),
     timestep_(timestep),
     temperature_(temperature),

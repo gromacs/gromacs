@@ -49,8 +49,10 @@
 
 #include <cmath>
 
+#include <algorithm>
 #include <array>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -69,11 +71,12 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-#include "langevintestdata.h"
+#include "stochasticdynamicstestdata.h"
 
 #if GMX_GPU && !GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gputraits.h"
+#    include "gromacs/mdlib/stochasticdynamics_gpu.h"
 #endif
 
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -93,7 +96,7 @@ namespace
 static const RVec sc_initialVelocity{ 1.0, -2.0, 3.0 };
 static const RVec sc_force{ -3.0, 2.0, -1.0 };
 
-void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
+void integrateStochasticDynamicsCpu(StochasticDynamicsTestData* testData, int64_t numSteps)
 {
     testData->state_.x.resizeWithPadding(testData->numAtoms_);
     testData->state_.v.resizeWithPadding(testData->numAtoms_);
@@ -107,7 +110,7 @@ void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
 
     Matrix3x3 parrinelloRahmanM;
 
-    for (int step = 0; step < numSteps; step++)
+    for (int64_t step = 0; step < numSteps; step++)
     {
         testData->update_->update_coords(testData->inputRecord_,
                                          step,
@@ -138,22 +141,153 @@ void integrateLangevinCpu(LangevinTestData* testData, int numSteps)
     }
 }
 
+#if GMX_GPU && !GMX_GPU_OPENCL
+
+void integrateStochasticDynamicsGpu(const DeviceContext&        deviceContext,
+                                    const DeviceStream&         deviceStream,
+                                    StochasticDynamicsTestData* testData,
+                                    int64_t                     numSteps,
+                                    ArrayRef<const int>         globalAtomIndices = {})
+{
+    int numAtoms = testData->numAtoms_;
+
+    Float3* h_x  = gmx::asGenericFloat3Pointer(testData->x_);
+    Float3* h_xp = gmx::asGenericFloat3Pointer(testData->xPrime_);
+    Float3* h_v  = gmx::asGenericFloat3Pointer(testData->v_);
+    Float3* h_f  = gmx::asGenericFloat3Pointer(testData->f_);
+
+    DeviceBuffer<Float3> d_x, d_xp, d_v, d_f;
+
+    allocateDeviceBuffer(&d_x, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_f, numAtoms, deviceContext);
+
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_f, h_f, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+
+    std::vector<float> refT(testData->numTCoupleGroups_, testData->temperature_);
+    std::vector<float> tauT(testData->numTCoupleGroups_, testData->tauT_);
+
+    auto integrator          = std::make_unique<StochasticDynamicsGpu>(deviceContext,
+                                                              deviceStream,
+                                                              testData->numTCoupleGroups_,
+                                                              testData->timestep_,
+                                                              refT.data(),
+                                                              tauT.data());
+    testData->inverseMasses_ = PaddedHostVector<real>(
+            testData->inverseMasses_,
+            HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+
+    testData->cTC_ = HostVector<unsigned short>(
+            testData->cTC_, HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+
+    {
+        SCOPED_TRACE("Preliminary call to set() to cover resizing edge cases");
+        // Use one atom more, so the call under test shrinks an object that holds data
+        const int              largerNumAtoms = testData->numAtoms_ + 1;
+        PaddedHostVector<real> inverseMasses(
+                HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+        HostVector<unsigned short> cTC(
+                HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported });
+        inverseMasses.resizeWithPadding(largerNumAtoms);
+        for (int i = 0; i < largerNumAtoms; i++)
+        {
+            inverseMasses[i] = 1.0 / (3.0 + i);
+        }
+        // Like mdatoms, only fill cTC when there is more than one group
+        if (testData->numTCoupleGroups_ > 1)
+        {
+            cTC.resize(largerNumAtoms);
+            for (int i = 0; i < largerNumAtoms; i++)
+            {
+                cTC[i] = i % testData->numTCoupleGroups_;
+            }
+        }
+        integrator->set(largerNumAtoms, inverseMasses, cTC, {});
+        deviceStream.synchronize();
+    }
+
+    integrator->set(numAtoms, testData->inverseMasses_, testData->cTC_, globalAtomIndices);
+
+    for (int64_t step = 0; step < numSteps; step++)
+    {
+        integrator->integrate(
+                d_x, d_xp, d_v, d_f, testData->timestep_, testData->seed_, step, SDUpdateStage::Combined);
+    }
+
+    copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+
+    freeDeviceBuffer(&d_x);
+    freeDeviceBuffer(&d_xp);
+    freeDeviceBuffer(&d_v);
+    freeDeviceBuffer(&d_f);
+}
+
+/*! \brief Checks that the GPU result for each atom does not depend on the local atom order
+ *
+ * With domain decomposition the local atom order differs from the global one. This integrates
+ * the system with the local atom order reversed, passing the global atom indices, and compares
+ * with \p reference, which was integrated with the local order equal to the global order.
+ */
+void checkGpuResultIsIndependentOfLocalAtomOrder(const DeviceContext&              deviceContext,
+                                                 const DeviceStream&               deviceStream,
+                                                 const StochasticDynamicsTestData& reference,
+                                                 int64_t                           numSteps)
+{
+    StochasticDynamicsTestData reordered(reference.numAtoms_,
+                                         reference.timestep_,
+                                         sc_initialVelocity,
+                                         sc_force,
+                                         reference.numTCoupleGroups_,
+                                         reference.temperature_,
+                                         reference.tauT_,
+                                         reference.seed_);
+    const int                  numAtoms = reordered.numAtoms_;
+    std::vector<int>           globalAtomIndices(numAtoms);
+    std::iota(globalAtomIndices.rbegin(), globalAtomIndices.rend(), 0);
+    std::reverse(reordered.x_.begin(), reordered.x_.end());
+    std::reverse(reordered.v_.begin(), reordered.v_.end());
+    std::reverse(reordered.f_.begin(), reordered.f_.end());
+    std::reverse(reordered.inverseMasses_.begin(), reordered.inverseMasses_.end());
+    std::reverse(reordered.cTC_.begin(), reordered.cTC_.end());
+
+    integrateStochasticDynamicsGpu(deviceContext, deviceStream, &reordered, numSteps, globalAtomIndices);
+
+    // Each atom goes through the same arithmetic in both runs, so the results must be identical
+    for (int localIndex = 0; localIndex < numAtoms; localIndex++)
+    {
+        const int globalIndex = globalAtomIndices[localIndex];
+        SCOPED_TRACE(formatString("Atom with global index %d", globalIndex));
+        for (int d = 0; d < DIM; d++)
+        {
+            EXPECT_EQ(reference.xPrime_[globalIndex][d], reordered.xPrime_[localIndex][d]);
+            EXPECT_EQ(reference.v_[globalIndex][d], reordered.v_[localIndex][d]);
+        }
+    }
+}
+
+#endif // GMX_GPU && !GMX_GPU_OPENCL
 
 //! Input configuration for Langevin tests
-using LangevinInputConfig = std::tuple<int,  // numAtoms
-                                       real, // timestep
-                                       int,  // numSteps
-                                       int,  // numTCoupleGroups
-                                       real, // temperature
-                                       real, // tauT
-                                       int>; // seed
+using StochasticDynamicsInputConfig = std::tuple<int,      // numAtoms
+                                                 real,     // timestep
+                                                 int64_t,  // numSteps
+                                                 int,      // numTCoupleGroups
+                                                 real,     // temperature
+                                                 real,     // tauT
+                                                 int64_t>; // seed
 
 /*! \brief Hardware test helper for Langevin
  *
  * \todo There are no execution modes - should test SIMD vs no SIMD
  * here. Perhaps coupling vs no-coupling is useful to express this way
  * also. */
-using LangevinTestHelper = HardwareAndExecutionTestHelper<LangevinInputConfig, std::tuple<>>;
+using StochasticDynamicsTestHelper =
+        HardwareAndExecutionTestHelper<StochasticDynamicsInputConfig, std::tuple<>>;
 
 //! Format timestep as integer for test names
 std::string formatTimestep(real timestep)
@@ -189,11 +323,11 @@ static const auto sc_configInfoFormatters =
 static const auto sc_executionModeFormatters = std::make_tuple();
 
 //! Helper object to name tests using all parameters
-static const NameOfTestFromTuple<LangevinTestHelper::DynamicParameters> sc_testNamer =
-        LangevinTestHelper::testNamer(sc_configInfoFormatters, sc_executionModeFormatters);
+static const NameOfTestFromTuple<StochasticDynamicsTestHelper::DynamicParameters> sc_testNamer =
+        StochasticDynamicsTestHelper::testNamer(sc_configInfoFormatters, sc_executionModeFormatters);
 
 //! The set of parameters combinations to run the test on
-const std::array<LangevinInputConfig, 17> sc_langevinConfigs = { {
+const std::array<StochasticDynamicsInputConfig, 17> sc_langevinConfigs = { {
         { 1, 0.001, 1, 1, 0, 2, 123 },
         { 1, 0.001, 1, 1, 0, 2, 12345 },
         { 1, 0.001, 1, 1, 100, 2, 123 },
@@ -215,13 +349,13 @@ const std::array<LangevinInputConfig, 17> sc_langevinConfigs = { {
 
 /*! \brief Test fixture for Langevin integrator.
  */
-class LangevinTest : public HardwareTestFixture<LangevinTestHelper>
+class StochasticDynamicsTest : public HardwareTestFixture<StochasticDynamicsTestHelper>
 {
 protected:
-    LangevinTest() : HardwareTestFixture(sc_configInfoFormatters) {}
+    StochasticDynamicsTest() : HardwareTestFixture(sc_configInfoFormatters) {}
 
 public:
-    void testAgainstReferenceData(const LangevinTestData& testData)
+    void testAgainstReferenceData(const StochasticDynamicsTestData& testData)
     {
         TestReferenceChecker finalPositionsRef(
                 checker().checkSequenceCompound("FinalPositions", testData.numAtoms_));
@@ -247,21 +381,35 @@ public:
     }
 };
 
-TEST_P(LangevinTest, SimpleIntegration)
+TEST_P(StochasticDynamicsTest, SimpleIntegration)
 {
     auto [numAtoms, timestep, numSteps, numTCoupleGroups, temperature, tauT, seed, _] = GetParam();
-
     {
-        std::unique_ptr<LangevinTestData> testData = std::make_unique<LangevinTestData>(
+        std::unique_ptr<StochasticDynamicsTestData> testData = std::make_unique<StochasticDynamicsTestData>(
                 numAtoms, timestep, sc_initialVelocity, sc_force, numTCoupleGroups, temperature, tauT, seed);
 
         if (isGpuTest())
         {
+#if GMX_GPU && !GMX_GPU_OPENCL
+            activateHardware();
+            integrateStochasticDynamicsGpu(*hardwareContext()->deviceContext(),
+                                           *hardwareContext()->deviceStream(),
+                                           testData.get(),
+                                           numSteps);
+            if (numAtoms > 1)
+            {
+                checkGpuResultIsIndependentOfLocalAtomOrder(*hardwareContext()->deviceContext(),
+                                                            *hardwareContext()->deviceStream(),
+                                                            *testData,
+                                                            numSteps);
+            }
+#else
             GMX_THROW(gmx::InternalError("GPU hardware context with no test code"));
+#endif
         }
         else
         {
-            integrateLangevinCpu(testData.get(), numSteps);
+            integrateStochasticDynamicsCpu(testData.get(), numSteps);
         }
 
         FloatingPointTolerance tolerance = absoluteTolerance(numSteps * (GMX_DOUBLE ? 5e-10 : 5e-6));
@@ -272,12 +420,12 @@ TEST_P(LangevinTest, SimpleIntegration)
 }
 
 INSTANTIATE_TEST_SUITE_P(AllHardware,
-                         LangevinTest,
+                         StochasticDynamicsTest,
                          ::testing::ConvertGenerator(
                                  ::testing::Combine(::testing::ValuesIn(sc_langevinConfigs),
                                                     ::testing::ValuesIn(getHardwareContextsWithCapability(
                                                             GpuConfigurationCapabilities::UpdateSD))),
-                                 flattenTupleWithHardwareContext<LangevinInputConfig>()),
+                                 flattenTupleWithHardwareContext<StochasticDynamicsInputConfig>()),
                          sc_testNamer);
 
 } // namespace

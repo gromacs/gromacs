@@ -56,6 +56,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/mdlib/stochasticdynamics.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -1143,15 +1144,6 @@ void Update::updateAfterPartition(int                            numAtoms,
 namespace
 {
 
-/*! \brief Sets the SD update type */
-enum class SDUpdate : int
-{
-    ForcesOnly,
-    FrictionAndNoiseOnly,
-    Combined,
-    Count
-};
-
 /*! \brief SD integrator update
  *
  * Two phases are required in the general case of a constrained
@@ -1170,7 +1162,7 @@ enum class SDUpdate : int
  * of RVec should be annotated with gmx_restrict, so the compiler knows
  * there is no aliasing, and for the same reason we do not use
  * ArrayRef<RVec> for them. */
-template<SDUpdate updateType>
+template<SDUpdateStage updateStage>
 void doSDUpdateGeneral(const gmx_stochd_t&            sd,
                        int                            start,
                        int                            nrend,
@@ -1195,18 +1187,18 @@ void doSDUpdateGeneral(const gmx_stochd_t&            sd,
     // cTC, cACC and cFREEZE can be nullptr any time, but various
     // instantiations do not make sense with particular pointer
     // values.
-    if (updateType == SDUpdate::ForcesOnly)
+    if constexpr (updateStage == SDUpdateStage::ForcesOnly)
     {
         GMX_ASSERT(f != nullptr, "SD update with only forces requires forces");
         GMX_ASSERT(cTC.empty(), "SD update with only forces cannot handle temperature groups");
     }
-    if (updateType == SDUpdate::FrictionAndNoiseOnly)
+    if constexpr (updateStage == SDUpdateStage::FrictionAndNoiseOnly)
     {
         GMX_ASSERT(f == nullptr, "SD update with only noise cannot handle forces");
         GMX_ASSERT(cAcceleration.empty(),
                    "SD update with only noise cannot handle acceleration groups");
     }
-    if (updateType == SDUpdate::Combined)
+    if constexpr (updateStage == SDUpdateStage::Combined)
     {
         GMX_ASSERT(f != nullptr, "SD update with forces and noise requires forces");
     }
@@ -1229,7 +1221,7 @@ void doSDUpdateGeneral(const gmx_stochd_t&            sd,
         const int temperatureGroup  = !cTC.empty() ? cTC[n] : 0;
 
         RVec parrinelloRahmanScaledVelocity;
-        if (updateType != SDUpdate::FrictionAndNoiseOnly)
+        if constexpr (updateStage != SDUpdateStage::FrictionAndNoiseOnly)
         {
             parrinelloRahmanScaledVelocity = dtPressureCouple * (parrinelloRahmanM * v[n]);
         }
@@ -1237,7 +1229,7 @@ void doSDUpdateGeneral(const gmx_stochd_t&            sd,
         {
             if ((ptype[n] != ParticleType::Shell) && !nFreeze[freezeGroup][d])
             {
-                if (updateType == SDUpdate::ForcesOnly)
+                if constexpr (updateStage == SDUpdateStage::ForcesOnly)
                 {
                     real vn = v[n][d] + (inverseMass * f[n][d] + acceleration[accelerationGroup][d]) * dt
                               - parrinelloRahmanScaledVelocity[d];
@@ -1245,7 +1237,7 @@ void doSDUpdateGeneral(const gmx_stochd_t&            sd,
                     // Simple position update.
                     xprime[n][d] = x[n][d] + v[n][d] * dt;
                 }
-                else if (updateType == SDUpdate::FrictionAndNoiseOnly)
+                else if constexpr (updateStage == SDUpdateStage::FrictionAndNoiseOnly)
                 {
                     real vn = v[n][d];
                     v[n][d] = (vn * sd.sdc[temperatureGroup].em
@@ -1272,7 +1264,7 @@ void doSDUpdateGeneral(const gmx_stochd_t&            sd,
                 // two phases, but we only need to zero the update of
                 // virtual, shell or frozen particles in at most one
                 // of the phases.
-                if (updateType != SDUpdate::FrictionAndNoiseOnly)
+                if constexpr (updateStage != SDUpdateStage::FrictionAndNoiseOnly)
                 {
                     v[n][d]      = 0.0;
                     xprime[n][d] = x[n][d];
@@ -1321,49 +1313,49 @@ void do_update_sd(int                            start,
     if (haveConstraints)
     {
         // With constraints, the SD update is done in 2 parts
-        doSDUpdateGeneral<SDUpdate::ForcesOnly>(sd,
-                                                start,
-                                                nrend,
-                                                dt,
-                                                nFreeze,
-                                                invmass,
-                                                ptype,
-                                                cFREEZE,
-                                                ArrayRef<const unsigned short>{},
-                                                cAcceleration,
-                                                acceleration.data(),
-                                                x,
-                                                xprime,
-                                                v,
-                                                f,
-                                                step,
-                                                seed,
-                                                nullptr,
-                                                dtPressureCouple,
-                                                parrinelloRahmanMToUseThisStep);
+        doSDUpdateGeneral<SDUpdateStage::ForcesOnly>(sd,
+                                                     start,
+                                                     nrend,
+                                                     dt,
+                                                     nFreeze,
+                                                     invmass,
+                                                     ptype,
+                                                     cFREEZE,
+                                                     ArrayRef<const unsigned short>{},
+                                                     cAcceleration,
+                                                     acceleration.data(),
+                                                     x,
+                                                     xprime,
+                                                     v,
+                                                     f,
+                                                     step,
+                                                     seed,
+                                                     nullptr,
+                                                     dtPressureCouple,
+                                                     parrinelloRahmanMToUseThisStep);
     }
     else
     {
-        doSDUpdateGeneral<SDUpdate::Combined>(sd,
-                                              start,
-                                              nrend,
-                                              dt,
-                                              nFreeze,
-                                              invmass,
-                                              ptype,
-                                              cFREEZE,
-                                              cTC,
-                                              cAcceleration,
-                                              acceleration.data(),
-                                              x,
-                                              xprime,
-                                              v,
-                                              f,
-                                              step,
-                                              seed,
-                                              (dd != nullptr) ? dd->globalAtomIndices.data() : nullptr,
-                                              dtPressureCouple,
-                                              parrinelloRahmanMToUseThisStep);
+        doSDUpdateGeneral<SDUpdateStage::Combined>(sd,
+                                                   start,
+                                                   nrend,
+                                                   dt,
+                                                   nFreeze,
+                                                   invmass,
+                                                   ptype,
+                                                   cFREEZE,
+                                                   cTC,
+                                                   cAcceleration,
+                                                   acceleration.data(),
+                                                   x,
+                                                   xprime,
+                                                   v,
+                                                   f,
+                                                   step,
+                                                   seed,
+                                                   (dd != nullptr) ? dd->globalAtomIndices.data() : nullptr,
+                                                   dtPressureCouple,
+                                                   parrinelloRahmanMToUseThisStep);
     }
 }
 
@@ -1657,7 +1649,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&            inputRecor
                 int start_th, end_th;
                 getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
-                doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>(
+                doSDUpdateGeneral<SDUpdateStage::FrictionAndNoiseOnly>(
                         sd_,
                         start_th,
                         end_th,

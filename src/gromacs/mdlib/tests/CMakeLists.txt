@@ -42,21 +42,21 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         energyoutput.cpp
         expanded.cpp
         freeenergyparameters.cpp
-        langevintestdata.cpp
         leapfrogtestdata.cpp
         parrinellorahman.cpp
         settletestdata.cpp
         shake.cpp
         simulationsignal.cpp
+        stochasticdynamicstestdata.cpp
         updategroups.cpp
         updategroupscog.cpp
         vsite.cpp
     GPU_CPP_SOURCE_FILES
         constr.cpp
-        langevin.cpp
         leapfrog.cpp
         mdgpugraph.cpp
         settle.cpp
+        stochasticdynamics.cpp
         wholemoleculetransform.cpp
         )
 target_link_libraries(mdlib-test PRIVATE

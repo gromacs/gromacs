@@ -12,7 +12,7 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
-*
+* Stochastic dynamics simulations with GPU update on CUDA, HIP and SYCL
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,

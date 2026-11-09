@@ -273,9 +273,9 @@ const FreeEnergySystem& findFreeEnergySystem(const std::string& name)
 //! Whether the GPU update path can be used for this system and integrator combination.
 bool freeEnergyGpuUpdateIsSupported(const std::string& simulationName, const IntegrationAlgorithm testIntegrator)
 {
-    if (testIntegrator == IntegrationAlgorithm::VV || testIntegrator == IntegrationAlgorithm::SD1)
+    if (testIntegrator == IntegrationAlgorithm::VV)
     {
-        // no support for md-vv or sd integrator, change once SD1 supports GPU update
+        // no support for md-vv integrator
         return false;
     }
     return findFreeEnergySystem(simulationName).gpuUpdateSupport == GpuUpdateSupport::Yes;

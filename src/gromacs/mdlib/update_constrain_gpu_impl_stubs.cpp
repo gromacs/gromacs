@@ -90,7 +90,9 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
                                    gmx::ArrayRef<const t_grp_tcstat> /* tcstat */,
                                    const bool /* doParrinelloRahman */,
                                    const float /* dtPressureCouple */,
-                                   const Matrix3x3& /* prVelocityScalingMatrix*/)
+                                   const Matrix3x3& /* prVelocityScalingMatrix*/,
+                                   const int64_t /* seed */,
+                                   const int64_t /* step */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
@@ -112,7 +114,8 @@ void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
                              DeviceBuffer<RVec> /* d_v */,
                              const DeviceBuffer<RVec> /* d_f */,
                              const InteractionDefinitions& /* idef */,
-                             const MDAtoms& /* md */)
+                             const MDAtoms& /* md */,
+                             ArrayRef<const int> /* globalAtomIndices */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");

@@ -108,7 +108,6 @@
 
 #include <cassert>
 
-#include <array>
 #include <limits>
 #include <memory>
 
@@ -163,7 +162,7 @@ namespace gmx
 namespace internal
 {
 // Variable-bitfield counters used to increment internal counters as
-// part of std::arrays.
+// part of arrays.
 
 struct highBitCounter
 {

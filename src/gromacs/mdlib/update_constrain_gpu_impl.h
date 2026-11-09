@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/leapfrog_gpu.h"
 #include "gromacs/mdlib/lincs_gpu.h"
 #include "gromacs/mdlib/settle_gpu.h"
+#include "gromacs/mdlib/stochasticdynamics_gpu.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/matrix.h"
@@ -76,14 +77,14 @@ public:
      *                                projection from it.
      * \param[in] mtop                Topology of the system: SETTLE gets the masses for O and H atoms
      *                                and target O-H and H-H distances from this object.
-     * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
+     * \param[in] numTempCouplGroups  Number of temperature coupling groups. Zero for no temperature scaling or temperature coupling.
      * \param[in] deviceContext       GPU device context.
      * \param[in] deviceStream        GPU stream to use.
      * \param[in] wcycle              The wallclock counter
      */
     Impl(const t_inputrec&    ir,
          const gmx_mtop_t&    mtop,
-         int                  numTempScaleValues,
+         int                  numTempCouplGroups,
          const DeviceContext& deviceContext,
          const DeviceStream&  deviceStream,
          gmx_wallcycle*       wcycle);
@@ -111,6 +112,8 @@ public:
      * \param[in]  doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
      * \param[in]  dtPressureCouple         Period between pressure coupling steps.
      * \param[in]  prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix.
+     * \param[in]  seed                     Random seed for sd integrator.
+     * \param[in]  step                     The step number in the simulation.
      */
     void integrate(GpuEventSynchronizer*             fReadyOnDevice,
                    real                              dt,
@@ -121,7 +124,9 @@ public:
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const gmx::Matrix3x3&             prVelocityScalingMatrix);
+                   const gmx::Matrix3x3&             prVelocityScalingMatrix,
+                   int64_t                           seed,
+                   int64_t                           step);
 
     /*! \brief Scale coordinates on the GPU for the pressure coupling.
      *
@@ -147,12 +152,16 @@ public:
      * \param[in]      d_f            Device buffer with forces.
      * \param[in] idef                System topology
      * \param[in] mdAtoms             Atoms data.
+     * \param[in] globalAtomIndices   Global atom index for each local atom, used by the SD
+     *                                integrator for the random numbers. Empty when the local
+     *                                and global atom orders are the same.
      */
     void set(DeviceBuffer<Float3>          d_x,
              DeviceBuffer<Float3>          d_v,
              DeviceBuffer<Float3>          d_f,
              const InteractionDefinitions& idef,
-             const MDAtoms&                mdAtoms);
+             const MDAtoms&                mdAtoms,
+             ArrayRef<const int>           globalAtomIndices);
 
     //! Record that the host has waited for all work in the update stream
     void markStreamSynchronized();
@@ -201,9 +210,9 @@ private:
     //! Device buffer for storing a copy of previous coordinates (maintained internally)
     DeviceBuffer<Float3> d_x0_;
     //! Number of elements in shifted coordinates buffer
-    int numXp_ = -1;
+    int numX0_ = -1;
     //! Allocation size for the shifted coordinates buffer
-    int numXpAlloc_ = -1;
+    int numX0Alloc_ = -1;
 
 
     //! 1/mass for all atoms (GPU)
@@ -214,7 +223,9 @@ private:
     int numInverseMassesAlloc_ = -1;
 
     //! Leap-Frog integrator
-    std::unique_ptr<LeapFrogGpu> integrator_;
+    std::unique_ptr<LeapFrogGpu> integratorLeapFrog_;
+    //! Langevin (SD) integrator
+    std::unique_ptr<StochasticDynamicsGpu> integratorLangevin_;
     //! LINCS GPU object to use for non-water constraints
     std::unique_ptr<LincsGpu> lincsGpu_;
     //! SETTLE GPU object for water constrains

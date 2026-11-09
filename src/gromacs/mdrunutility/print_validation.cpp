@@ -85,6 +85,9 @@ void logValidationMessages(const MDLogger&            mdlog,
     experimentalFeatures.appendIf(GMX_GPU_HIP && simulationWorkload.useGpuPmeDecomposition,
                                   "PME GPU decomposition with the AMD HIP GPU backend");
     experimentalFeatures.appendIf(useH5mdOutputFile, "H5md trajectory output");
+    experimentalFeatures.appendIf(
+            simulationWorkload.useGpuUpdate && integrationAlgorithm == IntegrationAlgorithm::SD1,
+            "Stochastic Dynamics integrator and GPU update");
     experimentalFeatures.finishContext();
     if (!experimentalFeatures.isEmpty())
     {

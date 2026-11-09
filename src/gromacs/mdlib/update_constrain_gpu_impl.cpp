@@ -35,12 +35,13 @@
  *
  * \brief Implements update and constraints class.
  *
- * The class combines Leap-Frog integrator with LINCS and SETTLE constraints.
+ * The class combines Leap-Frog or SD integrator with LINCS and SETTLE constraints.
  *
  * \todo The computational procedures in members should be integrated to improve
  *       computational performance.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
+ * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  *
  * \ingroup module_mdlib
  */
@@ -79,10 +80,15 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                                          gmx::ArrayRef<const t_grp_tcstat> tcstat,
                                          const bool                        doParrinelloRahman,
                                          const float                       dtPressureCouple,
-                                         const Matrix3x3&                  prVelocityScalingMatrix)
+                                         const Matrix3x3&                  prVelocityScalingMatrix,
+                                         const int64_t                     seed,
+                                         const int64_t                     step)
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
+
+    GMX_ASSERT((integratorLeapFrog_ == nullptr) != (integratorLangevin_ == nullptr),
+               "Must have exactly one of Leap frog and Langevin (SD) integrators.");
 
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
@@ -95,12 +101,51 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
     {
         // A copy of the current coordinates is saved into d_x0_ by integrate(), and
         // d_x_ is updated by integration and constraints.
-        integrator_->integrate(
-                d_x_, d_x0_, d_v_, d_f_, dt, doTemperatureScaling, tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
+        if (integratorLeapFrog_ != nullptr)
+        {
+            integratorLeapFrog_->integrate(
+                    d_x_, d_x0_, d_v_, d_f_, dt, doTemperatureScaling, tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
+        }
+        else if (integratorLangevin_ != nullptr)
+        {
+            integratorLangevin_->integrate(
+                    d_x_, d_x0_, d_v_, d_f_, dt, seed, step, SDUpdateStage::ForcesOnly);
+        }
+        // d_x_ has been propagated, d_x0_ now contains the original coordinates
         if constexpr (GpuConfigurationCapabilities::Constraints)
         {
             lincsGpu_->apply(d_x0_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
             settleGpu_->apply(d_x0_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
+        }
+
+        // d_x_ has now been constrained, d_x0_ still has the original coordinates (now useless for leapfrog)
+        if (integratorLangevin_ != nullptr)
+        {
+            integratorLangevin_->integrate(
+                    d_x_, {}, d_v_, d_f_, dt, seed, step, SDUpdateStage::FrictionAndNoiseOnly);
+            // d_x_ now includes friction and noise, d_x0_ still has the original coordinates
+            constexpr bool computeVirialAtHalfTimeStep    = false;
+            constexpr bool updateVelocitiesAtHalfTimeStep = true;
+            if constexpr (GpuConfigurationCapabilities::Constraints)
+            {
+                lincsGpu_->apply(d_x0_,
+                                 d_x_,
+                                 updateVelocitiesAtHalfTimeStep,
+                                 d_v_,
+                                 1.0 / (0.5 * dt),
+                                 computeVirialAtHalfTimeStep,
+                                 nullptr,
+                                 pbcAiuc_);
+                settleGpu_->apply(d_x0_,
+                                  d_x_,
+                                  updateVelocitiesAtHalfTimeStep,
+                                  d_v_,
+                                  1.0 / (0.5 * dt),
+                                  computeVirialAtHalfTimeStep,
+                                  nullptr,
+                                  pbcAiuc_);
+            }
+            // d_x_ has now been constrained again, d_x0_ still has the original coordinates (now useless)
         }
 
         // scaledVirial -> virial (methods above returns scaled values)
@@ -164,7 +209,24 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
                                gmx_wallcycle*       wcycle) :
     deviceContext_(deviceContext), deviceStream_(deviceStream), wcycle_(wcycle)
 {
-    integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_, numTempScaleValues);
+    if (ir.eI == IntegrationAlgorithm::SD1)
+    {
+        GMX_RELEASE_ASSERT(
+                GpuConfigurationCapabilities::UpdateSD && GpuConfigurationCapabilities::Constraints,
+                "GPU constraint support is required when using the GPU for updates with the SD "
+                "integrator.");
+        integratorLangevin_ = std::make_unique<StochasticDynamicsGpu>(
+                deviceContext_, deviceStream_, numTempScaleValues, ir.delta_t, ir.opts.ref_t, ir.opts.tau_t);
+        integratorLeapFrog_ = nullptr;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(GpuConfigurationCapabilities::UpdateLeapfrog,
+                           "GPU update for leapfrog needs to be available to run on the device");
+        integratorLeapFrog_ =
+                std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_, numTempScaleValues);
+        integratorLangevin_ = nullptr;
+    }
     if constexpr (GpuConfigurationCapabilities::Constraints)
     {
         lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, deviceStream_);
@@ -189,7 +251,8 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
                                    DeviceBuffer<Float3>          d_v,
                                    const DeviceBuffer<Float3>    d_f,
                                    const InteractionDefinitions& idef,
-                                   const MDAtoms&                mdAtoms)
+                                   const MDAtoms&                mdAtoms,
+                                   ArrayRef<const int>           globalAtomIndices)
 {
     wallcycle_start(wcycle_, WallCycleCounter::GpuSetConstr);
 
@@ -201,6 +264,9 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     GMX_ASSERT(d_x, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v, "Velocities device buffer should not be null.");
     GMX_ASSERT(d_f, "Forces device buffer should not be null.");
+    GMX_ASSERT(integratorLeapFrog_ == nullptr || integratorLangevin_ == nullptr,
+               "Cannot use Leap frog and Langevin (SD) integrators simultaneously.");
+
 
     d_x_ = d_x;
     d_v_ = d_v;
@@ -208,13 +274,20 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
 
     numAtoms_ = mdAtoms.numHomeAtoms;
 
-    reallocateDeviceBuffer(&d_x0_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
+    reallocateDeviceBuffer(&d_x0_, numAtoms_, &numX0_, &numX0Alloc_, deviceContext_);
 
     reallocateDeviceBuffer(
             &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
 
     // Integrator should also update something, but it does not even have a method yet
-    integrator_->set(numAtoms_, mdAtoms.invmass, mdAtoms.cTC);
+    if (integratorLeapFrog_ != nullptr)
+    {
+        integratorLeapFrog_->set(numAtoms_, mdAtoms.invmass, mdAtoms.cTC);
+    }
+    else if (integratorLangevin_ != nullptr)
+    {
+        integratorLangevin_->set(numAtoms_, mdAtoms.invmass, mdAtoms.cTC, globalAtomIndices);
+    }
     if constexpr (GpuConfigurationCapabilities::Constraints)
     {
         wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuSetLincs);
@@ -251,11 +324,11 @@ GpuEventSynchronizer* UpdateConstrainGpu::Impl::xUpdatedOnDeviceEvent()
 
 UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&    ir,
                                        const gmx_mtop_t&    mtop,
-                                       const int            numTempScaleValues,
+                                       const int            numTempCouplGroups,
                                        const DeviceContext& deviceContext,
                                        const DeviceStream&  deviceStream,
                                        gmx_wallcycle*       wcycle) :
-    impl_(new Impl(ir, mtop, numTempScaleValues, deviceContext, deviceStream, wcycle))
+    impl_(new Impl(ir, mtop, numTempCouplGroups, deviceContext, deviceStream, wcycle))
 {
 }
 
@@ -270,7 +343,9 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                                    const bool                        doParrinelloRahman,
                                    const float                       dtPressureCouple,
-                                   const gmx::Matrix3x3&             prVelocityScalingMatrix)
+                                   const gmx::Matrix3x3&             prVelocityScalingMatrix,
+                                   const int64_t                     seed,
+                                   const int64_t                     step)
 {
     impl_->integrate(fReadyOnDevice,
                      dt,
@@ -281,7 +356,9 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                      tcstat,
                      doParrinelloRahman,
                      dtPressureCouple,
-                     prVelocityScalingMatrix);
+                     prVelocityScalingMatrix,
+                     seed,
+                     step);
 }
 
 void UpdateConstrainGpu::scaleCoordinates(const gmx::Matrix3x3& scalingMatrix)
@@ -298,9 +375,10 @@ void UpdateConstrainGpu::set(DeviceBuffer<Float3>          d_x,
                              DeviceBuffer<Float3>          d_v,
                              const DeviceBuffer<Float3>    d_f,
                              const InteractionDefinitions& idef,
-                             const MDAtoms&                mdAtoms)
+                             const MDAtoms&                mdAtoms,
+                             ArrayRef<const int>           globalAtomIndices)
 {
-    impl_->set(d_x, d_v, d_f, idef, mdAtoms);
+    impl_->set(d_x, d_v, d_f, idef, mdAtoms, globalAtomIndices);
 }
 
 void UpdateConstrainGpu::markStreamSynchronized()
