@@ -217,10 +217,45 @@ public:
 
     /*! \brief Set up the file from input data.
      *
+     * Creates a particle block for the entire system defined in the \p topology.
+     *
      * \param[in] topology     Topology data of system.
      * \param[in] inputRecord  Simulation parameters.
      */
     void setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord);
+
+    /*! \brief Set up the file from input data.
+     *
+     * Creates a particle block for the given selection.
+     *
+     * \param[in] topology       Topology data of system.
+     * \param[in] inputRecord    Simulation parameters.
+     * \param[in] selectionInds  Global particle indices for selection to setup
+     *                           particle block for.
+     * \param[in] selectionName  Name of selection to setup particle block for.
+     */
+    void setupFileFromInput(const gmx_mtop_t&   topology,
+                            const t_inputrec&   inputRecord,
+                            ArrayRef<const int> selectionInds,
+                            const char*         selectionName);
+
+    /*! \brief Set up the current file based on and copy metadata from another file.
+     *
+     * If \p selectionInds is not empty its size will be used to set up
+     * the particle blocks. If it is empty, the number of particles is
+     * read from \p other.
+     *
+     * Copies metadata from the \p other file. Will also copy its topology
+     * data if its number of particles matches that of the new file.
+     *
+     * \param[in] other          File to use as base for the current file.
+     * \param[in] selectionInds  Global particle indices to set up particle block for.
+     * \param[in] selectionName  Name of selection to set up particle block for.
+     *
+     * \throws H5mdError if the PbcType of or number of particles in \p other
+     * cannot be determined.
+     */
+    void setupFromOtherFile(const H5md& other, ArrayRef<const int> selectionInds, const char* selectionName);
 
     /*! \brief Set up from an existing file.
      *
@@ -277,6 +312,22 @@ public:
                         double               time);
 
 private:
+    /*! \brief Copy simulation metadata from \p other to the current file.
+     *
+     * Copies a selection of metadata for the /h5md group, including
+     * known groups in /h5md/modules.
+     *
+     * Entries in /h5md/author and /h5md/creator are unchanged, i.e.
+     * will represent the current user instead of the original.
+     *
+     * If \p copyTopology is true any known topology data groups will
+     * also be copied over.
+     *
+     * \param[in] other         File to copy metadata from.
+     * \param[in] copyTopology  Whether to also copy topology data.
+     */
+    void copyMetaDataFromFile(const H5md& other, bool copyTopology);
+
     /*! \brief Set up particle blocks for trajectory writing according to the H5md specification.
      *
      * \param[in] topology         Molecular topology for the simulated system.

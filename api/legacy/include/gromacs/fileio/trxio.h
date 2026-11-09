@@ -144,6 +144,36 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
                                               gmx::ArrayRef<const int>     index,
                                               const char*                  index_group_name);
 
+/*! \brief
+ * Set up H5MD writing and return it in a newly allocated \c t_trxstatus* object.
+ *
+ * If \p inputFileStatus is not nullptr and contains an open H5MD trajectory,
+ * some data, e.g. the topology, will be copied over to the output file if
+ * possible.
+ *
+ * If an input H5MD file is not available, the output file will be set up
+ * for either \c numParticles particles, or the given \p index group.
+ *
+ * If \p mtop is not nullptr and represents the entire system, it will
+ * be used to write a topology to the output file. Otherwise no topology
+ * data is written to the file.
+ *
+ * \param[in] outputFileName   Path to open output H5MD file at.
+ * \param[in] inputFileStatus  Input file pointer or null.
+ * \param[in] numParticles     Number of particles for output file.
+ * \param[in] mtop             Pointer to system topology or null.
+ * \param[in] pbcType          PBC of the input file.
+ * \param[in] index            Array of global atom indices.
+ *
+ * \returns Pointer to output for H5MD file.
+ */
+t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& outputFileName,
+                                               t_trxstatus*                 inputFileStatus,
+                                               int                          numParticles,
+                                               const gmx_mtop_t*            mtop,
+                                               PbcType                      pbcType,
+                                               gmx::ArrayRef<const int>     index);
+
 /*! \brief Write a trxframe to the TNG file in status.
  *
  * This function is needed because both t_trxstatus and
@@ -151,6 +181,8 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
  * code with a t_trxstatus can't just call the TNG writing
  * function. */
 void write_tng_frame(t_trxstatus* status, const t_trxframe* fr);
+
+void write_h5md_frame(t_trxstatus* status, const t_trxframe& fr);
 
 void close_trx(t_trxstatus* status);
 /* Close trajectory file as opened with read_first_x, read_first_frame

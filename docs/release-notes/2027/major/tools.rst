@@ -28,3 +28,8 @@ it used to fail. Structures are shown with PyMOL, ChimeraX, Jmol or VMD, plots
 with Grace, and images and PostScript with the common desktop viewers. The
 ``GMX_VIEW_`` environment variables continue to override the choice.
 
+``gmx trjconv`` now supports converting trajectories to H5MD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+H5MD is now supported as both an input and output format for trajectory
+conversion.

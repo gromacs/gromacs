@@ -66,6 +66,7 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -81,6 +82,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/vec.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -533,9 +535,68 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
     return out;
 }
 
+t_trxstatus* trjtools_gmx_prepare_h5md_writing(const std::filesystem::path& outputFileName,
+                                               t_trxstatus*                 inputFileStatus,
+                                               const int                    numParticles,
+                                               const gmx_mtop_t*            mtop,
+                                               const PbcType                pbcType,
+                                               gmx::ArrayRef<const int>     index)
+{
+    gmx::unique_cptr<t_trxstatus, close_trx> outputFileStatus(new t_trxstatus);
+
+    // At some point we may want this to also set up files for appending
+    // data, but for now we only allow new files to be created.
+    outputFileStatus->fileType = efH5MD;
+    outputFileStatus->h5md = std::make_unique<gmx::H5md>(outputFileName, gmx::H5mdFileMode::Write);
+    if (inputFileStatus != nullptr && inputFileStatus->h5md != nullptr)
+    {
+        try
+        {
+            outputFileStatus->h5md->setupFromOtherFile(*inputFileStatus->h5md, index, "system");
+        }
+        catch (const gmx::FileIOError&)
+        {
+            GMX_THROW(gmx::FileIOError(gmx::formatString(
+                    "Cannot read required data from input H5MD file when creating output file %s",
+                    outputFileName.string().c_str())));
+        }
+    }
+    else
+    {
+        // To set up the file we need the number of particles and pbc type
+        // for the system.
+        gmx_mtop_t mtopFallback;
+        mtopFallback.natoms = numParticles;
+        t_inputrec inputRecord;
+        inputRecord.pbcType = pbcType;
+
+        // We can only write the topology if we have one and we are writing
+        // data for the entire system (until we know what to do for selections)
+        const bool writeTopology = mtop != nullptr && mtop->natoms == numParticles;
+        outputFileStatus->h5md->setupFileFromInput(
+                writeTopology ? *mtop : mtopFallback, inputRecord, index, "system");
+    }
+
+    return outputFileStatus.release();
+}
+
 void write_tng_frame(t_trxstatus* status, const t_trxframe* frame)
 {
     gmx_write_tng_from_trxframe(status->tng, frame, -1);
+}
+
+void write_h5md_frame(t_trxstatus* status, const t_trxframe& frame)
+{
+    status->h5md->writeNextFrame(
+            frame.bX ? gmx::constArrayRefFromArray(reinterpret_cast<const gmx::RVec*>(frame.x), frame.natoms)
+                     : gmx::ArrayRef<const gmx::RVec>{},
+            frame.bV ? gmx::constArrayRefFromArray(reinterpret_cast<const gmx::RVec*>(frame.v), frame.natoms)
+                     : gmx::ArrayRef<const gmx::RVec>{},
+            frame.bF ? gmx::constArrayRefFromArray(reinterpret_cast<const gmx::RVec*>(frame.f), frame.natoms)
+                     : gmx::ArrayRef<const gmx::RVec>{},
+            frame.box,
+            frame.step,
+            frame.time);
 }
 
 int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)

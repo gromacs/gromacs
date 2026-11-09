@@ -769,13 +769,16 @@ int gmx_trjconv(int argc, char* argv[])
         bool                        haveFullTopology = false;
         std::unique_ptr<gmx_mtop_t> mtop;
 
-        // If we are converting from TNG to TNG we prefer to copy topology
-        // data from the existing file. If not, we try to read it from
-        // an input topology file.
+        // If we are converting from TNG to TNG or H5MD to H5MD we prefer
+        // to copy topology data from the existing file. If not, we try to
+        // read it from an input topology file.
         const bool tngOutputRequiresMolecularTopology =
                 fn2ftp(out_file) == efTNG && fn2ftp(in_file) != efTNG;
+        const bool h5mdOutputRequiresMolecularTopology =
+                fn2ftp(out_file) == efH5MD && fn2ftp(in_file) != efH5MD;
 
-        const bool molecularTopologyRequired = bTPS || tngOutputRequiresMolecularTopology;
+        const bool molecularTopologyRequired =
+                bTPS || tngOutputRequiresMolecularTopology || h5mdOutputRequiresMolecularTopology;
         if (molecularTopologyRequired)
         {
             mtop = std::make_unique<gmx_mtop_t>();
@@ -1100,6 +1103,14 @@ int gmx_trjconv(int argc, char* argv[])
                                                               haveFullTopology ? mtop.get() : nullptr,
                                                               arrayRefFromArray(index, nout),
                                                               grpnm);
+                    break;
+                case efH5MD:
+                    trxout = trjtools_gmx_prepare_h5md_writing(out_file,
+                                                               trxin,
+                                                               nout,
+                                                               haveFullTopology ? mtop.get() : nullptr,
+                                                               pbcType,
+                                                               gmx::arrayRefFromArray(index, nout));
                     break;
                 case efCIF:
                 case efXTC:
@@ -1525,6 +1536,10 @@ int gmx_trjconv(int argc, char* argv[])
                             case efTNG:
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
+                                break;
+                            case efH5MD:
+                                // TODO when trjconv behaves better: work how to read and write lambda
+                                write_h5md_frame(trxout, frout);
                                 break;
                             case efCIF:
                                 // mmCIF needs atom/residue names, supplied via the

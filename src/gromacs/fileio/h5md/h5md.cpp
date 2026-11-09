@@ -228,6 +228,66 @@ static std::optional<int64_t> calcNumParticlesForSelection(const hid_t fileid, c
     return std::nullopt;
 }
 
+/*! \brief Return the PbcType for the block at \c /particles/selectionName/box.
+ *
+ * \param[in] fileid        Handle to H5md file.
+ * \param[in] selectionName Name of particle group.
+ *
+ * \returns The PbcType or std::nullopt if it does not exist.
+ *
+ * \throws H5mdError if the simulation box group at \c /particles/selectionName/box
+ * exists but the PbcType could not be determined from it.
+ */
+static std::optional<PbcType> getPbcForSelection(const hid_t fileid, const char* selectionName)
+{
+    const auto [particlesGroup, particlesGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid, c_particlesGroupPath));
+    const auto [selectionGroup, selectionGroupGuard] =
+            makeH5mdGroupGuard(openGroup(particlesGroup, selectionName));
+
+    if (!objectExists(selectionGroup, c_boxGroupName))
+    {
+        return std::nullopt;
+    }
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(openGroup(selectionGroup, c_boxGroupName));
+
+    const std::optional<std::vector<std::string>> boundary =
+            getAttributeVector<std::string>(boxGroup, c_boxBoundaryAttributeKey);
+    GMX_H5MD_THROW_UPON_ERROR(!boundary.has_value(),
+                              formatString("Cannot read periodicity for group '%s': required "
+                                           "'boundary' attribute does not exist",
+                                           getHandlePath(boxGroup).value_or("<unknown_path>").c_str()));
+
+    const std::vector<std::string>& pbc = boundary.value();
+    GMX_H5MD_THROW_UPON_ERROR(
+            pbc.size() != DIM,
+            formatString("Cannot read periodicity for group '%s': required 'boundary' "
+                         "attribute must have 3 values for periodicity",
+                         getHandlePath(boxGroup).value_or("<unknown_path>").c_str()));
+    constexpr char periodicValue[] = "periodic";
+    constexpr char noneValue[]     = "none";
+
+    if (pbc[XX] == periodicValue && pbc[YY] == periodicValue && pbc[ZZ] == periodicValue)
+    {
+        return PbcType::Xyz;
+    }
+    else if (pbc[XX] == periodicValue && pbc[YY] == periodicValue && pbc[ZZ] == noneValue)
+    {
+        return PbcType::XY;
+    }
+    else if (pbc[XX] == noneValue && pbc[YY] == noneValue && pbc[ZZ] == noneValue)
+    {
+        return PbcType::No;
+    }
+    else
+    {
+        GMX_THROW(
+                H5mdError(formatString("Cannot read periodicity for group '%s': boundary attribute "
+                                       "does not map to GROMACS PBC types",
+                                       getHandlePath(boxGroup).value_or("<unknown path>").c_str())));
+    }
+}
+
 } // namespace
 #endif // GMX_USE_HDF5
 
@@ -519,13 +579,59 @@ void H5md::setupModules()
 void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord)
 {
 #if GMX_USE_HDF5
+    setupFileFromInput(topology, inputRecord, {}, c_fullSystemGroupName);
+#else
+    GMX_UNUSED_VALUE(topology);
+    GMX_UNUSED_VALUE(inputRecord);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupFileFromInput(const gmx_mtop_t&   topology,
+                              const t_inputrec&   inputRecord,
+                              ArrayRef<const int> selectionInds,
+                              const char*         selectionName)
+{
+#if GMX_USE_HDF5
     setupModules();
-    setupParticleBlockForGroup(topology, {}, c_fullSystemGroupName, inputRecord);
+    setupParticleBlockForGroup(topology, selectionInds, selectionName, inputRecord);
     setupGromacsTopology(topology);
     setupBondConnectivity(topology);
 #else
     GMX_UNUSED_VALUE(topology);
     GMX_UNUSED_VALUE(inputRecord);
+    GMX_UNUSED_VALUE(selectionInds);
+    GMX_UNUSED_VALUE(selectionName);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupFromOtherFile(const H5md& other, const ArrayRef<const int> selectionInds, const char* selectionName)
+{
+#if GMX_USE_HDF5
+    const std::optional<int64_t> numParticles =
+            calcNumParticlesForSelection(other.fileid(), selectionName);
+    GMX_H5MD_THROW_UPON_ERROR(!numParticles.has_value(),
+                              formatString("Cannot read number of particles from input H5MD file"));
+    gmx_mtop_t topology;
+    topology.natoms = numParticles.value();
+
+    const std::optional<PbcType> pbcType = getPbcForSelection(other.fileid(), selectionName);
+    GMX_H5MD_THROW_UPON_ERROR(!pbcType.has_value(), "Cannot read PbcType from input H5MD file");
+    t_inputrec inputRecord;
+    inputRecord.pbcType = pbcType.value();
+
+    // NOTE: Only copy over the topology data if the new file contains data
+    // for the same number of particles. Until we figure out how to deal with
+    // sub group selections we should ensure that the topology represents all
+    // trajectory data.
+    const bool copyTopology = selectionInds.empty() || numParticles.value() == gmx::ssize(selectionInds);
+    copyMetaDataFromFile(other, copyTopology);
+    setupParticleBlockForGroup(topology, selectionInds, selectionName, inputRecord);
+#else
+    GMX_UNUSED_VALUE(other);
+    GMX_UNUSED_VALUE(selectionInds);
+    GMX_UNUSED_VALUE(selectionName);
 #endif
 }
 
@@ -603,6 +709,49 @@ void H5md::setupFromExistingFileForAppending(const int64_t restartingFromStep, c
 #else
     GMX_UNUSED_VALUE(restartingFromStep);
     GMX_UNUSED_VALUE(numParticles);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::copyMetaDataFromFile(const H5md& other, const bool copyTopology)
+{
+#if GMX_USE_HDF5
+    // Helper to create full paths to a H5MD module from its name,
+    // i.e. from '<name>' to '/h5md/modules/<name>'
+    auto pathToModule = [&](const char* moduleName) -> std::string
+    { return joinStrings({ c_h5mdMetaDataGroupName, c_h5mdModulesGroupName, moduleName }, "/"); };
+
+    std::vector<std::string> objectsToCopy = {
+        pathToModule("gromacs"),
+        pathToModule("units"),
+    };
+
+    if (copyTopology)
+    {
+        objectsToCopy.push_back(pathToModule("gromacs_topology"));
+        objectsToCopy.push_back(c_h5mdConnectivityGroupPath);
+    }
+
+    // To copy nested paths we need to set the option to create intermediate
+    // groups to the link creation property list (lcpl_id in the HDF5 docs).
+    const auto [linkCreationPropertyList, linkCreationPropertyListGuard] =
+            makeH5mdPropertyListGuard(H5Pcreate(H5P_LINK_CREATE));
+    H5Pset_create_intermediate_group(linkCreationPropertyList, 1);
+
+    for (const std::string& path : objectsToCopy)
+    {
+        if (objectExists(other.fileid(), path.c_str()))
+        {
+            GMX_H5MD_THROW_UPON_ERROR(
+                    H5Ocopy(other.fileid(), path.c_str(), fileid(), path.c_str(), H5P_DEFAULT, linkCreationPropertyList)
+                            < 0,
+                    formatString("Encountered error when copying object at '%s'.", path.c_str()));
+        }
+    }
+
+#else
+    GMX_UNUSED_VALUE(other);
+    GMX_UNUSED_VALUE(copyTopology);
 #endif
 }
 
