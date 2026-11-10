@@ -44,10 +44,13 @@
 
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/stringutil.h"
 
 /* This is just for clarity - it can never be anything but 4! */
 #define XDR_INT_SIZE 4
@@ -106,7 +109,7 @@ struct DataBuffer
 
 /*____________________________________________________________________________
  |
- | sendbits - encode num into buf using the specified number of bits
+ | sendBits - encode num into buf using the specified number of bits
  |
  | This routines appends the value of num to the bits already present in
  | the databuffer. You need to give it the number of bits to use and you
@@ -115,7 +118,7 @@ struct DataBuffer
  |
  */
 
-static void sendbits(struct DataBuffer* buffer, int num_of_bits, int num)
+static void sendBits(struct DataBuffer* buffer, int num_of_bits, int num)
 {
 
     unsigned int lastbyte;
@@ -149,13 +152,13 @@ static void sendbits(struct DataBuffer* buffer, int num_of_bits, int num)
 
 /*_________________________________________________________________________
  |
- | sizeofint - calculate bitsize of an integer
+ | sizeOfInt - calculate bitsize of an integer
  |
  | return the number of bits needed to store an integer with given max size
  |
  */
 
-static int sizeofint(const int size)
+static int sizeOfInt(const int size)
 {
     int num         = 1;
     int num_of_bits = 0;
@@ -170,30 +173,30 @@ static int sizeofint(const int size)
 
 /*___________________________________________________________________________
  |
- | sizeofints - calculate 'bitsize' of compressed ints
+ | sizeOfInts - calculate 'bitsize' of compressed ints
  |
  | given the number of small unsigned integers and the maximum value
  | return the number of bits needed to read or write them with the
- | routines receiveints and sendints. You need this parameter when
+ | routines receiveInts and sendInts. You need this parameter when
  | calling these routines. Note that for many calls I can use
  | the variable 'smallidx' which is exactly the number of bits, and
- | So I don't need to call 'sizeofints for those calls.
+ | So I don't need to call sizeOfInts for those calls.
  */
 
-static int sizeofints(const int num_of_ints, const unsigned int sizes[])
+static int sizeOfInts(gmx::ArrayRef<const unsigned int> sizes)
 {
-    int          i, num;
+    int          num;
     int          bytes[32];
     unsigned int num_of_bytes, num_of_bits, bytecnt, tmp;
     num_of_bytes = 1;
     bytes[0]     = 1;
     num_of_bits  = 0;
-    for (i = 0; i < num_of_ints; i++)
+    for (const unsigned int size : sizes)
     {
         tmp = 0;
         for (bytecnt = 0; bytecnt < num_of_bytes; bytecnt++)
         {
-            tmp            = bytes[bytecnt] * sizes[i] + tmp;
+            tmp            = bytes[bytecnt] * size + tmp;
             bytes[bytecnt] = tmp & 0xff;
             tmp >>= CHAR_BIT;
         }
@@ -216,7 +219,7 @@ static int sizeofints(const int num_of_ints, const unsigned int sizes[])
 
 /*____________________________________________________________________________
  |
- | sendints - send a small set of small integers in compressed format
+ | sendInts - send a small set of small integers in compressed format
  |
  | this routine is used internally by xdr3dfcoord, to send a set of
  | small integers to the buffer.
@@ -229,12 +232,12 @@ static int sizeofints(const int num_of_ints, const unsigned int sizes[])
  |
  */
 
-static void sendints(struct DataBuffer* buffer,
-                     const int          num_of_ints,
-                     const int          num_of_bits,
-                     unsigned int       sizes[],
-                     unsigned int       nums[])
+static void sendInts(struct DataBuffer*                buffer,
+                     const int                         num_of_bits,
+                     gmx::ArrayRef<const unsigned int> sizes,
+                     gmx::ArrayRef<const unsigned int> nums)
 {
+    GMX_ASSERT(sizes.size() == nums.size(), "Need a size for each integer");
 
     int          i, num_of_bytes, bytecnt;
     unsigned int bytes[32], tmp;
@@ -247,17 +250,13 @@ static void sendints(struct DataBuffer* buffer,
         tmp >>= CHAR_BIT;
     } while (tmp != 0);
 
-    for (i = 1; i < num_of_ints; i++)
+    for (i = 1; i < nums.ssize(); i++)
     {
-        if (nums[i] >= sizes[i])
-        {
-            fprintf(stderr,
-                    "major breakdown in sendints num %u doesn't "
-                    "match size %u\n",
-                    nums[i],
-                    sizes[i]);
-            std::exit(1);
-        }
+        GMX_RELEASE_ASSERT(
+                nums[i] < sizes[i],
+                gmx::formatString(
+                        "Major breakdown in sendInts num %u doesn't match size %u", nums[i], sizes[i])
+                        .c_str());
         /* use one step multiply */
         tmp = nums[i];
         for (bytecnt = 0; bytecnt < num_of_bytes; bytecnt++)
@@ -279,35 +278,35 @@ static void sendints(struct DataBuffer* buffer,
     {
         for (i = 0; i < num_of_bytes; i++)
         {
-            sendbits(buffer, CHAR_BIT, bytes[i]);
+            sendBits(buffer, CHAR_BIT, bytes[i]);
         }
-        sendbits(buffer, num_of_bits - num_of_bytes * CHAR_BIT, 0);
+        sendBits(buffer, num_of_bits - num_of_bytes * CHAR_BIT, 0);
     }
     else
     {
         // Otherwise send each byte we found
         for (i = 0; i < num_of_bytes - 1; i++)
         {
-            sendbits(buffer, CHAR_BIT, bytes[i]);
+            sendBits(buffer, CHAR_BIT, bytes[i]);
         }
         // Then the remaining bits
         const int numBitsRemaining = num_of_bits - (num_of_bytes - 1) * CHAR_BIT;
         GMX_ASSERT(numBitsRemaining < CHAR_BIT, "Help clang analyzer understand");
-        sendbits(buffer, numBitsRemaining, bytes[i]);
+        sendBits(buffer, numBitsRemaining, bytes[i]);
     }
 }
 
 
 /*___________________________________________________________________________
  |
- | receivebits - decode number from buffer using specified number of bits
+ | receiveBits - decode number from buffer using specified number of bits
  |
  | extract the number of bits from the data array in buffer and construct an integer
  | from it. Return that value.
  |
  */
 
-static int receivebits(struct DataBuffer* buffer, int num_of_bits)
+static int receiveBits(struct DataBuffer* buffer, int num_of_bits)
 {
 
     int          num, lastbits;
@@ -342,21 +341,22 @@ static int receivebits(struct DataBuffer* buffer, int num_of_bits)
 
 /*____________________________________________________________________________
  |
- | receiveints - decode 'small' integers from the buf array
+ | receiveInts - decode 'small' integers from the buf array
  |
- | this routine is the inverse from sendints() and decodes the small integers
+ | this routine is the inverse from sendInts() and decodes the small integers
  | written to buf by calculating the remainder and doing divisions with
  | the given sizes[]. You need to specify the total number of bits to be
  | used from buf in num_of_bits.
+ | Returns false if one of the sizes is zero, which means the input is corrupted.
  |
  */
 
-static void receiveints(struct DataBuffer* buffer,
-                        const int          num_of_ints,
-                        int                num_of_bits,
-                        const unsigned int sizes[],
-                        int                nums[])
+static bool receiveInts(struct DataBuffer*                buffer,
+                        int                               num_of_bits,
+                        gmx::ArrayRef<const unsigned int> sizes,
+                        gmx::ArrayRef<int>                nums)
 {
+    GMX_ASSERT(sizes.size() == nums.size(), "Need a size for each integer");
     int bytes[32];
     int i, j, num_of_bytes, p, num;
 
@@ -364,19 +364,22 @@ static void receiveints(struct DataBuffer* buffer,
     num_of_bytes                              = 0;
     while (num_of_bits > CHAR_BIT)
     {
-        bytes[num_of_bytes++] = receivebits(buffer, CHAR_BIT);
+        bytes[num_of_bytes++] = receiveBits(buffer, CHAR_BIT);
         num_of_bits -= CHAR_BIT;
     }
     if (num_of_bits > 0)
     {
-        bytes[num_of_bytes++] = receivebits(buffer, num_of_bits);
+        bytes[num_of_bytes++] = receiveBits(buffer, num_of_bits);
     }
-    for (i = num_of_ints - 1; i > 0; i--)
+    for (i = nums.ssize() - 1; i > 0; i--)
     {
         if (sizes[i] == 0)
         {
-            fprintf(stderr, "Cannot read trajectory, file possibly corrupted.");
-            exit(1);
+            fprintf(stderr,
+                    "Cannot read trajectory, file possibly corrupted: the size of encoded "
+                    "integer %d is zero.\n",
+                    i);
+            return false;
         }
 
         num = 0;
@@ -390,6 +393,7 @@ static void receiveints(struct DataBuffer* buffer,
         nums[i] = num;
     }
     nums[0] = bytes[0] | (bytes[1] << CHAR_BIT) | (bytes[2] << 2 * CHAR_BIT) | (bytes[3] << 3 * CHAR_BIT);
+    return true;
 }
 
 /*____________________________________________________________________________
@@ -453,25 +457,11 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0] = prevcoord[1] = prevcoord[2] = 0;
 
-    if (magic_number != XTC_MAGIC && magic_number != XTC_NEW_MAGIC)
-    {
-        fprintf(stderr,
-                "Invalid magic number (%d) requested (should be %d or %d).\n",
-                magic_number,
-                XTC_MAGIC,
-                XTC_NEW_MAGIC);
-        std::exit(1);
-    }
-
-    if (*size > XTC_1995_MAX_NATOMS && magic_number != XTC_NEW_MAGIC)
-    {
-        fprintf(stderr,
-                "Inconsistent input or file format. Cannot read/write a system\n"
-                "with %d atoms in a frame without using the new XTC magic number (%d).\n",
-                *size,
-                XTC_NEW_MAGIC);
-        std::exit(1);
-    }
+    GMX_RELEASE_ASSERT(
+            magic_number == XTC_MAGIC || magic_number == XTC_NEW_MAGIC,
+            gmx::formatString(
+                    "Invalid magic number (%d) requested (should be %d or %d).", magic_number, XTC_MAGIC, XTC_NEW_MAGIC)
+                    .c_str());
 
     struct DataBuffer buffer;
 
@@ -486,6 +476,14 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
     if (!bRead)
     {
         /* xdrs is open for writing */
+
+        GMX_RELEASE_ASSERT(
+                *size <= XTC_1995_MAX_NATOMS || magic_number == XTC_NEW_MAGIC,
+                gmx::formatString("Cannot write a system with %d atoms in a frame without using "
+                                  "the new XTC magic number (%d).",
+                                  *size,
+                                  XTC_NEW_MAGIC)
+                        .c_str());
 
         if (xdr_int(xdrs, size) == 0)
         {
@@ -520,11 +518,9 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             bufsize        = size3 * 1.2;
             ip             = reinterpret_cast<int*>(std::malloc(size3 * sizeof(*ip)));
             buffer.data    = reinterpret_cast<unsigned char*>(std::malloc(bufsize * XDR_INT_SIZE));
-            if (ip == nullptr || buffer.data == nullptr)
-            {
-                fprintf(stderr, "malloc failed\n");
-                std::exit(1);
-            }
+            GMX_RELEASE_ASSERT(
+                    ip != nullptr && buffer.data != nullptr,
+                    gmx::formatString("Memory allocation failed for a frame with %d atoms.", *size).c_str());
         }
 
         buffer.index    = 0;
@@ -649,14 +645,14 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         /* check if one of the sizes is to big to be multiplied */
         if ((sizeint[0] | sizeint[1] | sizeint[2]) > 0xffffff)
         {
-            bitsizeint[0] = sizeofint(sizeint[0]);
-            bitsizeint[1] = sizeofint(sizeint[1]);
-            bitsizeint[2] = sizeofint(sizeint[2]);
+            bitsizeint[0] = sizeOfInt(sizeint[0]);
+            bitsizeint[1] = sizeOfInt(sizeint[1]);
+            bitsizeint[2] = sizeOfInt(sizeint[2]);
             bitsize       = 0; /* flag the use of large sizes */
         }
         else
         {
-            bitsize = sizeofints(3, sizeint);
+            bitsize = sizeOfInts(sizeint);
         }
         luip     = reinterpret_cast<unsigned int*>(ip);
         smallidx = FIRSTIDX;
@@ -725,13 +721,13 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             tmpcoord[2] = thiscoord[2] - minint[2];
             if (bitsize == 0)
             {
-                sendbits(&buffer, bitsizeint[0], tmpcoord[0]);
-                sendbits(&buffer, bitsizeint[1], tmpcoord[1]);
-                sendbits(&buffer, bitsizeint[2], tmpcoord[2]);
+                sendBits(&buffer, bitsizeint[0], tmpcoord[0]);
+                sendBits(&buffer, bitsizeint[1], tmpcoord[1]);
+                sendBits(&buffer, bitsizeint[2], tmpcoord[2]);
             }
             else
             {
-                sendints(&buffer, 3, bitsize, sizeint, tmpcoord);
+                sendInts(&buffer, bitsize, sizeint, gmx::arrayRefFromArray(tmpcoord, 3));
             }
             prevcoord[0] = thiscoord[0];
             prevcoord[1] = thiscoord[1];
@@ -775,16 +771,16 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             if (run != prevrun || is_smaller != 0)
             {
                 prevrun = run;
-                sendbits(&buffer, 1, 1); /* flag the change in run-length */
-                sendbits(&buffer, 5, run + is_smaller + 1);
+                sendBits(&buffer, 1, 1); /* flag the change in run-length */
+                sendBits(&buffer, 5, run + is_smaller + 1);
             }
             else
             {
-                sendbits(&buffer, 1, 0); /* flag the fact that runlength did not change */
+                sendBits(&buffer, 1, 0); /* flag the fact that runlength did not change */
             }
             for (k = 0; k < run; k += 3)
             {
-                sendints(&buffer, 3, smallidx, sizesmall, &tmpcoord[k]);
+                sendInts(&buffer, smallidx, sizesmall, gmx::arrayRefFromArray(&tmpcoord[k], 3));
             }
             if (is_smaller != 0)
             {
@@ -876,6 +872,15 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                     *size,
                     lsize);
         }
+        if (lsize > XTC_1995_MAX_NATOMS && magic_number != XTC_NEW_MAGIC)
+        {
+            fprintf(stderr,
+                    "Inconsistent input or file format. Cannot read a system with %d atoms in a "
+                    "frame without using the new XTC magic number (%d).\n",
+                    lsize,
+                    XTC_NEW_MAGIC);
+            return 0;
+        }
         *size = lsize;
         size3 = static_cast<std::size_t>(*size) * 3;
         if (*size <= 9)
@@ -903,11 +908,9 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             bufsize        = size3 * 1.2;
             ip             = reinterpret_cast<int*>(std::malloc(size3 * sizeof(*ip)));
             buffer.data    = reinterpret_cast<unsigned char*>(std::malloc(bufsize * XDR_INT_SIZE));
-            if (ip == nullptr || buffer.data == nullptr)
-            {
-                fprintf(stderr, "malloc failed\n");
-                std::exit(1);
-            }
+            GMX_RELEASE_ASSERT(
+                    ip != nullptr && buffer.data != nullptr,
+                    gmx::formatString("Memory allocation failed for a frame with %d atoms.", *size).c_str());
         }
 
         buffer.index    = 0;
@@ -933,14 +936,14 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         /* check if one of the sizes is to big to be multiplied */
         if ((sizeint[0] | sizeint[1] | sizeint[2]) > 0xffffff)
         {
-            bitsizeint[0] = sizeofint(sizeint[0]);
-            bitsizeint[1] = sizeofint(sizeint[1]);
-            bitsizeint[2] = sizeofint(sizeint[2]);
+            bitsizeint[0] = sizeOfInt(sizeint[0]);
+            bitsizeint[1] = sizeOfInt(sizeint[1]);
+            bitsizeint[2] = sizeOfInt(sizeint[2]);
             bitsize       = 0; /* flag the use of large sizes */
         }
         else
         {
-            bitsize = sizeofints(3, sizeint);
+            bitsize = sizeOfInts(sizeint);
         }
 
         if (xdr_int(xdrs, &smallidx) == 0)
@@ -1018,13 +1021,21 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
 
             if (bitsize == 0)
             {
-                thiscoord[0] = receivebits(&buffer, bitsizeint[0]);
-                thiscoord[1] = receivebits(&buffer, bitsizeint[1]);
-                thiscoord[2] = receivebits(&buffer, bitsizeint[2]);
+                thiscoord[0] = receiveBits(&buffer, bitsizeint[0]);
+                thiscoord[1] = receiveBits(&buffer, bitsizeint[1]);
+                thiscoord[2] = receiveBits(&buffer, bitsizeint[2]);
             }
             else
             {
-                receiveints(&buffer, 3, bitsize, sizeint, thiscoord);
+                if (!receiveInts(&buffer, bitsize, sizeint, gmx::arrayRefFromArray(thiscoord, 3)))
+                {
+                    if (we_should_free)
+                    {
+                        std::free(ip);
+                        std::free(buffer.data);
+                    }
+                    return 0;
+                }
             }
 
             i++;
@@ -1037,11 +1048,11 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
             prevcoord[2] = thiscoord[2];
 
 
-            flag       = receivebits(&buffer, 1);
+            flag       = receiveBits(&buffer, 1);
             is_smaller = 0;
             if (flag == 1)
             {
-                run        = receivebits(&buffer, 5);
+                run        = receiveBits(&buffer, 5);
                 is_smaller = run % 3;
                 run -= is_smaller;
                 is_smaller--;
@@ -1051,7 +1062,15 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                 thiscoord += 3;
                 for (k = 0; k < run; k += 3)
                 {
-                    receiveints(&buffer, 3, smallidx, sizesmall, thiscoord);
+                    if (!receiveInts(&buffer, smallidx, sizesmall, gmx::arrayRefFromArray(thiscoord, 3)))
+                    {
+                        if (we_should_free)
+                        {
+                            std::free(ip);
+                            std::free(buffer.data);
+                        }
+                        return 0;
+                    }
                     i++;
                     thiscoord[0] += prevcoord[0] - smallnum;
                     thiscoord[1] += prevcoord[1] - smallnum;

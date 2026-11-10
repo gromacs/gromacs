@@ -1408,8 +1408,8 @@ static void init_perfdata(t_perf* perfdata[], int ntprs, int datasets, int repea
 }
 
 
-/* Check for errors on mdrun -h */
-static void make_sure_it_runs(const char* mdrun_cmd_line, int length, FILE* fp, const t_filenm* fnm, int nfile)
+/* Check for errors on mdrun -h, returns whether the benchmark could be run */
+static bool make_sure_it_runs(const char* mdrun_cmd_line, int length, FILE* fp, const t_filenm* fnm, int nfile)
 {
     char *command, *msg;
     int   ret;
@@ -1439,7 +1439,9 @@ static void make_sure_it_runs(const char* mdrun_cmd_line, int length, FILE* fp, 
         sep_line(fp);
         fprintf(fp, "%s", msg);
 
-        std::exit(ret);
+        sfree(command);
+        sfree(msg);
+        return false;
     }
     fprintf(stdout, "Benchmarks can be executed!\n");
 
@@ -1454,9 +1456,15 @@ static void make_sure_it_runs(const char* mdrun_cmd_line, int length, FILE* fp, 
 
     sfree(command);
     sfree(msg);
+    return true;
 }
 
-static void do_the_tests(FILE*  fp,                    /* General tune_pme output file           */
+/*! \brief Runs the benchmarks
+ *
+ * \returns whether the benchmarks were run, false when -r is 0 or when
+ * the first benchmark could not be executed.
+ */
+static bool do_the_tests(FILE*  fp,                    /* General tune_pme output file           */
                          char** tpr_names,             /* Filenames of the input files to test   */
                          int    maxPMEnodes,           /* Max fraction of nodes to use for PME   */
                          int    minPMEnodes,           /* Min fraction of nodes to use for PME   */
@@ -1539,9 +1547,10 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
     if (0 == repeats)
     {
         fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
-        gmx_ffclose(fp);
-        finalize(opt2fn("-p", nfile, fnm));
-        std::exit(0);
+        sfree(nPMEnodes);
+        sfree(command);
+        sfree(cmd_stub);
+        return false;
     }
 
     /* Allocate one dataset for each tpr input file: */
@@ -1603,7 +1612,16 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
                        implement that after some refactoring of how
                        the number of MPI ranks is managed. */
                     sprintf(temporary_cmd_line, "%s-npme 0 -nb cpu -s %s %s", cmd_stub, tpr_names[k], cmd_args_bench);
-                    make_sure_it_runs(temporary_cmd_line, cmdline_length, fp, fnm, nfile);
+                    const bool runs =
+                            make_sure_it_runs(temporary_cmd_line, cmdline_length, fp, fnm, nfile);
+                    sfree(temporary_cmd_line);
+                    if (!runs)
+                    {
+                        sfree(nPMEnodes);
+                        sfree(command);
+                        sfree(cmd_stub);
+                        return false;
+                    }
                 }
                 bFirst = FALSE;
 
@@ -1698,6 +1716,7 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
     }
     sfree(command);
     sfree(cmd_stub);
+    return true;
 }
 
 
@@ -2725,28 +2744,38 @@ int gmx_tune_pme(int argc, char* argv[])
     {
         GMX_RELEASE_ASSERT(npmevalues_opt[0] != nullptr,
                            "Options inconsistency; npmevalues_opt[0] is NULL");
-        do_the_tests(fp,
-                     tpr_names,
-                     maxPMEnodes,
-                     minPMEnodes,
-                     npme_fixed,
-                     npmevalues_opt[0],
-                     perfdata,
-                     &pmeentries,
-                     repeats,
-                     nnodes,
-                     ntprs,
-                     bThreads,
-                     cmd_mpirun,
-                     cmd_np,
-                     cmd_mdrun,
-                     cmd_args_bench,
-                     fnm,
-                     NFILE,
-                     presteps,
-                     cpt_steps,
-                     bCheck,
-                     eligible_gpu_ids);
+        if (!do_the_tests(fp,
+                          tpr_names,
+                          maxPMEnodes,
+                          minPMEnodes,
+                          npme_fixed,
+                          npmevalues_opt[0],
+                          perfdata,
+                          &pmeentries,
+                          repeats,
+                          nnodes,
+                          ntprs,
+                          bThreads,
+                          cmd_mpirun,
+                          cmd_np,
+                          cmd_mdrun,
+                          cmd_args_bench,
+                          fnm,
+                          NFILE,
+                          presteps,
+                          cpt_steps,
+                          bCheck,
+                          eligible_gpu_ids))
+        {
+            gmx_ffclose(fp);
+            if (repeats != 0)
+            {
+                // The first benchmark failed, the error was already reported
+                return 1;
+            }
+            finalize(opt2fn("-p", NFILE, fnm));
+            return 0;
+        }
 
         fprintf(fp, "\nTuning took%8.1f minutes.\n", (gmx_gettime() - seconds) / 60.0);
 

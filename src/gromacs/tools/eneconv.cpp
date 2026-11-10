@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -159,7 +160,12 @@ static void sort_files(ArrayRef<std::string> files, double* settime)
 }
 
 
-static int scan_ene_files(const std::vector<std::string>& files, double* readtime, double* timestep, int* nremax)
+/*! \brief Returns the minimum number of energy terms, or std::nullopt
+ * when the user declined to convert files with different numbers of terms. */
+static std::optional<int> scan_ene_files(const std::vector<std::string>& files,
+                                         double*                         readtime,
+                                         double*                         timestep,
+                                         int*                            nremax)
 {
     /* Check number of energy terms and start time of all files */
     int         nremin = 0, nresav = 0;
@@ -213,7 +219,10 @@ static int scan_ene_files(const std::vector<std::string>& files, double* readtim
                 if (inputstring[0] != 'y' && inputstring[0] != 'Y')
                 {
                     fprintf(stderr, "Will not convert\n");
-                    std::exit(0);
+                    close_enx(in);
+                    free_enxframe(fr);
+                    sfree(fr);
+                    return std::nullopt;
                 }
                 nresav = fr->nre;
             }
@@ -538,7 +547,15 @@ int gmx_eneconv(int argc, char* argv[])
     snew(readtime, files.size() + 1);
     snew(cont_type, files.size() + 1);
 
-    nre = scan_ene_files(files, readtime, &timestep, &nremax);
+    const std::optional<int> nremin = scan_ene_files(files, readtime, &timestep, &nremax);
+    if (!nremin)
+    {
+        sfree(settime);
+        sfree(readtime);
+        sfree(cont_type);
+        return 0;
+    }
+    nre = *nremin;
     edit_files(files, readtime, settime, cont_type, bSetTime, bSort);
 
     ee_sum_nsteps = 0;

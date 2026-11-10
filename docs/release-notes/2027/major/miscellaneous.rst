@@ -51,3 +51,12 @@ parse lengthy log files in order to verify the outputs of the tools, these warni
 to fatal errors so that only valid combinations of inputs will result in successful execution.
 
 :issue:`5626`
+
+Analysis tools fail when no output is selected, gmx tune_pme reports failed benchmarks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:ref:`gmx traj` and :ref:`gmx vanhove` used to exit successfully, without doing anything,
+when no output file was selected. They now stop with a fatal error and a non-zero exit code.
+
+When the check run of the first benchmark failed, :ref:`gmx tune_pme` exited with the raw
+status of the failed command, which could be truncated to zero. It now exits with 1.

@@ -62,6 +62,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/functions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -190,8 +191,7 @@ int gmx_vanhove(int argc, char* argv[])
 
     if (!matfile && !otfile && !orfile)
     {
-        fprintf(stderr, "For output set one (or more) of the output file options\n");
-        std::exit(0);
+        gmx_fatal(FARGS, "For output set one (or more) of the output file options");
     }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, boxtop, FALSE);

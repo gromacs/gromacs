@@ -2111,8 +2111,12 @@ static void read_pull_xf(const char*        fn,
     }
 }
 
-//! read pullf-files.dat or pullx-files.dat and tpr-files.dat
-static void read_tpr_pullxf_files(char**             fnTprs,
+/*! \brief Read pullf-files.dat or pullx-files.dat and tpr-files.dat
+ *
+ * \returns false when only the boundaries were to be determined (-boundsonly),
+ * so the caller should stop, true otherwise.
+ */
+static bool read_tpr_pullxf_files(char**             fnTprs,
                                   char**             fnPull,
                                   int                nfiles,
                                   t_UmbrellaHeader*  header,
@@ -2164,7 +2168,7 @@ static void read_tpr_pullxf_files(char**             fnTprs,
         if (opt->bBoundsOnly)
         {
             printf("Found option -boundsonly, now exiting.\n");
-            std::exit(0);
+            return false;
         }
     }
     /* store stepsize in profile */
@@ -2214,6 +2218,8 @@ static void read_tpr_pullxf_files(char**             fnTprs,
     }
     sfree(fnTprs);
     sfree(fnPull);
+
+    return true;
 }
 
 /*! \brief Read integrated autocorrelation times from input file (option -iiact)
@@ -3263,7 +3269,10 @@ int gmx_wham(int argc, char* argv[])
     }
 
     window = initUmbrellaWindows(nfiles);
-    read_tpr_pullxf_files(fninTpr, fninPull, nfiles, &header, window, &opt);
+    if (!read_tpr_pullxf_files(fninTpr, fninPull, nfiles, &header, window, &opt))
+    {
+        return 0;
+    }
 
     /* It is currently assumed that all pull coordinates have the same geometry, so they also have the same coordinate units.
        We can therefore get the units for the xlabel from the first coordinate. */
