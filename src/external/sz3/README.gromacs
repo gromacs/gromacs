@@ -1,0 +1,9 @@
+Code repository: https://github.com/szcompressor/SZ3
+Tag:             v3.4.0
+Git hash:        592df793eb596d952242aa9fec9cbe5e68782aae
+Checkout date:   2026-10-09
+Files:           what SZ3 builds as a subproject with BUILD_H5Z_FILTER on: CMakeLists.txt,
+                 include, tools/H5Z-SZ3 (without test and tools), tools/zstd (without
+                 huf_decompress_amd64.S, which ZSTD_DISABLE_ASM leaves out), README.md and
+                 copyright-and-BSD-license.txt
+When updating:   also update GMX_SZ3_MINIMUM_REQUIRED_VERSION in cmake/gmxManageSZ3.cmake

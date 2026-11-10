@@ -506,6 +506,28 @@ Variables affecting special targets
 External libraries
 ------------------
 
+|Gromacs| bundles several external libraries for use. An incomplete list
+of these and their associated CMake variables is provided here.
+
+SZ3
+   A modular error-bounded lossy compression framework for scientific 
+   datasets. Used as a lossy compression filter for HDF5 trajectory data.
+
+   .. cmake:: GMX_USE_SZ3
+
+      Set to ``EXTERNAL``, ``INTERNAL`` or ``NONE``` to build |Gromacs| against
+      an external, internal or disabled SZ3 library, respectively. Defaults
+      to ``AUTO`` which uses an external library if one is found and otherwise
+      uses the internal library.
+
+   |Gromacs| distributes the package with the following attribution:
+
+   This product includes software produced by UChicago Argonne, LLC under
+   Contract No. DE-AC02-06CH11357 with the Department of Energy.
+
+   See the license in :file:`src/external/sz3/copyright-and-BSD-license.txt`
+   for more details.
+
 .. todo::
 
    List external libraries used (either from src/external/, or from the

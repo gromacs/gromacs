@@ -59,4 +59,7 @@ macro(gmx_manage_hdf5)
             mark_as_advanced(${varname})
         endif()
     endforeach()
+
+    # Set up SZ3 library
+    gmx_manage_sz3()
 endmacro()
