@@ -586,6 +586,19 @@ void check_ir(const char* mdparin, MDModules* mdModules, t_inputrec* ir, t_gromp
                         "With multiple time stepping, nstpcouple should be a multiple of "
                         "mts-factor");
             }
+
+            const int c_pressureCouplePerformanceNoteInterval = 10;
+            if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+                && ir->pressureCouplingOptions.nstpcouple <= c_pressureCouplePerformanceNoteInterval)
+            {
+                sprintf(warn_buf,
+                        "The %s barostat requires frequent pressure calculations: currently every "
+                        "%d steps. Using the %s barostat will improve performance.",
+                        enumValueToString(ir->pressureCouplingOptions.epc),
+                        ir->pressureCouplingOptions.nstpcouple,
+                        enumValueToString(PressureCoupling::CRescale));
+                wi->addNote(warn_buf);
+            }
         }
 
         if (outputControl.nstcalcenergy > 0)
@@ -717,7 +730,7 @@ void check_ir(const char* mdparin, MDModules* mdModules, t_inputrec* ir, t_gromp
         {
             sprintf(warn_buf,
                     "Nose-Hoover based temperature control such as [%s] my not be "
-                    "entirelyconsistent with simulated tempering",
+                    "entirely consistent with simulated tempering",
                     enumValueToString(ir->etc));
             wi->addNote(warn_buf);
         }
@@ -1368,6 +1381,16 @@ void check_ir(const char* mdparin, MDModules* mdModules, t_inputrec* ir, t_gromp
     else
     {
         ir->opts.nhchainlength = 0;
+    }
+
+    if (ir->etc == TemperatureCoupling::NoseHoover)
+    {
+        sprintf(warn_buf,
+                "With the %s thermostat update cannot run on GPUs. When using GPUs you will get "
+                "much better performance when using the %s thermostat.",
+                enumValueToString(ir->etc),
+                enumValueToString(TemperatureCoupling::VRescale));
+        wi->addNote(warn_buf);
     }
 
     if (ir->eI == IntegrationAlgorithm::VVAK)
