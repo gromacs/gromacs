@@ -124,7 +124,7 @@ Fixes to the Colvars library
 This release fixes several bugs in the Colvars library, affecting the correctness of applied
 forces for certain variables.
 
-The following is a list of bugfix pull requests in the`Colvars repository
+The following is a list of bugfix pull requests in the `Colvars repository
 <https://github.com/Colvars/colvars>`_:
 
 * Tests and fixes to multiple gradients (`Colvars PR 838
