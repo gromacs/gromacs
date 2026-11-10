@@ -7,6 +7,16 @@ Bugs fixed
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Require at least 100 integration steps for Nose-Hoover thermostat
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The minimum required integration steps for the Nose-Hoover thermostat of 20
+was too low. This could lead to an overestimate of the fluctuation of the
+kinetic energy and temperature by up to 25%. Note that the averages were
+not affected.
+
+:issue:`5783`
+
 PDB with a box of size 1 Angstrom are interpreted as having no PBC
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

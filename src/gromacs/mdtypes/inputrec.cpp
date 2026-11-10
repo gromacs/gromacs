@@ -88,10 +88,12 @@ const int c_minimumStepsPerTauFirstOrderTemperatureCoupling = 5;
  */
 const int c_minimumStepsPerTauFirstOrderPressureCoupling = 25;
 
-/* The minimum number of integration steps per period
- * for reasonably accurate integration of second order coupling algorithms.
+/* The minimum number of integration steps per period for accurate integration
+ * of the Nose-Hoover thermostat.
+ * At 100 integration steps per period the standard deviation of the kinetic energy
+ * is too high by 3%, which we consider as just acceptible.
  */
-const int c_minimumStepsPerPeriodNoseHoover = 20;
+const int c_minimumStepsPerPeriodNoseHoover = 100;
 
 /* The minimum number of integration steps per period
  * for reasonably accurate integration of the Parrinello-Rahman barostat.
