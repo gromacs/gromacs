@@ -40,6 +40,7 @@ set(GMXPREPROCESS_SOURCES
     compute_io.cpp
     convparm.cpp
     editconf.cpp
+    extendableforcefield.cpp
     fflibutil.cpp
     gen_ad.cpp
     gen_maxwell_velocities.cpp

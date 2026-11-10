@@ -48,6 +48,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
@@ -68,14 +69,14 @@
 namespace gmx
 {
 
-PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
+PreprocessingAtomTypes read_atype(const ExtendableForceField& forceField)
 {
     FILE*  in;
     char   buf[STRLEN], name[STRLEN];
     double m;
     auto   atom = std::make_unique<t_atom>();
 
-    auto                   files = fflib_search_file_end(ffdir, ".atp", TRUE);
+    auto files = forceField.findAllPathsEndingWith(".atp", ExtendableForceField::OnEmptySearch::ThrowError);
     PreprocessingAtomTypes at;
 
     for (const auto& filename : files)

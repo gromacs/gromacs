@@ -50,6 +50,7 @@
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gen_vsite.h"
@@ -372,7 +373,10 @@ std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxl
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-void choose_watermodel(const char* wmsel, const std::filesystem::path& ffdir, char** watermodel, const MDLogger& logger)
+void choose_watermodel(const char*                 wmsel,
+                       const ExtendableForceField& forceField,
+                       char**                      watermodel,
+                       const MDLogger&             logger)
 {
     const char* fn_watermodels = "watermodels.dat";
     FILE*       fp;
@@ -394,8 +398,8 @@ void choose_watermodel(const char* wmsel, const std::filesystem::path& ffdir, ch
         return;
     }
 
-    auto filename = std::filesystem::path(ffdir).append(fn_watermodels);
-    if (!fflib_fexist(filename))
+    const auto watermodelsFile = forceField.findSinglePath(fn_watermodels);
+    if (!watermodelsFile)
     {
         GMX_LOG(logger.warning)
                 .asParagraph()
@@ -405,7 +409,7 @@ void choose_watermodel(const char* wmsel, const std::filesystem::path& ffdir, ch
         return;
     }
 
-    fp = fflib_open(filename);
+    fp = fflib_open(*watermodelsFile);
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Select the Water Model:");
     nwm   = 0;
     model = nullptr;
@@ -606,12 +610,15 @@ static void print_top_posre(FILE* out, const std::filesystem::path& pr)
     fprintf(out, "#endif\n\n");
 }
 
-static void print_top_water(FILE* out, const std::filesystem::path& ffdir, const char* water)
+static void print_top_water(FILE* out, const ExtendableForceField& forceField, const char* water)
 {
     fprintf(out, "; Include water topology\n");
 
-    auto waterPath = ffdir;
-    waterPath.append(water).replace_extension("itp");
+    const std::filesystem::path waterFile = std::filesystem::path(water).replace_extension("itp");
+    // The existence of the water model topology is checked when the model is
+    // selected; fall back to the conventional location if it is missing.
+    const std::filesystem::path waterPath =
+            forceField.findSinglePath(waterFile).value_or(forceField.forceFieldName() / waterFile);
     fprintf(out, "#include \"%s\"\n", waterPath.generic_string().c_str());
 
     fprintf(out, "\n");
@@ -623,22 +630,17 @@ static void print_top_water(FILE* out, const std::filesystem::path& ffdir, const
     fprintf(out, "#endif\n");
     fprintf(out, "\n");
 
-    auto ionPerWaterPath = ffdir;
-    ionPerWaterPath.append(std::string("ions_").append(water).append(".itp"));
-
-    auto ionPath = ffdir;
-    ionPath.append("ions.itp");
-
-    if (fflib_fexist(ionPerWaterPath))
+    if (auto ionPerWaterPath = forceField.findSinglePath(
+                std::filesystem::path(std::string("ions_").append(water).append(".itp"))))
     {
         fprintf(out, "; Include topology for ions\n");
-        fprintf(out, "#include \"%s\"\n", ionPerWaterPath.generic_string().c_str());
+        fprintf(out, "#include \"%s\"\n", ionPerWaterPath->generic_string().c_str());
         fprintf(out, "\n");
     }
-    else if (fflib_fexist(ionPath))
+    else if (auto ionPath = forceField.findSinglePath("ions.itp"))
     {
         fprintf(out, "; Include topology for ions\n");
-        fprintf(out, "#include \"%s\"\n", ionPath.generic_string().c_str());
+        fprintf(out, "#include \"%s\"\n", ionPath->generic_string().c_str());
         fprintf(out, "\n");
     }
 }
@@ -652,7 +654,7 @@ static void print_top_system(FILE* out, const char* title)
 
 void print_top_mols(FILE*                                 out,
                     const char*                           title,
-                    const std::filesystem::path&          ffdir,
+                    const ExtendableForceField&           forceField,
                     const char*                           water,
                     ArrayRef<const std::filesystem::path> incls,
                     ArrayRef<const t_mols>                mols)
@@ -670,7 +672,7 @@ void print_top_mols(FILE*                                 out,
 
     if (water)
     {
-        print_top_water(out, ffdir, water);
+        print_top_water(out, forceField, water);
     }
     print_top_system(out, title);
 
@@ -1532,7 +1534,7 @@ void pdb2top(FILE*                             top_file,
              bool                              bAllowMissing,
              bool                              bVsites,
              bool                              bVsiteAromatics,
-             const std::filesystem::path&      ffdir,
+             const ExtendableForceField&       forceField,
              real                              mHmult,
              ArrayRef<const DisulfideBond>     ssbonds,
              real                              long_bond_dist,
@@ -1599,7 +1601,7 @@ void pdb2top(FILE*                             top_file,
         }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..Count]! */
-        do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsiteTypeAndSign, mHmult, bVsiteAromatics, ffdir);
+        do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsiteTypeAndSign, mHmult, bVsiteAromatics, forceField);
     }
 
     /* Make Angles and Dihedrals */

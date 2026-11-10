@@ -35,6 +35,7 @@ gmx_add_gtest_executable(gmxpreprocess-test
     CPP_SOURCE_FILES
         convparm.cpp
         editconf.cpp
+        extendableforcefield.cpp
         genconf.cpp
         genion.cpp
         genrestr.cpp

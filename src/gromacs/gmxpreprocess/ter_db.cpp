@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
@@ -389,7 +390,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
     gmx_ffclose(in);
 }
 
-int read_ter_db(const std::filesystem::path&        ffdir,
+int read_ter_db(const ExtendableForceField&         forceField,
                 char                                ter,
                 std::vector<MoleculePatchDatabase>* tbptr,
                 PreprocessingAtomTypes*             atype)
@@ -399,7 +400,7 @@ int read_ter_db(const std::filesystem::path&        ffdir,
     /* Search for termini database files.
      * Do not generate an error when none are found.
      */
-    auto tdbf = fflib_search_file_end(ffdir, ext.c_str(), FALSE);
+    auto tdbf = forceField.findAllPathsEndingWith(ext);
     tbptr->clear();
     for (const auto& filename : tdbf)
     {

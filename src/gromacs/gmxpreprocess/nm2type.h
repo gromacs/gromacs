@@ -46,6 +46,7 @@ namespace gmx
 
 struct InteractionsOfType;
 
+class ExtendableForceField;
 class PreprocessingAtomTypes;
 
 struct t_nm2type
@@ -57,9 +58,9 @@ struct t_nm2type
     double* blen;
 };
 
-t_nm2type* rd_nm2type(const std::filesystem::path& ffdir, int* nnm);
+t_nm2type* rd_nm2type(const ExtendableForceField& forceField, int* nnm);
 /* Read the name 2 type database. nnm is the number of entries
- * ff is the force field.
+ * forceField is the set of force field directories to search.
  */
 
 void dump_nm2type(FILE* fp, int nnm, t_nm2type nm2t[]);

@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
@@ -135,9 +136,9 @@ static void rd_nm2type_file(const std::filesystem::path& filename, int* nnm, t_n
     *nmp = nm2t;
 }
 
-t_nm2type* rd_nm2type(const std::filesystem::path& ffdir, int* nnm)
+t_nm2type* rd_nm2type(const ExtendableForceField& forceField, int* nnm)
 {
-    auto ff       = fflib_search_file_end(ffdir, ".n2t", FALSE);
+    auto ff       = forceField.findAllPathsEndingWith(".n2t");
     *nnm          = 0;
     t_nm2type* nm = nullptr;
     for (const auto& filename : ff)

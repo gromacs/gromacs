@@ -42,6 +42,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/topology/atoms.h"
@@ -147,7 +148,7 @@ static void done_xlatom(int nxlate, t_xlate_atom* xlatom)
 }
 
 void rename_atoms(const std::filesystem::path&      xlfile,
-                  const std::filesystem::path&      ffdir,
+                  const ExtendableForceField&       forceField,
                   t_atoms*                          atoms,
                   t_symtab*                         symtab,
                   ArrayRef<const PreprocessResidue> localPpResidue,
@@ -171,7 +172,7 @@ void rename_atoms(const std::filesystem::path&      xlfile,
     }
     else
     {
-        auto fns = fflib_search_file_end(ffdir, ".arn", FALSE);
+        auto fns = forceField.findAllPathsEndingWith(".arn");
         for (const auto& filename : fns)
         {
             FILE* fp = fflib_open(filename);

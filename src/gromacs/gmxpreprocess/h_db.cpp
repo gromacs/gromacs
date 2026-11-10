@@ -45,6 +45,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/atoms.h"
@@ -210,13 +211,13 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
     }
 }
 
-int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatabase>* globalPatches)
+int read_h_db(const ExtendableForceField& forceField, std::vector<MoleculePatchDatabase>* globalPatches)
 {
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
      */
 
-    auto hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
+    auto hdbf = forceField.findAllPathsEndingWith(".hdb");
     globalPatches->clear();
     for (const auto& filename : hdbf)
     {

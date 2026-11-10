@@ -51,6 +51,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
@@ -529,7 +530,8 @@ int gmx_x2top(int argc, char* argv[])
         snew(atoms->pdbinfo, natoms);
     }
 
-    nm2t = rd_nm2type(ffdir, &nnm);
+    const ExtendableForceField forceField(ffdir);
+    nm2t = rd_nm2type(forceField, &nnm);
     if (nnm == 0)
     {
         gmx_fatal(FARGS,
@@ -606,7 +608,7 @@ int gmx_x2top(int argc, char* argv[])
                   excls,
                   &atypes,
                   rtp_header_settings.nrexcl);
-        print_top_mols(fp, mymol.name.c_str(), ffdir, nullptr, {}, arrayRefFromArray(&mymol, 1));
+        print_top_mols(fp, mymol.name.c_str(), forceField, nullptr, {}, arrayRefFromArray(&mymol, 1));
 
         gmx_ffclose(fp);
     }

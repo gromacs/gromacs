@@ -48,6 +48,7 @@ struct t_symtab;
 
 namespace gmx
 {
+class ExtendableForceField;
 struct InteractionsOfType;
 template<typename>
 class ArrayRef;
@@ -75,7 +76,7 @@ void do_vsites(ArrayRef<const PreprocessResidue>                          rtpFFD
                std::vector<VsiteTypeAndSign>*                             vsiteTypeAndSign,
                real                                                       mHmult,
                bool                                                       bVSiteAromatics,
-               const std::filesystem::path&                               ffdir);
+               const ExtendableForceField&                                forceField);
 
 /*! \brief Optionally, change masses of hydrogens
  *

@@ -48,6 +48,7 @@
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
@@ -1669,7 +1670,7 @@ void do_vsites(ArrayRef<const PreprocessResidue>                          rtpFFD
                std::vector<VsiteTypeAndSign>*                             vsiteTypeAndSign,
                const real                                                 mHmult,
                const bool                                                 bVsiteAromatics,
-               const std::filesystem::path&                               ffdir)
+               const ExtendableForceField&                                forceField)
 {
 #define MAXATOMSPERRESIDUE 16
     int     m, i0, ni0, whatres, add_shift, nvsite, nadd;
@@ -1764,7 +1765,7 @@ void do_vsites(ArrayRef<const PreprocessResidue>                          rtpFFD
         fprintf(debug, "# # # VSITES # # #\n");
     }
 
-    auto db = fflib_search_file_end(ffdir, ".vsd", FALSE);
+    auto db = forceField.findAllPathsEndingWith(".vsd");
 
     /* Container of CH3/NH3/NH2 configuration entries.
      * See comments in read_vsite_database. It isnt beautiful,

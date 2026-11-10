@@ -48,6 +48,7 @@
 
 namespace gmx
 {
+class ExtendableForceField;
 class MDLogger;
 class PreprocessingAtomTypes;
 struct PreprocessResidue;
@@ -86,10 +87,10 @@ getDatabaseEntry(const std::string& rtpname, gmx::ArrayRef<const PreprocessResid
 /*! \brief
  * Read atom types into database.
  *
- * \param[in] ffdir Force field directory.
+ * \param[in] forceField Force field directories to search for *.atp files.
  * \returns Atom type database.
  */
-PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir);
+PreprocessingAtomTypes read_atype(const ExtendableForceField& forceField);
 
 /*! \brief
  * Read in database, append to exisiting.

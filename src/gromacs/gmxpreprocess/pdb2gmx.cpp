@@ -57,6 +57,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/conformation_utilities.h"
+#include "gromacs/gmxpreprocess/extendableforcefield.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -665,20 +666,21 @@ void write_posres(const char* fn, t_atoms* pdba, real fc)
     gmx_fio_fclose(fp);
 }
 
-int read_pdball(const char*           inf,
-                bool                  bOutput,
-                const char*           outf,
-                char**                title,
-                t_atoms*              atoms,
-                rvec**                x,
-                PbcType*              pbcType,
-                matrix                box,
-                bool                  bRemoveH,
-                t_symtab*             symtab,
-                const ResidueTypeMap& residueTypeMap,
-                const char*           watres,
-                AtomProperties*       aps,
-                bool                  bVerbose)
+int read_pdball(const char*                 inf,
+                bool                        bOutput,
+                const char*                 outf,
+                char**                      title,
+                t_atoms*                    atoms,
+                rvec**                      x,
+                PbcType*                    pbcType,
+                matrix                      box,
+                bool                        bRemoveH,
+                t_symtab*                   symtab,
+                const ResidueTypeMap&       residueTypeMap,
+                const char*                 watres,
+                AtomProperties*             aps,
+                bool                        bVerbose,
+                const ExtendableForceField& forceField)
 /* Read a pdb file. (containing proteins) */
 {
     int natom, new_natom, i;
@@ -725,7 +727,7 @@ int read_pdball(const char*           inf,
     rename_pdbres(atoms, "SOL", watres, false, symtab);
     rename_pdbres(atoms, "WAT", watres, false, symtab);
 
-    rename_atoms("xlateat.dat", {}, atoms, symtab, {}, true, residueTypeMap, true, bVerbose);
+    rename_atoms("xlateat.dat", forceField, atoms, symtab, {}, true, residueTypeMap, true, bVerbose);
 
     if (natom == 0)
     {
@@ -2028,7 +2030,10 @@ int pdb2gmx::run()
             .appendTextFormatted(
                     "Using the %s force field in directory %s", ffname_, ffdir_.string().c_str());
 
-    choose_watermodel(c_waterTypeNames[waterType_], ffdir_, &watermodel_, logger);
+    /* Where the force field data files are searched for. */
+    const ExtendableForceField forceField(ffdir_);
+
+    choose_watermodel(c_waterTypeNames[waterType_], forceField, &watermodel_, logger);
 
     switch (vsitesType_)
     {
@@ -2056,7 +2061,7 @@ int pdb2gmx::run()
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     /* Read residue renaming database(s), if present */
-    auto rrn = fflib_search_file_end(ffdir_.string(), ".r2b", FALSE);
+    auto rrn = forceField.findAllPathsEndingWith(".r2b");
 
     std::vector<RtpRename> rtprename;
     for (const auto& filename : rrn)
@@ -2122,7 +2127,8 @@ int pdb2gmx::run()
                             residueTypeMap,
                             watres,
                             &aps,
-                            bVerbose_);
+                            bVerbose_,
+                            forceField);
 
     if (natom == 0)
     {
@@ -2383,11 +2389,11 @@ int pdb2gmx::run()
     check_occupancy(&pdba_all, inputConfFile_.c_str(), bVerbose_, logger);
 
     /* Read atomtypes... */
-    PreprocessingAtomTypes atype = read_atype(ffdir_);
+    PreprocessingAtomTypes atype = read_atype(forceField);
 
     /* read residue database */
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Reading residue database... (%s)", forcefield_);
-    auto                           rtpf = fflib_search_file_end(ffdir_, ".rtp", true);
+    auto rtpf = forceField.findAllPathsEndingWith(".rtp", ExtendableForceField::OnEmptySearch::ThrowError);
     std::vector<PreprocessResidue> rtpFFDB;
     for (const auto& filename : rtpf)
     {
@@ -2412,14 +2418,14 @@ int pdb2gmx::run()
 
     /* read hydrogen database */
     std::vector<MoleculePatchDatabase> ah;
-    read_h_db(ffdir_, &ah);
+    read_h_db(forceField, &ah);
 
     /* Read Termini database... */
     std::vector<MoleculePatchDatabase>  ntdb;
     std::vector<MoleculePatchDatabase>  ctdb;
     std::vector<MoleculePatchDatabase*> tdblist;
-    int                                 nNtdb = read_ter_db(ffdir_, 'n', &ntdb, &atype);
-    int                                 nCtdb = read_ter_db(ffdir_, 'c', &ctdb, &atype);
+    int                                 nNtdb = read_ter_db(forceField, 'n', &ntdb, &atype);
+    int                                 nCtdb = read_ter_db(forceField, 'c', &ctdb, &atype);
 
     FILE* top_file = gmx_fio_fopen(topologyFile_.c_str(), "w");
 
@@ -2635,7 +2641,7 @@ int pdb2gmx::run()
            requires some re-thinking of code in gen_vsite.c, which I won't
            do now :( AF 26-7-99 */
 
-        rename_atoms({}, ffdir_, pdba, &symtab, restp_chain, false, residueTypeMap, false, bVerbose_);
+        rename_atoms({}, forceField, pdba, &symtab, restp_chain, false, residueTypeMap, false, bVerbose_);
 
         match_atomnames_with_rtp(restp_chain, hb_chain, pdba, &symtab, x, bVerbose_, logger);
 
@@ -2809,7 +2815,7 @@ int pdb2gmx::run()
                 bAllowMissing_,
                 bVsites_,
                 bVsiteAromatics_,
-                ffdir_,
+                forceField,
                 mHmult_,
                 ssbonds,
                 long_bond_dist_,
@@ -2852,9 +2858,9 @@ int pdb2gmx::run()
     }
     else
     {
-        auto waterFile = ffdir_;
-        waterFile.append(watermodel_).replace_extension("itp");
-        if (!fflib_fexist(waterFile))
+        const std::filesystem::path waterFile =
+                std::filesystem::path(watermodel_).replace_extension("itp");
+        if (!forceField.findSinglePath(waterFile))
         {
             auto message = formatString(
                     "The topology file '%s' for the selected water "
@@ -2866,7 +2872,7 @@ int pdb2gmx::run()
         }
     }
 
-    print_top_mols(top_file, title, ffdir_, watermodel_, incls_, mols_);
+    print_top_mols(top_file, title, forceField, watermodel_, incls_, mols_);
     gmx_fio_fclose(top_file);
 
     /* now merge all chains back together */

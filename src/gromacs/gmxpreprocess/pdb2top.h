@@ -62,6 +62,7 @@ class MDLogger;
 struct MoleculePatchDatabase;
 struct PreprocessResidue;
 struct DisulfideBond;
+class ExtendableForceField;
 
 /* this *MUST* correspond to array in pdb2top.cpp */
 enum class HistidineStates : int
@@ -80,13 +81,13 @@ std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxl
  * If ffsel==NULL: interactive selection.
  */
 
-void choose_watermodel(const char*                  wmsel,
-                       const std::filesystem::path& ffdir,
-                       char**                       watermodel,
-                       const MDLogger&              logger);
+void choose_watermodel(const char*                 wmsel,
+                       const ExtendableForceField& forceField,
+                       char**                      watermodel,
+                       const MDLogger&             logger);
 /* Choose, possibly interactively, which water model to include,
  * based on the wmsel command line option choice and watermodels.dat
- * in ffdir.
+ * found through forceField.
  */
 
 void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>* globalPatches,
@@ -131,7 +132,7 @@ void print_top_header(FILE*                        out,
 
 void print_top_mols(FILE*                                 out,
                     const char*                           title,
-                    const std::filesystem::path&          ffdir,
+                    const ExtendableForceField&           forceField,
                     const char*                           water,
                     ArrayRef<const std::filesystem::path> incls,
                     ArrayRef<const t_mols>                mols);
@@ -161,7 +162,7 @@ void pdb2top(FILE*                             top_file,
              bool                              bAllowMissing,
              bool                              bVsites,
              bool                              bVsiteAromatics,
-             const std::filesystem::path&      ffdir,
+             const ExtendableForceField&       forceField,
              real                              mHmult,
              ArrayRef<const DisulfideBond>     ssbonds,
              real                              long_bond_dist,

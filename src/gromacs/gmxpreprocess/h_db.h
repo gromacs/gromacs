@@ -44,6 +44,7 @@
 
 namespace gmx
 {
+class ExtendableForceField;
 struct MoleculePatch;
 struct MoleculePatchDatabase;
 
@@ -55,11 +56,11 @@ void read_ab(char* line, const std::filesystem::path& fn, MoleculePatch* ab);
 /*! \brief
  * Read the databse from hdb file(s).
  *
- * \param[in] ffdir Directory for files.
+ * \param[in] forceField Force field directories to search for *.hdb files.
  * \param[inout] globalPatches The database for atom modifications to populate.
  * \returns The number of modifications stored.
  */
-int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatabase>* globalPatches);
+int read_h_db(const ExtendableForceField& forceField, std::vector<MoleculePatchDatabase>* globalPatches);
 
 void print_ab(FILE* out, const MoleculePatch& ab, const char* nname);
 /* print one add block */
