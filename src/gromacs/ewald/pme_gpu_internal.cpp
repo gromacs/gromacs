@@ -898,10 +898,15 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
             {
                 return gmx::FftBackend::HeFFTe_HIP;
             }
+            else if (GMX_USE_DISTRIBUTED_ROCFFT)
+            {
+                return gmx::FftBackend::HipMpiAwareRocfft;
+            }
             else
             {
                 GMX_THROW(gmx::NotImplementedError(
-                        "GROMACS must be build with rocFFT and HeFFTe to enable fully "
+                        "GROMACS must be built with rocFFT and HeFFTe or MPI-aware rocFFT to "
+                        "enable fully "
                         "GPU offloaded PME decomposition on ROCM-compatible GPUs"));
             }
         }

@@ -239,7 +239,6 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
         if (orderIndex == 0)
         {
             int   tableIndex = 0;
-            int   tInt       = 0;
             float n          = 0.0f;
             float t          = 0.0f;
             GMX_DEVICE_ASSERT(atomIndexLocal < DIM * atomsPerBlock);
@@ -273,8 +272,8 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             }
             const float shift = c_pmeMaxUnitcellShift;
             /* Fractional coordinates along box vectors, adding a positive shift to ensure t is positive for triclinic boxes */
-            t    = (t + shift) * n;
-            tInt = static_cast<const int>(t);
+            t              = (t + shift) * n;
+            const int tInt = static_cast<int>(t);
             GMX_DEVICE_ASSERT(sharedMemoryIndex < atomsPerBlock * DIM);
             fractCoord = t - tInt;
             tableIndex += tInt;

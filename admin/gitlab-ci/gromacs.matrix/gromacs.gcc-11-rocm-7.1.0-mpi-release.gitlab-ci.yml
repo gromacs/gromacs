@@ -24,7 +24,7 @@ gromacs:gcc-11-hip-710-mpi:release:configure:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx906 -DGMX_GPU_FFT_LIBRARY=ROCFFT"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx906 -DGMX_GPU_FFT_LIBRARY=ROCFFT -DGMX_USE_HEFFTE=ON"
     COMPILER_MAJOR_VERSION: 11
     RELEASE_BUILD_DIR: release-builds-gcc-rocm
   dependencies:
@@ -61,6 +61,7 @@ gromacs:gcc-11-hip-710-mpi:release:test:
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_GPU_PME_DECOMPOSITION: 1
   tags:
     - amd-gpu-gfx906
   allow_failure: true   # allow job failure w/o failing pipeline, since no redundant hardware
@@ -83,6 +84,7 @@ gromacs:gcc-11-hip-710-mpi:release:regressiontest:
     REGRESSIONTEST_PARALLEL: "-np"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
+    GMX_GPU_PME_DECOMPOSITION: 1
   tags:
     - amd-gpu-gfx906
   allow_failure: true   # allow job failure w/o failing pipeline, since no redundant hardware

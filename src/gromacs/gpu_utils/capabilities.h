@@ -102,10 +102,11 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running gpu graphs
     static constexpr bool GpuGraph = GMX_HAVE_GPU_GRAPH_SUPPORT;
     //! Whether this configuration supports running gpu pme decomposition
-    static constexpr bool PmeDecomposition = (GMX_GPU_CUDA && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
-                                             || (GMX_GPU_SYCL && GMX_USE_Heffte)
-                                             || (GMX_GPU_HIP && GMX_USE_Heffte);
-    static constexpr bool TwoDPmeDecomposition = PmeDecomposition && GMX_GPU_CUDA;
+    static constexpr bool PmeDecomposition =
+            (GMX_GPU_CUDA && (GMX_USE_Heffte || GMX_USE_cuFFTMp)) || (GMX_GPU_SYCL && GMX_USE_Heffte)
+            || (GMX_GPU_HIP && (GMX_USE_DISTRIBUTED_ROCFFT || GMX_USE_Heffte));
+    static constexpr bool TwoDPmeDecomposition =
+            PmeDecomposition && (GMX_GPU_CUDA || GMX_GPU_HIP) && !GMX_USE_Heffte;
     //! Whether we support running the threefry random number generator on the device.
     static constexpr bool Threefry = GMX_GPU && !GMX_GPU_OPENCL;
 };

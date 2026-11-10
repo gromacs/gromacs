@@ -927,7 +927,7 @@ Starts :ref:`mdrun <gmx mdrun>` using eight MPI ranks that will allow
 All interaction types that can run on a GPU will do so. Two GPUs (and
 MPI ranks) are dedicated to the long-range forces, which will work
 only when |Gromacs| is configured with a suitable library for a
-distributed GPU 3D-FFT (e.g. cuFFTMp or HeFFTe), and when the
+distributed GPU 3D-FFT (e.g. cuFFTMp, HeFFTe or MPI enabled rocFFT), and when the
 environment variable ``GMX_GPU_PME_DECOMPOSITION`` is set (to enable
 this run path, which is currently pending validation). This may be
 optimal on an HPC node with specialized interconnects like NVLINK.
@@ -1103,7 +1103,7 @@ Normally you would do this on e.g. two nodes each containing eight
 GPUs. All interaction types that can run on a GPU will do so. Four
 GPUs (and MPI ranks) are dedicated to the long-range forces, which
 will work only when |Gromacs| is configured with a suitable library
-for a distributed GPU 3D-FFT (e.g. cuFFTMp or HeFFTe), and when the
+for a distributed GPU 3D-FFT (e.g. cuFFTMp, HeFFTe or MPI enabled rcoFFT), and when the
 environment variable ``GMX_GPU_PME_DECOMPOSITION`` is set (to enable
 this run path, which is currently pending validation). This may be
 optimal on HPC nodes with specialized interconnects like NVLINK.
@@ -1349,8 +1349,9 @@ Known limitations
   experimental PME decomposition in hybrid mode (``-pmefft cpu``) with
   CUDA from the 2022 release and full GPU PME decomposition since the
   2023 release with CUDA or SYCL, and since the 2026 release with HIP (when |Gromacs| is built with
-  :ref:`cuFFTMp <cufftmp installation>` or
-  :ref:`HeFFTe <heffte installation>`).
+  :ref:`cuFFTMp <cufftmp installation>`,
+  :ref:`HeFFTe <heffte installation>` or 
+  :ref:`MPI enabled rocFFT <rocfftmp installation>`).
 
 - Only dynamical integrators are supported (ie. leap-frog, Velocity Verlet,
   stochastic dynamics)

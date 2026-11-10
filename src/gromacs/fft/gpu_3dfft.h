@@ -83,6 +83,7 @@ enum class FftBackend
     Sycl,               //!< stubs for not supported configurations
     HipVkfft,           //!< supports only single-GPU
     HipRocfft,          //!< supports only single-GPU
+    HipMpiAwareRocfft,  //!< supports only multi-gpu
     Count
 };
 
@@ -149,6 +150,7 @@ private:
     class ImplSycl;
     class ImplHipVkFft;
     class ImplHipRocfft;
+    class ImplHipMpiAwareRocfft;
 
     template<typename backend_tag>
     class ImplHeFfte;

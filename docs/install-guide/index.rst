@@ -570,6 +570,37 @@ C++ compiler and standard library also. When targeting Intel GPUs, add
 folder>``. When targeting AMD GPUs, add ``-DHeffte_ENABLE_ROCM=ON
 -DHeffte_ROCM_ROOT=<path to ROCm folder>``.
 
+
+.. _rocfftmp installation:
+
+Using MPI enabled rocFFT
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Decomposition of PME work to multiple GPUs is supported with AMD
+GPUs when using a HIP build. This requires building |Gromacs| with
+the rocFFT backend against a `MPI enabled rocFFT library.
+<https://rocm.docs.amd.com/projects/rocFFT/en/develop/how-to/distributed-transforms.html>`_.
+The easiest way to do this is to compile a matching version of rocFFT
+from the `official source <https://github.com/ROCm/rocm-libraries>`_, and
+adding ``-DROCFFT_MPI_ENABLE=ON -DROCFFT_RCCL_ENABLE=ON -DGPU_TARGETS=gfxXYZ`` to the compilation
+options, according to which hardware you are targetting.
+
+To enable MPI enabled rocFFT support use the following cmake options
+during the |Gromacs| build afterwards:
+
+::
+
+    cmake -DGMX_USE_DISTRIBUTED_ROCFFT=ON \
+          -DCMAKE_PREFIX_PATH="<path to custom rocFFT install>;$ROCM_PATH" \
+          -DGMX_GPU_FFT_LIBRARY=rocFFT
+
+To ensure |Gromacs| uses your rocFFT library during runtime, update your ``LD_LIBRARY_PATH`` as follows:
+
+::
+
+    export LD_LIBRARY_PATH=<path to your rocfft installation>/lib:$LD_LIBRARY_PATH
+
+ 
 Using VkFFT
 ~~~~~~~~~~~
 
