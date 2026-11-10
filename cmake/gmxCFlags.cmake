@@ -534,6 +534,10 @@ function(gmx_warn_on_everything target)
     # case-by-base basis.
     gmx_target_warning_suppression(${target} "-Wno-float-equal" HAS_WARNING_NO_FLOAT_EQUAL)
 
+    # Many false-posisitves and/or suggestions to do manual code annotation
+    gmx_target_warning_suppression(${target} "-Wno-lifetime-safety" HAS_WARNING_NO_LIFETIME_SAFETY)
+    gmx_target_warning_suppression(${target} "-Wno-lifetime-safety-suggestions" HAS_WARNING_NO_LIFETIME_SAFETY_SUGGESTIONS)
+
     if(GMX_GPU_SYCL)
         # Intel oneAPI compiler warns about compiling kernels with non-32 subgroups for CUDA devices.
         # But we can not avoid compiling kernels for other sub-group sizes unless we have
