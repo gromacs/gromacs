@@ -285,9 +285,11 @@ static void validateStepWorkload(const SimulationWorkload& simulationWork,
     GMX_RELEASE_ASSERT(
             stepWork.copyFinalFFromGpu
                     == (stepWork.useGpuFBufferOps && simulationWork.useGpuUpdate
-                        && !simulationWork.haveVirtualSites && !simulationWork.useCpuPmePpCommunication
+                        && !stepWork.spreadVsiteForcesOnHost && !simulationWork.useCpuPmePpCommunication
                         && do_per_step(step, outputControl.nstfout)),
             "Force output needs a GPU download only when forces are not already on the host");
+    GMX_RELEASE_ASSERT(!(simulationWork.useGpuUpdate && simulationWork.haveVirtualSites),
+                       "GPU update does not support virtual sites");
     if (simulationWork.useGpuUpdate)
     {
         // GPU update currently excludes virtual sites and separate CPU PME ranks
@@ -364,10 +366,13 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
     flags.copyVFromGpuForIO = simulationWork.useGpuUpdate
                               && (do_per_step(step, outputControl.nstvout)
                                   || (writeCheckpoint.value() && EI_STATE_VELOCITY(inputrec.eI)));
+    // Virtual-site forces are currently always spread on the host, since GPU update does not
+    // support virtual sites (see decideWhetherToUseGpuForUpdate).
+    flags.spreadVsiteForcesOnHost = simulationWork.haveVirtualSites && flags.computeForces;
     // CPU VSite spreading and staged PME-PP comms modify forces on host after reduction and before integration
     flags.copyReducedFFromGpu = flags.useGpuFBufferOps
                                 && (!simulationWork.useGpuUpdate || simulationWork.useCpuPmePpCommunication
-                                    || simulationWork.haveVirtualSites);
+                                    || flags.spreadVsiteForcesOnHost);
     flags.copyFinalFToGpu =
             simulationWork.useGpuUpdate && (!flags.useGpuFBufferOps || flags.copyReducedFFromGpu);
     flags.copyFinalFFromGpu = flags.useGpuFBufferOps && simulationWork.useGpuUpdate

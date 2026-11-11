@@ -2635,15 +2635,27 @@ void do_force(FILE*                         fplog,
 
     const bool haveCombinedMtsForces = (stepWork.computeForces && simulationWork.useMts && stepWork.computeSlowForces
                                         && stepWork.combineMtsForcesBeforeHaloExchange);
+    // Passing nullptr skips the vsite force spreading in the postProcess* functions
+    GMX_ASSERT(!stepWork.spreadVsiteForcesOnHost || vsite != nullptr,
+               "Need a vsite handler to spread vsite forces on the host");
+    VirtualSitesHandler* const vsiteForCpuSpreading = stepWork.spreadVsiteForcesOnHost ? vsite : nullptr;
     if (stepWork.computeForces)
     {
         postProcessForceWithShiftForces(
-                nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutMtsLevel0, vir_force, mdAtoms, *fr, vsite, stepWork);
+                nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutMtsLevel0, vir_force, mdAtoms, *fr, vsiteForCpuSpreading, stepWork);
 
         if (simulationWork.useMts && stepWork.computeSlowForces && !haveCombinedMtsForces)
         {
-            postProcessForceWithShiftForces(
-                    nrnb, wcycle, box, x.unpaddedArrayRef(), forceOutMtsLevel1, vir_force, mdAtoms, *fr, vsite, stepWork);
+            postProcessForceWithShiftForces(nrnb,
+                                            wcycle,
+                                            box,
+                                            x.unpaddedArrayRef(),
+                                            forceOutMtsLevel1,
+                                            vir_force,
+                                            mdAtoms,
+                                            *fr,
+                                            vsiteForCpuSpreading,
+                                            stepWork);
         }
     }
 
@@ -2671,8 +2683,18 @@ void do_force(FILE*                         fplog,
          * otherwise we have to post-process two outputs and then combine them.
          */
         ForceOutputs& forceOutCombined = (haveCombinedMtsForces ? forceOutMts.value() : forceOutMtsLevel0);
-        postProcessForces(
-                cr->dd, step, nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutCombined, vir_force, mdAtoms, fr, vsite, stepWork);
+        postProcessForces(cr->dd,
+                          step,
+                          nrnb,
+                          wcycle,
+                          box,
+                          x.unpaddedArrayRef(),
+                          &forceOutCombined,
+                          vir_force,
+                          mdAtoms,
+                          fr,
+                          vsiteForCpuSpreading,
+                          stepWork);
 
         if (simulationWork.useMts && stepWork.computeSlowForces && !haveCombinedMtsForces)
         {
@@ -2686,7 +2708,7 @@ void do_force(FILE*                         fplog,
                               vir_force,
                               mdAtoms,
                               fr,
-                              vsite,
+                              vsiteForCpuSpreading,
                               stepWork);
 
             combineMtsForces(mdAtoms.numHomeAtoms,
