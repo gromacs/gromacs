@@ -373,6 +373,28 @@ std::filesystem::path choose_ff(const char* ffsel, char* forcefield, int ff_maxl
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
+/*!
+ * \brief Check that the topology file of a water model can be found.
+ *
+ * \throws gmx::InconsistentInputError if \p watermodel.itp is not found
+ *         through \p forceField.
+ */
+static void checkWaterModelTopology(const ExtendableForceField& forceField, const char* watermodel)
+{
+    const std::filesystem::path waterFile =
+            std::filesystem::path(watermodel).replace_extension("itp");
+    if (!forceField.findSinglePath(waterFile))
+    {
+        auto message = formatString(
+                "The topology file '%s' for the selected water "
+                "model '%s' can not be found in the force field "
+                "directory. Select a different water model.",
+                (forceField.forceFieldName() / waterFile).string().c_str(),
+                watermodel);
+        GMX_THROW(InconsistentInputError(message));
+    }
+}
+
 void choose_watermodel(const char*                 wmsel,
                        const ExtendableForceField& forceField,
                        char**                      watermodel,
@@ -393,6 +415,7 @@ void choose_watermodel(const char*                 wmsel,
     }
     else if (std::strcmp(wmsel, "select") != 0)
     {
+        checkWaterModelTopology(forceField, wmsel);
         *watermodel = gmx_strdup(wmsel);
 
         return;
@@ -450,6 +473,7 @@ void choose_watermodel(const char*                 wmsel,
     }
     else
     {
+        checkWaterModelTopology(forceField, model[sel]);
         *watermodel = gmx_strdup(model[sel]);
     }
 
@@ -615,10 +639,9 @@ static void print_top_water(FILE* out, const ExtendableForceField& forceField, c
     fprintf(out, "; Include water topology\n");
 
     const std::filesystem::path waterFile = std::filesystem::path(water).replace_extension("itp");
-    // The existence of the water model topology is checked when the model is
-    // selected; fall back to the conventional location if it is missing.
-    const std::filesystem::path waterPath =
-            forceField.findSinglePath(waterFile).value_or(forceField.forceFieldName() / waterFile);
+    // The existence of the water model topology was checked when the model was
+    // selected; look it up again to write the location it was found in.
+    const std::filesystem::path waterPath = forceField.findRequiredPath(waterFile);
     fprintf(out, "#include \"%s\"\n", waterPath.generic_string().c_str());
 
     fprintf(out, "\n");

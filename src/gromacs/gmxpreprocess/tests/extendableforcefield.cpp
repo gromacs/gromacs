@@ -130,6 +130,20 @@ TEST_F(ExtendableForceFieldTest, SinglePathReturnsNulloptWhenMissing)
     EXPECT_FALSE(forceField().findSinglePath("nothing.dat").has_value());
 }
 
+TEST_F(ExtendableForceFieldTest, SinglePathFindsFilesInSubdirectories)
+{
+    // Water model topologies can be named with a subdirectory in
+    // watermodels.dat, e.g. "water/custom" selecting water/custom.itp.
+    EXPECT_THAT(forceField().findSinglePath("sub/deep.hdb"), Optional(pathIn("base.ff/sub/deep.hdb")));
+    EXPECT_FALSE(forceField().findSinglePath("sub/nothing.hdb").has_value());
+}
+
+TEST_F(ExtendableForceFieldTest, AllPathsFindsFilesInSubdirectories)
+{
+    EXPECT_EQ(forceField().findAllPaths("sub/deep.hdb"),
+              (std::vector<std::filesystem::path>{ pathIn("base.ff/sub/deep.hdb") }));
+}
+
 TEST_F(ExtendableForceFieldTest, RequiredPathReturnsTheFirstMatch)
 {
     EXPECT_EQ(forceField().findRequiredPath("common.dat"), pathIn("base.ff/common.dat"));

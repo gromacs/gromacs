@@ -2856,21 +2856,8 @@ int pdb2gmx::run()
             }
         }
     }
-    else
-    {
-        const std::filesystem::path waterFile =
-                std::filesystem::path(watermodel_).replace_extension("itp");
-        if (!forceField.findSinglePath(waterFile))
-        {
-            auto message = formatString(
-                    "The topology file '%s' for the selected water "
-                    "model '%s' can not be found in the force field "
-                    "directory. Select a different water model.",
-                    waterFile.string().c_str(),
-                    watermodel_);
-            GMX_THROW(InconsistentInputError(message));
-        }
-    }
+    /* The existence of the water model topology has been checked when the
+     * model was selected, in choose_watermodel(). */
 
     print_top_mols(top_file, title, forceField, watermodel_, incls_, mols_);
     gmx_fio_fclose(top_file);

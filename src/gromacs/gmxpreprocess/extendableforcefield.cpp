@@ -39,6 +39,7 @@
 
 #include "extendableforcefield.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "gromacs/utility/datafilefinder.h"
@@ -51,6 +52,30 @@
 
 namespace gmx
 {
+namespace
+{
+
+/*!
+ * \brief Whether \p fileName is a valid name to search for in the force field directories.
+ *
+ * A valid name is a non-empty relative path without "." or ".." components, so that
+ * appending it to a search directory cannot escape from that directory. Multi-component
+ * names ("sub/file.itp") are valid: force field data files, e.g. water model topologies
+ * named in watermodels.dat, may live in subdirectories of the force field directories.
+ */
+bool isValidSearchFileName(const std::filesystem::path& fileName)
+{
+    if (fileName.empty() || !fileName.is_relative())
+    {
+        return false;
+    }
+    return std::all_of(fileName.begin(),
+                       fileName.end(),
+                       [](const std::filesystem::path& component)
+                       { return component != "." && component != ".."; });
+}
+
+} // namespace
 
 ExtendableForceField::ExtendableForceField(const std::filesystem::path& forceFieldDir) :
     ExtendableForceField(forceFieldDir, {})
@@ -65,12 +90,12 @@ ExtendableForceField::ExtendableForceField(const std::filesystem::path&         
 
     if (forceFieldDir.empty())
     {
-        throw InvalidInputError("No force field directory was specified.");
+        GMX_THROW(InvalidInputError("No force field directory was specified."));
     }
     if (getLibraryFileFinder().findFile(DataFileOptions(forceFieldDir).throwIfNotFound(false)).empty())
     {
-        throw InvalidInputError(formatString("The force field directory '%s' does not exist.",
-                                             forceFieldDir.string().c_str()));
+        GMX_THROW(InvalidInputError(formatString("The force field directory '%s' does not exist.",
+                                                 forceFieldDir.string().c_str())));
     }
 }
 
@@ -86,8 +111,8 @@ const std::filesystem::path& ExtendableForceField::forceFieldName() const
 
 std::optional<std::filesystem::path> ExtendableForceField::findSinglePath(const std::filesystem::path& fileName) const
 {
-    GMX_ASSERT(fileName.is_relative() && fileName.filename() == fileName,
-               "fileName must be a single-component relative file name");
+    GMX_RELEASE_ASSERT(isValidSearchFileName(fileName),
+                       "fileName must be a non-empty relative path without . or .. components");
 
     for (const auto& dir : directories_)
     {
@@ -105,15 +130,15 @@ std::filesystem::path ExtendableForceField::findRequiredPath(const std::filesyst
     {
         return *found;
     }
-    throw InvalidInputError(formatString("File '%s' not found in force field directory '%s'",
-                                         fileName.string().c_str(),
-                                         directories_.front().string().c_str()));
+    GMX_THROW(InvalidInputError(formatString("File '%s' not found in force field directory '%s'",
+                                             fileName.string().c_str(),
+                                             directories_.front().string().c_str())));
 }
 
 std::vector<std::filesystem::path> ExtendableForceField::findAllPaths(const std::filesystem::path& fileName) const
 {
-    GMX_ASSERT(fileName.is_relative() && fileName.filename() == fileName,
-               "fileName must be a single-component relative file name");
+    GMX_RELEASE_ASSERT(isValidSearchFileName(fileName),
+                       "fileName must be a non-empty relative path without . or .. components");
 
     std::vector<std::filesystem::path> result;
     for (const auto& dir : directories_)
@@ -158,7 +183,7 @@ std::vector<std::filesystem::path> ExtendableForceField::findAllPathsEndingWith(
                                                   { return "'" + dir.string() + "'"; })
                                             .c_str());
         }
-        throw InvalidInputError(message);
+        GMX_THROW(InvalidInputError(message));
     }
     return result;
 }

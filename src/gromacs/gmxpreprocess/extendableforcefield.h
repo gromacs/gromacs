@@ -100,8 +100,10 @@ public:
 
     //! \p fileName in the first search directory that contains it.
     /*
-     * \p fileName must be a relative, single-component file name
-     * ("file.itp", not "dir/file.itp").
+     * \p fileName must be a non-empty relative path without "." or ".."
+     * components, so that it cannot escape from a search directory. It may
+     * contain subdirectories ("file.itp" or "water/file.itp"), which are
+     * searched relative to each of the search directories.
      */
     std::optional<std::filesystem::path> findSinglePath(const std::filesystem::path& fileName) const;
 
@@ -110,8 +112,7 @@ public:
 
     //! Every search directory that contains \p fileName, base force field first.
     /*
-     * \p fileName must be a relative, single-component file name
-     * ("file.itp", not "dir/file.itp").
+     * \p fileName must satisfy the same constraints as for findSinglePath().
      */
     std::vector<std::filesystem::path> findAllPaths(const std::filesystem::path& fileName) const;
 
