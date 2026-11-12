@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -66,6 +67,7 @@
 #include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/stderrcapture.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -599,6 +601,54 @@ TEST_P(GromppDeformFlowSpecialParticlesTest, ShellsAndVirtualSitesGetTheFlowProf
 INSTANTIATE_TEST_SUITE_P(WithAndWithoutGeneratedVelocities,
                          GromppDeformFlowSpecialParticlesTest,
                          testing::Bool());
+
+//! Test parameters: simulation database name, and whether the all-bonds note is expected
+using AllBondsNoteParams = std::tuple<std::string, bool>;
+
+//! Test fixture for the note discouraging constraints = all-bonds
+class GromppAllBondsConstraintsNoteTest : public ::testing::TestWithParam<AllBondsNoteParams>
+{
+};
+
+TEST_P(GromppAllBondsConstraintsNoteTest, IsPrintedOnlyWithoutVsite3fd)
+{
+    const auto [name, expectNote] = GetParam();
+    // Both inputs use AMBER force fields, which are parametrized with
+    // H-bond constraints, and the time step is short enough that the
+    // note is relevant.
+    const std::string mdpFileContents =
+            "integrator = md\n"
+            "nsteps = 0\n"
+            "dt = 0.002\n"
+            "constraints = all-bonds\n"
+            "cutoff-scheme = Verlet\n"
+            "pbc = xyz\n";
+
+    TestFileManager             fileManager;
+    const std::filesystem::path mdpInputFileName = fileManager.getTemporaryFilePath(name + ".mdp");
+    TextWriter::writeFileFromString(mdpInputFileName, mdpFileContents);
+    const std::filesystem::path tprFileName = fileManager.getTemporaryFilePath(name + ".tpr");
+
+    CommandLine caller;
+    caller.append("grompp");
+    caller.addOption("-f", mdpInputFileName);
+    caller.addOption("-p", TestFileManager::getInputFilePath(name + ".top").string());
+    caller.addOption("-c", TestFileManager::getInputFilePath(name + ".gro").string());
+    caller.addOption("-o", tprFileName);
+    // grompp writes notes only to stderr
+    StderrCapture     stderrCapture;
+    const int         returnValue = gmx_grompp(caller.argc(), caller.argv());
+    const std::string output      = stderrCapture.stop();
+    ASSERT_EQ(0, returnValue) << output;
+
+    const bool noteFound = (output.find("You are using constraints on all bonds") != std::string::npos);
+    EXPECT_EQ(expectNote, noteFound) << output;
+}
+
+INSTANTIATE_TEST_SUITE_P(WithAndWithoutVsite3fd,
+                         GromppAllBondsConstraintsNoteTest,
+                         ::testing::Values(AllBondsNoteParams{ "alanine_vacuo", true },
+                                           AllBondsNoteParams{ "alanine_vsite_vacuo", false }));
 
 } // namespace
 } // namespace test
