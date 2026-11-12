@@ -96,3 +96,20 @@ Simulations using the stochastic dynamics (langevin) integrator
 can now be run with the update step done on the GPU for the CUDA,
 HIP and SYCL backends. This feature currently needs to be enabled
 by explicitly setting ``-update gpu`` on the command line. 
+
+Collective variables module (Colvars) update
+""""""""""""""""""""""""""""""""""""""""""""
+
+The (`Colvars <https://colvars.github.io>`_) library for enhanced sampling simulations packaged with |Gromacs| has been updated to version 2026-09-10.
+
+Highlights include:
+
+- Added the Lepton library from `OpenMM <https://github.com/openmm/openmm>`_ to |Gromacs| to support custom mathematical expressions in Colvars (see the `Lepton section <https://colvars.github.io/gromacs-2027/colvars-refman-gromacs.html#sec:colvar_custom_function>`_ of the Colvars doc page for details)
+- Faster and more numerically robust coordination-number calculations
+- Improved collective-variable grids, added weighted Poisson integration
+- Added support for harmonic walls that start with zero force constants
+
+A complete list of changes can be found in merge request `6351 <https://gitlab.com/gromacs/gromacs/-/merge_requests/6351>`_.
+
+For documentation see :ref:`this section <colvars>` of the |Gromacs| doc and the corresponding
+Colvars doc page at `https://colvars.github.io/gromacs-2027 <https://colvars.github.io/gromacs-2027>`_.

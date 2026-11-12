@@ -49,3 +49,11 @@ CP2K version and reports a helpful fatal error if it requires
 This applies to CP2K 2027 or later, CP2K 2026.2 development builds, and
 unrecognized CP2K versions. Users are instructed to set the environment
 variable before launching |Gromacs|.
+
+Collective variables module (Colvars) fixes
+"""""""""""""""""""""""""""""""""""""""""""
+
+Below are issues fixed in the (`Colvars <https://colvars.github.io>`_) library (also included in the minor versions of the |Gromacs| 2026 release).
+
+- Improved restart consistency and fixes for multi-replica well-tempered metadynamics (Colvars repo pull request `820 <https://github.com/Colvars/colvars/pull/820>`_)
+- Fixed wrapping of extended-system variable coupled to orientationAngle (Colvars repo pull request `943 <https://github.com/Colvars/colvars/pull/943>`_)
