@@ -76,14 +76,22 @@ Available inputs, and their corresponding shapes and dictionary keys, are as fol
 
 The precision of real-valued input tensors is depends on the precision |Gromacs| was compiled with,
 and can be either 32-bit (single precision) or 64-bit (double precision) floating point. Atom indices
-are passed as 32-bit integers. 
-The model is expected to return a dictionary with a ``(1,)``-shape tensor containing the energy of the system under
-the key ``energy`` and, optionally, a ``(N_ml, 3)`` tensor containing the forces on the input atoms (``forces``).
-This option can be useful for cases in which the forces can be computed by the model
-by some technique that is more efficient than via backpropagation. If the model does not
-provide its own forces, they are calculated by the interface as gradients w.r.t. the position tensor.
-In the case of :mdp-value:`nnpot-embedding=electrostatic-model`, forces on MM atoms
-should be additionally returned by the model as a ``(N_mm, 3)`` tensor, under the key ``forces-mm``. \
+are passed as 32-bit integers.
+
+The expected and optional outputs, which likewise have to be returned in dictionary form, are:
+
+* ``energy``: A mandatory input tensor of shape ``(1,)`` containing the total energy of the input system.
+* ``forces``: An optional tensor of shape ``(N_ml, 3)`` containing the forces on the input atoms.
+    This can be useful for cases in which the forces can be computed by the model by some technique that
+    is more efficient than via backpropagation. If the model does not provide its own forces, they are
+    calculated by the interface as gradients w.r.t. the position tensor.
+* ``forces-mm``: A tensor of shape ``(N_mm, 3)``, which is required if
+    :mdp-value:`nnpot-embedding=electrostatic-model` was set.
+* ``virial``: An optional tensor of shape ``(3, 3)`` containing a virial stress contribution for the 
+    ML subsystem. Note that this tensor has to follow the virial convention of |Gromacs| as described in
+    :ref:`details`. If no virial contribution is supplied, the NNP does not contribute to pressure scaling
+    in NPT simulations, which will produce artifacts in simulations with larger ML subsystems.
+
 By default, |Gromacs| will run inference on the GPU, if available. You can also explicitly
 specify the device on which you wish to run model inference using the environment
 variable ``GMX_NN_DEVICE``. The options ``cpu`` and ``gpu`` are supported. Option ``cuda``

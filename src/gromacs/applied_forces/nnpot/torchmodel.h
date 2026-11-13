@@ -74,7 +74,7 @@ public:
 
     /*! Call inference on NN model and retrieve outputs
      * \param[out] enerd energy data struct
-     * \param[out] forces forces on atoms
+     * \param[out] fOutput force and virial data
      * \param[in] indexLookup lookup table for atom indices
      * \param[in] mmIndices indices of MM atoms
      * \param[in] positions atom positions
@@ -89,7 +89,7 @@ public:
      * \param[in] pbcType periodic boundary conditions
      */
     void evaluateModel(gmx_enerdata_t*                  enerd,
-                       ArrayRef<RVec>                   forces,
+                       ForceWithVirial*                 fOutput,
                        ArrayRef<const int32_t>          indexLookup,
                        ArrayRef<const int32_t>          mmIndices,
                        ArrayRef<RVec>                   positions,
@@ -107,6 +107,8 @@ public:
     bool outputsForces() const override;
     //! helper function to check if model outputs forces on MM atoms
     bool outputsMMForces() const override;
+    //! helper function to check if model outputs virial contribution
+    bool outputsVirial() const override;
 
 private:
     class Impl;

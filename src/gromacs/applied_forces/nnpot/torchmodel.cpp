@@ -269,7 +269,7 @@ public:
     Impl(const std::string& fileName, NNPotEmbedding embedding, const MDLogger& logger, const MpiComm& mpiComm);
 
     void evaluateModel(gmx_enerdata_t*                  enerd,
-                       ArrayRef<RVec>                   forces,
+                       ForceWithVirial*                 fOutput,
                        ArrayRef<const int32_t>          indexLookup,
                        ArrayRef<const int32_t>          mmIndices,
                        ArrayRef<RVec>                   positions,
@@ -285,6 +285,7 @@ public:
 
     bool outputsForces() const;
     bool outputsMMForces() const;
+    bool outputsVirial() const;
 
 private:
     //! Functions to prepare inputs for NN model. Create input torch::Tensors for the model.
@@ -316,6 +317,8 @@ private:
     bool outputsForces_ = false;
     //! whether the model outputs forces on MM atoms directly (for electrostatic embedding)
     bool outputsMMForces_ = false;
+    // whether the model outputs virial contribution
+    bool outputsVirial_ = false;
 };
 
 TorchModel::Impl::Impl(const std::string& fileName,
@@ -441,7 +444,7 @@ torch::Tensor TorchModel::Impl::prepareNNPCharge(real charge)
 }
 
 void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
-                                     ArrayRef<RVec>                   forces,
+                                     ForceWithVirial*                 fOutput,
                                      ArrayRef<const int32_t>          indexLookup,
                                      ArrayRef<const int32_t>          mmIndices,
                                      ArrayRef<RVec>                   positions,
@@ -477,9 +480,10 @@ void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
 
     // for now: only do inference on main rank
     torch::Tensor energyTensor;
-    const int     N           = indexLookup.size();
-    const int     numMM       = mmIndices.size();
-    torch::Tensor forceTensor = torch::zeros({ N, DIM });
+    const int     N            = indexLookup.size();
+    const int     numMM        = mmIndices.size();
+    torch::Tensor forceTensor  = torch::zeros({ N, DIM });
+    torch::Tensor virialTensor = torch::zeros({ DIM, DIM });
     // electrostatic embedding produces additional force corrections on MM atoms
     torch::Tensor mmForceTensor = torch::zeros({ numMM, DIM });
     if (mpiComm_.isMainRank())
@@ -549,12 +553,13 @@ void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
         // otherwise, we calculate them from the energy
         outputsForces_   = outputs.contains("forces");
         outputsMMForces_ = outputs.contains("forces-mm");
+        outputsVirial_   = outputs.contains("virial");
         if (outputsForces_)
         {
-            forceTensor = outputs.at("forces").to(torch::kCPU);
+            forceTensor = outputs.at("forces").to(sc_torchRealType).to(torch::kCPU);
             if (outputsMMForces_)
             {
-                mmForceTensor = outputs.at("forces-mm").to(torch::kCPU);
+                mmForceTensor = outputs.at("forces-mm").to(sc_torchRealType).to(torch::kCPU);
             }
         }
         else
@@ -563,15 +568,30 @@ void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
             const torch::Tensor& positionTensor = inputData.at("positions");
             energyTensor.backward();
             forceTensor = -1. * positionTensor.grad();
+            forceTensor = forceTensor.to(sc_torchRealType).to(torch::kCPU);
         }
         // set energy
         energyTensor = energyTensor.to(sc_torchRealType).to(torch::kCPU);
         enerd->term[InteractionFunction::NeuralNetworkPotentialEnergy] = energyTensor.item<real>();
 
-        forceTensor = forceTensor.to(sc_torchRealType).to(torch::kCPU);
+        // set virial if the model provides it
+        if (outputsVirial_)
+        {
+            virialTensor          = outputs.at("virial").to(sc_torchRealType).to(torch::kCPU);
+            auto   virialAccessor = virialTensor.accessor<real, 2>();
+            matrix virial;
+            for (int i = 0; i < DIM; ++i)
+            {
+                for (int j = 0; j < DIM; ++j)
+                {
+                    virial[i][j] = virialAccessor[i][j];
+                }
+            }
+            fOutput->addVirialContribution(virial);
+        }
     }
 
-    // distribute forces
+    // distribute forces and virial
     if (mpiComm_.isParallel())
     {
         mpiComm_.sumReduce(3 * N, static_cast<real*>(forceTensor.data_ptr()));
@@ -610,7 +630,7 @@ void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
         }
         for (int d = 0; d < DIM; ++d)
         {
-            forces[indexLookup[i]][d] += forceAccessor[i][d];
+            fOutput->force_[indexLookup[i]][d] += forceAccessor[i][d];
         }
     }
 
@@ -622,7 +642,7 @@ void TorchModel::Impl::evaluateModel(gmx_enerdata_t*                  enerd,
         {
             for (int i = 0; i < numMM; ++i)
             {
-                forces[mmIndices[i]][m] += mmForceAccessor[i][m];
+                fOutput->force_[mmIndices[i]][m] += mmForceAccessor[i][m];
             }
         }
     }
@@ -638,6 +658,11 @@ bool TorchModel::Impl::outputsMMForces() const
     return outputsMMForces_;
 }
 
+bool TorchModel::Impl::outputsVirial() const
+{
+    return outputsVirial_;
+}
+
 TorchModel::TorchModel(const std::string& filename,
                        NNPotEmbedding     embedding,
                        const MDLogger&    logger,
@@ -649,7 +674,7 @@ TorchModel::TorchModel(const std::string& filename,
 TorchModel::~TorchModel() = default;
 
 void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
-                               ArrayRef<RVec>                   forces,
+                               ForceWithVirial*                 fOutput,
                                ArrayRef<const int32_t>          indexLookup,
                                ArrayRef<const int32_t>          mmIndices,
                                ArrayRef<RVec>                   positions,
@@ -664,7 +689,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
                                PbcType&                         pbcType)
 {
     impl_->evaluateModel(enerd,
-                         forces,
+                         fOutput,
                          indexLookup,
                          mmIndices,
                          positions,
@@ -687,6 +712,11 @@ bool TorchModel::outputsForces() const
 bool TorchModel::outputsMMForces() const
 {
     return impl_->outputsMMForces();
+}
+
+bool TorchModel::outputsVirial() const
+{
+    return impl_->outputsVirial();
 }
 
 } // namespace gmx

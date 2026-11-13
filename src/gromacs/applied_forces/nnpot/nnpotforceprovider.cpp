@@ -222,7 +222,7 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     }
 
     model_->evaluateModel(&(fOutput->enerd_),
-                          fOutput->forceWithVirial_.force_,
+                          &(fOutput->forceWithVirial_),
                           inputToLocalIndex_,
                           mmIndices,
                           positions,

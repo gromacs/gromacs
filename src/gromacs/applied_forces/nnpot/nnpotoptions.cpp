@@ -574,10 +574,11 @@ void NNPotOptions::checkNNPotModel()
         gmx_enerdata_t    enerd(numNNPAtoms + 1, nullptr);
         std::vector<RVec> forcesVec(numNNPAtoms + 1, RVec({ 0.0, 0.0, 0.0 }));
         ArrayRef<RVec>    forces(forcesVec);
+        ForceWithVirial   fOutput(forces, true);
 
         // might throw a runtime error if the model is not compatible with the dummy input
         model->evaluateModel(&enerd,
-                             forces,
+                             &fOutput,
                              indices,
                              mmIndices,
                              positions,
@@ -591,10 +592,18 @@ void NNPotOptions::checkNNPotModel()
                              box,
                              pbc);
 
-        // log whether model outputs forces or we need to compute them
+        // log whether model outputs forces (and virial) or we need to compute them
         if (model->outputsForces())
         {
-            GMX_LOG(theLogger.info).appendText("Will use forces from NNP model.");
+            if (model->outputsVirial())
+            {
+                // if the model outputs virial, but no force, autograd will throw an error in evaluateModel
+                GMX_LOG(theLogger.info).appendText("Will use forces and virial from NNP model.");
+            }
+            else
+            {
+                GMX_LOG(theLogger.info).appendText("Will use forces from NNP model.");
+            }
         }
         else
         {

@@ -655,6 +655,164 @@ INSTANTIATE_TEST_SUITE_P(
                            ::testing::ValuesIn(getHardwareContextsWithCapability(sc_nnpotSupportsGpu))),
         sc_pairlistTestNamer);
 
+/*! \brief Test fixture for the virial contribution of NNP models
+ *
+ * model_virial.pt computes a Gaussian pair repulsion with minimum image convention,
+ * E = 10 sum_{i<j} exp(-|x_ij|^2 / 0.15^2), and returns forces and the virial
+ * -1/2 sum_i x_i (x) f_i = 1/2 (dE/dstrain)^T, obtained by automatic differentiation
+ * with respect to a homogeneous strain of positions and box. It was generated with:
+ *
+ *     class VirialModel(torch.nn.Module):
+ *         def forward(self, input_data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+ *             positions = input_data["positions"].to(torch.float64)
+ *             box = input_data["box"].to(torch.float64)
+ *             strain = torch.zeros(3, 3, dtype=torch.float64,
+ *                                  device=positions.device).requires_grad_()
+ *             x = positions + positions @ strain.t()
+ *             b = box + box @ strain.t()
+ *             s = x @ torch.inverse(b)
+ *             ds = s.unsqueeze(0) - s.unsqueeze(1)
+ *             dx = (ds - torch.round(ds)) @ b
+ *             r2 = (dx * dx).sum(dim=-1)
+ *             mask = torch.triu(torch.ones_like(r2, dtype=torch.bool), diagonal=1)
+ *             energy = 10.0 * torch.exp(-r2[mask] / 0.15**2).sum()
+ *             gradX, gradStrain = torch.autograd.grad([energy], [positions, strain])
+ *             assert gradX is not None and gradStrain is not None
+ *             dtype = input_data["positions"].dtype
+ *             return {"energy": energy.to(dtype),
+ *                     "forces": (-gradX).to(dtype),
+ *                     "virial": (0.5 * gradStrain.t()).to(dtype)}
+ *
+ *     torch.jit.script(VirialModel()).save("model_virial.pt")
+ */
+class NNPotVirialTest : public ::testing::Test
+{
+public:
+    NNPotVirialTest()
+    {
+        TprAndFileManager tprManager("4water");
+        tprManager.setInputConf("4water.gro");
+        bool  fullTopology;
+        rvec* coords = nullptr;
+        readConfAndTopology(tprManager.tprName(), &fullTopology, &mtop_, &pbcType_, &coords, nullptr, box_);
+        positions_.assign(reinterpret_cast<RVec*>(coords), reinterpret_cast<RVec*>(coords) + mtop_.natoms);
+        sfree(coords);
+
+        std::vector<Index> nnpIndices(mtop_.natoms);
+        std::iota(nnpIndices.begin(), nnpIndices.end(), 0);
+        params_.active_     = true;
+        params_.atoms_      = gmx_mtop_global_atoms(mtop_);
+        params_.numAtoms_   = mtop_.natoms;
+        params_.pbcType_    = std::make_unique<PbcType>(pbcType_);
+        LocalAtomSet nnpSet = atomSetManager_.add(ArrayRef<const Index>(nnpIndices));
+        params_.nnpAtoms_   = std::make_unique<LocalAtomSet>(nnpSet);
+    }
+
+    ~NNPotVirialTest() override { done_atom(&params_.atoms_); }
+
+    //! Energy and virial returned by the force provider
+    struct EnergyAndVirial
+    {
+        real   energy;
+        matrix virial;
+    };
+
+    //! Evaluates the model in \p modelFile on the given configuration
+    EnergyAndVirial evaluate(const std::string& modelFile, ArrayRef<const RVec> x, const matrix box)
+    {
+        params_.modelFileName_ = TestFileManager::getInputFilePath(modelFile).string();
+        NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_);
+        nnpotForceProvider.gatherAtomNumbersIndices(
+                MDModulesAtomsRedistributedSignal{ box, x, {}, {}, std::nullopt });
+
+        ForceProviderInput  fInput(x, params_.numAtoms_, {}, {}, 0.0, 0, box, mpiComm_, nullptr);
+        std::vector<RVec>   forces(params_.numAtoms_, RVec{ 0, 0, 0 });
+        ForceWithVirial     forceWithVirial(forces, true);
+        gmx_enerdata_t      enerd(1, nullptr);
+        ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerd);
+        nnpotForceProvider.calculateForces(fInput, &forceProviderOutput);
+
+        EnergyAndVirial result;
+        result.energy = enerd.term[InteractionFunction::NeuralNetworkPotentialEnergy];
+        copy_mat(forceWithVirial.getVirial(), result.virial);
+        return result;
+    }
+
+protected:
+    NNPotParameters     params_;
+    MDLogger            logger_;
+    LocalAtomSetManager atomSetManager_;
+    const MpiComm       mpiComm_ = MpiComm(MpiComm::SingleRank{});
+    gmx_mtop_t          mtop_;
+    PbcType             pbcType_;
+    matrix              box_;
+    std::vector<RVec>   positions_;
+};
+
+/*! \brief Checks the virial from the model against the energy change under box deformation
+ *
+ * Under a homogeneous strain x' = (1 + strain) x of positions and box, the virial
+ * Xi = -1/2 sum_i x_i (x) f_i satisfies dE/dstrain_ij = 2 Xi_ji. We use central
+ * differences for each strain component that keeps the box lower triangular.
+ */
+TEST_F(NNPotVirialTest, VirialMatchesBoxDeformation)
+{
+    auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "cpu");
+
+    matrix virialFromModel;
+    copy_mat(evaluate("model_virial.pt", positions_, box_).virial, virialFromModel);
+
+    constexpr real c_strain = 5e-3;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = i; j < DIM; j++)
+        {
+            real energyPosStrain, energyNegStrain;
+            for (int sign : { 1, -1 })
+            {
+                std::vector<RVec> strainedPositions = positions_;
+                matrix            strainedBox;
+                copy_mat(box_, strainedBox);
+                for (auto& pos : strainedPositions)
+                {
+                    pos[i] += sign * c_strain * pos[j];
+                }
+                for (int d = 0; d < DIM; d++)
+                {
+                    strainedBox[d][i] += sign * c_strain * box_[d][j];
+                }
+                if (sign > 0)
+                {
+                    energyPosStrain = evaluate("model_virial.pt", strainedPositions, strainedBox).energy;
+                }
+                else
+                {
+                    energyNegStrain = evaluate("model_virial.pt", strainedPositions, strainedBox).energy;
+                }
+            }
+            const real virialFromEnergy = (energyPosStrain - energyNegStrain) / (4 * c_strain);
+
+            SCOPED_TRACE(formatString("Strain component %d %d", i, j));
+            EXPECT_REAL_EQ_TOL(virialFromEnergy, virialFromModel[j][i], absoluteTolerance(3e-3));
+        }
+    }
+}
+
+//! Checks that no virial is added when the model does not return one
+TEST_F(NNPotVirialTest, NoVirialWithoutModelOutput)
+{
+    auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", "cpu");
+
+    const EnergyAndVirial result = evaluate("model.pt", positions_, box_);
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            EXPECT_EQ(result.virial[i][j], 0.0) << "virial component " << i << " " << j;
+        }
+    }
+}
+
 #endif // GMX_TORCH
 
 } // namespace test

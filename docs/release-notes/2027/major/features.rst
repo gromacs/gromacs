@@ -127,3 +127,13 @@ is now automatically increased by a buffer that accounts for the value of ``nstl
 is calculated as twice the RMSD of the atomic displacements over the pairlist lifetime.
 The pairlist passed to the model is pruned at every step to only include pairs within
 the user-defined cutoff.
+
+Allow neural network potentials to add a virial contribution
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some neural network potentials are able to compute a virial stress contribution, e.g.
+by calculating the derivative of the potential energy with respect to an infinitesimal
+strain deformation. This contribution can now be taken into account by the NNPot interface,
+enabling simulations in the NPT ensemble with ML regions that contribute significantly
+to the virial. To enable this, the user should add an additional value to the return dictionary
+of the model, under the key ``virial``.

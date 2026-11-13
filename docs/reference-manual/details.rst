@@ -1,3 +1,5 @@
+.. _details:
+
 Some implementation details
 ===========================
 

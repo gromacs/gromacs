@@ -51,6 +51,7 @@ namespace gmx
 {
 class MpiComm;
 class LinkFrontierAtom;
+class ForceWithVirial;
 
 /*! \brief NNPot Module
  *
@@ -78,7 +79,7 @@ public:
      *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
      */
     virtual void evaluateModel(gmx_enerdata_t* /* enerData */,
-                               ArrayRef<RVec> /* forces */,
+                               ForceWithVirial* /* fOutput */,
                                ArrayRef<const int32_t> /* idxLookup */,
                                ArrayRef<const int32_t> /* mmIndices */,
                                ArrayRef<RVec> /* positions */,
@@ -96,6 +97,8 @@ public:
     virtual bool outputsForces() const = 0;
     //! helper function to check if model outputs forces on MM atoms
     virtual bool outputsMMForces() const = 0;
+    //! helper function to check if model outputs virial contribution
+    virtual bool outputsVirial() const = 0;
 };
 
 } // namespace gmx
