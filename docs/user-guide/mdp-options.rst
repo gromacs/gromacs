@@ -3773,7 +3773,10 @@ interface implementation follow :ref:`nnpot`.
 .. mdp:: pair-cutoff
 
    (0.0) [nm] Cutoff distance for pairs of NNP atoms. Positive cutoff value must be specified
-   when requesting ``atom-pairs`` input.
+   when requesting ``atom-pairs`` input. To this value, the interface automatically adds
+   a buffer computed from twice the RMSD atomic displacements over the pairlist lifetime.
+   The pairlist passed to the model is pruned at each step to include only pairs of NNP atoms
+   within the specified cutoff distance.
 
 .. mdp:: nnpot-link-type
 

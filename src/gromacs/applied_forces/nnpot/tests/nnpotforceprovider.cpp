@@ -50,6 +50,7 @@
 #include <tuple>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/nnpot/nnpotoptions.h"
@@ -80,6 +81,7 @@
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/testmatchers.h"
 #include "testutils/tprfilegenerator.h"
 
 namespace gmx
@@ -253,6 +255,18 @@ static const EnumerationArray<LocalAtomOrder, const char*> sc_localAtomOrderName
     { "GlobalOrder", "ReversedOrder" }
 };
 
+//! Returns the global index of each local atom for the given local atom order
+std::vector<int> localToGlobalIndices(LocalAtomOrder localAtomOrder, int numAtoms)
+{
+    std::vector<int> localToGlobal(numAtoms);
+    std::iota(localToGlobal.begin(), localToGlobal.end(), 0);
+    if (localAtomOrder == LocalAtomOrder::Reversed)
+    {
+        std::reverse(localToGlobal.begin(), localToGlobal.end());
+    }
+    return localToGlobal;
+}
+
 //! Whether NNP models can run on a GPU in this configuration, cf. getMdrunActiveDevice()
 static constexpr bool sc_nnpotSupportsGpu = GMX_GPU_CUDA || GMX_GPU_HIP || GMX_TORCH_XPU;
 
@@ -322,8 +336,6 @@ public:
             x -= RVec{ 0.8, 1.25, 1.2 };
         }
         put_atoms_in_box(pbcType_, box_, xGlobal_);
-
-        calc_shifts(box_, shiftVecs_);
     }
 
     ~NNPotPairlistInputTest() override { done_atom(&params_.atoms_); }
@@ -337,11 +349,17 @@ public:
                 "With the LibTorch XPU backend, NNP models only run on the first GPU");
     }
 
-    /*! \brief Calculates NNP forces with the given local atom order and checks them
+    //! Returns whether the atom with global index \p globalIndex is part of the NNP region
+    static bool isNNPAtom(int globalIndex)
+    {
+        return std::find(sc_nnpIndices.begin(), sc_nnpIndices.end(), globalIndex) != sc_nnpIndices.end();
+    }
+
+    /*! \brief Sets up the local atom order and returns the local coordinates
      *
      * \param[in] localToGlobal  localToGlobal[l] is the global index of the atom at local index l
      */
-    void testCalculateForces(ArrayRef<const int> localToGlobal)
+    std::vector<RVec> setLocalAtomOrder(ArrayRef<const int> localToGlobal)
     {
         const int numAtoms = params_.numAtoms_;
 
@@ -354,32 +372,122 @@ public:
         }
         atomSetManager_.setIndicesInDomainDecomposition(ga2la);
 
-        // Excluded pairlist over all atoms in local indices, as nbnxm provides it,
-        // using the convention: distance = x[first] - x[second] + shiftVec[shiftIndex]
-        auto isNNPAtom = [](int globalIndex)
+        return xLocal;
+    }
+
+    /*! \brief Returns all pairs within \p range in local indices, as nbnxm provides them
+     *
+     * Uses the convention: distance = x[first] - x[second] + shiftVec[shiftIndex]
+     *
+     * \param[in] x         Local coordinates
+     * \param[in] box       Box for computing the shift vectors
+     * \param[in] range     Pair search range
+     * \param[in] nnpOnly   When not empty, only return pairs of NNP atoms; holds the local to
+     *                      global index mapping
+     */
+    static std::vector<PairlistEntry> pairsWithinRange(ArrayRef<const RVec> x,
+                                                       const matrix         box,
+                                                       real                 range,
+                                                       ArrayRef<const int>  nnpOnly = {})
+    {
+        std::array<RVec, c_numShiftVectors> shiftVecs;
+        calc_shifts(box, shiftVecs);
+
+        std::vector<PairlistEntry> pairs;
+        for (int first = 0; first < gmx::ssize(x); first++)
         {
-            return std::find(sc_nnpIndices.begin(), sc_nnpIndices.end(), globalIndex)
-                   != sc_nnpIndices.end();
-        };
-        std::vector<PairlistEntry> excludedPairs;
-        int                        numPeriodicNNPPairs = 0;
-        for (int first = 0; first < numAtoms; first++)
-        {
-            for (int second = first + 1; second < numAtoms; second++)
+            for (int second = first + 1; second < gmx::ssize(x); second++)
             {
+                if (!nnpOnly.empty() && !(isNNPAtom(nnpOnly[first]) && isNNPAtom(nnpOnly[second])))
+                {
+                    continue;
+                }
                 for (int shiftIndex = 0; shiftIndex < c_numShiftVectors; shiftIndex++)
                 {
-                    if (norm(xLocal[first] - xLocal[second] + shiftVecs_[shiftIndex]) < sc_pairCutoff)
+                    if (norm(x[first] - x[second] + shiftVecs[shiftIndex]) <= range)
                     {
-                        excludedPairs.push_back({ { first, second }, shiftIndex });
-                        numPeriodicNNPPairs +=
-                                (isNNPAtom(localToGlobal[first]) && isNNPAtom(localToGlobal[second])
-                                 && shiftIndex != c_centralShiftIndex);
+                        pairs.push_back({ { first, second }, shiftIndex });
                     }
                 }
             }
         }
-        ASSERT_GT(numPeriodicNNPPairs, 0)
+        return pairs;
+    }
+
+    //! \brief Helper struct to hold a pair of energy and forces
+    struct EnergyAndForces
+    {
+        double            energy;
+        std::vector<RVec> forces;
+    };
+
+    /*! \brief Computes energy and forces of model_pairs.pt for all NNP pairs within the cutoff
+     *
+     * This is the expected output of the force provider, independent of the pairlist buffer.
+     */
+    EnergyAndForces referenceEnergyAndForces(ArrayRef<const RVec> x,
+                                             ArrayRef<const int>  localToGlobal,
+                                             const matrix         box) const
+    {
+        std::array<RVec, c_numShiftVectors> shiftVecs;
+        calc_shifts(box, shiftVecs);
+
+        double            energy = 0;
+        std::vector<RVec> forces(x.size(), RVec{ 0, 0, 0 });
+        for (const auto& [atomPair, shiftIndex] : pairsWithinRange(x, box, sc_pairCutoff, localToGlobal))
+        {
+            const auto [first, second] = atomPair;
+            const RVec d               = x[first] - x[second] + shiftVecs[shiftIndex];
+            const real zz              = params_.atoms_.atom[localToGlobal[first]].atomnumber
+                            * params_.atoms_.atom[localToGlobal[second]].atomnumber;
+            energy += zz * norm2(d);
+            forces[first] -= 2 * zz * d;
+            forces[second] += 2 * zz * d;
+        }
+        return { energy, forces };
+    }
+
+    //! Runs the force provider on local coordinates \p x and returns energy and forces
+    EnergyAndForces calculateEnergyAndForces(NNPotForceProvider*  nnpotForceProvider,
+                                             ArrayRef<const RVec> x,
+                                             const matrix         box)
+    {
+        ForceProviderInput  fInput(x, params_.numAtoms_, {}, {}, 0.0, 0, box, mpiComm_, nullptr);
+        std::vector<RVec>   forces(params_.numAtoms_, RVec{ 0, 0, 0 });
+        ForceWithVirial     forceWithVirial(forces, true);
+        gmx_enerdata_t      enerd(1, nullptr);
+        ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerd);
+        nnpotForceProvider->calculateForces(fInput, &forceProviderOutput);
+
+        return { enerd.term[InteractionFunction::NeuralNetworkPotentialEnergy], forces };
+    }
+
+    //! Checks that the force provider output matches the brute-force reference
+    void compareEnergyAndForces(const EnergyAndForces& first, const EnergyAndForces& second)
+    {
+        EXPECT_REAL_EQ_TOL(
+                first.energy, second.energy, relativeToleranceAsFloatingPoint(second.energy, 5e-5));
+        EXPECT_THAT(first.forces,
+                    ::testing::Pointwise(RVecEq(relativeToleranceAsFloatingPoint(100.0, 5e-5)),
+                                         second.forces));
+    }
+
+    /*! \brief Calculates NNP forces with the given local atom order and checks them
+     *
+     * \param[in] localToGlobal  localToGlobal[l] is the global index of the atom at local index l
+     */
+    void testCalculateForces(ArrayRef<const int> localToGlobal)
+    {
+        const int               numAtoms = params_.numAtoms_;
+        const std::vector<RVec> xLocal   = setLocalAtomOrder(localToGlobal);
+
+        // Excluded pairlist over all atoms in local indices
+        const std::vector<PairlistEntry> excludedPairs = pairsWithinRange(xLocal, box_, sc_pairCutoff);
+        const auto nnpPairs = pairsWithinRange(xLocal, box_, sc_pairCutoff, localToGlobal);
+        ASSERT_TRUE(std::any_of(nnpPairs.begin(),
+                                nnpPairs.end(),
+                                [](const PairlistEntry& p)
+                                { return p.second != c_centralShiftIndex; }))
                 << "Test setup should produce NNP pairs across the boundary";
 
         NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_);
@@ -387,22 +495,17 @@ public:
                 MDModulesAtomsRedistributedSignal{ box_, xLocal, {}, {}, std::nullopt });
         nnpotForceProvider.setPairlist(MDModulesPairlistConstructedSignal{ {}, excludedPairs, {} });
 
-        ForceProviderInput  fInput(xLocal, numAtoms, {}, {}, 0.0, 0, box_, mpiComm_, nullptr);
-        std::vector<RVec>   forces(numAtoms, RVec{ 0, 0, 0 });
-        ForceWithVirial     forceWithVirial(forces, true);
-        gmx_enerdata_t      enerd(1, nullptr);
-        ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerd);
-        nnpotForceProvider.calculateForces(fInput, &forceProviderOutput);
+        const auto result = calculateEnergyAndForces(&nnpotForceProvider, xLocal, box_);
 
         // Check forces in global order, so all local orders share the same reference
         std::vector<RVec> forcesGlobal(numAtoms);
         for (int i = 0; i < numAtoms; i++)
         {
-            forcesGlobal[localToGlobal[i]] = forces[i];
+            forcesGlobal[localToGlobal[i]] = result.forces[i];
         }
 
         checker().setDefaultTolerance(relativeToleranceAsFloatingPoint(10.0, 5e-5));
-        checker().checkReal(enerd.term[InteractionFunction::NeuralNetworkPotentialEnergy], "Energy");
+        checker().checkReal(result.energy, "Energy");
         checker().setDefaultTolerance(relativeToleranceAsFloatingPoint(100.0, 5e-5));
         checker().checkSequence(forcesGlobal.begin(), forcesGlobal.end(), "Forces");
     }
@@ -412,16 +515,17 @@ protected:
     static inline const std::vector<Index> sc_nnpIndices = { 0, 1, 2, 3, 4, 5 };
     //! Cutoff for NNP pairs
     static constexpr real sc_pairCutoff = 0.5;
+    //! Pairlist buffer, as computed from the pairlist lifetime in mdrun
+    static constexpr real sc_pairlistBuffer = 0.1;
 
-    NNPotParameters                     params_;
-    MDLogger                            logger_;
-    LocalAtomSetManager                 atomSetManager_;
-    const MpiComm                       mpiComm_ = MpiComm(MpiComm::SingleRank{});
-    gmx_mtop_t                          mtop_;
-    PbcType                             pbcType_;
-    matrix                              box_;
-    std::vector<RVec>                   xGlobal_;
-    std::array<RVec, c_numShiftVectors> shiftVecs_;
+    NNPotParameters     params_;
+    MDLogger            logger_;
+    LocalAtomSetManager atomSetManager_;
+    const MpiComm       mpiComm_ = MpiComm(MpiComm::SingleRank{});
+    gmx_mtop_t          mtop_;
+    PbcType             pbcType_;
+    matrix              box_;
+    std::vector<RVec>   xGlobal_;
 };
 
 TEST_P(NNPotPairlistInputTest, CanCalculateForces)
@@ -436,14 +540,112 @@ TEST_P(NNPotPairlistInputTest, CanCalculateForces)
     activateHardware();
     auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", isGpuTest() ? "gpu" : "cpu");
 
-    std::vector<int> localToGlobal(params_.numAtoms_);
-    std::iota(localToGlobal.begin(), localToGlobal.end(), 0);
-    if (localAtomOrder == LocalAtomOrder::Reversed)
+    testCalculateForces(localToGlobalIndices(localAtomOrder, params_.numAtoms_));
+}
+
+/*! \brief Test that pairs from the buffer region are pruned at every step
+ *
+ * The pairlist is constructed once with a buffer, as mdrun does. Then the system is rescaled
+ * without constructing a new pairlist, so that pairs from the buffer region move inside the
+ * cutoff and pairs inside the cutoff move out, and the shift vectors change.
+ * This check makes sure that the pairs within the buffer region do not contribute to
+ * the energy and force calculation by the model, by checking against a reference implementation
+ * (in referenceEnergyAndForces()). That is, the model should always see exactly the NNP pairs within the cutoff.
+ */
+TEST_P(NNPotPairlistInputTest, PrunesBufferedPairlistEveryStep)
+{
+    auto [localAtomOrder, _] = GetParam();
+
+    SCOPED_TRACE(formatString("Testing on %s with %s",
+                              hardwareContext()->description().c_str(),
+                              sc_localAtomOrderNames[localAtomOrder]));
+
+    activateHardware();
+    auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", isGpuTest() ? "gpu" : "cpu");
+
+    const std::vector<int>  localToGlobal = localToGlobalIndices(localAtomOrder, params_.numAtoms_);
+    const std::vector<RVec> xLocal        = setLocalAtomOrder(localToGlobal);
+
+    const real pairlistRange = sc_pairCutoff + sc_pairlistBuffer;
+    const auto numNNPPairs   = [&](ArrayRef<const RVec> x, const matrix box, real range)
+    { return pairsWithinRange(x, box, range, localToGlobal).size(); };
+    ASSERT_GT(numNNPPairs(xLocal, box_, pairlistRange), numNNPPairs(xLocal, box_, sc_pairCutoff))
+            << "Test setup should produce NNP pairs in the buffer region";
+
+    NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_);
+    nnpotForceProvider.gatherAtomNumbersIndices(
+            MDModulesAtomsRedistributedSignal{ box_, xLocal, {}, {}, std::nullopt });
+    nnpotForceProvider.setPairlist(MDModulesPairlistConstructedSignal{
+            {}, pairsWithinRange(xLocal, box_, pairlistRange), {} });
+
     {
-        std::reverse(localToGlobal.begin(), localToGlobal.end());
+        SCOPED_TRACE("Step with pairlist construction");
+        const auto energyAndForcesFromModel = calculateEnergyAndForces(&nnpotForceProvider, xLocal, box_);
+        const auto energyAndForcesFromReference = referenceEnergyAndForces(xLocal, localToGlobal, box_);
+        compareEnergyAndForces(energyAndForcesFromModel, energyAndForcesFromReference);
     }
 
-    testCalculateForces(localToGlobal);
+    // Scale factors are chosen such that all pairs within the scaled cutoff are still within
+    // the pairlist range, i.e. the buffer is sufficient
+    for (const real scale : { real(0.9), real(1.1) })
+    {
+        SCOPED_TRACE(formatString("Step without pairlist construction, scaled by %g", scale));
+
+        matrix box;
+        for (int d = 0; d < DIM; d++)
+        {
+            for (int e = 0; e < DIM; e++)
+            {
+                box[d][e] = scale * box_[d][e];
+            }
+        }
+        std::vector<RVec> x(xLocal);
+        for (auto& xi : x)
+        {
+            xi *= scale;
+        }
+        ASSERT_NE(numNNPPairs(x, box, sc_pairCutoff), numNNPPairs(xLocal, box_, sc_pairCutoff))
+                << "Scaling should change the set of NNP pairs within the cutoff";
+        ASSERT_LE(sc_pairCutoff / scale, pairlistRange)
+                << "Test setup should have all pairs within the cutoff in the pairlist";
+
+        const auto energyAndForcesFromModel = calculateEnergyAndForces(&nnpotForceProvider, x, box);
+        const auto energyAndForcesFromReference = referenceEnergyAndForces(x, localToGlobal, box);
+        compareEnergyAndForces(energyAndForcesFromModel, energyAndForcesFromReference);
+    }
+}
+
+//! Test that a newly constructed pairlist replaces the previous one
+TEST_P(NNPotPairlistInputTest, NewPairlistReplacesPrevious)
+{
+    auto [localAtomOrder, _] = GetParam();
+
+    SCOPED_TRACE(formatString("Testing on %s with %s",
+                              hardwareContext()->description().c_str(),
+                              sc_localAtomOrderNames[localAtomOrder]));
+
+    activateHardware();
+    auto envGuard = GmxEnvGuard("GMX_NN_DEVICE", isGpuTest() ? "gpu" : "cpu");
+
+    const std::vector<int>  localToGlobal = localToGlobalIndices(localAtomOrder, params_.numAtoms_);
+    const std::vector<RVec> xLocal        = setLocalAtomOrder(localToGlobal);
+    const std::vector<PairlistEntry> excludedPairs =
+            pairsWithinRange(xLocal, box_, sc_pairCutoff + sc_pairlistBuffer);
+
+    NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_);
+    nnpotForceProvider.gatherAtomNumbersIndices(
+            MDModulesAtomsRedistributedSignal{ box_, xLocal, {}, {}, std::nullopt });
+    // Repeatedly set a (new) pairlist and check against reference, to make sure that the
+    // pairlist is reset upon receiving a new signal, instead of appended to
+    for (int construction = 0; construction < 3; construction++)
+    {
+        SCOPED_TRACE(formatString("Pairlist construction %d", construction));
+        nnpotForceProvider.setPairlist(MDModulesPairlistConstructedSignal{ {}, excludedPairs, {} });
+
+        const auto energyAndForcesFromModel = calculateEnergyAndForces(&nnpotForceProvider, xLocal, box_);
+        const auto energyAndForcesFromReference = referenceEnergyAndForces(xLocal, localToGlobal, box_);
+        compareEnergyAndForces(energyAndForcesFromModel, energyAndForcesFromReference);
+    }
 }
 
 INSTANTIATE_TEST_SUITE_P(

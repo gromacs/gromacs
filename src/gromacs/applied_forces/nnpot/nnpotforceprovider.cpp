@@ -212,14 +212,14 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
         centerAtomPositions(positions, mmPositions, box, *(params_.pbcType_));
     }
 
+    // get link atom info
+    std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_, positions));
+
     // prepare pairlist input if requested (non-zero cutoff)
     if (params_.pairCutoff_ > 0.0)
     {
-        preparePairlistInput(box);
+        preparePairlistInput(positions, box);
     }
-
-    // get link atom info
-    std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_, positions));
 
     model_->evaluateModel(&(fOutput->enerd_),
                           fOutput->forceWithVirial_.force_,
@@ -358,40 +358,19 @@ NNPotForceProvider::constructLinkFrontier(const std::vector<LinkFrontierAtom>& i
 
 void NNPotForceProvider::setPairlist(const MDModulesPairlistConstructedSignal& signal)
 {
-    // We don't have the updated box vectors yet here, so we can't compute the shift vectors.
-    // So, we just store the pairlist and prepare the input later in calculateForces().
-    fullPairlist_.assign(signal.excludedPairlist_.begin(), signal.excludedPairlist_.end());
-    doPairlist_ = true;
-}
-
-void NNPotForceProvider::preparePairlistInput(const matrix& box)
-{
-    // New pair list constructed: Indices in the pairlist correspond to local atom indices.
-    // For now, find all pairs of NNP atoms within the cutoff (which were excluded from the
-    // short-range calculation in GROMACS) so the NN potential does not have to re-compute them.
-    // Thus, we're interested in the excluded pairlist, because all NNP-atom pairs are excluded
-    // pairs, but not all excluded pairs are necessarily NNP-atom pairs.
+    // New pair list constructed. Indices in the pairlist correspond to local atom indices.
+    // We're interested in the excluded pairlist here: all NNP atoms have been excluded from the
+    // short-ranged non-bonded calculations. However, not all excluded pairs are necessarily
+    // NNP-atom pairs, so we still have to filter it.
     // TODO: figure out dom.dec. case.
-    if (!doPairlist_)
-    {
-        return;
-    }
-    // this assert should only trigger if something breaks in the mdmodules notifications
-    GMX_ASSERT(!fullPairlist_.empty(), "Pairlist for NNP model is empty!");
+    const auto& pairlist = signal.excludedPairlist_;
 
-    const int numPairs = gmx::ssize(fullPairlist_);
-    pairlistForModel_.clear();
-    pairlistForModel_.reserve(2 * numPairs);
-    shiftVectors_.clear();
-    shiftVectors_.reserve(numPairs);
-
-    // precompute shifts
-    std::array<RVec, c_numShiftVectors> shiftVecs;
-    calc_shifts(box, shiftVecs);
-
+    const int numPairs = gmx::ssize(pairlist);
+    filteredPairlist_.clear();
+    filteredPairlist_.reserve(pairlist.size());
     for (int i = 0; i < numPairs; i++)
     {
-        const auto [atomPair, shiftIndex] = fullPairlist_[i];
+        const auto atomPair = pairlist[i].first;
 
         // we only want to add pairs where both atoms are part of the NNP input
         // if any of the two (or more commonly both) is not, we skip this pair
@@ -403,7 +382,39 @@ void NNPotForceProvider::preparePairlistInput(const matrix& box)
         const int inputIdxB = localToInputIndex_[atomPair.second];
         if (inputIdxA >= 0 && inputIdxB >= 0)
         {
-            // no need to check cutoff: pairlist already comes filtered by cutoff
+            filteredPairlist_.push_back(pairlist[i]);
+        }
+    }
+}
+
+void NNPotForceProvider::preparePairlistInput(ArrayRef<const RVec> positions, const matrix& box)
+{
+    // precompute shifts
+    std::array<RVec, c_numShiftVectors> shiftVecs;
+    calc_shifts(box, shiftVecs);
+
+    // Any model that needs the pairlist input will also need the positions,
+    // but we might just have an empty domain.
+    GMX_RELEASE_ASSERT(!positions.empty() || mpiComm_.isParallel(), "Position vector is empty");
+
+    const int numPairs = gmx::ssize(filteredPairlist_);
+    pairlistForModel_.clear();
+    pairlistForModel_.reserve(2 * numPairs);
+    shiftVectors_.clear();
+    shiftVectors_.reserve(numPairs);
+
+    const real cutoffSquared = params_.pairCutoff_ * params_.pairCutoff_;
+    for (int i = 0; i < numPairs; i++)
+    {
+        const auto [atomPair, shiftIndex] = filteredPairlist_[i];
+        const int inputIdxA               = localToInputIndex_[atomPair.first];
+        const int inputIdxB               = localToInputIndex_[atomPair.second];
+
+        // filter out pairs that are not within the user-defined cutoff
+        const real distanceSquared =
+                norm2(positions[inputIdxA] - positions[inputIdxB] + shiftVecs[shiftIndex]);
+        if (distanceSquared <= cutoffSquared)
+        {
             pairlistForModel_.push_back(inputIdxA);
             pairlistForModel_.push_back(inputIdxB);
             shiftVectors_.push_back(shiftVecs[shiftIndex]);
@@ -412,7 +423,6 @@ void NNPotForceProvider::preparePairlistInput(const matrix& box)
     // sanity check
     GMX_RELEASE_ASSERT(pairlistForModel_.size() == shiftVectors_.size() * 2,
                        "Inconsistent pairlist and shift vector sizes");
-    doPairlist_ = false;
 }
 
 } // namespace gmx

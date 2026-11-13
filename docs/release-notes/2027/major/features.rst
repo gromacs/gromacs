@@ -77,6 +77,7 @@ a single character. Such identifiers are truncated to their first character, and
 a warning naming them is printed.
 
 :issue:`4753`
+
 New I/O format for neural network potentials
 """"""""""""""""""""""""""""""""""""""""""""
 
@@ -113,3 +114,16 @@ A complete list of changes can be found in merge request `6351 <https://gitlab.c
 
 For documentation see :ref:`this section <colvars>` of the |Gromacs| doc and the corresponding
 Colvars doc page at `https://colvars.github.io/gromacs-2027 <https://colvars.github.io/gromacs-2027>`_.
+
+NNPot pairlist cutoff now accounts for pairlist lifetime
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Prior to this change, the NNPot pairlist cutoff was set exactly to the user-defined cutoff.
+However, if ``nstlist`` is set to a value greater than 1, the pairlist passed to the NNPot
+model might be missing pairs that moved into the cutoff region since the last pairlist update.
+If this is not accounted for, the NNPot model will not be able to compute the exact forces
+and energies. Instead of relying on the user to set a larger cutoff, the NNPot pairlist cutoff
+is now automatically increased by a buffer that accounts for the value of ``nstlist``. The buffer
+is calculated as twice the RMSD of the atomic displacements over the pairlist lifetime.
+The pairlist passed to the model is pruned at every step to only include pairs within
+the user-defined cutoff.

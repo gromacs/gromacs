@@ -179,7 +179,12 @@ public:
         if (nnpotOptions_.parameters().pairCutoff_ > 0.0)
         {
             const auto setPlainPairlistRangeFunction = [this](PlainPairlistRanges* plainPairlistRanges)
-            { plainPairlistRanges->addRange(nnpotOptions_.parameters().pairCutoff_); };
+            {
+                const real userCutoff = nnpotOptions_.parameters().pairCutoff_;
+                // add a buffer to the user-defined cutoff to account for the pairlist lifetime
+                const real buffer = 2 * plainPairlistRanges->rmsdDistance().value_or(0.0);
+                plainPairlistRanges->addRange(userCutoff + buffer);
+            };
             notifiers->simulationSetupNotifier_.subscribe(setPlainPairlistRangeFunction);
         }
     }
