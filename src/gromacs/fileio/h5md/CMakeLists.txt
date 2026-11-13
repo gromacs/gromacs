@@ -40,6 +40,7 @@ if(GMX_USE_HDF5)
     target_sources(h5md PRIVATE
         h5md.cpp
         h5md_attribute.cpp
+        h5md_compound_type.cpp
         h5md_compression.cpp
         h5md_datasetbase.cpp
         h5md_fixeddataset.cpp
@@ -49,6 +50,7 @@ if(GMX_USE_HDF5)
         h5md_guard.cpp
         h5md_particleblock.cpp
         h5md_timedatablock.cpp
+        h5md_topologycompound.cpp
         h5md_topologyutils.cpp
         binary_information.cpp
         exceptions.cpp

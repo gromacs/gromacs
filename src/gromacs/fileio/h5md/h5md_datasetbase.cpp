@@ -44,7 +44,9 @@
 #include <algorithm>
 
 #include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_compound_type.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
+#include "gromacs/fileio/h5md/h5md_topologycompound.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -80,7 +82,8 @@ static hid_t openDataSet(const hid_t container, const char* name)
 /*! \brief Verify that the data set is consistent for its templated \c ValueType.
  *
  * Verifies:
- * 1. That the base primitive of ValueType matches the internal HDF5 data set \p storedDataType.
+ * 1. That the base primitive of ValueType matches the internal HDF5 data set \p storedDataType,
+ *    or, for a compound type, that its members match in name and type.
  * 2. That the primitive data set dimensions \p dims can store values of the templated \c ValueType.
  *
  * \param[in] storedDataType Data type of data set.
@@ -104,9 +107,20 @@ static void verifyDataSetConsistency(const hid_t storedDataType, const DataSetDi
                                   "for BasicVector<double>");
     }
 
-    GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsSameClassAsDataType<ValueType>(storedDataType),
-                              "Could not open data set: compiled type parameter does not match "
-                              "the primitive type of the data set");
+    if constexpr (valueTypeIsHdf5CompoundType<ValueType>())
+    {
+        GMX_H5MD_THROW_UPON_ERROR(
+                !ValueType::matches(storedDataType),
+                formatString("Could not open data set: compiled struct type parameter %s does not "
+                             "match the data type of the data set",
+                             ValueType::sc_typeName));
+    }
+    else
+    {
+        GMX_H5MD_THROW_UPON_ERROR(!valueTypeIsSameClassAsDataType<ValueType>(storedDataType),
+                                  "Could not open data set: compiled type parameter does not match "
+                                  "the primitive type of the data set");
+    }
 }
 
 //! \brief Return whether the number of data points in \p values matches the selections.
@@ -306,6 +320,10 @@ static bool writeVariableLengthStringsToDataSet(const hid_t                 data
  * For std::string data types we need additional information that is
  * only available in \p storedDataType and so derive the returned type
  * from it.
+ *
+ * Compound types return their own layout. H5Tget_native_type() would
+ * recompute the member offsets from the native alignment, which differs
+ * from the struct when it holds a member that is not stored.
  */
 template<typename ValueType>
 static hid_t getMemoryDataType(const hid_t storedDataType)
@@ -321,6 +339,10 @@ static hid_t getMemoryDataType(const hid_t storedDataType)
     else if constexpr (std::is_same_v<ValueType, std::string>)
     {
         return H5Tget_native_type(storedDataType, H5T_DIR_DEFAULT);
+    }
+    else if constexpr (valueTypeIsHdf5CompoundType<ValueType>())
+    {
+        return ValueType::constructHdf5DataType();
     }
     else
     {
@@ -448,6 +470,8 @@ template class H5mdDataSetBase<double>;
 template class H5mdDataSetBase<BasicVector<float>>;
 template class H5mdDataSetBase<BasicVector<double>>;
 template class H5mdDataSetBase<std::string>;
+
+template class H5mdDataSetBase<MoleculeBlock>;
 
 } // namespace gmx
 

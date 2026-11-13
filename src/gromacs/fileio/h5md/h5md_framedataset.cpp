@@ -42,7 +42,9 @@
 #include "h5md_framedataset.h"
 
 #include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_compound_type.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
+#include "gromacs/fileio/h5md/h5md_topologycompound.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -54,7 +56,8 @@ namespace gmx
 
 ///@{
 //! \brief Return the frame dimensions for the data set dimensions.
-template<typename ValueType, std::enable_if_t<std::is_arithmetic_v<ValueType>, bool> = true>
+template<typename ValueType,
+         std::enable_if_t<std::is_arithmetic_v<ValueType> || valueTypeIsHdf5CompoundType<ValueType>(), bool> = true>
 static DataSetDims getFrameDims(const DataSetDims& dataSetDims)
 {
     return DataSetDims(dataSetDims.cbegin() + 1, dataSetDims.cend());
@@ -279,5 +282,9 @@ template class H5mdScalarFrameDataSet<float>;
 template class H5mdScalarFrameDataSet<double>;
 template class H5mdScalarFrameDataSet<BasicVector<float>>;
 template class H5mdScalarFrameDataSet<BasicVector<double>>;
+
+template class H5mdFrameDataSet<MoleculeBlock>;
+
+template class H5mdScalarFrameDataSet<MoleculeBlock>;
 
 } // namespace gmx

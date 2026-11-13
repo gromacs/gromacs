@@ -52,6 +52,9 @@ class ArrayRef;
 template<typename ValueType>
 class BasicVector;
 
+// Compound data types
+struct MoleculeBlock;
+
 /*! \brief Class which provides an interface for reading and writing data to data sets of fixed size.
  *
  * \tparam ValueType Type of values stored in data set (not limited to primitives).
@@ -125,6 +128,8 @@ extern template class H5mdFixedDataSet<BasicVector<float>>;
 extern template class H5mdFixedDataSet<BasicVector<double>>;
 
 extern template class H5mdFixedDataSet<std::string>;
+
+extern template class H5mdFixedDataSet<MoleculeBlock>;
 
 } // namespace gmx
 

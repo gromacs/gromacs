@@ -56,6 +56,8 @@ namespace gmx
 {
 
 constexpr char c_unitAttributeKey[] = "unit";
+//! \brief Name of the attribute with the unit of each member of a compound data set.
+constexpr char c_unitsAttributeKey[] = "units";
 
 /*! \brief Read an attribute of a given data type
  *

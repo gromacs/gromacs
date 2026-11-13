@@ -42,6 +42,8 @@
 #include "h5md_fixeddataset.h"
 
 #include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_compound_type.h"
+#include "gromacs/fileio/h5md/h5md_topologycompound.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
@@ -70,10 +72,12 @@ static DataSetDims primitiveDimsToValueTypeDims(const DataSetDims& dims)
                                   "Innermost dimension of data set for BasicVector<T> must be 3");
         return DataSetDims(dims.cbegin(), dims.cend() - 1);
     }
-    else if constexpr (std::is_arithmetic_v<ValueType> || std::is_same_v<ValueType, std::string>)
+    else if constexpr (std::is_arithmetic_v<ValueType> || std::is_same_v<ValueType, std::string>
+                       || valueTypeIsHdf5CompoundType<ValueType>())
     {
         // For simple primitives the dimensions are unchanged.
-        // The same goes for strings in HDF5, each string represents a single value.
+        // The same goes for strings and compound types in HDF5, each string or
+        // compound record represents a single value.
         return dims;
     }
     else
@@ -169,6 +173,8 @@ template class H5mdFixedDataSet<BasicVector<float>>;
 template class H5mdFixedDataSet<BasicVector<double>>;
 
 template class H5mdFixedDataSet<std::string>;
+
+template class H5mdFixedDataSet<MoleculeBlock>;
 
 } // namespace gmx
 

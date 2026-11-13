@@ -57,6 +57,9 @@ class BasicVector;
 template<typename ValueType>
 class H5mdDataSetBuilder;
 
+// Compound data types
+struct MoleculeBlock;
+
 /*! \brief Dimensions of a HDF5 data set.
  */
 using DataSetDims = std::vector<hsize_t>;
@@ -205,6 +208,8 @@ extern template class H5mdDataSetBase<double>;
 extern template class H5mdDataSetBase<BasicVector<float>>;
 extern template class H5mdDataSetBase<BasicVector<double>>;
 extern template class H5mdDataSetBase<std::string>;
+
+extern template class H5mdDataSetBase<MoleculeBlock>;
 
 } // namespace gmx
 

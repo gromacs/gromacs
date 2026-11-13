@@ -51,6 +51,7 @@
 
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
+#include "gromacs/fileio/h5md/h5md_compound_type.h"
 #include "gromacs/fileio/h5md/h5md_datasetbase.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
@@ -159,6 +160,8 @@ public:
     // \note The max length must be positive and count the null-terminator character.
     // If neither withMaxStringLength() nor withVariableStringLength() is called,
     // the default is variable-length strings for string data sets.
+    // For a compound type with fixed-length string members (see valueTypeHasSizedStrings()),
+    // \p maxLength is the size in which those members are stored.
     H5mdDataSetBuilder& withMaxStringLength(const int maxLength)
     {
         // Use int to prevent the integer overflow if passed a negative value
@@ -184,6 +187,9 @@ public:
     }
 
     //! \brief Finalize all set options, then build and return the data set.
+    //
+    // For a compound \c ValueType that declares \c sc_units, these are written as the
+    // \c units attribute of the data set (see h5md_compound_type.h).
     //
     // \throws H5mdError if any set options are incorrect or incompatible with other
     // options, or if an error occurred when creating the data set.
@@ -267,6 +273,14 @@ public:
         {
             setAttribute(dataSetHandle, c_unitAttributeKey, unit_.c_str());
         }
+        if constexpr (valueTypeHasUnits<ValueType>())
+        {
+            static_assert(ValueType::sc_units.size() == ValueType::sc_names.size(),
+                          "A compound type must give one unit for each member");
+            // Written whenever the type declares units, even if all members are dimensionless
+            setAttributeVector(
+                    dataSetHandle, c_unitsAttributeKey, ArrayRef<const char* const>(ValueType::sc_units));
+        }
 
         // Responsibility for closing `dataSetHandle` is taken by the `H5mdDataSetBase<ValueType>`
         return H5mdDataSetBase<ValueType>(dataSetHandle);
@@ -300,6 +314,17 @@ private:
             {
                 return hdf5DataTypeForVariableLengthString();
             }
+        }
+        else if constexpr (valueTypeIsHdf5CompoundType<ValueType>())
+        {
+            if constexpr (valueTypeHasSizedStrings<ValueType>())
+            {
+                if (maxStringLength_.has_value())
+                {
+                    return ValueType::constructHdf5DataType(maxStringLength_.value());
+                }
+            }
+            return ValueType::constructHdf5DataType();
         }
         else
         {
