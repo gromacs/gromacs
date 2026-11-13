@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/topology/chainid.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
@@ -251,100 +252,6 @@ static void get_stx_coordnum(const std::filesystem::path& infile, int* natoms)
     }
 }
 
-//! Constructs plausible chain IDs for multi-molecule systems, e.g. when read from .tpr files
-class ChainIdFiller
-{
-public:
-    //! Fill in the chain ID for the indicated atom range, which might be a molecule.
-    void fill(t_atoms* atoms, int startAtomIndex, int endAtomIndex);
-    //! If only one chain was found, we don't add a chain ID.
-    void clearIfNeeded(t_atoms* atoms) const;
-
-private:
-    //! Minimum size for a chain worth giving an ID
-    static constexpr int s_chainMinAtoms = 15;
-
-    //! The number of the next chain that will be assigned.
-    int nextChainNumber_ = 0;
-    //! The chain ID of the next chain that will be assigned.
-    char nextChainId_ = 'A';
-    //! Whether the set of chain IDs (ie. upper- and lower-case letters and single digits) is exhausted.
-    bool outOfIds_ = false;
-};
-
-void ChainIdFiller::fill(t_atoms* atoms, const int startAtomIndex, const int endAtomIndex)
-{
-    // We always assign a new chain number, but only assign a chain id
-    // characters for larger molecules.
-    char chainIdToAssign;
-    if (endAtomIndex - startAtomIndex >= s_chainMinAtoms && !outOfIds_)
-    {
-        /* Set the chain id for the output */
-        chainIdToAssign = nextChainId_;
-        /* Here we allow for the max possible 2*26+10=62 chain ids */
-        if (nextChainId_ == 'Z')
-        {
-            nextChainId_ = 'a';
-        }
-        else if (nextChainId_ == 'z')
-        {
-            nextChainId_ = '0';
-        }
-        else if (nextChainId_ == '9')
-        {
-            outOfIds_ = true;
-        }
-        else
-        {
-            nextChainId_++;
-        }
-    }
-    else
-    {
-        chainIdToAssign = ' ';
-    }
-    for (int a = startAtomIndex; a < endAtomIndex; a++)
-    {
-        atoms->resinfo[atoms->atom[a].resind].chainnum = nextChainNumber_;
-        atoms->resinfo[atoms->atom[a].resind].chainid  = chainIdToAssign;
-    }
-    nextChainNumber_++;
-}
-
-void ChainIdFiller::clearIfNeeded(t_atoms* atoms) const
-{
-    /* Blank out the chain id if there was only one chain */
-    if (nextChainId_ == 'B')
-    {
-        for (int r = 0; r < atoms->nres; r++)
-        {
-            atoms->resinfo[r].chainid = ' ';
-        }
-    }
-}
-
-//! Make chain IDs in the t_atoms for a gmx_mtop_t built from a .tpr file
-static void makeChainIdentifiersAfterTprReading(t_atoms* atoms, const gmx::RangePartitioning& mols)
-{
-    ChainIdFiller filler;
-    for (auto m = 0; m != mols.numBlocks(); ++m)
-    {
-        filler.fill(atoms, mols.block(m).begin(), mols.block(m).end());
-    }
-    filler.clearIfNeeded(atoms);
-}
-
-//! Make chain IDs in the t_atoms for a legacy t_topology built from a .tpr file
-static void tpx_make_chain_identifiers(t_atoms* atoms, const t_block* mols)
-{
-    ChainIdFiller filler;
-    for (int m = 0; m < mols->nr; m++)
-    {
-        filler.fill(atoms, mols->index[m], mols->index[m + 1]);
-    }
-    filler.clearIfNeeded(atoms);
-}
-
 static void read_stx_conf(const std::filesystem::path& infile,
                           t_symtab*                    symtab,
                           char**                       name,
@@ -415,7 +322,7 @@ void readConfAndAtoms(const std::filesystem::path& infile,
         *name                            = gmx_strdup(*mtop.name);
         *atoms                           = gmx_mtop_global_atoms(mtop);
         gmx::RangePartitioning molecules = gmx_mtop_molecules(mtop);
-        makeChainIdentifiersAfterTprReading(atoms, molecules);
+        gmx::makeChainIdentifiersAfterTprReading(atoms, molecules);
 
         /* Inelegant solution to avoid all char pointers in atoms becoming
          * invalid after destruction of mtop.
@@ -520,7 +427,7 @@ gmx_bool read_tps_conf(const std::filesystem::path& infile,
     // This conditional has the side effect of preserving chain identifiers read from a PDB file.
     if (haveTopology)
     {
-        tpx_make_chain_identifiers(&top->atoms, &top->mols);
+        gmx::tpx_make_chain_identifiers(&top->atoms, &top->mols);
     }
 
     if (requireMasses && !top->atoms.haveMass)

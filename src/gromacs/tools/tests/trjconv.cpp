@@ -54,6 +54,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
@@ -514,6 +515,123 @@ INSTANTIATE_TEST_SUITE_P(Works,
                          TrjconvPbcTest,
                          ::testing::Values("mol", "res", "atom", "nojump", "whole"),
                          nameOfPbcTest);
+
+//! \brief Test helper compound type for a sequence of particles with the same chain id
+struct ParticleChain
+{
+    //! Length of sequence
+    int length;
+    //! Chain ID for particles in sequence
+    char id;
+};
+
+class TrjconvChainIdTest : public test::CommandLineTestBase
+{
+public:
+    static void checkChainIds(const std::filesystem::path& fileName, ArrayRef<const ParticleChain> expectedChains)
+    {
+        TextInputFile pdbFile(fileName);
+        std::string   line;
+
+        int atomIndex  = 0;
+        int chainIndex = 0;
+        while (pdbFile.readLine(&line))
+        {
+            if (startsWith(line, "ATOM"))
+            {
+                ASSERT_LT(chainIndex, expectedChains.size())
+                        << "Output PDB file contains more chains than expected";
+
+                constexpr int chainIdIndexInAtomLine = 21;
+                const char    chainId                = line[chainIdIndexInAtomLine];
+                EXPECT_EQ(chainId, expectedChains[chainIndex].id) << "Chain ID mismatch in line: " << line;
+
+                ++atomIndex;
+                if (atomIndex >= expectedChains[chainIndex].length)
+                {
+                    ++chainIndex;
+                    atomIndex = 0;
+                }
+            }
+        }
+        EXPECT_EQ(chainIndex, expectedChains.size())
+                << "Last chain in output PDB file has too few particles";
+        pdbFile.close();
+    }
+};
+
+TEST_F(TrjconvChainIdTest, ChainIdsAreGeneratedAndWrittenToPdb)
+{
+    auto& cmdline = commandLine();
+
+    // Generate a .tpr that has no chain IDs
+    TprAndFileManager tprManager("OctaneSandwich");
+    tprManager.setInputConf("OctaneSandwich.gro");
+    tprManager.setPositionRestraintConf("OctaneSandwich.gro");
+    setInputFile("-f", "OctaneSandwich.gro");
+    setInputFile("-s", tprManager.tprName());
+    // Trigger trjconv to generate chain IDs for the output
+    const std::filesystem::path outputFile = setOutputFile("-o", "trjconv-out.pdb", NoTextMatch());
+
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("System\n");
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    checkChainIds(outputFile,
+                  std::vector<ParticleChain>{ { 166, 'A' }, { 798, ' ' }, { 166, 'B' }, { 12691, ' ' } });
+}
+
+TEST_F(TrjconvChainIdTest, ChainIdsAreRetainedFromPdbTopology)
+{
+    auto& cmdline = commandLine();
+
+    setInputFile("-f", "lysozyme.gro");
+    setInputFile("-s", "lysozyme.pdb");
+    const std::filesystem::path outputFile = setOutputFile("-o", "trjconv-out.pdb", NoTextMatch());
+
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("System\n");
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    checkChainIds(outputFile, std::vector<ParticleChain>{ { 156, 'B' } });
+}
+
+TEST_F(TrjconvChainIdTest, ChainIdsAreNotRetainedFromPdbInputConfWithGroTopology)
+{
+    auto& cmdline = commandLine();
+
+    // Due to current behavior of trjconv, chain IDs from an input .pdb conf
+    // are not retained since they are read from the input topology file.
+    // Adjust test accordingly if this is changes.
+    setInputFile("-f", "lysozyme.pdb");
+    setInputFile("-s", "lysozyme.gro");
+    const std::filesystem::path outputFile = setOutputFile("-o", "trjconv-out.pdb", NoTextMatch());
+
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("System\n");
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    checkChainIds(outputFile, std::vector<ParticleChain>{ { 156, ' ' } });
+}
+
+TEST_F(TrjconvChainIdTest, ChainIdsAreNotRetainedFromPdbInputConfWithFullTopology)
+{
+    auto&             cmdline = commandLine();
+    TprAndFileManager tprManager("lysozyme");
+
+    // Due to current behavior of trjconv, chain IDs from an input .pdb conf
+    // are not retained since they are read from the input topology file.
+    // Adjust test accordingly if this is changes.
+    setInputFile("-f", "lysozyme.pdb");
+    setInputFile("-s", tprManager.tprName());
+    const std::filesystem::path outputFile = setOutputFile("-o", "trjconv-out.pdb", NoTextMatch());
+
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("System\n");
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    checkChainIds(outputFile, std::vector<ParticleChain>{ { 156, ' ' } });
+}
 
 } // namespace
 } // namespace test

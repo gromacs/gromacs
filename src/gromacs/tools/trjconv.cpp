@@ -70,6 +70,7 @@
 #include "gromacs/pbcutil/pbcmethods.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/chainid.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -828,6 +829,17 @@ int gmx_trjconv(int argc, char* argv[])
             block = std::make_unique<t_block>(gmx_mtop_molecules_t_block(*mtop));
             interactionDefinitions =
                     std::make_unique<InteractionDefinitions>(gmx_mtop_to_InteractionDefinitions(*mtop));
+
+            const bool outputFormatWritesChainIds = fn2ftp(out_file) == efPDB || fn2ftp(out_file) == efCIF;
+            // Only make chain IDs if we have the full topology, otherwise
+            // any IDs (possibly) read from top_file will be cleared.
+            // TODO: When we have the capability, improve this conditional
+            // by analyzing data in t_atoms to determine whether we need
+            // to generate IDs.
+            if (outputFormatWritesChainIds && haveFullTopology)
+            {
+                tpx_make_chain_identifiers(atoms.get(), block.get());
+            }
 
             std::strncpy(top_title, *mtop->name, 255);
             top_title[255] = '\0';
@@ -1736,6 +1748,10 @@ int gmx_trjconv(int argc, char* argv[])
             // atoms.
             sfree(useatoms->atomname);
             sfree(useatoms->atom);
+            if (useatoms->havePdbInfo)
+            {
+                sfree(useatoms->pdbinfo);
+            }
         }
         if (atoms)
         {
