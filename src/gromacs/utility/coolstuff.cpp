@@ -1723,6 +1723,8 @@ std::string getCoolQuote()
         { "People [whose names are shown] in red are people that did something here, I think. "
           "[Berk Hess's name was shown in black.]",
           "Gerrit Groenhof" },
+        { "Your metadata should outlive your trajectories!", "Yang Zhang" },
+        { "Fear neither hardship nor darkness.", "Margaret Nearl" },
     };
 
     if (beCool())
