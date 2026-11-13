@@ -2833,13 +2833,15 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                                    checkForLargePrimeFactors);
 
     // Now that we know whether GPU-direct halos actually will be used, we might have to modify DLB
-    if (!isDlbDisabled(ddSettings_.initialDlbState) && useGpuForUpdate && useGpuDirectHalo)
+    const bool usingTimerBasedDlb =
+            !isDlbDisabled(ddSettings_.initialDlbState) && (ddSettings_.eFlop == 0);
+    if (usingTimerBasedDlb && useGpuForUpdate && useGpuDirectHalo)
     {
         ddSettings_.initialDlbState = DlbState::offForever;
         GMX_LOG(mdlog.info)
                 .appendText(
-                        "Disabling dynamic load balancing; unsupported with GPU communication + "
-                        "update.");
+                        "Disabling dynamic load balancing; unsupported with timer-based "
+                        "balancing + GPU communication + GPU update.");
     }
 
     // DD grid setup uses a more different cell size limit for
