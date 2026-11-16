@@ -129,7 +129,7 @@ void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
  * \param[in]     hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
  * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy into.
  * \param[in]     numValues            Number of values to copy.
- * \param[in]     deviceStream         GPU stream to perform asynchronous copy in.
+ * \param[in]     deviceStream         GPU stream to perform the copy in.
  * \param[in]     transferKind         Copy type: synchronous or asynchronous.
  * \param[out]    timingEvent          A dummy pointer to the H2D copy timing event to be filled in.
  *                                     Not used in CUDA implementation.
@@ -170,11 +170,13 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = cudaMemcpy(*reinterpret_cast<ValueType**>(buffer) + startingOffset,
-                              hostBuffer,
-                              bytes,
-                              cudaMemcpyHostToDevice);
+            stat = cudaMemcpyAsync(*reinterpret_cast<ValueType**>(buffer) + startingOffset,
+                                   hostBuffer,
+                                   bytes,
+                                   cudaMemcpyHostToDevice,
+                                   deviceStream.stream());
             gmx::checkDeviceError(stat, "Synchronous H2D copy failed.");
+            deviceStream.synchronize();
             break;
 
         default: throw;
@@ -189,7 +191,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
  * \param[in]     buffer               Pointer to the device-side buffer
  * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy from.
  * \param[in]     numValues            Number of values to copy.
- * \param[in]     deviceStream         GPU stream to perform asynchronous copy in.
+ * \param[in]     deviceStream         GPU stream to perform the copy in.
  * \param[in]     transferKind         Copy type: synchronous or asynchronous.
  * \param[out]    timingEvent          A dummy pointer to the H2D copy timing event to be filled in.
  *                                     Not used in CUDA implementation.
@@ -231,11 +233,13 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = cudaMemcpy(hostBuffer,
-                              *reinterpret_cast<ValueType**>(buffer) + startingOffset,
-                              bytes,
-                              cudaMemcpyDeviceToHost);
+            stat = cudaMemcpyAsync(hostBuffer,
+                                   *reinterpret_cast<ValueType**>(buffer) + startingOffset,
+                                   bytes,
+                                   cudaMemcpyDeviceToHost,
+                                   deviceStream.stream());
             gmx::checkDeviceError(stat, "Synchronous D2H copy failed.");
+            deviceStream.synchronize();
             break;
 
         default: throw;
@@ -252,7 +256,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
  * \param[in]     startingOffset           Offset (in values) at the source buffer (only) to
  *                                         copy from.
  * \param[in]     numValues                Number of values to copy.
- * \param[in]     deviceStream             GPU stream to perform asynchronous copy in.
+ * \param[in]     deviceStream             GPU stream to perform the copy in.
  * \param[in]     transferKind             Copy type: synchronous or asynchronous.
  * \param[out]    timingEvent              A pointer to the H2D copy timing event to be
  *                                         filled in. Ignored in CUDA.
@@ -292,11 +296,13 @@ void copyBetweenDeviceBuffers(ValueType*               destinationDeviceBuffer,
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = cudaMemcpy(destinationDeviceBuffer,
-                              sourceDeviceBuffer + startingOffset,
-                              bytes,
-                              cudaMemcpyDeviceToDevice);
+            stat = cudaMemcpyAsync(destinationDeviceBuffer,
+                                   sourceDeviceBuffer + startingOffset,
+                                   bytes,
+                                   cudaMemcpyDeviceToDevice,
+                                   deviceStream.stream());
             gmx::checkDeviceError(stat, "Synchronous D2D copy failed.");
+            deviceStream.synchronize();
             break;
 
         default: throw;
