@@ -1050,11 +1050,11 @@ static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorklo
             // Event is consumed by launchPmeGpuSpread
             result++;
         }
-        if (stepWork.computeNonbondedForces && stepWork.useGpuXBufferOps)
-        {
-            // Event is consumed by convertCoordinatesGpu
-            result++;
-        }
+    }
+    if (stepWork.computeNonbondedForces && stepWork.useGpuXBufferOps)
+    {
+        // Event is consumed by convertCoordinatesGpu
+        result++;
     }
     if (stepWork.useGpuXHalo)
     {
