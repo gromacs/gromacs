@@ -52,6 +52,7 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer.h"
@@ -130,6 +131,7 @@ void LincsGpu::apply(const DeviceBuffer<Float3>& d_x,
 
 LincsGpu::LincsGpu(int                  numIterations,
                    int                  expansionOrder,
+                   bool                 hasTriangleConstraints,
                    const DeviceContext& deviceContext,
                    const DeviceStream&  deviceStream) :
     deviceContext_(deviceContext),
@@ -140,11 +142,14 @@ LincsGpu::LincsGpu(int                  numIterations,
     h_coupledConstraintsCounts_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported }),
     h_coupledConstraintsIndices_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported }),
     h_massFactors_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported }),
-    h_constraintGroupSize_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported })
+    h_constraintGroupSize_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported }),
+    h_triangleBits_(HostAllocationPolicy{ deviceContext, PinningPolicy::PinnedIfSupported })
 {
     GMX_RELEASE_ASSERT(GMX_GPU && !GMX_GPU_OPENCL, "LINCS GPU is not implemented in OPENCL.");
     kernelParams_.numIterations  = numIterations;
     kernelParams_.expansionOrder = expansionOrder;
+
+    kernelParams_.hasTriangleConstraints = hasTriangleConstraints;
 
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
@@ -178,6 +183,7 @@ LincsGpu::~LincsGpu()
             {
                 freeDeviceBuffer(&kernelParams_.d_constraintGroupsSizes);
             }
+            freeDeviceBuffer(&kernelParams_.d_triangleBits);
             freeDeviceBuffer(&kernelParams_.d_inverseMasses);
         }
     }
@@ -442,6 +448,63 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
         }
     }
 
+    // If we have triangle constraints, build per-constraint coupling bitmasks.
+    // A constraint c1=(A,B) is part of a triangle if some coupled constraint c2 shares atom A
+    // (with other atom C) while there is also a constraint between C and B, forming a 3-cycle.
+    // Bit n in h_triangleBitsHost_[splitMap[c1]] corresponds to coupling slot n, using the same
+    // traversal order (first through atom A, then through atom B) as the coupling-data loop above.
+    h_triangleBits_.assign(kernelParams_.numConstraintsThreads, 0);
+    if (kernelParams_.hasTriangleConstraints)
+    {
+        constexpr int c_maxCouplingsForTriangle = std::numeric_limits<int>::digits;
+#pragma omp parallel for num_threads(numOmpThreads) schedule(static)
+        for (int c1 = 0; c1 < numConstraints; c1++)
+        {
+            int c1a1 = iatoms[stride * c1 + 1];
+            int c1a2 = iatoms[stride * c1 + 2];
+
+            int n    = 0;
+            int bits = 0;
+
+            // Helper function to detect triangle: a coupling slot closes a triangle if the constraint
+            // in that slot connects \p sharedAtom to another that is itself connected to \p otherAtom.
+            auto scanCouplings = [&](int sharedAtom, int otherAtom)
+            {
+                for (const auto& adj1 : atomsAdjacencyList[sharedAtom])
+                {
+                    if (adj1.indexOfConstraint_ == c1)
+                    {
+                        continue;
+                    }
+                    const int thirdAtom = adj1.indexOfSecondConstrainedAtom_;
+                    for (const auto& adj2 : atomsAdjacencyList[otherAtom])
+                    {
+                        if (adj2.indexOfConstraint_ != c1 && adj2.indexOfSecondConstrainedAtom_ == thirdAtom)
+                        {
+                            // guard for out-of-range bitshift
+                            GMX_RELEASE_ASSERT(
+                                    n <= c_maxCouplingsForTriangle,
+                                    formatString("A constraint that is part of a constraint "
+                                                 "triangle is coupled to %d other constraints, "
+                                                 "which is more than the %d supported for "
+                                                 "constraints participating in triangles.",
+                                                 n + 1,
+                                                 c_maxCouplingsForTriangle)
+                                            .c_str());
+                            bits |= (1 << n);
+                            break;
+                        }
+                    }
+                    n++;
+                }
+            };
+            scanCouplings(c1a1, c1a2);
+            scanCouplings(c1a2, c1a1);
+
+            h_triangleBits_[splitMap[c1]] = bits;
+        }
+    }
+
     // (Re)allocate the buffers that no longer fit, with the usual over-allocation slack.
     const int numThreads = kernelParams_.numConstraintsThreads;
     reallocateDeviceBuffer(
@@ -476,6 +539,8 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
                                &d_constraintGroupsSizesCapacity_,
                                deviceContext_);
     }
+    reallocateDeviceBuffer(
+            &kernelParams_.d_triangleBits, numThreads, &d_triangleBitsSize_, &d_triangleBitsCapacity_, deviceContext_);
     reallocateDeviceBuffer(&kernelParams_.d_inverseMasses,
                            numAtoms,
                            &d_inverseMassesSize_,
@@ -528,6 +593,14 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
                            GpuApiCallBehavior::Async,
                            nullptr);
     }
+
+    copyToDeviceBuffer(&kernelParams_.d_triangleBits,
+                       h_triangleBits_.data(),
+                       0,
+                       kernelParams_.numConstraintsThreads,
+                       deviceStream_,
+                       GpuApiCallBehavior::Async,
+                       nullptr);
 
     GMX_RELEASE_ASSERT(!invmass.empty(), "Masses of atoms should be specified.\n");
     copyToDeviceBuffer(&kernelParams_.d_inverseMasses,

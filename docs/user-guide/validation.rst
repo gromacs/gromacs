@@ -76,6 +76,7 @@ The current features with status validation pending are:
 * The Fast Multipole Method interface, enabled at build time by the ``-DGMX_USE_EXT_FMM`` CMake variable
 * AMBER LEaP-compatible dihedral reordering by grompp, activated by the ``_FF_AMBER_LEAP_ATOM_REORDERING`` preprocessor define
 * Non-bonded free-energy calculations on a GPU, activated by the ``-nbfe gpu`` mdrun option
+* Triangle constraints with LINCS on a GPU, activated by setting the ``GMX_GPU_TRIANGLE_CONSTRAINTS`` environment variable.
 
 Feature lifecycle stages
 ------------------------

@@ -101,6 +101,10 @@ struct LincsGpuKernelParameters
     DeviceBuffer<float> d_massFactors;
     //! Sizes for constraint groups if no coupled constraints are found
     DeviceBuffer<int> d_constraintGroupsSizes;
+    //! Whether any constraints are part of triangles (3-atom rigid triangles)
+    bool hasTriangleConstraints = false;
+    //! Per-constraint bitmask: bit n set means coupling slot n is a triangle coupling (GPU)
+    DeviceBuffer<int> d_triangleBits;
 };
 
 /*! \internal \brief Class with interfaces and data for GPU version of LINCS. */
@@ -110,13 +114,15 @@ class LincsGpu
 public:
     /*! \brief Constructor.
      *
-     * \param[in] numIterations    Number of iteration for the correction of the projection.
-     * \param[in] expansionOrder   Order of the matrix inversion algorithm.
-     * \param[in] deviceContext    Device context.
-     * \param[in] deviceStream     Device command stream.
+     * \param[in] numIterations           Number of iteration for the correction of the projection.
+     * \param[in] expansionOrder          Order of the matrix inversion algorithm.
+     * \param[in] hasTriangleConstraints Whether any constraints are part of triangles (3-atom rigid triangles).
+     * \param[in] deviceContext           Device context.
+     * \param[in] deviceStream            Device command stream.
      */
     LincsGpu(int                  numIterations,
              int                  expansionOrder,
+             bool                 hasTriangleConstraints,
              const DeviceContext& deviceContext,
              const DeviceStream&  deviceStream);
     /*! \brief Destructor.*/
@@ -158,7 +164,7 @@ public:
      * This version uses common data formats so it can be called from anywhere
      * in the code. Does not recycle the data preparation routines from the CPU
      * version. Works only with simple case when all the constraints in idef are
-     * are handled by a single GPU. Triangles are not handled as special case.
+     * handled by a single GPU.
      *
      * Information about constraints is taken from:
      *     idef.il[InteractionFunction::Constraints].iatoms  --- type (T) of constraint and two
@@ -210,6 +216,8 @@ private:
     int d_matrixACapacity_                   = -1;
     int d_constraintGroupsSizesSize_         = -1;
     int d_constraintGroupsSizesCapacity_     = -1;
+    int d_triangleBitsSize_                  = -1;
+    int d_triangleBitsCapacity_              = -1;
     int d_inverseMassesSize_                 = -1;
     int d_inverseMassesCapacity_             = -1;
     //! \}
@@ -231,6 +239,8 @@ private:
     gmx::HostVector<float> h_massFactors_;
     //! Host buffer for constraint group sizes, HIP only
     gmx::HostVector<int> h_constraintGroupSize_;
+    //! Host buffer for per-constraint triangle bitmask
+    gmx::HostVector<int> h_triangleBits_;
 };
 
 } // namespace gmx

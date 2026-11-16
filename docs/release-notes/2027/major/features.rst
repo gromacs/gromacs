@@ -137,3 +137,12 @@ strain deformation. This contribution can now be taken into account by the NNPot
 enabling simulations in the NPT ensemble with ML regions that contribute significantly
 to the virial. To enable this, the user should add an additional value to the return dictionary
 of the model, under the key ``virial``.
+Triangle constraints are now supported with GPU-resident update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Triangles of coupled constraints are now supported with GPU-resident update and LINCS.
+This can lead to performance improvements for systems with many such coupled constraints,
+for example when constraining water molecules with LINCS, or in coarse-grained models like Martini.
+Thus, |Gromacs| will no longer throw an error on such systems when specifying ``-update gpu``.
+
+:issue:`5665`

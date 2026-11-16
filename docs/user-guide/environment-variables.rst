@@ -307,6 +307,10 @@ Performance and Run Control
 ``GMX_GPU_PME_PP_COMMS``
         Removed.
 
+``GMX_GPU_TRIANGLE_CONSTRAINTS``
+        Enable support for triangle constraints with LINCS on the GPU. This enables GPU-resident update
+        for systems containing such coupled constraints, which can improve performance.
+
 ``GMX_GPUTASKS``
         set in the same way as ``mdrun -gputasks``, ``GMX_GPUTASKS`` allows the mapping
         of GPU tasks to GPU device IDs to be different on different ranks, if e.g. the MPI

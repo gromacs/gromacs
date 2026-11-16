@@ -211,8 +211,10 @@ void applyLincsGpu(const DeviceContext& deviceContext,
 {
     deviceContext.activate();
 
+    const bool hasTriangles =
+            hasTriangleConstraints(testData->mtop_, FlexibleConstraintTreatment::Include);
     auto lincsGpu = std::make_unique<LincsGpu>(
-            testData->ir_.nLincsIter, testData->ir_.nProjOrder, deviceContext, deviceStream);
+            testData->ir_.nLincsIter, testData->ir_.nProjOrder, hasTriangles, deviceContext, deviceStream);
 
     // Pin the invmass buffer now that we have a DeviceContext, so async H2D copies work.
     testData->invmass_ = HostVector<real>(
@@ -492,24 +494,100 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = []
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
     {
-        ConstraintsTestSystem constraintsTestSystem;
+        ConstraintsTestSystem basicTriangle;
 
-        constraintsTestSystem.title       = "basic triangle (three atoms, connected to each other)";
-        constraintsTestSystem.numAtoms    = 3;
-        constraintsTestSystem.masses      = { 1.0, 1.0, 1.0 };
-        constraintsTestSystem.constraints = { 0, 0, 1, 2, 0, 2, 1, 1, 2 };
-        constraintsTestSystem.hasTriangle = true;
-        constraintsTestSystem.constraintsR0 = { 0.1, 0.1, 0.1 };
+        basicTriangle.title         = "basic triangle (three atoms, connected to each other)";
+        basicTriangle.numAtoms      = 3;
+        basicTriangle.masses        = { 1.0, 1.0, 1.0 };
+        basicTriangle.constraints   = { 0, 0, 1, 2, 0, 2, 1, 1, 2 };
+        basicTriangle.hasTriangle   = true;
+        basicTriangle.constraintsR0 = { 0.1, 0.1, 0.1 };
 
         real oneTenthOverSqrtTwo = 0.1_real / std::sqrt(2.0_real);
 
-        constraintsTestSystem.x = { { oneTenthOverSqrtTwo, 0.0, 0.0 },
-                                    { 0.0, oneTenthOverSqrtTwo, 0.0 },
-                                    { 0.0, 0.0, oneTenthOverSqrtTwo } };
+        basicTriangle.x = { { oneTenthOverSqrtTwo, 0.0, 0.0 },
+                            { 0.0, oneTenthOverSqrtTwo, 0.0 },
+                            { 0.0, 0.0, oneTenthOverSqrtTwo } };
 
-        constraintsTestSystem.xPrime = { { 0.09, -0.02, 0.01 }, { -0.02, 0.10, -0.02 }, { 0.03, -0.01, 0.07 } };
+        basicTriangle.xPrime = { { 0.09, -0.02, 0.01 }, { -0.02, 0.10, -0.02 }, { 0.03, -0.01, 0.07 } };
 
-        constraintsTestSystem.v = { { 1.0, 1.0, 1.0 }, { -2.0, -2.0, -2.0 }, { 1.0, 1.0, 1.0 } };
+        basicTriangle.v = { { 1.0, 1.0, 1.0 }, { -2.0, -2.0, -2.0 }, { 1.0, 1.0, 1.0 } };
+
+        constraintsTestSystemList.emplace_back(basicTriangle);
+
+        // in addition, we want to test the triangle path with a system that has many more triangles
+        ConstraintsTestSystem manyTriangles;
+        constexpr int         numMolecules =
+                100; // 300 constraints, which is larger than the thread block of 256 we are currently using
+        manyTriangles.title       = "system of many triangles";
+        manyTriangles.numAtoms    = numMolecules * basicTriangle.numAtoms;
+        manyTriangles.hasTriangle = true;
+
+        manyTriangles.masses.resize(numMolecules * basicTriangle.numAtoms);
+        manyTriangles.x.resize(numMolecules * basicTriangle.numAtoms);
+        manyTriangles.xPrime.resize(numMolecules * basicTriangle.numAtoms);
+        manyTriangles.v.resize(numMolecules * basicTriangle.numAtoms);
+
+        manyTriangles.constraints.resize(numMolecules * basicTriangle.constraints.size());
+
+        for (int mol = 0; mol < numMolecules; mol++)
+        {
+            int offsetAtoms = mol * basicTriangle.numAtoms;
+            for (int i = 0; i < basicTriangle.numAtoms; i++)
+            {
+                manyTriangles.masses[offsetAtoms + i] = basicTriangle.masses[i];
+                for (int d = 0; d < DIM; d++)
+                {
+                    manyTriangles.x[offsetAtoms + i][d]      = basicTriangle.x[i][d];
+                    manyTriangles.xPrime[offsetAtoms + i][d] = basicTriangle.xPrime[i][d];
+                    manyTriangles.v[offsetAtoms + i][d]      = basicTriangle.v[i][d];
+                }
+            }
+            int offsetConstraints = mol * basicTriangle.constraints.size();
+            for (size_t c = 0; c < basicTriangle.constraints.size(); c++)
+            {
+                manyTriangles.constraints[offsetConstraints + c] = basicTriangle.constraints[c];
+                if (c % 3 != 0)
+                {
+                    manyTriangles.constraints[offsetConstraints + c] += offsetAtoms;
+                }
+            }
+        }
+
+        manyTriangles.constraintsR0 = basicTriangle.constraintsR0;
+
+        constraintsTestSystemList.emplace_back(manyTriangles);
+    }
+    {
+        ConstraintsTestSystem constraintsTestSystem;
+
+        // Near-degenerate ("flat") triangle: the apex atom sits close to the base,
+        // so the three constraints are strongly coupled and the coupling matrix has
+        // a large eigenvalue. The plain coupled-constraint expansion then converges
+        // too slowly, and only the triangle-specific extra expansion iterations
+        // (mirroring the CPU LINCS triangle handling, see lincs.cpp) bring the GPU
+        // result to the reference solution within tolerance. This makes the system a
+        // genuine regression guard for the GPU triangle code path: it fails if those
+        // extra iterations are removed, whereas the equal-mass "basic triangle" above
+        // still passes without them.
+        constraintsTestSystem.title         = "flat triangle (stiff coupling)";
+        constraintsTestSystem.numAtoms      = 3;
+        constraintsTestSystem.masses        = { 1.0, 1.0, 1.0 };
+        constraintsTestSystem.constraints   = { 0, 0, 1, 1, 0, 2, 1, 1, 2 };
+        constraintsTestSystem.hasTriangle   = true;
+        constraintsTestSystem.constraintsR0 = { 0.2, 0.107703 };
+
+        // Atoms 0 and 1 form the long base; atom 2 sits just above its midpoint.
+        constraintsTestSystem.x = { { 0.0, 0.0, 0.0 }, { 0.2, 0.0, 0.0 }, { 0.1, 0.04, 0.0 } };
+
+        constraintsTestSystem.xPrime = { { 0.020, 0.015, -0.010 },
+                                         { 0.220, -0.012, 0.008 },
+                                         { 0.090, 0.060, 0.012 } };
+
+        constraintsTestSystem.v = { { 1.0, 0.5, -0.5 }, { -1.0, 0.5, 0.5 }, { 0.5, -1.0, 1.0 } };
+
+        constraintsTestSystem.lincsNIter               = 4;
+        constraintsTestSystem.lincslincsExpansionOrder = 4;
 
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }

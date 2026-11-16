@@ -107,6 +107,8 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     float* __restrict__ gm_matrixA                       = kernelParams.d_matrixA;
     const float* __restrict__ gm_inverseMasses           = kernelParams.d_inverseMasses;
     float* __restrict__ gm_virialScaled                  = kernelParams.d_virialScaled;
+    const int* __restrict__ gm_triangleBits              = kernelParams.d_triangleBits;
+    const bool hasTriangleConstraints                    = kernelParams.hasTriangleConstraints;
 
     const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -136,6 +138,10 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
     // i == -1 indicates dummy constraint at the end of the thread block.
     const bool isDummyThread = (i == -1);
+
+    // Triangle bitmask: bit n set means coupling slot n is a triangle coupling.
+    // Zero for dummy threads and non-triangle constraints.
+    const int triangleBits = isDummyThread ? 0 : gm_triangleBits[threadIndex];
 
     // Everything computed for these dummies will be equal to zero
     if (isDummyThread)
@@ -229,6 +235,33 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         sol                                                = sol + mvb;
     }
 
+    // Extra expansionOrder iterations for triangle constraints only.
+    // Triangle constraints have higher coupling-matrix eigenvalues (~0.7 vs ~0.4 for bonds),
+    // requiring additional expansion depth to achieve the same accuracy.
+    if (hasTriangleConstraints)
+    {
+        for (int rec = 0; rec < expansionOrder; rec++)
+        {
+            __syncthreads();
+            float mvb = 0.0F;
+            if (triangleBits != 0)
+            {
+                for (int n = 0; n < coupledConstraintsCount; n++)
+                {
+                    if (triangleBits & (1 << n))
+                    {
+                        int index = n * numConstraintsThreads + threadIndex;
+                        int c1    = gm_coupledConstraintsIndices[index];
+                        mvb       = mvb
+                              + gm_matrixA[index] * sm_rhs[c1 + blockDim.x * ((expansionOrder + rec) % 2)];
+                    }
+                }
+            }
+            sm_rhs[threadIdx.x + blockDim.x * ((expansionOrder + rec + 1) % 2)] = mvb;
+            sol                                                                 = sol + mvb;
+        }
+    }
+
     // Current mass-scaled Lagrange multipliers
     lagrangeScaled = sqrtReducedMass * sol;
 
@@ -295,6 +328,31 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
             }
             sm_rhs[threadIdx.x + blockDim.x * ((rec + 1) % 2)] = mvb;
             sol                                                = sol + mvb;
+        }
+
+        if (hasTriangleConstraints)
+        {
+            for (int rec = 0; rec < expansionOrder; rec++)
+            {
+                __syncthreads();
+                float mvb = 0.0F;
+                if (triangleBits != 0)
+                {
+                    for (int n = 0; n < coupledConstraintsCount; n++)
+                    {
+                        if (triangleBits & (1 << n))
+                        {
+                            int index = n * numConstraintsThreads + threadIndex;
+                            int c1    = gm_coupledConstraintsIndices[index];
+                            mvb       = mvb
+                                  + gm_matrixA[index]
+                                            * sm_rhs[c1 + blockDim.x * ((expansionOrder + rec) % 2)];
+                        }
+                    }
+                }
+                sm_rhs[threadIdx.x + blockDim.x * ((expansionOrder + rec + 1) % 2)] = mvb;
+                sol                                                                 = sol + mvb;
+            }
         }
 
         // Add corrections to Lagrange multipliers

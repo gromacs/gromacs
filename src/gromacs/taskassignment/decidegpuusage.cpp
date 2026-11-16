@@ -873,10 +873,13 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf(haveFrozenAtoms,
                           // There is a known bug with frozen atoms and GPU update, see Issue #3920.
                           "Frozen atoms not supported.");
-    errorReasons.appendIf(hasAnyConstraints
-                                  && hasTriangleConstraints(
-                                          mtop, flexibleConstraintTreatment(EI_DYNAMICS(inputrec.eI))),
-                          "Triangle constraints are not supported.");
+    const bool triangleGpuEnabled = std::getenv("GMX_GPU_TRIANGLE_CONSTRAINTS") != nullptr;
+    errorReasons.appendIf(
+            hasAnyConstraints && hasTriangleConstraints(mtop, FlexibleConstraintTreatment::Include)
+                    && !triangleGpuEnabled,
+            "Triangle constraints with LINCS on the GPU are pending validation and disabled by "
+            "default; "
+            "set the GMX_GPU_TRIANGLE_CONSTRAINTS environment variable to enable them.");
     errorReasons.finishContext();
 
     if (!errorReasons.isEmpty())

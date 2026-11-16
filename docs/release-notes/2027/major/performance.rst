@@ -17,7 +17,6 @@ all three dimensions are considered when estimating atom density.
 
 :issue:`5622`
 
-
 Reduced host-side blocking in the GPU update and constraints setup
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -54,3 +53,15 @@ pass whenever the corresponding lambda is 0 or 1 (for example across van der
 Waals windows where charges are already decoupled, or at lambda endpoints).
 
 :issue:`5805`
+Triangle constraints are now supported with GPU-resident update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Triangles of coupled constraints are now supported with GPU-resident update and LINCS.
+This can lead to performance improvements for systems with many such coupled constraints,
+for example when constraining water molecules with LINCS, or in coarse-grained models like Martini.
+|Gromacs| will now be able to run such systems with the ``-update gpu`` option.
+
+Currently, this feature is pending validation and requires explicit activation via the
+``GMX_GPU_TRIANGLE_CONSTRAINTS=1`` environment variable.
+
+:issue:`5665`

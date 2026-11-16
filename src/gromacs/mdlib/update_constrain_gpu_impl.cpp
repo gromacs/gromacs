@@ -229,7 +229,10 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
     }
     if constexpr (GpuConfigurationCapabilities::Constraints)
     {
-        lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, deviceStream_);
+        // Check if the system has triangle constraints
+        const bool hasTriangles = hasTriangleConstraints(mtop, FlexibleConstraintTreatment::Include);
+        lincsGpu_ = std::make_unique<LincsGpu>(
+                ir.nLincsIter, ir.nProjOrder, hasTriangles, deviceContext_, deviceStream_);
         settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, deviceStream_);
     }
 }
