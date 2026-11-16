@@ -154,6 +154,13 @@ DeviceVendor getDeviceVendor(const char* vendorName);
  */
 int getDeviceComputeUnitFactor(const DeviceInformation& deviceInfo);
 
+/*! \brief Returns the sub-group (warp) size to use on \p deviceInfo
+ *
+ * When the device supports only one size, returns that size. When it supports several,
+ * returns \p preferredSize.
+ */
+int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo, int preferredSize);
+
 /*! \brief Find all GPUs in the system.
  *
  *  Will detect every GPU supported by the device driver in use.

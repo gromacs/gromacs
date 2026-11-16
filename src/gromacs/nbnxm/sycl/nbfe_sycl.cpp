@@ -40,6 +40,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/utility/template_mp.h"
@@ -96,7 +97,8 @@ void gpu_launch_free_energy_kernel(NbnxmGpu*                      nb,
                                    const gmx::StepWorkload&       stepWork,
                                    const InteractionLocality      iloc)
 {
-    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext.deviceInfo(), sc_layoutType);
+    const int subGroupSize = chooseSubGroupSizeForDevice(
+            nb->deviceContext.deviceInfo(), sc_gpuParallelExecutionWidth(sc_layoutType));
     switch (subGroupSize)
     {
         // Ensure any changes are in sync with device_management_sycl.cpp and the #if above

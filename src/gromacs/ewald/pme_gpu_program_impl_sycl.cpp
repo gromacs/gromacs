@@ -46,6 +46,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/syclutils.h"
 #include "gromacs/hardware/device_information.h"
+#include "gromacs/hardware/device_management.h"
 
 #include "pme_gather_sycl.h"
 #include "pme_gpu_constants.h"
@@ -63,30 +64,6 @@ constexpr bool c_wrapY = true;
 
 constexpr int c_stateA = 0;
 constexpr int c_stateB = 1;
-
-static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
-{
-    if (deviceInfo.supportedSubGroupSizes.size() == 1)
-    {
-        return deviceInfo.supportedSubGroupSizes[0];
-    }
-    else if (deviceInfo.supportedSubGroupSizes.size() > 1)
-    {
-        switch (deviceInfo.deviceVendor)
-        {
-            case DeviceVendor::Intel: return 16; // TODO: Choose best value, Issue #4153.
-            case DeviceVendor::PoclCpu: return 16;
-            default:
-                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
-                return 0;
-        }
-    }
-    else
-    {
-        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
-        return 0;
-    }
-}
 
 // clang-format off
 /* Help document which template field means what
@@ -218,7 +195,7 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
 {
     // kernel parameters
     const DeviceInformation& deviceInfo = deviceContext.deviceInfo();
-    warpSize_                           = chooseSubGroupSizeForDevice(deviceInfo);
+    warpSize_ = chooseSubGroupSizeForDevice(deviceInfo, 16); // TODO: Choose best value, Issue #4153
     GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes.begin(),
                                  deviceInfo.supportedSubGroupSizes.end(),
                                  warpSize_)

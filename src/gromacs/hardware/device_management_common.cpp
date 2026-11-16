@@ -133,6 +133,30 @@ int getDeviceComputeUnitFactor(const DeviceInformation& deviceInfo)
     }
 }
 
+int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo, int preferredSize)
+{
+    if (deviceInfo.supportedSubGroupSizes.size() == 1)
+    {
+        return deviceInfo.supportedSubGroupSizes[0];
+    }
+    else if (deviceInfo.supportedSubGroupSizes.size() > 1)
+    {
+        switch (deviceInfo.deviceVendor)
+        {
+            case DeviceVendor::Intel: return preferredSize;
+            case DeviceVendor::PoclCpu: return preferredSize;
+            default:
+                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
+                return 0;
+        }
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
+        return 0;
+    }
+}
+
 
 std::vector<std::reference_wrapper<DeviceInformation>>
 getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList)

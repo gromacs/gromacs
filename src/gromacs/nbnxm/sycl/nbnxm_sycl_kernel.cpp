@@ -42,6 +42,7 @@
 
 #include "nbnxm_sycl_kernel.h"
 
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/template_mp.h"
 
@@ -49,33 +50,6 @@
 
 namespace gmx
 {
-
-int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistType layoutType)
-{
-    if (deviceInfo.supportedSubGroupSizes.size() == 1)
-    {
-        return deviceInfo.supportedSubGroupSizes[0];
-    }
-    else if (deviceInfo.supportedSubGroupSizes.size() > 1)
-    {
-        switch (deviceInfo.deviceVendor)
-        {
-            /* For Intel, choose 8 for 4x4 clusters, and 32 for 8x8 clusters.
-             * The optimal one depends on the hardware, but we cannot choose c_nbnxmGpuClusterSize
-             * at runtime anyway yet. */
-            case DeviceVendor::Intel: return sc_gpuParallelExecutionWidth(layoutType);
-            case DeviceVendor::PoclCpu: return sc_gpuParallelExecutionWidth(layoutType);
-            default:
-                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
-                return 0;
-        }
-    }
-    else
-    {
-        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
-        return 0;
-    }
-}
 
 template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc);
@@ -122,7 +96,8 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
-    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext.deviceInfo(), sc_layoutType);
+    const int subGroupSize = chooseSubGroupSizeForDevice(
+            nb->deviceContext.deviceInfo(), sc_gpuParallelExecutionWidth(sc_layoutType));
     switch (subGroupSize)
     {
         // Ensure any changes are in sync with device_management_sycl.cpp, nbnxm_sycl_kernel_body.h, and the #if above

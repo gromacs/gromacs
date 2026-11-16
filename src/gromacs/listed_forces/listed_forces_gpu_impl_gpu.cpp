@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/hardware/device_information.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -61,30 +62,6 @@
 namespace gmx
 {
 // ---- ListedForcesGpu::Impl
-
-static int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo)
-{
-    if (deviceInfo.supportedSubGroupSizes.size() == 1)
-    {
-        return deviceInfo.supportedSubGroupSizes[0];
-    }
-    else if (deviceInfo.supportedSubGroupSizes.size() > 1)
-    {
-        switch (deviceInfo.deviceVendor)
-        {
-            case DeviceVendor::Intel: return 32;
-            case DeviceVendor::PoclCpu: return 32;
-            default:
-                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
-                return 0;
-        }
-    }
-    else
-    {
-        GMX_RELEASE_ASSERT(false, "Device has no known supported sub-group sizes");
-        return 0;
-    }
-}
 
 ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
                             const float           electrostaticsScaleFactor,
@@ -142,7 +119,7 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
     }
 
     const DeviceInformation& deviceInfo = deviceContext.deviceInfo();
-    deviceSubGroupSize_                 = chooseSubGroupSizeForDevice(deviceInfo);
+    deviceSubGroupSize_                 = chooseSubGroupSizeForDevice(deviceInfo, 32);
     GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes.begin(),
                                  deviceInfo.supportedSubGroupSizes.end(),
                                  deviceSubGroupSize_)
