@@ -104,6 +104,12 @@ const std::string c_nnpLinkTag_ = "nnp-link";
 const std::string c_mmLinkTag_  = "mm-link";
 //! \}
 
+/*! \brief Number of model inputs nnpot-model-input1 to 9 of GROMACS 2025 and 2026
+ *
+ * These versions write the keys into every tpr file, so mdrun must still accept them.
+ */
+constexpr int c_numObsoleteModelInputs_ = 9;
+
 /*! \brief Helper function to preprocess topology for NNP
  *
  * This function performs the following modifications:
@@ -199,6 +205,12 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
                               .enumValue(c_embeddingSchemeNames)
                               .store(&params_.embeddingScheme_));
     section.addOption(RealOption(c_nnpChargeTag_.c_str()).store(&params_.nnpCharge_));
+    // Only for reading older tpr files, so there is no mdp transform for these
+    for (int i = 1; i <= c_numObsoleteModelInputs_; i++)
+    {
+        section.addOption(
+                StringOption(formatString("model-input%d", i).c_str()).hidden().storeIsSet(&haveObsoleteModelInput_));
+    }
 }
 
 void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -349,6 +361,14 @@ void NNPotOptions::readParamsFromKvt(const KeyValueTreeObject& tree)
     if (!params_.active_)
     {
         return;
+    }
+
+    if (haveObsoleteModelInput_)
+    {
+        GMX_THROW(InconsistentInputError(
+                "This tpr file was written by GROMACS 2025 or 2026, whose neural network potential "
+                "models take the inputs named by nnpot-model-input1 to 9. Models now take a "
+                "dictionary of inputs. Run grompp again with a model in that format."));
     }
 
     // Try to read input atoms index

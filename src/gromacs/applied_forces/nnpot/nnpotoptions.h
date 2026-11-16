@@ -188,6 +188,12 @@ private:
     //! NNPot parameters
     NNPotParameters params_;
 
+    /*! \brief Whether a tpr file of GROMACS 2025 or 2026 set any of nnpot-model-input1 to 9
+     *
+     * Those versions write the keys even when the module is inactive.
+     */
+    bool haveObsoleteModelInput_ = false;
+
     /*! \brief MDLogger during mdrun
      *
      * This is a pointer only because we need an "optional reference"

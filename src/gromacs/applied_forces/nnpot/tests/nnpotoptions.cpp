@@ -50,6 +50,8 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
@@ -128,6 +130,34 @@ TEST_F(NNPotOptionsTest, OptionSetsActive)
     EXPECT_FALSE(nnpotOptions.parameters().active_);
     test::fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues(), &nnpotOptions);
     EXPECT_TRUE(nnpotOptions.parameters().active_);
+}
+
+//! Sets nnpot options as mdrun does from a tpr file of GROMACS 2025 or 2026
+static void setObsoleteOptionsFromTpr(const char* active, NNPotOptions* nnpotOptions)
+{
+    KeyValueTreeBuilder       builder;
+    KeyValueTreeObjectBuilder section =
+            builder.rootObject().addObject(std::string(NNPotModuleInfo::sc_name));
+    section.addValue<std::string>("active", active);
+    section.addValue<std::string>("model-input1", "atom-positions");
+    section.addValue<std::string>("model-input9", "");
+    Options options;
+    nnpotOptions->initMdpOptions(&options);
+    assignOptionsFromKeyValueTree(&options, builder.build(), nullptr);
+}
+
+TEST_F(NNPotOptionsTest, ReadsInactiveTprWithObsoleteModelInputs)
+{
+    NNPotOptions nnpotOptions;
+    ASSERT_NO_THROW(setObsoleteOptionsFromTpr("false", &nnpotOptions));
+    EXPECT_NO_THROW(nnpotOptions.readParamsFromKvt(KeyValueTreeBuilder().build()));
+}
+
+TEST_F(NNPotOptionsTest, RejectsActiveTprWithObsoleteModelInputs)
+{
+    NNPotOptions nnpotOptions;
+    ASSERT_NO_THROW(setObsoleteOptionsFromTpr("true", &nnpotOptions));
+    EXPECT_THROW(nnpotOptions.readParamsFromKvt(KeyValueTreeBuilder().build()), InconsistentInputError);
 }
 
 TEST_F(NNPotOptionsTest, OutputNoDefaultValuesWhenInactive)
