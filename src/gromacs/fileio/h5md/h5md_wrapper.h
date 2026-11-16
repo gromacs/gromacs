@@ -68,6 +68,17 @@ H5md* makeH5md(const std::filesystem::path& fileName, H5mdFileMode mode);
  */
 void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec& inputRecord);
 
+/*! \brief Write the MD parameters of the simulation to the file.
+ *
+ * \param[out] h5md        Handle to H5md object
+ * \param[in] inputRecord  Simulation parameters.
+ * \param[in] topology     Topology of the simulated system.
+ * \param[in] isRerun      Whether the energies of an existing trajectory are recomputed.
+ *
+ * \throws H5mdError if the MD parameters cannot be written.
+ */
+void setupMDParameters(H5md* h5md, const t_inputrec& inputRecord, const gmx_mtop_t& topology, bool isRerun);
+
 /*! \brief Set up from an existing \p h5md file for restarting with appending.
  *
  * Scans for trajectory data available in the /particles/system group

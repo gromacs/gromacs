@@ -229,6 +229,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                         gmx::setupFileFromInput(of->h5mdLowPrecision,
                                                 useGlobalTopology ? top_global : reducedTopology,
                                                 *ir);
+                        // The parameters describe the whole simulation, so take the full topology
+                        gmx::setupMDParameters(of->h5mdLowPrecision, *ir, top_global, mdrunOptions.rerun);
                     }
                     else
                     {
@@ -272,6 +274,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     if (!restartWithAppending)
                     {
                         gmx::setupFileFromInput(of->h5md, top_global, *ir);
+                        gmx::setupMDParameters(of->h5md, *ir, top_global, mdrunOptions.rerun);
                     }
                     else
                     {

@@ -58,6 +58,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_USE_HDF5
@@ -70,6 +71,8 @@
 #    include "h5md_framedatasetbuilder.h"
 #    include "h5md_group.h"
 #    include "h5md_guard.h"
+#    include "h5md_kvtree_writer.h"
+#    include "h5md_mdparameters.h"
 #    include "h5md_particleblock.h"
 #    include "h5md_timedatablock.h"
 #    include "h5md_topologyutils.h"
@@ -126,6 +129,8 @@ constexpr char c_h5mdEmailAttributeKey[] = "email";
 constexpr char c_h5mdVersionAttributeKey[] = "version";
 //! \brief Path to H5MD connectivity group from the file root.
 constexpr char c_h5mdConnectivityGroupPath[] = "/connectivity";
+//! \brief Path to the group of the MD parameters from the file root.
+constexpr char c_h5mdParametersGroupPath[] = "/parameters";
 //! \brief Unit for position data for simulations produced by mdrun.
 constexpr char c_positionUnit[] = "nm";
 //! \brief Unit for velocity data for simulations produced by mdrun.
@@ -620,6 +625,24 @@ void H5md::setupFileFromInput(const gmx_mtop_t&   topology,
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupMDParameters(const t_inputrec& inputRecord, const gmx_mtop_t& topology, const bool isRerun)
+{
+#if GMX_USE_HDF5
+    KeyValueTreeBuilder       builder;
+    KeyValueTreeObjectBuilder root = builder.rootObject();
+    buildMdParameterTree(&root, inputRecord, topology, isRerun);
+
+    const auto [parametersGroup, parametersGroupGuard] =
+            makeH5mdGroupGuard(createGroup(file_, c_h5mdParametersGroupPath));
+    writeKeyValueTreeToH5md(parametersGroup, builder.build());
+#else
+    GMX_UNUSED_VALUE(inputRecord);
+    GMX_UNUSED_VALUE(topology);
+    GMX_UNUSED_VALUE(isRerun);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setupFromOtherFile(const H5md& other, const ArrayRef<const int> selectionInds, const char* selectionName)
 {
 #if GMX_USE_HDF5
@@ -738,6 +761,7 @@ void H5md::copyMetaDataFromFile(const H5md& other, const bool copyTopology)
     std::vector<std::string> objectsToCopy = {
         pathToModule("gromacs"),
         pathToModule("units"),
+        c_h5mdParametersGroupPath,
     };
 
     if (copyTopology)
@@ -1055,6 +1079,11 @@ H5md* makeH5md(const std::filesystem::path& fileName, H5mdFileMode mode)
 void setupFileFromInput(H5md* h5md, const gmx_mtop_t& topology, const t_inputrec& inputRecord)
 {
     h5md->setupFileFromInput(topology, inputRecord);
+}
+
+void setupMDParameters(H5md* h5md, const t_inputrec& inputRecord, const gmx_mtop_t& topology, const bool isRerun)
+{
+    h5md->setupMDParameters(inputRecord, topology, isRerun);
 }
 
 void setupFromExistingFileForAppending(H5md* h5md, const int64_t restartingFromStep, const int64_t numParticles)

@@ -43,6 +43,7 @@
 
 #include "gromacs/fileio/h5md/h5md.h"
 
+#include <filesystem>
 #include <optional>
 #include <string>
 
@@ -334,6 +335,78 @@ TEST_F(H5mdIoTest, SetupFileFromInputCreatesParticlesGroup)
 
     file().setupFileFromInput(mtop, inputRecord);
     EXPECT_NO_THROW_GMX(openGroup(fileid(), "/particles/system"));
+}
+
+TEST_F(H5mdIoTest, SetupMDParametersWritesTheParameterCategories)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    inputRecord.eI = IntegrationAlgorithm::MD;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    file().setupMDParameters(inputRecord, mtop, false);
+
+    for (const char* category : { "run_control",
+                                  "output_control",
+                                  "coulomb_interactions",
+                                  "vdw_interactions",
+                                  "boundary_conditions" })
+    {
+        SCOPED_TRACE(category);
+        EXPECT_TRUE(objectExists(fileid(), formatString("/parameters/%s", category).c_str()));
+    }
+    EXPECT_TRUE(objectExists(fileid(), "/parameters/run_control/molecular_dynamics"));
+}
+
+TEST_F(H5mdIoTest, SetupMDParametersDescribesARerun)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    inputRecord.eI = IntegrationAlgorithm::MD;
+    file().setupFileFromInput(mtop, inputRecord);
+
+    file().setupMDParameters(inputRecord, mtop, true);
+
+    // A rerun integrates nothing, so its run control only holds the simulation type
+    EXPECT_TRUE(objectExists(fileid(), "/parameters/run_control/simulation_type"));
+    EXPECT_FALSE(objectExists(fileid(), "/parameters/run_control/molecular_dynamics"));
+}
+
+TEST_F(H5mdIoTest, SetupMDParametersThrowsWhenWrittenTwice)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    file().setupFileFromInput(mtop, inputRecord);
+    file().setupMDParameters(inputRecord, mtop, false);
+
+    EXPECT_THROW_GMX(file().setupMDParameters(inputRecord, mtop, false), H5mdError);
+}
+
+TEST_F(H5mdIoTest, SetupFromOtherFileCopiesMDParameters)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    inputRecord.eI = IntegrationAlgorithm::MD;
+
+    TestFileManager             fileManager;
+    const std::filesystem::path otherFileName = fileManager.getTemporaryFilePath("other.h5md");
+    {
+        H5md other(otherFileName, H5mdFileMode::Write);
+        other.setupFileFromInput(mtop, inputRecord);
+        other.setupMDParameters(inputRecord, mtop, false);
+        // The number of particles is read from the trajectory data of the other file
+        const std::vector<RVec> positions(mtop.natoms, { 0.0, 0.0, 0.0 });
+        other.writeNextFrame(positions, {}, {}, c_unusedBox, 0, 0.0, std::nullopt);
+    }
+
+    const H5md other(otherFileName, H5mdFileMode::Read);
+    file().setupFromOtherFile(other, {}, "system");
+
+    EXPECT_TRUE(objectExists(fileid(), "/parameters/run_control/molecular_dynamics"));
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)

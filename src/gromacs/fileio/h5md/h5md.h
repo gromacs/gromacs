@@ -243,6 +243,21 @@ public:
                             ArrayRef<const int> selectionInds,
                             const char*         selectionName);
 
+    /*! \brief Write the MD parameters of the simulation to the group `/parameters`.
+     *
+     * The parameters follow the MD parameters of the H5MD biophysics specification
+     * (https://gromacs.gitlab.io/h5md-biophysics/md_parameter.html), as described by
+     * buildMdParameterTree().
+     *
+     * \param[in] inputRecord Simulation parameters.
+     * \param[in] topology    Topology of the simulated system, which gives the names of the
+     *                        simulation groups and whether any bond is constrained.
+     * \param[in] isRerun     Whether the energies of an existing trajectory are recomputed.
+     *
+     * \throws H5mdError if the group exists already or cannot be written.
+     */
+    void setupMDParameters(const t_inputrec& inputRecord, const gmx_mtop_t& topology, bool isRerun);
+
     /*! \brief Set up the current file based on and copy metadata from another file.
      *
      * If \p selectionInds is not empty its size will be used to set up
@@ -337,7 +352,8 @@ private:
      * will represent the current user instead of the original.
      *
      * If \p copyTopology is true any known topology data groups will
-     * also be copied over.
+     * also be copied over. The MD parameters in /parameters are copied
+     * whatever \p copyTopology.
      *
      * \param[in] other         File to copy metadata from.
      * \param[in] copyTopology  Whether to also copy topology data.
