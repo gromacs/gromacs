@@ -359,7 +359,7 @@ TEST_P(NNPotTopologyPreprocessorTest, RemovingChargeOnVSites)
     }
 
     expectLogMessage("Neural network potential interface is active, topology was modified!");
-    expectLogMessage("Number of embedded NNP atoms: 16\nNumber of regular atoms: 8\n");
+    expectLogMessage("Number of embedded NNP atoms: 16\nNumber of regular atoms: 10\n");
     expectLogMessage("Number of exclusions made: 16\n");
     expectLogMessage("Number of bonds removed: 28\n");
     expectLogMessage("Number of InteractionFunction::ConnectBonds \\(type 5 bonds\\) added: 15\n");
@@ -371,8 +371,10 @@ TEST_P(NNPotTopologyPreprocessorTest, RemovingChargeOnVSites)
         expectLogMessage(
                 "Total charge of the classical system \\(before modifications\\): 0.00000");
         expectLogMessage("Classical charge removed from embedded atoms: 0.00000\n");
+        // The two VsiteN sites count as 3 + 5 here, as the preprocessor counts every constructing
+        // atom of a VsiteN site as a separate virtual site.
         expectLogMessage(
-                "Note: There are 8 virtual sites found, which are built from embedded atoms only. "
+                "Note: There are 16 virtual sites found, which are built from embedded atoms only. "
                 "Classical charges on them have been removed as well.\n");
     }
     EXPECT_NO_THROW(options.modifyTopology(mtop.get()));

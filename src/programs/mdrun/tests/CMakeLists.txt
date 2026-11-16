@@ -448,4 +448,14 @@ gmx_add_gtest_executable(${exename} MPI
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 INTEGRATION_TEST QUICK_GPU_TEST)
+gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+# ... but also with a single rank, because constructing virtual sites on the GPU requires
+# all virtual sites to be within update groups when using domain decomposition, which the
+# virtual site test system does not allow.
+gmx_register_gtest_test("MdrunVirtualSiteSingleRankTests" ${exename} INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
+# Because the mdrun tests depend on writing files whose names are not
+# unique across test cases, prevent CTest from running these tests
+# concurrently. See #4654
+if (TEST MdrunVirtualSiteTests AND TEST MdrunVirtualSiteSingleRankTests)
+    set_tests_properties(MdrunVirtualSiteTests PROPERTIES DEPENDS MdrunVirtualSiteSingleRankTests)
+endif()

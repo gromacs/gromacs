@@ -190,6 +190,8 @@ const MdpFileValues mdpFileValueDatabase_g{
         { 1, 2, 3, 4, 5, 6, 8, 9 } } },
     // Artificial test system including all virtual site types
     { "vsite_test", { {}, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
+    // Artificial test system including only the linear virtual site types
+    { "vsite_test_linear", { {}, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
 };
 
 //! Helper typedef for mdp database

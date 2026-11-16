@@ -311,15 +311,17 @@ TEST_F(QMMMTopologyPreprocessorTest, RemovingQMVsites)
             MDLogger::LogLevel::Info, "QMMM Interface with CP2K is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
-            "Number of embedded QM atoms: 16\nNumber of regular atoms: 8\n");
+            "Number of embedded QM atoms: 16\nNumber of regular atoms: 10\n");
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
             "Total charge of the classical system \\(before modifications\\): 0.00000");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Classical charge removed from embedded atoms: 0.00000\n");
+    // The two VsiteN sites count as 3 + 5 here, as the preprocessor counts every constructing
+    // atom of a VsiteN site as a separate virtual site.
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
-            "Note: There are 8 virtual sites found, which are built from embedded atoms only. "
+            "Note: There are 16 virtual sites found, which are built from embedded atoms only. "
             "Classical charges on them have been removed as well.\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 16\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 28\n");

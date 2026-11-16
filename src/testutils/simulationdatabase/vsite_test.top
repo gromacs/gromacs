@@ -54,9 +54,30 @@ VSTEST     3
    22   DUM    1   VSTEST   VS6   22   -0.010   0.0
    23   DUM    1   VSTEST   VS7   23    0.010   0.0
    24   DUM    1   VSTEST   VS8   24   -0.010   0.0
+   25   DUM    1   VSTEST   VS9   25    0.010   0.0
+   26   DUM    1   VSTEST  VS10   26   -0.010   0.0
 ; total charge of the molecule:   0.000
 [ bonds ]
 ;  ai   aj  funct   c0         c1
+#ifdef HARMONIC_BONDS
+; Harmonic bonds with the force constant equivalent to the GROMOS96 bonds
+; (k_harmonic = 2 k_G96 b0^2). Unlike GROMOS96 bonds, these can run on GPUs.
+    1    2    1   0.1530   3.3475e+05
+    2    3    1   0.1530   3.3475e+05
+    3    4    1   0.1530   3.3475e+05
+    4    5    1   0.1530   3.3475e+05
+    5    6    1   0.1530   3.3475e+05
+    6    7    1   0.1530   3.3475e+05
+    7    8    1   0.1530   3.3475e+05
+    8    9    1   0.1530   3.3475e+05
+    9   10    1   0.1530   3.3475e+05
+   10   11    1   0.1530   3.3475e+05
+   11   12    1   0.1530   3.3475e+05
+   12   13    1   0.1530   3.3475e+05
+   13   14    1   0.1530   3.3475e+05
+   14   15    1   0.1530   3.3475e+05
+   15   16    1   0.1530   3.3475e+05
+#else
     1    2    2   0.1530   7.1500e+06
     2    3    2   0.1530   7.1500e+06
     3    4    2   0.1530   7.1500e+06
@@ -72,6 +93,7 @@ VSTEST     3
    13   14    2   0.1530   7.1500e+06
    14   15    2   0.1530   7.1500e+06
    15   16    2   0.1530   7.1500e+06
+#endif
 [ pairs ]
 ;  ai   aj  funct  ;  all 1-4 pairs but the ones excluded in GROMOS itp
     1    4    1
@@ -144,6 +166,21 @@ VSTEST     3
 [ virtual_sites4 ]
 ; Site  from                      funct   a          b          c
   24    12   13    14    15       2       1.0        0.9       0.105
+#ifdef REPLACE_VIRTUAL_SITES_N
+; Replace the virtual_sitesn constructions by linear ones, for use where
+; virtual_sitesn is not supported. Site 25 is constructed identically, as
+; the center of geometry of atoms 14-16. Site 26 is constructed as the
+; center of mass of only atoms 1-3, as it can not be of atoms 1-5.
+[ virtual_sites3 ]
+; Site  from               funct   a          b
+  25    14   15    16      1       0.33333333 0.33333333
+  26    1     2     3      1       0.32553552 0.32553552
+#else
+[ virtual_sitesn ]
+; Site  funct  from
+  25    1      14    15    16
+  26    2      1     2     3     4     5
+#endif
 
 [ system ]
 ; Name
