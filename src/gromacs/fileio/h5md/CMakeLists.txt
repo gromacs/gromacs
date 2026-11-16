@@ -48,6 +48,7 @@ if(GMX_USE_HDF5)
         h5md_group.cpp
         h5md_indexgroup.cpp
         h5md_guard.cpp
+        h5md_kvtree_writer.cpp
         h5md_mdparameters.cpp
         h5md_particleblock.cpp
         h5md_timedatablock.cpp
