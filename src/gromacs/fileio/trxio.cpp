@@ -596,7 +596,8 @@ void write_h5md_frame(t_trxstatus* status, const t_trxframe& frame)
                      : gmx::ArrayRef<const gmx::RVec>{},
             frame.box,
             frame.step,
-            frame.time);
+            frame.time,
+            std::nullopt);
 }
 
 int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)

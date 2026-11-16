@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
@@ -57,6 +58,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/generate_frame_data.h"
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 
@@ -765,6 +767,48 @@ TEST_F(H5mdTimeDataBlockTest, CompressionWorks)
     const size_t compressedSize   = H5Dget_storage_size(valueDataSetCompressed.id());
     EXPECT_LT(compressedSize, 0.5 * uncompressedSize)
             << "gzip compression should yield a saving of much more than 50% for this data";
+}
+
+TEST_F(H5mdTimeDataBlockTest, Sz3CompressionWorks)
+{
+    if (!sz3CompressionIsAvailable())
+    {
+        GTEST_SKIP() << "GROMACS is not built with SZ3 support";
+    }
+
+    using ValueType         = BasicVector<double>;
+    constexpr int numValues = 101;
+
+    {
+        SCOPED_TRACE(
+                "Create data sets, write some data to them and close them at the end of scope");
+        H5mdTimeDataBlock<ValueType> dataBlockUncompressed =
+                H5mdTimeDataBlockBuilder<ValueType>(fileid(), "uncompressed")
+                        .withFrameDimension({ numValues })
+                        .build();
+
+        H5mdTimeDataBlock<ValueType> dataBlockCompressed =
+                H5mdTimeDataBlockBuilder<ValueType>(fileid(), "compressed")
+                        .withFrameDimension({ numValues })
+                        .withCompression(H5mdCompression::LossySz3BioMD, 5e-4)
+                        .build();
+
+        // Write some data to the data sets
+        std::vector<ValueType> valuesToWrite(numValues);
+        TrajectoryFrameDataGenerator()(valuesToWrite);
+        dataBlockUncompressed.writeNextFrame(valuesToWrite, 0, 0.0);
+        dataBlockCompressed.writeNextFrame(valuesToWrite, 0, 0.0);
+    }
+
+    // Open the value data sets as H5mdDataSetBase to access the hid_t handles for below
+    H5mdDataSetBase<ValueType> valueDataSetUncompressed(fileid(), "uncompressed/value");
+    H5mdDataSetBase<ValueType> valueDataSetCompressed(fileid(), "compressed/value");
+
+    // H5Dget_storage_size returns the size (in bytes) of the stored data inside the set.
+    const size_t uncompressedSize = H5Dget_storage_size(valueDataSetUncompressed.id());
+    const size_t compressedSize   = H5Dget_storage_size(valueDataSetCompressed.id());
+    EXPECT_LT(compressedSize, 0.5 * uncompressedSize)
+            << "SZ3 BioMD compression should yield a saving of much more than 50% for this data";
 }
 
 TEST_F(H5mdTimeDataBlockTest, UnitsAreSetCorrectly)

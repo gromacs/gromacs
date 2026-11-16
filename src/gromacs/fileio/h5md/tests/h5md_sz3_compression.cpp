@@ -72,7 +72,7 @@ TEST(H5mdSz3CompressionTest, FilterIsApplied)
     const auto [creationPropertyList, creationPropertyListGuard] =
             makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
 
-    setSz3Compression(creationPropertyList, 5e-4);
+    setCompressionFilters(creationPropertyList, H5mdCompression::LossySz3BioMD, 5e-4);
     EXPECT_EQ(H5Pget_nfilters(creationPropertyList), 1);
     // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
     EXPECT_GE(H5Pget_filter_by_id2(
@@ -86,7 +86,7 @@ TEST(H5mdSz3CompressionTest, AbsoluteErrorIsSet)
 
     const auto [creationPropertyList, creationPropertyListGuard] =
             makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
-    setSz3Compression(creationPropertyList, absoluteError);
+    setCompressionFilters(creationPropertyList, H5mdCompression::LossySz3BioMD, absoluteError);
 
     SZ3::Config conf;
     get_SZ3_conf_from_H5(creationPropertyList, conf);
@@ -98,17 +98,18 @@ TEST(H5mdSz3CompressionTest, ThrowsForNonPositiveAbsoluteError)
     const auto [creationPropertyList, creationPropertyListGuard] =
             makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
 
-    EXPECT_THROW(setSz3Compression(creationPropertyList, -5e-4), H5mdError);
-    EXPECT_THROW(setSz3Compression(creationPropertyList, 0.0), H5mdError);
+    EXPECT_THROW(setCompressionFilters(creationPropertyList, H5mdCompression::LossySz3BioMD, -5e-4),
+                 H5mdError);
+    EXPECT_THROW(setCompressionFilters(creationPropertyList, H5mdCompression::LossySz3BioMD, 0.0), H5mdError);
 }
 
 TEST(H5mdSz3CompressionTest, ThrowsForInvalidHandles)
 {
     const auto [accessPropertyList, accessPropertyListGuard] =
             makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_ACCESS));
-    EXPECT_THROW(setSz3Compression(accessPropertyList, 5e-4), H5mdError)
+    EXPECT_THROW(setCompressionFilters(accessPropertyList, H5mdCompression::LossySz3BioMD, 5e-4), H5mdError)
             << "Must throw for handle which is not a H5P_DATASET_CREATE property list";
-    EXPECT_THROW(setSz3Compression(H5I_INVALID_HID, 5e-4), H5mdError)
+    EXPECT_THROW(setCompressionFilters(H5I_INVALID_HID, H5mdCompression::LossySz3BioMD, 5e-4), H5mdError)
             << "Must throw for invalid handle";
 }
 
@@ -118,7 +119,8 @@ TEST(H5mdSz3DisabledTest, SetSz3CompressionThrows)
 {
     const auto [creationPropertyList, creationPropertyListGuard] =
             makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
-    EXPECT_THROW_GMX(setSz3Compression(creationPropertyList, 5e-4), NotImplementedError);
+    EXPECT_THROW_GMX(setCompressionFilters(creationPropertyList, H5mdCompression::LossySz3BioMD, 5e-4),
+                     NotImplementedError);
 }
 
 #endif // GMX_HAVE_SZ3

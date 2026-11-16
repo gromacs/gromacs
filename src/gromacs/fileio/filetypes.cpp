@@ -61,7 +61,7 @@ enum
 static const int trxs[] = { efXTC, efTRR, efCPT, efGRO, efG96, efPDB, efCIF, efTNG, efH5MD };
 #define NTRXS asize(trxs)
 
-static const int trcompressed[] = { efXTC, efTNG };
+static const int trcompressed[] = { efXTC, efH5MD, efTNG };
 #define NTRCOMPRESSED asize(trcompressed)
 
 static const int tros[] = { efXTC, efTRR, efGRO, efG96, efPDB, efCIF, efTNG, efH5MD };

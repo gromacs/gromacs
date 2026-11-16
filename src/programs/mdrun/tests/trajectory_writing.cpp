@@ -48,7 +48,10 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -56,8 +59,11 @@
 #include "testutils/mpitest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/trajectoryreader.h"
 
-#include "moduletest.h"
+#include "programs/mdrun/tests/mdruncomparison.h"
+#include "programs/mdrun/tests/moduletest.h"
+#include "programs/mdrun/tests/trajectorycomparison.h"
 
 namespace gmx
 {
@@ -161,41 +167,80 @@ INSTANTIATE_TEST_SUITE_P(MdrunCanWrite,
 
 #if GMX_USE_HDF5
 //! Test fixture for mdrun H5md trajectory writing
-class H5mdTrajectoryWritingTest : public gmx::test::MdrunTestFixture
+class H5mdTrajectoryWritingTest : public MdrunTestFixture
 {
 public:
-    //! The file name of the MDP file
-    std::string theMdpFile;
-
-    //! Execute the trajectory writing test
-    void runTest()
+    void compareTrajectories(const std::filesystem::path& referenceTrajectory,
+                             const std::filesystem::path& testTrajectory)
     {
-        runner_.useStringAsMdpFile(theMdpFile);
-        runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
-        EXPECT_EQ(0, runner_.callGrompp());
+        TrajectoryTolerances tolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
+        if (fn2ftp(referenceTrajectory) == efXTC)
+        {
+            // XTC stores time as a float
+            tolerances.time = defaultFloatTolerance();
+        }
 
-        runner_.fullPrecisionTrajectoryFileName_ =
-                fileManager_.getTemporaryFilePath("spc-and-methanol.h5md").string();
-        // We're not yet ready for H5md compressed output
-        // runner_.reducedPrecisionTrajectoryFileName_ =
-        //         fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.h5md").string();
-        ASSERT_EQ(0, runner_.callMdrun());
-        // TODO When there is a way to sense something like the
-        // output of gmx check, compare the result with that from
-        // writing .trr and .xtc and assert the behaviour is
-        // correct.
+        // Build the manager that will present matching pairs of frames to compare
+        FramePairManager<TrajectoryFrameReader> trajectoryManager(
+                std::make_unique<TrajectoryFrameReader>(referenceTrajectory),
+                std::make_unique<TrajectoryFrameReader>(testTrajectory));
+
+        trajectoryManager.compareAllFramePairs<TrajectoryFrame>(
+                TrajectoryComparison{ trajectoryMatchSettings_, tolerances });
     }
+
+private:
+    const TrajectoryFrameMatchSettings trajectoryMatchSettings_{
+        false,
+        false,
+        false,
+        ComparisonConditions::CompareIfReferenceFound,
+        ComparisonConditions::CompareIfReferenceFound,
+        ComparisonConditions::CompareIfReferenceFound,
+        MaxNumFrames::compareAllFrames(),
+    };
 };
 
-TEST_F(H5mdTrajectoryWritingTest, Works)
+TEST_F(H5mdTrajectoryWritingTest, FullAndReducedPrecisionOutputMatchesTrrAndXtc)
 {
-    theMdpFile =
+    const std::string mdpContent =
             "integrator = md\n"
             "nsteps = 6\n"
             "nstxout = 5\n"
             "nstvout = 2\n"
-            "nstfout = 4\n";
-    runTest();
+            "nstfout = 4\n"
+            "nstxout-compressed = 3\n";
+
+    runner_.useStringAsMdpFile(mdpContent);
+    runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+    ASSERT_EQ(0, runner_.callGrompp());
+
+    const std::filesystem::path referenceFullPrecisionTrajectory =
+            fileManager_.getTemporaryFilePath("spc-and-methanol.trr");
+    const std::filesystem::path h5mdFullPrecisionTrajectory =
+            fileManager_.getTemporaryFilePath("spc-and-methanol.h5md");
+    const std::filesystem::path referenceReducedPrecisionTrajectory =
+            fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.xtc");
+    const std::filesystem::path h5mdReducedPrecisionTrajectory =
+            fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.h5md");
+
+    runner_.fullPrecisionTrajectoryFileName_    = h5mdFullPrecisionTrajectory.string();
+    runner_.reducedPrecisionTrajectoryFileName_ = h5mdReducedPrecisionTrajectory.string();
+    if (!sz3CompressionIsAvailable())
+    {
+        GMX_EXPECT_DEATH_IF_SUPPORTED(runner_.callMdrun(), "SZ3");
+    }
+    else
+    {
+        ASSERT_EQ(0, runner_.callMdrun());
+
+        runner_.fullPrecisionTrajectoryFileName_    = referenceFullPrecisionTrajectory.string();
+        runner_.reducedPrecisionTrajectoryFileName_ = referenceReducedPrecisionTrajectory.string();
+        ASSERT_EQ(0, runner_.callMdrun());
+
+        compareTrajectories(referenceFullPrecisionTrajectory, h5mdFullPrecisionTrajectory);
+        compareTrajectories(referenceReducedPrecisionTrajectory, h5mdReducedPrecisionTrajectory);
+    }
 }
 
 #endif // GMX_USE_HDF5

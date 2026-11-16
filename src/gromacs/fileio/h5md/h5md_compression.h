@@ -42,24 +42,79 @@
 
 #include <hdf5.h>
 
+#include <optional>
+
 namespace gmx
 {
+//! \brief Registered id for the SZ3 filter in HDF5
+constexpr int c_sz3FilterId = 32024;
 
-/*! \brief Set lossy SZ3 compression filter to input property list.
+//! \brief Data set compression options
+enum class H5mdCompression : int
+{
+    Uncompressed,      //!< No compression
+    LosslessNoShuffle, //!< Lossless, only gzip (deflate)
+    LosslessShuffle,   //!< Lossless, byte shuffle followed by gzip (deflate)
+    LossySz3BioMD,     //!< Lossy, SZ3 BioMD algorithm with an absolute error
+    Count,             //!< Number of compression schemes
+};
+
+//! \brief Return string description for input \p compression scheme.
+const char* enumValueToString(H5mdCompression compression);
+
+/*! \brief Return whether input \p dataSet uses SZ3 compression.
  *
- * The lossy compression error is bounded as:
- * value - absoluteError <= value <= value + absoluteError
+ * Can be called regardless of whether GROMACS is compiled with SZ3 support
+ * or not. Should be used by non-SZ3 builds to check whether we are
+ * opening a data set which we cannot interact with, i.e. if SZ3
+ * compression is used for it.
  *
- * \note This filter must be applied before any checksum filters are
+ * \throws H5mdError if the creation property list could not be retrieved
+ * from \p dataSet.
+ */
+bool isCompressedWithSz3(hid_t dataSet);
+
+/*! \brief Return the absolute error for SZ3 compression in \p dataSet.
+ *
+ * If a lossy SZ3 compression scheme is applied to the given \p dataSet
+ * the absolute error is retrieved and returned. Otherwise, including
+ * if no filter is applied, std::nullopt is returned.
+ *
+ * \throws H5mdError if there was an error getting the SZ3 filter
+ * configuration.
+ *
+ * \throws NotImplementedError if GROMACS is not built with SZ3 support.
+ */
+std::optional<double> getSz3AbsoluteError(hid_t dataSet);
+
+/*! \brief Register the active SZ3 filter and return if successful.
+ *
+ * This replaces, for the current process, an SZ3 filter that HDF5
+ * may have loaded from HDF5_PLUGIN_PATH with the filter that GROMACS
+ * is built against.
+ *
+ * \throws NotImplementedError if GROMACS is not built with SZ3 support.
+ */
+bool registerSz3Filter();
+
+
+/*! \brief Set HDF5 filters for input \p compression scheme to \p creationPropertyList.
+ *
+ * \note Filters must be applied before any checksum filters are
  * (e.g. Fletcher-32).
  *
  * \param[in] creationPropertyList Property list for data set creation.
- * \param[in] absoluteError        Maximum absolute error for compression.
+ * \param[in] compression          Compression scheme.
+ * \param[in] absoluteError        Maximum absolute error for lossy compression schemes
+ *                                 (unused for non-lossy schemes).
  *
- * \throws H5mdError if \p absoluteError is not positive or the compression
- * filter could not be applied to \p creationPropertyList.
+ * \throws H5mdError if \p compression is a lossy compression scheme
+ * and \p absoluteError is not positive, or if the compression filter
+ * could not be applied to \p creationPropertyList.
+ *
+ * \throws NotImplementedError if GROMACS is not built with SZ3 support.
  */
-void setSz3Compression(hid_t creationPropertyList, double absoluteError);
+void setCompressionFilters(hid_t creationPropertyList, H5mdCompression compression, double absoluteError = 0.0);
 
 } // namespace gmx
 

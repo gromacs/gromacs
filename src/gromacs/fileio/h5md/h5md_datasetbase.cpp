@@ -43,11 +43,14 @@
 
 #include <algorithm>
 
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_compound_type.h"
+#include "gromacs/fileio/h5md/h5md_compression.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_topologycompound.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
+#include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
@@ -74,9 +77,15 @@ static hsize_t getNumDims(const hid_t dataSetHandle) noexcept
 //! \brief Helper function to open a data set and throw with a unique error message if it fails.
 static hid_t openDataSet(const hid_t container, const char* name)
 {
-    const hid_t handle = H5Dopen(container, name, H5P_DEFAULT);
-    GMX_H5MD_THROW_UPON_INVALID_HID(handle, formatString("Cannot open data set with name %s.", name));
-    return handle;
+    // Guard handle to ensure that it is closed in case we throw
+    auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(H5Dopen(container, name, H5P_DEFAULT));
+    GMX_H5MD_THROW_UPON_INVALID_HID(dataSet, formatString("Cannot open data set with name %s.", name));
+    GMX_H5MD_THROW_UPON_ERROR(!sz3CompressionIsAvailable() && isCompressedWithSz3(dataSet),
+                              formatString("Cannot open data set at %s: it uses SZ3 compression "
+                                           "and GROMACS is built without SZ3 support",
+                                           getHandlePath(dataSet).value_or("<unknown>").c_str()));
+    dataSetGuard.dismiss();
+    return dataSet;
 }
 
 /*! \brief Verify that the data set is consistent for its templated \c ValueType.

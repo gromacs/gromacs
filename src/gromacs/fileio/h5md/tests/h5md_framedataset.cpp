@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
@@ -782,6 +783,41 @@ TEST_F(H5mdFrameDataSetTest, ShrinkToNumFramesThrowsIfNewNumFramesIsLargerThanCu
 
     ASSERT_NO_THROW_GMX(dataSet.shrinkToNumFrames(numFrames));
     EXPECT_THROW_GMX(dataSet.shrinkToNumFrames(numFrames + 1), H5mdError);
+}
+
+TEST_F(H5mdFrameDataSetTest, AbsoluteErrorIsStoredForSz3Compression)
+{
+    using ValueType                = BasicVector<float>;
+    constexpr double absoluteError = 5e-4;
+
+    {
+        SCOPED_TRACE("No compression");
+        H5mdFrameDataSet<ValueType> dataSet =
+                H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "uncompressed")
+                        .withCompression(H5mdCompression::Uncompressed, absoluteError)
+                        .withFrameDimension({ 1 })
+                        .build();
+        EXPECT_FALSE(dataSet.absoluteError().has_value());
+    }
+    {
+        SCOPED_TRACE("Lossless compression");
+        H5mdFrameDataSet<ValueType> dataSet =
+                H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "lossless")
+                        .withCompression(H5mdCompression::LosslessNoShuffle, absoluteError)
+                        .withFrameDimension({ 1 })
+                        .build();
+        EXPECT_FALSE(dataSet.absoluteError().has_value());
+    }
+    if (sz3CompressionIsAvailable())
+    {
+        SCOPED_TRACE("SZ3 compression");
+        H5mdFrameDataSet<ValueType> dataSet =
+                H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "sz3")
+                        .withCompression(H5mdCompression::LossySz3BioMD, absoluteError)
+                        .withFrameDimension({ 1 })
+                        .build();
+        EXPECT_THAT(dataSet.absoluteError(), ::testing::Optional(absoluteError));
+    }
 }
 
 } // namespace

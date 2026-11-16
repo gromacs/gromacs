@@ -42,6 +42,8 @@
 
 #include <hdf5.h>
 
+#include <optional>
+
 #include "gromacs/fileio/h5md/h5md_datasetbase.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 
@@ -106,6 +108,9 @@ public:
     H5mdFrameDataSet(H5mdFrameDataSet<ValueType>&&) noexcept;
     //! \brief Move assignment explicitly deleted (not supported by H5mdDataSetBase).
     H5mdFrameDataSet& operator=(H5mdFrameDataSet<ValueType>&&) = delete;
+
+    //! \brief Return the absolute error bound of data (if lossy compression is applied).
+    std::optional<double> absoluteError() const;
 
     /*! \brief Return the dimensions of a single frame of the templated type in data set.
      *
@@ -291,6 +296,9 @@ private:
 
     //!< Current number of frames in the data set.
     hsize_t numFrames_;
+
+    //! Absolute error bound of data (if lossy compression is applied).
+    const std::optional<double> absoluteError_;
 };
 
 /*! \brief Class which provides an interface for reading and writing scalar frame data to H5mdDataSetBase objects.

@@ -76,9 +76,10 @@ public:
     using Base::Base;
 
     //! \copydoc H5mdDataSetBuilder::withCompression()
-    H5mdFrameDataSetBuilder& withCompression(const H5mdCompression compression)
+    H5mdFrameDataSetBuilder& withCompression(const H5mdCompression compression,
+                                             const double          absoluteError = 0.0)
     {
-        Base::withCompression(compression);
+        Base::withCompression(compression, absoluteError);
         return *this;
     }
 

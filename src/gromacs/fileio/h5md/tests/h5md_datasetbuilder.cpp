@@ -50,8 +50,10 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/h5md/exceptions.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
+#include "gromacs/fileio/h5md/h5md_compression.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
@@ -576,54 +578,75 @@ TEST_F(H5mdDataSetBuilderTest, UncompressedByDefault)
             makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
 
     EXPECT_EQ(H5Pget_nfilters(propertyList), 0);
-    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
-    EXPECT_LT(H5Pget_filter_by_id2(
-                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
-              0);
-    EXPECT_LT(H5Pget_filter_by_id2(
-                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
-              0);
 }
 
-TEST_F(H5mdDataSetBuilderTest, WithLosslessCompression)
+//! Test fixture which checks that SZ3 compression is only used for RVec-like data
+template<typename ValueType>
+class H5mdDataSetBuilderSz3CompressionTypeTest : public H5mdTestBase
 {
-    const H5mdDataSetBase<int32_t> dataSet = H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet")
-                                                     .withDimension({ 0 })
-                                                     .withCompression(H5mdCompression::LosslessNoShuffle)
-                                                     .build();
+};
 
-    const auto [propertyList, propertyListGuard] =
-            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+using Sz3TestTypes =
+        ::testing::Types<int32_t, int64_t, float, double, std::string, BasicVector<float>, BasicVector<double>>;
+TYPED_TEST_SUITE(H5mdDataSetBuilderSz3CompressionTypeTest, Sz3TestTypes);
 
-    EXPECT_EQ(H5Pget_nfilters(propertyList), 1);
-    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
-    EXPECT_GE(H5Pget_filter_by_id2(
-                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
-              0);
-    EXPECT_LT(H5Pget_filter_by_id2(
-                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
-              0);
-}
-
-TEST_F(H5mdDataSetBuilderTest, WithLosslessShuffleCompression)
+TYPED_TEST(H5mdDataSetBuilderSz3CompressionTypeTest, WithSz3CompressionThrowsForNonRvecLikeDataTypes)
 {
-    const H5mdDataSetBase<int32_t> dataSet = H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet")
-                                                     .withDimension({ 0 })
-                                                     .withCompression(H5mdCompression::LosslessShuffle)
-                                                     .build();
+    if (!sz3CompressionIsAvailable())
+    {
+        GTEST_SKIP() << "GROMACS is not built with SZ3 support";
+    }
 
-    const auto [propertyList, propertyListGuard] =
-            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+    constexpr double              absoluteError = 1.0;
+    H5mdDataSetBuilder<TypeParam> builder(this->fileid(), "testDataSet");
 
-    EXPECT_EQ(H5Pget_nfilters(propertyList), 2);
-    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
-    EXPECT_GE(H5Pget_filter_by_id2(
-                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
-              0);
-    EXPECT_GE(H5Pget_filter_by_id2(
-                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
-              0);
+    if constexpr (std::is_same_v<TypeParam, BasicVector<float>>
+                  || std::is_same_v<TypeParam, BasicVector<double>>)
+    {
+        EXPECT_NO_THROW_GMX(builder.withCompression(H5mdCompression::LossySz3BioMD, absoluteError));
+    }
+    else
+    {
+        EXPECT_THROW_GMX(builder.withCompression(H5mdCompression::LossySz3BioMD, absoluteError), H5mdError);
+    }
 }
+
+//! Test fixture which checks that the dimensions of data sets are compatible with SZ3
+class H5mdDataSetBuilderSz3CompressionNumDimsTest :
+    public H5mdTestBase,
+    public ::testing::WithParamInterface<int>
+{
+};
+
+TEST_P(H5mdDataSetBuilderSz3CompressionNumDimsTest, InputNumDimsMustEqual2)
+{
+    if (!sz3CompressionIsAvailable())
+    {
+        GTEST_SKIP() << "GROMACS is not built with SZ3 support";
+    }
+
+    const int         numDims = GetParam();
+    const DataSetDims dims(numDims, 0);
+
+    H5mdDataSetBuilder<RVec> builder(fileid(), "testDataSet");
+    builder.withCompression(H5mdCompression::LossySz3BioMD, 5e-4);
+    builder.withDimension(dims);
+
+    // SZ3 requires the primitive data to be of shape [numFrames][numParticles][3].
+    // Since only RVec-like compiled ValueTypes are allowed, for which the call
+    // to build() appends the innermost dimension (=3), the input to .withDimension(dims)
+    // must be exactly 2 values
+    if (numDims == 2)
+    {
+        EXPECT_NO_THROW_GMX(builder.build()) << "Must not throw for numDims == 2";
+    }
+    else
+    {
+        EXPECT_THROW_GMX(builder.build(), H5mdError) << "Must throw numDims != 2";
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(Works, H5mdDataSetBuilderSz3CompressionNumDimsTest, ::testing::Values(0, 1, 2, 3));
 
 } // namespace
 } // namespace test

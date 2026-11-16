@@ -46,12 +46,72 @@
 #endif
 
 #include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_guard.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
-void setSz3Compression(const hid_t creationPropertyList, const double absoluteError)
+// gzip (deflate) compression level: 1 = fastest, 9 = highest compression
+constexpr int c_h5mdDeflateCompressionLevel = 1;
+
+const char* enumValueToString(H5mdCompression compression)
+{
+    constexpr EnumerationArray<H5mdCompression, const char*> compressionSchemeDescriptions = {
+        "Uncompressed",
+        "LosslessNoShuffle",
+        "LosslessShuffle",
+        "LossySz3BioMD",
+    };
+    return compressionSchemeDescriptions[compression];
+}
+
+bool isCompressedWithSz3(hid_t dataSet)
+{
+    const auto [creationPropertyList, creationPropertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet));
+    GMX_H5MD_THROW_UPON_INVALID_HID(creationPropertyList,
+                                    "Cannot retrieve creation property list from data set");
+    return H5Pget_filter_by_id2(
+                   creationPropertyList, c_sz3FilterId, nullptr, nullptr, nullptr, 0, nullptr, nullptr)
+           >= 0;
+}
+
+std::optional<double> getSz3AbsoluteError(const hid_t dataSet)
+{
+#if GMX_HAVE_SZ3
+    SZ3::Config conf;
+    const auto [creationPropertyList, creationPropertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet));
+
+    const herr_t status = get_SZ3_conf_from_H5(creationPropertyList, conf);
+    GMX_H5MD_THROW_UPON_ERROR(status < 0, "Error in SZ3: Cannot get filter configuration");
+    return status > 0 ? std::make_optional(conf.absErrorBound) : std::nullopt;
+#else
+    GMX_THROW(NotImplementedError("GROMACS was compiled without SZ3 support"));
+    GMX_UNUSED_VALUE(dataSet);
+#endif
+}
+
+bool registerSz3Filter()
+{
+#if GMX_HAVE_SZ3
+    return H5Zregister(H5PLget_plugin_info()) >= 0;
+#else
+    GMX_THROW(NotImplementedError("GROMACS was compiled without SZ3 support"));
+#endif
+}
+
+/*! \brief Set lossy SZ3 compression filter to input property list.
+ *
+ * The lossy compression error is bounded as:
+ * value - absoluteError <= value <= value + absoluteError
+ *
+ * \throws H5mdError if \p absoluteError is not positive or the compression
+ * filter could not be applied to \p creationPropertyList.
+ */
+static void setSz3Compression(const hid_t creationPropertyList, const double absoluteError)
 {
 #if GMX_HAVE_SZ3
     GMX_H5MD_THROW_UPON_ERROR(absoluteError <= 0.0,
@@ -64,6 +124,30 @@ void setSz3Compression(const hid_t creationPropertyList, const double absoluteEr
     GMX_UNUSED_VALUE(creationPropertyList);
     GMX_UNUSED_VALUE(absoluteError);
 #endif
+}
+
+void setCompressionFilters(const hid_t           creationPropertyList,
+                           const H5mdCompression compression,
+                           const double          absoluteError)
+{
+    switch (compression)
+    {
+        case H5mdCompression::Uncompressed: break;
+        case H5mdCompression::LosslessShuffle:
+            GMX_H5MD_THROW_UPON_ERROR(H5Pset_shuffle(creationPropertyList) < 0,
+                                      "Cannot set shuffle filter to property list");
+            [[fallthrough]];
+        case H5mdCompression::LosslessNoShuffle:
+            GMX_H5MD_THROW_UPON_ERROR(
+                    H5Pset_deflate(creationPropertyList, c_h5mdDeflateCompressionLevel) < 0,
+                    "Cannot set shuffle filter to property list");
+            break;
+        case H5mdCompression::LossySz3BioMD:
+            setSz3Compression(creationPropertyList, absoluteError);
+            break;
+        case H5mdCompression::Count:
+            GMX_THROW(InternalError("Invalid compression scheme: cannot use Count"));
+    }
 }
 
 } // namespace gmx

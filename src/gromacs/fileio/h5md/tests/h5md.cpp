@@ -49,6 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_fixeddataset.h"
@@ -61,6 +62,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/generate_frame_data.h"
@@ -76,6 +78,8 @@ namespace test
 {
 namespace
 {
+
+using ::testing::Pointwise;
 
 //! \brief Test fixture which sets up an empty H5md file.
 using H5mdIoTest = H5mdTestBase;
@@ -574,10 +578,70 @@ TEST_F(H5mdIoTest, BoxGroupAttributesPbcScrew)
             << "For PBC=screw all values are none";
 }
 
-using H5mdWriteNextFrameTest = H5mdIoTest;
+// Test helper alias for parametrizing fixtures with position precision (nullopt = full precision)
+using PositionPrecision = std::optional<double>;
 
-TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsCreatesTimeDataBlock)
+//! Help GoogleTest name our test cases.
+std::string nameOfTest(const testing::TestParamInfo<PositionPrecision>& info)
 {
+    std::string testName = info.param.has_value()
+                                   ? formatString("PositionPrecision%g", info.param.value())
+                                   : "FullPrecision";
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+class H5mdWriteNextFrameTest : public H5mdIoTest, public ::testing::WithParamInterface<PositionPrecision>
+{
+public:
+    H5mdWriteNextFrameTest() :
+        absoluteError_{ GetParam().has_value() ? std::make_optional(1.0 / (2.0 * GetParam().value()))
+                                               : std::nullopt },
+        tolerance_{ absoluteError_.has_value() ? absoluteTolerance(absoluteError_.value())
+                                               : defaultRealTolerance() }
+    {
+    }
+
+    //! Return the absolute error for the parametrized position precision
+    const std::optional<double>& absoluteError() const { return absoluteError_; }
+
+    //! Return the floating point tolerance for the parametrized position precision
+    FloatingPointTolerance tolerance() const { return tolerance_; }
+
+    //! Return any common reasons to skip this test if necessary.
+    MessageStringCollector getSkipMessagesIfNecessary() const
+    {
+        MessageStringCollector messages;
+        MessageStringContext   messagesContext(&messages, "Test is being skipped because:");
+
+        messages.appendIf(!sz3CompressionIsAvailable() && GetParam().has_value(),
+                          "Position precision is used but GROMACS is not built with SZ3");
+
+        return messages;
+    }
+
+private:
+    const std::optional<double> absoluteError_;
+
+    const FloatingPointTolerance tolerance_;
+};
+
+TEST_P(H5mdWriteNextFrameTest, FirstCallWithPositionsCreatesTimeDataBlock)
+{
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     gmx_mtop_t mtop;
     mtop.natoms = sevenParticles;
@@ -597,15 +661,54 @@ TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsCreatesTimeDataBlock)
     }
     {
         SCOPED_TRACE("Writing positions creates corresponding time data block only");
-        file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0);
+        file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 0, 0, GetParam());
         ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition));
         ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
         ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
     }
 }
 
-TEST_F(H5mdWriteNextFrameTest, FirstCallWithVelocitiesCreatesTimeDataBlock)
+TEST_P(H5mdWriteNextFrameTest, PositionPrecisionSetsSz3CompressionToPositionDataBlockOnly)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
+    constexpr int64_t numParticles = 7;
+    t_inputrec        inputRecord;
+    gmx_mtop_t        mtop;
+    mtop.natoms = numParticles;
+
+    constexpr char pathToPosition[] = "/particles/system/position";
+    constexpr char pathToVelocity[] = "/particles/system/velocity";
+    constexpr char pathToForce[]    = "/particles/system/force";
+
+    file().setupFileFromInput(mtop, inputRecord);
+    std::vector<RVec> valuesToWrite(numParticles, { 0.0, 0.0, 0.0 });
+
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0, GetParam());
+
+    H5mdTimeDataBlock<RVec> positionBlock(fileid(), pathToPosition);
+    H5mdTimeDataBlock<RVec> velocityBlock(fileid(), pathToVelocity);
+    H5mdTimeDataBlock<RVec> forceBlock(fileid(), pathToForce);
+
+    EXPECT_EQ(positionBlock.absoluteError().has_value(), GetParam().has_value());
+    if (GetParam().has_value())
+    {
+        EXPECT_DOUBLE_EQ(positionBlock.absoluteError().value(), absoluteError().value());
+    }
+    EXPECT_FALSE(velocityBlock.absoluteError().has_value());
+    EXPECT_FALSE(forceBlock.absoluteError().has_value());
+}
+
+TEST_P(H5mdWriteNextFrameTest, FirstCallWithVelocitiesCreatesTimeDataBlock)
+{
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     gmx_mtop_t mtop;
     mtop.natoms = sevenParticles;
@@ -625,15 +728,20 @@ TEST_F(H5mdWriteNextFrameTest, FirstCallWithVelocitiesCreatesTimeDataBlock)
     }
     {
         SCOPED_TRACE("Writing velocities creates corresponding time data block only");
-        file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0);
+        file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 0, 0, GetParam());
         ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
         ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity));
         ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce), H5mdError);
     }
 }
 
-TEST_F(H5mdWriteNextFrameTest, FirstCallWithForcesCreatesTimeDataBlock)
+TEST_P(H5mdWriteNextFrameTest, FirstCallWithForcesCreatesTimeDataBlock)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     gmx_mtop_t mtop;
     mtop.natoms = sevenParticles;
@@ -653,15 +761,20 @@ TEST_F(H5mdWriteNextFrameTest, FirstCallWithForcesCreatesTimeDataBlock)
     }
     {
         SCOPED_TRACE("Writing forces creates corresponding time data block only");
-        file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0);
+        file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 0, 0, GetParam());
         ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition), H5mdError);
         ASSERT_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToVelocity), H5mdError);
         ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToForce));
     }
 }
 
-TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsAlsoCreatesLinkedBoxTimeDataBlock)
+TEST_P(H5mdWriteNextFrameTest, FirstCallWithPositionsAlsoCreatesLinkedBoxTimeDataBlock)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     gmx_mtop_t mtop;
     mtop.natoms = sevenParticles;
@@ -680,7 +793,7 @@ TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsAlsoCreatesLinkedBoxTimeDat
     }
     {
         SCOPED_TRACE("Writing positions creates box data set");
-        file().writeNextFrame(valuesToWrite, {}, {}, boxToWrite, 0, 0);
+        file().writeNextFrame(valuesToWrite, {}, {}, boxToWrite, 0, 0, GetParam());
         ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<RVec>(fileid(), pathToPosition));
         ASSERT_NO_THROW_GMX(H5mdTimeDataBlock<real>(fileid(), pathToBox));
     }
@@ -714,8 +827,13 @@ TEST_F(H5mdWriteNextFrameTest, FirstCallWithPositionsAlsoCreatesLinkedBoxTimeDat
     }
 }
 
-TEST_F(H5mdWriteNextFrameTest, Works)
+TEST_P(H5mdWriteNextFrameTest, Works)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
 
     // Read the topology from a test system in our simulation data base
@@ -758,7 +876,8 @@ TEST_F(H5mdWriteNextFrameTest, Works)
                               forces[frameIndex],
                               boxes[frameIndex],
                               steps[frameIndex],
-                              times[frameIndex]);
+                              times[frameIndex],
+                              GetParam());
     }
 
     H5mdTimeDataBlock<RVec> positionDataSet(fileid(), "/particles/system/position");
@@ -779,7 +898,7 @@ TEST_F(H5mdWriteNextFrameTest, Works)
         {
             std::vector<RVec> readValueBuffer(numAtoms);
             positionDataSet.readValueAtIndex(i, readValueBuffer);
-            EXPECT_EQ(readValueBuffer, positions[i]);
+            EXPECT_THAT(readValueBuffer, Pointwise(RVecEq(tolerance()), positions[i]));
             velocityDataSet.readValueAtIndex(i, readValueBuffer);
             EXPECT_EQ(readValueBuffer, velocities[i]);
             forceDataSet.readValueAtIndex(i, readValueBuffer);
@@ -810,8 +929,13 @@ TEST_F(H5mdWriteNextFrameTest, Works)
     }
 }
 
-TEST_F(H5mdWriteNextFrameTest, DoesNotWriteEmptyRefs)
+TEST_P(H5mdWriteNextFrameTest, DoesNotWriteEmptyRefs)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
 
     // Read the topology from a test system in our simulation data base
@@ -833,10 +957,10 @@ TEST_F(H5mdWriteNextFrameTest, DoesNotWriteEmptyRefs)
     TrajectoryFrameDataGenerator(TrajectoryFrameMode::Negative, {})(velocitiesToWrite);
     TrajectoryFrameDataGenerator(TrajectoryFrameMode::Alternating, {})(forcesToWrite);
 
-    file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0);
-    file().writeNextFrame(positionsToWrite, {}, {}, c_unusedBox, 0, 0);
-    file().writeNextFrame({}, velocitiesToWrite, {}, c_unusedBox, 0, 0);
-    file().writeNextFrame({}, {}, forcesToWrite, c_unusedBox, 0, 0);
+    file().writeNextFrame({}, {}, {}, c_unusedBox, 0, 0, GetParam());
+    file().writeNextFrame(positionsToWrite, {}, {}, c_unusedBox, 0, 0, GetParam());
+    file().writeNextFrame({}, velocitiesToWrite, {}, c_unusedBox, 0, 0, GetParam());
+    file().writeNextFrame({}, {}, forcesToWrite, c_unusedBox, 0, 0, GetParam());
 
     H5mdTimeDataBlock<RVec> positionDataSet(fileid(), "/particles/system/position");
     H5mdTimeDataBlock<RVec> velocityDataSet(fileid(), "/particles/system/velocity");
@@ -859,8 +983,13 @@ TEST_F(H5mdWriteNextFrameTest, DoesNotWriteEmptyRefs)
     }
 }
 
-TEST_F(H5mdWriteNextFrameTest, ThrowsForBuffersWithIncorrectSize)
+TEST_P(H5mdWriteNextFrameTest, ThrowsForBuffersWithIncorrectSize)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
 
     // Read the topology from a test system in our simulation data base
@@ -877,26 +1006,31 @@ TEST_F(H5mdWriteNextFrameTest, ThrowsForBuffersWithIncorrectSize)
     std::vector<RVec> bufferTooLarge(numAtoms + 1, { 0.0, 0.0, 0.0 });
     std::vector<RVec> bufferJustRight(numAtoms, { 0.0, 0.0, 0.0 });
 
-    EXPECT_NO_THROW_GMX(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0));
-    EXPECT_THROW_GMX(file().writeNextFrame(bufferTooSmall, {}, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_THROW_GMX(file().writeNextFrame(bufferTooLarge, {}, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0));
-    EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooSmall, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooLarge, {}, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0));
-    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0), H5mdError);
-    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0), H5mdError);
+    EXPECT_NO_THROW_GMX(file().writeNextFrame(bufferJustRight, {}, {}, c_unusedBox, 0, 0, GetParam()));
+    EXPECT_THROW_GMX(file().writeNextFrame(bufferTooSmall, {}, {}, c_unusedBox, 0, 0, GetParam()), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame(bufferTooLarge, {}, {}, c_unusedBox, 0, 0, GetParam()), H5mdError);
+    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, bufferJustRight, {}, c_unusedBox, 0, 0, GetParam()));
+    EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooSmall, {}, c_unusedBox, 0, 0, GetParam()), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame({}, bufferTooLarge, {}, c_unusedBox, 0, 0, GetParam()), H5mdError);
+    EXPECT_NO_THROW_GMX(file().writeNextFrame({}, {}, bufferJustRight, c_unusedBox, 0, 0, GetParam()));
+    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooSmall, c_unusedBox, 0, 0, GetParam()), H5mdError);
+    EXPECT_THROW_GMX(file().writeNextFrame({}, {}, bufferTooLarge, c_unusedBox, 0, 0, GetParam()), H5mdError);
 }
 
-TEST_F(H5mdWriteNextFrameTest, UnitsAreSetCorrectly)
+TEST_P(H5mdWriteNextFrameTest, UnitsAreSetCorrectly)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     gmx_mtop_t mtop;
     mtop.natoms = oneParticle;
 
     file().setupFileFromInput(mtop, inputRecord);
     std::vector<RVec> valuesToWrite(oneParticle, { 0.0, 0.0, 0.0 });
-    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0);
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0, GetParam());
 
     {
         SCOPED_TRACE("Units for position data sets");
@@ -963,16 +1097,23 @@ TEST_F(H5mdWriteNextFrameTest, UnitsAreSetCorrectly)
     }
 }
 
+INSTANTIATE_TEST_SUITE_P(Works, H5mdWriteNextFrameTest, ::testing::Values(std::nullopt, 1000), nameOfTest);
+
 //! \brief Helper function to return an ArrayRef<RVec> from an input rvec pointer \p values.
 ArrayRef<RVec> asRVecArray(rvec* values, int64_t numValues)
 {
     return arrayRefFromArray(reinterpret_cast<RVec*>(values), numValues);
 }
 
-using H5mdReadNextFrame = H5mdIoTest;
+using H5mdReadNextFrame = H5mdWriteNextFrameTest;
 
-TEST_F(H5mdReadNextFrame, Works)
+TEST_P(H5mdReadNextFrame, Works)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
 
     const int  numAtoms = 6;
@@ -1011,7 +1152,8 @@ TEST_F(H5mdReadNextFrame, Works)
                               forces[frameIndex],
                               boxes[frameIndex],
                               steps[frameIndex],
-                              times[frameIndex]);
+                              times[frameIndex],
+                              GetParam());
     }
 
     t_trxframe* frame;
@@ -1020,9 +1162,15 @@ TEST_F(H5mdReadNextFrame, Works)
     {
         EXPECT_TRUE(file().readNextFrame(frame)) << "Must return true for a successful read";
 
+        EXPECT_EQ(frame->bPrec, GetParam().has_value());
+        if (GetParam().has_value())
+        {
+            EXPECT_REAL_EQ(frame->prec, GetParam().value());
+        }
+
         EXPECT_TRUE(frame->bX);
         EXPECT_THAT(asRVecArray(frame->x, frame->natoms),
-                    ::testing::Pointwise(::testing::Eq(), positions[frameIndex]));
+                    Pointwise(RVecEq(tolerance()), positions[frameIndex]));
         EXPECT_TRUE(frame->bV);
         EXPECT_THAT(asRVecArray(frame->v, frame->natoms),
                     ::testing::Pointwise(::testing::Eq(), velocities[frameIndex]));
@@ -1045,8 +1193,13 @@ TEST_F(H5mdReadNextFrame, Works)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
+TEST_P(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1057,14 +1210,19 @@ TEST_F(H5mdReadNextFrame, ReturnsFalseBeforeDataIsWritten)
     snew(frame, 1);
     EXPECT_FALSE(file().readNextFrame(frame));
     std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
-    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0.0);
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, 0, 0.0, GetParam());
     EXPECT_TRUE(file().readNextFrame(frame));
     done_frame(frame);
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
+TEST_P(H5mdReadNextFrame, WorksIfNoDataSetsExists)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1084,8 +1242,13 @@ TEST_F(H5mdReadNextFrame, WorksIfNoDataSetsExists)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
+TEST_P(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1095,13 +1258,13 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
 
     const std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
     matrix boxToWrite = { { 0.1, 0.2, 0.3 }, { 1.1, 1.2, 1.3 }, { 2.1, 2.2, 2.3 } };
-    file().writeNextFrame(valuesToWrite, {}, {}, boxToWrite, -1, -1.0);
+    file().writeNextFrame(valuesToWrite, {}, {}, boxToWrite, -1, -1.0, GetParam());
 
     t_trxframe* frame;
     snew(frame, 1);
     EXPECT_TRUE(file().readNextFrame(frame));
     EXPECT_TRUE(frame->bX);
-    EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), valuesToWrite));
+    EXPECT_THAT(asRVecArray(frame->x, frame->natoms), Pointwise(RVecEq(tolerance()), valuesToWrite));
     EXPECT_FALSE(frame->bV);
     EXPECT_FALSE(frame->bF);
     EXPECT_TRUE(frame->bBox) << "Simulation box must be read when positions are";
@@ -1113,8 +1276,13 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyPositionDataExists)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
+TEST_P(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1123,7 +1291,7 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
     file().setupFileFromInput(mtop, inputRecord);
 
     const std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
-    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, -1, -1.0);
+    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, -1, -1.0, GetParam());
 
     t_trxframe* frame;
     snew(frame, 1);
@@ -1137,8 +1305,13 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyVelocityDataExists)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
+TEST_P(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
     const int  numAtoms = 1;
     gmx_mtop_t mtop;
@@ -1148,7 +1321,7 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
 
     const std::vector<RVec> valuesToWrite = { { 0.0, 1.0, 2.0 } };
     matrix boxToWrite = { { 0.1, 0.2, 0.3 }, { 1.1, 1.2, 1.3 }, { 2.1, 2.2, 2.3 } };
-    file().writeNextFrame({}, {}, valuesToWrite, boxToWrite, -1, -1.0);
+    file().writeNextFrame({}, {}, valuesToWrite, boxToWrite, -1, -1.0, GetParam());
 
     t_trxframe* frame;
     snew(frame, 1);
@@ -1162,8 +1335,13 @@ TEST_F(H5mdReadNextFrame, WorksIfOnlyForceDataExists)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
+TEST_P(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
 
     const int  numAtoms = 1;
@@ -1174,31 +1352,34 @@ TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
     // First frame: Velocity only
     const int64_t           step1     = 1;
     const std::vector<RVec> velocity1 = { { 0.3, 0.4, 0.5 } };
-    file().writeNextFrame({}, velocity1, {}, c_unusedBox, step1, static_cast<double>(step1));
+    file().writeNextFrame({}, velocity1, {}, c_unusedBox, step1, static_cast<double>(step1), GetParam());
 
     // Second frame: Position + Force
     const int64_t           step2     = 2;
     const std::vector<RVec> position1 = { { 0.0, 0.1, 0.2 } };
     const std::vector<RVec> force1    = { { 0.6, 0.7, 0.8 } };
-    file().writeNextFrame(position1, {}, force1, c_unusedBox, step2, static_cast<double>(step2));
+    file().writeNextFrame(
+            position1, {}, force1, c_unusedBox, step2, static_cast<double>(step2), GetParam());
 
     // Third frame: Velocity + force
     const int64_t           step3     = 3;
     const std::vector<RVec> velocity2 = { { 1.3, 1.4, 1.5 } };
     const std::vector<RVec> force2    = { { 1.6, 1.7, 1.8 } };
-    file().writeNextFrame({}, velocity2, force2, c_unusedBox, step3, static_cast<double>(step3));
+    file().writeNextFrame(
+            {}, velocity2, force2, c_unusedBox, step3, static_cast<double>(step3), GetParam());
 
     // Fourth frame: Position only
     const int64_t           step4     = 4;
     const std::vector<RVec> position2 = { { 1.0, 1.1, 1.2 } };
-    file().writeNextFrame(position2, {}, {}, c_unusedBox, step4, static_cast<double>(step4));
+    file().writeNextFrame(position2, {}, {}, c_unusedBox, step4, static_cast<double>(step4), GetParam());
 
     // Fifth frame: All
     const int64_t           step5     = 5;
     const std::vector<RVec> position3 = { { 2.0, 2.1, 2.2 } };
     const std::vector<RVec> velocity3 = { { 2.3, 2.4, 2.5 } };
     const std::vector<RVec> force3    = { { 2.6, 2.7, 2.8 } };
-    file().writeNextFrame(position3, velocity3, force3, c_unusedBox, step5, static_cast<double>(step5));
+    file().writeNextFrame(
+            position3, velocity3, force3, c_unusedBox, step5, static_cast<double>(step5), GetParam());
 
     t_trxframe* frame;
     snew(frame, 1);
@@ -1219,7 +1400,7 @@ TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
         SCOPED_TRACE("Frame 2: Position + Force");
         file().readNextFrame(frame);
         EXPECT_TRUE(frame->bX);
-        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), position1));
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), Pointwise(RVecEq(tolerance()), position1));
         EXPECT_FALSE(frame->bV);
         EXPECT_TRUE(frame->bF);
         EXPECT_THAT(asRVecArray(frame->f, frame->natoms), ::testing::Pointwise(::testing::Eq(), force1));
@@ -1247,7 +1428,7 @@ TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
         SCOPED_TRACE("Frame 4: Position only");
         file().readNextFrame(frame);
         EXPECT_TRUE(frame->bX);
-        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), position2));
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), Pointwise(RVecEq(tolerance()), position2));
         EXPECT_FALSE(frame->bV);
         EXPECT_FALSE(frame->bF);
         EXPECT_TRUE(frame->bBox) << "Box frames are only read when positions are read";
@@ -1260,7 +1441,7 @@ TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
         SCOPED_TRACE("Frame 3: Position + Velocity + Force");
         file().readNextFrame(frame);
         EXPECT_TRUE(frame->bX);
-        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), ::testing::Pointwise(::testing::Eq(), position3));
+        EXPECT_THAT(asRVecArray(frame->x, frame->natoms), Pointwise(RVecEq(tolerance()), position3));
         EXPECT_TRUE(frame->bV);
         EXPECT_THAT(asRVecArray(frame->v, frame->natoms), ::testing::Pointwise(::testing::Eq(), velocity3));
         EXPECT_TRUE(frame->bF);
@@ -1275,8 +1456,13 @@ TEST_F(H5mdReadNextFrame, DataSetsWithDifferentStepFrequenciesAreReadInOrder)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
+TEST_P(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     // Manually set up the trajectory tree, only position and force data sets store time!
     const DataSetDims frameDims = { 1 };
     {
@@ -1309,27 +1495,27 @@ TEST_F(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
 
     // Frame 1: Write velocities only (will not write time)
     const double time1 = 1.1;
-    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 1, time1);
+    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 1, time1, GetParam());
 
     // Frame 2: Write position + velocity (will write time)
     const double time2 = 2.2;
-    file().writeNextFrame(valuesToWrite, valuesToWrite, {}, c_unusedBox, 2, time2);
+    file().writeNextFrame(valuesToWrite, valuesToWrite, {}, c_unusedBox, 2, time2, GetParam());
 
     // Frame 3: Write position only (will write time)
     const double time3 = 3.3;
-    file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 3, time3);
+    file().writeNextFrame(valuesToWrite, {}, {}, c_unusedBox, 3, time3, GetParam());
 
     // Frame 4: Write velocities only (will not write time)
     const double time4 = 4.4;
-    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 4, time4);
+    file().writeNextFrame({}, valuesToWrite, {}, c_unusedBox, 4, time4, GetParam());
 
     // Frame 5: Write velocities + force (will write time)
     const double time5 = 5.5;
-    file().writeNextFrame({}, valuesToWrite, valuesToWrite, c_unusedBox, 5, time5);
+    file().writeNextFrame({}, valuesToWrite, valuesToWrite, c_unusedBox, 5, time5, GetParam());
 
     // Frame 1: Write force only (will write time)
     const double time6 = 6.6;
-    file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 6, time6);
+    file().writeNextFrame({}, {}, valuesToWrite, c_unusedBox, 6, time6, GetParam());
 
     t_trxframe* frame;
     snew(frame, 1);
@@ -1371,8 +1557,13 @@ TEST_F(H5mdReadNextFrame, MissingTimeDataSetsAreHandled)
     sfree(frame);
 }
 
-TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
+TEST_P(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
 {
+    if (const MessageStringCollector skipMessages = getSkipMessagesIfNecessary(); !skipMessages.isEmpty())
+    {
+        GTEST_SKIP() << skipMessages.toString();
+    }
+
     t_inputrec inputRecord;
 
     const int  numAtoms = 1;
@@ -1381,7 +1572,7 @@ TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
     file().setupFileFromInput(mtop, inputRecord);
 
     const std::vector<RVec> valuesToWrite = { { -1.0, -1.0, -1.0 } };
-    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, -1, -1.0);
+    file().writeNextFrame(valuesToWrite, valuesToWrite, valuesToWrite, c_unusedBox, -1, -1.0, GetParam());
 
     t_trxframe* frame;
     snew(frame, 1);
@@ -1392,11 +1583,13 @@ TEST_F(H5mdReadNextFrame, NonTrajectoryFrameBoolsInTrxFrameAreFalse)
     EXPECT_FALSE(frame->bFepState);
     EXPECT_FALSE(frame->bIndex);
     EXPECT_FALSE(frame->bPBC);
-    EXPECT_FALSE(frame->bPrec); // check this for reduced-precision trajectories separately
+    EXPECT_EQ(frame->bPrec, GetParam().has_value());
 
     done_frame(frame);
     sfree(frame);
 }
+
+INSTANTIATE_TEST_SUITE_P(Works, H5mdReadNextFrame, ::testing::Values(std::nullopt, 1000), nameOfTest);
 
 } // namespace
 } // namespace test

@@ -130,6 +130,8 @@ private:
          * \param[out] hasBox      Whether or not simulation box data exist for the next frame.
          * \param[out] hasStep     Whether or not step data exist for the next frame.
          * \param[out] hasTime     Whether or not time data exist for the next frame.
+         * \param[out] hasCompressedPosition Whether or not the next frame has compressed position data.
+         * \param[out] positionPrecision     Precision of position data of the next frame.
          *
          * \returns True if a next frame exists to read, otherwise false.
          */
@@ -139,7 +141,9 @@ private:
                                bool* hasForce,
                                bool* hasBox,
                                bool* hasStep,
-                               bool* hasTime);
+                               bool* hasTime,
+                               bool* hasCompressedPosition,
+                               real* positionPrecision);
 
         /*! \brief Read the next frame into given data buffers.
          *
@@ -294,22 +298,34 @@ public:
 
     /*! \brief Write input data as the next frame of the trajectory.
      *
+     * \note Position data is only compressed if \p positionPrecision
+     * is not nullopt. Since this is set once-only, during data set
+     * creation, only the first call to writeNextFrame uses this parameter
+     * (and only if the data sets do not already exist, e.g. when resuming
+     * a simulation by appending to an old trajectory).
+     *
      * \param[in] positions     Position data to write (or empty if not to write).
      * \param[in] velocities    Velocity data to write (or empty if not to write).
      * \param[in] forces        Force data to write (or empty if not to write).
      * \param[in] box           Simulation box for frame.
      * \param[in] step          Simulation step for frame.
      * \param[in] time          Simulation time for frame.
+     * \param[in] positionPrecision  Precision for lossy compression of \p position.
      *
      * \throws H5mdError if the size of the data buffers do not match
-     * the number of atoms of the system.
+     * the number of atoms of the system, or if \p positionPrecision
+     * has a non-positive value.
+     *
+     * \throws NotImplementedError if \p positionPrecision is not nullopt
+     * and GROMACS is not built with SZ3 support.
      */
     void writeNextFrame(ArrayRef<const RVec> positions,
                         ArrayRef<const RVec> velocities,
                         ArrayRef<const RVec> forces,
                         const matrix         box,
                         int64_t              step,
-                        double               time);
+                        double               time,
+                        std::optional<real>  positionPrecision);
 
 private:
     /*! \brief Copy simulation metadata from \p other to the current file.
