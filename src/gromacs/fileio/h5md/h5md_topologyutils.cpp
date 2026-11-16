@@ -101,6 +101,8 @@ constexpr char c_h5mdInternalTopologyNameAttributeKey[] = "system_name";
 constexpr char c_moleculeNamesAttributeKey[] = "molecule_block_names";
 //! \brief Name of attribute for the number of blocks for each molecule types
 constexpr char c_numMolBlocksAttributeKey[] = "molecule_block_counts";
+//! \brief Default lossless compression scheme for topology data.
+constexpr H5mdCompression c_losslessCompression = H5mdCompression::LosslessShuffle;
 
 namespace
 {
@@ -314,26 +316,32 @@ void writeAtomicProperties(AtomRange&                     atomRange,
 
     // Create the datasets for atomic properties
     H5mdFixedDataSet<int64_t> datasetAtomId = H5mdDataSetBuilder<int64_t>(baseContainer, c_particleIdName)
+                                                      .withCompression(c_losslessCompression)
                                                       .withDimension({ atomIds.size() })
                                                       .build();
     H5mdFixedDataSet<int32_t> datasetAtomSpecies =
             H5mdDataSetBuilder<int32_t>(baseContainer, c_particleSpeciesName)
+                    .withCompression(c_losslessCompression)
                     .withDimension({ atomSpecies.size() })
                     .build();
     H5mdFixedDataSet<real> datasetCharge = H5mdDataSetBuilder<real>(baseContainer, c_particleChargeName)
+                                                   .withCompression(c_losslessCompression)
                                                    .withDimension({ atomCharges.size() })
                                                    .withUnit(c_elementaryChargeUnit)
                                                    .build();
     H5mdFixedDataSet<real> datasetMass = H5mdDataSetBuilder<real>(baseContainer, c_particleMassName)
+                                                 .withCompression(c_losslessCompression)
                                                  .withDimension({ atomMasses.size() })
                                                  .withUnit(c_massUnit)
                                                  .build();
     H5mdFixedDataSet<int32_t> datasetAtomNameInLookupTable =
             H5mdDataSetBuilder<int32_t>(baseContainer, c_particleNameIndicesName)
+                    .withCompression(c_losslessCompression)
                     .withDimension({ atomNameTable.size() })
                     .build();
     H5mdFixedDataSet<std::string> datasetAtomNameTable =
             H5mdDataSetBuilder<std::string>(baseContainer, c_particleNameTableName)
+                    .withCompression(c_losslessCompression)
                     .withDimension({ existingAtomNames.size() })
                     .withMaxStringLength(maxStrLength + 1)
                     .build();
@@ -433,18 +441,22 @@ void writeResidueInfo(AtomRange& atomRange, const hid_t baseContainer, const std
     // Create the datasets for residue information
     H5mdFixedDataSet<int32_t> datasetResidueId = H5mdDataSetBuilder<int32_t>(baseContainer, c_residueIdName)
                                                          .withDimension({ residueNumbers.size() })
+                                                         .withCompression(c_losslessCompression)
                                                          .build();
     H5mdFixedDataSet<int32_t> datasetResidueName =
             H5mdDataSetBuilder<int32_t>(baseContainer, c_residueNameIndicesName)
                     .withDimension({ residueNameIds.size() })
+                    .withCompression(c_losslessCompression)
                     .build();
     H5mdFixedDataSet<int32_t> datasetSequence =
             H5mdDataSetBuilder<int32_t>(baseContainer, c_residueSequenceName)
+                    .withCompression(c_losslessCompression)
                     .withDimension({ sequence.size() })
                     .build();
     H5mdFixedDataSet<std::string> datasetResidueNameTable =
             H5mdDataSetBuilder<std::string>(baseContainer, c_residueNameTableName)
                     .withDimension({ residueNameTable.size() })
+                    .withCompression(c_losslessCompression)
                     .withMaxStringLength(maxStrLength + 1)
                     .build();
 
@@ -501,6 +513,7 @@ void writeBonds(const gmx_mtop_t& topology, const hid_t baseContainer, const std
     // Register the Root group explicitly for connectivity
     const size_t bCount = systemBonds.size() / 2;
     H5mdFixedDataSet<int64_t> dBonds = H5mdDataSetBuilder<int64_t>(baseContainer, c_bondsConnectivityName)
+                                               .withCompression(c_losslessCompression)
                                                .withDimension({ bCount, 2 })
                                                .build();
     dBonds.writeData(systemBonds);
@@ -546,6 +559,7 @@ void writeDisulfideBonds(const gmx_mtop_t&              topology,
     {
         const size_t bondCount = systemBonds.size() / 2;
         H5mdFixedDataSet<int64_t> dBonds = H5mdDataSetBuilder<int64_t>(baseContainer, c_disulfideBondsName)
+                                                   .withCompression(c_losslessCompression)
                                                    .withDimension({ bondCount, 2 })
                                                    .build();
         dBonds.writeData(systemBonds);
