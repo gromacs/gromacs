@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
@@ -155,6 +156,8 @@ public:
                           "TNG support is not configured");
         messages.appendIf(!GMX_USE_HDF5 && (inputExt_ == efH5MD || outputExt_ == efH5MD),
                           "H5MD support is not configured");
+        messages.appendIf(endsWith(inputFile_, "-reduced.h5md") && !sz3CompressionIsAvailable(),
+                          "SZ3 support is not configured for reduced precision H5MD i/o");
         // TODO: Remove this conditional once a fix is in (see #5747).
         messages.appendIf(inputExt_ == efTNG && outputExt_ == efTNG,
                           "TNG to TNG conversion is currently broken");
@@ -365,7 +368,8 @@ std::string nameOfTest(const testing::TestParamInfo<std::tuple<const char*, Grom
 const char* const g_fromTrajectoryFiles[] = { "spc2-traj.trr",  "spc2-traj-double.trr",
                                               "spc2-traj.xtc",  "spc2-traj.gro",
                                               "spc2-traj.pdb",  "spc2-traj.g96",
-                                              "spc2-traj.h5md", "spc2-traj.tng" };
+                                              "spc2-traj.h5md", "spc2-traj-reduced.h5md",
+                                              "spc2-traj.tng" };
 
 //! List of file types to convert to.
 static const GromacsFileType g_toTrajectoryFormats[] = {
@@ -420,6 +424,11 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     {
         GTEST_SKIP() << "Cannot test H5MD reading if H5MD support is not configured";
     }
+    if (endsWith(std::get<0>(GetParam()), "-reduced.h5md") && !sz3CompressionIsAvailable())
+    {
+        GTEST_SKIP() << "Cannot test compressed H5MD reading if SZ3 support is not configured";
+    }
+
     auto& cmdline = commandLine();
 
     setInputFile("-f", std::get<0>(GetParam()));

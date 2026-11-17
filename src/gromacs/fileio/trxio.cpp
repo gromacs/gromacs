@@ -57,6 +57,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/groio.h"
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
@@ -597,7 +598,7 @@ void write_h5md_frame(t_trxstatus* status, const t_trxframe& frame)
             frame.box,
             frame.step,
             frame.time,
-            std::nullopt);
+            frame.bPrec && gmx::sz3CompressionIsAvailable() ? std::make_optional(frame.prec) : std::nullopt);
 }
 
 int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)

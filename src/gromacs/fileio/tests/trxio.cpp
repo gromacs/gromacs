@@ -49,6 +49,7 @@
 #include "gromacs/coordinateio/coordinatefile.h"
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/fileio/h5md/binary_information.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -222,6 +223,11 @@ public:
 // over time.
 TEST_P(TrxReadFrameTest, ReadTrajectoryFromSimulationDataBase)
 {
+    if (endsWith(GetParam(), "-reduced.h5md") && !sz3CompressionIsAvailable())
+    {
+        GTEST_SKIP() << "GROMACS is built without SZ3 support";
+    }
+
     TestReferenceData    data;
     TestReferenceChecker checker(data.rootChecker());
     checker.setDefaultTolerance(relativeToleranceAsFloatingPoint(1.0, 1e-7));
@@ -301,10 +307,10 @@ TEST_P(TrxReadFrameTest, ReadTrajectoryFromSimulationDataBase)
 }
 
 const char* g_trajectoryFilesToTest[] = {
-    "spc2-traj.pdb",  "spc2-traj.trr", "spc2-traj-double.trr",
-    "spc2-traj.xtc",  "spc2-traj.gro", "spc2-traj.g96",
+    "spc2-traj.pdb",  "spc2-traj.trr",          "spc2-traj-double.trr",
+    "spc2-traj.xtc",  "spc2-traj.gro",          "spc2-traj.g96",
 #if GMX_USE_HDF5
-    "spc2-traj.h5md",
+    "spc2-traj.h5md", "spc2-traj-reduced.h5md",
 #endif
 #if GMX_USE_TNG
     "spc2-traj.tng",
