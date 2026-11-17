@@ -67,6 +67,10 @@ function(gmx_manage_vkfft BACKEND_NAME)
     if (APPLE)
         # macOS Ventura because `sprintf` was deprecated in favor of `snprintf`.
         gmx_target_interface_warning_suppression(VkFFT "-Wno-deprecated-declarations" HAS_WARNING_NO_DEPRECATED_DECLARATIONS)
+        # Newer macOS SDKs (e.g. the macOS 26 CoreFoundation headers, pulled in transitively by
+        # metal-cpp) use enum syntax that non-Apple Clang builds (e.g. Homebrew LLVM, needed for
+        # AdaptiveCpp) reject as an error by default.
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-elaborated-enum-base" HAS_WARNING_NO_ELABORATED_ENUM_BASE)
     endif()
 
     # Backend-specific settings and workarounds
@@ -105,6 +109,39 @@ function(gmx_manage_vkfft BACKEND_NAME)
         gmx_target_interface_warning_suppression(VkFFT "-Wno-cast-qual" HAS_WARNING_NO_CAST_QUAL)
     elseif(BACKEND_NAME STREQUAL "LevelZero")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=4)
+    elseif(BACKEND_NAME STREQUAL "Metal")
+        target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=5)
+        # VkFFT's Metal backend uses Apple's header-only metal-cpp bindings. Use the same
+        # cache variable as AdaptiveCpp so one path can be supplied to both projects.
+        find_path(METAL_INCLUDE_DIR
+            NAMES Metal/Metal.hpp
+            PATHS
+                $ENV{METAL_INCLUDE_DIR}
+                ${METAL_INCLUDE_DIR}
+                /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework/Headers
+                /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Metal.framework/Headers
+                /System/Library/Frameworks/Metal.framework/Headers
+            PATH_SUFFIXES include
+            DOC "Path to Apple's metal-cpp headers"
+        )
+        if(NOT METAL_INCLUDE_DIR)
+            message(FATAL_ERROR "VkFFT's Metal backend requires Apple's metal-cpp headers. Please set METAL_INCLUDE_DIR to the directory containing Metal/Metal.hpp")
+        endif()
+        target_include_directories(VkFFT INTERFACE ${METAL_INCLUDE_DIR})
+        find_library(METAL_LIBRARY Metal REQUIRED)
+        find_library(FOUNDATION_LIBRARY Foundation REQUIRED)
+        find_library(QUARTZCORE_LIBRARY QuartzCore REQUIRED)
+        target_link_libraries(VkFFT INTERFACE ${METAL_LIBRARY} ${FOUNDATION_LIBRARY} ${QUARTZCORE_LIBRARY})
+        # backend_interop<sycl::backend::metal>::get_native_device() (used by the SYCL FFT
+        # binding) calls into AdaptiveCpp's Metal runtime backend directly, so unlike other
+        # AdaptiveCpp backends -- which are only ever dlopen'd as plugins -- this one must also
+        # be a normal link-time dependency here.
+        find_library(ACPP_RT_BACKEND_METAL_LIBRARY
+            NAMES rt-backend-metal
+            HINTS "${adaptivecpp_DIR}/../../hipSYCL" "${adaptivecpp_DIR}/../.."
+            PATH_SUFFIXES hipSYCL
+            REQUIRED)
+        target_link_libraries(VkFFT INTERFACE ${ACPP_RT_BACKEND_METAL_LIBRARY})
     else()
         message(FATAL_ERROR "Unknown VkFFT backend name ${BACKEND_NAME}")
     endif()
@@ -121,7 +158,8 @@ elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_CUDA_TARGET) OR (GMX_SYCL_DPCPP AND GMX_
     gmx_manage_vkfft("CUDA")
 elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_HIP_TARGET) OR (GMX_SYCL_DPCPP AND GMX_DPCPP_HAVE_HIP_TARGET))
     gmx_manage_vkfft("HIP")
+elseif(GMX_SYCL_ACPP AND GMX_ACPP_HAVE_GENERIC_TARGET AND APPLE)
+    gmx_manage_vkfft("Metal")
 else()
-     message(FATAL_ERROR "VkFFT can only be used with GMX_GPU=SYCL, HIP, or OpenCL; with SYCL, it only supports NVIDIA (CUDA) and AMD (HIP) targets")
+     message(FATAL_ERROR "VkFFT can only be used with GMX_GPU=SYCL, HIP, or OpenCL; with SYCL, it only supports NVIDIA (CUDA), AMD (HIP), and (on Apple, through the generic/SSCP target) Metal")
 endif()
-

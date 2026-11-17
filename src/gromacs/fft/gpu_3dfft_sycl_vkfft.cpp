@@ -77,6 +77,12 @@ static constexpr auto sc_syclBackend = sycl::backend::hip;
 #        include <sycl/ext/oneapi/backend/hip.hpp>
 static constexpr auto sc_syclBackend = sycl::backend::ext_oneapi_hip;
 #    endif
+#elif VKFFT_BACKEND == 5 // Metal
+#    include <Metal/Metal.hpp>
+// Metal is only reachable through AdaptiveCpp's generic/SSCP target; there is no DPC++ path.
+#    if GMX_SYCL_ACPP
+static constexpr auto sc_syclBackend = sycl::backend::metal;
+#    endif
 #else
 #    error "VkFFT launcher in GROMACS does not support the selected VkFFT backend"
 #endif
@@ -126,7 +132,14 @@ public:
     VkFFTLaunchParams  launchParams_;
     uint64_t           bufferSize_;
     uint64_t           inputBufferSize_;
-    NativeDevice       queue_device_;
+#if VKFFT_BACKEND == 5
+    //! Command queue backing \c queue_, valid for the Impl's lifetime; VkFFT's Metal backend
+    //! expects a persistent MTL::CommandQueue* in configuration_.queue, unlike the CUDA/HIP
+    //! backends, which take a stream pointer fresh at every launch.
+    MTL::CommandQueue* commandQueue_ = nullptr;
+#else
+    NativeDevice queue_device_;
+#endif
 
     DeviceBuffer<float> realGrid_;
 
@@ -170,10 +183,17 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     configuration_.size[1] = realGridSize[YY];
     configuration_.size[2] = realGridSize[XX];
 
-    configuration_.performR2C  = 1;
+    configuration_.performR2C = 1;
+#if VKFFT_BACKEND == 5
+    // Metal's VkFFTConfiguration::device is an MTL::Device* itself (not a pointer-to-handle,
+    // unlike CUDA/HIP), and sycl::get_native<> supports extracting it directly (unlike the
+    // native queue, which requires an interop_handle -- see the ACpp init block below).
+    configuration_.device = sycl::get_native<sc_syclBackend>(queue_.get_device());
+#else
     queue_device_              = sycl::get_native<sc_syclBackend>(queue_.get_device());
     configuration_.device      = &queue_device_;
     configuration_.num_streams = 1;
+#endif
 
     bufferSize_ = complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ]
                   * sizeof(float) * 2;
@@ -200,13 +220,22 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     queue_.submit(
                   [&](sycl::handler& cgh)
                   {
-                      gmx::syclEnqueueCustomOp(cgh,
-                                               [=](sycl::interop_handle& gmx_unused h)
-                                               {
-                                                   VkFFTResult result = initializeVkFFT(
-                                                           &application_, configuration_);
-                                                   handleFftError(result, "Initializing VkFFT");
-                                               });
+                      gmx::syclEnqueueCustomOp(
+                              cgh,
+                              [=](sycl::interop_handle& gmx_unused h)
+                              {
+#    if VKFFT_BACKEND == 5
+                                  // Native queue extraction requires an
+                                  // interop_handle for ACpp's Metal backend
+                                  // (can_extract_native_queue is false; see
+                                  // backend_interop<backend::metal>), so it
+                                  // is fetched here rather than above.
+                                  commandQueue_        = h.get_native_queue<sc_syclBackend>();
+                                  configuration_.queue = commandQueue_;
+#    endif
+                                  VkFFTResult result = initializeVkFFT(&application_, configuration_);
+                                  handleFftError(result, "Initializing VkFFT");
+                              });
                   })
             .wait();
 #endif
@@ -254,6 +283,12 @@ Gpu3dFft::ImplSyclVkfft::~ImplSyclVkfft()
     deallocateComplexGrid();
 }
 
+#if VKFFT_BACKEND != 5
+// Not compiled for Metal (VKFFT_BACKEND==5): VkFFTConfiguration/VkFFTLaunchParams have a
+// completely different member layout there (no .stream, and MTL::Buffer** instead of void**
+// for inputBuffer/buffer), so this "generic" stream-based launcher does not type-check for it
+// even though it is never instantiated for that backend -- the member accesses below are not
+// dependent on NativeQueue, so they are checked at definition time regardless.
 template<typename NativeQueue>
 static void launchVkFft(const DeviceBuffer<float>& realGrid,
                         const DeviceBuffer<float>& complexGrid,
@@ -282,6 +317,55 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
     // It was a pointer to a stack variable; don't leak it
     application->configuration.stream = nullptr;
 }
+#endif
+
+#if VKFFT_BACKEND == 5
+//! Launches VkFFT's Metal backend, which -- unlike the CUDA/HIP "stream" backends -- takes an
+//! explicit command buffer and compute encoder rather than appending to a queue implicitly.
+static void launchVkFftMetal(const DeviceBuffer<float>& realGrid,
+                             const DeviceBuffer<float>& complexGrid,
+                             MTL::CommandQueue*         commandQueue,
+                             const sycl::context&       syclContext,
+                             gmx_fft_direction          fftDirection,
+                             VkFFTApplication*          application,
+                             VkFFTLaunchParams*         launchParams)
+{
+    // GROMACS' SYCL DeviceBuffer is a raw USM pointer, not an MTL::Buffer*, so the backing
+    // Metal buffer (and this allocation's offset within it) must be recovered explicitly;
+    // see backend_interop<sycl::backend::metal>::get_native_allocation.
+    auto inputAllocation =
+            sycl::get_native_allocation<sc_syclBackend>(realGrid.buffer_->ptr_, syclContext);
+    auto outputAllocation =
+            sycl::get_native_allocation<sc_syclBackend>(complexGrid.buffer_->ptr_, syclContext);
+    GMX_RELEASE_ASSERT(inputAllocation.buffer != nullptr && outputAllocation.buffer != nullptr,
+                       "Could not resolve the Metal buffer backing a SYCL USM allocation");
+
+    MTL::CommandBuffer*         commandBuffer  = commandQueue->commandBuffer();
+    MTL::ComputeCommandEncoder* commandEncoder = commandBuffer->computeCommandEncoder();
+
+    launchParams->commandBuffer                  = commandBuffer;
+    launchParams->commandEncoder                 = commandEncoder;
+    launchParams->inputBuffer                    = &inputAllocation.buffer;
+    launchParams->buffer                         = &outputAllocation.buffer;
+    application->configuration.bufferOffset      = outputAllocation.offset;
+    application->configuration.inputBufferOffset = inputAllocation.offset;
+
+    VkFFTResult result = VKFFT_SUCCESS;
+    if (fftDirection == GMX_FFT_REAL_TO_COMPLEX)
+    {
+        result = VkFFTAppend(application, -1, launchParams);
+        handleFftError(result, "VkFFT: Real to complex");
+    }
+    else
+    {
+        result = VkFFTAppend(application, 1, launchParams);
+        handleFftError(result, "VkFFT: Complex to real");
+    }
+
+    commandEncoder->endEncoding();
+    commandBuffer->commit();
+}
+#endif
 
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
@@ -291,14 +375,24 @@ void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* 
                                   {
                                       gmx::syclEnqueueCustomOp(
                                               cgh,
-                                              [=](sycl::interop_handle& h)
+                                              [=](sycl::interop_handle& gmx_unused h)
                                               {
+#    if VKFFT_BACKEND == 5
+                                                  launchVkFftMetal(impl_->realGrid_,
+                                                                   complexGrid_,
+                                                                   impl_->commandQueue_,
+                                                                   impl_->queue_.get_context(),
+                                                                   dir,
+                                                                   &impl_->application_,
+                                                                   &impl_->launchParams_);
+#    else
                                                   launchVkFft(impl_->realGrid_,
                                                               complexGrid_,
                                                               h.get_native_queue<sc_syclBackend>(),
                                                               dir,
                                                               &impl_->application_,
                                                               &impl_->launchParams_);
+#    endif
                                               });
                                   });
 #elif GMX_SYCL_DPCPP // submit directly
