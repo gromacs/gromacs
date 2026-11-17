@@ -32,10 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Declares the topology utility functions for H5MD.
+/*! \internal \file
+ * \brief Declares the topology utility functions for H5MD.
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #ifndef GMX_FILEIO_H5MD_TOPOLOGYUTILS_H
@@ -43,7 +45,10 @@
 
 #include <hdf5.h>
 
+#include <cstdint>
+
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "gromacs/topology/mtop_atomloops.h"
@@ -194,6 +199,57 @@ void writeMoleculeTypes(hid_t baseContainer, ArrayRef<const gmx_moltype_t> molTy
 void writeMoleculeBlocks(hid_t                          baseContainer,
                          ArrayRef<const gmx_molblock_t> molBlocks,
                          ArrayRef<const gmx_moltype_t>  molTypes);
+
+/*! \brief Write the particles of \p atomRange to \p baseContainer as the data of one molecule type.
+ *
+ * Follows the molecule type of the H5MD biophysics specification
+ * (https://gromacs.gitlab.io/h5md-biophysics/system_topology.html):
+ * @verbatim
+ * <molecule_type>                       (baseContainer)
+ * \++ particle_count: Integer
+ * \++ residue_count: Integer
+ * \-- particle_name_table: String[P]
+ * \-- component_name_table: String[C]
+ * \-- particle_data: Compound[N] <- {name: Integer, species: Integer, charge: Float,
+ * |                                  mass: Float, sequence_index: Integer}
+ * |   \++ units: String[5]
+ * \-- sequence: Compound[M] <- {residue_number: Integer, component_name: Integer}
+ * @endverbatim
+ * The names are stored once each in the tables, in the order of first appearance. A residue
+ * starts at the first particle of a molecule and wherever the residue index of the particle
+ * changes, so residues with equal numbers, such as in two chains, stay distinct.
+ *
+ * \param[in] atomRange The particles to write.
+ * \param[in] baseContainer The HDF5 group of the molecule type.
+ */
+void writeMoleculeTypeAsCompound(AtomRange& atomRange, hid_t baseContainer);
+
+/*! \brief Write each molecule type in \p molTypes as a group of the same name in \p baseContainer.
+ *
+ * See writeMoleculeTypeAsCompound() for the content of each group.
+ *
+ * \param[in] baseContainer The HDF5 group of the topology.
+ * \param[in] molTypes The molecule types to write.
+ */
+void writeMoleculeTypesAsCompound(hid_t baseContainer, ArrayRef<const gmx_moltype_t> molTypes);
+
+/*! \brief Write the molecule blocks as the compound data set `molecule_blocks` in \p baseContainer.
+ *
+ * Each record holds the name of the molecule type of the block and its number of molecules,
+ * in the order of the blocks. The names are stored as fixed-length strings of the length of
+ * the longest name plus its terminating null.
+ *
+ * \param[in] baseContainer The HDF5 group of the topology.
+ * \param[in] molBlocks The molecule blocks to write.
+ * \param[in] molTypes The molecule types, which give the names of the blocks.
+ *
+ * \throws InternalError if a block refers to a molecule type outside \p molTypes.
+ * \throws InvalidInputError if the name of a molecule type does not fit in
+ *         MoleculeBlock::sc_nameCapacity.
+ */
+void writeMoleculeBlocksAsCompound(hid_t                          baseContainer,
+                                   ArrayRef<const gmx_molblock_t> molBlocks,
+                                   ArrayRef<const gmx_moltype_t>  molTypes);
 
 
 } // namespace gmx

@@ -32,9 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Declarations of H5md fixed data set class.
+/*! \internal \file
+ * \brief Declarations of H5md fixed data set class.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #ifndef GMX_FILEIO_H5MD_FIXEDDATASET_H
@@ -51,9 +54,6 @@ template<typename ValueType>
 class ArrayRef;
 template<typename ValueType>
 class BasicVector;
-
-// Compound data types
-struct MoleculeBlock;
 
 /*! \brief Class which provides an interface for reading and writing data to data sets of fixed size.
  *
@@ -128,8 +128,6 @@ extern template class H5mdFixedDataSet<BasicVector<float>>;
 extern template class H5mdFixedDataSet<BasicVector<double>>;
 
 extern template class H5mdFixedDataSet<std::string>;
-
-extern template class H5mdFixedDataSet<MoleculeBlock>;
 
 } // namespace gmx
 

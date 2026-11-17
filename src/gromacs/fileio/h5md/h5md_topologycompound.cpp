@@ -36,6 +36,7 @@
  * \brief Definitions of the compound HDF5 data types for the H5MD topology.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  * \ingroup module_fileio
  */
 
@@ -120,6 +121,49 @@ bool MoleculeBlock::matches(const hid_t dataType)
     // A longer stored name would be cut when reading it into the struct
     const auto [nameDataType, nameDataTypeGuard] = makeH5mdTypeGuard(H5Tget_member_type(dataType, 0));
     return H5Tget_size(nameDataType) <= sc_nameCapacity;
+}
+
+
+hid_t ParticleData::constructHdf5DataType()
+{
+    return createCompoundDataType(
+            sizeof(ParticleData),
+            { { sc_names[0], HOFFSET(ParticleData, name), hdf5DataTypeFor<int32_t>() },
+              { sc_names[1], HOFFSET(ParticleData, species), hdf5DataTypeFor<int32_t>() },
+              { sc_names[2], HOFFSET(ParticleData, charge), hdf5DataTypeFor<float>() },
+              { sc_names[3], HOFFSET(ParticleData, mass), hdf5DataTypeFor<float>() },
+              { sc_names[4], HOFFSET(ParticleData, sequenceIndex), hdf5DataTypeFor<int32_t>() } });
+}
+
+bool ParticleData::matches(const hid_t dataType)
+{
+    if (H5Tget_class(dataType) != H5T_COMPOUND || H5Tget_nmembers(dataType) != 5)
+    {
+        return false;
+    }
+    return checkCompoundMember<int32_t>(dataType, 0, sc_names[0])
+           && checkCompoundMember<int32_t>(dataType, 1, sc_names[1])
+           && checkCompoundMember<float>(dataType, 2, sc_names[2])
+           && checkCompoundMember<float>(dataType, 3, sc_names[3])
+           && checkCompoundMember<int32_t>(dataType, 4, sc_names[4]);
+}
+
+hid_t SequenceData::constructHdf5DataType()
+{
+    return createCompoundDataType(
+            sizeof(SequenceData),
+            { { sc_names[0], HOFFSET(SequenceData, residueNumber), hdf5DataTypeFor<int32_t>() },
+              { sc_names[1], HOFFSET(SequenceData, componentName), hdf5DataTypeFor<int32_t>() } });
+}
+
+bool SequenceData::matches(const hid_t dataType)
+{
+    if (H5Tget_class(dataType) != H5T_COMPOUND || H5Tget_nmembers(dataType) != 2)
+    {
+        return false;
+    }
+    return checkCompoundMember<int32_t>(dataType, 0, sc_names[0])
+           && checkCompoundMember<int32_t>(dataType, 1, sc_names[1]);
 }
 
 } // namespace gmx

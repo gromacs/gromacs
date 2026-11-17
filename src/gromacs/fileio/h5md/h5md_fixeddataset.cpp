@@ -32,9 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Definitions of H5md fixed data set class.
+/*! \internal \file
+ * \brief Definitions of H5md fixed data set class.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #include "gmxpre.h"
@@ -175,6 +178,8 @@ template class H5mdFixedDataSet<BasicVector<double>>;
 template class H5mdFixedDataSet<std::string>;
 
 template class H5mdFixedDataSet<MoleculeBlock>;
+template class H5mdFixedDataSet<ParticleData>;
+template class H5mdFixedDataSet<SequenceData>;
 
 } // namespace gmx
 

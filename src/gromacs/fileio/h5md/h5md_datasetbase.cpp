@@ -32,9 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Definitions of H5md data set base class.
+/*! \internal \file
+ * \brief Definitions of H5md data set base class.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #include "gmxpre.h"
@@ -174,6 +177,7 @@ static bool checkBufferSize(const ArrayRef<const ValueType> values,
     return numValues == numPointsIn(memoryDataSpace) && numValues == numPointsIn(fileDataSpace);
 }
 
+//! \brief Reclaim the memory that HDF5 allocated for the variable-length data in \p values; return whether it succeeded.
 template<typename ValueType>
 static bool reclaimMemory(const ArrayRef<ValueType> values,
                           const hid_t               memoryDataType,
@@ -203,6 +207,7 @@ static bool reclaimMemory(const ArrayRef<ValueType> values,
     }
 }
 
+//! \brief Read fixed-length strings from \p dataSet into \p stringValues; return whether the read succeeded.
 static bool readFixedLengthStringsFromDataSet(const hid_t           dataSet,
                                               const hid_t           nativeDataType,
                                               const hid_t           memoryDataSpace,
@@ -234,6 +239,7 @@ static bool readFixedLengthStringsFromDataSet(const hid_t           dataSet,
     return readWasSuccessful;
 }
 
+//! \brief Read variable-length strings from \p dataSet into \p stringValues; return whether the read succeeded.
 static bool readVariableLengthStringsFromDataSet(const hid_t           dataSet,
                                                  const hid_t           nativeDataType,
                                                  const hid_t           memoryDataSpace,
@@ -269,6 +275,7 @@ static bool readVariableLengthStringsFromDataSet(const hid_t           dataSet,
     return readWasSuccessful;
 }
 
+//! \brief Write \p stringsToWrite to \p dataSet as fixed-length strings; return whether the write succeeded.
 static bool writeFixedLengthStringsToDataSet(const hid_t                 dataSet,
                                              const hid_t                 nativeDataType,
                                              const hid_t                 memoryDataSpace,
@@ -298,6 +305,7 @@ static bool writeFixedLengthStringsToDataSet(const hid_t                 dataSet
            >= 0;
 }
 
+//! \brief Write \p stringsToWrite to \p dataSet as variable-length strings; return whether the write succeeded.
 static bool writeVariableLengthStringsToDataSet(const hid_t                 dataSet,
                                                 const hid_t                 nativeDataType,
                                                 const hid_t                 memoryDataSpace,
@@ -481,6 +489,8 @@ template class H5mdDataSetBase<BasicVector<double>>;
 template class H5mdDataSetBase<std::string>;
 
 template class H5mdDataSetBase<MoleculeBlock>;
+template class H5mdDataSetBase<ParticleData>;
+template class H5mdDataSetBase<SequenceData>;
 
 } // namespace gmx
 

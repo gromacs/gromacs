@@ -35,7 +35,21 @@
 /*! \internal \file
  * \brief Compound HDF5 data types for the H5MD topology.
  *
+ * Defines one struct per compound data set of the system topology in the H5MD biophysics
+ * specification (https://gromacs.gitlab.io/h5md-biophysics/system_topology.html):
+ * - MoleculeBlock: one record of `molecule_blocks`, the name and count of a molecule block.
+ * - ParticleData: one record of `particle_data` in a molecule type, a particle.
+ * - SequenceData: one record of `sequence` in a molecule type, a residue.
+ *
+ * The members of ParticleData and SequenceData are stored as 32-bit integers and floats,
+ * whatever the precision of the GROMACS build, so that the layout of the file does not depend
+ * on it. 32 bits hold the indices within a molecule type, and the masses and charges with
+ * the precision that topologies give them.
+ *
+ * The definitions are in h5md_topologycompound.cpp.
+ *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  * \ingroup module_fileio
  */
 
@@ -49,6 +63,9 @@
 #include <array>
 #include <string_view>
 
+#include "gromacs/fileio/h5md/h5md_datasetbase.h"
+#include "gromacs/fileio/h5md/h5md_fixeddataset.h"
+#include "gromacs/fileio/h5md/h5md_framedataset.h"
 #include "gromacs/utility/cstringutil.h"
 
 namespace gmx
@@ -112,6 +129,63 @@ struct MoleculeBlock
     std::array<char, sc_nameCapacity> name{};    //!< Name of the molecule type, null-terminated
     int32_t                           count = 0; //!< Number of molecules in block
 };
+
+//! \brief Compound HDF5 record of one particle of a molecule type.
+struct ParticleData
+{
+    //! \brief Name of this struct, for messages
+    static constexpr char sc_typeName[] = "ParticleData";
+    //! \brief Names of the members in the HDF5 compound type
+    static constexpr std::array<const char*, 5> sc_names = { "name",
+                                                             "species",
+                                                             "charge",
+                                                             "mass",
+                                                             "sequence_index" };
+    //! \brief Unit of each member, an empty string for a dimensionless one
+    static constexpr std::array<const char*, 5> sc_units = { "", "", "e", "u", "" };
+
+    //! \copydoc MoleculeBlock::constructHdf5DataType()
+    static hid_t constructHdf5DataType();
+    //! \copydoc MoleculeBlock::matches()
+    static bool matches(hid_t dataType);
+
+    int32_t name;          //!< Index into particle_name_table
+    int32_t species;       //!< Atomic number, or another quantity for other models
+    float   charge;        //!< Partial charge (e)
+    float   mass;          //!< Mass (u)
+    int32_t sequenceIndex; //!< Index into sequence, the residue of the particle
+};
+
+//! \brief Compound HDF5 record of one residue of a molecule type.
+struct SequenceData
+{
+    //! \brief Name of this struct, for messages
+    static constexpr char sc_typeName[] = "SequenceData";
+    //! \brief Names of the members in the HDF5 compound type
+    static constexpr std::array<const char*, 2> sc_names = { "residue_number", "component_name" };
+
+    //! \copydoc MoleculeBlock::constructHdf5DataType()
+    static hid_t constructHdf5DataType();
+    //! \copydoc MoleculeBlock::matches()
+    static bool matches(hid_t dataType);
+
+    int32_t residueNumber; //!< Residue number as the source structure gave it
+    int32_t componentName; //!< Index into component_name_table
+};
+
+// Suppress implicit instantiation; definitions are in h5md_datasetbase.cpp
+extern template class H5mdDataSetBase<MoleculeBlock>;
+extern template class H5mdDataSetBase<ParticleData>;
+extern template class H5mdDataSetBase<SequenceData>;
+
+// Suppress implicit instantiation; definitions are in h5md_fixeddataset.cpp
+extern template class H5mdFixedDataSet<MoleculeBlock>;
+extern template class H5mdFixedDataSet<ParticleData>;
+extern template class H5mdFixedDataSet<SequenceData>;
+
+// Suppress implicit instantiation; definitions are in h5md_framedataset.cpp
+extern template class H5mdFrameDataSet<MoleculeBlock>;
+extern template class H5mdScalarFrameDataSet<MoleculeBlock>;
 
 } // namespace gmx
 

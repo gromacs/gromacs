@@ -35,6 +35,8 @@
  * \brief Tests for H5MD compound data set i/o.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #include "gmxpre.h"
@@ -46,12 +48,14 @@
 #include <array>
 #include <functional>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/h5md/exceptions.h"
+#include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_fixeddataset.h"
 #include "gromacs/fileio/h5md/h5md_framedataset.h"
@@ -81,8 +85,10 @@ static_assert(valueTypeIsHdf5CompoundType<MoleculeBlock>());
 static_assert(!valueTypeIsHdf5CompoundType<int64_t>());
 static_assert(!valueTypeIsHdf5CompoundType<std::string>());
 static_assert(valueTypeHasSizedStrings<MoleculeBlock>());
-// A type gets a units attribute only if it declares sc_units, which MoleculeBlock does not
+// A type gets a units attribute only if it declares sc_units
 static_assert(!valueTypeHasUnits<MoleculeBlock>());
+static_assert(valueTypeHasUnits<ParticleData>());
+static_assert(!valueTypeHasUnits<SequenceData>());
 
 //! \brief Create the compound data set \p name of one record with the given members in \p container.
 template<typename RecordType>
@@ -160,6 +166,28 @@ TEST_F(H5mdCompoundTypeTest, StoresNamesWithGivenSize)
         EXPECT_EQ(readBuffer[i].name.data(), names[i]);
         EXPECT_EQ(readBuffer[i].count, values[i].count);
     }
+}
+
+TEST_F(H5mdCompoundTypeTest, UnitsAreWrittenIfAndOnlyIfTheTypeDeclaresThem)
+{
+    {
+        H5mdFixedDataSet<ParticleData> dataSet =
+                H5mdDataSetBuilder<ParticleData>(fileid(), "withUnits").withDimension({ 1 }).build();
+        dataSet.writeData(std::vector<ParticleData>{ { 0, 8, -0.8F, 15.999F, 0 } });
+        H5mdFixedDataSet<SequenceData> otherDataSet =
+                H5mdDataSetBuilder<SequenceData>(fileid(), "withoutUnits").withDimension({ 1 }).build();
+        otherDataSet.writeData(std::vector<SequenceData>{ { 1, 0 } });
+    }
+
+    // One unit per member, in member order, with empty strings for dimensionless members
+    const std::optional<std::vector<std::string>> units = getAttributeVector<std::string>(
+            H5mdDataSetBase<ParticleData>(fileid(), "withUnits").id(), "units");
+    ASSERT_TRUE(units.has_value());
+    EXPECT_EQ(*units,
+              (std::vector<std::string>(ParticleData::sc_units.begin(), ParticleData::sc_units.end())));
+    EXPECT_EQ(units->size(), ParticleData::sc_names.size());
+
+    EXPECT_EQ(H5Aexists(H5mdDataSetBase<SequenceData>(fileid(), "withoutUnits").id(), "units"), 0);
 }
 
 TEST_F(H5mdCompoundTypeTest, ThrowsForNamesThatDoNotFit)

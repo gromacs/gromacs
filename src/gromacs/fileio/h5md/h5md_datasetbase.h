@@ -32,9 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Declarations of H5md data set base class.
+/*! \internal \file
+ * \brief Declarations of H5md data set base class.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #ifndef GMX_FILEIO_H5MD_DATASETBASE_H
@@ -56,9 +59,6 @@ template<typename ValueType>
 class BasicVector;
 template<typename ValueType>
 class H5mdDataSetBuilder;
-
-// Compound data types
-struct MoleculeBlock;
 
 /*! \brief Dimensions of a HDF5 data set.
  */
@@ -208,8 +208,6 @@ extern template class H5mdDataSetBase<double>;
 extern template class H5mdDataSetBase<BasicVector<float>>;
 extern template class H5mdDataSetBase<BasicVector<double>>;
 extern template class H5mdDataSetBase<std::string>;
-
-extern template class H5mdDataSetBase<MoleculeBlock>;
 
 } // namespace gmx
 

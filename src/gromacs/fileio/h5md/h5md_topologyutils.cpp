@@ -32,19 +32,29 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Definition of the topology utility functions for H5MD.
+/*! \internal \file
+ * \brief Definition of the topology utility functions for H5MD.
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #include "gromacs/fileio/h5md/h5md_topologyutils.h"
+
+#include <algorithm>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 #include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_fixeddataset.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
+#include "gromacs/fileio/h5md/h5md_topologycompound.h"
+#include "gromacs/utility/exceptions.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -109,7 +119,7 @@ namespace
 //! \brief Atomic number for sulfur element
 constexpr int c_sulfurAtomicNumber = 16;
 
-// Deduced bonds from interactions list
+//! \brief Return the bonds of \p moltype from its chemical-bond and SETTLE interactions.
 BondPairs deduceBondsFromMolecule(const gmx_moltype_t& moltype)
 {
     BondPairs bonds;
@@ -141,6 +151,7 @@ BondPairs deduceBondsFromMolecule(const gmx_moltype_t& moltype)
     return bonds;
 }
 
+//! \brief Return the chemical bonds of \p molType between two sulfur atoms.
 BondPairs deduceDisulfideBondsFromMolecule(const gmx_moltype_t& molType)
 {
     BondPairs disulfideBonds;
@@ -637,6 +648,150 @@ void writeMoleculeBlocks(const hid_t                          baseContainer,
 
     setAttributeVector(baseContainer, c_moleculeNamesAttributeKey, namesPerBlock);
     setAttributeVector<int32_t>(baseContainer, c_numMolBlocksAttributeKey, numMolsPerBlock);
+}
+
+namespace
+{
+
+// Names only used in the biophysics module's topology specification.
+//! \brief Name of the compound data set of the particles of a molecule type.
+constexpr char c_particleDataCompoundDatasetName[] = "particle_data";
+//! \brief Name of the data set of the distinct component (residue) names of a molecule type.
+constexpr char c_componentNameTableName[] = "component_name_table";
+//! \brief Name of the compound data set of the molecule blocks.
+constexpr char c_moleculeBlocksCompoundDatasetName[] = "molecule_blocks";
+
+/*! \brief Distinct names in the order of first appearance, with the index of each. */
+class NameTable
+{
+public:
+    /*! \brief Return the index of \p name in the table.
+     *
+     * If the \p name does not exist, a new name is appended to the table, and
+     * its new index is returned.
+     */
+    int32_t findOrAdd(const char* name)
+    {
+        const auto [entry, isNew] = indices_.try_emplace(name, gmx::ssize(names_));
+        if (isNew)
+        {
+            names_.emplace_back(name);
+        }
+        return entry->second;
+    }
+
+    //! \brief The distinct names.
+    ArrayRef<const std::string> names() const { return names_; }
+
+private:
+    std::vector<std::string>                 names_;
+    std::unordered_map<std::string, int32_t> indices_;
+};
+
+//! \brief Write \p names as the fixed-length string data set \p datasetName in \p container.
+void writeNameTable(const hid_t container, const char* datasetName, ArrayRef<const std::string> names)
+{
+    size_t maxLength = 0;
+    for (const std::string& name : names)
+    {
+        maxLength = std::max(maxLength, name.size());
+    }
+    H5mdFixedDataSet<std::string> dataSet = H5mdDataSetBuilder<std::string>(container, datasetName)
+                                                    .withCompression(c_losslessCompression)
+                                                    .withDimension({ names.size() })
+                                                    .withMaxStringLength(static_cast<int>(maxLength + 1))
+                                                    .build();
+    dataSet.writeData(names);
+}
+
+} // namespace
+
+void writeMoleculeTypeAsCompound(AtomRange& atomRange, const hid_t baseContainer)
+{
+    std::vector<ParticleData> particles;
+    std::vector<SequenceData> sequence;
+    NameTable                 particleNames;
+    NameTable                 componentNames;
+    int                       previousResidueIndex = -1;
+    for (const AtomProxy atomProxy : atomRange)
+    {
+        const t_atom& atom = atomProxy.atom();
+        // A residue starts with each molecule and wherever the residue index in the molecule
+        // changes, so that residues with equal numbers, such as in two chains, stay distinct
+        if (atomProxy.atomNumberInMol() == 0 || atom.resind != previousResidueIndex)
+        {
+            sequence.push_back({ atomProxy.residueNumber(),
+                                 componentNames.findOrAdd(atomProxy.residueName()) });
+            previousResidueIndex = atom.resind;
+        }
+        particles.push_back({ particleNames.findOrAdd(atomProxy.atomName()),
+                              atom.atomnumber,
+                              static_cast<float>(atom.q),
+                              static_cast<float>(atom.m),
+                              static_cast<int32_t>(gmx::ssize(sequence) - 1) });
+    }
+
+    writeNameTable(baseContainer, c_particleNameTableName, particleNames.names());
+    writeNameTable(baseContainer, c_componentNameTableName, componentNames.names());
+
+    // The builder writes the units of ParticleData; SequenceData holds no physical quantity
+    // and has none
+    H5mdFixedDataSet<ParticleData> particleDataSet =
+            H5mdDataSetBuilder<ParticleData>(baseContainer, c_particleDataCompoundDatasetName)
+                    .withCompression(c_losslessCompression)
+                    .withDimension({ particles.size() })
+                    .build();
+    particleDataSet.writeData(particles);
+
+    H5mdFixedDataSet<SequenceData> sequenceDataSet =
+            H5mdDataSetBuilder<SequenceData>(baseContainer, c_residueSequenceName)
+                    .withCompression(c_losslessCompression)
+                    .withDimension({ sequence.size() })
+                    .build();
+    sequenceDataSet.writeData(sequence);
+
+    setAttribute<int64_t>(baseContainer, c_numParticlesAttributeKey, particles.size());
+    setAttribute<int64_t>(baseContainer, c_numResiduesAttributeKey, sequence.size());
+}
+
+void writeMoleculeTypesAsCompound(const hid_t baseContainer, const ArrayRef<const gmx_moltype_t> molTypes)
+{
+    for (const gmx_moltype_t& molType : molTypes)
+    {
+        const auto [molTypeGroup, molTypeGroupGuard] =
+                makeH5mdGroupGuard(createGroup(baseContainer, *(molType.name)));
+        gmx_mtop_t molTypeTopology;
+        detail::mtopFromMolType(&molTypeTopology, molType);
+        AtomRange atomRange(molTypeTopology);
+        writeMoleculeTypeAsCompound(atomRange, molTypeGroup);
+    }
+}
+
+void writeMoleculeBlocksAsCompound(const hid_t                          baseContainer,
+                                   const ArrayRef<const gmx_molblock_t> molBlocks,
+                                   const ArrayRef<const gmx_moltype_t>  molTypes)
+{
+    std::vector<MoleculeBlock> records;
+    records.reserve(molBlocks.size());
+    size_t maxNameLength = 0;
+    for (const gmx_molblock_t& molBlock : molBlocks)
+    {
+        if (molBlock.type < 0 || molBlock.type >= gmx::ssize(molTypes))
+        {
+            GMX_THROW(InternalError("Molecule block type points to an invalid molecule type."));
+        }
+        const std::string_view name = *(molTypes[molBlock.type].name);
+        records.emplace_back(name, molBlock.nmol);
+        maxNameLength = std::max(maxNameLength, name.size());
+    }
+    // The names are stored in as many bytes as the longest needs, with its terminating null
+    H5mdFixedDataSet<MoleculeBlock> dataSet =
+            H5mdDataSetBuilder<MoleculeBlock>(baseContainer, c_moleculeBlocksCompoundDatasetName)
+                    .withCompression(c_losslessCompression)
+                    .withDimension({ records.size() })
+                    .withMaxStringLength(static_cast<int>(maxNameLength + 1))
+                    .build();
+    dataSet.writeData(records);
 }
 
 } // namespace gmx

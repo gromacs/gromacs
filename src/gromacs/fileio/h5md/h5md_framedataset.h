@@ -32,9 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Declarations of H5md frame data set manipulation routines.
+/*! \internal \file
+ * \brief Declarations of H5md frame data set manipulation routines.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
+ * \ingroup module_fileio
  */
 
 #ifndef GMX_FILEIO_H5MD_FRAMEDATASET_H
@@ -54,9 +57,6 @@ template<typename ValueType>
 class ArrayRef;
 template<typename ValueType>
 class BasicVector;
-
-// Compound data types
-struct MoleculeBlock;
 
 /*! \brief Class which provides an interface for reading and writing frame data to H5mdDataSet objects.
  *
@@ -359,10 +359,6 @@ extern template class H5mdScalarFrameDataSet<float>;
 extern template class H5mdScalarFrameDataSet<double>;
 extern template class H5mdScalarFrameDataSet<BasicVector<float>>;
 extern template class H5mdScalarFrameDataSet<BasicVector<double>>;
-
-extern template class H5mdFrameDataSet<MoleculeBlock>;
-
-extern template class H5mdScalarFrameDataSet<MoleculeBlock>;
 
 } // namespace gmx
 
