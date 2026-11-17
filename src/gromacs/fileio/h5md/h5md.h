@@ -385,7 +385,7 @@ private:
 
     /*! \brief Set up the H5MD module group and add our used modules.
      *
-     * Sets up the modules group with GROMACS and units modules. This
+     * Sets up the modules group with GROMACS, units and biophysics modules. This
      * must be called before adding any other H5MD module information.
      *
      * Creates the following groups and attributes (relative to the HDF5 root):
@@ -397,39 +397,32 @@ private:
      *     \-- units       (units module group)
      *         \++ version (units module version)
      *         \++ system  (unit system string)
+     *     \-- biophysics  (H5MD biophysics module group)
+     *         \++ version (biophysics module version)
      */
     void setupModules();
 
-    /*! \brief Set up the module for GROMACS molecular topology
+    /*! \brief Write the topology of the system to the group `/topology`.
      *
-     * This module store the GROMACS molecular topology for internal use.
-     * The version of this module is determined by the h5md_topologyutils module.
+     * Follows the system topology of the H5MD biophysics specification
+     * (https://gromacs.gitlab.io/h5md-biophysics/system_topology.html): each molecule
+     * type is stored once, and the molecule blocks give the order and the number of
+     * copies of the molecule types in the system.
      *
      * Create the following hierarchy (relative to the HDF5 root):
      *
-     * /h5md/modules/gromacs_topology  (group for H5md GROMACS topology module)
-     * \++ version                     (attribute for the version of GROMACS topology)
-     * \++ molecule_block_names        (attribute for the names of molecules in the system)
-     * \++ system_name                 (attribute for the name of the system)
-     * \-- molecule1                   (group for molecule 1, same group name as molecule_block_names[0])
-     *     \++ particle_count            (attribute for the number of particles in molecule 1)
-     *     \++ residue_count             (attribute for the number of residues in molecule 1)
-     *     \-- id                      (dataset for the atomic identifier in molecule 1)
-     *     \-- mass                    (dataset for the atomic masses in molecule 1)
-     *     \-- charge                  (dataset for the atomic charges in molecule 1)
-     *     \-- species                 (dataset for the atomic species in molecule 1)
-     *     \-- particle_name           (dataset for the atomic names (indices into particle name table) in molecule 1)
-     *     \-- particle_name_table     (dataset for the atomic name lookup table in molecule 1)
-     *     \-- residue_id              (dataset for the residue identifier in molecule 1)
-     *     \-- sequence                (dataset for the residue sequence (indices into residue name table) in molecule 1)
-     *     \-- residue_name            (dataset for the residue names (indices into residue name table) in molecule 1)
-     *     \-- residue_name_table      (dataset for the residue name lookup table in molecule 1)
-     *     \-- posres_xA               (dataset for the position restraint for topology A values in molecule 1)
-     *     \-- posres_xB               (dataset for the position restraint for topology B values in molecule 1)
+     * /topology                  (group for the system topology)
+     * \++ system_name            (attribute for the name of the system)
+     * \++ total_particle_count   (attribute for the number of particles in the system)
+     * \++ total_residue_count    (attribute for the number of residues in the system)
+     * \-- molecule_blocks        (compound data set of the name and count of each block)
+     * \-- \<molecule_type\>      (group for each molecule type, see writeMoleculeTypeAsCompound())
+     *
+     * Nothing is written for a topology without molecule types.
      *
      * \param[in] topology Molecular topology for the simulated system.
      */
-    void setupGromacsTopology(const gmx_mtop_t& topology);
+    void setupSystemTopology(const gmx_mtop_t& topology);
 
     /*! \brief Set up the H5MD metadata group for connectivity information.
      *

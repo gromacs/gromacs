@@ -127,6 +127,8 @@ constexpr char c_h5mdNameAttributeKey[] = "name";
 constexpr char c_h5mdEmailAttributeKey[] = "email";
 //! \brief Attribute name for a version specification.
 constexpr char c_h5mdVersionAttributeKey[] = "version";
+//! \brief Path to the group of the system topology from the file root.
+constexpr char c_h5mdTopologyGroupPath[] = "/topology";
 //! \brief Path to H5MD connectivity group from the file root.
 constexpr char c_h5mdConnectivityGroupPath[] = "/connectivity";
 //! \brief Path to the group of the MD parameters from the file root.
@@ -193,6 +195,24 @@ static void setupUnitsModule(const hid_t modulesGroup, const char* unitSystem = 
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(modulesGroup, name));
     setAttributeVector(group, c_h5mdVersionAttributeKey, constArrayRefFromArray(version, 2));
     setAttribute(group, "system", unitSystem);
+    setAttribute(group, c_urlAttributeKey, url);
+}
+
+/*! \brief Set up the biophysics module with metadata in \p modulesGroup.
+ *
+ * Creates a module group with name "biophysics", which declares that the file follows
+ * the H5MD biophysics specification, and writes its version and a URL to it.
+ */
+static void setupBiophysicsModule(const hid_t modulesGroup)
+{
+    // Only the major and minor versions are stored: files following version
+    // 1.0.0-alpha.1 of the specification carry { 1, 0 }
+    constexpr char name[]    = "biophysics";
+    constexpr int  version[] = { 1, 0 };
+    constexpr char url[]     = "https://gromacs.gitlab.io/h5md-biophysics/";
+
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(modulesGroup, name));
+    setAttributeVector(group, c_h5mdVersionAttributeKey, constArrayRefFromArray(version, 2));
     setAttribute(group, c_urlAttributeKey, url);
 }
 
@@ -539,25 +559,24 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void H5md::setupGromacsTopology(const gmx_mtop_t& topology)
+void H5md::setupSystemTopology(const gmx_mtop_t& topology)
 {
 #if GMX_USE_HDF5
     if (topology.moltype.empty())
     {
         return;
     }
-    // Create the HDF5 group for storing the GROMACS topology
-    constexpr char    c_moduleNameGromacsTopology[] = "gromacs_topology";
-    const std::string pathToGromacsTopology         = joinStrings(
-            { c_h5mdMetaDataGroupName, c_h5mdModulesGroupName, c_moduleNameGromacsTopology }, "/");
-    const auto [gmxTop, gmxTopGuard] =
-            makeH5mdGroupGuard(createGroup(file_, pathToGromacsTopology.c_str()));
+    constexpr char c_totalParticleCountAttributeKey[] = "total_particle_count";
+    constexpr char c_totalResidueCountAttributeKey[]  = "total_residue_count";
 
-    writeMoleculeTypes(gmxTop, makeConstArrayRef(topology.moltype));
-    writeMoleculeBlocks(gmxTop, makeConstArrayRef(topology.molblock), makeConstArrayRef(topology.moltype));
-    // The h5md_topologyutils module takes care of the versioning of the GROMACS topology
-    labelInternalTopologyVersion(gmxTop);
-    labelTopologyName(gmxTop, *(topology.name));
+    const auto [topologyGroup, topologyGroupGuard] =
+            makeH5mdGroupGuard(createGroup(file_, c_h5mdTopologyGroupPath));
+    labelTopologyName(topologyGroup, *(topology.name));
+    setAttribute<int64_t>(topologyGroup, c_totalParticleCountAttributeKey, topology.natoms);
+    setAttribute<int64_t>(topologyGroup, c_totalResidueCountAttributeKey, gmx_mtop_nres(topology));
+    writeMoleculeBlocksAsCompound(
+            topologyGroup, makeConstArrayRef(topology.molblock), makeConstArrayRef(topology.moltype));
+    writeMoleculeTypesAsCompound(topologyGroup, makeConstArrayRef(topology.moltype));
 #else
     GMX_UNUSED_VALUE(topology);
 #endif
@@ -591,6 +610,7 @@ void H5md::setupModules()
             makeH5mdGroupGuard(createGroup(group, c_h5mdModulesGroupName));
     setupGromacsModule(modulesGroup);
     setupUnitsModule(modulesGroup);
+    setupBiophysicsModule(modulesGroup);
 #endif
 }
 
@@ -614,7 +634,7 @@ void H5md::setupFileFromInput(const gmx_mtop_t&   topology,
 #if GMX_USE_HDF5
     setupModules();
     setupParticleBlockForGroup(topology, selectionInds, selectionName, inputRecord);
-    setupGromacsTopology(topology);
+    setupSystemTopology(topology);
     setupBondConnectivity(topology);
 #else
     GMX_UNUSED_VALUE(topology);
@@ -761,12 +781,13 @@ void H5md::copyMetaDataFromFile(const H5md& other, const bool copyTopology)
     std::vector<std::string> objectsToCopy = {
         pathToModule("gromacs"),
         pathToModule("units"),
+        pathToModule("biophysics"),
         c_h5mdParametersGroupPath,
     };
 
     if (copyTopology)
     {
-        objectsToCopy.push_back(pathToModule("gromacs_topology"));
+        objectsToCopy.push_back(c_h5mdTopologyGroupPath);
         objectsToCopy.push_back(c_h5mdConnectivityGroupPath);
     }
 

@@ -57,6 +57,7 @@
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
+#include "gromacs/fileio/h5md/h5md_topologycompound.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/mtop_util.h"
@@ -325,6 +326,12 @@ TEST_F(H5mdIoTest, SetupFileFromInputWritesModuleInformation)
             makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/units"));
     EXPECT_EQ(getAttributeVector<int>(unitsGroup, "version").value(), (std::vector<int>{ 1, 0 }))
             << "units module specification version should be 1.0";
+
+    // Check that the file declares the biophysics module, version 1.0.0-alpha.1
+    const auto [biophysicsGroup, biophysicsGroupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/biophysics"));
+    EXPECT_THAT(getAttributeVector<int>(biophysicsGroup, "version"),
+                ::testing::Optional(std::vector<int>{ 1, 0 }));
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputCreatesParticlesGroup)
@@ -407,6 +414,31 @@ TEST_F(H5mdIoTest, SetupFromOtherFileCopiesMDParameters)
     file().setupFromOtherFile(other, {}, "system");
 
     EXPECT_TRUE(objectExists(fileid(), "/parameters/run_control/molecular_dynamics"));
+}
+
+TEST_F(H5mdIoTest, SetupFromOtherFileCopiesSystemTopology)
+{
+    gmx_mtop_t        mtop;
+    t_inputrec        inputRecord;
+    bool              haveTopology;
+    TprAndFileManager tprFileHandle("alanine_vsite_solvated");
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+
+    TestFileManager             fileManager;
+    const std::filesystem::path otherFileName = fileManager.getTemporaryFilePath("other.h5md");
+    {
+        H5md other(otherFileName, H5mdFileMode::Write);
+        other.setupFileFromInput(mtop, inputRecord);
+        const std::vector<RVec> positions(mtop.natoms, { 0.0, 0.0, 0.0 });
+        other.writeNextFrame(positions, {}, {}, c_unusedBox, 0, 0.0, std::nullopt);
+    }
+
+    const H5md other(otherFileName, H5mdFileMode::Read);
+    file().setupFromOtherFile(other, {}, "system");
+
+    EXPECT_TRUE(objectExists(fileid(), "/h5md/modules/biophysics"));
+    EXPECT_TRUE(objectExists(fileid(), "/topology/molecule_blocks"));
+    EXPECT_TRUE(objectExists(fileid(), "/topology/SOL/particle_data"));
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)
@@ -499,7 +531,7 @@ TEST_F(H5mdSetupFromExistingFile, ThrowsIfParticleCountIsNotMatchingIfGiven)
             << "Must throw for numAtoms > numAtomsInParticleBlock";
 }
 
-TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
+TEST_F(H5mdIoTest, SetupFileFromInputWritesSystemTopology)
 {
     gmx_mtop_t        mtop;
     t_inputrec        inputRecord;
@@ -508,42 +540,45 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesAtomicProperties)
     readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
 
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_NO_THROW_GMX(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
-    const auto [group, groupGuard] =
-            makeH5mdGroupGuard(openGroup(fileid(), "/h5md/modules/gromacs_topology"));
+    const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(fileid(), "/topology"));
 
-    // Check attributes for the topology group.
-    EXPECT_EQ(getAttributeVector<int>(group, "version").value_or(std::vector<int>{}), std::vector<int>({ 0, 1 }))
-            << "The internal topology version is 0.1 in the current implementation";
-    EXPECT_EQ(getAttributeVector<std::string>(group, "molecule_block_names").value_or(std::vector<std::string>{}),
-              std::vector<std::string>({ "Alanine_dipeptide", "SOL" }));
-    EXPECT_EQ(getAttributeVector<int32_t>(group, "molecule_block_counts").value_or(std::vector<int32_t>{}),
-              std::vector<int32_t>({ 1, 298 }));
-    EXPECT_EQ(getAttribute<std::string>(group, "system_name").value_or("NotASystem"), *(mtop.name));
+    EXPECT_THAT(getAttribute<std::string>(group, "system_name"),
+                ::testing::Optional(::testing::StrEq(*(mtop.name))));
+    EXPECT_THAT(getAttribute<int64_t>(group, "total_particle_count"), ::testing::Optional(mtop.natoms));
+    EXPECT_THAT(getAttribute<int64_t>(group, "total_residue_count"),
+                ::testing::Optional(gmx_mtop_nres(mtop)));
 
-    for (auto& moltype : mtop.moltype)
+    H5mdFixedDataSet<MoleculeBlock> blockDataSet(group, "molecule_blocks");
+    std::vector<MoleculeBlock>      blocks(blockDataSet.numValues());
+    blockDataSet.readData(blocks);
+    ASSERT_EQ(blocks.size(), mtop.molblock.size());
+    int64_t numParticlesInBlocks = 0;
+    int64_t numResiduesInBlocks  = 0;
+    for (int i = 0; i < gmx::ssize(blocks); ++i)
     {
-        const std::string molPath = formatString("/h5md/modules/gromacs_topology/%s", *(moltype.name));
-        EXPECT_NO_THROW_GMX(openGroup(fileid(), molPath.c_str()));
+        const gmx_moltype_t& molType = mtop.moltype[mtop.molblock[i].type];
+        EXPECT_STREQ(blocks[i].name.data(), *(molType.name));
+        EXPECT_EQ(blocks[i].count, mtop.molblock[i].nmol);
 
-        const auto [molGroup, molGroupGuard] = makeH5mdGroupGuard(openGroup(fileid(), molPath.c_str()));
-
-        // Check attributes for each molecule type.
-        EXPECT_GT(getAttribute<int64_t>(molGroup, "particle_count").value_or(-1), 0);
-        EXPECT_GT(getAttribute<int>(molGroup, "residue_count").value_or(-1), 0);
-
-        // Check atomic properties datasets for each molecule type.
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int64_t>(molGroup, "id"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<real>(molGroup, "mass"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<real>(molGroup, "charge"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "species"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "particle_name"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<std::string>(molGroup, "particle_name_table"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "residue_id"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "sequence"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<int>(molGroup, "residue_name"));
-        EXPECT_NO_THROW_GMX(H5mdDataSetBase<std::string>(molGroup, "residue_name_table"));
+        // Each block refers to the group of its molecule type
+        const auto [molTypeGroup, molTypeGroupGuard] =
+                makeH5mdGroupGuard(openGroup(group, blocks[i].name.data()));
+        const std::optional<int64_t> particleCount =
+                getAttribute<int64_t>(molTypeGroup, "particle_count");
+        ASSERT_TRUE(particleCount.has_value());
+        EXPECT_EQ(particleCount.value(), molType.atoms.nr);
+        const std::optional<int64_t> residueCount =
+                getAttribute<int64_t>(molTypeGroup, "residue_count");
+        ASSERT_TRUE(residueCount.has_value());
+        EXPECT_TRUE(objectExists(molTypeGroup, "particle_data"));
+        EXPECT_TRUE(objectExists(molTypeGroup, "sequence"));
+        numParticlesInBlocks += blocks[i].count * particleCount.value();
+        numResiduesInBlocks += blocks[i].count * residueCount.value();
     }
+    EXPECT_EQ(numParticlesInBlocks, mtop.natoms)
+            << "The molecule blocks must expand to all particles of the system";
+    EXPECT_EQ(numResiduesInBlocks, gmx_mtop_nres(mtop))
+            << "The molecule blocks must expand to all residues of the system";
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritesConnectivity)
@@ -568,7 +603,7 @@ TEST_F(H5mdIoTest, SetupFileFromInputTopologyWritingSkipsEmptyTopology)
     mtop.natoms = 1;
     t_inputrec inputRecord;
     file().setupFileFromInput(mtop, inputRecord);
-    EXPECT_THROW_GMX(openGroup(fileid(), "/h5md/modules/gromacs_topology"), H5mdError);
+    EXPECT_THROW_GMX(openGroup(fileid(), "/topology"), H5mdError);
 }
 
 TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
