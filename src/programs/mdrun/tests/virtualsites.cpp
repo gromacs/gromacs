@@ -804,6 +804,19 @@ TEST_P(VirtualSiteTest, WithinToleranceOfReference)
                         "to \"no\" anyway";
     }
 
+    // The test binary is registered with CTest both with one rank and with multiple ranks.
+    // The single-rank registration is needed for VirtualSiteGpuTest, but it also runs these
+    // cases again. When the GROMACS CI system runs the tests under compute-sanitizer
+    // racecheck, that brings the single-rank run close to its timeout, so we skip these
+    // CPU-only cases under racecheck.
+    const char* const computeSanitizerTool = std::getenv("GMX_CI_COMPUTE_SANITIZER");
+    if (getNumberOfTestMpiRanks() == 1 && computeSanitizerTool != nullptr
+        && std::string(computeSanitizerTool) == "racecheck")
+    {
+        GTEST_SKIP() << "Under racecheck in the GROMACS CI system, the CPU-update cases only "
+                        "run with multiple ranks";
+    }
+
     runTest({});
 }
 

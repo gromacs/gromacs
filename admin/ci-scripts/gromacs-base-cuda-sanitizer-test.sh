@@ -29,9 +29,6 @@ TEST_LABELS='QuickGpuTest'
 # Flag to mark that any
 TOOLS_FAILED=""
 
-# Let test binaries know they are running in the GROMACS CI compute-sanitizer job
-export GMX_CI_COMPUTE_SANITIZER=1
-
 # Each pass would overwrite the logs and XML files of the previous one in Testing/,
 # so after each pass its output is moved to a directory per tool. CTest recreates
 # the directories in the next pass. Testing/ is archived as a job artifact.
@@ -44,6 +41,9 @@ echo "<runs>" > "${RUNS_LIST}"
 
 for TOOL in memcheck racecheck synccheck initcheck; do
     echo "Running CUDA Compute Sanitizer in ${TOOL} mode"
+    # Let test binaries know they are running in the GROMACS CI compute-sanitizer job,
+    # and with which tool
+    export GMX_CI_COMPUTE_SANITIZER="${TOOL}"
     "${CTEST}" -T MemCheck \
       --overwrite MemoryCheckCommand="${COMPUTE_SANITIZER_BIN}" \
       --overwrite MemoryCheckCommandOptions="--tool=${TOOL} ${COMPUTE_SANITIZER_FLAGS}" \
