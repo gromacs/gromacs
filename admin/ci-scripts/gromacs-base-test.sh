@@ -86,7 +86,7 @@ else
 fi
 
 awk '/The following tests FAILED/,/^Errors while running CTest|^$/' ctestLog.log | tee ctestErrors.log
-xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/$TEST_XML_OUTPUT > JUnitTestResults.xml
+xsltproc $CI_PROJECT_DIR/admin/ci-scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/$TEST_XML_OUTPUT > JUnitTestResults.xml
 if [ -s ctestErrors.log ] || [ $EXITCODE != 0 ] ; then
     echo "Error during running ctest";
     exit 1;
