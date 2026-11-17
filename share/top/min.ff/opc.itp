@@ -1,0 +1,111 @@
+; OPC 4-site water model as implemented by MHolmboe. Model taken from:
+; Saeed Izadi, and Alexey V. Onufriev
+; Building Water Models, A Different Approach
+; DOI:	10.1021/jz501780a
+;
+; In the DOI: 10.1021/acs.jctc.5b00444 J. Chem. Theory Comput. 2015, 11, 3969−3972 paper 
+; the authors report that the above authors in some Amber manual recommend the 
+; Joung and Cheatham TIP4Pew ion-pair parameters...
+;
+
+[ moleculetype ]
+; molname	nrexcl
+SOL		2
+
+[ atoms ]
+; id  at type     res nr  res name  at name  cg nr  charge    mass
+  1   OW_opc  1       SOL       OW       1       0        15.9994
+  2   HW_opc  1       SOL       HW1      1       0.6791   1.00794
+  3   HW_opc  1       SOL       HW2      1       0.6791   1.00794
+  4   MW      1       SOL       MW       1      -1.3582   0.00000
+
+#ifndef FLEXIBLE
+
+[ settles ]
+; i	funct	doh	dhh
+1	1	0.08724	0.142461
+
+#else
+[ bonds ]
+; i     j       funct   length  force.c.
+1       2       1       0.08724 502416.0 0.08724       502416.0 ; where does the force constant come from?
+1       3       1       0.08724 502416.0 0.08724       502416.0 ; where does the force constant come from?
+        
+[ angles ]
+; i     j       k       funct   angle   force.c.
+2       1       3       1       103.6  628.02  103.6  628.02    ; where does the force constant come from?
+
+#endif
+
+
+[ virtual_sites3 ]
+; Vsite from                    funct   a               b
+4       1       2       3       1       0.14772952      0.14772952
+
+
+[ exclusions ]
+1	2	3	4
+2	1	3	4
+3	1	2	4
+4	1	2	3
+
+
+; The position of the virtual site is computed as follows:
+;
+;		O
+;  	      
+;	    	V
+;	  
+;	H		H
+;
+; OPC:
+; const = distance (OV) / [ cos (angle(VOH)) 	* distance (OH) ]
+;	  0.01594 nm	/ [ cos (51.8 deg)	* 0.08724 nm	]
+;	then a = b = 0.5 * const = 0.14772952032
+;
+; Vsite pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+;
+;		O
+;  	      
+;	    	V
+;	  
+;	H		H
+;
+; Ewald tip4p:
+; const = distance (OV) / [ cos (angle(VOH)) 	* distance (OH) ]
+;	  0.0125 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const = 0.106676721
+;
+; Vsite pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+;
+; The position of the dummy is computed as follows:
+;
+;		O
+;  	      
+;	    	D
+;	  
+;	H		H
+;
+; Ewald tip4p:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.0125 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const = 0.106676721
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+; standard tip4p:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.015 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+; tip4p/2005:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.01546 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;

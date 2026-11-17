@@ -63,6 +63,12 @@ t_nm2type* rd_nm2type(const ExtendableForceField& forceField, int* nnm);
  * forceField is the set of force field directories to search.
  */
 
+t_nm2type* rd_nm2type_from_file(const std::filesystem::path& filename, int* nnm);
+/* Read the name 2 type database from a single, user-specified .n2t file. */
+
+void free_nm2type(int nnm, t_nm2type* nm2t);
+/* Free the database returned by rd_nm2type() or rd_nm2type_from_file() */
+
 void dump_nm2type(FILE* fp, int nnm, t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 

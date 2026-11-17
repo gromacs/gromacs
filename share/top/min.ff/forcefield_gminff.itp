@@ -1,0 +1,23 @@
+#define _FF_MINFF
+
+; This force field uses a format that requires Gromacs 2018 or later.
+;
+; Documentation for the (g/t)MINFF force field: 
+; https://github.com/mholmboe/minff
+; Select the angle force constant in the .mdp file, for example:
+;
+;   define = -DMINFF_k500 -DOPC3 -DOPC3_HFE_LM
+; 
+; If you use MINFF, please cite Holmboe, Lavauzelle and Swai, "MINFF: A Family of
+; Classical Force Fields for Minerals with Tunable Angle Terms", arXiv:2610.18220,
+; doi.org/10.48550/arXiv.2610.18220
+;
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               no              1.0     1.0
+
+#include "ffnonbonded_gminff.itp"
+#include "ffbonded_gminff.itp"
+
+

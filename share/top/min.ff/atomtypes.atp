@@ -1,0 +1,247 @@
+; atomtypes.atp - atom types and masses for the MINFF force field.
+;
+; This file is read only by pdb2gmx. grompp takes its atom types from the
+; [ atomtypes ] sections of the .itp files instead, so nothing here affects a
+; normal MINFF run. Names and masses are generated from min.ff/ffnonbonded*.itp
+; and cover every type those files define.
+;
+; ========================================================================
+; MINFF mineral atom types
+; ========================================================================
+       Fe2   55.84500 ;   OCTAHEDRAL FE2+, LOW-CHARGE VARIANT Q=0.64/0.70 (LOW-FE-CHARGE SET ONLY)
+      Fe2t   55.84500 ;   TETRAHEDRAL FE2+, LOW-CHARGE VARIANT Q=0.64 (LOW-FE-CHARGE SET ONLY)
+      Fee2   55.84500 ;   EDGE FE2+, NOT RIGOROUSLY TESTED
+      Fee3   55.84500 ;   EDGE FE3+, NOT RIGOROUSLY TESTED
+      Feo2   55.84500 ;   WUSTITE
+      Feo3   55.84500 ;   HEMATITE
+       Fet   55.84500 ;   TETRAHEDRAL FE3+, OLD NAME FOR Fet3 (LOW-FE-CHARGE SET ONLY)
+      Fet2   55.84500 ;   TETRAHEDRAL FE2+, NOT RIGOROUSLY TESTED
+      Fet3   55.84500 ;   TETRAHEDRAL FE3+
+        Fs   18.99840 ;   HECTORITE
+        He    1.00794 ;   EDGE HYDROXYL HYDROGEN
+      Oahs   15.99941 ;   EDGE O, AL-OH H-SI
+       Obs   15.99941 ;   BRIDGING OXYGEN WITH SUBST., MICA
+       Obt   15.99941 ;   BRIDGING OXYGEN, AKDAL AITE
+      Ohmn   15.99941 ;   HYDROXYL O AT SUBSTITUTION SITE, Q=-0.89517 (LOW-FE-CHARGE SET ONLY)
+       Omn   15.99941 ;   BRIDGING/APICAL O AT SUBSTITUTION SITE, Q=-0.89517 (LOW-FE-CHARGE SET ONLY)
+       Ops   15.99941 ;   APICAL O, IN AL-O-AL(T)
+       Sio   28.08538 ;   TETRAHEDRAL SI, OLD NAME FOR Sit (LOW-FE-CHARGE SET ONLY)
+       Tio   47.86700 ;   TIO2
+;
+; ========================================================================
+; CLAYFF atom types (CLAYFF_2004 lowercase, CLAYFF_EXT mixed case)
+; ========================================================================
+        ae   26.98154 ;   OCTAHEDRAL ALUMINUM
+        Al   26.98154 ;   OCTAHEDRAL ALUMINUM
+       Ale   26.98154 ;   SILICATE EDGE
+       Alo   26.98154 ;   CORUNDUM, MONTMORILLONITE
+       Alt   26.98154 ;   TETRAHEDRAL SIT SITE IN CLAYS
+        ao   26.98154 ;   OCTAHEDRAL ALUMINUM
+        at   26.98154 ;   TETRAHEDRAL ALUMINUM
+       Cah   40.07800 ;   PORTLANDITE
+       cah   40.07800 ;   HYDROXIDE CALCIUM
+       Cao   40.07800 ;   LIME
+       cao   40.07800 ;   OCTAHEDRAL CALCIUM
+        Du    0.00000 ;   DUMMY ATOM
+       Feo   55.84500 ;   OCTAHEDRAL IRON, FE-O, RECALCULATED FROM SEBASTIAN KERISIT 2011 SUPPORTING INFO
+       feo   55.84500 ;   OCTAHEDRAL IRON, FE-O, RECALCULATED FROM SEBASTIAN KERISIT 2011 SUPPORTING INFO
+         H    1.00794 ;   HYDROGEN BONDED TO NITROGEN
+        ho    1.00794 ;   HYDROXYL HYDROGEN
+       Lio    6.94000 ;   OCTAHEDRAL LIO, LI2O
+       lio    6.94100 ;   OCTAHEDRAL LITHIUM
+       Mge   24.30500 ;   EDGE MG2+, NOT RIGOROUSLY TESTED
+       Mgh   24.30500 ;   BRUCITE
+       mgh   24.30500 ;   HYDROXIDE MAGNESIUM
+       Mgo   24.30500 ;   PERICLASE
+       mgo   24.30500 ;   OCTAHEDRAL MAGNESIUM
+         O   15.99940 ;   OXYGEN
+         o   15.99940 ;   BRIDGING OXYGEN
+      oahe   15.99940 ;   ALUMINO HYDROXYL OXYGEN WITH SUBST.
+     oahhe   15.99940 ;   ALUMINO DIHYDRO OXYGEN OXYGEN WITH SUBST.
+       Oal   15.99941 ;   EDGE O, AL-O
+      Oalh   15.99941 ;   EDGE O, AL-O-H
+     Oalhh   15.99941 ;   EDGE AL-OH2 OXYGEN
+     Oalsi   15.99941 ;   EDGE O, AL-O-SI
+      Oalt   15.99941 ;   BRIDGING (BASAL) O, SI-O-AL(T)
+       oas   15.99940 ;   ALUMINO-SILICA OXYGEN OXYGEN WITH SUBST.
+        Ob   15.99941 ;   BRIDGING OXYGEN, SI-O-SI
+        ob   15.99940 ;   BRIDGING OXYGEN
+      obos   15.99940 ;   BRIDGING OXYGEN WITH OCTAHEDRAL SUBST.
+      obss   15.99940 ;   BRIDGING OXYGEN WITH DOUBLE SUBST.
+      obts   15.99940 ;   BRIDGING OXYGEN WITH TETRAHEDRAL SUBST.
+     Odsub   15.99941 ;   BRIDGING O, DOUBLE ISOMORPHIC SUBST., EX. MG-O-MG
+        Oh   15.99941 ;   HYDROXYL OXYGEN
+        oh   15.99940 ;   HYDROXYL OXYGEN
+      Ohmg   15.99941 ;   HYDROXYL OXYGEN, ISOMORPHIC SUBST SITE, H-O-MG
+       ohs   15.99940 ;   HYDROXYL OXYGEN WITH SUBST.
+       Oli   15.99941 ;   LI2O
+       Ome   15.99940 ;   NEW! EDGE O-(H,MG) BOGUES CHARGE
+       Omg   15.99941 ;   BRIDGING/APICAL O, IN AL-O-MG
+      Omhh   15.99940 ;   NEW! EDGE O-(H,H,MG) BOGUS CHARGE
+        Op   15.99941 ;   APICAL O, IN AL-O-SI
+        op   15.99940 ;   BRIDGING OXYGEN
+      oshe   15.99940 ;   SILANOL HYDROXYL OXYGEN WITH SUBST.
+       Osi   15.99941 ;   EDGE SI-O
+      Osih   15.99941 ;   EDGE SI-O-H
+        Si   28.08550 ;   TETRAHEDRAL SILICON
+       Sit   28.08538 ;   SIO2, CLAYS
+        st   28.08550 ;   TETRAHEDRAL SILICON
+;
+; ========================================================================
+; Ions - all parameter sets (JC, Aqvist, Babu-Lim, Li-Merz)
+; ========================================================================
+       Ag+  107.86820 ;   AQUEOUS SILVER ION (1+)
+      Ag2+  107.86820 ;   AQUEOUS SILVER ION (2+)
+      Al3+   26.98150 ;   AQUEOUS ALUMINIUM ION (3+)
+      Ba2+  137.33000 ;   AQUEOUS BARIUM ION
+      Be2+    9.01220 ;   AQUEOUS BERYLLIUM ION (2+)
+       Br-   79.90400 ;   AQUEOUS BROMIDE ION
+      Ca2+   40.07800 ;   AQUEOUS CALCIUM ION
+      Cd2+  112.41100 ;   AQUEOUS CADMIUM ION (2+)
+      Ce3+  140.11600 ;   AQUEOUS CERIUM ION (3+)
+      Ce4+  140.11600 ;   AQUEOUS CERIUM ION (4+)
+       Cl-   35.45300 ;   AQUEOUS CHLORIDE ION
+      Co2+   58.93320 ;   AQUEOUS COBALT ION (2+)
+      Cr2+   51.99610 ;   AQUEOUS CHROMIUM ION (2+)
+      Cr3+   51.99610 ;   AQUEOUS CHROMIUM ION (3+)
+       Cs+  132.90550 ;   AQUEOUS CESIUM ION
+       Cu+   63.54600 ;   AQUEOUS COPPER ION (1+)
+      Cu2+   63.55000 ;   AQUEOUS COPPER ION
+      Dy3+  162.50000 ;   AQUEOUS DYSPROSIUM ION (3+)
+      Er3+  167.25900 ;   AQUEOUS ERBIUM ION (3+)
+      Eu2+  151.96400 ;   AQUEOUS EUROPIUM ION (2+)
+      Eu3+  151.96400 ;   AQUEOUS EUROPIUM ION (3+)
+        F-   18.99840 ;   AQUEOUS FLUORIDE ION
+      Fe2+   55.84500 ;   AQUEOUS IRON ION (2+)
+      Fe3+   55.84500 ;   AQUEOUS IRON ION (3+)
+      Gd3+  157.25000 ;   AQUEOUS GADOLINIUM ION (3+)
+  H+_Eigen    1.00794 ;   HYDRATED PROTON, EIGEN CATION (1+)
+ H+_Zundel    1.00794 ;   HYDRATED PROTON, ZUNDEL CATION (1+)
+      H3O+   19.01810 ;   HYDRONIUM ION (1+)
+      Hf4+  178.49000 ;   AQUEOUS HAFNIUM ION (4+)
+      Hg2+  200.59000 ;   AQUEOUS MERCURY ION (2+)
+        I-  126.90450 ;   AQUEOUS IODIDE ION
+      In3+  126.90450 ;   AQUEOUS INDIUM ION (3+)
+        K+   39.09830 ;   AQUEOUS POTASSIUM ION
+      La3+  138.90550 ;   AQUEOUS LANTHANUM ION (3+)
+       Li+    6.94100 ;   AQUEOUS LITHIUM ION
+      Lu3+  174.96700 ;   AQUEOUS LUTETIUM ION (3+)
+      Mg2+   24.30500 ;   AQUEOUS MAGNESIUM ION
+      Mn2+   54.93800 ;   AQUEOUS MANGANESE ION (2+)
+       Na+   22.98977 ;   AQUEOUS SODIUM ION
+      Nd3+  144.24000 ;   AQUEOUS NEODYMIUM ION (3+)
+      NH4+   14.00670 ;   AMMONIUM ION (1+)
+      Ni2+   58.69000 ;   AQUEOUS NICKEL ION
+      Pb2+  207.20000 ;   AQUEOUS LEAD ION (2+)
+      Pd2+  106.42000 ;   AQUEOUS PALLADIUM ION (2+)
+      Pr3+  140.90770 ;   AQUEOUS PRASEODYMIUM ION (3+)
+      Pt2+  195.07800 ;   AQUEOUS PLATINUM ION (2+)
+      Pu4+  244.00000 ;   AQUEOUS PLUTONIUM ION (4+)
+      Ra2+  186.20700 ;   AQUEOUS RADIUM ION (2+)
+       Rb+   85.46783 ;   AQUEOUS RUBINIUM ION
+      Sm2+  150.36000 ;   AQUEOUS SAMARIUM ION (2+)
+      Sm3+  150.36000 ;   AQUEOUS SAMARIUM ION (3+)
+      Sn2+  118.71000 ;   AQUEOUS TIN ION (2+)
+      Sr2+   87.62000 ;   AQUEOUS STRONTIUM ION
+      Tb3+  158.92530 ;   AQUEOUS TERBIUM ION (3+)
+      Th4+  232.03810 ;   AQUEOUS THORIUM ION (4+)
+       Tl+  204.38330 ;   AQUEOUS THALLIUM ION (1+)
+      Tl3+  204.38330 ;   AQUEOUS THALLIUM ION (3+)
+      Tm3+  168.93420 ;   AQUEOUS THULIUM ION (3+)
+       U4+  238.02890 ;   AQUEOUS URANIUM ION (4+)
+       V2+   50.94150 ;   AQUEOUS VANADIUM ION (2+)
+       Y3+   88.90590 ;   AQUEOUS YTTRIUM ION (3+)
+      Yb2+  173.04000 ;   AQUEOUS YTTERBIUM ION (2+)
+      Zn2+   65.41000 ;   AQUEOUS ZINK ION
+      Zr4+   91.22400 ;   AQUEOUS ZIRCONIUM ION (4+)
+;
+; ========================================================================
+; Water models, dummy and virtual sites
+; ========================================================================
+    HW_flx    1.00794 ;   FLX WATER HYDROGEN
+    HW_ice    1.00800 ;   ICE WATER HYDROGEN
+    HW_opc    1.00794 ;   OPC WATER HYDROGEN
+   HW_opc3    1.00794 ;   OPC3 WATER HYDROGEN
+    HW_spc    1.00794 ;   SPC WATER HYDROGEN
+   HW_spce    1.00794 ;   SPCE WATER HYDROGEN
+  HW_tip3p    1.00794 ;   TIP3P WATER HYDROGEN
+HW_TIP3PFB    1.00794 ;   TIP3PFB WATER HYDROGEN
+  HW_tip4p    1.00794 ;   TIP4P WATER HYDROGEN
+HW_tip4p2005    1.00794 ;   TIP4P2005 WATER HYDROGEN
+HW_tip4pew    1.00794 ;   TIP4PEW WATER HYDROGEN
+ HW_tip4pf    1.00794 ;   TIP4PF WATER HYDROGEN
+HW_TIP4PFB    1.00794 ;   TIP4PFB WATER HYDROGEN
+  HW_tip5p    1.00794 ;   TIP5P WATER HYDROGEN
+ HW_tips3p    1.00800 ;   TIPS3P WATER HYDROGEN
+ IW_tip4pf    0.00000 ;   TIP4PF DUMMY/VIRTUAL SITE
+        MW    0.00000 ;   DUMMY MASS IN RIGID TYROSINE RINGS
+    OW_flx   15.99940 ;   FLX WATER OXYGEN
+    OW_ice   15.99940 ;   ICE WATER OXYGEN
+    OW_opc   15.99940 ;   OPC WATER OXYGEN
+   OW_opc3   15.99940 ;   OPC3 WATER OXYGEN
+    OW_spc   15.99940 ;   SPC WATER OXYGEN
+   OW_spce   15.99940 ;   SPCE WATER OXYGEN
+  OW_tip3p   15.99940 ;   TIP3P WATER OXYGEN
+OW_TIP3PFB   15.99940 ;   TIP3PFB WATER OXYGEN
+  OW_tip4p   15.99940 ;   TIP4P WATER OXYGEN
+OW_tip4p2005   15.99940 ;   TIP4P2005 WATER OXYGEN
+OW_tip4pew   15.99940 ;   TIP4PEW WATER OXYGEN
+ OW_tip4pf   15.99940 ;   TIP4PF WATER OXYGEN
+OW_TIP4PFB   15.99940 ;   TIP4PFB WATER OXYGEN
+  OW_tip5p   15.99940 ;   TIP5P WATER OXYGEN
+ OW_tips3p   15.99940 ;   TIPS3P WATER OXYGEN
+;
+; ========================================================================
+; Legacy GROMOS entries. These belong to no MINFF parameter set and are kept
+; only for backwards compatibility.
+; ========================================================================
+         C   12.01100 ;   BARE CARBON (PEPTIDE,C=O,C-N)
+        CA   40.08000 ;   CALCIUM (2+)
+        CB   12.01100 ;   BARE CARBON (5-,6-RING)
+        CD   15.03500 ;   DMSO CARBON
+       CH1   13.01900 ;   ALIPHATIC CH-GROUP
+       CH2   14.02700 ;   ALIPHATIC CH2-GROUP
+       CH3   15.03500 ;   ALIPHATIC CH3-GROUP
+       CHE   12.01100 ;   HEME RING CARBON
+        CL   35.45300 ;   CHLORINE (1-)
+       CP2   14.02700 ;   ALIPHATIC CH2-GROUP USING RYCKAERT-
+       CP3   15.03500 ;   ALIPHATIC CH3-GROUP USING RYCKAERT-
+       CR5   12.01100 ;   AROMATIC CH-GROUP (5-RING)+H
+      CR51   13.01900 ;   AROMATIC CH-GROUP (5-RING), UNITED
+       CR6   12.01100 ;   AROMATIC C- BONDED TO H (6-RING)+H
+      CR61   13.01900 ;   AROMATIC CH-GROUP (6-RING), UNITED
+       CS1   13.01900 ;   SUGAR CH-GROUP
+       CS2   14.02700 ;   SUGAR CH2-GROUP
+         F   18.99840 ;   FLUORINE (COV. BOUND)
+        FE   55.84700 ;   IRON
+       HCR    1.00800 ;   H ATTACHED TO AROMATIC C (5 OR 6 RI
+        HS    1.00800 ;   HYDROGEN BONDED TO SULFUR
+        HW    1.00800 ;   WATER HYDROGEN
+        Hw    1.00800 ;   WATER HYDROGEN
+        IW          0 ;   DUMMY PARTICLE IN TIP4P ETC.
+         K   39.10000 ;   POTASSIUM (1+) (PROEFSCHRIFT STRAATSMA)
+        MG   24.30500 ;   MAGNESIUM (2+)
+      MNH3          0 ;   DUMMY MASS IN RIGID TETRAEDRICAL NH3 GROUP
+         N   14.00670 ;   PEPTIDE NITROGEN (N OR NH)
+        NA   22.98980 ;   SODIUM (1+)
+        Na   22.98980 ;   SODIUM (1+)
+        NE   14.00670 ;   ARG NE (NH)
+        NL   14.00670 ;   TERMINAL NITROGEN (NH3)
+        NP   14.00670 ;   PORPHYRIN NITROGEN
+       NR5   14.00670 ;   AROMATIC N (5-RING,2 BONDS)
+      NR5*   14.00670 ;   AROMATIC N (5-RING,3 BONDS)
+       NR6   14.00670 ;   AROMATIC N (6-RING,2 BONDS)
+      NR6*   14.00670 ;   AROMATIC N (6-RING,3 BONDS)
+        NT   14.00670 ;   TERMINAL NITROGEN (NH2)
+        NZ   14.00670 ;   ARG NH (NH2)
+        OD   15.99940 ;   DMSO OXYGEN
+        OS   15.99940 ;   SUGAR OR ESTER OXYGEN
+        OW   15.99940 ;   WATER OXYGEN
+        Ow   15.99940 ;   WATER OXYGEN
+      OWT3   15.99940 ;   TIP3P WATER OXYGEN
+      OWT4   15.99940 ;   TIP4P WATER OXYGEN
+         P   30.97380 ;   PHOSPHOR
+         S   32.06000 ;   SULFUR
+        SD   32.06000 ;   DMSO SULPHUR
+        SI   28.08000 ;   SILICON
+        ZN   65.37000 ;   ZINC

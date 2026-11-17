@@ -1,0 +1,17 @@
+#define _FF_MINFF
+
+; This force field uses a format that requires Gromacs 2018 or later.
+;
+; Documentation for the (g/t)MINFF force field:
+; https://github.com/mholmboe/minff
+; Select the angle force constant in the .mdp file, for example:
+;
+;   define = -DMINFF_k500 -DOPC3 -DOPC3_HFE_LM
+;
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               no              1.0     1.0
+
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"

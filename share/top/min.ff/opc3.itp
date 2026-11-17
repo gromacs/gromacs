@@ -1,0 +1,37 @@
+; OPC3 3-site water model as implemented by MHolmboe. Model taken from:
+; Saeed Izadi, and Alexey V. Onufriev
+; Accuracy limit of rigid 3-point water models
+; Cite as: J. Chem. Phys. 145, 074501 (2016); https://doi.org/10.1063/1.4960175
+;
+
+
+[ moleculetype ]
+; molname	nrexcl
+SOL		2
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+1       OW_opc3      1       SOL              OW             1       -0.895170
+2       HW_opc3      1       SOL             HW1             1        0.447585
+3       HW_opc3      1       SOL             HW2             1        0.447585
+
+#ifndef FLEXIBLE
+[ settles ]
+; i	j	funct	length
+1	1	0.097888	0.15985
+
+[ exclusions ]
+1	2	3
+2	1	3
+3	1	2
+#else
+[ bonds ]
+; i	j	funct	length	force.c.
+1	2	1	0.097888	502416.0 0.097888	502416.0  ; where does the force constant come from?
+1	3	1	0.097888	502416.0 0.097888	502416.0  ; where does the force constant come from?
+	
+
+[ angles ]
+; i	j	k	funct	angle	force.c.
+2	1	3	1	109.47	628.02	109.47	628.02	; where does the force constant come from?
+#endif

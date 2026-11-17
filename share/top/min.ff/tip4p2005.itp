@@ -1,0 +1,57 @@
+; TIP4P/2005 from gromacs user contributions amber03w.ff
+[ moleculetype ]
+; molname	nrexcl
+SOL		1
+
+[ atoms ]
+; 	at type	      res nr  res name	at name	      cg nr	charge	   mass
+1   OW_tip4p2005  1	SOL	 OW		1	0.0000   15.99940
+2	HW_tip4p2005  1	SOL	HW1		1	0.5564 	  1.00794
+3	HW_tip4p2005  1	SOL	HW2		1	0.5564 	  1.00794
+4	MW		      1	SOL	MW 		1  -1.1128    0.00000
+
+
+[ settles ]
+; i	funct	doh	dhh ---> same as standard tip4p
+1	1	0.09572	0.15139
+
+[ virtual_sites3 ]
+; Dummy from			funct	a		b
+4	1	2	3	1	0.131937768	0.131937768
+
+[ exclusions ]
+1	2	3	4
+2	1	3	4
+3	1	2	4
+4	1	2	3
+
+
+; The position of the dummy is computed as follows:
+;
+;		O
+;  	      
+;	    	D
+;	  
+;	H		H
+;
+; Ewald tip4p:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.0125 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const = 0.106676721
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+; standard tip4p:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.015 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;
+; tip4p/2005:
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.01546 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+;	then a = b = 0.5 * const
+;
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+;

@@ -1,0 +1,2046 @@
+; This is basically a copy of the ffnonbonded_gminff.itp file
+;
+; General (G)MINFF parameters Oct 11 2026
+; Please report errors to michael.holmboe@umu.se
+; If you use MINFF, please cite Holmboe, Lavauzelle and Swai, "MINFF: A Family of
+; Classical Force Fields for Minerals with Tunable Angle Terms", arXiv:2610.18220,
+; doi.org/10.48550/arXiv.2610.18220
+;
+; This file contains non-bonded paramaters compiled from several different sources and 
+; made available as-is and without any guarantee of their correctness or accuracy. Hence,
+; check the original papers listed below before using any of these parameters. MINFF has 
+; mostly been tested with the OPC3 water model and ion potentials from Li&Merz's papers.
+;
+; Note that the charges of the oxygen atomtypes should ideally be calculated by the charge
+; smearing equation, see the MINFF reference paper doi.org/10.48550/arXiv.2610.18220.
+;
+; The first part of this file contains forcefield parameters for the general MINFF, called
+; GMINFF, after angle force constants 0, 250, 500, 1500 kJ·mol⁻¹·rad⁻² between all O-M-O.
+; Note that for the M-O-H angles, MINFF v1.0 uses the angles parameters from Pouvreau, 
+; Greathouse, Cygan and Kalinichev, see J. Phys. Chem. C 2019, 123, 11628−11638.
+; Note that the charges of the oxygen atomtypes shoud ideally be calculated by the charge
+; smearing equation, see the MINFF reference paper doi.org/10.48550/arXiv.2610.18220.
+;
+; Note that parameters defined by #ifdef statements are also meant to be used with the
+; -D{abbreviation} syntax in the Gromacs .mdp file, hence in gromacs, use the -D flag 
+; in the .mdp file to activate the specific param set, like:
+; 
+; define = -DMINFF_k500 -DOPC3_IOD_LM ; see line 148-187
+;
+; The last part of this file contain parameters for different common water models
+;
+; References (water models excluded, should be added..)
+; 1.  GMINFF - Version 1.0 for the k0, k250, k500, k1500 general (GMINFF) parameter sets 
+; 2.  CLAYFF - Cygan et al., 2004, J. Phys. Chem. B, 108, 1255-1266, DOI:10.1021/jp0363287
+; 3.  JC - Joung & Cheatham, 2008, J. Phys. Chem. B, 112, 9020–9041
+; 4.  AQVIST - Åqvist, J, 1990. J. Phys. Chem. 1990, 94, 8021-8024, 
+; 5.  BL - Babu & Lim, 2006, J. Phys. Chem. A 2006, 110, 691-699, DOI:10.1021/jp054177x
+; 6.  LM - Li, Song, Merz, 2015,  J. Chem. Theory Comput. 11, 1645−1657, DOI:10.1021/ct500918t
+; 7.  LM - Li, Song & Merz, 2015, J. Phys. Chem. B 2015, 119, 883−895, DOI:10.1021/jp505875v
+; 8.  LM - Sengupta, Li, Song & Merz, 2021, J. Chem. Inf. Model. 2021, 61, 869−880, DOI:10.1021/acs.jcim.0c01390 
+; 9.  LM - Li, Song, Li & Merz, 2020, : J. Chem. Theory Comput. 2020, 16, 4429−4442, DOI:10.1021/acs.jctc.0c00194
+; 10. LM - Li, Song & Merz, 2021, J. Chem. Theory Comput. 2021, 17, 2342−2354, DOI:10.1021/acs.jctc.0c01320
+; 11. ZQ - Monovalent ions, Qiu et al., J. Phys. Chem. B 2021, 125, 13502-13518, doi 10.1021/acs.jpcb.1c09103
+; 12. ZQ - Divalent ions, Zhang et al., J. Chem. Inf. Model. 2021, 61, 4031-4044, doi 10.1021/acs.jcim.1c00580 
+; 13. ZQ - Polyvalent ions, Zhang et al., J. Chem. Inf. Model. 2021, 61, 4613-4629, doi 10.1021/acs.jcim.1c00723
+;
+;
+; References					Available ion-pair sets/abbreviations
+; Ref 3: 	Monovalent ions:	SPC_JC, SPCE_JC, TIP3P_JC, TIP4P_JC (same as TIP3P_JC)
+;
+; Ref 4: 	Divalent ions:		SPC_AQVIST
+;
+; Ref 5.	Divalent ions:		TIP3P_BL
+;
+; Ref 6:	Monovalent ions:	SPCE_HFE_LM, TIP3P_HFE_LM, TIP4PEW_HFE_LM
+;           					all_IOD_LM (SPCE/tip3p/tip4pew)
+;
+; Ref 7:	Polyvalent ions:	SPCE_HFE_LM, TIP3P_HFE_LM, TIP4PEW_HFE_LM
+;           					SPCE_IOD_LM, TIP3P_IOD_LM, TIP4PEW_IOD_LM
+;
+; Ref 8:	Monovalent ions:	OPC3_HFE_LM, OPC_HFE_LM, TIP3PFB_HFE_LM, TIP4PFB_HFE_LM
+;           					OPC3_IOD_LM, OPC_IOD_LM, TIP3PFB_IOD_LM, TIP4PFB_IOD_LM
+;
+; Ref 9:	Divalent ions:		OPC3_CM_LM,  OPC_CM_LM,  TIP3PFB_CM_LM,  TIP4PFB_CM_LM
+;								OPC3_HFE_LM, OPC_HFE_LM, TIP3PFB_HFE_LM, TIP4PFB_HFE_LM
+;           					OPC3_IOD_LM, OPC_IOD_LM, TIP3PFB_IOD_LM, TIP4PFB_IOD_LM
+;
+; Ref 10:	Polyvalent ions:	OPC3_HFE_LM, OPC_HFE_LM, TIP3PFB_HFE_LM, TIP4PFB_HFE_LM
+;           					OPC3_IOD_LM, OPC_IOD_LM, TIP3PFB_IOD_LM, TIP4PFB_IOD_LM
+;
+; Ref 11-13: Mono-, Di-, Polyvalent Ions:
+;								OPC3_ZQ, OPC_ZQ, SPCE_ZQ, SPCEB_ZQ, TIP3P_ZQ, TIP3PFB_ZQ,  
+;								TIP4P2005_ZQ, TIP4PEW_ZQ, TIP4PFB_ZQ, TIP4PD_ZQ,
+;								A99SBDISP_ZQ
+;
+; Note about ref 6-10: The HFE parameter set can reportedly reproduce the target HFE values 
+; within 1 kcal/mol, while the IOD parameter set can reproduce the target IOD values within 
+; 0.01 Å. The CM set is a compromise between HFE and IOD data sets for the divalent ions.
+; Note about ref 11-13: These models deliberately pair a small R with a very large eps 
+; (up to ~1e4 kcal/mol for M(III)/M(IV) ions). That is what the papers report, not a
+; transcription error; see the discussion of Figure 5 in the M(III)/M(IV) paper.
+
+
+[ atomtypes ]
+; name  number  mass  charge  ptype  sigma   epsilon ;
+;
+#ifdef MINFF_k0
+; GMINFF k0 kJ/mol/rad2
+H          1	 1.00794	 0.40000   A  	 0.000000	 0.000000 ; Hydroxyl hydrogen
+He         1	 1.00794	 0.40000   A  	 0.000000	 0.000000 ; Edge hydroxyl hydrogen
+Lio        3	 6.94000	 0.86000   A  	 0.191606	 0.219589 ; Octahedral Lio, Ex. Li2O
+Oahs       8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge O, Al-OhH-Si
+Oal        8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge O, Al-O
+Oalh       8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge O, Al-O-H
+Oalhh      8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge Al-OH2 oxygen 
+Oalsi      8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge O, Al-O-Si
+Oalt       8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Bridging (basal) O, Si-O-Al(t)
+Ob         8	 15.99941	-0.94200   A  	 0.317427	 0.683690 ; Bridging oxygen, Ex. Si-O-Si
+Obt        8	 15.99941	-0.94200   A  	 0.317427	 0.683690 ; Bridging oxygen, Ex. Akdalaite
+Obs        8	 15.99941	-1.16650   A  	 0.317427	 0.683690 ; Bridging oxygen with subst., Ex. Mica
+Odsub      8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Bridging O, double isomorphic subst., Ex. Mg-O-Mg 
+Oh         8	 15.99941	-0.94200   A  	 0.317427	 0.683690 ; Hydroxyl oxygen
+Ohmg       8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Hydroxyl oxygen, isomorphic subst site, Ex. H-O-Mg
+Oli        8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Ex. Li2O
+Omg        8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Bridging/apical O, Ex. in Al-O-Mg
+Op         8	 15.99941	-0.94200   A  	 0.317427	 0.683690 ; Apical O, Ex. in Al-O-Si 
+Ops        8	 15.99941	-0.94200   A  	 0.317427	 0.683690 ; Apical O, Ex. in Al-O-Al(t)
+Osi        8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge Si-O
+Osih       8	 15.99941	-0.89517   A  	 0.317427	 0.683690 ; Edge Si-O-H
+Fs         9	 18.99840	-0.76000   A  	 0.317622	 0.192769 ; Ex. Hectorite
+Mgh       12	 24.30500	 1.74000   A  	 0.188066	 0.988654 ; Ex. Brucite
+Mge       12	 24.30500	 1.63500   A  	 0.195549	 0.734121 ; Edge Mg2+, not rigorously tested
+Mgo       12	 24.30500	 1.56200   A  	 0.195549	 0.734121 ; Ex. Periclase
+Alo       13	 26.98154	 1.78200   A  	 0.144095	 0.473893 ; Ex. Corundum, Montmorillonite
+Ale       13	 26.98154	 1.98500   A  	 0.159028	 0.369202 ; Silicate edge
+Alt       13	 26.98154	 1.78200   A  	 0.169243	 0.178242 ; Tetrahedral Sit site in clays
+Sit       14	 28.08538	 1.88400   A  	 0.082225	 0.422422 ; SiO2, clays
+Cah       20	 40.07800	 1.52000   A  	 0.254786	 0.872777 ; Ex. Portlandite
+Cao       20	 40.07800	 1.66000   A  	 0.269310	 1.577302 ; Ex. Lime
+Fet2      26	 55.84500	 1.18400   A  	 0.147279	 0.171251 ; Tetrahedral Fe2+, not rigorously tested
+Fee2      26	 55.84500	 1.32000   A  	 0.215896	 0.230825 ; Edge Fe2+, not rigorously tested
+Feo2      26	 55.84500	 1.18400   A  	 0.215896	 0.230825 ; Ex. Wustite 
+Fet3      26	 55.84500	 1.50000   A  	 0.197627	 0.119088 ; Tetrahedral Fe3+  
+Fee3      26	 55.84500	 1.75000   A  	 0.168158	 0.385264 ; Edge Fe3+, not rigorously tested
+Feo3      26	 55.84500	 1.50000   A  	 0.168158	 0.385264 ; Ex. Hematite
+Tio       22	 47.86700	 2.48000   A  	 0.188206	 0.806177 ; Ex. TiO2
+#endif
+
+#ifdef MINFF_k250
+; GMINFF k250 kJ/mol/rad2
+H          1	 1.00794	 0.40000   A  	 0.000000	 0.000000
+He         1	 1.00794	 0.40000   A  	 0.000000	 0.000000
+Lio        3	 6.94000	 0.86000   A  	 0.192274	 0.219667
+Oahs       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oal        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalh       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalhh      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalsi      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalt       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Ob         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Obt        8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Obs        8	 15.99941	-1.16650   A  	 0.317427	 0.683690
+Odsub      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oh         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Ohmg       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oli        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Omg        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Op         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Ops        8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Osi        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Osih       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Fs         9	 18.99840	-0.76000   A  	 0.318354	 0.189745
+Mgh       12	 24.30500	 1.74000   A  	 0.186611	 0.960819
+Mge       12	 24.30500	 1.63500   A  	 0.196144	 0.744317
+Mgo       12	 24.30500	 1.56200   A  	 0.196144	 0.744317
+Alo       13	 26.98154	 1.78200   A  	 0.143862	 0.466201
+Ale       13	 26.98154	 1.98500   A  	 0.159028	 0.369202
+Alt       13	 26.98154	 1.78200   A  	 0.170069	 0.176182
+Sit       14	 28.08538	 1.88400   A  	 0.091168	 0.443611
+Cah       20	 40.07800	 1.52000   A  	 0.255577	 0.908704
+Cao       20	 40.07800	 1.66000   A  	 0.270104	 1.511493
+Fet2      26	 55.84500	 1.18400   A  	 0.147279	 0.171251
+Fee2      26	 55.84500	 1.32000   A  	 0.220018	 0.210001
+Feo2      26	 55.84500	 1.18400   A  	 0.220018	 0.210001
+Fet3      26	 55.84500	 1.50000   A  	 0.187131	 0.113822
+Fee3      26	 55.84500	 1.75000   A  	 0.169854	 0.370788
+Feo3      26	 55.84500	 1.50000   A  	 0.169854	 0.370788
+Tio       22	 47.86700	 2.48000   A  	 0.189407	 0.806691
+#endif
+
+#ifdef MINFF_k500
+; GMINFF k500kJ/mol/rad2
+H          1	 1.00794	 0.40000   A  	 0.000000	 0.000000
+He         1	 1.00794	 0.40000   A  	 0.000000	 0.000000
+Lio        3	 6.94000	 0.86000   A  	 0.191531	 0.229417
+Oahs       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oal        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalh       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalhh      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalsi      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalt       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Ob         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Obt        8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Obs        8	 15.99941	-1.16650   A  	 0.317427	 0.683690
+Odsub      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oh         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Ohmg       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oli        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Omg        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Op         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Ops        8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Osi        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Osih       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Fs         9	 18.99840	-0.76000   A  	 0.320267	 0.185651
+Mgh       12	 24.30500	 1.74000   A  	 0.186981	 0.961886
+Mge       12	 24.30500	 1.63500   A  	 0.198028	 0.716963
+Mgo       12	 24.30500	 1.56200   A  	 0.198028	 0.716963
+Alo       13	 26.98154	 1.78200   A  	 0.146158	 0.471919
+Ale       13	 26.98154	 1.98500   A  	 0.159028	 0.369202
+Alt       13	 26.98154	 1.78200   A  	 0.170704	 0.175038
+Sit       14	 28.08538	 1.88400   A  	 0.093467	 0.458196
+Cah       20	 40.07800	 1.52000   A  	 0.255225	 0.889170
+Cao       20	 40.07800	 1.66000   A  	 0.270147	 1.577941
+Fet2      26	 55.84500	 1.18400   A  	 0.147279	 0.171251
+Fee2      26	 55.84500	 1.32000   A  	 0.220434	 0.210576
+Feo2      26	 55.84500	 1.18400   A  	 0.220434	 0.210576
+Fet3      26	 55.84500	 1.50000   A  	 0.188425	 0.115038
+Fee3      26	 55.84500	 1.75000   A  	 0.169565	 0.387325
+Feo3      26	 55.84500	 1.50000   A  	 0.169565	 0.387325
+Tio       22	 47.86700	 2.48000   A  	 0.188503	 0.808327
+#endif
+
+#ifdef MINFF_k1500
+; GMINFF k1500kJ/mol/rad2
+H          1	 1.00794	 0.40000   A  	 0.000000	 0.000000
+He         1	 1.00794	 0.40000   A  	 0.000000	 0.000000
+Lio        3	 6.94000	 0.86000   A  	 0.192056	 0.229375
+Oahs       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oal        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalh       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalhh      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalsi      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oalt       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Ob         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Obt        8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Obs        8	 15.99941	-1.16650   A  	 0.317427	 0.683690
+Odsub      8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oh         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Ohmg       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Oli        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Omg        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Op         8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Ops        8	 15.99941	-0.94200   A  	 0.317427	 0.683690
+Osi        8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Osih       8	 15.99941	-0.89517   A  	 0.317427	 0.683690
+Fs         9	 18.99840	-0.76000   A  	 0.321464	 0.190145
+Mgh       12	 24.30500	 1.74000   A  	 0.190547	 1.001225
+Mge       12	 24.30500	 1.63500   A  	 0.196465	 0.742461
+Mgo       12	 24.30500	 1.56200   A  	 0.196465	 0.742461
+Alo       13	 26.98154	 1.78200   A  	 0.142145	 0.460200
+Ale       13	 26.98154	 1.98500   A  	 0.159028	 0.369202
+Alt       13	 26.98154	 1.78200   A  	 0.168338	 0.175845
+Sit       14	 28.08538	 1.88400   A  	 0.095058	 0.455759
+Cah       20	 40.07800	 1.52000   A  	 0.257601	 0.909985
+Cao       20	 40.07800	 1.66000   A  	 0.269989	 1.509434
+Fet2      26	 55.84500	 1.18400   A  	 0.147279	 0.171251
+Fee2      26	 55.84500	 1.32000   A  	 0.220810	 0.210784
+Feo2      26	 55.84500	 1.18400   A  	 0.220810	 0.210784
+Fet3      26	 55.84500	 1.50000   A  	 0.191267	 0.116022
+Fee3      26	 55.84500	 1.75000   A  	 0.170260	 0.381470
+Feo3      26	 55.84500	 1.50000   A  	 0.170260	 0.381470
+Tio       22	 47.86700	 2.48000   A  	 0.186107	 0.794466
+#endif
+
+#ifdef CLAYFF_2004	
+; CLAYFF (Cygan, Liang & Kalinichev 2004), see ref 2
+ho		1	1.007940	0.42500	A	0.000000	0.000000	;	Hydroxyl	hydrogen			
+oh		8	15.99940	-0.9500	A	0.316556	0.650170	;	Hydroxyl	oxygen			
+o 		8	15.99940	-1.0500	A	0.316556	0.650170	;	Bridging	oxygen	
+ob		8	15.99940	-1.0500	A	0.316556	0.650170	;	Bridging	oxygen	
+op		8	15.99940	-1.0500	A	0.316556	0.650170	;	Bridging	oxygen			
+obos	8	15.99940	-1.1808	A	0.316556	0.650170	;	Bridging	oxygen	with	octahedral	subst.
+obts	8	15.99940	-1.1688	A	0.316556	0.650170	;	Bridging	oxygen	with	tetrahedral	subst.
+obss	8	15.99940	-1.2996	A	0.316556	0.650170	;	Bridging	oxygen	with	double	subst.
+ohs  	8	15.99940	-1.0809	A	0.316556	0.650170	;	Hydroxyl	oxygen	with	subst.	
+oahe	8	15.99940	-1.2375	A	0.316556	0.650170	;	Alumino hydroxyl	oxygen	with	subst.	
+oahhe	8	15.99940	-0.6625	A	0.316556	0.650170	;	alumino dihydro oxygen	oxygen	with	subst.	
+oas 	8	15.99940	-1.2375	A	0.316556	0.650170	;	Alumino-Silica oxygen	oxygen	with	subst.	
+oshe	8	15.99940	-0.9500	A	0.316556	0.650170	;	Silanol hydroxyl	oxygen	with	subst.	
+st		14	28.08550	2.10000	A	0.330200	7.70065E-06	;	Tetrahedral	silicon			
+ao		13	26.98154	1.57500	A	0.427100	5.56388E-06	;	Octahedral	aluminum
+ae		13	26.98154	1.81250	A	0.427100	5.56388E-06	;	Octahedral	aluminum			
+at		13	26.98154	1.57500	A	0.330200	7.70065E-06	;	Tetrahedral	aluminum			
+mgo		12	24.30500	1.36000	A	0.526400	3.77807E-06	;	Octahedral	magnesium			
+mgh		12	24.30500	1.05000	A	0.526400	3.77807E-06	;	Hydroxide	magnesium			
+cao		20	40.07800	1.36000	A	0.556700	2.10447E-05	;	Octahedral	calcium			
+cah		20	40.07800	1.05000	A	0.556700	2.10447E-05	;	Hydroxide	calcium			
+feo		26	55.84500	1.57500	A	0.490620    3.77807E-06	;	The correct CLAYFF param for octahedral Fe3+, see SI of doi.org/10.1021/acs.jpcc.1c04600
+;feo	26	55.84500	1.57500	A	0.407222	3.77671E-05	;	Octahedral	iron, Fe-O, recalculated from Sebastian Kerisit 2011 supporting info	
+lio		3	6.941000	0.52500	A	0.421000	3.77807E-05	;	Octahedral	lithium
+#endif
+
+#ifdef CLAYFF_EXT
+; CLAYFF, albeit with some extra custom atomtypes and names by MHolmboe
+; Note that the new atomtypes and their charges are supposed to be consistent with the original CLAYFF, 2004 parameters   										
+H		1	1.007940	0.42500	A	0.000000	0.000000	;	Hydroxyl	hydrogen			
+Oh		8	15.99940	-0.9500	A	0.316556	0.650170	;	Hydroxyl	oxygen			
+O		8	15.99940	-1.0500	A	0.316556	0.650170	;	Bridging	oxygen
+Ob		8	15.99940	-1.0500	A	0.316556	0.650170	;	New! Bridging	basal oxygen
+Op		8	15.99940	-1.0500	A	0.316556	0.650170	;	New! Bridging	apical oxygen			
+Omg		8	15.99940	-1.1808	A	0.316556	0.650170	;	Bridging	oxygen	with	octahedral	subst.
+Oalt	8	15.99940	-1.1688	A	0.316556	0.650170	;	Bridging	oxygen	with	tetrahedral	subst.
+Odsub	8	15.99940	-1.2996	A	0.316556	0.650170	;	Bridging	oxygen	with	double	subst.
+Ohmg	8	15.99940	-1.0809	A	0.316556	0.650170	;	Hydroxyl	oxygen	with	subst.	
+Oal 	8	15.99940	-1.7650	A	0.316556	0.650170	;	New! Deprotonated alumino hydroxyl	oxygen
+Oalh	8	15.99940	-1.2375	A	0.316556	0.650170	;	New! Alumino hydroxyl	oxygen	with	subst.	
+Oalhh	8	15.99940	-0.6625	A	0.316556	0.650170	;	New! alumino dihydro oxygen	oxygen	with	subst.	
+Oalsi	8	15.99940	-1.2375	A	0.316556	0.650170	;	New! Alumino-Silica oxygen	oxygen	with	subst.	
+Ome 	8	15.99940	-1.0000	A	0.316556	0.650170	;	New! Edge O-(H,Mg) Bogues charge
+Omhh 	8	15.99940	-1.0000	A	0.316556	0.650170	;	New! Edge O-(H,H,Mg) Bogus charge
+Oli 	8	15.99940	-1.2875	A	0.316556	0.650170	;	New! O-Li in Hectorite
+Osih	8	15.99940	-0.9500	A	0.316556	0.650170	;	Silanol hydroxyl
+Osi 	8	15.99940	-1.5250	A	0.316556	0.650170	;	New! Deprotonated silanol hydroxyl	
+Sit		14	28.08550	2.10000	A	0.330200	7.70065E-06	;	Tetrahedral	silicon			
+Alo		13	26.98154	1.57500	A	0.427100	5.56388E-06	;	Octahedral	aluminum
+Ale		13	26.98154	1.81250	A	0.427100	5.56388E-06	;	New! Octahedral	aluminum			
+Alt		13	26.98154	1.57500	A	0.330200	7.70065E-06	;	Tetrahedral	aluminum			
+Mgo		12	24.30500	1.36000	A	0.526400	3.77807E-06	;	Octahedral	magnesium			
+Mgh		12	24.30500	1.05000	A	0.526400	3.77807E-06	;	Hydroxide	magnesium			
+Cao		20	40.07800	1.36000	A	0.556700	2.10447E-05	;	Octahedral	calcium			
+Cah		20	40.07800	1.05000	A	0.556700	2.10447E-05	;	Hydroxide	calcium			
+Feo		26	55.84500	1.57500	A	0.490620    3.77807E-06	;	The correct CLAYFF param for octahedral Fe3+, see SI of doi.org/10.1021/acs.jpcc.1c04600
+;Feo	26	55.84500	1.57500	A	0.407222	3.77671E-05	;	Octahedral	iron, Fe-O, recalculated from Sebastian Kerisit 2011 supporting info	
+Lio		3	6.941000	0.52500	A	0.421000	3.77807E-05	;	Octahedral	lithium
+Du		10	0.000000	0.00000	A	0.000000	0.000000	;	dummy atom	
+#endif
+
+#ifdef SPC_JC		
+; Joung Cheatham 2008
+Li+		3	6.941000	1.00000	A	0.140940	1.40890		;	Aqueous	lithium	ion		
+Na+		11	22.98977	1.00000	A	0.215954	1.47545		;	Aqueous	sodium	ion		
+K+		19	39.09830	1.00000	A	0.283840	1.79789		;	Aqueous	potassium	ion
+Rb+	    37	85.46783	1.00000	A	0.309498	1.8623  	;	Aqueous	rubinium	ion				
+Cs+		55	132.9055	1.00000	A	0.360100	0.37596		;	Aqueous	cesium	ion		
+F-	    9	18.99840	-1.0000	A	0.402152	0.030964	;	Aqueous	fluoride	ion
+Cl-		17	35.45300	-1.0000	A	0.483050	0.05349		;	Aqueous	chloride	ion	
+Br-		35	79.90400	-1.0000	A	0.490170	0.11279		;	Aqueous	bromide	ion		
+I-		53	126.9045	-1.0000	A	0.520107	0.17901		;	Aqueous	iodide	ion
+#endif
+
+#ifdef SPCE_JC		
+; Same as for SPC
+Li+		3	6.941000	1.00000	A	0.140940	1.40890		;	Aqueous	lithium	ion		
+Na+		11	22.98977	1.00000	A	0.215954	1.47545		;	Aqueous	sodium	ion		
+K+		19	39.09830	1.00000	A	0.283840	1.79789		;	Aqueous	potassium	ion	
+Rb+	    37	85.46783	1.00000	A	0.309498	1.8623  	;	Aqueous	rubinium	ion			
+Cs+		55	132.9055	1.00000	A	0.360100	0.37596		;	Aqueous	cesium	ion		
+F-	    9	18.99840	-1.0000	A	0.402152	0.030964	;	Aqueous	fluoride	ion
+Cl-		17	35.45300	-1.0000	A	0.483050	0.05349		;	Aqueous	chloride	ion	
+Br-		35	79.90400	-1.0000	A	0.490170	0.11279		;	Aqueous	bromide	ion		
+I-		53	126.9045	-1.0000	A	0.520107	0.17901		;	Aqueous	iodide	ion
+#endif
+
+#ifdef TIP3P_JC		
+;TIP3P / ; Joung Cheatham 2008											
+Li+	3	6.94100	    1.00000	    A 	0.182634	0.11711	;	Aqueous	lithium	ion
+Na+	11	22.98977	1.00000	    A	0.243928	0.36585	;	Aqueous	sodium	ion
+K+	19	39.09830	1.00000	    A	0.303796	0.81037	;	Aqueous	potassium	ion
+Rb+	37	85.4678	    1.00000	    A	0.323040	1.37161	;	Aqueous	rubinium	ion
+Cs+	55	132.90545	1.00000	    A	0.352083	1.70096	;	Aqueous	cesium	ion
+F-	9	18.99840	-1.00000	A	0.410348	0.01407	;	Aqueous	fluoride	ion
+Cl-	17	35.45300	-1.00000	A	0.447766	0.14891	;	Aqueous	chloride	ion
+Br-	35	79.90400	-1.00000	A	0.464693	0.24541	;	Aqueous	bromide	ion
+I-	53	126.90447	-1.00000	A	0.509594	0.22460	;	Aqueous	iodide	ion
+#endif		
+
+#ifdef TIP4P_JC										
+;TIP4PEW / ; Joung Cheatham 2008											
+Li+	3	6.94100	    1.00000	    A	0.143969	0.43509	;	Aqueous	lithium	ion
+Na+	11	22.98977	1.00000	    A	0.218448	0.70474	;	Aqueous	sodium	ion
+K+	19	39.09830	1.00000	    A	0.283306	1.16928	;	Aqueous	potassium	ion
+Rb+	37	85.4678	    1.00000	    A	0.304509	1.81230	;	Aqueous	rubinium	ion
+Cs+	55	132.90545	1.00000	    A	0.336403	1.65030	;	Aqueous	cesium	ion
+F-	9	18.99840	-1.00000	A	0.452220	0.00659	;	Aqueous	fluoride	ion
+Cl-	17	35.45300	-1.00000	A	0.491776	0.04879	;	Aqueous	chloride	ion
+Br-	35	79.90400	-1.00000	A	0.493202	0.12710	;	Aqueous	bromide	ion
+I-	53	126.90447	-1.00000	A	0.525987	0.17451	;	Aqueous	iodide	ion
+#endif
+
+#ifdef TIP5P_JC
+;Same as TIP4PEW for now... / ; Joung Cheatham 2008											
+Li+	3	6.94100	    1.00000	    A	0.143969	0.43509	;	Aqueous	lithium	ion
+Na+	11	22.98977	1.00000	    A	0.218448	0.70474	;	Aqueous	sodium	ion
+K+	19	39.09830	1.00000	    A	0.283306	1.16928	;	Aqueous	potassium	ion
+Rb+	37	85.4678	    1.00000	    A	0.304509	1.81230	;	Aqueous	rubinium	ion
+Cs+	55	132.90545	1.00000	    A	0.336403	1.65030	;	Aqueous	cesium	ion
+F-	9	18.99840	-1.00000	A	0.452220	0.00659	;	Aqueous	fluoride	ion
+Cl-	17	35.45300	-1.00000	A	0.491776	0.04879	;	Aqueous	chloride	ion
+Br-	35	79.90400	-1.00000	A	0.493202	0.12710	;	Aqueous	bromide	ion
+I-	53	126.90447	-1.00000	A	0.525987	0.17451	;	Aqueous	iodide	ion
+#endif	
+
+#ifdef TIP3P_BL
+; From Babu & Lim 2006, divalent ions, parameterized with the new set of param based on Cd2+
+; with tip3p but should work with SPC and SPC/E according to the authors										
+Ba2+	    56	137.33000	2.00000	A	0.400031342	0.8338712	;	Aqueous	barium	ion
+Ca2+	    20	40.07800	2.00000	A	0.345027256	0.1330512	;	Aqueous	calcium	ion
+Cu2+	    29	63.550	    2.00000	A	0.184059675	0.1786568	;	Aqueous	copper	ion
+Mg2+	    12	24.30500	2.00000	A	0.242965898	0.1112944	;	Aqueous	magnesium	ion
+Ni2+	    28	58.69	    2.00000	A	0.194946458	0.1531344	;	Aqueous	nickel	ion
+Sr2+	    38	87.62000	2.00000	A	0.372805478	0.2778176	;	Aqueous	strontium	ion
+Zn2+	    30	65.41	    2.00000	A	0.204710707	0.13598	    ;	Aqueous	zink	ion						
+#endif
+
+#ifdef SPC_AQVIST 
+; For spc and spce, Åqvist only Mg, Ca, Ba, Sr... the rest from Babu & Lim
+Mg2+		12	24.30500	2.00000	A	0.139770	3.65874		;	Aqueous	magnesium	ion		
+Ca2+		20	40.07800	2.00000	A	0.236090	1.88011		;	Aqueous	calcium	ion		
+Sr2+		38	87.62000	2.00000	A	0.310240	0.49433		;	Aqueous	strontium	ion		
+Ba2+		56	137.3300	2.00000	A	0.378620	0.19692		;	Aqueous	barium	ion	
+Cu2+	    29	63.550	    2.00000	A	0.184059675	0.1786568	;	Aqueous	copper	ion
+Ni2+	    28	58.69	    2.00000	A	0.194946458	0.1531344	;	Aqueous	nickel	ion
+Zn2+	    30	65.41	    2.00000	A	0.204710707	0.13598  	;	Aqueous	zink	ion
+#endif
+
+#ifdef all_IOD_LM
+; Li, Song & Merz 2015 monovalent ion set for the SPC/E, TIP3P and TIP4P-Ew water models, IOD-optimised (16 ions), see ref 6
+H+_Eigen       1	 1.007940	 1.000000   A	 0.149849	 2.76562e-07
+H+_Zundel      1	 1.007940	 1.000000   A	 0.164816	 6.15048e-06
+Li+            3	 6.941000	 1.000000   A	 0.234306	 0.0248938
+F-             9	 18.998400	-1.000000   A	 0.309855	 0.693449
+H3O+          11	 19.018100	 1.000000   A	 0.306469	 0.636053
+NH4+          11	 14.006700	 1.000000   A	 0.318942	 0.857902
+Na+           11	 22.989700	 1.000000   A	 0.261033	  0.12172
+Cl-           17	 35.453000	-1.000000   A	 0.385225	  2.22399
+K+            19	 39.098300	 1.000000   A	 0.310924	 0.712036
+Cu+           29	 63.546000	 1.000000   A	  0.21631	 0.00582396
+Br-           35	 79.904000	-1.000000   A	 0.415337	  2.75947
+Rb+           37	 85.467800	 1.000000   A	 0.324287	  0.96074
+Ag+           47	 107.868200	 1.000000   A	  0.26727	 0.163169
+I-            53	 126.904500	-1.000000   A	 0.461486	   3.3595
+Cs+           55	 132.905500	 1.000000   A	 0.356359	  1.62939
+Tl+           81	 204.383300	 1.000000   A	 0.333196	  1.13991
+#endif
+
+#ifdef SPCE_HFE_LM
+; Li, Song & Merz 2015 monovalent ion set for the SPC/E water model, HFE-optimised (14 ions), see ref 6
+Li+            3	 6.941000	 1.000000   A	  0.22415	 0.011468
+F-             9	 18.998400	-1.000000   A	 0.324109	 0.957249
+H3O+          11	 19.018000	 1.000000   A	 0.236445	 0.0289143
+NH4+          11	 18.032000	 1.000000   A	 0.310567	 0.705817
+Na+           11	 22.989700	 1.000000   A	 0.259073	 0.110416
+Cl-           17	 35.453000	-1.000000   A	 0.411239	  2.69312
+K+            19	 39.098300	 1.000000   A	 0.299877	 0.531094
+Cu+           29	 63.546000	 1.000000   A	  0.21239	 0.00403312
+Br-           35	 79.904000	-1.000000   A	 0.440104	  3.11439
+Rb+           37	 85.467800	 1.000000   A	 0.319298	  0.86463
+Ag+           47	 107.868200	 1.000000   A	 0.236979	 0.0299964
+I-            53	 126.904500	-1.000000   A	 0.493558	  3.63493
+Cs+           55	 132.905500	 1.000000   A	 0.347985	  1.45073
+Tl+           81	 204.383300	 1.000000   A	 0.297204	 0.491272
+#endif
+
+#ifdef TIP3P_HFE_LM
+; Li, Song & Merz 2015 monovalent ion set for the TIP3P water model, HFE-optimised (14 ions), see ref 6
+Li+            3	 6.941000	 1.000000   A	 0.225754	 0.0130568
+F-             9	 18.998400	-1.000000   A	 0.317694	 0.834509
+H3O+          11	 19.018100	 1.000000   A	 0.238226	 0.032647
+NH4+          11	 18.032000	 1.000000   A	 0.316982	 0.821252
+Na+           11	 22.989700	 1.000000   A	 0.262815	 0.132695
+Cl-           17	 35.453000	-1.000000   A	 0.401261	  2.52266
+K+            19	 39.098300	 1.000000   A	 0.306291	 0.633096
+Cu+           29	 63.546000	 1.000000   A	 0.213994	 0.00469863
+Br-           35	 79.904000	-1.000000   A	  0.43262	  3.01545
+Rb+           37	 85.467800	 1.000000   A	 0.326782	  1.01003
+Ag+           47	 107.868200	 1.000000   A	 0.238939	 0.0342432
+I-            53	 126.904500	-1.000000   A	 0.485362	   3.5739
+Cs+           55	 132.905500	 1.000000   A	 0.354221	  1.58379
+Tl+           81	 204.383300	 1.000000   A	  0.30344	 0.586672
+#endif
+
+#ifdef TIP4PEW_HFE_LM
+; Li, Song & Merz 2015 monovalent ion set for the TIP4P-Ew water model, HFE-optimised (14 ions), see ref 6
+Li+            3	 6.941000	 1.000000   A	 0.218448	 0.00705782
+F-             9	 18.998400	-1.000000   A	 0.328207	  1.03852
+H3O+          11	 19.081000	 1.000000   A	 0.230208	 0.0184478
+NH4+          11	 18.038700	 1.000000   A	 0.304153	 0.598118
+Na+           11	 22.989700	 1.000000   A	 0.255153	 0.0901244
+Cl-           17	 35.453000	-1.000000   A	 0.413555	  2.73089
+K+            19	 39.098300	 1.000000   A	 0.297382	 0.493876
+Cu+           29	 63.546000	 1.000000   A	 0.205976	 0.00211376
+Br-           35	 79.904000	-1.000000   A	 0.449013	  3.22311
+Rb+           37	 85.467800	 1.000000   A	 0.314844	 0.781979
+Ag+           47	 107.868200	 1.000000   A	 0.230565	 0.0189478
+I-            53	 126.904500	-1.000000   A	 0.502289	  3.69372
+Cs+           55	 132.905500	 1.000000   A	 0.344956	  1.38628
+Tl+           81	 204.383300	 1.000000   A	 0.293284	 0.435864
+#endif
+
+#ifdef OPC3_HFE_LM
+; Sengupta et al. 2021 monovalent ion set for the OPC3 water model, HFE-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.226288	 0.0136252
+F-             9	 18.998400	-1.000000   A	 0.323931	 0.953762
+Na+           11	 22.989700	 1.000000   A	 0.261746	 0.126029
+Cl-           17	 35.453000	-1.000000   A	 0.410882	  2.68724
+K+            19	 39.098300	 1.000000   A	  0.30344	 0.586672
+Cu+           29	 63.546000	 1.000000   A	 0.213994	 0.00469863
+Br-           35	 79.904000	-1.000000   A	 0.445628	  3.18294
+Rb+           37	 85.467800	 1.000000   A	 0.320724	 0.891731
+Ag+           47	 107.868200	 1.000000   A	  0.23787	 0.0318714
+I-            53	 126.904500	-1.000000   A	  0.49534	  3.64744
+Cs+           55	 132.905500	 1.000000   A	 0.350123	  1.49632
+Tl+           81	 204.383300	 1.000000   A	 0.299698	 0.528389
+#endif
+
+#ifdef OPC_HFE_LM
+; Sengupta et al. 2021 monovalent ion set for the OPC water model, HFE-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.221299	 0.00903987
+F-             9	 18.998400	-1.000000   A	 0.327851	  1.03138
+Na+           11	 22.989700	 1.000000   A	  0.26139	 0.123861
+Cl-           17	 35.453000	-1.000000   A	 0.420504	  2.84005
+K+            19	 39.098300	 1.000000   A	 0.303262	 0.583828
+Cu+           29	 63.546000	 1.000000   A	 0.210252	 0.00327243
+Br-           35	 79.904000	-1.000000   A	 0.445271	  3.17863
+Rb+           37	 85.467800	 1.000000   A	 0.323931	 0.953762
+Ag+           47	 107.868200	 1.000000   A	 0.234485	 0.0252106
+I-            53	 126.904500	-1.000000   A	 0.516721	  3.77817
+Cs+           55	 132.905500	 1.000000   A	 0.349232	  1.47732
+Tl+           81	 204.383300	 1.000000   A	 0.295778	 0.470706
+#endif
+
+#ifdef TIP3PFB_HFE_LM
+; Sengupta et al. 2021 monovalent ion set for the TIP3P-FB water model, HFE-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.224506	 0.0118064
+F-             9	 18.998400	-1.000000   A	 0.326782	  1.01003
+Na+           11	 22.989700	 1.000000   A	 0.259964	 0.115455
+Cl-           17	 35.453000	-1.000000   A	 0.409813	  2.66953
+K+            19	 39.098300	 1.000000   A	 0.303796	 0.592382
+Cu+           29	 63.546000	 1.000000   A	  0.21239	 0.00403312
+Br-           35	 79.904000	-1.000000   A	 0.442064	  3.13915
+Rb+           37	 85.467800	 1.000000   A	  0.32108	 0.898552
+Ag+           47	 107.868200	 1.000000   A	 0.236623	 0.0292714
+I-            53	 126.904500	-1.000000   A	 0.488569	  3.59849
+Cs+           55	 132.905500	 1.000000   A	 0.351014	  1.51534
+Tl+           81	 204.383300	 1.000000   A	 0.298629	 0.512308
+#endif
+
+#ifdef TIP4PFB_HFE_LM
+; Sengupta et al. 2021 monovalent ion set for the TIP4P-FB water model, HFE-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.220943	 0.00876912
+F-             9	 18.998400	-1.000000   A	 0.328742	  1.04926
+Na+           11	 22.989700	 1.000000   A	 0.258004	 0.104581
+Cl-           17	 35.453000	-1.000000   A	  0.41213	  2.70772
+K+            19	 39.098300	 1.000000   A	 0.300233	 0.536526
+Cu+           29	 63.546000	 1.000000   A	 0.208827	 0.00283692
+Br-           35	 79.904000	-1.000000   A	 0.437253	  3.07753
+Rb+           37	 85.467800	 1.000000   A	 0.319833	 0.874757
+Ag+           47	 107.868200	 1.000000   A	  0.23395	 0.0242697
+I-            53	 126.904500	-1.000000   A	 0.499616	  3.67637
+Cs+           55	 132.905500	 1.000000   A	 0.347451	  1.43934
+Tl+           81	 204.383300	 1.000000   A	 0.296847	 0.486086
+#endif
+
+#ifdef OPC3_IOD_LM
+; Sengupta et al. 2021 monovalent ion set for the OPC3 water model, IOD-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.235375	 0.0268437
+F-             9	 18.998400	-1.000000   A	 0.309498	 0.687302
+Na+           11	 22.989700	 1.000000   A	 0.261924	 0.127123
+Cl-           17	 35.453000	-1.000000   A	 0.384868	  2.21704
+K+            19	 39.098300	 1.000000   A	 0.310567	 0.705817
+Cu+           29	 63.546000	 1.000000   A	 0.216132	 0.00572995
+Br-           35	 79.904000	-1.000000   A	 0.412486	  2.71354
+Rb+           37	 85.467800	 1.000000   A	 0.322505	 0.926019
+Ag+           47	 107.868200	 1.000000   A	 0.267626	   0.1658
+I-            53	 126.904500	-1.000000   A	 0.461486	   3.3595
+Cs+           55	 132.905500	 1.000000   A	 0.354578	  1.59139
+Tl+           81	 204.383300	 1.000000   A	 0.332483	  1.12528
+#endif
+
+#ifdef OPC_IOD_LM
+; Sengupta et al. 2021 monovalent ion set for the OPC water model, IOD-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.232525	 0.0218984
+F-             9	 18.998400	-1.000000   A	 0.306469	 0.636053
+Na+           11	 22.989700	 1.000000   A	 0.256579	 0.0971555
+Cl-           17	 35.453000	-1.000000   A	 0.383086	  2.18209
+K+            19	 39.098300	 1.000000   A	 0.309676	 0.690372
+Cu+           29	 63.546000	 1.000000   A	 0.213994	 0.00469863
+Br-           35	 79.904000	-1.000000   A	 0.411952	  2.70481
+Rb+           37	 85.467800	 1.000000   A	  0.32108	 0.898552
+Ag+           47	 107.868200	 1.000000   A	  0.26531	 0.149216
+I-            53	 126.904500	-1.000000   A	 0.458456	  3.32801
+Cs+           55	 132.905500	 1.000000   A	 0.354578	  1.59139
+Tl+           81	 204.383300	 1.000000   A	 0.328742	  1.04926
+#endif
+
+#ifdef TIP3PFB_IOD_LM
+; Sengupta et al. 2021 monovalent ion set for the TIP3P-FB water model, IOD-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.235197	 0.0265105
+F-             9	 18.998400	-1.000000   A	 0.310567	 0.705817
+Na+           11	 22.989700	 1.000000   A	 0.260142	 0.116483
+Cl-           17	 35.453000	-1.000000   A	 0.385937	  2.23786
+K+            19	 39.098300	 1.000000   A	 0.310211	 0.699621
+Cu+           29	 63.546000	 1.000000   A	 0.21631	 0.00582396
+Br-           35	 79.904000	-1.000000   A	 0.415159	  2.75663
+Rb+           37	 85.467800	 1.000000   A	 0.322505	 0.926019
+Ag+           47	 107.868200	 1.000000   A	 0.268161	   0.1698
+I-            53	 126.904500	-1.000000   A	 0.462733	  3.37216
+Cs+           55	 132.905500	 1.000000   A	 0.354221	  1.58379
+Tl+           81	 204.383300	 1.000000   A	 0.332305	  1.12163
+#endif
+
+#ifdef TIP4PFB_IOD_LM
+; Sengupta et al. 2021 monovalent ion set for the TIP4P-FB water model, IOD-optimised (12 ions), see ref 8
+Li+            3	 6.941000	 1.000000   A	 0.232703	 0.0221842
+F-             9	 18.998400	-1.000000   A	 0.310033	 0.696532
+Na+           11	 22.989700	 1.000000   A	 0.258361	   0.1065
+Cl-           17	 35.453000	-1.000000   A	 0.385937	  2.23786
+K+            19	 39.098300	 1.000000   A	 0.309498	 0.687302
+Cu+           29	 63.546000	 1.000000   A	 0.215241	 0.00527904
+Br-           35	 79.904000	-1.000000   A	 0.416941	  2.78485
+Rb+           37	 85.467800	 1.000000   A	 0.322505	 0.926019
+Ag+           47	 107.868200	 1.000000   A	 0.263884	 0.139608
+I-            53	 126.904500	-1.000000   A	 0.461129	  3.35585
+Cs+           55	 132.905500	 1.000000   A	 0.356359	  1.62939
+Tl+           81	 204.383300	 1.000000   A	 0.331414	  1.10342
+#endif
+
+#ifdef OPC3_CM_LM
+; Li et al. 2020 divalent ion set for the OPC3 water model, compromise (CM) (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.173013	 2.59826e-05
+Mg2+          12	 24.305000	 2.000000   A	 0.242859	 0.044157
+Ca2+          20	 40.078000	 2.000000   A	 0.290077	 0.393257
+V2+           23	 50.941500	 2.000000   A	 0.243394	 0.0456665
+Cr2+          24	 51.996100	 2.000000   A	 0.240364	 0.0376205
+Mn2+          25	 54.938000	 2.000000   A	 0.251233	 0.0727321
+Fe2+          26	 55.845000	 2.000000   A	 0.241612	 0.0407862
+Co2+          27	 58.933200	 2.000000   A	 0.232703	 0.0221842
+Ni2+          28	 58.693400	 2.000000   A	 0.222903	 0.0103463
+Cu2+          29	 63.546000	 2.000000   A	 0.218805	 0.00728351
+Zn2+          30	 65.390000	 2.000000   A	  0.22807	 0.0156693
+Sr2+          38	 87.620000	 2.000000   A	 0.316804	 0.817951
+Pd2+          46	 106.420000	 2.000000   A	 0.233237	 0.0230595
+Ag2+          47	 107.868200	 2.000000   A	 0.238583	 0.0334375
+Cd2+          48	 112.411000	 2.000000   A	 0.251768	 0.0749418
+Sn2+          50	 118.710000	 2.000000   A	 0.292393	  0.42378
+Ba2+          56	 137.327000	 2.000000   A	 0.350301	  1.50013
+Sm2+          62	 150.360000	 2.000000   A	 0.317873	 0.837836
+Eu2+          63	 151.964000	 2.000000   A	 0.315735	 0.798251
+Yb2+          70	 173.040000	 2.000000   A	 0.289008	  0.37961
+Ra2+          75	 186.207000	 2.000000   A	 0.350301	  1.50013
+Pt2+          78	 195.078000	 2.000000   A	 0.226645	 0.0140154
+Hg2+          80	 200.590000	 2.000000   A	 0.251233	 0.0727321
+Pb2+          82	 207.200000	 2.000000   A	 0.307004	 0.644964	
+#endif
+
+#ifdef OPC_CM_LM
+; Li et al. 2020 divalent ion set for the OPC water model, compromise (CM) (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.164104	 5.35552e-06
+Mg2+          12	 24.305000	 2.000000   A	 0.236979	 0.0299964
+Ca2+          20	 40.078000	 2.000000   A	 0.286513	  0.34886
+V2+           23	 50.941500	 2.000000   A	 0.237692	 0.0314891
+Cr2+          24	 51.996100	 2.000000   A	 0.234485	 0.0252106
+Mn2+          25	 54.938000	 2.000000   A	 0.246066	 0.0538255
+Fe2+          26	 55.845000	 2.000000   A	 0.235732	 0.0275202
+Co2+          27	 58.933200	 2.000000   A	 0.225041	 0.0123295
+Ni2+          28	 58.693400	 2.000000   A	 0.213281	 0.00439211
+Cu2+          29	 63.546000	 2.000000   A	 0.209896	 0.0031585
+Zn2+          30	 65.390000	 2.000000   A	 0.217201	 0.00631378
+Sr2+          38	 87.620000	 2.000000   A	 0.314665	 0.778741
+Pd2+          46	 106.420000	 2.000000   A	  0.22611	 0.0134335
+Ag2+          47	 107.868200	 2.000000   A	 0.232525	 0.0218984
+Cd2+          48	 112.411000	 2.000000   A	 0.247492	 0.0586131
+Sn2+          50	 118.710000	 2.000000   A	 0.289542	 0.386399
+Ba2+          56	 137.327000	 2.000000   A	 0.349232	  1.47732
+Sm2+          62	 150.360000	 2.000000   A	 0.314665	 0.778741
+Eu2+          63	 151.964000	 2.000000   A	 0.312349	  0.73715
+Yb2+          70	 173.040000	 2.000000   A	 0.285444	 0.336152
+Ra2+          75	 186.207000	 2.000000   A	 0.349232	  1.47732
+Pt2+          78	 195.078000	 2.000000   A	 0.217201	 0.00631378
+Hg2+          80	 200.590000	 2.000000   A	 0.246066	 0.0538255
+Pb2+          82	 207.200000	 2.000000   A	 0.304153	 0.598118
+#endif
+
+#ifdef TIP3PFB_CM_LM
+; Li et al. 2020 divalent ion set for the TIP3P-FB water model, compromise (CM) (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.171587	 2.04598e-05
+Mg2+          12	 24.305000	 2.000000   A	 0.242859	 0.044157
+Ca2+          20	 40.078000	 2.000000   A	 0.291324	 0.409531
+V2+           23	 50.941500	 2.000000   A	 0.243394	 0.0456665
+Cr2+          24	 51.996100	 2.000000   A	 0.240364	 0.0376205
+Mn2+          25	 54.938000	 2.000000   A	 0.251412	 0.0734632
+Fe2+          26	 55.845000	 2.000000   A	 0.241612	 0.0407862
+Co2+          27	 58.933200	 2.000000   A	 0.232346	 0.0216157
+Ni2+          28	 58.693400	 2.000000   A	 0.223972	 0.0113018
+Cu2+          29	 63.546000	 2.000000   A	 0.217914	 0.00673038
+Zn2+          30	 65.390000	 2.000000   A	 0.227357	 0.0148234
+Sr2+          38	 87.620000	 2.000000   A	 0.318764	 0.854546
+Pd2+          46	 106.420000	 2.000000   A	 0.233059	 0.0227646
+Ag2+          47	 107.868200	 2.000000   A	 0.238583	 0.0334375
+Cd2+          48	 112.411000	 2.000000   A	 0.252124	 0.0764427
+Sn2+          50	 118.710000	 2.000000   A	 0.294353	 0.450616
+Ba2+          56	 137.327000	 2.000000   A	  0.35333	  1.56478
+Sm2+          62	 150.360000	 2.000000   A	 0.319833	 0.874757
+Eu2+          63	 151.964000	 2.000000   A	 0.317516	 0.831188
+Yb2+          70	 173.040000	 2.000000   A	 0.290255	 0.395559
+Ra2+          75	 186.207000	 2.000000   A	  0.35333	  1.56478
+Pt2+          78	 195.078000	 2.000000   A	 0.227001	 0.0144147
+Hg2+          80	 200.590000	 2.000000   A	 0.251412	 0.0734632
+Pb2+          82	 207.200000	 2.000000   A	 0.308251	  0.66598
+#endif
+
+#ifdef TIP4PFB_CM_LM
+; Li et al. 2020 divalent ion set for the TIP4P-FB water model, compromise (CM) (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.164638	 5.94128e-06
+Mg2+          12	 24.305000	 2.000000   A	 0.239117	 0.0346517
+Ca2+          20	 40.078000	 2.000000   A	 0.289898	 0.390963
+V2+           23	 50.941500	 2.000000   A	 0.239652	 0.0359005
+Cr2+          24	 51.996100	 2.000000   A	 0.236445	 0.0289143
+Mn2+          25	 54.938000	 2.000000   A	 0.248383	 0.0617668
+Fe2+          26	 55.845000	 2.000000   A	 0.237692	 0.0314891
+Co2+          27	 58.933200	 2.000000   A	 0.227536	 0.0150312
+Ni2+          28	 58.693400	 2.000000   A	 0.216132	 0.00572995
+Cu2+          29	 63.546000	 2.000000   A	  0.21043	 0.0037643
+Zn2+          30	 65.390000	 2.000000   A	 0.219874	 0.00799738
+Sr2+          38	 87.620000	 2.000000   A	 0.318764	 0.854546
+Pd2+          46	 106.420000	 2.000000   A	 0.228426	 0.0161069
+Ag2+          47	 107.868200	 2.000000   A	 0.234485	 0.0252106
+Cd2+          48	 112.411000	 2.000000   A	 0.249095	 0.0643816
+Sn2+          50	 118.710000	 2.000000   A	 0.293106	 0.433432
+Ba2+          56	 137.327000	 2.000000   A	 0.354934	  1.59899
+Sm2+          62	 150.360000	 2.000000   A	 0.320011	 0.878143
+Eu2+          63	 151.964000	 2.000000   A	 0.317516	 0.831188
+Yb2+          70	 173.040000	 2.000000   A	 0.288829	 0.377363
+Ra2+          75	 186.207000	 2.000000   A	 0.354934	  1.59899
+Pt2+          78	 195.078000	 2.000000   A	 0.218983	 0.00739861
+Hg2+          80	 200.590000	 2.000000   A	 0.248383	 0.0617668
+Pb2+          82	 207.200000	 2.000000   A	 0.307895	 0.659944
+#endif
+
+#ifdef OPC3_HFE_LM
+; Li et al. 2020 divalent ion set for the OPC3 water model, HFE-optimised (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.166598	 8.53536e-06
+Mg2+          12	 24.305000	 2.000000   A	 0.232703	 0.0221842
+Ca2+          20	 40.078000	 2.000000   A	 0.274575	 0.223043
+V2+           23	 50.941500	 2.000000   A	 0.233415	 0.0233573
+Cr2+          24	 51.996100	 2.000000   A	  0.23003	 0.0182019
+Mn2+          25	 54.938000	 2.000000   A	 0.241077	 0.0394048
+Fe2+          26	 55.845000	 2.000000   A	 0.231634	 0.0205142
+Co2+          27	 58.933200	 2.000000   A	 0.219696	 0.0078745
+Ni2+          28	 58.693400	 2.000000   A	 0.210074	 0.00321503
+Cu2+          29	 63.546000	 2.000000   A	 0.207758	 0.002544
+Zn2+          30	 65.390000	 2.000000   A	 0.213816	 0.00462035
+Sr2+          38	 87.620000	 2.000000   A	 0.298807	  0.51497
+Pd2+          46	 106.420000	 2.000000   A	 0.220408	 0.00837582
+Ag2+          47	 107.868200	 2.000000   A	 0.228783	 0.0165545
+Cd2+          48	 112.411000	 2.000000   A	  0.24179	 0.041255
+Sn2+          50	 118.710000	 2.000000   A	 0.277248	 0.248151
+Ba2+          56	 137.327000	 2.000000   A	 0.327851	  1.03138
+Sm2+          62	 150.360000	 2.000000   A	 0.299877	 0.531094
+Eu2+          63	 151.964000	 2.000000   A	 0.297738	 0.499106
+Yb2+          70	 173.040000	 2.000000   A	 0.273328	 0.211921
+Ra2+          75	 186.207000	 2.000000   A	 0.327851	  1.03138
+Pt2+          78	 195.078000	 2.000000   A	 0.212925	 0.00424538
+Hg2+          80	 200.590000	 2.000000   A	 0.241077	 0.0394048
+Pb2+          82	 207.200000	 2.000000   A	 0.289364	 0.384128
+#endif
+
+#ifdef OPC_HFE_LM
+; Li et al. 2020 divalent ion set for the OPC water model, HFE-optimised (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.151809	 4.184e-07
+Mg2+          12	 24.305000	 2.000000   A	 0.220765	 0.00863636
+Ca2+          20	 40.078000	 2.000000   A	 0.266022	  0.15419
+V2+           23	 50.941500	 2.000000   A	 0.221656	 0.00931756
+Cr2+          24	 51.996100	 2.000000   A	 0.217201	 0.00631378
+Mn2+          25	 54.938000	 2.000000   A	 0.232525	 0.0218984
+Fe2+          26	 55.845000	 2.000000   A	 0.218983	 0.00739861
+Co2+          27	 58.933200	 2.000000   A	 0.208827	 0.00283692
+Ni2+          28	 58.693400	 2.000000   A	 0.201699	 0.00132938
+Cu2+          29	 63.546000	 2.000000   A	 0.198492	 0.00092161
+Zn2+          30	 65.390000	 2.000000   A	 0.205085	 0.00192343
+Sr2+          38	 87.620000	 2.000000   A	 0.290611	 0.400185
+Pd2+          46	 106.420000	 2.000000   A	 0.209361	 0.00299399
+Ag2+          47	 107.868200	 2.000000   A	 0.214707	 0.00502323
+Cd2+          48	 112.411000	 2.000000   A	 0.233237	 0.0230595
+Sn2+          50	 118.710000	 2.000000   A	 0.268339	 0.171149
+Ba2+          56	 137.327000	 2.000000   A	 0.320189	 0.881533
+Sm2+          62	 150.360000	 2.000000   A	  0.29168	  0.41425
+Eu2+          63	 151.964000	 2.000000   A	 0.289542	 0.386399
+Yb2+          70	 173.040000	 2.000000   A	  0.26531	 0.149216
+Ra2+          75	 186.207000	 2.000000   A	 0.320189	 0.881533
+Pt2+          78	 195.078000	 2.000000   A	 0.203838	 0.00168209
+Hg2+          80	 200.590000	 2.000000   A	 0.232525	 0.0218984
+Pb2+          82	 207.200000	 2.000000   A	 0.280989	 0.286257
+#endif
+
+#ifdef TIP3PFB_HFE_LM
+; Li et al. 2020 divalent ion set for the TIP3P-FB water model, HFE-optimised (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.162856	 4.22584e-06
+Mg2+          12	 24.305000	 2.000000   A	 0.229496	 0.0174802
+Ca2+          20	 40.078000	 2.000000   A	 0.271724	 0.198172
+V2+           23	 50.941500	 2.000000   A	 0.230208	 0.0184478
+Cr2+          24	 51.996100	 2.000000   A	 0.227714	 0.0152415
+Mn2+          25	 54.938000	 2.000000   A	 0.238583	 0.0334375
+Fe2+          26	 55.845000	 2.000000   A	 0.228783	 0.0165545
+Co2+          27	 58.933200	 2.000000   A	 0.217379	 0.00641583
+Ni2+          28	 58.693400	 2.000000   A	 0.208292	 0.00268701
+Cu2+          29	 63.546000	 2.000000   A	 0.205441	 0.00199769
+Zn2+          30	 65.390000	 2.000000   A	 0.210074	 0.00321503
+Sr2+          38	 87.620000	 2.000000   A	   0.2956	 0.468168
+Pd2+          46	 106.420000	 2.000000   A	 0.217379	 0.00641583
+Ag2+          47	 107.868200	 2.000000   A	  0.22611	 0.0134335
+Cd2+          48	 112.411000	 2.000000   A	 0.239117	 0.0346517
+Sn2+          50	 118.710000	 2.000000   A	 0.274397	 0.221431
+Ba2+          56	 137.327000	 2.000000   A	    0.325	 0.974744
+Sm2+          62	 150.360000	 2.000000   A	 0.296491	  0.48093
+Eu2+          63	 151.964000	 2.000000   A	 0.294531	 0.453101
+Yb2+          70	 173.040000	 2.000000   A	 0.270833	 0.190799
+Ra2+          75	 186.207000	 2.000000   A	    0.325	 0.974744
+Pt2+          78	 195.078000	 2.000000   A	 0.209539	 0.003048
+Hg2+          80	 200.590000	 2.000000   A	 0.238583	 0.0334375
+Pb2+          82	 207.200000	 2.000000   A	 0.286335	 0.346723
+#endif
+
+#ifdef TIP4PFB_HFE_LM
+; Li et al. 2020 divalent ion set for the TIP4P-FB water model, HFE-optimised (24 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.149671	 2.5104e-07
+Mg2+          12	 24.305000	 2.000000   A	 0.220587	 0.00850524
+Ca2+          20	 40.078000	 2.000000   A	 0.265131	 0.147991
+V2+           23	 50.941500	 2.000000   A	 0.223616	 0.0109755
+Cr2+          24	 51.996100	 2.000000   A	 0.217023	 0.00621311
+Mn2+          25	 54.938000	 2.000000   A	 0.231634	 0.0205142
+Fe2+          26	 55.845000	 2.000000   A	 0.218092	 0.00683808
+Co2+          27	 58.933200	 2.000000   A	 0.207401	 0.00245237
+Ni2+          28	 58.693400	 2.000000   A	 0.200809	 0.00120273
+Cu2+          29	 63.546000	 2.000000   A	 0.197245	 0.000795713
+Zn2+          30	 65.390000	 2.000000   A	 0.203481	 0.00161816
+Sr2+          38	 87.620000	 2.000000   A	  0.28972	 0.388677
+Pd2+          46	 106.420000	 2.000000   A	 0.208114	 0.0026386
+Ag2+          47	 107.868200	 2.000000   A	 0.213816	 0.00462035
+Cd2+          48	 112.411000	 2.000000   A	  0.23199	 0.0210591
+Sn2+          50	 118.710000	 2.000000   A	  0.26727	 0.163169
+Ba2+          56	 137.327000	 2.000000   A	 0.319833	 0.874757
+Sm2+          62	 150.360000	 2.000000   A	 0.290789	  0.40251
+Eu2+          63	 151.964000	 2.000000   A	 0.288651	 0.375124
+Yb2+          70	 173.040000	 2.000000   A	 0.264597	 0.144356
+Ra2+          75	 186.207000	 2.000000   A	 0.319833	 0.874757
+Pt2+          78	 195.078000	 2.000000   A	 0.202947	 0.00152628
+Hg2+          80	 200.590000	 2.000000   A	 0.231634	 0.0205142
+Pb2+          82	 207.200000	 2.000000   A	 0.280455	 0.280601
+#endif
+
+#ifdef OPC3_IOD_LM
+; Li et al. 2020 divalent ion set for the OPC3 water model, IOD-optimised (16 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.207045	 0.00236358
+Mg2+          12	 24.305000	 2.000000   A	 0.249452	 0.0657201
+Ca2+          20	 40.078000	 2.000000   A	 0.288117	 0.368452
+V2+           23	 50.941500	 2.000000   A	 0.263706	 0.138439
+Cr2+          24	 51.996100	 2.000000   A	 0.247848	 0.0598594
+Mn2+          25	 54.938000	 2.000000   A	 0.260499	 0.118558
+Fe2+          26	 55.845000	 2.000000   A	 0.251768	 0.0598594
+Co2+          27	 58.933200	 2.000000   A	 0.250521	 0.0698628
+Ni2+          28	 58.693400	 2.000000   A	 0.244641	 0.049345
+Cu2+          29	 63.546000	 2.000000   A	 0.251768	 0.0749418
+Zn2+          30	 65.390000	 2.000000   A	 0.249452	 0.0657201
+Sr2+          38	 87.620000	 2.000000   A	 0.313953	 0.765844
+Cd2+          48	 112.411000	 2.000000   A	 0.271902	 0.199669
+Sn2+          50	 118.710000	 2.000000   A	 0.311102	 0.715155
+Ba2+          56	 137.327000	 2.000000   A	 0.341749	  1.31835
+Hg2+          80	 200.590000	 2.000000   A	 0.282237	  0.29973
+#endif
+
+#ifdef OPC_IOD_LM
+; Li et al. 2020 divalent ion set for the OPC water model, IOD-optimised (16 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.202412	 0.00143896
+Mg2+          12	 24.305000	 2.000000   A	 0.244641	 0.049345
+Ca2+          20	 40.078000	 2.000000   A	 0.283306	 0.311587
+V2+           23	 50.941500	 2.000000   A	  0.25943	 0.112412
+Cr2+          24	 51.996100	 2.000000   A	 0.243037	 0.0446558
+Mn2+          25	 54.938000	 2.000000   A	 0.257292	 0.100818
+Fe2+          26	 55.845000	 2.000000   A	 0.247848	 0.0598594
+Co2+          27	 58.933200	 2.000000   A	 0.246244	 0.0544069
+Ni2+          28	 58.693400	 2.000000   A	 0.239652	 0.0359005
+Cu2+          29	 63.546000	 2.000000   A	 0.247848	 0.0598594
+Zn2+          30	 65.390000	 2.000000   A	 0.244641	 0.049345
+Sr2+          38	 87.620000	 2.000000   A	 0.308429	 0.669007
+Cd2+          48	 112.411000	 2.000000   A	 0.268339	 0.171149
+Sn2+          50	 118.710000	 2.000000   A	 0.305578	 0.621331
+Ba2+          56	 137.327000	 2.000000   A	 0.335512	  1.18774
+Hg2+          80	 200.590000	 2.000000   A	 0.278851	 0.264058
+#endif
+
+#ifdef TIP3PFB_IOD_LM
+; Li et al. 2020 divalent ion set for the TIP3P-FB water model, IOD-optimised (16 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.207223	 0.00240764
+Mg2+          12	 24.305000	 2.000000   A	 0.249452	 0.0657201
+Ca2+          20	 40.078000	 2.000000   A	 0.288117	 0.368452
+V2+           23	 50.941500	 2.000000   A	 0.263706	 0.138439
+Cr2+          24	 51.996100	 2.000000   A	 0.247848	 0.0598594
+Mn2+          25	 54.938000	 2.000000   A	 0.260499	 0.118558
+Fe2+          26	 55.845000	 2.000000   A	 0.251768	 0.0749418
+Co2+          27	 58.933200	 2.000000   A	 0.250521	 0.0698628
+Ni2+          28	 58.693400	 2.000000   A	 0.244641	 0.049345
+Cu2+          29	 63.546000	 2.000000   A	 0.251768	 0.0749418
+Zn2+          30	 65.390000	 2.000000   A	 0.249452	 0.0657201
+Sr2+          38	 87.620000	 2.000000   A	 0.313953	 0.765844
+Cd2+          48	 112.411000	 2.000000   A	 0.270833	 0.190799
+Sn2+          50	 118.710000	 2.000000   A	 0.311102	 0.715155
+Ba2+          56	 137.327000	 2.000000   A	 0.341749	  1.31835
+Hg2+          80	 200.590000	 2.000000   A	 0.282237	  0.29973
+#endif
+
+#ifdef TIP4PFB_IOD_LM
+; Li et al. 2020 divalent ion set for the TIP4P-FB water model, IOD-optimised (16 ions), see ref 9
+Be2+           4	 9.012200	 2.000000   A	 0.204907	 0.00188719
+Mg2+          12	 24.305000	 2.000000   A	 0.246423	 0.0549931
+Ca2+          20	 40.078000	 2.000000   A	 0.285088	 0.331979
+V2+           23	 50.941500	 2.000000   A	 0.261033	  0.12172
+Cr2+          24	 51.996100	 2.000000   A	 0.244997	 0.050437
+Mn2+          25	 54.938000	 2.000000   A	 0.259964	 0.115455
+Fe2+          26	 55.845000	 2.000000   A	 0.249452	 0.0657201
+Co2+          27	 58.933200	 2.000000   A	 0.248026	 0.0604901
+Ni2+          28	 58.693400	 2.000000   A	 0.241968	 0.041728
+Cu2+          29	 63.546000	 2.000000   A	 0.249452	 0.0657201
+Zn2+          30	 65.390000	 2.000000   A	 0.246423	 0.0549931
+Sr2+          38	 87.620000	 2.000000   A	 0.311102	 0.715155
+Cd2+          48	 112.411000	 2.000000   A	  0.26923	    0.178
+Sn2+          50	 118.710000	 2.000000   A	 0.308429	 0.669007
+Ba2+          56	 137.327000	 2.000000   A	 0.338542	  1.25089
+Hg2+          80	 200.590000	 2.000000   A	 0.280099	 0.276869
+#endif
+
+#ifdef SPCE_HFE_LM
+; Li, Song & Merz 2015 trivalent and tetravalent ion set for the SPC/E water model, HFE-optimised (24 ions), see ref 7
+Al3+          13	 26.981500	 3.000000   A	 0.176576	 4.63169e-05
+Cr3+          24	 51.996100	 3.000000   A	 0.213103	 0.00431822
+Fe3+          26	 55.845000	 3.000000   A	 0.194394	 0.00056325
+Y3+           39	 88.905900	 3.000000   A	 0.259964	 0.115455
+Zr4+          40	 91.224000	 4.000000   A	 0.204729	 0.00185159
+In3+          49	 114.818000	 3.000000   A	 0.215419	 0.00536669
+La3+          57	 138.905500	 3.000000   A	 0.290255	 0.395559
+Ce3+          58	 140.116000	 3.000000   A	 0.284553	 0.325779
+Ce4+          58	 140.116000	 4.000000   A	 0.242324	 0.0426867
+Pr3+          59	 140.907700	 3.000000   A	  0.27992	 0.275016
+Nd3+          60	 144.240000	 3.000000   A	 0.276357	 0.239587
+Sm3+          62	 150.360000	 3.000000   A	 0.271902	 0.199669
+Eu3+          63	 151.964000	 3.000000   A	 0.268517	 0.172504
+Gd3+          64	 157.250000	 3.000000   A	 0.267091	 0.161865
+Tb3+          65	 158.925300	 3.000000   A	 0.264597	 0.144356
+Dy3+          66	 162.500000	 3.000000   A	 0.262281	 0.129331
+Er3+          68	 167.259000	 3.000000   A	 0.255866	 0.0935913
+Tm3+          69	 168.934200	 3.000000   A	 0.254084	 0.0851034
+Lu3+          71	 174.967000	 3.000000   A	 0.254084	 0.0851034
+Hf4+          72	 178.490000	 4.000000   A	 0.195641	 0.00065626
+Tl3+          81	 204.383300	 3.000000   A	 0.216132	 0.00572995
+Th4+          90	 232.038100	 4.000000   A	 0.261568	 0.124941
+U4+           92	 238.028900	 4.000000   A	 0.217023	 0.00621311
+Pu4+          94	 244.000000	 4.000000   A	 0.228248	 0.0158869
+#endif
+
+#ifdef TIP3P_HFE_LM
+; Li, Song & Merz 2015 trivalent and tetravalent ion set for the TIP3P water model, HFE-optimised (24 ions), see ref 7
+Al3+          13	 26.981500	 3.000000   A	 0.174794	 3.48109e-05
+Cr3+          24	 51.996100	 3.000000   A	 0.211678	 0.0037643
+Fe3+          26	 55.845000	 3.000000   A	  0.19279	 0.000460951
+Y3+           39	 88.905900	 3.000000   A	 0.259073	 0.110416
+Zr4+          40	 91.224000	 4.000000   A	 0.202947	 0.00152628
+In3+          49	 114.818000	 3.000000   A	 0.214172	 0.00477804
+La3+          57	 138.905500	 3.000000   A	 0.290077	 0.393257
+Ce3+          58	 140.116000	 3.000000   A	 0.284197	 0.321684
+Ce4+          58	 140.116000	 4.000000   A	 0.241077	 0.0394048
+Pr3+          59	 140.907700	 3.000000   A	 0.279386	 0.269501
+Nd3+          60	 144.240000	 3.000000   A	 0.275822	 0.234542
+Sm3+          62	 150.360000	 3.000000   A	  0.27119	 0.193726
+Eu3+          63	 151.964000	 3.000000   A	 0.267804	 0.167126
+Gd3+          64	 157.250000	 3.000000   A	 0.266379	 0.156719
+Tb3+          65	 158.925300	 3.000000   A	 0.263884	 0.139608
+Dy3+          66	 162.500000	 3.000000   A	 0.261568	 0.124941
+Er3+          68	 167.259000	 3.000000   A	 0.254975	 0.0892727
+Tm3+          69	 168.934200	 3.000000   A	 0.253193	 0.0810806
+Lu3+          71	 174.967000	 3.000000   A	 0.253193	 0.0810806
+Hf4+          72	 178.490000	 4.000000   A	 0.193681	 0.000515511
+Tl3+          81	 204.383300	 3.000000   A	 0.214885	 0.00510728
+Th4+          90	 232.038100	 4.000000   A	 0.260677	 0.119605
+U4+           92	 238.028900	 4.000000   A	 0.215419	 0.00536669
+Pu4+          94	 244.000000	 4.000000   A	 0.226823	 0.0142139
+#endif
+
+#ifdef TIP4PEW_HFE_LM
+; Li, Song & Merz 2015 trivalent and tetravalent ion set for the TIP4P-Ew water model, HFE-optimised (24 ions), see ref 7
+Al3+          13	 26.981500	 3.000000   A	 0.156085	 1.08784e-06
+Cr3+          24	 51.996100	 3.000000   A	 0.195285	 0.000628395
+Fe3+          26	 55.845000	 3.000000   A	 0.175329	 3.79489e-05
+Y3+           39	 88.905900	 3.000000   A	 0.244997	 0.050437
+Zr4+          40	 91.224000	 4.000000   A	 0.183703	 0.000135562
+In3+          49	 114.818000	 3.000000   A	  0.19778	 0.000847678
+La3+          57	 138.905500	 3.000000   A	 0.276713	 0.242989
+Ce3+          58	 140.116000	 3.000000   A	 0.270655	 0.189347
+Ce4+          58	 140.116000	 4.000000   A	 0.223972	 0.0113018
+Pr3+          59	 140.907700	 3.000000   A	 0.265844	 0.152936
+Nd3+          60	 144.240000	 3.000000   A	 0.262102	 0.128224
+Sm3+          62	 150.360000	 3.000000   A	  0.25747	  0.10175
+Eu3+          63	 151.964000	 3.000000   A	 0.253906	 0.0842872
+Gd3+          64	 157.250000	 3.000000   A	 0.252481	 0.077966
+Tb3+          65	 158.925300	 3.000000   A	 0.249986	 0.0677675
+Dy3+          66	 162.500000	 3.000000   A	 0.247492	 0.0586131
+Er3+          68	 167.259000	 3.000000   A	 0.240543	 0.0380605
+Tm3+          69	 168.934200	 3.000000   A	 0.238761	 0.0338384
+Lu3+          71	 174.967000	 3.000000   A	 0.238761	 0.0338384
+Hf4+          72	 178.490000	 4.000000   A	 0.174082	 3.10034e-05
+Tl3+          81	 204.383300	 3.000000   A	 0.198492	 0.00092161
+Th4+          90	 232.038100	 4.000000   A	 0.244106	 0.0477414
+U4+           92	 238.028900	 4.000000   A	 0.196889	 0.000762618
+Pu4+          94	 244.000000	 4.000000   A	 0.208827	 0.00283692
+#endif
+
+#ifdef SPCE_IOD_LM
+; Li, Song & Merz 2015 trivalent and tetravalent ion set for the SPC/E water model, IOD-optimised (24 ions), see ref 7
+Al3+          13	 26.981500	 3.000000   A	 0.230921	 0.0194587
+Cr3+          24	 51.996100	 3.000000   A	 0.239295	 0.0350641
+Fe3+          26	 55.845000	 3.000000   A	 0.246957	 0.0567809
+Y3+           39	 88.905900	 3.000000   A	 0.285444	 0.336152
+Zr4+          40	 91.224000	 4.000000   A	 0.271011	 0.192259
+In3+          49	 114.818000	 3.000000   A	 0.260321	 0.117517
+La3+          57	 138.905500	 3.000000   A	 0.306113	 0.630145
+Ce3+          58	 140.116000	 3.000000   A	 0.310211	 0.699621
+Ce4+          58	 140.116000	 4.000000   A	 0.300946	 0.547474
+Pr3+          59	 140.907700	 3.000000   A	 0.308964	 0.678127
+Nd3+          60	 144.240000	 3.000000   A	  0.29952	 0.525691
+Sm3+          62	 150.360000	 3.000000   A	   0.2956	 0.468168
+Eu3+          63	 151.964000	 3.000000   A	 0.296847	 0.486086
+Gd3+          64	 157.250000	 3.000000   A	 0.289186	 0.381865
+Tb3+          65	 158.925300	 3.000000   A	 0.290433	 0.397868
+Dy3+          66	 162.500000	 3.000000   A	 0.286691	 0.351006
+Er3+          68	 167.259000	 3.000000   A	 0.285444	 0.336152
+Tm3+          69	 168.934200	 3.000000   A	 0.285444	 0.336152
+Lu3+          71	 174.967000	 3.000000   A	 0.282949	 0.307603
+Hf4+          72	 178.490000	 4.000000   A	 0.267448	 0.164481
+Tl3+          81	 204.383300	 3.000000   A	 0.269586	 0.180792
+Th4+          90	 232.038100	 4.000000   A	 0.305222	 0.615488
+U4+           92	 238.028900	 4.000000   A	 0.300946	 0.547474
+Pu4+          94	 244.000000	 4.000000   A	 0.296847	 0.486086
+#endif
+
+#ifdef TIP3P_IOD_LM
+; Li, Song & Merz 2015 trivalent and tetravalent ion set for the TIP3P water model, IOD-optimised (24 ions), see ref 7
+Al3+          13	 26.981500	 3.000000   A	 0.231099	 0.0197183
+Cr3+          24	 51.996100	 3.000000   A	 0.239474	 0.0354803
+Fe3+          26	 55.845000	 3.000000   A	 0.246957	 0.0567809
+Y3+           39	 88.905900	 3.000000   A	 0.285444	 0.336152
+Zr4+          40	 91.224000	 4.000000   A	 0.270655	 0.189347
+In3+          49	 114.818000	 3.000000   A	 0.260321	 0.117517
+La3+          57	 138.905500	 3.000000   A	 0.306113	 0.630145
+Ce3+          58	 140.116000	 3.000000   A	 0.310211	 0.699621
+Ce4+          58	 140.116000	 4.000000   A	 0.300055	 0.533806
+Pr3+          59	 140.907700	 3.000000   A	 0.308785	 0.67508
+Nd3+          60	 144.240000	 3.000000   A	  0.29952	 0.525691
+Sm3+          62	 150.360000	 3.000000   A	   0.2956	 0.468168
+Eu3+          63	 151.964000	 3.000000   A	 0.296847	 0.486086
+Gd3+          64	 157.250000	 3.000000   A	 0.289186	 0.381865
+Tb3+          65	 158.925300	 3.000000   A	 0.290433	 0.397868
+Dy3+          66	 162.500000	 3.000000   A	 0.286691	 0.351006
+Er3+          68	 167.259000	 3.000000   A	 0.285444	 0.336152
+Tm3+          69	 168.934200	 3.000000   A	 0.285444	 0.336152
+Lu3+          71	 174.967000	 3.000000   A	 0.282949	 0.307603
+Hf4+          72	 178.490000	 4.000000   A	 0.267091	 0.161865
+Tl3+          81	 204.383300	 3.000000   A	 0.269586	 0.180792
+Th4+          90	 232.038100	 4.000000   A	 0.304331	 0.600996
+U4+           92	 238.028900	 4.000000   A	 0.300055	 0.533806
+Pu4+          94	 244.000000	 4.000000   A	 0.296135	 0.475803
+#endif
+
+#ifdef TIP4PEW_IOD_LM
+; Li, Song & Merz 2015 trivalent and tetravalent ion set for the TIP4P-Ew water model, IOD-optimised (24 ions), see ref 7
+Al3+          13	 26.981500	 3.000000   A	 0.228961	 0.0167821
+Cr3+          24	 51.996100	 3.000000   A	 0.237514	 0.0311105
+Fe3+          26	 55.845000	 3.000000   A	 0.244997	 0.050437
+Y3+           39	 88.905900	 3.000000   A	 0.283306	 0.311587
+Zr4+          40	 91.224000	 4.000000   A	 0.267804	 0.167126
+In3+          49	 114.818000	 3.000000   A	 0.258361	   0.1065
+La3+          57	 138.905500	 3.000000   A	 0.304687	 0.598312
+Ce3+          58	 140.116000	 3.000000   A	 0.308073	 0.662958
+Ce4+          58	 140.116000	 4.000000   A	 0.297026	 0.488675
+Pr3+          59	 140.907700	 3.000000   A	 0.306826	 0.641987
+Nd3+          60	 144.240000	 3.000000   A	 0.297382	 0.493876
+Sm3+          62	 150.360000	 3.000000   A	 0.293462	 0.438304
+Eu3+          63	 151.964000	 3.000000   A	 0.294887	 0.458093
+Gd3+          64	 157.250000	 3.000000   A	 0.287226	 0.357489
+Tb3+          65	 158.925300	 3.000000   A	 0.288473	 0.372892
+Dy3+          66	 162.500000	 3.000000   A	 0.284553	 0.325779
+Er3+          68	 167.259000	 3.000000   A	 0.283306	 0.311587
+Tm3+          69	 168.934200	 3.000000   A	 0.283306	 0.311587
+Lu3+          71	 174.967000	 3.000000   A	 0.280989	 0.286257
+Hf4+          72	 178.490000	 4.000000   A	 0.264241	 0.141968
+Tl3+          81	 204.383300	 3.000000   A	 0.267626	   0.1658
+Th4+          90	 232.038100	 4.000000   A	 0.301124	 0.550229
+U4+           92	 238.028900	 4.000000   A	 0.297026	 0.488675
+Pu4+          94	 244.000000	 4.000000   A	 0.293106	 0.433432
+#endif
+
+#ifdef OPC3_HFE_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the OPC3 water model, HFE-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.179071    6.8241e-05
+Cr3+          24	 51.996100	 3.000000   A	 0.216845    0.00611383
+Fe3+          26	 55.845000	 3.000000   A	 0.199739    0.00106479
+Y3+           39	 88.905900	 3.000000   A	 0.259786    0.114435
+Zr4+          40	 91.224000	 4.000000   A	 0.208292    0.00268701
+In3+          49	 114.818000	 3.000000   A	 0.221121    0.00890364
+La3+          57	 138.905500	 3.000000   A	 0.293284    0.435864
+Ce3+          58	 140.116000	 3.000000   A	 0.286869    0.353159
+Ce4+          58	 140.116000	 4.000000   A	 0.244106    0.0477414
+Pr3+          59	 140.907700	 3.000000   A	 0.282059    0.297782
+Nd3+          60	 144.240000	 3.000000   A	 0.278317    0.258685
+Sm3+          62	 150.360000	 3.000000   A	 0.272793    0.207269
+Eu3+          63	 151.964000	 3.000000   A	 0.269764    0.182199
+Gd3+          64	 157.250000	 3.000000   A	 0.268161    0.1698
+Tb3+          65	 158.925300	 3.000000   A	 0.263528    0.137276
+Dy3+          66	 162.500000	 3.000000   A	 0.26139     0.123861
+Er3+          68	 167.259000	 3.000000   A	 0.255332    0.0909821
+Tm3+          69	 168.934200	 3.000000   A	 0.25355     0.0826724
+Lu3+          71	 174.967000	 3.000000   A	 0.25355     0.0826724
+Hf4+          72	 178.490000	 4.000000   A	 0.202056    0.00138323
+Tl3+          81	 204.383300	 3.000000   A	 0.223259    0.010657
+Th4+          90	 232.038100	 4.000000   A	 0.262815    0.132695
+U4+           92	 238.028900	 4.000000   A	 0.22219     0.00974746
+Pu4+          94	 244.000000	 4.000000   A	 0.233059    0.0227646
+#endif
+
+#ifdef OPC_HFE_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the OPC water model, HFE-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.164638	  5.94128e-06
+Cr3+          24	 51.996100	 3.000000   A	 0.204016	   0.00171485
+Fe3+          26	 55.845000	 3.000000   A	 0.182278	  0.000110248
+Y3+           39	 88.905900	 3.000000   A	 0.249273	    0.0650482
+Zr4+          40	 91.224000	 4.000000   A	 0.194572	   0.00057576
+In3+          49	 114.818000	 3.000000   A	 0.206154	   0.00215376
+La3+          57	 138.905500	 3.000000   A	 0.280989	     0.286257
+Ce3+          58	 140.116000	 3.000000   A	 0.274397	     0.221431
+Ce4+          58	 140.116000	 4.000000   A	 0.232703	    0.0221842
+Pr3+          59	 140.907700	 3.000000   A	 0.268873	     0.175237
+Nd3+          60	 144.240000	 3.000000   A	  0.26531	     0.149216
+Sm3+          62	 150.360000	 3.000000   A	 0.259786	     0.114435
+Eu3+          63	 151.964000	 3.000000   A	 0.256222	    0.0953611
+Gd3+          64	 157.250000	 3.000000   A	 0.254975	    0.0892727
+Tb3+          65	 158.925300	 3.000000   A	 0.253015	    0.0802934
+Dy3+          66	 162.500000	 3.000000   A	 0.251055	    0.0720066
+Er3+          68	 167.259000	 3.000000   A	 0.245888	    0.0532489
+Tm3+          69	 168.934200	 3.000000   A	 0.244463	    0.0488059
+Lu3+          71	 174.967000	 3.000000   A	 0.244463	    0.0488059
+Hf4+          72	 178.490000	 4.000000   A	 0.182278	  0.000110248
+Tl3+          81	 204.383300	 3.000000   A	 0.206154	   0.00215376
+Th4+          90	 232.038100	 4.000000   A	 0.248204	    0.0611259
+U4+           92	 238.028900	 4.000000   A	 0.205798	   0.00207447
+Pu4+          94	 244.000000	 4.000000   A	 0.217557	   0.00651926
+#endif
+
+#ifdef TIP3PFB_HFE_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the TIP3P-FB water model, HFE-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.173191	  2.67358e-05
+Cr3+          24	 51.996100	 3.000000   A	 0.213281	   0.00439211
+Fe3+          26	 55.845000	 3.000000   A	  0.19582	  0.000670612
+Y3+           39	 88.905900	 3.000000   A	 0.254975	   0.0892727
+Zr4+          40	 91.224000	 4.000000   A	 0.204907	   0.00188719
+In3+          49	 114.818000	 3.000000   A	 0.215776	   0.00554581
+La3+          57	 138.905500	 3.000000   A	 0.289364	   0.384128
+Ce3+          58	 140.116000	 3.000000   A	 0.283128	   0.309591
+Ce4+          58	 140.116000	 4.000000   A	 0.240899	   0.0389527
+Pr3+          59	 140.907700	 3.000000   A	 0.278139	   0.25691
+Nd3+          60	 144.240000	 3.000000   A	 0.274397	   0.221431
+Sm3+          62	 150.360000	 3.000000   A	 0.269408	   0.179392
+Eu3+          63	 151.964000	 3.000000   A	 0.265844	   0.152936
+Gd3+          64	 157.250000	 3.000000   A	 0.264597	   0.144356
+Tb3+          65	 158.925300	 3.000000   A	 0.259964	   0.115455
+Dy3+          66	 162.500000	 3.000000   A	 0.257648	   0.102687
+Er3+          68	 167.259000	 3.000000   A	 0.252124	   0.0764427
+Tm3+          69	 168.934200	 3.000000   A	  0.25159	   0.0741997
+Lu3+          71	 174.967000	 3.000000   A	  0.25159	   0.0741997
+Hf4+          72	 178.490000	 4.000000   A	 0.197601	  0.000830022
+Tl3+          81	 204.383300	 3.000000   A	 0.215776	   0.00554581
+Th4+          90	 232.038100	 4.000000   A	 0.259073	   0.110416
+U4+           92	 238.028900	 4.000000   A	 0.217914	   0.00673038
+Pu4+          94	 244.000000	 4.000000   A	 0.228961	   0.0167821
+#endif
+
+#ifdef TIP4PFB_HFE_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the TIP4P-FB water model, HFE-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.163213	  4.51872e-06
+Cr3+          24	 51.996100	 3.000000   A	 0.203125	   0.00155636
+Fe3+          26	 55.845000	 3.000000   A	 0.180496	  8.46842e-05
+Y3+           39	 88.905900	 3.000000   A	 0.247848	   0.0598594
+Zr4+          40	 91.224000	 4.000000   A	 0.193681	  0.000515511
+In3+          49	 114.818000	 3.000000   A	  0.20455	   0.00181653
+La3+          57	 138.905500	 3.000000   A	 0.280455	   0.280601
+Ce3+          58	 140.116000	 3.000000   A	 0.273862	   0.216641
+Ce4+          58	 140.116000	 4.000000   A	 0.231812	   0.0207852
+Pr3+          59	 140.907700	 3.000000   A	 0.268339	   0.171149
+Nd3+          60	 144.240000	 3.000000   A	 0.264597	   0.144356
+Sm3+          62	 150.360000	 3.000000   A	 0.259964	   0.115455
+Eu3+          63	 151.964000	 3.000000   A	 0.254797	   0.088427
+Gd3+          64	 157.250000	 3.000000   A	 0.253193	   0.0810806
+Tb3+          65	 158.925300	 3.000000   A	 0.251055	   0.0720066
+Dy3+          66	 162.500000	 3.000000   A	  0.24963	   0.0663973
+Er3+          68	 167.259000	 3.000000   A	 0.244641	   0.049345
+Tm3+          69	 168.934200	 3.000000   A	 0.243037	   0.0446558
+Lu3+          71	 174.967000	 3.000000   A	 0.243037	   0.0446558
+Hf4+          72	 178.490000	 4.000000   A	 0.180674	  8.69854e-05
+Tl3+          81	 204.383300	 3.000000   A	 0.205263	   0.00196025
+Th4+          90	 232.038100	 4.000000   A	 0.247313	   0.0579974
+U4+           92	 238.028900	 4.000000   A	  0.20455	   0.00181653
+Pu4+          94	 244.000000	 4.000000   A	 0.216488	   0.00591923
+#endif
+
+#ifdef OPC3_IOD_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the OPC3 water model, IOD-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.229317	 0.0172449
+Cr3+          24	 51.996100	 3.000000   A	 0.243037	 0.0446558
+Fe3+          26	 55.845000	 3.000000   A	 0.252837	 0.0795119
+Y3+           39	 88.905900	 3.000000   A	 0.285088	 0.331979
+Zr4+          40	 91.224000	 4.000000   A	 0.268695	 0.173867
+In3+          49	 114.818000	 3.000000   A	 0.258895	 0.109427
+La3+          57	 138.905500	 3.000000   A	 0.308785	 0.67508
+Ce3+          58	 140.116000	 3.000000   A	  0.31324	 0.753035
+Ce4+          58	 140.116000	 4.000000   A	 0.304331	 0.600996
+Pr3+          59	 140.907700	 3.000000   A	 0.311815	 0.727689
+Nd3+          60	 144.240000	 3.000000   A	  0.30148	 0.555759
+Sm3+          62	 150.360000	 3.000000   A	 0.297026	 0.488675
+Eu3+          63	 151.964000	 3.000000   A	 0.298451	 0.509653
+Gd3+          64	 157.250000	 3.000000   A	 0.289542	 0.386399
+Tb3+          65	 158.925300	 3.000000   A	 0.290968	 0.404843
+Dy3+          66	 162.500000	 3.000000   A	 0.286513	 0.34886
+Er3+          68	 167.259000	 3.000000   A	 0.285088	 0.331979
+Tm3+          69	 168.934200	 3.000000   A	 0.285088	 0.331979
+Lu3+          71	 174.967000	 3.000000   A	 0.282059	 0.297782
+Hf4+          72	 178.490000	 4.000000   A	  0.26531	 0.149216
+Tl3+          81	 204.383300	 3.000000   A	 0.266557	 0.157995
+Th4+          90	 232.038100	 4.000000   A	 0.306647	 0.639017
+U4+           92	 238.028900	 4.000000   A	 0.304331	 0.600996
+Pu4+          94	 244.000000	 4.000000   A	 0.299698	 0.528389
+#endif
+
+#ifdef OPC_IOD_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the OPC water model, IOD-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.222725	 0.0101938
+Cr3+          24	 51.996100	 3.000000   A	 0.238048	 0.0322573
+Fe3+          26	 55.845000	 3.000000   A	 0.249452	 0.0657201
+Y3+           39	 88.905900	 3.000000   A	 0.280633	 0.282478
+Zr4+          40	 91.224000	 4.000000   A	 0.265131	 0.147991
+In3+          49	 114.818000	 3.000000   A	 0.256579	 0.0971555
+La3+          57	 138.905500	 3.000000   A	 0.302906	 0.578159
+Ce3+          58	 140.116000	 3.000000   A	  0.30736	 0.650937
+Ce4+          58	 140.116000	 4.000000   A	 0.299877	 0.531094
+Pr3+          59	 140.907700	 3.000000   A	 0.305935	 0.6272
+Nd3+          60	 144.240000	 3.000000   A	 0.296135	 0.475803
+Sm3+          62	 150.360000	 3.000000   A	 0.291858	 0.416621
+Eu3+          63	 151.964000	 3.000000   A	 0.293284	 0.435864
+Gd3+          64	 157.250000	 3.000000   A	 0.285088	 0.331979
+Tb3+          65	 158.925300	 3.000000   A	 0.286513	 0.34886
+Dy3+          66	 162.500000	 3.000000   A	 0.282059	 0.297782
+Er3+          68	 167.259000	 3.000000   A	 0.280633	 0.282478
+Tm3+          69	 168.934200	 3.000000   A	 0.280633	 0.282478
+Lu3+          71	 174.967000	 3.000000   A	 0.277604	 0.251631
+Hf4+          72	 178.490000	 4.000000   A	 0.260321	 0.117517
+Tl3+          81	 204.383300	 3.000000   A	 0.264241	 0.141968
+Th4+          90	 232.038100	 4.000000   A	 0.303618	 0.589524
+U4+           92	 238.028900	 4.000000   A	 0.299877	 0.531094
+Pu4+          94	 244.000000	 4.000000   A	 0.295422	 0.465638
+#endif
+
+#ifdef TIP3PFB_IOD_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the TIP3P-FB water model, IOD-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.229317	 0.0172449
+Cr3+          24	 51.996100	 3.000000   A	 0.243037	 0.0446558
+Fe3+          26	 55.845000	 3.000000   A	 0.252837	 0.0795119
+Y3+           39	 88.905900	 3.000000   A	 0.285088	 0.331979
+Zr4+          40	 91.224000	 4.000000   A	 0.268695	 0.173867
+In3+          49	 114.818000	 3.000000   A	  0.25747	 0.10175
+La3+          57	 138.905500	 3.000000   A	 0.308429	 0.669007
+Ce3+          58	 140.116000	 3.000000   A	 0.312527	 0.740316
+Ce4+          58	 140.116000	 4.000000   A	 0.303796	 0.592382
+Pr3+          59	 140.907700	 3.000000   A	 0.311102	 0.715155
+Nd3+          60	 144.240000	 3.000000   A	  0.30148	 0.555759
+Sm3+          62	 150.360000	 3.000000   A	 0.297026	 0.488675
+Eu3+          63	 151.964000	 3.000000   A	 0.298451	 0.509653
+Gd3+          64	 157.250000	 3.000000   A	 0.289542	 0.386399
+Tb3+          65	 158.925300	 3.000000   A	 0.290968	 0.404843
+Dy3+          66	 162.500000	 3.000000   A	 0.286513	 0.34886
+Er3+          68	 167.259000	 3.000000   A	 0.285088	 0.331979
+Tm3+          69	 168.934200	 3.000000   A	 0.285088	 0.331979
+Lu3+          71	 174.967000	 3.000000   A	 0.282059	 0.297782
+Hf4+          72	 178.490000	 4.000000   A	  0.26531	 0.149216
+Tl3+          81	 204.383300	 3.000000   A	 0.266557	 0.157995
+Th4+          90	 232.038100	 4.000000   A	 0.306113	 0.630145
+U4+           92	 238.028900	 4.000000   A	 0.303796	 0.592382
+Pu4+          94	 244.000000	 4.000000   A	 0.299698	 0.528389
+#endif
+
+#ifdef TIP4PFB_IOD_LM
+; Li, Song & Merz 2021 trivalent and tetravalent ion set for the TIP4P-FB water model, IOD-optimised (24 ions), see ref 10
+Al3+          13	 26.981500	 3.000000   A	 0.225754	 0.0130568
+Cr3+          24	 51.996100	 3.000000   A	 0.239652	 0.0359005
+Fe3+          26	 55.845000	 3.000000   A	 0.250164	 0.0684605
+Y3+           39	 88.905900	 3.000000   A	 0.282059	 0.297782
+Zr4+          40	 91.224000	 4.000000   A	 0.266379	 0.156719
+In3+          49	 114.818000	 3.000000   A	 0.257113	 0.0998933
+La3+          57	 138.905500	 3.000000   A	 0.305578	 0.621331
+Ce3+          58	 140.116000	 3.000000   A	 0.309676	 0.690372
+Ce4+          58	 140.116000	 4.000000   A	  0.30148	 0.555759
+Pr3+          59	 140.907700	 3.000000   A	 0.308429	 0.669007
+Nd3+          60	 144.240000	 3.000000   A	 0.298451	 0.509653
+Sm3+          62	 150.360000	 3.000000   A	 0.293997	 0.445668
+Eu3+          63	 151.964000	 3.000000   A	 0.295422	 0.465638
+Gd3+          64	 157.250000	 3.000000   A	 0.286513	 0.34886
+Tb3+          65	 158.925300	 3.000000   A	 0.288117	 0.368452
+Dy3+          66	 162.500000	 3.000000   A	 0.283662	 0.315602
+Er3+          68	 167.259000	 3.000000   A	 0.282059	 0.297782
+Tm3+          69	 168.934200	 3.000000   A	 0.282059	 0.297782
+Lu3+          71	 174.967000	 3.000000   A	 0.279208	 0.267679
+Hf4+          72	 178.490000	 4.000000   A	  0.26139	 0.123861
+Tl3+          81	 204.383300	 3.000000   A	 0.265131	 0.147991
+Th4+          90	 232.038100	 4.000000   A	 0.304509	 0.603881
+U4+           92	 238.028900	 4.000000   A	  0.30148	 0.555759
+Pu4+          94	 244.000000	 4.000000   A	 0.297026	 0.488675
+#endif
+
+#ifdef OPC3_ZQ
+; Zhang/Qiu 12-6 ion set for the OPC3 water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.213834	 85.7415
+Li+            3	 6.941000	 1.000000   A	 0.143916	 2.80454
+NH4+           7	 18.038700	 1.000000   A	 0.329258	 0.597475
+F-_star        9	 18.998400	-1.000000   A	 0.282771	 19.151
+F-             9	 18.998400	-1.000000   A	 0.381821	 0.048116
+Na+           11	 22.989700	 1.000000   A	 0.286976	 0.0556472
+Mg2+          12	 24.305000	 2.000000   A	 0.121233	 92.6174
+Al3+          13	 26.981500	 3.000000   A	0.0399657	 7024.12
+Cl-           17	 35.453000	-1.000000   A	 0.399604	 1.39202
+K+            19	 39.098300	 1.000000   A	 0.314719	 0.740986
+Ca2+          20	 40.078000	 2.000000   A	 0.230743	 5.47895
+V2+           23	 50.941500	 2.000000   A	 0.119648	 327.334
+Cr2+          24	 51.996100	 2.000000   A	 0.117011	 95.8939
+Cr3+          24	 51.996100	 3.000000   A	0.0790405	 676.693
+Mn2+          25	 54.938000	 2.000000   A	 0.135541	 97.027
+Fe2+          26	 55.845000	 2.000000   A	 0.116975	 173.377
+Fe3+          26	 55.845000	 3.000000   A	    0.065	 4989.9
+Co2+          27	 58.933200	 2.000000   A	 0.100636	 452.368
+Ni2+          28	 58.693400	 2.000000   A	0.0882702	 480.498
+Cu+           29	 63.546000	 1.000000   A	 0.138588	 0.493712
+Cu2+          29	 63.546000	 2.000000   A	0.0910855	 1260.64
+Zn2+          30	 65.390000	 2.000000   A	0.0946491	 628.625
+Br-           35	 79.904000	-1.000000   A	 0.420362	 2.63676
+Rb+           37	 85.467800	 1.000000   A	 0.357874	 0.230957
+Sr2+          38	 87.620000	 2.000000   A	 0.267662	 6.66009
+Y3+           39	 88.905900	 3.000000   A	  0.17385	 100.344
+Zr4+          40	 91.224000	 4.000000   A	0.0934196	 8623.66
+Ag+           47	 107.868200	 1.000000   A	 0.164567	 48.1273
+Cd2+          48	 112.411000	 2.000000   A	 0.137359	 218.772
+Sn2+          50	 118.710000	 2.000000   A	 0.214813	 82.9834
+I-            53	 126.904500	-1.000000   A	 0.468755	 2.66563
+In3+          49	 114.818000	 3.000000   A	0.0887513	 1476.7
+Cs+           55	 132.905500	 1.000000   A	 0.371469	 0.873201
+Ba2+          56	 137.327000	 2.000000   A	 0.321614	 3.27565
+La3+          57	 138.905500	 3.000000   A	 0.240828	 18.8753
+Ce3+          58	 140.116000	 3.000000   A	 0.219286	 64.7428
+Ce4+          58	 140.116000	 4.000000   A	 0.145092	 2664.35
+Pr3+          59	 140.907700	 3.000000   A	 0.209397	 97.542
+Nd3+          60	 144.240000	 3.000000   A	 0.207508	 52.1787
+Sm3+          62	 150.360000	 3.000000   A	 0.199169	 57.094
+Eu3+          63	 151.964000	 3.000000   A	 0.187534	 133.165
+Gd3+          64	 157.250000	 3.000000   A	 0.195071	 35.7351
+Tb3+          65	 158.925300	 3.000000   A	  0.18242	 97.8119
+Dy3+          66	 162.500000	 3.000000   A	 0.179035	 80.7964
+Er3+          68	 167.259000	 3.000000   A	 0.163836	 181.089
+Tm3+          69	 168.934200	 3.000000   A	 0.160184	 222.839
+Lu3+          71	 174.967000	 3.000000   A	 0.160397	 171.906
+Hf4+          72	 178.490000	 4.000000   A	 0.085063	 12033.5
+Hg2+          80	 200.590000	 2.000000   A	 0.146428	 475.655
+Tl+           81	 204.383300	 1.000000   A	 0.292678	 7.28936
+Tl3+          81	 204.383300	 3.000000   A	 0.105393	 2305.11
+Th4+          90	 232.038100	 4.000000   A	 0.172442	 1534.64
+U4+           92	 238.028900	 4.000000   A	 0.139871	 5911.42
+Pu4+          94	 244.000000	 4.000000   A	 0.127381	 8302.17
+#endif
+
+#ifdef OPC_ZQ
+; Zhang/Qiu 12-6 ion set for the OPC water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.211553	 83.867
+Li+            3	 6.941000	 1.000000   A	 0.125349	 5.70028
+NH4+           7	 18.038700	 1.000000   A	 0.304527	 1.24348
+F-_star        9	 18.998400	-1.000000   A	 0.303458	 5.62581
+F-             9	 18.998400	-1.000000   A	  0.33202	 0.236396
+Na+           11	 22.989700	 1.000000   A	 0.270887	 0.064852
+Mg2+          12	 24.305000	 2.000000   A	 0.107104	 155.2
+Al3+          13	 26.981500	 3.000000   A	0.0312884	 8503.38
+Cl-           17	 35.453000	-1.000000   A	 0.441013	 0.298319
+K+            19	 39.098300	 1.000000   A	 0.288687	 1.82924
+Ca2+          20	 40.078000	 2.000000   A	 0.206867	 12.3708
+V2+           23	 50.941500	 2.000000   A	 0.112717	 508.735
+Cr2+          24	 51.996100	 2.000000   A	 0.102721	 173.058
+Cr3+          24	 51.996100	 3.000000   A	0.0679043	 1521.22
+Mn2+          25	 54.938000	 2.000000   A	 0.121804	 202.298
+Fe2+          26	 55.845000	 2.000000   A	 0.105554	 275.291
+Fe3+          26	 55.845000	 3.000000   A	0.0635211	 6927.34
+Co2+          27	 58.933200	 2.000000   A	0.0945778	 662.204
+Ni2+          28	 58.693400	 2.000000   A	0.0829783	 841.573
+Cu+           29	 63.546000	 1.000000   A	 0.105625	 2.18112
+Cu2+          29	 63.546000	 2.000000   A	0.0870052	 1517.02
+Zn2+          30	 65.390000	 2.000000   A	0.0906757	 944.913
+Br-           35	 79.904000	-1.000000   A	 0.445984	 0.930103
+Rb+           37	 85.467800	 1.000000   A	 0.315877	 1.22549
+Sr2+          38	 87.620000	 2.000000   A	 0.249683	 9.34329
+Y3+           39	 88.905900	 3.000000   A	 0.154785	 273.963
+Zr4+          40	 91.224000	 4.000000   A	0.0888761	 10916.7
+Ag+           47	 107.868200	 1.000000   A	 0.160522	 45.6763
+Cd2+          48	 112.411000	 2.000000   A	 0.128183	 362.988
+Sn2+          50	 118.710000	 2.000000   A	 0.205156	 95.4755
+I-            53	 126.904500	-1.000000   A	 0.498048	 0.77404
+In3+          49	 114.818000	 3.000000   A	0.0837445	 2703.91
+Cs+           55	 132.905500	 1.000000   A	 0.349606	 2.2284
+Ba2+          56	 137.327000	 2.000000   A	 0.297703	 6.58854
+La3+          57	 138.905500	 3.000000   A	 0.213958	 54.2615
+Ce3+          58	 140.116000	 3.000000   A	 0.199722	 163.076
+Ce4+          58	 140.116000	 4.000000   A	  0.13939	 3797.45
+Pr3+          59	 140.907700	 3.000000   A	 0.192808	 231.522
+Nd3+          60	 144.240000	 3.000000   A	 0.185485	 138.004
+Sm3+          62	 150.360000	 3.000000   A	  0.17695	 159.622
+Eu3+          63	 151.964000	 3.000000   A	 0.171534	 265.089
+Gd3+          64	 157.250000	 3.000000   A	  0.16601	 167.298
+Tb3+          65	 158.925300	 3.000000   A	 0.163676	 251.299
+Dy3+          66	 162.500000	 3.000000   A	 0.158544	 235.717
+Er3+          68	 167.259000	 3.000000   A	 0.148923	 405.874
+Tm3+          69	 168.934200	 3.000000   A	 0.146482	 469.993
+Lu3+          71	 174.967000	 3.000000   A	 0.144807	 407.56
+Hf4+          72	 178.490000	 4.000000   A	0.0778111	 14177.2
+Hg2+          80	 200.590000	 2.000000   A	 0.141956	 609.525
+Tl+           81	 204.383300	 1.000000   A	   0.2845	 10.947
+Tl3+          81	 204.383300	 3.000000   A	0.0993887	 3177.54
+Th4+          90	 232.038100	 4.000000   A	 0.163605	 2024.84
+U4+           92	 238.028900	 4.000000   A	  0.13237	 6712.61
+Pu4+          94	 244.000000	 4.000000   A	 0.124904	 9745.22
+#endif
+
+#ifdef SPCE_ZQ
+; Zhang/Qiu 12-6 ion set for the SPC/E water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	  0.21403	 103.727
+Li+            3	 6.941000	 1.000000   A	 0.126508	 9.08639
+NH4+           7	 18.038700	 1.000000   A	 0.317071	 1.14014
+F-_star        9	 18.998400	-1.000000   A	 0.285836	 15.6168
+F-             9	 18.998400	-1.000000   A	 0.405448	 0.0221752
+Na+           11	 22.989700	 1.000000   A	 0.285676	 0.0476976
+Mg2+          12	 24.305000	 2.000000   A	 0.112717	 140.279
+Al3+          13	 26.981500	 3.000000   A	0.0388254	 9772.18
+Cl-           17	 35.453000	-1.000000   A	 0.413769	 0.765254
+K+            19	 39.098300	 1.000000   A	 0.303476	 1.15855
+Ca2+          20	 40.078000	 2.000000   A	 0.214083	 14.3712
+V2+           23	 50.941500	 2.000000   A	 0.115158	 494.643
+Cr2+          24	 51.996100	 2.000000   A	 0.108618	 146.451
+Cr3+          24	 51.996100	 3.000000   A	0.0723232	 1320.66
+Mn2+          25	 54.938000	 2.000000   A	  0.12649	 184.711
+Fe2+          26	 55.845000	 2.000000   A	 0.109135	 278.992
+Fe3+          26	 55.845000	 3.000000   A	 0.062452	 6612.9
+Co2+          27	 58.933200	 2.000000   A	 0.097108	 658.403
+Ni2+          28	 58.693400	 2.000000   A	0.0871299	 1067.8
+Cu+           29	 63.546000	 1.000000   A	 0.120182	 1.28072
+Cu2+          29	 63.546000	 2.000000   A	0.0878426	 1720.65
+Zn2+          30	 65.390000	 2.000000   A	0.0926178	 1035.6
+Br-           35	 79.904000	-1.000000   A	 0.424567	 2.01585
+Rb+           37	 85.467800	 1.000000   A	 0.331022	 0.871946
+Sr2+          38	 87.620000	 2.000000   A	  0.25526	 11.4102
+Y3+           39	 88.905900	 3.000000   A	 0.163141	 195.475
+Zr4+          40	 91.224000	 4.000000   A	 0.089963	 10548.5
+Ag+           47	 107.868200	 1.000000   A	 0.162642	 65.7344
+Cd2+          48	 112.411000	 2.000000   A	 0.131586	 285.294
+Sn2+          50	 118.710000	 2.000000   A	 0.209646	 126.909
+I-            53	 126.904500	-1.000000   A	  0.47615	 2.03342
+In3+          49	 114.818000	 3.000000   A	0.0867557	 2221.73
+Cs+           55	 132.905500	 1.000000   A	 0.361919	 1.29662
+Ba2+          56	 137.327000	 2.000000   A	 0.306505	 6.79649
+La3+          57	 138.905500	 3.000000   A	 0.226466	 34.1109
+Ce3+          58	 140.116000	 3.000000   A	 0.207419	 131.945
+Ce4+          58	 140.116000	 4.000000   A	 0.143132	 3720.42
+Pr3+          59	 140.907700	 3.000000   A	 0.198581	 208.733
+Nd3+          60	 144.240000	 3.000000   A	 0.194234	 132.92
+Sm3+          62	 150.360000	 3.000000   A	 0.186661	 150.415
+Eu3+          63	 151.964000	 3.000000   A	 0.179801	 232.323
+Gd3+          64	 157.250000	 3.000000   A	 0.179391	 93.4743
+Tb3+          65	 158.925300	 3.000000   A	 0.173013	 166.223
+Dy3+          66	 162.500000	 3.000000   A	 0.168558	 140.829
+Er3+          68	 167.259000	 3.000000   A	 0.155622	 312.962
+Tm3+          69	 168.934200	 3.000000   A	 0.152575	 358.255
+Lu3+          71	 174.967000	 3.000000   A	 0.151791	 302.198
+Hf4+          72	 178.490000	 4.000000   A	0.0822834	 14561
+Hg2+          80	 200.590000	 2.000000   A	 0.145359	 707.606
+Tl+           81	 204.383300	 1.000000   A	 0.288544	 8.97426
+Tl3+          81	 204.383300	 3.000000   A	 0.102756	 3090.95
+Th4+          90	 232.038100	 4.000000   A	 0.165654	 1855.2
+U4+           92	 238.028900	 4.000000   A	 0.136842	 7242.55
+Pu4+          94	 244.000000	 4.000000   A	 0.125349	 9976.81
+#endif
+
+#ifdef SPCEB_ZQ
+; Zhang/Qiu 12-6 ion set for the SPC/Eb water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.211642	 107.125
+Li+            3	 6.941000	 1.000000   A	 0.128343	 7.69103
+NH4+           7	 18.038700	 1.000000   A	 0.312901	 1.24307
+F-_star        9	 18.998400	-1.000000   A	 0.287404	 16.508
+F-             9	 18.998400	-1.000000   A	 0.390748	 0.0389112
+Na+           11	 22.989700	 1.000000   A	 0.283235	 0.0523
+Mg2+          12	 24.305000	 2.000000   A	 0.113999	 117.217
+Al3+          13	 26.981500	 3.000000   A	0.0391995	 9364.65
+Cl-           17	 35.453000	-1.000000   A	 0.408958	 1.14934
+K+            19	 39.098300	 1.000000   A	 0.301052	 1.28742
+Ca2+          20	 40.078000	 2.000000   A	 0.213192	 13.5921
+V2+           23	 50.941500	 2.000000   A	 0.116565	 464.292
+Cr2+          24	 51.996100	 2.000000   A	 0.109652	 132.553
+Cr3+          24	 51.996100	 3.000000   A	0.0739802	 1244.78
+Mn2+          25	 54.938000	 2.000000   A	 0.127523	 165.727
+Fe2+          26	 55.845000	 2.000000   A	 0.110097	 269.707
+Fe3+          26	 55.845000	 3.000000   A	0.0631647	 6417.88
+Co2+          27	 58.933200	 2.000000   A	0.0980523	 666.027
+Ni2+          28	 58.693400	 2.000000   A	0.0878426	 1001.59
+Cu+           29	 63.546000	 1.000000   A	 0.122997	 0.863996
+Cu2+          29	 63.546000	 2.000000   A	0.0884484	 1672.6
+Zn2+          30	 65.390000	 2.000000   A	0.0931524	 979.02
+Br-           35	 79.904000	-1.000000   A	 0.422642	 2.35978
+Rb+           37	 85.467800	 1.000000   A	  0.32835	 0.889937
+Sr2+          38	 87.620000	 2.000000   A	 0.252213	 14.0377
+Y3+           39	 88.905900	 3.000000   A	 0.164531	 176.194
+Zr4+          40	 91.224000	 4.000000   A	0.0911033	 10504.9
+Ag+           47	 107.868200	 1.000000   A	 0.160362	 63.7663
+Cd2+          48	 112.411000	 2.000000   A	 0.133314	 324.857
+Sn2+          50	 118.710000	 2.000000   A	 0.208043	 115.184
+I-            53	 126.904500	-1.000000   A	 0.480194	 1.98991
+In3+          49	 114.818000	 3.000000   A	0.0859895	 2136.94
+Cs+           55	 132.905500	 1.000000   A	 0.363077	 1.22591
+Ba2+          56	 137.327000	 2.000000   A	  0.30091	 9.25543
+La3+          57	 138.905500	 3.000000   A	 0.223972	 46.6541
+Ce3+          58	 140.116000	 3.000000   A	  0.20888	 116.813
+Ce4+          58	 140.116000	 4.000000   A	 0.143328	 3562.8
+Pr3+          59	 140.907700	 3.000000   A	 0.199722	 197.466
+Nd3+          60	 144.240000	 3.000000   A	 0.194234	 135.891
+Sm3+          62	 150.360000	 3.000000   A	 0.186501	 162.029
+Eu3+          63	 151.964000	 3.000000   A	 0.180336	 234.581
+Gd3+          64	 157.250000	 3.000000   A	 0.178554	 115.636
+Tb3+          65	 158.925300	 3.000000   A	 0.173529	 173.657
+Dy3+          66	 162.500000	 3.000000   A	 0.169271	 144.441
+Er3+          68	 167.259000	 3.000000   A	 0.156905	 274.974
+Tm3+          69	 168.934200	 3.000000   A	 0.153662	 324.035
+Lu3+          71	 174.967000	 3.000000   A	 0.153128	 264.358
+Hf4+          72	 178.490000	 4.000000   A	0.0821587	 14002.1
+Hg2+          80	 200.590000	 2.000000   A	 0.146642	 721.426
+Tl+           81	 204.383300	 1.000000   A	 0.284785	 10.2541
+Tl3+          81	 204.383300	 3.000000   A	 0.105019	 3146.24
+Th4+          90	 232.038100	 4.000000   A	  0.17034	 1892.74
+U4+           92	 238.028900	 4.000000   A	 0.138374	 7167.9
+Pu4+          94	 244.000000	 4.000000   A	  0.12551	 9682.59
+#endif
+
+#ifdef TIP3P_ZQ
+; Zhang/Qiu 12-6 ion set for the TIP3P water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.212568	 99.2181
+Li+            3	 6.941000	 1.000000   A	 0.130659	 6.3078
+NH4+           7	 18.038700	 1.000000   A	 0.322612	 0.765254
+F-_star        9	 18.998400	-1.000000   A	 0.279493	 20.4359
+F-             9	 18.998400	-1.000000   A	 0.349054	 0.155226
+Na+           11	 22.989700	 1.000000   A	 0.285088	 0.0531368
+Mg2+          12	 24.305000	 2.000000   A	 0.108779	 214.977
+Al3+          13	 26.981500	 3.000000   A	0.0377741	 11155.6
+Cl-           17	 35.453000	-1.000000   A	 0.410508	 0.784082
+K+            19	 39.098300	 1.000000   A	 0.309106	 0.940982
+Ca2+          20	 40.078000	 2.000000   A	 0.211143	 18.5991
+V2+           23	 50.941500	 2.000000   A	 0.114284	 502.102
+Cr2+          24	 51.996100	 2.000000   A	 0.104324	 300.948
+Cr3+          24	 51.996100	 3.000000   A	 0.069989	 1736.97
+Mn2+          25	 54.938000	 2.000000   A	 0.123728	 194.936
+Fe2+          26	 55.845000	 2.000000   A	 0.107264	 380.357
+Fe3+          26	 55.845000	 3.000000   A	0.0624164	 7158
+Co2+          27	 58.933200	 2.000000   A	0.0958963	 832.323
+Ni2+          28	 58.693400	 2.000000   A	0.0865954	 1248.8
+Cu+           29	 63.546000	 1.000000   A	 0.110454	 2.45057
+Cu2+          29	 63.546000	 2.000000   A	0.0874506	 1868.49
+Zn2+          30	 65.390000	 2.000000   A	0.0917982	 1236.49
+Br-           35	 79.904000	-1.000000   A	 0.429894	 1.41963
+Rb+           37	 85.467800	 1.000000   A	 0.334515	 0.74015
+Sr2+          38	 87.620000	 2.000000   A	 0.258681	 9.22321
+Y3+           39	 88.905900	 3.000000   A	 0.160629	 254.151
+Zr4+          40	 91.224000	 4.000000   A	0.0903906	 11901.2
+Ag+           47	 107.868200	 1.000000   A	 0.163052	 59.7986
+Cd2+          48	 112.411000	 2.000000   A	 0.131194	 320.473
+Sn2+          50	 118.710000	 2.000000   A	 0.209735	 111.196
+I-            53	 126.904500	-1.000000   A	 0.480052	 1.5577
+In3+          49	 114.818000	 3.000000   A	0.0872012	 2535.08
+Cs+           55	 132.905500	 1.000000   A	 0.365928	 1.18826
+Ba2+          56	 137.327000	 2.000000   A	  0.30638	 7.07891
+La3+          57	 138.905500	 3.000000   A	 0.219963	 55.3213
+Ce3+          58	 140.116000	 3.000000   A	 0.204604	 163.603
+Ce4+          58	 140.116000	 4.000000   A	 0.142562	 4181.11
+Pr3+          59	 140.907700	 3.000000   A	 0.196301	 239.547
+Nd3+          60	 144.240000	 3.000000   A	 0.190189	 174.498
+Sm3+          62	 150.360000	 3.000000   A	 0.182919	 190.06
+Eu3+          63	 151.964000	 3.000000   A	 0.176451	 275.481
+Gd3+          64	 157.250000	 3.000000   A	 0.175365	 134.925
+Tb3+          65	 158.925300	 3.000000   A	 0.169485	 228.24
+Dy3+          66	 162.500000	 3.000000   A	 0.164923	 194.756
+Er3+          68	 167.259000	 3.000000   A	 0.153929	 371.271
+Tm3+          69	 168.934200	 3.000000   A	 0.150847	 420.428
+Lu3+          71	 174.967000	 3.000000   A	 0.149885	 343.631
+Hf4+          72	 178.490000	 4.000000   A	0.0832278	 16428.3
+Hg2+          80	 200.590000	 2.000000   A	 0.146196	 705.491
+Tl+           81	 204.383300	 1.000000   A	 0.290772	 9.91273
+Tl3+          81	 204.383300	 3.000000   A	  0.10256	 3489.73
+Th4+          90	 232.038100	 4.000000   A	 0.160985	 1784.81
+U4+           92	 238.028900	 4.000000   A	  0.13661	 7979.79
+Pu4+          94	 244.000000	 4.000000   A	 0.126098	 11066
+#endif
+
+#ifdef TIP3PFB_ZQ
+; Zhang/Qiu 12-6 ion set for the TIP3P-FB water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.211464	 113.891
+Li+            3	 6.941000	 1.000000   A	 0.125545	 8.99686
+NH4+           7	 18.038700	 1.000000   A	 0.309534	 1.30248
+F-_star        9	 18.998400	-1.000000   A	 0.288045	 15.0243
+F-             9	 18.998400	-1.000000   A	 0.403096	 0.0263592
+Na+           11	 22.989700	 1.000000   A	 0.279012	 0.0644336
+Mg2+          12	 24.305000	 2.000000   A	 0.110988	 184.455
+Al3+          13	 26.981500	 3.000000   A	0.0364021	 9046.73
+Cl-           17	 35.453000	-1.000000   A	 0.420932	 0.686594
+K+            19	 39.098300	 1.000000   A	  0.29683	 1.53678
+Ca2+          20	 40.078000	 2.000000   A	 0.211303	 15.1423
+V2+           23	 50.941500	 2.000000   A	 0.114748	 501.755
+Cr2+          24	 51.996100	 2.000000   A	 0.106658	 237.461
+Cr3+          24	 51.996100	 3.000000   A	0.0724835	 1305.24
+Mn2+          25	 54.938000	 2.000000   A	 0.126223	 195.655
+Fe2+          26	 55.845000	 2.000000   A	 0.108975	 314.117
+Fe3+          26	 55.845000	 3.000000   A	0.0612404	 6651.07
+Co2+          27	 58.933200	 2.000000   A	0.0962349	 677.472
+Ni2+          28	 58.693400	 2.000000   A	0.0855441	 970.938
+Cu+           29	 63.546000	 1.000000   A	 0.120414	 1.07236
+Cu2+          29	 63.546000	 2.000000   A	0.0873615	 1725.41
+Zn2+          30	 65.390000	 2.000000   A	 0.091228	 1016
+Br-           35	 79.904000	-1.000000   A	 0.428451	 1.88322
+Rb+           37	 85.467800	 1.000000   A	 0.321009	 1.20123
+Sr2+          38	 87.620000	 2.000000   A	 0.249006	 17.7987
+Y3+           39	 88.905900	 3.000000   A	 0.162179	 181.214
+Zr4+          40	 91.224000	 4.000000   A	0.0885375	 10507.3
+Ag+           47	 107.868200	 1.000000   A	 0.159311	 60.8123
+Cd2+          48	 112.411000	 2.000000   A	 0.130659	 346.571
+Sn2+          50	 118.710000	 2.000000   A	 0.207526	 118.384
+I-            53	 126.904500	-1.000000   A	 0.479535	 2.18656
+In3+          49	 114.818000	 3.000000   A	0.0862212	 2230.96
+Cs+           55	 132.905500	 1.000000   A	 0.355504	 1.8033
+Ba2+          56	 137.327000	 2.000000   A	 0.301908	 7.58727
+La3+          57	 138.905500	 3.000000   A	 0.224168	 41.0952
+Ce3+          58	 140.116000	 3.000000   A	 0.207205	 116.867
+Ce4+          58	 140.116000	 4.000000   A	 0.143061	 3749.66
+Pr3+          59	 140.907700	 3.000000   A	 0.197958	 214.334
+Nd3+          60	 144.240000	 3.000000   A	  0.19279	 147.432
+Sm3+          62	 150.360000	 3.000000   A	  0.18561	 146.08
+Eu3+          63	 151.964000	 3.000000   A	 0.179249	 191.026
+Gd3+          64	 157.250000	 3.000000   A	 0.177948	 96.8261
+Tb3+          65	 158.925300	 3.000000   A	   0.1723	 144.076
+Dy3+          66	 162.500000	 3.000000   A	 0.167703	 129.149
+Er3+          68	 167.259000	 3.000000   A	 0.154963	 314.19
+Tm3+          69	 168.934200	 3.000000   A	  0.15197	 372.299
+Lu3+          71	 174.967000	 3.000000   A	 0.151186	 304.643
+Hf4+          72	 178.490000	 4.000000   A	0.0839405	 15163.2
+Hg2+          80	 200.590000	 2.000000   A	 0.145644	 743.861
+Tl+           81	 204.383300	 1.000000   A	 0.281577	 10.7993
+Tl3+          81	 204.383300	 3.000000   A	 0.104502	 3320.41
+Th4+          90	 232.038100	 4.000000   A	 0.166438	 1927.49
+U4+           92	 238.028900	 4.000000   A	 0.136218	 7151.41
+Pu4+          94	 244.000000	 4.000000   A	 0.123853	 9960.74
+#endif
+
+#ifdef TIP4P2005_ZQ
+; Zhang/Qiu 12-6 ion set for the TIP4P/2005 water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.208078	 120.862
+Li+            3	 6.941000	 1.000000   A	 0.103487	 24.8023
+NH4+           7	 18.038700	 1.000000   A	 0.284161	 3.3882
+F-_star        9	 18.998400	-1.000000   A	 0.312991	 4.36015
+F-             9	 18.998400	-1.000000   A	 0.363451	 0.0903744
+Na+           11	 22.989700	 1.000000   A	  0.23215	 0.394551
+Mg2+          12	 24.305000	 2.000000   A	0.0930098	 549.024
+Al3+          13	 26.981500	 3.000000   A	0.0320367	 16939.2
+Cl-           17	 35.453000	-1.000000   A	 0.452042	 0.250203
+K+            19	 39.098300	 1.000000   A	 0.272562	 4.0589
+Ca2+          20	 40.078000	 2.000000   A	  0.18128	 61.5165
+V2+           23	 50.941500	 2.000000   A	 0.103006	 974.073
+Cr2+          24	 51.996100	 2.000000   A	0.0899095	 669.409
+Cr3+          24	 51.996100	 3.000000   A	0.0576055	 4041.96
+Mn2+          25	 54.938000	 2.000000   A	 0.108601	 505.931
+Fe2+          26	 55.845000	 2.000000   A	0.0944174	 798.899
+Fe3+          26	 55.845000	 3.000000   A	0.0559841	 11947.9
+Co2+          27	 58.933200	 2.000000   A	0.0870764	 1470.59
+Ni2+          28	 58.693400	 2.000000   A	0.0754413	 1786.86
+Cu+           29	 63.546000	 1.000000   A	0.0681538	 40.653
+Cu2+          29	 63.546000	 2.000000   A	 0.081927	 2733.33
+Zn2+          30	 65.390000	 2.000000   A	0.0819627	 1822.6
+Br-           35	 79.904000	-1.000000   A	 0.468256	 0.455219
+Rb+           37	 85.467800	 1.000000   A	 0.298415	 2.62546
+Sr2+          38	 87.620000	 2.000000   A	 0.224649	 43.5801
+Y3+           39	 88.905900	 3.000000   A	 0.138107	 730.452
+Zr4+          40	 91.224000	 4.000000   A	0.0834416	 18360.8
+Ag+           47	 107.868200	 1.000000   A	 0.153145	 85.9394
+Cd2+          48	 112.411000	 2.000000   A	 0.118739	 672.809
+Sn2+          50	 118.710000	 2.000000   A	 0.194875	 199.063
+I-            53	 126.904500	-1.000000   A	 0.503429	 0.831361
+In3+          49	 114.818000	 3.000000   A	0.0782031	 5210.65
+Cs+           55	 132.905500	 1.000000   A	 0.336047	 4.67939
+Ba2+          56	 137.327000	 2.000000   A	 0.273987	 18.9975
+La3+          57	 138.905500	 3.000000   A	 0.189708	 257.035
+Ce3+          58	 140.116000	 3.000000   A	 0.184309	 458.555
+Ce4+          58	 140.116000	 4.000000   A	 0.134116	 6793.47
+Pr3+          59	 140.907700	 3.000000   A	  0.17793	 598.951
+Nd3+          60	 144.240000	 3.000000   A	 0.168309	 468.373
+Sm3+          62	 150.360000	 3.000000   A	 0.160772	 518.074
+Eu3+          63	 151.964000	 3.000000   A	 0.157297	 662.967
+Gd3+          64	 157.250000	 3.000000   A	 0.149564	 496.926
+Tb3+          65	 158.925300	 3.000000   A	 0.148691	 656.586
+Dy3+          66	 162.500000	 3.000000   A	 0.143167	 658.1
+Er3+          68	 167.259000	 3.000000   A	 0.137091	 1025.87
+Tm3+          69	 168.934200	 3.000000   A	 0.135078	 1130.03
+Lu3+          71	 174.967000	 3.000000   A	 0.132477	 1031.08
+Hf4+          72	 178.490000	 4.000000   A	0.0776864	 24048.7
+Hg2+          80	 200.590000	 2.000000   A	 0.136379	 1027.29
+Tl+           81	 204.383300	 1.000000   A	 0.276161	 16.4281
+Tl3+          81	 204.383300	 3.000000   A	0.0963062	 5672.72
+Th4+          90	 232.038100	 4.000000   A	 0.153555	 3807.95
+U4+           92	 238.028900	 4.000000   A	 0.127452	 10954.5
+Pu4+          94	 244.000000	 4.000000   A	   0.1233	 15310.6
+#endif
+
+#ifdef TIP4PD_ZQ
+; Zhang/Qiu 12-6 ion set for the TIP4P-D water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.208951	 90.7593
+Li+            3	 6.941000	 1.000000   A	  0.10942	 14.3214
+NH4+           7	 18.038700	 1.000000   A	 0.291039	 2.25852
+F-_star        9	 18.998400	-1.000000   A	 0.317997	 3.18486
+F-             9	 18.998400	-1.000000   A	 0.360547	 0.100416
+Na+           11	 22.989700	 1.000000   A	 0.263367	 0.0719648
+Mg2+          12	 24.305000	 2.000000   A	0.0969832	 383.877
+Al3+          13	 26.981500	 3.000000   A	0.0285978	 12111.3
+Cl-           17	 35.453000	-1.000000   A	 0.467009	 0.117989
+K+            19	 39.098300	 1.000000   A	 0.278477	 2.49408
+Ca2+          20	 40.078000	 2.000000   A	 0.186465	 38.2907
+V2+           23	 50.941500	 2.000000   A	 0.106676	 733.992
+Cr2+          24	 51.996100	 2.000000   A	0.0928673	 414.66
+Cr3+          24	 51.996100	 3.000000   A	0.0588706	 2520.53
+Mn2+          25	 54.938000	 2.000000   A	 0.113572	 381.761
+Fe2+          26	 55.845000	 2.000000   A	0.0974465	 525.402
+Fe3+          26	 55.845000	 3.000000   A	0.0594764	 9457.83
+Co2+          27	 58.933200	 2.000000   A	0.0886088	 970.268
+Ni2+          28	 58.693400	 2.000000   A	0.0757442	 1171.63
+Cu+           29	 63.546000	 1.000000   A	0.0782922	 12.7173
+Cu2+          29	 63.546000	 2.000000   A	0.0810183	 1918.19
+Zn2+          30	 65.390000	 2.000000   A	0.0842077	 1264.13
+Br-           35	 79.904000	-1.000000   A	  0.47239	 0.329699
+Rb+           37	 85.467800	 1.000000   A	 0.304759	 1.85393
+Sr2+          38	 87.620000	 2.000000   A	 0.231046	 26.983
+Y3+           39	 88.905900	 3.000000   A	 0.142366	 544.492
+Zr4+          40	 91.224000	 4.000000   A	0.0851699	 14594.6
+Ag+           47	 107.868200	 1.000000   A	 0.155622	 59.1007
+Cd2+          48	 112.411000	 2.000000   A	 0.122374	 515.1
+Sn2+          50	 118.710000	 2.000000   A	 0.197993	 146.181
+I-            53	 126.904500	-1.000000   A	 0.500364	 0.791613
+In3+          49	 114.818000	 3.000000   A	0.0779893	 4128.49
+Cs+           55	 132.905500	 1.000000   A	 0.338951	 3.31038
+Ba2+          56	 137.327000	 2.000000   A	 0.277889	 18.6205
+La3+          57	 138.905500	 3.000000   A	 0.194857	 139.185
+Ce3+          58	 140.116000	 3.000000   A	 0.188069	 293.084
+Ce4+          58	 140.116000	 4.000000   A	 0.133332	 5229.88
+Pr3+          59	 140.907700	 3.000000   A	 0.182046	 415.329
+Nd3+          60	 144.240000	 3.000000   A	 0.172015	 299.289
+Sm3+          62	 150.360000	 3.000000   A	 0.164674	 343.314
+Eu3+          63	 151.964000	 3.000000   A	 0.161306	 466.758
+Gd3+          64	 157.250000	 3.000000   A	 0.152985	 332.806
+Tb3+          65	 158.925300	 3.000000   A	 0.151667	 467.726
+Dy3+          66	 162.500000	 3.000000   A	 0.145323	 463.865
+Er3+          68	 167.259000	 3.000000   A	 0.138392	 732.473
+Tm3+          69	 168.934200	 3.000000   A	 0.136628	 820.714
+Lu3+          71	 174.967000	 3.000000   A	 0.134223	 730.957
+Hf4+          72	 178.490000	 4.000000   A	 0.074978	 18693.5
+Hg2+          80	 200.590000	 2.000000   A	 0.137074	 762.065
+Tl+           81	 204.383300	 1.000000   A	  0.27682	 12.1282
+Tl3+          81	 204.383300	 3.000000   A	0.0919051	 4202.34
+Th4+          90	 232.038100	 4.000000   A	 0.159934	 3074.62
+U4+           92	 238.028900	 4.000000   A	  0.12763	 8661.47
+Pu4+          94	 244.000000	 4.000000   A	 0.121536	 12277
+#endif
+
+#ifdef TIP4PEW_ZQ
+; Zhang/Qiu 12-6 ion set for the TIP4P-Ew water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.207847	 126.53
+Li+            3	 6.941000	 1.000000   A	 0.106249	 20.8254
+NH4+           7	 18.038700	 1.000000   A	 0.291716	 2.7811
+F-_star        9	 18.998400	-1.000000   A	 0.300554	 8.77803
+F-             9	 18.998400	-1.000000   A	  0.32696	 0.371539
+Na+           11	 22.989700	 1.000000   A	 0.238208	 0.337649
+Mg2+          12	 24.305000	 2.000000   A	0.0952014	 542.115
+Al3+          13	 26.981500	 3.000000   A	0.0343531	 17103.8
+Cl-           17	 35.453000	-1.000000   A	 0.452862	 0.215894
+K+            19	 39.098300	 1.000000   A	 0.278976	 3.43255
+Ca2+          20	 40.078000	 2.000000   A	 0.185645	 66.8791
+V2+           23	 50.941500	 2.000000   A	 0.104217	 885.914
+Cr2+          24	 51.996100	 2.000000   A	0.0915844	 586.397
+Cr3+          24	 51.996100	 3.000000   A	0.0594408	 3495.36
+Mn2+          25	 54.938000	 2.000000   A	 0.109723	 458.133
+Fe2+          26	 55.845000	 2.000000   A	0.0958251	 709.074
+Fe3+          26	 55.845000	 3.000000   A	0.0538281	 11096.6
+Co2+          27	 58.933200	 2.000000   A	0.0879852	 1417.07
+Ni2+          28	 58.693400	 2.000000   A	0.0774904	 1771.71
+Cu+           29	 63.546000	 1.000000   A	0.0745148	 23.6915
+Cu2+          29	 63.546000	 2.000000   A	0.0814281	 2711.39
+Zn2+          30	 65.390000	 2.000000   A	0.0830852	 1775.38
+Br-           35	 79.904000	-1.000000   A	 0.454483	 0.70333
+Rb+           37	 85.467800	 1.000000   A	 0.304883	 2.26564
+Sr2+          38	 87.620000	 2.000000   A	 0.228141	 33.3728
+Y3+           39	 88.905900	 3.000000   A	 0.143435	 653.569
+Zr4+          40	 91.224000	 4.000000   A	0.0848314	 17692.6
+Ag+           47	 107.868200	 1.000000   A	 0.154856	 89.6999
+Cd2+          48	 112.411000	 2.000000   A	 0.121037	 608.263
+Sn2+          50	 118.710000	 2.000000   A	  0.19655	 197.466
+I-            53	 126.904500	-1.000000   A	 0.498511	 1.01922
+In3+          49	 114.818000	 3.000000   A	0.0807867	 4694.53
+Cs+           55	 132.905500	 1.000000   A	 0.343531	 3.87522
+Ba2+          56	 137.327000	 2.000000   A	 0.276642	 23.5174
+La3+          57	 138.905500	 3.000000   A	 0.193378	 187.151
+Ce3+          58	 140.116000	 3.000000   A	 0.187784	 425.59
+Ce4+          58	 140.116000	 4.000000   A	  0.13465	 6435.64
+Pr3+          59	 140.907700	 3.000000   A	 0.181387	 497.924
+Nd3+          60	 144.240000	 3.000000   A	 0.172638	 426.866
+Sm3+          62	 150.360000	 3.000000   A	 0.165921	 486.398
+Eu3+          63	 151.964000	 3.000000   A	 0.161538	 605.05
+Gd3+          64	 157.250000	 3.000000   A	 0.154785	 419.848
+Tb3+          65	 158.925300	 3.000000   A	 0.152219	 549.151
+Dy3+          66	 162.500000	 3.000000   A	 0.145858	 526.856
+Er3+          68	 167.259000	 3.000000   A	 0.140887	 958.72
+Tm3+          69	 168.934200	 3.000000   A	 0.139337	 1078.68
+Lu3+          71	 174.967000	 3.000000   A	 0.133189	 852.887
+Hf4+          72	 178.490000	 4.000000   A	0.0782387	 23221.6
+Hg2+          80	 200.590000	 2.000000   A	 0.136967	 1006.22
+Tl+           81	 204.383300	 1.000000   A	 0.277622	 17.3418
+Tl3+          81	 204.383300	 3.000000   A	0.0978385	 5454.96
+Th4+          90	 232.038100	 4.000000   A	 0.154428	 3430.77
+U4+           92	 238.028900	 4.000000   A	 0.130891	 11055.8
+Pu4+          94	 244.000000	 4.000000   A	 0.123247	 15271.9
+#endif
+
+#ifdef TIP4PFB_ZQ
+; Zhang/Qiu 12-6 ion set for the TIP4P-FB water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.209575	 104.928
+Li+            3	 6.941000	 1.000000   A	 0.116244	 12.5139
+NH4+           7	 18.038700	 1.000000   A	 0.296919	 2.1284
+F-_star        9	 18.998400	-1.000000   A	 0.301747	 7.40777
+F-             9	 18.998400	-1.000000   A	 0.322541	 0.457311
+Na+           11	 22.989700	 1.000000   A	 0.262156	 0.100416
+Mg2+          12	 24.305000	 2.000000   A	 0.101545	 285.294
+Al3+          13	 26.981500	 3.000000   A	0.0354221	 12359.2
+Cl-           17	 35.453000	-1.000000   A	 0.448033	 0.246019
+K+            19	 39.098300	 1.000000   A	  0.28254	 2.47902
+Ca2+          20	 40.078000	 2.000000   A	 0.195748	 27.6751
+V2+           23	 50.941500	 2.000000   A	 0.107478	 670.18
+Cr2+          24	 51.996100	 2.000000   A	0.0975534	 332.73
+Cr3+          24	 51.996100	 3.000000   A	0.0640734	 2195.79
+Mn2+          25	 54.938000	 2.000000   A	 0.117599	 278.222
+Fe2+          26	 55.845000	 2.000000   A	 0.101456	 468.373
+Fe3+          26	 55.845000	 3.000000   A	0.0595833	 8643.54
+Co2+          27	 58.933200	 2.000000   A	   0.0926	 1030.84
+Ni2+          28	 58.693400	 2.000000   A	0.0815707	 1304.04
+Cu+           29	 63.546000	 1.000000   A	0.0860608	 8.55628
+Cu2+          29	 63.546000	 2.000000   A	0.0840296	 1982.86
+Zn2+          30	 65.390000	 2.000000   A	0.0883593	 1335.03
+Br-           35	 79.904000	-1.000000   A	 0.448692	 0.848934
+Rb+           37	 85.467800	 1.000000   A	 0.313115	 1.26566
+Sr2+          38	 87.620000	 2.000000   A	 0.236445	 25.7211
+Y3+           39	 88.905900	 3.000000   A	 0.150152	 360.24
+Zr4+          40	 91.224000	 4.000000   A	0.0867557	 13421.2
+Ag+           47	 107.868200	 1.000000   A	 0.158473	 77.5517
+Cd2+          48	 112.411000	 2.000000   A	 0.124761	 461.202
+Sn2+          50	 118.710000	 2.000000   A	 0.200809	 151.388
+I-            53	 126.904500	-1.000000   A	 0.496908	 0.95437
+In3+          49	 114.818000	 3.000000   A	0.0826041	 3387.6
+Cs+           55	 132.905500	 1.000000   A	 0.344635	 2.77692
+Ba2+          56	 137.327000	 2.000000   A	 0.284749	 13.6424
+La3+          57	 138.905500	 3.000000   A	 0.204426	 105.267
+Ce3+          58	 140.116000	 3.000000   A	 0.194786	 238.832
+Ce4+          58	 140.116000	 4.000000   A	 0.139515	 4869.58
+Pr3+          59	 140.907700	 3.000000   A	 0.187873	 333.881
+Nd3+          60	 144.240000	 3.000000   A	 0.179766	 249.512
+Sm3+          62	 150.360000	 3.000000   A	 0.172335	 320.031
+Eu3+          63	 151.964000	 3.000000   A	 0.168647	 437.111
+Gd3+          64	 157.250000	 3.000000   A	 0.162054	 239.382
+Tb3+          65	 158.925300	 3.000000   A	 0.159685	 335.731
+Dy3+          66	 162.500000	 3.000000   A	 0.153983	 300.394
+Er3+          68	 167.259000	 3.000000   A	 0.144379	 512.379
+Tm3+          69	 168.934200	 3.000000   A	 0.142134	 597.299
+Lu3+          71	 174.967000	 3.000000   A	 0.140121	 515.931
+Hf4+          72	 178.490000	 4.000000   A	0.0786129	 17815.2
+Hg2+          80	 200.590000	 2.000000   A	 0.141011	 824.312
+Tl+           81	 204.383300	 1.000000   A	  0.27837	 13.2796
+Tl3+          81	 204.383300	 3.000000   A	0.0995134	 4015.98
+Th4+          90	 232.038100	 4.000000   A	 0.160896	 2687.77
+U4+           92	 238.028900	 4.000000   A	 0.131408	 8417.67
+Pu4+          94	 244.000000	 4.000000   A	 0.123657	 11992
+#endif
+
+#ifdef A99SBDISP_ZQ
+; Zhang/Qiu 12-6 ion set for the a99SB-disp water model (54 ions)
+H3O+           1	 19.018100	 1.000000   A	 0.210163	 91.0104
+Li+            3	 6.941000	 1.000000   A	 0.109474	 14.4741
+NH4+           7	 18.038700	 1.000000   A	 0.288936	 2.49617
+F-_star        9	 18.998400	-1.000000   A	 0.318639	 3.33632
+F-             9	 18.998400	-1.000000   A	  0.43271	 0.0071128
+Na+           11	 22.989700	 1.000000   A	 0.250253	 0.151879
+Mg2+          12	 24.305000	 2.000000   A	0.0968229	 255.854
+Al3+          13	 26.981500	 3.000000   A	0.0278851	 11163.3
+Cl-           17	 35.453000	-1.000000   A	 0.481442	 0.0677808
+K+            19	 39.098300	 1.000000   A	 0.275484	 3.238
+Ca2+          20	 40.078000	 2.000000   A	 0.187178	 30.4223
+V2+           23	 50.941500	 2.000000   A	 0.107763	 696.613
+Cr2+          24	 51.996100	 2.000000   A	0.0921724	 276.116
+Cr3+          24	 51.996100	 3.000000   A	0.0594051	 2235.07
+Mn2+          25	 54.938000	 2.000000   A	 0.115354	 345.774
+Fe2+          26	 55.845000	 2.000000   A	0.0974109	 397.916
+Fe3+          26	 55.845000	 3.000000   A	0.0614007	 8974.12
+Co2+          27	 58.933200	 2.000000   A	0.0885732	 817.884
+Ni2+          28	 58.693400	 2.000000   A	 0.076742	 1034.41
+Cu+           29	 63.546000	 1.000000   A	0.0793078	 11.7353
+Cu2+          29	 63.546000	 2.000000   A	0.0823012	 1808.39
+Zn2+          30	 65.390000	 2.000000   A	0.0850986	 1146.55
+Br-           35	 79.904000	-1.000000   A	 0.493914	 0.158155
+Rb+           37	 85.467800	 1.000000   A	 0.304206	 1.47988
+Sr2+          38	 87.620000	 2.000000   A	 0.232008	 20.7154
+Y3+           39	 88.905900	 3.000000   A	 0.142954	 512.025
+Zr4+          40	 91.224000	 4.000000   A	0.0839939	 13310.4
+Ag+           47	 107.868200	 1.000000   A	 0.158277	 59.9781
+Cd2+          48	 112.411000	 2.000000   A	    0.122	 480.056
+Sn2+          50	 118.710000	 2.000000   A	 0.198973	 137.845
+I-            53	 126.904500	-1.000000   A	 0.512071	 0.534715
+In3+          49	 114.818000	 3.000000   A	0.0785416	 3920.05
+Cs+           55	 132.905500	 1.000000   A	 0.336172	 3.17984
+Ba2+          56	 137.327000	 2.000000   A	 0.280883	 11.9533
+La3+          57	 138.905500	 3.000000   A	 0.195481	 133.75
+Ce3+          58	 140.116000	 3.000000   A	 0.188496	 253.391
+Ce4+          58	 140.116000	 4.000000   A	 0.134953	 4927.1
+Pr3+          59	 140.907700	 3.000000   A	 0.182884	 361.736
+Nd3+          60	 144.240000	 3.000000   A	 0.172995	 267.727
+Sm3+          62	 150.360000	 3.000000   A	 0.163979	 306.896
+Eu3+          63	 151.964000	 3.000000   A	  0.16225	 429.034
+Gd3+          64	 157.250000	 3.000000   A	 0.154553	 317.681
+Tb3+          65	 158.925300	 3.000000   A	 0.152415	 435.604
+Dy3+          66	 162.500000	 3.000000   A	 0.146036	 415.424
+Er3+          68	 167.259000	 3.000000   A	 0.139016	 681.541
+Tm3+          69	 168.934200	 3.000000   A	  0.13727	 767.347
+Lu3+          71	 174.967000	 3.000000   A	 0.134633	 680.6
+Hf4+          72	 178.490000	 4.000000   A	0.0754413	 17325.7
+Hg2+          80	 200.590000	 2.000000   A	 0.136913	 731.293
+Tl+           81	 204.383300	 1.000000   A	 0.278406	 13.1612
+Tl3+          81	 204.383300	 3.000000   A	0.0920298	 3951.77
+Th4+          90	 232.038100	 4.000000   A	 0.159703	 2817.03
+U4+           92	 238.028900	 4.000000   A	  0.12861	 8062.91
+Pu4+          94	 244.000000	 4.000000   A	 0.122017	 11497.2
+#endif
+
+#ifdef OPC3
+; OPC3 - Default for MINFF
+HW_opc3        1	 1.00794 	 0.447585   A  	 0.000000e+00	 0.000000e+00
+OW_opc3        8	 15.99940	-0.895170   A  	 3.174270e-01	 6.836900e-01
+#endif
+
+#ifdef OPC
+; OPC
+HW_opc         1	 1.00794 	 0.679100   A  	 0.000000e+00	 0.000000e+00
+OW_opc         8	 15.99940	 0.000000   A  	 3.166560e-01	 8.903100e-01
+MW             0     0.0000     -1.358200   A    0.00000e+00     0.00000e+000
+#endif
+
+#ifdef SPC
+; spc water
+HW_spc         1	 1.00794 	 0.410000   A  	 0.000000e+00	 0.000000e+00
+OW_spc         8	 15.99940	-0.820000   A  	 3.165570e-01	 6.501700e-01
+#endif
+
+#ifdef SPCE
+; spce water              
+HW_spce        1	 1.00794 	 0.423800   A  	 0.000000e+00	 0.000000e+00
+OW_spce        8	 15.99940	-0.847600   A  	 3.165570e-01	 6.501700e-01
+#endif
+
+#ifdef SPC
+; Ferguson SPC water
+HW_flx         1	 1.00794 	 0.413000   A  	 0.000000e+00	 0.000000e+00
+OW_flx         8	 15.99940	-0.826000   A  	 3.182600e-01	 6.296200e-01
+#endif
+
+#ifdef TIP3P
+; tip3p
+HW_tip3p       1	 1.00794 	 0.417000   A  	 0.000000e+00	 0.000000e+00
+OW_tip3p       8	 15.99940	-0.834000   A  	 3.150580e-01	 6.363860e-01
+#endif
+
+#ifdef TIPS3P
+; tips3p CHARMM TIP3P with LJ also for H's
+HW_tips3p      1	 1.00800 	 0.417000   A  	 4.000100e-02	 1.924640e-01
+OW_tips3p      8	 15.99940	-0.834000   A  	 3.150570e-01	 6.363860e-01
+#endif
+
+#ifdef TIP3PFB
+; TIP3PFB
+HW_TIP3PFB     1	 1.00794 	 0.424224   A  	 0.000000e+00	 0.000000e+00
+OW_TIP3PFB     8	 15.99940	-0.848448   A  	 3.177965e-01	 6.521435e-01
+#endif
+
+; 4-site models
+#ifdef TIP4P
+; tip4p
+HW_tip4p       1	 1.00794 	 0.520000   A  	 0.000000e+00	 0.000000e+00
+OW_tip4p       8	 15.99940	 0.000000   A  	 3.153650e-01	 6.485200e-01
+MW             0     0.0000     -1.040000   A    0.00000e+00     0.00000e+000
+#endif
+
+#ifdef TIP4P2005
+; tip4p/2005
+HW_tip4p2005   1	 1.00794 	 0.556400   A  	 0.000000e+00	 0.000000e+00
+OW_tip4p2005   8	 15.99940	 0.000000   A  	 3.158900e-01	 7.748980e-01
+MW             0     0.0000     -1.112800   A    0.00000e+00     0.00000e+000
+#endif
+
+#ifdef TIP4PEW
+;tip4p-EW
+HW_tip4pew     1	 1.00794 	 0.524220   A  	 0.000000e+00	 0.000000e+00
+OW_tip4pew     8	 15.99940	 0.000000   A  	 3.164350e-01	 6.809460e-01
+MW             0     0.0000     -1.048440   A    0.00000e+00     0.00000e+000
+#endif
+
+#ifdef TIP4PICE
+;tip4p-Ice
+HW_ice         1	 1.00800 	 0.589700   A  	 0.000000e+00	 0.000000e+00
+OW_ice         8	 15.99940	 0.000000   A  	 3.166800e-01	 8.821600e-01
+MW             0     0.0000     -1.179400   A    0.00000e+00     0.00000e+000
+#endif
+
+#ifdef TIP4PF
+;tip4p/flex by m.gonzalez12@imperial.ac.uk
+HW_tip4pf      1	 1.00794 	 0.556400   A  	 0.000000e+00	 0.000000e+00
+OW_tip4pf      8	 15.99940	 0.000000   A  	 3.164400e-01	 7.749000e-01
+MW             0     0.0000     -1.1128     D    0.000000e+00    0.000000e+00
+#endif
+
+#ifdef TIP4PFB
+; TIP4PFB
+HW_TIP4PFB     1	 1.00794 	 0.525870   A  	 0.000000e+00	 0.000000e+00
+OW_TIP4PFB     8	 15.99940	 0.000000   A  	 3.165550e-01	 7.492790e-01
+MW             0     0.0000     -1.051740   A    0.00000e+00     0.00000e+000
+#endif
+
+; 5-site models
+#ifdef TIP5P
+;tip5p
+HW_tip5p       1	 1.00794 	 0.000000   A  	 0.000000e+00	 0.000000e+00
+OW_tip5p       8	 15.99940	 0.000000   A  	 3.120000e-01	 6.694400e-01
+MW             0     0.0000      0.000000   A    0.00000e+00     0.00000e+000
+#endif
+
+#ifdef DUMMY
+; dummy defs
+MW             0     0.0000      0.0000     A    0.00000e+00     0.00000e+00
+#endif
+

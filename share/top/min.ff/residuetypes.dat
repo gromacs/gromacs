@@ -1,0 +1,327 @@
+ABU	Protein
+ACE	Protein
+AIB	Protein
+ALA  	Protein
+ARG  	Protein
+ARGN	Protein
+ASN	Protein
+ASN1  	Protein
+ASP	Protein
+ASP1	Protein
+ASPH	Protein
+ASH 	Protein
+CT3 	Protein
+CYS 	Protein
+CYS1	Protein
+CYS2 	Protein
+CYSH 	Protein
+DALA	Protein
+GLN  	Protein
+GLU  	Protein
+GLUH 	Protein
+GLH	Protein
+GLY	Protein
+HIS 	Protein
+HIS1	Protein
+HISA 	Protein
+HISB 	Protein
+HISH	Protein
+HISD	Protein
+HISE	Protein
+HISP 	Protein
+HSD	Protein
+HSE	Protein
+HSP	Protein
+HYP  	Protein
+ILE  	Protein
+LEU  	Protein
+LSN	Protein
+LYS  	Protein
+LYSH 	Protein
+MELEU	Protein
+MET  	Protein
+MEVAL	Protein
+NAC  	Protein
+NME     Protein
+NHE	Protein
+NH2	Protein
+PHE  	Protein
+PHEH 	Protein
+PHEU 	Protein
+PHL 	Protein
+PRO  	Protein
+SER  	Protein
+THR  	Protein
+TRP  	Protein
+TRPH 	Protein
+TRPU 	Protein
+TYR  	Protein
+TYRH 	Protein
+TYRU 	Protein
+VAL  	Protein
+PGLU	Protein
+HID	Protein
+HIE	Protein
+HIP	Protein
+LYP	Protein
+LYN	Protein
+CYN	Protein
+CYM	Protein
+CYX	Protein
+DAB	Protein
+ORN	Protein
+HYP	Protein
+NALA    Protein
+NGLY    Protein
+NSER    Protein
+NTHR    Protein
+NLEU    Protein
+NILE    Protein
+NVAL    Protein
+NASN    Protein
+NGLN    Protein
+NARG    Protein
+NHID    Protein
+NHIE    Protein
+NHIP    Protein
+NHISD   Protein
+NHISE   Protein
+NHISH   Protein
+NTRP    Protein
+NPHE    Protein
+NTYR    Protein
+NGLU    Protein
+NASP    Protein
+NLYS    Protein
+NORN    Protein
+NDAB    Protein
+NLYSN   Protein
+NPRO    Protein
+NHYP    Protein
+NCYS    Protein
+NCYS2   Protein
+NMET    Protein
+NASPH   Protein
+NGLUH   Protein
+CALA    Protein
+CGLY    Protein
+CSER    Protein
+CTHR    Protein
+CLEU    Protein
+CILE    Protein
+CVAL    Protein
+CASN    Protein
+CGLN    Protein
+CARG    Protein
+CHID    Protein
+CHIE    Protein
+CHIP    Protein
+CHISD   Protein
+CHISE   Protein
+CHISH   Protein
+CTRP    Protein
+CPHE    Protein
+CTYR    Protein
+CGLU    Protein
+CASP    Protein
+CLYS    Protein
+CORN    Protein
+CDAB    Protein
+CLYSN   Protein
+CPRO    Protein
+CHYP    Protein
+CCYS    Protein
+CCYS2   Protein
+CMET    Protein
+CASPH   Protein
+CGLUH   Protein
+DA	DNA
+DG	DNA
+DC	DNA
+DT	DNA
+DA5     DNA
+DG5     DNA
+DC5     DNA
+DT5     DNA
+DA3     DNA
+DG3     DNA
+DC3     DNA
+DT3     DNA
+DAN     DNA
+DGN     DNA
+DCN     DNA
+DTN     DNA
+A       RNA
+U       RNA
+C       RNA
+G       RNA
+RA      RNA
+RU      RNA
+RC      RNA
+RG      RNA
+RA5     RNA
+RT5     RNA
+RU5     RNA
+RC5     RNA
+RG5     RNA
+RA3     RNA
+RT3     RNA
+RU3     RNA
+RC3     RNA
+RG3     RNA
+RAN     RNA
+RTN     RNA
+RUN     RNA
+RCN     RNA
+RGN     RNA
+SOL	Water
+WAT	Water
+HOH	Water
+OHH	Water
+OPC	Water
+SPC	Water
+TIP	Water
+T3P	Water
+T4P	Water
+T5P	Water
+T3H	Water
+MIN	Mineral
+MOL	Molecule
+MMT	Montmorillonite
+KAO Kaolinite
+; ==========================================================================
+; Ions. Residue names are the ones used in min.ff/ions.itp.
+;
+; GROMACS matches these CASE-SENSITIVELY (verified against GROMACS 2025.3;
+; the 2021 series matched case-insensitively instead). Both the mixed-case
+; spelling used in ions.itp and the all-uppercase spelling written by gmx
+; genion and by most PDB files are therefore listed below, so either form
+; is recognised.
+;
+; U4+ is absent on purpose: the residue name U is already taken by the RNA
+; entry above and the first match wins, so adding it here would only print a
+; warning on every run. Uppercase RA is left out for the same reason, though
+; the mixed-case Ra is fine. Both ions still simulate correctly; they are
+; simply reported outside the Ion default group by make_ndx.
+; ==========================================================================
+; Anions
+Br			Ion
+Cl			Ion
+F			Ion
+I			Ion
+; Monatomic cations
+Ag			Ion
+Al			Ion
+Ba			Ion
+Be			Ion
+Ca			Ion
+Cd			Ion
+Ce			Ion
+Co			Ion
+Cr			Ion
+Cs			Ion
+Cu			Ion
+Dy			Ion
+Er			Ion
+Eu			Ion
+Fe			Ion
+Gd			Ion
+Hf			Ion
+Hg			Ion
+In			Ion
+K			Ion
+La			Ion
+Li			Ion
+Lu			Ion
+Mg			Ion
+Mn			Ion
+Na			Ion
+Nd			Ion
+Ni			Ion
+Pb			Ion
+Pd			Ion
+Pr			Ion
+Pt			Ion
+Pu			Ion
+Ra			Ion
+Rb			Ion
+Sm			Ion
+Sn			Ion
+Sr			Ion
+Tb			Ion
+Th			Ion
+Tl			Ion
+Tm			Ion
+V			Ion
+Y			Ion
+Yb			Ion
+Zn			Ion
+Zr			Ion
+; Polyatomic cations
+HO			Ion	; H3O+, hydronium
+H_Eigen			Ion	; H+ Eigen cation
+H_Zundel		Ion	; H+ Zundel cation
+NH			Ion	; NH4+, ammonium
+; Uppercase aliases (gmx genion / PDB convention)
+AG			Ion
+AL			Ion
+BA			Ion
+BE			Ion
+BR			Ion
+CA			Ion
+CD			Ion
+CE			Ion
+CL			Ion
+CO			Ion
+CR			Ion
+CS			Ion
+CU			Ion
+DY			Ion
+ER			Ion
+EU			Ion
+FE			Ion
+GD			Ion
+HF			Ion
+HG			Ion
+H_EIGEN			Ion
+H_ZUNDEL		Ion
+IN			Ion
+LA			Ion
+LI			Ion
+LU			Ion
+MG			Ion
+MN			Ion
+NA			Ion
+ND			Ion
+NI			Ion
+PB			Ion
+PD			Ion
+PR			Ion
+PT			Ion
+PU			Ion
+RB			Ion
+SM			Ion
+SN			Ion
+SR			Ion
+TB			Ion
+TH			Ion
+TL			Ion
+TM			Ion
+YB			Ion
+ZN			Ion
+ZR			Ion
+; Truncated forms. A .gro residue-name field holds only 5 characters and a
+; .pdb only 4, so H_Eigen and H_Zundel cannot survive a round trip through a
+; coordinate file. The truncations are listed so those two ions are still
+; recognised; shortening the residue names in ions.itp would be the real fix.
+H_Eig		Ion	; truncated H_Eigen
+H_Zun		Ion	; truncated H_Zundel
+H_EIG		Ion	; truncated H_EIGEN
+H_ZUN		Ion	; truncated H_ZUNDEL
+; Legacy GROMACS/AMBER aliases
+NA+			Ion	; AMBER sodium
+CL-			Ion	; AMBER chloride
+CU1			Ion	; AMBER Cu(I)
+Cal			Ion	; AMBER calcium
+IB+			Ion	; AMBER generic big ion
+OH			Ion	; hydroxide

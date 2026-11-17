@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+;
+;
+;	This is a include topology file
+;
+;	Created by:
+;
+;	Force field was read from current directory or a relative path - path added.
+;
+
+; Include forcefield parameters
+#include "./min.ff/forcefield.itp"
+
+[ moleculetype ]
+; Name            nrexcl
+MIN                 1
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+     1        Alo      1    MIN     Al      1      1.782   26.98154
+     2        Alo      1    MIN     Al      2      1.782   26.98154
+     3        Alo      1    MIN     Al      3      1.782   26.98154
+     4        Alo      1    MIN     Al      4      1.782   26.98154
+     5        Sit      1    MIN    Sit      5      1.884   28.08538
+     6        Sit      1    MIN    Sit      6      1.884   28.08538
+     7        Sit      1    MIN    Sit      7      1.884   28.08538
+     8        Sit      1    MIN    Sit      8      1.884   28.08538
+     9         Ob      1    MIN     Ob      9         -1   15.99941
+    10         Ob      1    MIN     Ob     10         -1   15.99941
+    11         Ob      1    MIN     Ob     11         -1   15.99941
+    12         Ob      1    MIN     Ob     12         -1   15.99941
+    13         Ob      1    MIN     Ob     13         -1   15.99941
+    14         Ob      1    MIN     Ob     14         -1   15.99941
+    15         Op      1    MIN     Op     15         -1   15.99941
+    16         Op      1    MIN     Op     16         -1   15.99941
+    17         Op      1    MIN     Op     17         -1   15.99941
+    18         Op      1    MIN     Op     18         -1   15.99941
+    19         Oh      1    MIN     Oh     19         -1   15.99941
+    20         Oh      1    MIN     Oh     20         -1   15.99941
+    21         Oh      1    MIN     Oh     21         -1   15.99941
+    22         Oh      1    MIN     Oh     22         -1   15.99941
+    23         Oh      1    MIN     Oh     23         -1   15.99941
+    24         Oh      1    MIN     Oh     24         -1   15.99941
+    25         Oh      1    MIN     Oh     25         -1   15.99941
+    26         Oh      1    MIN     Oh     26         -1   15.99941
+    27          H      1    MIN      H     27        0.4    1.00794
+    28          H      1    MIN      H     28        0.4    1.00794
+    29          H      1    MIN      H     29        0.4    1.00794
+    30          H      1    MIN      H     30        0.4    1.00794
+    31          H      1    MIN      H     31        0.4    1.00794
+    32          H      1    MIN      H     32        0.4    1.00794
+    33          H      1    MIN      H     33        0.4    1.00794
+    34          H      1    MIN      H     34        0.4    1.00794   ; qtot -0.136
+
+[ bonds ]
+; i     j       funct
+    19     27      1     ; Oh-H
+    20     28      1     ; Oh-H
+    21     29      1     ; Oh-H
+    22     31      1     ; Oh-H
+    23     30      1     ; Oh-H
+    24     32      1     ; Oh-H
+    25     33      1     ; Oh-H
+    26     34      1     ; Oh-H
+
+[ angles ]
+; i    j   k   type   theta   force.c.
+    15      1     16      1      93.41     500.00     ; Op-Alo-Op
+    15      1     21      1      77.83     500.00     ; Op-Alo-Oh
+    15      1     23      1      96.27     500.00     ; Op-Alo-Oh
+    15      1     25      1     168.47     500.00     ; Op-Alo-Oh
+    15      1     26      1      93.45     500.00     ; Op-Alo-Oh
+    16      1     21      1      97.12     500.00     ; Op-Alo-Oh
+    16      1     23      1     166.59     500.00     ; Op-Alo-Oh
+    16      1     25      1      77.98     500.00     ; Op-Alo-Oh
+    16      1     26      1      93.93     500.00     ; Op-Alo-Oh
+    21      1     23      1      93.98     500.00     ; Oh-Alo-Oh
+    21      1     25      1      95.48     500.00     ; Oh-Alo-Oh
+    21      1     26      1     166.28     500.00     ; Oh-Alo-Oh
+    23      1     25      1      93.52     500.00     ; Oh-Alo-Oh
+    23      1     26      1      76.28     500.00     ; Oh-Alo-Oh
+    25      1     26      1      94.77     500.00     ; Oh-Alo-Oh
+    15      2     17      1      93.78     500.00     ; Op-Alo-Op
+    15      2     20      1      96.73     500.00     ; Op-Alo-Oh
+    15      2     21      1      76.84     500.00     ; Op-Alo-Oh
+    15      2     23      1     166.81     500.00     ; Op-Alo-Oh
+    15      2     26      1      93.60     500.00     ; Op-Alo-Oh
+    17      2     20      1      77.97     500.00     ; Op-Alo-Oh
+    17      2     21      1     167.22     500.00     ; Op-Alo-Oh
+    17      2     23      1      96.04     500.00     ; Op-Alo-Oh
+    17      2     26      1      93.80     500.00     ; Op-Alo-Oh
+    20      2     21      1      94.34     500.00     ; Oh-Alo-Oh
+    20      2     23      1      93.91     500.00     ; Oh-Alo-Oh
+    20      2     26      1     167.16     500.00     ; Oh-Alo-Oh
+    21      2     23      1      94.64     500.00     ; Oh-Alo-Oh
+    21      2     26      1      95.42     500.00     ; Oh-Alo-Oh
+    23      2     26      1      77.01     500.00     ; Oh-Alo-Oh
+    16      3     18      1      93.75     500.00     ; Op-Alo-Op
+    16      3     19      1      93.69     500.00     ; Op-Alo-Oh
+    16      3     22      1      95.91     500.00     ; Op-Alo-Oh
+    16      3     24      1     167.32     500.00     ; Op-Alo-Oh
+    16      3     25      1      77.97     500.00     ; Op-Alo-Oh
+    18      3     19      1      93.79     500.00     ; Op-Alo-Oh
+    18      3     22      1     166.82     500.00     ; Op-Alo-Oh
+    18      3     24      1      76.97     500.00     ; Op-Alo-Oh
+    18      3     25      1      96.78     500.00     ; Op-Alo-Oh
+    19      3     22      1      76.69     500.00     ; Oh-Alo-Oh
+    19      3     24      1      95.51     500.00     ; Oh-Alo-Oh
+    19      3     25      1     166.91     500.00     ; Oh-Alo-Oh
+    22      3     24      1      94.69     500.00     ; Oh-Alo-Oh
+    22      3     25      1      93.99     500.00     ; Oh-Alo-Oh
+    24      3     25      1      94.38     500.00     ; Oh-Alo-Oh
+    17      4     18      1      93.47     500.00     ; Op-Alo-Op
+    17      4     19      1      93.85     500.00     ; Op-Alo-Oh
+    17      4     20      1      77.91     500.00     ; Op-Alo-Oh
+    17      4     22      1     166.68     500.00     ; Op-Alo-Oh
+    17      4     24      1      97.15     500.00     ; Op-Alo-Oh
+    18      4     19      1      93.37     500.00     ; Op-Alo-Oh
+    18      4     20      1     168.48     500.00     ; Op-Alo-Oh
+    18      4     22      1      96.20     500.00     ; Op-Alo-Oh
+    18      4     24      1      77.83     500.00     ; Op-Alo-Oh
+    19      4     20      1      94.81     500.00     ; Oh-Alo-Oh
+    19      4     22      1      76.47     500.00     ; Oh-Alo-Oh
+    19      4     24      1     166.27     500.00     ; Oh-Alo-Oh
+    20      4     22      1      93.60     500.00     ; Oh-Alo-Oh
+    20      4     24      1      95.51     500.00     ; Oh-Alo-Oh
+    22      4     24      1      93.84     500.00     ; Oh-Alo-Oh
+     9      5     10      1     108.48     500.00     ; Ob-Sit-Ob
+     9      5     12      1     109.20     500.00     ; Ob-Sit-Ob
+     9      5     15      1     113.27     500.00     ; Ob-Sit-Op
+    10      5     12      1     105.88     500.00     ; Ob-Sit-Ob
+    10      5     15      1     109.62     500.00     ; Ob-Sit-Op
+    12      5     15      1     110.12     500.00     ; Ob-Sit-Op
+    10      6     12      1     109.37     500.00     ; Ob-Sit-Ob
+    10      6     14      1     106.21     500.00     ; Ob-Sit-Ob
+    10      6     17      1     111.75     500.00     ; Ob-Sit-Op
+    12      6     14      1     105.70     500.00     ; Ob-Sit-Ob
+    12      6     17      1     113.66     500.00     ; Ob-Sit-Op
+    14      6     17      1     109.73     500.00     ; Ob-Sit-Op
+     9      7     11      1     105.70     500.00     ; Ob-Sit-Ob
+     9      7     13      1     106.19     500.00     ; Ob-Sit-Ob
+     9      7     16      1     109.73     500.00     ; Ob-Sit-Op
+    11      7     13      1     109.43     500.00     ; Ob-Sit-Ob
+    11      7     16      1     113.66     500.00     ; Ob-Sit-Op
+    13      7     16      1     111.71     500.00     ; Ob-Sit-Op
+    11      8     13      1     105.78     500.00     ; Ob-Sit-Ob
+    11      8     14      1     109.13     500.00     ; Ob-Sit-Ob
+    11      8     18      1     109.99     500.00     ; Ob-Sit-Op
+    13      8     14      1     108.65     500.00     ; Ob-Sit-Ob
+    13      8     18      1     109.75     500.00     ; Ob-Sit-Op
+    14      8     18      1     113.26     500.00     ; Ob-Sit-Op
+     5      9      7      1     129.76     500.00     ; Sit-Ob-Sit
+     5     10      6      1     143.72     500.00     ; Sit-Ob-Sit
+     7     11      8      1     131.05     500.00     ; Sit-Ob-Sit
+     5     12      6      1     131.05     500.00     ; Sit-Ob-Sit
+     7     13      8      1     143.66     500.00     ; Sit-Ob-Sit
+     6     14      8      1     129.81     500.00     ; Sit-Ob-Sit
+     1     15      2      1     100.51     500.00     ; Alo-Op-Alo
+     1     15      5      1     121.82     500.00     ; Alo-Op-Sit
+     2     15      5      1     127.01     500.00     ; Alo-Op-Sit
+     1     16      3      1     100.87     500.00     ; Alo-Op-Alo
+     1     16      7      1     128.49     500.00     ; Alo-Op-Sit
+     3     16      7      1     120.51     500.00     ; Alo-Op-Sit
+     2     17      4      1     100.92     500.00     ; Alo-Op-Alo
+     2     17      6      1     120.51     500.00     ; Alo-Op-Sit
+     4     17      6      1     128.46     500.00     ; Alo-Op-Sit
+     3     18      4      1     100.47     500.00     ; Alo-Op-Alo
+     3     18      8      1     127.21     500.00     ; Alo-Op-Sit
+     4     18      8      1     121.73     500.00     ; Alo-Op-Sit
+     3     19      4      1     103.34     500.00     ; Alo-Oh-Alo
+     3     19     27      1     108.97     110.00     ; Alo-Oh-H
+     4     19     27      1     109.85     110.00     ; Alo-Oh-H
+     2     20      4      1     103.21     500.00     ; Alo-Oh-Alo
+     2     20     28      1     129.69     110.00     ; Alo-Oh-H
+     4     20     28      1     124.07     110.00     ; Alo-Oh-H
+     1     21      2      1     104.82     500.00     ; Alo-Oh-Alo
+     1     21     29      1     132.35     110.00     ; Alo-Oh-H
+     2     21     29      1     121.86     110.00     ; Alo-Oh-H
+     3     22      4      1     103.47     500.00     ; Alo-Oh-Alo
+     3     22     31      1     128.53     110.00     ; Alo-Oh-H
+     4     22     31      1     127.99     110.00     ; Alo-Oh-H
+     1     23      2      1     103.50     500.00     ; Alo-Oh-Alo
+     1     23     30      1     127.35     110.00     ; Alo-Oh-H
+     2     23     30      1     129.15     110.00     ; Alo-Oh-H
+     3     24      4      1     104.73     500.00     ; Alo-Oh-Alo
+     3     24     32      1     122.06     110.00     ; Alo-Oh-H
+     4     24     32      1     132.23     110.00     ; Alo-Oh-H
+     1     25      3      1     103.19     500.00     ; Alo-Oh-Alo
+     1     25     33      1     124.18     110.00     ; Alo-Oh-H
+     3     25     33      1     129.75     110.00     ; Alo-Oh-H
+     1     26      2      1     103.18     500.00     ; Alo-Oh-Alo
+     1     26     34      1     109.46     110.00     ; Alo-Oh-H
+     2     26     34      1     109.62     110.00     ; Alo-Oh-H
+
+[ system ]
+; Name
+MIN
+
+[ molecules ]
+; Compound        #mols
+MIN                 1
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

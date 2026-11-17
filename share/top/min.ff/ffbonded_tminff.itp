@@ -1,0 +1,400 @@
+; ffbonded_tminff.itp - bonded parameters for the TMINFF mineral sets.
+;
+; Companion to ffnonbonded_tminff.itp. Each block is guarded by the mineral
+; name alone, because these parameters do not depend on the angle force
+; constant: the O-M-O stiffness is applied through KANGLE in the mineral .itp
+; file, not here. Select with e.g. define = -DMontmorillonite -DMINFF_k500.
+;
+; Only the terms whose atomtypes the chosen mineral actually defines are
+; emitted, so grompp never sees a bondtype referring to an undeclared type.
+; Minerals with no hydroxyl groups (quartz, corundum, rutile, periclase and
+; the other anhydrous oxides) legitimately contribute nothing.
+;
+; Bonds: O-H from MINFF; M-O from the MINFF bonded set.
+; Angles: M-O-H from Pouvreau, Greathouse, Cygan and Kalinichev,
+;         J. Phys. Chem. C 2019, 123, 11628-11638 (k=125.52, theta0=110).
+;
+; If you use MINFF, please cite Holmboe, Lavauzelle and Swai, "MINFF: A Family of
+; Classical Force Fields for Minerals with Tunable Angle Terms", arXiv:2610.18220,
+; doi.org/10.48550/arXiv.2610.18220
+;
+
+#ifdef Akdalaite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Anatase
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Boehmite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Brucite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Mgh     1     110.0   125.52  ; Mg(hyd)-O-H
+#endif
+
+#ifdef CaF2
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef CaO
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Coesite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Corundum
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Cristobalite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+
+#ifdef Diaspore
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Dickite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Forsterite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Gibbsite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Goethite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+#endif
+
+#ifdef Hectorite-F
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Hectorite-H
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Mgh     1     110.0   125.52  ; Mg(hyd)-O-H
+#endif
+
+#ifdef Hematite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Imogolite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Osih    H       1      0.09572   441050
+Sit     Osih    1        0.160   251040
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Osih    Sit     1     110.0   125.52  ; Si-Osih-H (silanol)
+#endif
+
+#ifdef Kaolinite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Lepidocrocite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+#endif
+
+#ifdef Li2O
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Maghemite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Magnetite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Montmorillonite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef Muscovite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef Nacrite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Nontronite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+#endif
+
+#ifdef Periclase
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Portlandite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Cah     1     110.0   125.52  ; Ca(hyd)-O-H
+#endif
+
+#ifdef Pyrophyllite
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef Quartz
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Rutile
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef Talc
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Mgh     1     110.0   125.52  ; Mg(hyd)-O-H
+#endif
+
+#ifdef Wustite
+; no hydroxyl or M-O bonded terms for this mineral
+#endif
+
+#ifdef cis_Oct_Fe2_cis
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Feo2    1     110.0   125.52  ; Fe2+(oct)-O-H
+#endif
+
+#ifdef cis_Oct_Fe2_trans
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Feo2    1     110.0   125.52  ; Fe2+(oct)-O-H
+#endif
+
+#ifdef cis_Oct_Mg2cis_Fe3cis
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef cis_Oct_Mg2cis_Fe3trans
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef cis_Oct_Mg2trans_Fe3cis
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef cis_Oct_Mg2trans_Fe3trans
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef cis_Tet_Fe3
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif
+
+#ifdef trans_Oct_Fe2_cis
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Feo2    1     110.0   125.52  ; Fe2+(oct)-O-H
+#endif
+
+#ifdef trans_Oct_Mg2cis_Fe3cis
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+Ohmg    H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgo     1     110.0   125.52  ; Mg(oct)-O-H
+H       Oh      Feo3    1     110.0   125.52  ; Fe3+(oct)-O-H
+H       Ohmg    Mgo     1     110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1     110.0   125.52  ; Al-Ohmg-H
+#endif
+
+#ifdef trans_Tet_Fe3
+[ bondtypes ]
+;  i      j     func      b0        kb
+Oh      H       1      0.09572   441050
+Ob      H       1      0.09572   441050
+[ angletypes ]
+;  i      j       k     func    th0      cth
+H       Oh      Alo     1     110.0   125.52  ; Al(oct)-O-H
+#endif

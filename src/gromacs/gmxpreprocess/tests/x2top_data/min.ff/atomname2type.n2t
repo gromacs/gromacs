@@ -1,0 +1,9 @@
+; Reduced copy of the MINFF atomname2type.n2t (https://github.com/mholmboe/minff, min.ff),
+; keeping only the atom types needed for the kaolinite test structure.
+; Columns: Element  AtomType  Charge  Mass[u]  CN  [NeighborElement  Distance(nm)]
+H H 0.400000 1.00794 1 O 0.098
+Al Alo 1.782000 26.98154 6 O 0.188 O 0.189 O 0.191 O 0.191 O 0.192 O 0.193
+Si Sit 1.884000 28.08538 4 O 0.161 O 0.161 O 0.162 O 0.162
+O Ob -0.942000 15.99941 2 Si 0.161 Si 0.162
+O Oh -0.994000 15.99941 3 Al 0.189 Al 0.190 H 0.098
+O Op -1.065000 15.99941 3 Al 0.192 Al 0.193 Si 0.161

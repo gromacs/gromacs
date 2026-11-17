@@ -50,6 +50,7 @@ gmx_add_gtest_executable(gmxpreprocess-test
         readir.cpp
         solvate.cpp
         topdirs.cpp
+        x2top.cpp
         )
 gmx_register_gtest_test(GmxPreprocessTests gmxpreprocess-test SLOW_TEST)
 target_link_libraries(gmxpreprocess-test PRIVATE

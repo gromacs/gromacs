@@ -148,6 +148,30 @@ t_nm2type* rd_nm2type(const ExtendableForceField& forceField, int* nnm)
     return nm;
 }
 
+void free_nm2type(int nnm, t_nm2type* nm2t)
+{
+    for (int i = 0; i < nnm; i++)
+    {
+        sfree(nm2t[i].elem);
+        sfree(nm2t[i].type);
+        for (int j = 0; j < nm2t[i].nbonds; j++)
+        {
+            sfree(nm2t[i].bond[j]);
+        }
+        sfree(nm2t[i].bond);
+        sfree(nm2t[i].blen);
+    }
+    sfree(nm2t);
+}
+
+t_nm2type* rd_nm2type_from_file(const std::filesystem::path& filename, int* nnm)
+{
+    *nnm          = 0;
+    t_nm2type* nm = nullptr;
+    rd_nm2type_file(filename, nnm, &nm);
+    return nm;
+}
+
 void dump_nm2type(FILE* fp, int nnm, t_nm2type nm2t[])
 {
     int i, j;
@@ -365,6 +389,11 @@ int nm2type(int nnm, t_nm2type nm2t[], t_atoms* atoms, PreprocessingAtomTypes* a
     sfree(bbb);
     sfree(n_mask);
     sfree(m_mask);
+    for (int i = 0; i < maxbond; i++)
+    {
+        sfree(match[i]);
+    }
+    sfree(match);
 
     return nresolved;
 }

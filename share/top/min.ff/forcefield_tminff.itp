@@ -1,0 +1,28 @@
+#define _FF_MINFF
+
+; This force field uses a format that requires Gromacs 2018 or later.
+;
+; Tailored MINFF (TMINFF). Use this instead of forcefield.itp when you want the
+; mineral-specific parameter sets rather than the general GMINFF ones.
+;
+; Select a mineral AND an angle force constant in the .mdp file, for example:
+;
+;   define = -DMontmorillonite -DMINFF_k500 -DOPC3 -DOPC3_HFE_LM
+;
+; The mineral name picks the tailored parameters, MINFF_k{0,250,500,1500} picks
+; the O-M-O angle force constant. Both are required. ffbonded_tminff.itp then
+; contributes only the bonded terms whose atomtypes that mineral declares, so
+; grompp never sees a bondtype referring to an undeclared atomtype.
+;
+; Documentation: https://github.com/mholmboe/minff
+; If you use MINFF, please cite Holmboe, Lavauzelle and Swai, "MINFF: A Family of
+; Classical Force Fields for Minerals with Tunable Angle Terms", arXiv:2610.18220,
+; doi.org/10.48550/arXiv.2610.18220
+;
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               no              1.0     1.0
+
+#include "ffnonbonded_tminff.itp"
+#include "ffbonded_tminff.itp"

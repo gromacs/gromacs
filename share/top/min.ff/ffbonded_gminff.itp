@@ -1,0 +1,49 @@
+; If you use MINFF, please cite Holmboe, Lavauzelle and Swai, "MINFF: A Family of
+; Classical Force Fields for Minerals with Tunable Angle Terms", arXiv:2610.18220,
+; doi.org/10.48550/arXiv.2610.18220
+;
+
+[ bondtypes ]
+;i      j	   func     b0	    kb
+; Bonds are defined elsewhere, in each respective .itp file
+Oh      H		1   	0.09572	441050
+Ob      H		1   	0.09572	441050
+Ohmg    H		1   	0.09572	441050
+Oalh    H		1   	0.09572	441050
+Oalhh   H		1   	0.09572	441050
+Osih    H		1   	0.09572	441050
+Alo		Oalh    1   	0.195   251040
+Alo		Oalhh   1   	0.195 	251040
+Sit		Osih	1   	0.160   251040
+
+[ angletypes ]
+;i      j       k	func	th0	cth
+; Angles are defined elsewhere, in each respective .itp file
+;
+; Note that for the M-O-H angles, MINFF v1.0 uses the angles parameters from Pouvreau, 
+; Greathouse, Cygan and Kalinichev, see J. Phys. Chem. C 2019, 123, 11628−11638.
+;
+; Reference M-O-H angles: k=125.52 kJ/mol/rad^2 (15 kcal/mol/rad^2), theta0=110 deg
+; These are generic reference values. For specific minerals, angles should be scanned from structure.
+;
+; Hydroxyl O-H angles (M-O-H)
+H       Oh      Alo     1       110.0   125.52  ; Al(oct)-O-H
+H       Oh      Mgh     1       110.0   125.52  ; Mg(hyd)-O-H
+H       Oh      Mgo     1       110.0   125.52  ; Mg(oct)-O-H
+#ifndef CLAYFF_EXT
+; GMINFF splits octahedral iron into Fe2+/Fe3+ (Feo2/Feo3).
+H       Oh      Feo2    1       110.0   125.52  ; Fe2+(oct)-O-H
+H       Oh      Feo3    1       110.0   125.52  ; Fe3+(oct)-O-H
+#else
+; CLAYFF_EXT uses a single octahedral Fe3+ iron type (Feo, q=+1.575; Cygan 2004).
+H       Oh      Feo     1       110.0   125.52  ; Fe3+(oct)-O-H
+#endif
+H       Oh      Cah     1       110.0   125.52  ; Ca(hyd)-O-H
+H       Ohmg    Mgh     1       110.0   125.52  ; Mg-Ohmg-H (isomorphic subst)
+H       Ohmg    Mgo     1       110.0   125.52  ; Mg-Ohmg-H
+H       Ohmg    Alo     1       110.0   125.52  ; Al-Ohmg-H
+H       Oalh    Alo     1       110.0   125.52  ; Al-Oalh-H (edge)
+H       Oalhh   Alo     1       110.0   125.52  ; Al-Oalhh-H (edge dihydroxyl)
+H       Osih    Sit     1       110.0   125.52  ; Si-Osih-H (silanol)
+; (No generic H-O-H water angle here: water carries its own angle/settle in its
+;  model .itp — opc3.itp/spc.itp — using suffixed types like OW_opc3/HW_spc.)

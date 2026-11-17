@@ -1,0 +1,63 @@
+;From m.gonzalez12@imperial.ac.uk
+;[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+;  1		2		no		1.0	1.0
+
+;[atomtypes]
+;name     mass      charge   ptype    sigma        epsilon
+;IW     0             0.000       D   0.0           0.0
+;OWT4   15.99940       0.000       A   0.31644       0.77490
+;HW     1.00800       0.000       A   0.00000E+00   0.00000E+00
+
+
+[moleculetype]
+; name nrexcl
+SOL    1
+
+[atoms]
+; nr type resnr residu atom cgnr charge
+1     OW_tip4pf   1     SOL  OW   1     0         15.9994 
+2     HW_tip4pf   1     SOL  HW1  1     0.5564    1.008
+3     HW_tip4pf   1     SOL  HW2  1     0.5564    1.008
+4     IW_tip4pf   1     SOL  MW   1    -1.1128    0.0
+
+[ bonds ]
+; i     j       funct   length       Dr      beta
+1       2       3       0.09419  432.580584  22.87
+1       3       3       0.09419  432.580584  22.87
+
+[ angles ]
+; i     j       k       funct   angle   force.c.
+2       1       3       1       107.4   367.810
+
+[exclusions]
+1       2       3       4
+2       1       2       4
+3       1       2       4
+4       1       2       3
+
+
+; The position of the dummy is computed as follows:
+;
+;		O
+;  	      
+;	    	D
+;	  
+;	H		H
+;
+; const = distance (OD) / [ cos (angle(DOH)) 	* distance (OH) ]
+;	  0.01546 nm	/ [ cos (52.26 deg)	* 0.09572 nm	]
+
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+
+
+[dummies3]
+; Dummy from			funct	a		b
+4       1       2       3       1       0.13193828      0.13193828 
+
+
+;[system]
+;water TIP4P/2005f
+
+;[molecules]
+;water 500

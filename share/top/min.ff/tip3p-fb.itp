@@ -1,0 +1,49 @@
+; TIP3P-FB water model:
+; Lee-Ping Wang, Todd J. Martinez and Vijay S. Pande. Building force fields - an automatic, systematic and reproducible approach.  
+; Journal of Physical Chemistry Letters, 2014, 5, pp 1885-1891.  DOI:10.1021/jz500737m
+; 
+; If using a protein force field, comment out the [ defaults ] and [ atomtypes ] 
+; sections and make sure the atom types go into the [ atomtypes ] section in 
+; the protein force field (usually ffnonbonded.itp).  
+; Combination rules 2 and 3 are equivalent for the purposes of this model.
+; 
+;
+;[ defaults ]
+;1    2    yes    0.5    0.8333
+;
+;[ atomtypes ]
+;OW_tip3pfb    8     15.99940     0.000       A    0.317796456355  0.652143528104
+;HW_tip3pfb    1      1.00800     0.000       A    0.00000e+00  0.00000e+00
+
+[ moleculetype ]
+SOL        2
+
+[ atoms ]
+     1  OW_tip3pfb   1    SOL     OW      1      -0.848448
+     2  HW_tip3pfb   1    SOL    HW1      1       0.424224
+     3  HW_tip3pfb   1    SOL    HW2      1       0.424224
+
+#ifndef FLEXIBLE
+
+[ settles ]
+1    1    0.101181082494    0.163868385147
+
+#else
+
+[ bonds ]
+; Force constants copied from amber99sb-ildn.ff/ffbonded.itp .
+; This is a rigid water model - do NOT use flexible parameters
+1    2    1    0.101181082494   462750.4 
+1    3    1    0.101181082494   462750.4 
+
+[ angles ]
+; Force constants copied from amber99sb-ildn.ff/ffbonded.itp .
+; This is a rigid water model - do NOT use flexible parameters
+2    1    3    1    108.14844252012414    836.800
+
+#endif
+
+[ exclusions ]
+1    2    3
+2    1    3
+3    1    2
