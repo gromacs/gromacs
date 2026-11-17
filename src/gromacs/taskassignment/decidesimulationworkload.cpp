@@ -168,12 +168,16 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     // Disallow use of native FFT libraries until ext_codeplay_enqueue_native_command is used.
     constexpr bool haveSyclWithGraphIncompatibleGpuFftLibrary =
             GMX_GPU_SYCL && !(GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_MKL || GMX_GPU_FFT_ONEMATH);
+    // The SD update kernel takes the step number by value to seed its random noise,
+    // so the noise would repeat when Graphs are used.
+    const bool sdIntegratorPreventsMdGpuGraph = inputrec.eI == IntegrationAlgorithm::SD1;
     simulationWorkload.useMdGpuGraph =
             devFlags.enableCudaGraphs && useGpuForUpdate
             && (simulationWorkload.haveSeparatePmeRank ? simulationWorkload.useGpuPmePpCommunication : true)
             && (havePpDomainDecomposition ? simulationWorkload.useGpuHaloExchange : true)
             && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true)
-            && !(haveSyclWithGraphIncompatibleGpuFftLibrary && simulationWorkload.useGpuPmeFft);
+            && !(haveSyclWithGraphIncompatibleGpuFftLibrary && simulationWorkload.useGpuPmeFft)
+            && !sdIntegratorPreventsMdGpuGraph;
 
     // When PME on a seperate rank is on a CPU, the
     // DeviceStreamManager does not have a PME stream and thus none of
