@@ -40,11 +40,7 @@
 #ifndef GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_H
 #define GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_H
 
-#include "gromacs/nbnxm/nbnxm_enums.h"
-
 // Forward declarations
-struct DeviceInformation;
-
 namespace gmx
 {
 enum class InteractionLocality;

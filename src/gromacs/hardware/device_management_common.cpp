@@ -141,14 +141,13 @@ int chooseSubGroupSizeForDevice(const DeviceInformation& deviceInfo, int preferr
     }
     else if (deviceInfo.supportedSubGroupSizes.size() > 1)
     {
-        switch (deviceInfo.deviceVendor)
-        {
-            case DeviceVendor::Intel: return preferredSize;
-            case DeviceVendor::PoclCpu: return preferredSize;
-            default:
-                GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
-                return 0;
-        }
+        GMX_RELEASE_ASSERT(
+                std::find(deviceInfo.supportedSubGroupSizes.begin(),
+                          deviceInfo.supportedSubGroupSizes.end(),
+                          preferredSize)
+                        != deviceInfo.supportedSubGroupSizes.end(),
+                "Device has flexible sub-groups but does not support the preferred sub-group size");
+        return preferredSize;
     }
     else
     {

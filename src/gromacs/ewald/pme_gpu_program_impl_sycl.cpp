@@ -45,7 +45,6 @@
 
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/syclutils.h"
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
 
 #include "pme_gather_sycl.h"
@@ -196,11 +195,6 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     // kernel parameters
     const DeviceInformation& deviceInfo = deviceContext.deviceInfo();
     warpSize_ = chooseSubGroupSizeForDevice(deviceInfo, 16); // TODO: Choose best value, Issue #4153
-    GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes.begin(),
-                                 deviceInfo.supportedSubGroupSizes.end(),
-                                 warpSize_)
-                               != deviceInfo.supportedSubGroupSizes.end(),
-                       "Device does not support selected sub-group size");
     spreadWorkGroupSize   = c_spreadMaxWarpsPerBlock * warpSize_;
     solveMaxWorkGroupSize = c_solveMaxWarpsPerBlock * warpSize_;
     gatherWorkGroupSize   = c_gatherMaxWarpsPerBlock * warpSize_;

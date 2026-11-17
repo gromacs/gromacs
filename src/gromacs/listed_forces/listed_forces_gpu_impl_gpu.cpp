@@ -48,7 +48,6 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -120,11 +119,6 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
 
     const DeviceInformation& deviceInfo = deviceContext.deviceInfo();
     deviceSubGroupSize_                 = chooseSubGroupSizeForDevice(deviceInfo, 32);
-    GMX_RELEASE_ASSERT(std::find(deviceInfo.supportedSubGroupSizes.begin(),
-                                 deviceInfo.supportedSubGroupSizes.end(),
-                                 deviceSubGroupSize_)
-                               != deviceInfo.supportedSubGroupSizes.end(),
-                       "Device does not support selected sub-group size");
 
     int functionTypeRangeEnd = kernelParams_.functionTypeRangeEnd[sc_numFunctionTypesOnGpu - 1];
 
