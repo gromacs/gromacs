@@ -1725,6 +1725,7 @@ std::string getCoolQuote()
           "Gerrit Groenhof" },
         { "Your metadata should outlive your trajectories!", "Yang Zhang" },
         { "Fear neither hardship nor darkness.", "Margaret Nearl" },
+        { "Hard times coming your way", "Cro-Mags" },
     };
 
     if (beCool())
