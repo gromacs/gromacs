@@ -288,22 +288,34 @@ static void validateStepWorkload(const SimulationWorkload& simulationWork,
                         && !stepWork.spreadVsiteForcesOnHost && !simulationWork.useCpuPmePpCommunication
                         && do_per_step(step, outputControl.nstfout)),
             "Force output needs a GPU download only when forces are not already on the host");
-    GMX_RELEASE_ASSERT(!(simulationWork.useGpuUpdate && simulationWork.haveVirtualSites),
-                       "GPU update does not support virtual sites");
+    // Virtual-site forces must be spread exactly once, either on the host or on the GPU
+    GMX_RELEASE_ASSERT(!(stepWork.spreadVsiteForcesOnHost && stepWork.spreadVsiteForcesOnGpu),
+                       "Virtual-site forces must not be spread both on the host and on the GPU");
+    GMX_RELEASE_ASSERT(
+            (stepWork.spreadVsiteForcesOnHost || stepWork.spreadVsiteForcesOnGpu)
+                    == (simulationWork.haveVirtualSites && stepWork.computeForces),
+            "Virtual-site forces must be spread when there are virtual sites and forces");
+    GMX_RELEASE_ASSERT(!stepWork.spreadVsiteForcesOnGpu || simulationWork.useGpuUpdate,
+                       "Virtual-site forces can only be spread on the GPU within the GPU update");
     if (simulationWork.useGpuUpdate)
     {
-        // GPU update currently excludes virtual sites and separate CPU PME ranks
-        // (see decideWhetherToUseGpuForUpdate). Thus any staged PME forces are
-        // from GPU PME, and no CPU vsite spreading needs a further force upload.
-        GMX_RELEASE_ASSERT(stepWork.copyFinalFToGpu
-                                   == ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
-                                       || !stepWork.useGpuFBufferOps),
-                           "GPU update needs a force upload after CPU reduction or staged GPU PME "
-                           "communication");
+        // GPU update currently excludes separate CPU PME ranks (see decideWhetherToUseGpuForUpdate).
+        // Thus any staged PME forces are from GPU PME. Virtual sites are spread on the GPU during
+        // update, unless they are spread on the host (see setupStepWorkload()).
+        GMX_RELEASE_ASSERT(
+                stepWork.copyFinalFToGpu
+                        == ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
+                            || !stepWork.useGpuFBufferOps || stepWork.spreadVsiteForcesOnHost),
+                "GPU update needs a force upload after CPU reduction, staged GPU PME communication "
+                "or host-side VSite spreading");
         GMX_RELEASE_ASSERT(!stepWork.copyFinalFToGpu
-                                   == (stepWork.useGpuFBufferOps && !simulationWork.useCpuPmePpCommunication),
+                                   == (stepWork.useGpuFBufferOps && !simulationWork.useCpuPmePpCommunication
+                                       && !stepWork.spreadVsiteForcesOnHost),
                            "GPU update must wait for the force upload when GPU reduction does not "
                            "produce the final forces");
+        GMX_RELEASE_ASSERT(!stepWork.spreadVsiteForcesOnHost || stepWork.copyFinalFToGpu,
+                           "Virtual-site forces spread on the host must be uploaded for the GPU "
+                           "update");
     }
 }
 
@@ -366,9 +378,20 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
     flags.copyVFromGpuForIO = simulationWork.useGpuUpdate
                               && (do_per_step(step, outputControl.nstvout)
                                   || (writeCheckpoint.value() && EI_STATE_VELOCITY(inputrec.eI)));
-    // Virtual-site forces are currently always spread on the host, since GPU update does not
-    // support virtual sites (see decideWhetherToUseGpuForUpdate).
-    flags.spreadVsiteForcesOnHost = simulationWork.haveVirtualSites && flags.computeForces;
+    // Virtual-site forces are spread on the host with CPU update, and with GPU update on virial
+    // steps (for the shift-force virial) and on force-output steps. Otherwise, with GPU update,
+    // they are spread on the GPU within the update, also when the forces were uploaded from
+    // the host before the update.
+    // NOTE: With GPU update, the virial and force output are the only host-side consumers of
+    // spread vsite forces. Any new consumer needs to be added to the condition below.
+    // NOTE: The GPU vsite spreading in UpdateConstrainGpu::integrate() is controlled by
+    // spreadVsiteForcesOnGpu, so the two flags must stay mutually exclusive.
+    const bool haveVsiteForceWork = simulationWork.haveVirtualSites && flags.computeForces;
+    flags.spreadVsiteForcesOnHost = haveVsiteForceWork
+                                    && (!simulationWork.useGpuUpdate || flags.computeVirial
+                                        || do_per_step(step, outputControl.nstfout));
+    flags.spreadVsiteForcesOnGpu =
+            haveVsiteForceWork && simulationWork.useGpuUpdate && !flags.spreadVsiteForcesOnHost;
     // CPU VSite spreading and staged PME-PP comms modify forces on host after reduction and before integration
     flags.copyReducedFFromGpu = flags.useGpuFBufferOps
                                 && (!simulationWork.useGpuUpdate || simulationWork.useCpuPmePpCommunication

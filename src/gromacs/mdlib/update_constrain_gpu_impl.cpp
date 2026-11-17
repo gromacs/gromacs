@@ -76,6 +76,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                                          const bool                        updateVelocities,
                                          const bool                        computeVirial,
                                          tensor                            virial,
+                                         const bool                        spreadVsiteForces,
                                          const bool                        doTemperatureScaling,
                                          gmx::ArrayRef<const t_grp_tcstat> tcstat,
                                          const bool                        doParrinelloRahman,
@@ -99,6 +100,18 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
 
     if (numAtoms_ != 0)
     {
+        if constexpr (GpuConfigurationCapabilities::UpdateVsite)
+        {
+            if (spreadVsiteForces)
+            {
+                // Spread virtual site forces to parent atoms before the integration step, once
+                // forces are ready on device. When this is not requested, e.g. on virial and
+                // force-output steps, the forces have been spread on the host instead
+                // (see StepWorkload::spreadVsiteForcesOnHost).
+                vsiteGpu_->spreadForces(d_f_);
+            }
+        }
+
         // A copy of the current coordinates is saved into d_x0_ by integrate(), and
         // d_x_ is updated by integration and constraints.
         if (integratorLeapFrog_ != nullptr)
@@ -146,6 +159,14 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                                   pbcAiuc_);
             }
             // d_x_ has now been constrained again, d_x0_ still has the original coordinates (now useless)
+        }
+
+        // Construct virtual sites once the parent atoms have reached their final positions.
+        // A later coordinate scaling for pressure coupling keeps them correct, because all
+        // vsite types supported on the GPU are linear (see vsite_gpu.h).
+        if constexpr (GpuConfigurationCapabilities::UpdateVsite)
+        {
+            vsiteGpu_->construct(d_x_, pbcAiuc_);
         }
 
         // scaledVirial -> virial (methods above returns scaled values)
@@ -235,6 +256,10 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
                 ir.nLincsIter, ir.nProjOrder, hasTriangles, deviceContext_, deviceStream_);
         settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, deviceStream_);
     }
+    if constexpr (GpuConfigurationCapabilities::UpdateVsite)
+    {
+        vsiteGpu_ = std::make_unique<VsiteGpu>(mtop, deviceContext_, deviceStream_);
+    }
 }
 
 UpdateConstrainGpu::Impl::~Impl()
@@ -305,6 +330,18 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
         GMX_ASSERT(idef.il[InteractionFunction::SETTLE].empty(), "SETTLE not supported");
         GMX_ASSERT(idef.il[InteractionFunction::Constraints].empty(), "LINCS not supported");
     }
+    if constexpr (GpuConfigurationCapabilities::UpdateVsite)
+    {
+        vsiteGpu_->set(idef);
+    }
+    else
+    {
+        for (const InteractionFunction vsiteType : c_vsiteTypesOnGpu)
+        {
+            GMX_RELEASE_ASSERT(idef.il[vsiteType].empty(),
+                               "Virtual sites with GPU update are not supported with this backend");
+        }
+    }
 
     wallcycle_stop(wcycle_, WallCycleCounter::GpuSetConstr);
 }
@@ -342,6 +379,7 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                                    const bool                        updateVelocities,
                                    const bool                        computeVirial,
                                    tensor                            virialScaled,
+                                   const bool                        spreadVsiteForces,
                                    const bool                        doTemperatureScaling,
                                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                                    const bool                        doParrinelloRahman,
@@ -355,6 +393,7 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                      updateVelocities,
                      computeVirial,
                      virialScaled,
+                     spreadVsiteForces,
                      doTemperatureScaling,
                      tcstat,
                      doParrinelloRahman,

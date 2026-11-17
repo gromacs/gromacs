@@ -468,7 +468,6 @@ void LegacySimulator::do_md()
                         || ir->pressureCouplingOptions.epc == PressureCoupling::CRescale,
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are supported "
                 "with the GPU update.\n");
-        GMX_RELEASE_ASSERT(!virtualSites_, "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
                            "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(*ir->pull),
@@ -944,9 +943,19 @@ void LegacySimulator::do_md()
         const bool needVirtualVelocitiesThisStep =
                 (virtualSites_ != nullptr) && do_per_step(step, c_virtualSiteVelocityUpdateInterval);
 
-        if (virtualSites_ != nullptr)
+        if (virtualSites_ != nullptr && (!useGpuForUpdate || bFirstStep))
         {
-            // Virtual sites need to be updated before domain decomposition and forces are calculated
+            // Virtual sites need to be updated before domain decomposition and forces are
+            // calculated. When GPU update is active, construction is done on the GPU at the end of
+            // integrator->integrate() (after LINCS/SETTLE) so we skip the CPU call here,
+            // except on the first step where we need to have the virtual sites constructed for
+            // the initial forces and domain decomposition.
+            // With GPU update, the periodic velocity update above is not needed after the first
+            // step: the vsite positions are reconstructed on the device after every update, so
+            // the vsite velocities on the device do not affect the dynamics. Host-side velocity
+            // construction on later steps would also use stale host x and v, or be overwritten
+            // by the copy from the GPU at the start of search steps. Velocities for trajectory
+            // output are constructed in do_md_trajectory_writing().
             wallcycle_start(wallCycleCounters_, WallCycleCounter::VsiteConstr);
             virtualSites_->construct(state_->x,
                                      state_->v,
@@ -1558,6 +1567,7 @@ void LegacySimulator::do_md()
                             true,
                             bCalcVir,
                             shake_vir,
+                            runScheduleWork_->stepWork.spreadVsiteForcesOnGpu,
                             doTemperatureScalingGpu,
                             ekind_->tcstat,
                             doParrinelloRahman,
@@ -1851,6 +1861,8 @@ void LegacySimulator::do_md()
         if (useGpuForUpdate
             && (doBerendsenPressureCoupling || doCRescalePressureCoupling || doParrinelloRahman))
         {
+            // This also scales the vsites constructed on the GPU during the update,
+            // which keeps them correct because they are linear (see vsite_gpu.h).
             integrator->scaleCoordinates(pressureCouplingMu);
             if (doCRescalePressureCoupling)
             {

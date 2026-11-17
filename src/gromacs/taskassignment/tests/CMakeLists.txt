@@ -33,6 +33,8 @@
 
 gmx_add_unit_test(TaskAssignmentUnitTests taskassignment-test
     CPP_SOURCE_FILES
+        decidesimulationworkload.cpp
         usergpuids.cpp
         )
-target_link_libraries(taskassignment-test PRIVATE taskassignment)
+# TODO: Remove `legacy_api` and `legacy_modules` once specific modules are explicitly linked.
+target_link_libraries(taskassignment-test PRIVATE taskassignment legacy_api legacy_modules)

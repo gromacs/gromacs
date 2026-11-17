@@ -1662,6 +1662,10 @@ void do_force(FILE*                         fplog,
     // to a remote task for halo exchange or PME-PP communication. At
     // search steps the current coordinates are already on the host,
     // hence copy is not needed.
+    // Spreading virtual-site forces on the host does not need the
+    // coordinates by itself: GPU update only supports vsite types 1, 2
+    // and 3 (see decideWhetherToUseGpuForUpdate()), whose force spreading
+    // only uses coordinates for the shift forces, i.e. with the virial.
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
         && (runScheduleWork.domainWork.haveCpuLocalForceWork || stepWork.computeVirial
             || simulationWork.useCpuPmePpCommunication || simulationWork.useCpuHaloExchange
@@ -2635,7 +2639,10 @@ void do_force(FILE*                         fplog,
 
     const bool haveCombinedMtsForces = (stepWork.computeForces && simulationWork.useMts && stepWork.computeSlowForces
                                         && stepWork.combineMtsForcesBeforeHaloExchange);
-    // Passing nullptr skips the vsite force spreading in the postProcess* functions
+    // When vsite forces are spread on the GPU, this is done inside UpdateConstrainGpu::integrate()
+    // on the update stream. Otherwise, e.g. on force-output or virial steps with GPU update,
+    // they are spread on the host (see StepWorkload::spreadVsiteForcesOnHost).
+    // Passing nullptr to the postProcess* functions skips the host spreading.
     GMX_ASSERT(!stepWork.spreadVsiteForcesOnHost || vsite != nullptr,
                "Need a vsite handler to spread vsite forces on the host");
     VirtualSitesHandler* const vsiteForCpuSpreading = stepWork.spreadVsiteForcesOnHost ? vsite : nullptr;

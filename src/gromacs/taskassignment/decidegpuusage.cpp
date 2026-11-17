@@ -731,6 +731,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
                                     const bool           haveFrozenAtoms,
                                     const bool           useModularSimulator,
                                     const bool           doRerun,
+                                    const bool           enableGpuVirtualSites,
                                     const gmx::MDLogger& mdlog)
 {
 
@@ -840,8 +841,32 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf((usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0),
                           // The graph is needed, but not supported
                           "Ewald surface correction is not supported.");
-    errorReasons.appendIf((gmx_mtop_interaction_count(mtop, sc_ifcVirtualSite) > 0),
-                          "Virtual sites are not supported.");
+    // GPU update supports type 1, 2 and 3 virtual sites. Any other vsite type blocks it.
+    // NOTE: Before supporting more types, check that do_force() copies the coordinates
+    // from the GPU when these are needed for spreading vsite forces on the host, as
+    // spreading for some other types needs them also without the virial.
+    {
+        const int totalVsites     = gmx_mtop_interaction_count(mtop, sc_ifcVirtualSite);
+        const int supportedVsites = gmx_mtop_ftype_count(mtop, InteractionFunction::VirtualSite1)
+                                    + gmx_mtop_ftype_count(mtop, InteractionFunction::VirtualSite2)
+                                    + gmx_mtop_ftype_count(mtop, InteractionFunction::VirtualSite3);
+        const bool allVsitesAreSupported = (totalVsites == supportedVsites);
+        // Handling virtual sites on the GPU is considered experimental for now.
+        // It must be explicitly enabled with the GMX_GPU_VSITES environment variable,
+        // see manageDevelopmentFeatures().
+        errorReasons.appendIf(!GpuConfigurationCapabilities::UpdateVsite && totalVsites > 0,
+                              "Backend does not support virtual sites with GPU update.");
+        errorReasons.appendIf(
+                GpuConfigurationCapabilities::UpdateVsite && totalVsites > 0 && !enableGpuVirtualSites,
+                "Virtual sites with GPU update are considered an experimental feature and "
+                "disabled by default; set the GMX_GPU_VSITES environment variable to "
+                "enable it.");
+        errorReasons.appendIf(!allVsitesAreSupported,
+                              "Virtual sites other than VS1, VS2 and VS3 are not supported.");
+        errorReasons.appendIf(
+                totalVsites > 0 && allVsitesAreSupported && isDomainDecomposition && !useUpdateGroups,
+                "Virtual sites are not all within update groups while using domain decomposition.");
+    }
     errorReasons.appendIf(useEssentialDynamics, "Essential dynamics is not supported.");
     errorReasons.appendIf((inputrec.bPull && pull_have_constraint(*inputrec.pull)),
                           "Constraints pulling is not supported.");

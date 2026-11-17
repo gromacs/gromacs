@@ -300,6 +300,14 @@ Performance and Run Control
         performance when scaling over many GPUs. Note: this feature still lacks
         substantial testing.
 
+``GMX_GPU_VSITES``
+        Enable the experimental support for virtual sites with GPU update.
+        Virtual sites of linear types 1, 2 and 3 are then constructed, and their
+        forces spread, on the GPU. Not supported with all GPU backends.
+        With domain decomposition, all virtual sites must be within
+        update groups. The force spreading uses atomic operations, so the
+        summation order and thus results are not reproducible between runs.
+
 ``GMX_GPU_DISABLE_BUFFER_OPS``
         Disable coordinate/force transformation to be done on the GPU and execute these
         tasks on the CPU instead.

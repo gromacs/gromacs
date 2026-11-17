@@ -109,14 +109,27 @@ public:
     bool copyXFromGpuForIO = false;
     //! Whether we need to copy velocities from GPU for IO at this step, will occur just before update, is always false with update on CPU
     bool copyVFromGpuForIO = false;
-    //! \brief Whether the forces reduced on the GPU are copied to the host for CPU update, host-side VSite spreading, or staged PME contribution
+    /*! \brief Whether the forces reduced on the GPU are copied to the host for
+     * CPU update, host-side VSite spreading (see \c spreadVsiteForcesOnHost),
+     * or staged PME contribution. */
     bool copyReducedFFromGpu = false;
     //! \brief Whether final forces need to be copied from the GPU for output before update; always false with CPU update
     bool copyFinalFFromGpu = false;
     //! \brief Whether the host holds the final forces that the GPU update needs, so they are copied to the GPU
     bool copyFinalFToGpu = false;
-    //! \brief Whether virtual-site forces are spread on the host this step
+    /*! \brief Whether virtual-site forces are spread on the host this step
+     *
+     * Always the case with virtual sites and CPU update. With GPU update, this is the case
+     * on virial and force-output steps, when the spread forces are needed on the host.
+     * These are the only host-side consumers of spread vsite forces with GPU update.
+     * Mutually exclusive with \c spreadVsiteForcesOnGpu.
+     */
     bool spreadVsiteForcesOnHost = false;
+    /*! \brief Whether virtual-site forces are spread on the GPU, within the GPU update, this step
+     *
+     * Mutually exclusive with \c spreadVsiteForcesOnHost.
+     */
+    bool spreadVsiteForcesOnGpu = false;
 };
 
 /*! \libinternal

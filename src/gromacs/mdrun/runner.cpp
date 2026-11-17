@@ -308,6 +308,30 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const MDLogger&  mdlog,
         }
     }
 
+    if (std::getenv("GMX_GPU_VSITES") != nullptr)
+    {
+        if (GpuConfigurationCapabilities::UpdateVsite)
+        {
+            devFlags.enableGpuVirtualSites = true;
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_GPU_VSITES environment variable is detected. "
+                            "The experimental support for virtual sites with GPU update "
+                            "will be used if run conditions allow.");
+        }
+        else
+        {
+            devFlags.enableGpuVirtualSites = false;
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_GPU_VSITES environment variable is detected, but virtual sites "
+                            "with GPU update are not supported with this GPU backend. "
+                            "GPU virtual sites will be disabled.");
+        }
+    }
+
     // PME decomposition is supported only with CUDA or SYCL and also
     // needs GPU-aware MPI support for it to work.
     const bool pmeGpuDecompositionRequested =
@@ -1374,6 +1398,24 @@ int Mdrunner::mdrunner()
                                         cutoffMargin);
     }
 
+    // We are using the minimal supported level of GPU-aware MPI
+    // support as an approximation of whether such communication
+    // will work. It likely would not work in cases where ranks
+    // have heterogeneous device types or vendors unless the MPI
+    // library supported that.
+    const bool canUseDirectGpuComm =
+            decideWhetherDirectGpuCommunicationCanBeUsed(hwinfo_->minGpuAwareMpiStatus,
+                                                         inputrec->useMts,
+                                                         replExParams.exchangeInterval > 0,
+                                                         (inputrec->eSwapCoords != SwapType::No),
+                                                         gpusWereDetected,
+                                                         mdlog);
+
+    // Initialize development feature flags that enabled by environment variable
+    // and report those features that are enabled.
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
+            mdlog, pmeRunMode, mpiCommSimulation.size(), domdecOptions.numPmeRanks, canUseDirectGpuComm);
+
     try
     {
         const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
@@ -1393,27 +1435,10 @@ int Mdrunner::mdrunner()
                 haveFrozenAtoms,
                 useModularSimulator,
                 doRerun,
+                devFlags.enableGpuVirtualSites,
                 mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-
-    // We are using the minimal supported level of GPU-aware MPI
-    // support as an approximation of whether such communication
-    // will work. It likely would not work in cases where ranks
-    // have heterogeneous device types or vendors unless the MPI
-    // library supported that.
-    const bool canUseDirectGpuComm =
-            decideWhetherDirectGpuCommunicationCanBeUsed(hwinfo_->minGpuAwareMpiStatus,
-                                                         inputrec->useMts,
-                                                         replExParams.exchangeInterval > 0,
-                                                         (inputrec->eSwapCoords != SwapType::No),
-                                                         gpusWereDetected,
-                                                         mdlog);
-
-    // Initialize development feature flags that enabled by environment variable
-    // and report those features that are enabled.
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
-            mdlog, pmeRunMode, mpiCommSimulation.size(), domdecOptions.numPmeRanks, canUseDirectGpuComm);
 
     bool useGpuDirectHalo = false;
 

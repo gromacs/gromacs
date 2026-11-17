@@ -100,6 +100,8 @@ if(GMX_GPU_CUDA)
        settle_gpu_internal.cu
        stochasticdynamics_gpu.cpp
        stochasticdynamics_gpu_internal.cu
+       vsite_gpu.cpp
+       vsite_gpu_internal.cu
        update_constrain_gpu_impl.cpp
        update_constrain_gpu_internal.cu
        mdgraph_gpu_impl.cu
@@ -115,6 +117,7 @@ if(GMX_GPU_CUDA)
        lincs_gpu.cpp
        settle_gpu.cpp
        stochasticdynamics_gpu.cpp
+       vsite_gpu.cpp
        update_constrain_gpu_impl.cpp
        )
 elseif(GMX_GPU_HIP)
@@ -129,6 +132,7 @@ elseif(GMX_GPU_HIP)
        settle_gpu_internal_hip.cpp
        stochasticdynamics_gpu.cpp
        stochasticdynamics_gpu_internal_hip.cpp
+       vsite_gpu_stubs.cpp
        update_constrain_gpu_impl.cpp
        update_constrain_gpu_internal_hip.cpp
        )
@@ -143,6 +147,7 @@ elseif(GMX_GPU_HIP)
        settle_gpu_internal_hip.cpp
        stochasticdynamics_gpu.cpp
        stochasticdynamics_gpu_internal_hip.cpp
+       vsite_gpu_stubs.cpp
        update_constrain_gpu_impl.cpp
        update_constrain_gpu_internal_hip.cpp
        )
@@ -159,6 +164,7 @@ elseif(GMX_GPU_SYCL)
         settle_gpu_internal_sycl.cpp
         stochasticdynamics_gpu.cpp
         stochasticdynamics_gpu_internal_sycl.cpp
+        vsite_gpu_stubs.cpp
         update_constrain_gpu_impl.cpp
         update_constrain_gpu_internal_sycl.cpp
     )
@@ -176,6 +182,7 @@ elseif(GMX_GPU_SYCL)
         settle_gpu_internal_sycl.cpp
         stochasticdynamics_gpu.cpp
         stochasticdynamics_gpu_internal_sycl.cpp
+        vsite_gpu_stubs.cpp
         update_constrain_gpu_impl.cpp
         update_constrain_gpu_internal_sycl.cpp
     )

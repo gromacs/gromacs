@@ -86,6 +86,8 @@ struct DevelopmentFeatureFlags
     bool enableCudaGraphs = false;
     //! True if NVSHMEM can be used for GPU communication
     bool enableNvshmem = false;
+    //! True if virtual sites may be constructed and have their forces spread on the GPU with GPU update
+    bool enableGpuVirtualSites = false;
 };
 
 
@@ -301,6 +303,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
  * \param[in]  haveFrozenAtoms              If this simulation has frozen atoms (see Issue #3920).
  * \param[in]  useModularSimulator          Whether the modular simulator is used
  * \param[in]  doRerun                      It this is a rerun.
+ * \param[in]  enableGpuVirtualSites        Whether experimental GPU virtual-site support is on.
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether complete simulation can be run on GPU.
@@ -321,6 +324,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
                                     bool                 haveFrozenAtoms,
                                     bool                 useModularSimulator,
                                     bool                 doRerun,
+                                    bool                 enableGpuVirtualSites,
                                     const gmx::MDLogger& mdlog);
 
 /*! \brief Decide whether direct GPU communication can be used.

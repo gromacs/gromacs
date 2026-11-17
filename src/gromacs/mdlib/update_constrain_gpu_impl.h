@@ -55,6 +55,7 @@
 #include "gromacs/mdlib/settle_gpu.h"
 #include "gromacs/mdlib/stochasticdynamics_gpu.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
+#include "gromacs/mdlib/vsite_gpu.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/matrix.h"
 
@@ -107,6 +108,7 @@ public:
      * \param[in]  updateVelocities         If the velocities should be constrained.
      * \param[in]  computeVirial            If virial should be updated.
      * \param[out] virial                   Place to save virial tensor.
+     * \param[in]  spreadVsiteForces        Whether to spread virtual-site forces before integrating.
      * \param[in]  doTemperatureScaling     If velocities should be scaled for temperature coupling.
      * \param[in]  tcstat                   Temperature coupling data.
      * \param[in]  doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
@@ -120,6 +122,7 @@ public:
                    bool                              updateVelocities,
                    bool                              computeVirial,
                    tensor                            virial,
+                   bool                              spreadVsiteForces,
                    bool                              doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    bool                              doParrinelloRahman,
@@ -230,6 +233,8 @@ private:
     std::unique_ptr<LincsGpu> lincsGpu_;
     //! SETTLE GPU object for water constrains
     std::unique_ptr<SettleGpu> settleGpu_;
+    //! GPU virtual site handler
+    std::unique_ptr<VsiteGpu> vsiteGpu_;
 
     //! The event to indicate when the update of coordinates is complete
     GpuEventSynchronizer xUpdatedOnDeviceEvent_;

@@ -79,6 +79,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/topology/idef.h"
@@ -819,27 +820,6 @@ INSTANTIATE_TEST_SUITE_P(
                            ::testing::Values("no", "c-rescale", "parrinello-rahman")),
         sc_testNamer);
 
-/*! \brief Whether GPU update supports virtual sites
- *
- * \todo Replace by GpuConfigurationCapabilities::UpdateVsite once GPU update
- * supports virtual sites, which enables VirtualSiteGpuTest. Then also remove
- * the HarmonicBonds instantiation of VirtualSiteTest below.
- */
-constexpr bool c_gpuUpdateSupportsVirtualSites = false;
-
-/* Only VirtualSiteGpuTest uses harmonic bonds, so while it is skipped, this
- * single case checks that the harmonic-bond variant of the test systems works.
- * It is temporary, see c_gpuUpdateSupportsVirtualSites. */
-INSTANTIATE_TEST_SUITE_P(HarmonicBonds,
-                         VirtualSiteTest,
-                         ::testing::Combine(::testing::Values("vsite_test", "vsite_test_linear"),
-                                            ::testing::Values(InteractionFunction::Bonds),
-                                            ::testing::Values(true),
-                                            ::testing::Values("md"),
-                                            ::testing::Values("v-rescale"),
-                                            ::testing::Values("c-rescale")),
-                         sc_testNamer);
-
 /*! \brief Test fixture for virtual sites constructed on the GPU
  *
  * Runs the same checks as VirtualSiteTest, but with the update and constraints
@@ -851,9 +831,9 @@ class VirtualSiteGpuTest : public VirtualSiteTest
 
 TEST_P(VirtualSiteGpuTest, WithinToleranceOfReference)
 {
-    if (!c_gpuUpdateSupportsVirtualSites)
+    if (!GpuConfigurationCapabilities::UpdateVsite)
     {
-        GTEST_SKIP() << "GPU update does not support virtual sites yet.";
+        GTEST_SKIP() << "GPU update does not support virtual sites with this GPU backend.";
     }
     if (getCompatibleDevices(s_hwinfo->deviceInfoList).empty())
     {
