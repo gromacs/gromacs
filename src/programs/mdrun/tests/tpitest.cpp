@@ -51,6 +51,7 @@
 
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -112,6 +113,51 @@ void TpiTest::runTest()
         checker.setDefaultTolerance(relativeToleranceAsFloatingPoint(actualValue, relativeTolerance));
         checker.checkDouble(actualValue, name.c_str());
     }
+}
+
+using TpiCavityTest = MdrunTestFixture;
+
+TEST_F(TpiCavityTest, CavityInsertionComputesFiniteChemicalPotential)
+{
+    runner_.useTopGroAndNdxFromDatabase("spc216_with_methane");
+    runner_.ndxFileName_ = "";
+    runner_.useStringAsMdpFile(R"(
+        integrator  = tpic
+        ld-seed     = 1993
+        rtpi        = 0.15
+        coulombtype = PME
+        rcoulomb    = 0.9
+        rvdw        = 0.9
+        dispcorr    = EnerPres
+        tc-grps     = System
+        tau-t       = 0.5
+        ref-t       = 298
+        nsteps      = 100
+    )");
+    ASSERT_EQ(0, runner_.callGrompp());
+
+    // Build a 649-atom rerun frame (648 solvent atoms + 1 cavity-center coordinate)
+    const std::string spc216Gro =
+            TextReader::readFileToString(TestFileManager::getInputFilePath("spc216.gro"));
+    const auto        nl1   = spc216Gro.find('\n');
+    const auto        nl2   = spc216Gro.find('\n', nl1 + 1);
+    const auto        boxNl = spc216Gro.rfind('\n', spc216Gro.size() - 2);
+    const std::string cavityGro =
+            spc216Gro.substr(0, nl1 + 1) + "  649\n" + spc216Gro.substr(nl2 + 1, boxNl - nl2)
+            + "  217CAV    CAV  649   0.931   0.931   0.931\n" + spc216Gro.substr(boxNl + 1);
+    const auto rerunPath = fileManager_.getTemporaryFilePath("spc216_cavity.gro");
+    TextWriter::writeFileFromString(rerunPath, cavityGro);
+
+    CommandLine cmd;
+    cmd.addOption("-rerun", rerunPath.string());
+    ASSERT_EQ(0, runner_.callMdrun(cmd));
+
+    const std::string logContents = TextReader::readFileToString(runner_.logFileName_);
+    const auto        muPos       = logContents.find("<mu> =");
+    ASSERT_NE(muPos, std::string::npos);
+    const double mu = std::stod(logContents.substr(muPos + 6));
+    EXPECT_GT(mu, -1e6);
+    EXPECT_LT(mu, 1e6);
 }
 
 TEST_P(TpiTest, ReproducesOutput)

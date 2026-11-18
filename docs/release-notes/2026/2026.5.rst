@@ -15,6 +15,16 @@ previous 2026.4 version, to fix known issues.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed crash in cavity test-particle insertion (``integrator = tpic``)
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``TestParticleInsertion`` did not initialize the cavity-defining atom masses
+constructed in ``do_tpi()``, causing a division by zero when computing the
+cavity center on the first step of a frame. This has been present in versions
+2025.0 to 2026.4.
+
+:issue:`5820`
+
 Fixed incorrect LJ-PME forces and energies for perturbed particles
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

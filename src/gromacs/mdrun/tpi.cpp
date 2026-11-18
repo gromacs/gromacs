@@ -182,6 +182,7 @@ public:
                           t_forcerec*               forceRec,
                           gmx_enerdata_t*           enerd,
                           const Range<int>&         testAtomsRange,
+                          ArrayRef<const real>      massesDefiningCavity,
                           ArrayRef<const RVec>      xMoleculeToInsert,
                           real                      beta,
                           real                      rfExclusionEnergy,
@@ -276,7 +277,7 @@ private:
     //! Whether we insert in a cavity location and not in the whole volume
     bool insertIntoCavity_;
     //! The masses of the atoms that define the cavity
-    ArrayRef<real> massesDefiningCavity_;
+    ArrayRef<const real> massesDefiningCavity_;
     //! The coordinates of the molecule to insert, centered at the origin
     std::vector<RVec> xMoleculeToInsert_;
 
@@ -346,6 +347,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
                                              t_forcerec*               forceRec,
                                              gmx_enerdata_t*           enerd,
                                              const Range<int>&         testAtomsRange,
+                                             ArrayRef<const real>      massesDefiningCavity,
                                              ArrayRef<const RVec>      xMoleculeToInsert,
                                              const real                beta,
                                              const real                rfExclusionEnergy,
@@ -363,6 +365,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     rng_(inputRec.ld_seed, RandomDomain::TestParticleInsertion),
     testAtomsRange_(testAtomsRange),
     insertIntoCavity_(inputRec.eI == IntegrationAlgorithm::TPIC),
+    massesDefiningCavity_(massesDefiningCavity),
     xMoleculeToInsert_(xMoleculeToInsert.begin(), xMoleculeToInsert.end()),
     ngid_(topGlobal.groups.groups[SimulationAtomGroupType::EnergyOutput].size()),
     beta_(beta),
@@ -1134,6 +1137,7 @@ void LegacySimulator::do_tpi()
                               fr_,
                               enerd_,
                               testAtomsRange,
+                              massesDefiningCavity,
                               x_mol,
                               beta,
                               rfExclusionEnergy,
