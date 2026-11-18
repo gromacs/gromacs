@@ -50,6 +50,7 @@
 
 #include "config.h"
 
+#include <algorithm>
 #include <array>
 #include <list>
 #include <memory>
@@ -499,8 +500,9 @@ void pme_gpu_reinit_haloexchange(PmeGpu* pmeGpu)
         int overlapUp = overlapX;
 
         // if only 2 PME ranks in X-domain and overlap width more than slab width
-        // just transfer all grid points from neighbor
-        if (down == up && 2 * overlapX >= downGrid)
+        // just transfer all grid points from neighbor.
+        // Both ranks need to make the same choice, so we check the thinner slab.
+        if (down == up && 2 * overlapX >= std::min(myGridX, downGrid))
         {
             overlapX    = myGridX;
             overlapDown = downGrid;
@@ -545,8 +547,9 @@ void pme_gpu_reinit_haloexchange(PmeGpu* pmeGpu)
         int overlapLeft = overlapY;
 
         // if only 2 PME ranks in Y-domain and overlap width more than slab width
-        // just transfer all grid points from neighbor
-        if (right == left && 2 * overlapY >= rightGrid)
+        // just transfer all grid points from neighbor.
+        // Both ranks need to make the same choice, so we check the thinner slab.
+        if (right == left && 2 * overlapY >= std::min(myGridY, rightGrid))
         {
             overlapY     = myGridY;
             overlapRight = rightGrid;

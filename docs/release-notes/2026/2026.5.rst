@@ -121,6 +121,15 @@ decomposition was introduced.
 
 :issue:`5803`
 
+Fixed crash with GPU PME decomposition and two ranks of unequal size
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With GPU PME decomposition over two ranks along X or Y and unequal domain
+sizes, the two ranks could disagree on the size of the PME grid halo,
+leading to an MPI truncation error.
+
+:issue:`5829`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
