@@ -352,28 +352,29 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
         /* Only threads with tidxj < 3 will update fshift.
            The threads performing the update must be the same as the threads
            storing the reduction result above. */
-        if (tidxj < 3)
+        if constexpr (c_avoidFloatingPointAtomics(sc_layoutType))
         {
-            if constexpr (c_avoidFloatingPointAtomics(sc_layoutType))
-            {
-                /* Intel Xe (Gen12LP) and earlier GPUs implement floating-point atomics via
-                 * a compare-and-swap (CAS) loop. It has particularly poor performance when
-                 * updating the same memory location from the same work-group.
-                 * Such optimization might be slightly beneficial for NVIDIA and AMD as well,
-                 * but it is unlikely to make a big difference and thus was not evaluated.
-                 */
-                auto sg = itemIdx.get_sub_group();
-                fShiftBuf += sycl::shift_group_left(sg, fShiftBuf, 1);
-                fShiftBuf += sycl::shift_group_left(sg, fShiftBuf, 2);
-                if (tidxi == 0)
-                {
-                    atomicFetchAdd(a_fShift[shift][tidxj], fShiftBuf);
-                }
-            }
-            else
+            /* Intel Xe (Gen12LP) and earlier GPUs implement floating-point atomics via
+             * a compare-and-swap (CAS) loop. It has particularly poor performance when
+             * updating the same memory location from the same work-group.
+             * Such optimization might be slightly beneficial for NVIDIA and AMD as well,
+             * but it is unlikely to make a big difference and thus was not evaluated.
+             */
+            auto sg = itemIdx.get_sub_group();
+            fShiftBuf += sycl::shift_group_left(sg, fShiftBuf, 1);
+            fShiftBuf += sycl::shift_group_left(sg, fShiftBuf, 2);
+            /* tidxj condition cannot be moved up, because subgroup collective must be
+             * called by all work-items in a sub-group; lanes with tidxj == 3 take part
+             * with fShiftBuf == 0, so the sums are unchanged.
+             */
+            if (tidxj < 3 && tidxi == 0)
             {
                 atomicFetchAdd(a_fShift[shift][tidxj], fShiftBuf);
             }
+        }
+        else if (tidxj < 3)
+        {
+            atomicFetchAdd(a_fShift[shift][tidxj], fShiftBuf);
         }
     }
 }

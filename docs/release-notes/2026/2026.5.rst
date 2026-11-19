@@ -181,6 +181,15 @@ of the atom name. Now the second character is checked when the first is a digit.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed undefined behavior in SYCL nonbonded shift-force reduction
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With nonbonded cluster size 4, the default for Intel GPUs, the SYCL
+nonbonded kernel called sub-group shuffles from only part of a sub-group
+when reducing shift forces, which is undefined behavior in SYCL. No
+incorrect results have been observed on supported hardware. The shuffles
+are now called by the whole sub-group.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
