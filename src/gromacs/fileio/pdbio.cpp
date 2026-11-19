@@ -967,7 +967,8 @@ int read_pdbfile(FILE*      in,
                     }
                     if (std::strlen(c) > 0)
                     {
-                        std::strcpy(title, c);
+                        std::strncpy(title, c, STRLEN - 1);
+                        title[STRLEN - 1] = '\0';
                     }
                 }
                 break;
@@ -1002,12 +1003,13 @@ int read_pdbfile(FILE*      in,
                     {
                         if (bCOMPND)
                         {
-                            std::strcat(title, "; ");
-                            std::strcat(title, c);
+                            std::strncat(title, "; ", STRLEN - std::strlen(title) - 1);
+                            std::strncat(title, c, STRLEN - std::strlen(title) - 1);
                         }
                         else
                         {
-                            std::strcpy(title, c);
+                            std::strncpy(title, c, STRLEN - 1);
+                            title[STRLEN - 1] = '\0';
                         }
                     }
                     bCOMPND = TRUE;

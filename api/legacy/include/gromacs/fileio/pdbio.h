@@ -144,6 +144,7 @@ int read_pdbfile(FILE*            in,
                  matrix           box,
                  gmx_conect       conect);
 /* Function returns number of atoms found.
+ * title must point to a buffer of at least STRLEN bytes; longer titles are truncated.
  * pbcType and gmx_conect structure may be NULL.
  */
 
