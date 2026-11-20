@@ -72,6 +72,8 @@ macro(gmx_manage_sz3)
                     "True if a status message has already been printed")
             endif()
             set(GMX_HAVE_SZ3 1 CACHE INTERNAL "Are we building with SZ3?")
+            # Not SYSTEM, so that these headers are searched before any other SZ3 on the include path
+            set_target_properties(SZ3::SZ3core PROPERTIES SYSTEM OFF)
 
             # Reset status messages for internal library configuration
             set(SZ3_ALREADY_PRINTED_INTERNAL_STATUS_MESSAGE FALSE CACHE INTERNAL "")
@@ -121,11 +123,16 @@ function(gmx_setup_internal_sz3)
     include(FetchContent)
     set(FETCHCONTENT_QUIET ON)
 
-    FetchContent_Declare(SZ3 SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/external/sz3 EXCLUDE_FROM_ALL SYSTEM)
+    FetchContent_Declare(SZ3 SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/external/sz3 EXCLUDE_FROM_ALL)
     FetchContent_GetProperties(SZ3)
     if (NOT ${sz3_POPULATED})
         FetchContent_MakeAvailable(SZ3)
     endif()
+    # Search the bundled SZ3 before the HDF5 directories, which can hold another SZ3
+    # This works around an issue in the internal SZ3 3.4.0 build (see #5821).
+    # The target_include_directories line can be removed once we bundle 3.4.1.
+    target_include_directories(hdf5sz3 BEFORE PRIVATE
+        $<TARGET_PROPERTY:SZ3core,INTERFACE_INCLUDE_DIRECTORIES>)
 
     if (BUILD_SHARED_LIBS)
         install(TARGETS hdf5sz3

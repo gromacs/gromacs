@@ -43,7 +43,15 @@
 #include <hdf5.h>
 
 #if GMX_HAVE_SZ3
+#    include "gromacs/utility/basedefinitions.h"
+// The SZ3 headers trigger warnings that GROMACS enables for its tests.
+// Once we bundle and update our CMake for SZ3 3.4.1 we should no longer need to silence these
+// warnings.
+CLANG_DIAGNOSTIC_IGNORE("-Wcomma")
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 #    include <H5Z_SZ3.hpp>
+CLANG_DIAGNOSTIC_RESET
+CLANG_DIAGNOSTIC_RESET
 #endif
 
 #include <gtest/gtest.h>
