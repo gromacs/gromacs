@@ -35,10 +35,11 @@ set(MMCIF_SOURCES
     ${MMCIF_MODULES}/cpp-tables/src/ITTable.C
     ${MMCIF_MODULES}/cpp-tables/src/TTable.C
     ${MMCIF_MODULES}/cpp-tables/src/TableFile.C
-    # cc-regex (C sources; engine.c and split.c are #included, not compiled directly)
+    # cc-regex (C sources; engine.c and split.c are #included, not compiled directly).
+    # regerror.c is left out: nothing calls its regerror(), which, unlike the
+    # rcsb_reg*() functions, has the name of the C library function.
     ${MMCIF_MODULES}/cc-regex/src/regcomp.c
     ${MMCIF_MODULES}/cc-regex/src/regexec.c
-    ${MMCIF_MODULES}/cc-regex/src/regerror.c
     ${MMCIF_MODULES}/cc-regex/src/regfree.c
     # cpp-cif-file
     ${MMCIF_MODULES}/cpp-cif-file/src/CifFile.C
