@@ -65,19 +65,26 @@ set(MMCIF_SOURCES
 
 add_library(mmcif STATIC ${MMCIF_SOURCES})
 
-# Headers reference each other by flat name across modules, so every module
-# include directory must be on the search path; generated/ holds the bison
-# headers (CifParser.h, DICParser.h). Exposed PUBLIC + SYSTEM so the single
-# consumer (fileio/cifio.cpp) can include CifFile.h etc. without warnings.
+# Headers reference each other by flat name across modules, so the include
+# directory of every module whose headers CifFile.h etc. reach must be on the
+# search path of the single consumer (fileio/cifio.cpp). Exposed PUBLIC +
+# SYSTEM so that it can include them without warnings.
 target_include_directories(mmcif SYSTEM PUBLIC
     ${MMCIF_MODULES}/cpp-common/include
     # ISTable.h / TableFile.h #include the mapped_*.C template bodies from here
     ${MMCIF_MODULES}/cpp-common/src
     ${MMCIF_MODULES}/cpp-tables/include
-    ${MMCIF_MODULES}/cc-regex/include
     ${MMCIF_MODULES}/cpp-cif-file/include
     ${MMCIF_MODULES}/cpp-cif-file-util/include
     ${MMCIF_MODULES}/cpp-cif-parser/include
+    )
+
+# Only the suite's own sources include headers from these. cc-regex has a
+# regex.h whose regex_t differs from that of the system <regex.h>, so it must
+# not reach code that links mmcif; generated/ holds the bison headers
+# (CifParser.h, DICParser.h).
+target_include_directories(mmcif SYSTEM PRIVATE
+    ${MMCIF_MODULES}/cc-regex/include
     ${MMCIF_GENERATED}
     )
 
