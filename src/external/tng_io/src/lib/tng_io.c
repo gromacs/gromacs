@@ -14208,7 +14208,6 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length(struct tng_traj
     tng_function_status stat;
     tng_data_t          data;
     int64_t             orig_file_pos, file_pos;
-    int                 is_particle_data;
 
     if (tng_data->current_trajectory_frame_set_input_file_pos <= 0)
     {
@@ -14257,34 +14256,10 @@ tng_function_status DECLSPECDLLEXPORT tng_data_get_stride_length(struct tng_traj
 
                     return (stat);
                 }
-                else
-                {
-                    is_particle_data = 1;
-                }
-            }
-            else
-            {
-                is_particle_data = 0;
             }
         }
-        else
-        {
-            is_particle_data = 1;
-        }
     }
-    else
-    {
-        is_particle_data = 0;
-    }
-    if (is_particle_data)
-    {
-        *stride_length = data->stride_length;
-    }
-    // Possible bug here
-    //    else
-    //    {
-    //        *stride_length = data->stride_length;
-    //    }
+    *stride_length = data->stride_length;
     tng_reread_frame_set_at_file_pos(tng_data, orig_file_pos);
 
     return (TNG_SUCCESS);

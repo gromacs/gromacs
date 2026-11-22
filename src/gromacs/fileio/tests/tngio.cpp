@@ -46,6 +46,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/path.h"
 
 #include "testutils/simulationdatabase.h"
@@ -69,6 +70,18 @@ TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
 {
     gmx_tng_trajectory_t tng = nullptr;
     gmx_tng_close(&tng);
+}
+
+TEST_F(TngTest, PrepareWritingCopiesBoxIntervalFromTngInput)
+{
+    gmx_tng_trajectory_t in = nullptr;
+    gmx_tng_open(TestFileManager::getTestSimulationDatabaseDirectory() / "spc2-traj.tng", 'r', &in);
+    gmx_tng_trajectory_t out = nullptr;
+    gmx_prepare_tng_writing(
+            fileManager_.getTemporaryFilePath("out.tng"), 'w', &in, &out, 6, nullptr, ArrayRef<const int>(), nullptr);
+    EXPECT_GT(gmx_tng_get_box_output_interval(out), 0);
+    gmx_tng_close(&out);
+    gmx_tng_close(&in);
 }
 
 } // namespace

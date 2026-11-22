@@ -186,6 +186,16 @@ Avoid crashes on malformed input files.
 
 :issue:`5815`
 
+Fixed gmx trjconv abort when converting TNG to TNG
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The bundled TNG library reported no stride length for data that is not
+per particle, such as the box. :ref:`gmx trjconv` then aborted when it set
+up the output TNG file from a TNG input file. This has been present in
+versions 2025.0 to 2026.4.
+
+:issue:`5807`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
