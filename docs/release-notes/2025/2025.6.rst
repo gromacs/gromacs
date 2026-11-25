@@ -28,6 +28,16 @@ in well-equilibrated systems.
 
 :issue:`5724`
 
+Fix race condition with GPU graphs and x/v output
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+With CUDA/SYCL graphs enabled, on non-graph steps following a graph step, the coordinates
+and velocities copied back to the host for trajectory output could be stale. This was
+caused by the graph and non-graph streams not being in sync, and could potentially
+cause wrong dynamics. However, it is unlikely that this has happened in practice.
+
+:issue:`5833`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
