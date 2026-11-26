@@ -93,6 +93,9 @@ macro(gmx_manage_sz3)
         else()
             set(GMX_HAVE_SZ3 0 CACHE INTERNAL "Are we building with SZ3?")
         endif()
+    else()
+        # Reset a value cached while HDF5 was enabled
+        set(GMX_HAVE_SZ3 0 CACHE INTERNAL "Are we building with SZ3?")
     endif()
 
     # Mark SZ3-related CMake options as "advanced"
