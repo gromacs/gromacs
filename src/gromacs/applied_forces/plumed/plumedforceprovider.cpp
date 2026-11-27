@@ -41,10 +41,13 @@
 
 #include "plumedforceprovider.h"
 
+#include "config.h"
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
@@ -112,6 +115,26 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
             int res = 1;
             plumed_->cmd("setRestart", &res);
         }
+    }
+
+    /* In a multi-simulation, PLUMED also needs the INTER-replica communicator.
+       It is what populates PlumedMain::multi_sim_comm; without it that stays at
+       its default MPI_COMM_SELF, whose size is 1, and every replica concludes it
+       is replica 0 of 1 -- so multi-replica biases silently act on one replica.
+       PLUMED reads these arguments as MPI_Comm*. The intra-replica communicator
+       comes from the multi-simulation, because MpiComm::comm() is MPI_COMM_NULL
+       when the simulation has a single rank. GREX must be initialised before
+       setMPIComm. */
+    if (isMultiSim(options.ms_))
+    {
+#if GMX_MPI
+        if (options.mpiComm_->isMainRank())
+        {
+            plumed_->cmd("GREX setMPIIntercomm", const_cast<MPI_Comm*>(&options.ms_->mainRanksComm_));
+        }
+        plumed_->cmd("GREX setMPIIntracomm", const_cast<MPI_Comm*>(&options.ms_->simulationComm_));
+        plumed_->cmd("GREX init", nullptr);
+#endif
     }
 
     if (options.mpiComm_->isParallel())

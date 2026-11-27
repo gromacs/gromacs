@@ -49,6 +49,7 @@
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 
 namespace gmx
 {
@@ -58,13 +59,14 @@ struct EnsembleTemperature;
 
 struct PlumedOptions
 {
-    std::string         plumedFile_;
-    int                 natoms_;
-    const MpiComm*      mpiComm_;
-    real                simulationTimeStep_;
-    std::optional<real> ensembleTemperature_{};
-    StartingBehavior    startingBehavior_{};
-    bool                active_{ false };
+    std::string           plumedFile_;
+    int                   natoms_;
+    const MpiComm*        mpiComm_;
+    const gmx_multisim_t* ms_{ nullptr };
+    real                  simulationTimeStep_;
+    std::optional<real>   ensembleTemperature_{};
+    StartingBehavior      startingBehavior_{};
+    bool                  active_{ false };
 };
 
 class PlumedOptionProvider
@@ -99,6 +101,14 @@ public:
      * @param mpiComm  the Communication object
      */
     void setComm(const MpiComm& mpiComm);
+    /*! @brief Sets the multi-simulation record, if this is a multi-simulation
+     *
+     * Needed to give PLUMED the inter-replica communicator; without it every
+     * replica sees itself as replica 0 of 1 and multi-replica biases silently
+     * act on a single replica.
+     * @param ms the multi-simulation record, may be nullptr
+     */
+    void setMultiSim(const gmx_multisim_t* ms);
     //! @brief returns the active status of the module
     bool active() const;
 

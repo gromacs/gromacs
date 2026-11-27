@@ -87,8 +87,25 @@ public:
 
         // Access the plumed filename this is used to activate the plumed module
         notifier->simulationSetupNotifier_.subscribe(
-                [this](const PlumedInputFilename& plumedFilename)
-                { this->options_.setPlumedFile(plumedFilename.plumedFilename_); });
+                [this, notifier](const PlumedInputFilename& plumedFilename)
+                {
+                    this->options_.setPlumedFile(plumedFilename.plumedFilename_);
+                    /* Subscribing to the multi-simulation record is not free of side
+                       effects: do_md() decides that the simulations share state, and so
+                       must checkpoint and stop in lockstep, based on whether any module
+                       subscribed to a const gmx_multisim_t*. Subscribing unconditionally
+                       would impose that on every -multidir run built with PLUMED support,
+                       even one that never passes -plumed, which deadlocks when the
+                       simulations run different numbers of steps. So only subscribe once
+                       the input file has shown that PLUMED is actually in use. This
+                       notification is delivered before the gmx_multisim_t* one, so the
+                       subscription is in place in time to receive it. */
+                    if (this->options_.active())
+                    {
+                        notifier->simulationSetupNotifier_.subscribe(
+                                [this](const gmx_multisim_t* ms) { this->options_.setMultiSim(ms); });
+                    }
+                });
         // Access the temperature if it is constant during the simulation
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const EnsembleTemperature& ensembleT)

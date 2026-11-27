@@ -91,6 +91,11 @@ void PlumedOptionProvider::setComm(const MpiComm& mpiComm)
     opts_.mpiComm_ = &mpiComm;
 }
 
+void PlumedOptionProvider::setMultiSim(const gmx_multisim_t* ms)
+{
+    opts_.ms_ = ms;
+}
+
 bool PlumedOptionProvider::active() const
 {
     return opts_.active_;

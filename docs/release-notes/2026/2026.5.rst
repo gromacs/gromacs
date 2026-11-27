@@ -140,6 +140,18 @@ leading to an MPI truncation error.
 
 :issue:`5829`
 
+Fixed PLUMED acting on a single simulation with ``mdrun -multidir``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With ``mdrun -multidir`` and ``-plumed``, PLUMED was not given the
+communicator between the simulations, so each simulation acted as if it
+were the only one. PLUMED biases that couple simulations, such as
+``ENSEMBLE`` or multiple-walker metadynamics, then silently acted on each
+simulation alone. Such runs now also checkpoint and stop at the same step
+in all simulations. This has been present in versions 2025.0 to 2026.4.
+
+:issue:`5684`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
