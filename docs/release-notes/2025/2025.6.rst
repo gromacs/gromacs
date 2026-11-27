@@ -1,0 +1,49 @@
+GROMACS 2025.6 release notes
+----------------------------
+
+This version was released on TODO, 2026. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2025.5 version, to fix known issues. It also incorporates all
+fixes made in version 2024.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix race condition with stale shift vectors in GPU non-local nonbonded kernel
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With domain decomposition, GPU nonbonded interactions, GPU coordinate
+buffer operations and a changing box (e.g., pressure coupling), the
+non-local nonbonded kernel could use the shift vectors from the previous
+step, leading to incorrect forces between local and non-local atoms
+interacting across a periodic boundary. The effect is expected to be minor
+in well-equilibrated systems.
+
+:issue:`5724`
+
+Fix race condition with GPU graphs and x/v output
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+With CUDA/SYCL graphs enabled, on non-graph steps following a graph step, the coordinates
+and velocities copied back to the host for trajectory output could be stale. This was
+caused by the graph and non-graph streams not being in sync, and could potentially
+cause wrong dynamics. However, it is unlikely that this has happened in practice.
+
+:issue:`5833`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+

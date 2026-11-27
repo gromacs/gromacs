@@ -195,6 +195,8 @@ private:
     int ppSize_ = 1;
     //! Temporary event used for forking and joining streams in graph
     std::unique_ptr<GpuEventSynchronizer> helperEvent_;
+    //! Event marked in the launch stream after the graph, which the update stream waits on
+    std::unique_ptr<GpuEventSynchronizer> graphCompletedEvent_;
     //! Whether step is even or odd, where different graphs are used for each
     MdGraphEvenOrOddStep evenOrOddStep_;
     //! event marked on this step when this PP task has completed its tasks

@@ -71,6 +71,7 @@ MdGpuGraph::Impl::Impl(const DeviceStreamManager& deviceStreamManager,
     wcycle_(wcycle)
 {
     helperEvent_           = std::make_unique<GpuEventSynchronizer>();
+    graphCompletedEvent_   = std::make_unique<GpuEventSynchronizer>();
     ppTaskCompletionEvent_ = std::make_unique<GpuEventSynchronizer>();
 
     if (havePPDomainDecomposition_)
@@ -501,6 +502,14 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
     enqueueRank0EventToAllPpStreams(helperEvent_.get(), *thisLaunchStream);
     xUpdatedOnDeviceEvent->reset();
     xUpdatedOnDeviceEvent->markEvent(*thisLaunchStream);
+
+    // For non-graph steps immediately following a graph step, make sure that the update stream
+    // waits for coordinates and velocities to be ready after the last update. This is needed
+    // to prevent coordinate and velocity D2H copies for writing trajectories in the
+    // update stream racing with the update stage in the graph stream.
+    graphCompletedEvent_->markEvent(*thisLaunchStream);
+    graphCompletedEvent_->enqueueWaitEvent(
+            deviceStreamManager_.stream(gmx::DeviceStreamType::UpdateAndConstraints));
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::MdGpuGraphLaunch);
     wallcycle_stop(wcycle_, WallCycleCounter::MdGpuGraph);
