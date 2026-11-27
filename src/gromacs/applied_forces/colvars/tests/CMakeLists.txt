@@ -48,6 +48,10 @@ else()
         )
 endif()
 
+if(GMX_HAVE_COLVARS AND GMX_HAVE_LEPTON)
+    target_sources(colvars_applied_forces-test PRIVATE colvarslepton.cpp)
+endif()
+
 target_link_libraries(colvars_applied_forces-test PRIVATE
     applied_forces
     math

@@ -76,6 +76,12 @@ if (GMX_HAVE_COLVARS AND GMX_USE_COLVARS STREQUAL "INTERNAL")
     # Ensure the target can be used in both STATIC and SHARED libraries.
     set_target_properties(colvars_library PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+    if(GMX_HAVE_LEPTON)
+        # Enable compilation of Colvars-Lepton interface code
+        target_link_libraries(colvars_library PRIVATE lepton)
+        target_compile_options(colvars_library PRIVATE -DLEPTON -DLEPTON_USE_STATIC_LIBRARIES)
+    endif()
+
     # Ensure we don't get warnings or linting suggestions when
     # including these headers in GROMACS source code.
     target_include_directories(colvars_library SYSTEM INTERFACE $<BUILD_INTERFACE:${COLVARS_DIR}>)

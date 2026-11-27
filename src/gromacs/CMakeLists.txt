@@ -72,6 +72,9 @@ mark_as_advanced(GMX_USE_SIMD_KERNELS)
 # pulling is using the muparser target as well, so detect it early
 gmx_manage_muparser()
 
+# Add Lepton target
+gmx_manage_lepton()
+
 # The following functions and macros called here sets up the "module_x_active" variable before
 # including the directories with their own modules
 gmx_manage_plumed()
