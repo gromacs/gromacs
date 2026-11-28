@@ -1462,10 +1462,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
 
             inc_nrnb(nrnb, eNR_GATHERFBSP, pme->pme_order * pme->pme_order * pme->pme_order * atc.numAtoms());
-            /* Note: this wallcycle region is opened above inside an OpenMP
-               region, so take care if refactoring code here. */
-            wallcycle_stop(wcycle, WallCycleCounter::PmeGather);
         }
+        /* Note: this wallcycle region is opened above inside an OpenMP
+           region, so take care if refactoring code here. */
+        wallcycle_stop(wcycle, WallCycleCounter::PmeGather);
 
         if (computeEnergyAndVirial)
         {
